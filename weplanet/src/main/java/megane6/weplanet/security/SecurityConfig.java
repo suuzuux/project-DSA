@@ -1,4 +1,4 @@
-package megane6.weplanet.config;
+package megane6.weplanet.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
