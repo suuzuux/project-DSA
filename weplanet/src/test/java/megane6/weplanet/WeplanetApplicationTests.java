@@ -1,4 +1,4 @@
-package _megane.weplanet;
+package megane6.weplanet;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
