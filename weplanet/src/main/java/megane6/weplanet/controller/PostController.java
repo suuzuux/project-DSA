@@ -3,10 +3,12 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.BoardType;
+import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,6 +26,7 @@ public class PostController {
 
     private final PostService postService;
     private final UserRepository userRepository;
+    private final CommentService commentService;
 
     // 게시판 목록 조회 - sort 파라미터로 정렬 방식 선택 (latest=최신순, popular=인기순)
     @GetMapping("/posts/{boardType}")
@@ -84,6 +87,52 @@ public class PostController {
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
 
         return "redirect:/posts/" + boardType;
+    }
+
+    // 게시글 상세 화면 (댓글 목록 포함)
+    @GetMapping("/posts/detail/{id}")
+    public String detail(
+            @PathVariable Long id,
+            Model model
+    ) {
+        Post post = postService.getPost(id);
+        List<Comment> comments = commentService.getComments(post);
+
+        model.addAttribute("post", post);
+        model.addAttribute("comments", comments);
+
+        return "postDetail";
+    }
+
+    // 댓글 작성
+    @PostMapping("/posts/detail/{id}/comment")
+    public String addComment(
+            @PathVariable Long id,
+            @RequestParam String content,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Post post = postService.getPost(id);
+        User author = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        commentService.createComment(post, author, content);
+
+        return "redirect:/posts/detail/" + id;
+    }
+
+    // 댓글 삭제 - 본인 댓글만 삭제 가능
+    @PostMapping("/posts/detail/{id}/comment/{commentId}/delete")
+    public String deleteComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        User requester = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        commentService.deleteComment(commentId, requester);
+
+        return "redirect:/posts/detail/" + id;
     }
 }
 
