@@ -26,7 +26,7 @@ public class PostController {
     ) {
 
         // URL의 소문자 문자열 ("fan")을 enum(FAN)으로 변환
-        BoardType type = BoardType.valueOf(boardType.toUpperCase()); // 이문법 뭐지
+        BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
         List<Post> posts = postService.getPostsByBoardType(type);
 

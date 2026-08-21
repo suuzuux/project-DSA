@@ -20,7 +20,7 @@ public class PostService {
         return postRepository.findByBoardTypeOrderByCreatedAtDesc(boardType);
     }
 
-    // 게시글 작성 (임시로 작성자 이름만 문자열로 받음 - User 완성되면 파라미터 교체 예정)
+    // 게시글 작성
     public Post createPost(BoardType boardType, String title, String content, User author) {
         Post post = Post.builder()
                 .boardType(boardType)
