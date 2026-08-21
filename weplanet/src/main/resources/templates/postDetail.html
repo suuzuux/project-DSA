@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 상세</title>
+</head>
+<body>
+
+<h1 th:text="${post.title}"></h1>
+<p th:text="${post.content}"></p>
+<p>작성일: <span th:text="${post.createdAt}"></span></p>
+
+<form th:action="@{/posts/detail/{id}/like(id=${post.id})}" method="post">
+    <select name="testUserId">
+        <option value="1">1번 - 팬 계정</option>
+        <option value="2">2번 - 아티스트 계정</option>
+    </select>
+    <button type="submit">좋아요 (<span th:text="${post.likeCount}"></span>)</button>
+</form>
+
+<hr>
+
+<h3>댓글</h3>
+
+<form th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
+    <select name="testUserId">
+        <option value="1">1번 - 팬 계정</option>
+        <option value="2">2번 - 아티스트 계정</option>
+    </select>
+    <input type="text" name="content" placeholder="댓글을 입력하세요">
+    <button type="submit">댓글 작성</button>
+</form>
+
+<ul>
+    <li th:each="comment : ${comments}">
+        <span th:text="${comment.author.nickname}"></span> :
+        <span th:text="${comment.content}"></span>
+        (<span th:text="${comment.createdAt}"></span>)
+
+        <form th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
+              method="post" style="display:inline;">
+            <select name="testUserId">
+                <option value="1">1번(팬)으로 삭제 시도</option>
+                <option value="2">2번(아티스트)으로 삭제 시도</option>
+            </select>
+            <button type="submit">삭제</button>
+        </form>
+    </li>
+</ul>
+
+<p th:if="${#lists.isEmpty(comments)}">등록된 댓글이 없습니다.</p>
+
+<a th:href="@{/}">홈으로</a>
+
+</body>
+</html>
