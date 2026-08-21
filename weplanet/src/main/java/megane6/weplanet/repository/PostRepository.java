@@ -8,9 +8,6 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    // 게시판 종류(팬/아티스트)별로 게시글 목록 조회 - 최신순
+    // 게시판 종류(팬/아티스트)별로 게시글 목록 조회
     List<Post> findByBoardTypeOrderByCreatedAtDesc(BoardType boardType);
-
-    // 게시판 종류별로 게시글 목록 조회 - 인기순(좋아요 많은 순, 동률이면 최신순)
-    List<Post> findByBoardTypeOrderByLikeCountDescCreatedAtDesc(BoardType boardType);
 }
