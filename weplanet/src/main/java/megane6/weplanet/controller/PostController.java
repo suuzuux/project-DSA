@@ -134,5 +134,21 @@ public class PostController {
 
         return "redirect:/posts/detail/" + id;
     }
+
+    // 좋아요 토글
+    @PostMapping("/posts/detail/{id}/like")
+    public String like(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Post post = postService.getPost(id);
+        User user = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        boolean liked = postService.toggleLike(post, user);
+        log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
+
+        return "redirect:/posts/detail/" + id;
+    }
 }
 

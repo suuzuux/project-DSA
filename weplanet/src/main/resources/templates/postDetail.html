@@ -9,7 +9,14 @@
 <h1 th:text="${post.title}"></h1>
 <p th:text="${post.content}"></p>
 <p>작성일: <span th:text="${post.createdAt}"></span></p>
-<p>좋아요: <span th:text="${post.likeCount}"></span></p>
+
+<form th:action="@{/posts/detail/{id}/like(id=${post.id})}" method="post">
+    <select name="testUserId">
+        <option value="1">1번 - 팬 계정</option>
+        <option value="2">2번 - 아티스트 계정</option>
+    </select>
+    <button type="submit">좋아요 (<span th:text="${post.likeCount}"></span>)</button>
+</form>
 
 <hr>
 
