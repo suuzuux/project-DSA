@@ -39,6 +39,11 @@ public class Post {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    // 인기순 정렬용 좋아요 개수 (FEED-05에서 좋아요 기능이 이 값을 올리고 내림)
+    @Builder.Default
+    @Column(nullable = false)
+    private int likeCount = 0;
+
     // 엔티티가 저장되기 직전에 자동으로 실행됨
     @PrePersist
     public void prePersist() {
