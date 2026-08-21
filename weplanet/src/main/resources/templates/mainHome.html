@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
-	<meta charset="UTF-8">
-	<title>Title</title>
+    <meta charset="UTF-8">
+    <title>Title</title>
 </head>
 <body>
 <h1>WePlanet</h1>
+
+<ul>
+    <li><a th:href="@{/posts/fan}">팬 게시판</a></li>
+    <li><a th:href="@{/posts/artist}">아티스트 게시판</a></li>
+</ul>
+
 </body>
 </html>
