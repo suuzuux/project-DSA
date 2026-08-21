@@ -32,7 +32,6 @@ public class Post {
     @Column(nullable = false)
     private String content;
 
-    // 임시 필드 - AUTH 완성되면 User 엔티티와의 연관관계(@ManyToOne)로 교체 예정
     @ManyToOne
     @JoinColumn(name = "author_id")
     private User author;
