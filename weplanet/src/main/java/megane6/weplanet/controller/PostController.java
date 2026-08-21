@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.PostService;
 import org.springframework.stereotype.Controller;
@@ -60,18 +61,24 @@ public class PostController {
     public String create(
             @PathVariable String boardType,
             @RequestParam String title,
-            @RequestParam String content
+            @RequestParam String content,
+            @RequestParam(defaultValue = "1") Long testUserId
     ) {
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
-// 임시 - 로그인 기능 완성 전까지는 DB에 미리 넣어둔 테스트용 유저 1번을 작성자로 사용
-// 형준님 회원가입/로그인 완성되면 이 부분을 실제 로그인한 User로 교체 예정
-        User tempAuthor = userRepository.findById(1L)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=1)가 없습니다. DB에 먼저 넣어주세요."));
+        // 임시 - 로그인 기능 완성 전까지는 폼에서 넘어온 testUserId로 작성자를 선택
+        // 형준님 로그인 완성되면 이 블록 전체를 세션에서 꺼낸 실제 User로 교체 예정
+        User tempAuthor = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 아티스트만 작성 가능
+        if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
+            throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
+        }
 
         postService.createPost(type, title, content, tempAuthor);
 
-        log.debug("게시글 작성 완료 : boardType={}, title={}", type, title);
+        log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
 
         return "redirect:/posts/" + boardType;
     }
