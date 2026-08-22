@@ -15,13 +15,11 @@ import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -140,9 +138,10 @@ public class PostController {
         return "redirect:/posts/detail/" + id;
     }
 
-    // 좋아요 토글
+    // 좋아요 토글 (비동기) - 페이지 새로고침 없이 결과(JSON)만 반환
     @PostMapping("/posts/detail/{id}/like")
-    public String like(
+    @ResponseBody
+    public Map<String, Object> like(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
@@ -153,7 +152,10 @@ public class PostController {
         boolean liked = postService.toggleLike(post, user);
         log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
 
-        return "redirect:/posts/detail/" + id;
+        return Map.of(
+                "liked", liked,
+                "likeCount", post.getLikeCount()
+        );
     }
 
     // 게시글 삭제 - 본인 글만 삭제 가능

@@ -44,13 +44,27 @@
     <p th:text="${summary}"></p>
 </div>
 
-<form th:action="@{/posts/detail/{id}/like(id=${post.id})}" method="post">
-    <select name="testUserId">
-        <option value="1">1번 - 팬 계정</option>
-        <option value="2">2번 - 아티스트 계정</option>
-    </select>
-    <button type="submit">좋아요 (<span th:text="${post.likeCount}"></span>)</button>
-</form>
+<select id="likeUserId">
+    <option value="1">1번 - 팬 계정</option>
+    <option value="2">2번 - 아티스트 계정</option>
+</select>
+<button id="likeButton" type="button">좋아요 (<span id="likeCount" th:text="${post.likeCount}"></span>)</button>
+
+<script th:inline="javascript">
+    const postId = /*[[${post.id}]]*/ 0;
+
+    document.getElementById('likeButton').addEventListener('click', function () {
+        const testUserId = document.getElementById('likeUserId').value;
+
+        fetch(`/posts/detail/${postId}/like?testUserId=${testUserId}`, {
+            method: 'POST'
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('likeCount').textContent = data.likeCount;
+            });
+    });
+</script>
 
 <hr>
 
