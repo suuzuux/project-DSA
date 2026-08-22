@@ -37,6 +37,12 @@
         stompClient.subscribe('/topic/chat.' + artistId + '.artistFeed', function (message) {
             appendMessage(JSON.parse(message.body));
         });
+
+        // 필터에 걸려서 거부된 내 메시지에 대한 경고
+        stompClient.subscribe('/topic/chat.error.' + artistId, function (message) {
+            const data = JSON.parse(message.body);
+            alert(data.message);
+        });
     });
 
     document.getElementById('sendButton').addEventListener('click', function () {

@@ -5,6 +5,7 @@ import megane6.weplanet.domain.dto.ChatMessageRequest;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -23,6 +24,7 @@ public class ChatController {
     private final ChatMessageService chatMessageService;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatFilterService chatFilterService;
 
     // 팬 전용 채팅방 화면 - 이 팬 개인 채널 + 아티스트 방송 채널만 구독
     @GetMapping("/chat/room/fan")
@@ -49,6 +51,18 @@ public class ChatController {
     // 브라우저가 /app/chat.send 로 보낸 메시지를 저장하고, 채팅방 구독자들에게 실시간 방송
     @MessageMapping("/chat.send")
     public void send(ChatMessageRequest request) {
+
+        // 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람에게만 경고를 돌려줌
+        if (chatFilterService.containsBannedWord(request.getContent())) {
+            Map<String, Object> warning = new HashMap<>();
+            warning.put("error", true);
+            warning.put("message", "부적절한 언어가 포함되어 전송이 제한되었습니다.");
+
+            messagingTemplate.convertAndSend("/topic/chat.error." + request.getSenderId(), (Object) warning);
+
+            return;
+        }
+
         User artist = userRepository.findById(request.getArtistId())
                 .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
         User sender = userRepository.findById(request.getSenderId())
