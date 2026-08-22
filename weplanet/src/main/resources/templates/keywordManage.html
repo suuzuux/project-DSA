@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>금칙어 관리</title>
+</head>
+<body>
+
+<h1>금칙어 관리 (관리자 전용)</h1>
+
+<form th:action="@{/chat/admin/keywords}" method="post">
+    <input type="hidden" name="testUserId" th:value="${testUserId}">
+    <input type="text" name="keyword" placeholder="등록할 금칙어">
+    <button type="submit">등록</button>
+</form>
+
+<ul>
+    <li th:each="kw : ${keywords}">
+        <span th:text="${kw.keyword}"></span>
+        <form th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}" method="post" style="display:inline;">
+            <input type="hidden" name="testUserId" th:value="${testUserId}">
+            <button type="submit">삭제</button>
+        </form>
+    </li>
+</ul>
+
+<p th:if="${#lists.isEmpty(keywords)}">등록된 금칙어가 없습니다.</p>
+
+</body>
+</html>

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ChatMessageRequest;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
@@ -12,6 +13,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.HashMap;
@@ -94,5 +97,60 @@ public class ChatController {
                 messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".artistFeed", (Object) payload);
             }
         }
+    }
+
+    // 금칙어 관리 화면 - 관리자만 접근 가능
+    @GetMapping("/chat/admin/keywords")
+    public String keywordList(
+            @RequestParam(defaultValue = "3") Long testUserId,
+            Model model
+    ) {
+        User requester = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        if (requester.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+        }
+
+        model.addAttribute("keywords", chatFilterService.getAllKeywords());
+        model.addAttribute("testUserId", testUserId);
+
+        return "keywordManage";
+    }
+
+    // 금칙어 등록
+    @PostMapping("/chat/admin/keywords")
+    public String addKeyword(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "3") Long testUserId
+    ) {
+        User requester = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        if (requester.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+        }
+
+        chatFilterService.addKeyword(keyword);
+
+        return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
+    }
+
+    // 금칙어 삭제
+    @PostMapping("/chat/admin/keywords/{id}/delete")
+    public String deleteKeyword(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "3") Long testUserId
+    ) {
+        User requester = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        if (requester.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+        }
+
+        chatFilterService.deleteKeyword(id);
+
+        return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
     }
 }
