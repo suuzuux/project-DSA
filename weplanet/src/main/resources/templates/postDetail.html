@@ -18,6 +18,20 @@
     <button type="submit">게시글 삭제</button>
 </form>
 
+<form th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post" style="display:inline;">
+    <select name="testUserId">
+        <option value="1">1번(팬)으로 신고</option>
+        <option value="2">2번(아티스트)으로 신고</option>
+    </select>
+    <select name="reason">
+        <option value="SPAM">스팸</option>
+        <option value="ABUSE">욕설/혐오</option>
+        <option value="SEXUAL">음란물</option>
+        <option value="ETC">기타</option>
+    </select>
+    <button type="submit">게시글 신고</button>
+</form>
+
 <form th:action="@{/posts/detail/{id}/like(id=${post.id})}" method="post">
     <select name="testUserId">
         <option value="1">1번 - 팬 계정</option>
@@ -38,6 +52,7 @@
     <input type="text" name="content" placeholder="댓글을 입력하세요">
     <button type="submit">댓글 작성</button>
 </form>
+
 
 <ul>
     <li th:each="comment : ${comments}">

@@ -8,6 +8,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.PostRepository;
+import megane6.weplanet.repository.ReportRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final ReportRepository reportRepository;
 
     // 게시판 종류별 목록 조회 - sort 값에 따라 최신순/인기순 선택
     public List<Post> getPostsByBoardType(BoardType boardType, String sort) {
@@ -80,6 +82,7 @@ public class PostService {
         // 게시글을 참조하는 좋아요/댓글을 먼저 지운 뒤에 게시글을 삭제 (외래키 제약 위반 방지)
         likeRepository.deleteByPost(post);
         commentRepository.deleteByPost(post);
+        reportRepository.deleteByPost(post);
         postRepository.delete(post);
     }
 }

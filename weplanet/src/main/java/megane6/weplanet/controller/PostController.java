@@ -6,10 +6,12 @@ import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.ReportService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +29,7 @@ public class PostController {
     private final PostService postService;
     private final UserRepository userRepository;
     private final CommentService commentService;
+    private final ReportService reportService;
 
     @GetMapping("/posts/{boardType}")
     public String list(
@@ -163,5 +166,21 @@ public class PostController {
         postService.deletePost(post, requester);
 
         return "redirect:/posts/" + post.getBoardType().name().toLowerCase();
+    }
+
+    // 게시글 신고 - 같은 사람이 같은 글 중복 신고 시 예외
+    @PostMapping("/posts/detail/{id}/report")
+    public String reportPost(
+            @PathVariable Long id,
+            @RequestParam ReportReason reason,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Post post = postService.getPost(id);
+        User reporter = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        reportService.reportPost(post, reporter, reason);
+
+        return "redirect:/posts/detail/" + id;
     }
 }
