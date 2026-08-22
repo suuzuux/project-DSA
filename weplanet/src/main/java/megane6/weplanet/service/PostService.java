@@ -65,5 +65,14 @@ public class PostService {
             return true; // 새로 눌림
         }
     }
+
+    // 게시글 삭제 - 작성자 본인만 삭제 가능
+    public void deletePost(Post post, User requester) {
+        if (!post.getAuthor().getId().equals(requester.getId())) {
+            throw new IllegalStateException("본인이 작성한 게시글만 삭제할 수 있습니다.");
+        }
+
+        postRepository.delete(post);
+    }
 }
 

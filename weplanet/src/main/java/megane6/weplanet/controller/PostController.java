@@ -28,7 +28,6 @@ public class PostController {
     private final UserRepository userRepository;
     private final CommentService commentService;
 
-    // 게시판 목록 조회 - sort 파라미터로 정렬 방식 선택 (latest=최신순, popular=인기순)
     @GetMapping("/posts/{boardType}")
     public String list(
             @PathVariable String boardType,
@@ -150,5 +149,19 @@ public class PostController {
 
         return "redirect:/posts/detail/" + id;
     }
-}
 
+    // 게시글 삭제 - 본인 글만 삭제 가능
+    @PostMapping("/posts/detail/{id}/delete")
+    public String deletePost(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Post post = postService.getPost(id);
+        User requester = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        postService.deletePost(post, requester);
+
+        return "redirect:/posts/" + post.getBoardType().name().toLowerCase();
+    }
+}
