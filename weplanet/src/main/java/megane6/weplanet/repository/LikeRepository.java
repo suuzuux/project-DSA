@@ -11,4 +11,7 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
 
     // 특정 유저가 특정 게시글에 이미 좋아요 눌렀는지 확인
     Optional<Like> findByPostAndUser(Post post, User user);
+
+    // 게시글 삭제 시 그 게시글에 달린 좋아요를 먼저 지우기 위함
+    void deleteByPost(Post post);
 }

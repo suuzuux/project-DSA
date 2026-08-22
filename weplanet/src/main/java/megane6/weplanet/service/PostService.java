@@ -5,9 +5,11 @@ import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Like;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.PostRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +20,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
+    private final CommentRepository commentRepository;
 
     // 게시판 종류별 목록 조회 - sort 값에 따라 최신순/인기순 선택
     public List<Post> getPostsByBoardType(BoardType boardType, String sort) {
@@ -67,11 +70,16 @@ public class PostService {
     }
 
     // 게시글 삭제 - 작성자 본인만 삭제 가능
+    // 좋아요/댓글 삭제 + 게시글 삭제가 하나의 트랜잭션으로 묶여야 해서 @Transactional 필요
+    @Transactional
     public void deletePost(Post post, User requester) {
         if (!post.getAuthor().getId().equals(requester.getId())) {
             throw new IllegalStateException("본인이 작성한 게시글만 삭제할 수 있습니다.");
         }
 
+        // 게시글을 참조하는 좋아요/댓글을 먼저 지운 뒤에 게시글을 삭제 (외래키 제약 위반 방지)
+        likeRepository.deleteByPost(post);
+        commentRepository.deleteByPost(post);
         postRepository.delete(post);
     }
 }
