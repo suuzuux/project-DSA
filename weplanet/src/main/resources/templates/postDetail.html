@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>게시글 상세</title>
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
 </head>
 <body>
 
 <h1 th:text="${post.title}"></h1>
-<p th:text="${post.content}"></p>
+<div id="contentViewer"></div>
 <p>작성일: <span th:text="${post.createdAt}"></span></p>
 
 <a th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
@@ -76,6 +77,15 @@
 <p th:if="${#lists.isEmpty(comments)}">등록된 댓글이 없습니다.</p>
 
 <a th:href="@{/}">홈으로</a>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script th:inline="javascript">
+    new toastui.Editor.factory({
+        el: document.querySelector('#contentViewer'),
+        viewer: true,
+        initialValue: /*[[${post.content}]]*/ ''
+    });
+</script>
 
 </body>
 </html>
