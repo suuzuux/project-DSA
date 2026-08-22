@@ -183,4 +183,34 @@ public class PostController {
 
         return "redirect:/posts/detail/" + id;
     }
+
+    // 수정 폼 화면 이동 - 기존 제목/내용을 미리 채워서 보여줌
+    @GetMapping("/posts/detail/{id}/edit")
+    public String editForm(
+            @PathVariable Long id,
+            Model model
+    ) {
+        Post post = postService.getPost(id);
+        model.addAttribute("post", post);
+        model.addAttribute("boardType", post.getBoardType());
+
+        return "postForm";
+    }
+
+    // 수정 저장 처리 - 작성자 본인 또는 관리자만 가능
+    @PostMapping("/posts/detail/{id}/edit")
+    public String updatePost(
+            @PathVariable Long id,
+            @RequestParam String title,
+            @RequestParam String content,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Post post = postService.getPost(id);
+        User requester = userRepository.findById(testUserId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+
+        postService.updatePost(post, title, content, requester);
+
+        return "redirect:/posts/detail/" + id;
+    }
 }

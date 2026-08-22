@@ -10,6 +10,8 @@
 <p th:text="${post.content}"></p>
 <p>작성일: <span th:text="${post.createdAt}"></span></p>
 
+<a th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
+
 <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post" style="display:inline;">
     <select name="testUserId">
         <option value="1">1번(팬)으로 삭제 시도</option>

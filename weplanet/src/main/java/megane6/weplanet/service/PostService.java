@@ -5,6 +5,7 @@ import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Like;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.PostRepository;
@@ -84,6 +85,20 @@ public class PostService {
         commentRepository.deleteByPost(post);
         reportRepository.deleteByPost(post);
         postRepository.delete(post);
+    }
+
+    // 게시글 수정 - 작성자 본인 또는 관리자만 수정 가능
+    public void updatePost(Post post, String title, String content, User requester) {
+        boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) {
+            throw new IllegalStateException("본인이 작성한 게시글 또는 관리자만 수정할 수 있습니다.");
+        }
+
+        post.setTitle(title);
+        post.setContent(content);
+        postRepository.save(post);
     }
 }
 
