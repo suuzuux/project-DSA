@@ -24,14 +24,26 @@ public class ChatController {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
-    // 채팅방 테스트 화면 이동
-    @GetMapping("/chat/room")
-    public String room(
+    // 팬 전용 채팅방 화면 - 이 팬 개인 채널 + 아티스트 방송 채널만 구독
+    @GetMapping("/chat/room/fan")
+    public String fanRoom(
+            @RequestParam Long artistId,
+            @RequestParam Long fanId,
+            Model model
+    ) {
+        model.addAttribute("artistId", artistId);
+        model.addAttribute("fanId", fanId);
+        return "fanChatRoom";
+    }
+
+    // 아티스트 전용 채팅방 화면 - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독
+    @GetMapping("/chat/room/artist")
+    public String artistRoom(
             @RequestParam Long artistId,
             Model model
     ) {
         model.addAttribute("artistId", artistId);
-        return "chatRoom";
+        return "artistChatRoom";
     }
 
     // 브라우저가 /app/chat.send 로 보낸 메시지를 저장하고, 채팅방 구독자들에게 실시간 방송
@@ -56,6 +68,17 @@ public class ChatController {
         payload.put("content", saved.getContent());
         payload.put("createdAt", saved.getCreatedAt().toString());
 
-        messagingTemplate.convertAndSend("/topic/chat." + artist.getId(), (Object) payload);
+        if (fan == null) {
+            // 아티스트가 보낸 방송 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
+            messagingTemplate.convertAndSend("/topic/chat." + artist.getId(), (Object) payload);
+        } else {
+            // 팬이 보낸 개인 메시지 - 일단 그 팬 개인 채널에는 무조건 전달
+            messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".fan." + fan.getId(), (Object) payload);
+
+            // 도배 방지를 위해 30% 확률로만 아티스트의 추천 피드에도 노출
+            if (Math.random() < 0.3) {
+                messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".artistFeed", (Object) payload);
+            }
+        }
     }
 }

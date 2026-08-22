@@ -2,21 +2,13 @@
 <html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>채팅방</title>
+    <title>팬 채팅방</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
 
-<h1>아티스트 <span th:text="${artistId}"></span>번 채팅방</h1>
-
-<p>
-    보내는 사람:
-    <select id="senderRole">
-        <option value="artist">아티스트(2번)로 보내기</option>
-        <option value="fan">팬(1번)으로 보내기</option>
-    </select>
-</p>
+<h1>아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
 
 <div id="messages" style="border:1px solid #ccc; height:300px; overflow-y:auto; padding:8px;"></div>
 
@@ -25,37 +17,36 @@
 
 <script th:inline="javascript">
     const artistId = /*[[${artistId}]]*/ 0;
+    const fanId = /*[[${fanId}]]*/ 0;
 
     const socket = new SockJS('/ws-chat');
     const stompClient = Stomp.over(socket);
 
+    function appendMessage(data) {
+        const div = document.getElementById('messages');
+        div.innerHTML += '<p><b>' + data.senderNickname + '</b>: ' + data.content + '</p>';
+        div.scrollTop = div.scrollHeight;
+    }
+
     stompClient.connect({}, function () {
+        // 아티스트 방송 채널
         stompClient.subscribe('/topic/chat.' + artistId, function (message) {
-            const data = JSON.parse(message.body);
-            const div = document.getElementById('messages');
-            div.innerHTML += '<p><b>' + data.senderNickname + '</b>: ' + data.content + '</p>';
-            div.scrollTop = div.scrollHeight;
+            appendMessage(JSON.parse(message.body));
+        });
+
+        // 나(이 팬)와 아티스트만 보는 개인 채널
+        stompClient.subscribe('/topic/chat.' + artistId + '.fan.' + fanId, function (message) {
+            appendMessage(JSON.parse(message.body));
         });
     });
 
     document.getElementById('sendButton').addEventListener('click', function () {
         const content = document.getElementById('messageInput').value;
-        const role = document.getElementById('senderRole').value;
-
-        // 테스트 편의상 role 값으로 senderId/fanId를 대충 정함 (실제 로그인 붙으면 세션에서 가져올 값)
-        let senderId, fanId;
-        if (role === 'artist') {
-            senderId = artistId;
-            fanId = null;
-        } else {
-            senderId = 1;
-            fanId = 1;
-        }
 
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             artistId: artistId,
             fanId: fanId,
-            senderId: senderId,
+            senderId: fanId,
             content: content
         }));
 

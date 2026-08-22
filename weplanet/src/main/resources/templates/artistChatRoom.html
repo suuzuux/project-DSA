@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>아티스트 채팅방</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+
+<h1>내 채팅방 (아티스트 화면)</h1>
+
+<div id="messages" style="border:1px solid #ccc; height:300px; overflow-y:auto; padding:8px;"></div>
+
+<input type="text" id="messageInput" placeholder="팬들에게 방송할 메시지를 입력하세요">
+<button id="sendButton">방송 보내기</button>
+
+<script th:inline="javascript">
+    const artistId = /*[[${artistId}]]*/ 0;
+
+    const socket = new SockJS('/ws-chat');
+    const stompClient = Stomp.over(socket);
+
+    function appendMessage(data) {
+        const div = document.getElementById('messages');
+        div.innerHTML += '<p><b>' + data.senderNickname + '</b>: ' + data.content + '</p>';
+        div.scrollTop = div.scrollHeight;
+    }
+
+    stompClient.connect({}, function () {
+        // 내가 방송한 메시지
+        stompClient.subscribe('/topic/chat.' + artistId, function (message) {
+            appendMessage(JSON.parse(message.body));
+        });
+
+        // 팬들 메시지 중 랜덤으로 추려진 것만 오는 채널
+        stompClient.subscribe('/topic/chat.' + artistId + '.artistFeed', function (message) {
+            appendMessage(JSON.parse(message.body));
+        });
+    });
+
+    document.getElementById('sendButton').addEventListener('click', function () {
+        const content = document.getElementById('messageInput').value;
+
+        stompClient.send('/app/chat.send', {}, JSON.stringify({
+            artistId: artistId,
+            fanId: null,
+            senderId: artistId,
+            content: content
+        }));
+
+        document.getElementById('messageInput').value = '';
+    });
+</script>
+
+</body>
+</html>
