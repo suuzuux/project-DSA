@@ -12,12 +12,14 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
+import megane6.weplanet.service.SummaryService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class PostController {
     private final UserRepository userRepository;
     private final CommentService commentService;
     private final ReportService reportService;
+    private final SummaryService summaryService;
 
     @GetMapping("/posts/{boardType}")
     public String list(
@@ -210,6 +213,20 @@ public class PostController {
                 .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
 
         postService.updatePost(post, title, content, requester);
+
+        return "redirect:/posts/detail/" + id;
+    }
+
+    // AI 자동 요약 - 게시글 내용을 요약해서 보여줌 (저장하지 않고 요청할 때마다 새로 생성)
+    @PostMapping("/posts/detail/{id}/summarize")
+    public String summarizePost(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes
+    ) {
+        Post post = postService.getPost(id);
+        String summary = summaryService.summarize(post.getContent());
+
+        redirectAttributes.addFlashAttribute("summary", summary);
 
         return "redirect:/posts/detail/" + id;
     }

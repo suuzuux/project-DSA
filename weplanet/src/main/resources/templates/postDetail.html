@@ -35,6 +35,15 @@
     <button type="submit">게시글 신고</button>
 </form>
 
+<form th:action="@{/posts/detail/{id}/summarize(id=${post.id})}" method="post" style="display:inline;">
+    <button type="submit">AI 요약보기</button>
+</form>
+
+<div th:if="${summary}">
+    <h4>AI 요약</h4>
+    <p th:text="${summary}"></p>
+</div>
+
 <form th:action="@{/posts/detail/{id}/like(id=${post.id})}" method="post">
     <select name="testUserId">
         <option value="1">1번 - 팬 계정</option>
