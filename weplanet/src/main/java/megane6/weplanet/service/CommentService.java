@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+// 댓글 관련 로직 (조회/작성/삭제)을 모아둔 서비스. PostService와 구조는 거의 동일함
 @Service
 @RequiredArgsConstructor
 public class CommentService {

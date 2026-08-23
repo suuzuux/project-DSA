@@ -7,20 +7,26 @@
 <body>
 
 <h1 th:text="${boardType} + ' 게시판'"></h1>
+<hr>
 
-<a th:href="@{/}">홈으로</a>
+<p><a th:href="@{/}">&lt;&lt; 홈으로</a></p>
 
 <p>
-    정렬 :
+    <b>정렬</b> :
     <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}">최신순</a>
     |
     <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}">인기순</a>
-    (현재: <span id="currentSort" th:text="${sort}"></span>)
+    &nbsp;&nbsp;(현재 정렬 기준: <b id="currentSort" th:text="${sort}"></b>)
 </p>
 
-<!-- 정렬 버튼 클릭 시 이 안쪽만 fetch로 새로 받아서 교체함 (페이지 전체 새로고침 없음) -->
+<!--
+    이 div 안쪽(표+안내문구)이 "postListFragment"라는 이름표가 붙은 부분임.
+    정렬 버튼을 누르면, 페이지 전체가 아니라 이 div 안쪽 내용만 서버에서 새로 받아와서 통째로 바꿔치기함.
+    (th:fragment="이름" 을 붙여두면, 다른 곳에서 "postList :: postListFragment" 라고 써서
+     이 부분만 콕 집어 렌더링해달라고 서버에 요청할 수 있음)
+-->
 <div id="postListArea" th:fragment="postListFragment">
-    <table border="1">
+    <table border="1" cellpadding="8" cellspacing="0">
         <tr>
             <th>번호</th>
             <th>제목</th>
@@ -35,37 +41,58 @@
         </tr>
     </table>
 
-    <p th:if="${#lists.isEmpty(posts)}">등록된 게시글이 없습니다.</p>
+    <p th:if="${#lists.isEmpty(posts)}"><i>등록된 게시글이 없습니다.</i></p>
 </div>
 
 <script>
-    // 정렬 링크를 눌러도 페이지 전체를 새로 불러오지 않고,
-    // 목록 부분(#postListArea)만 fetch로 받아와서 통째로 교체함
+    // ===================================================================
+    // 아래는 "비동기(fetch) 정렬 전환" 기능의 자바스크립트 코드.
+    // web1~5 과정에서는 <a href="...">를 누르면 브라우저가 그 주소로 페이지 전체를 새로 불러왔는데,
+    // 여기서는 fetch()라는 자바스크립트 기능을 이용해서, 페이지 이동 없이
+    // "서버한테 살짝 물어보고, 그 결과로 화면 일부만 바꿔치기"하는 방식을 씀.
+    // ===================================================================
+
+    // url 주소로 서버에 정렬된 목록을 요청하고, 받아온 결과로 화면을 갱신하는 함수.
+    // pushHistory : 브라우저 주소창의 URL과 "뒤로가기 기록"을 남길지 여부
     function loadList(url, pushHistory) {
+
+        // fetch(주소, 옵션) : 페이지 이동 없이 그 주소로 요청을 보내는 자바스크립트 내장 기능.
+        // headers에 X-Requested-With: fetch 를 실어 보내면, 서버(PostController)가
+        // "아, 이건 화면 전체가 아니라 목록 부분만 원하는 요청이구나"라고 알아채고
+        // postList.html 전체가 아니라 위 div(postListFragment) 부분만 돌려줌
         fetch(url, {headers: {'X-Requested-With': 'fetch'}})
             .then(function (response) {
+                // response : 서버가 돌려준 응답 전체. .text()로 그 안의 HTML 텍스트만 꺼냄
                 return response.text();
             })
             .then(function (html) {
+                // 서버가 돌려준 HTML 조각(html)으로, 기존 div를 통째로 교체함
                 document.getElementById('postListArea').outerHTML = html;
 
+                // 주소(url)에서 sort= 뒤에 붙은 값(latest 또는 popular)만 뽑아서
+                // "(현재 정렬 기준: ...)" 표시도 같이 갱신해줌
                 const sortValue = new URL(url, window.location.origin).searchParams.get('sort') || 'latest';
                 document.getElementById('currentSort').textContent = sortValue;
 
                 if (pushHistory) {
+                    // history.pushState(...) : 페이지를 새로 불러오지 않으면서,
+                    // 브라우저 주소창의 URL만 바꾸고 "뒤로가기 기록"에 한 페이지를 추가하는 기능.
+                    // 이걸 해줘야 새로고침해도 정렬 상태가 유지되고, 뒤로가기도 자연스럽게 동작함
                     history.pushState({}, '', url);
                 }
             });
     }
 
+    // "최신순" / "인기순" 링크를 누르면, 원래 동작(페이지 이동) 대신 loadList()가 실행되게 함
     document.querySelectorAll('.sort-link').forEach(function (link) {
         link.addEventListener('click', function (e) {
-            e.preventDefault();
+            e.preventDefault(); // 링크의 원래 동작(페이지 이동)을 막음
             loadList(this.getAttribute('href'), true);
         });
     });
 
-    // 브라우저 뒤로가기/앞으로가기를 눌렀을 때도 새로고침 없이 목록만 다시 불러옴
+    // 브라우저 뒤로가기/앞으로가기 버튼을 눌렀을 때 발생하는 이벤트.
+    // 이때도 페이지를 통째로 새로 불러오는 대신, 목록 부분만 다시 fetch로 불러옴
     window.addEventListener('popstate', function () {
         loadList(window.location.href, false);
     });
