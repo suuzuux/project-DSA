@@ -34,6 +34,24 @@ public class ChatController {
     private final ChatQuotaService chatQuotaService;
     private final AiFanChatService aiFanChatService;
 
+    // 유저 조회 공통 헬퍼 - label은 에러 메시지에 쓸 대상 이름 ("아티스트", "팬" 등)
+    private User getUserOrThrow(Long userId, String label) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException(label + "를 찾을 수 없습니다."));
+    }
+
+    // 관리자 권한 체크 공통 헬퍼 - 관리자가 아니면 예외
+    private void requireAdmin(User requester) {
+        if (requester.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+        }
+    }
+
+    // 웹소켓 방송 공통 헬퍼 - payload를 (Object)로 캐스팅해서 넘기는 부분을 한 곳으로 모음
+    private void broadcast(String destination, Map<String, Object> payload) {
+        messagingTemplate.convertAndSend(destination, (Object) payload);
+    }
+
     // 팬 전용 채팅방 화면 - 이 팬 개인 채널 + 아티스트 방송 채널만 구독
     @GetMapping("/chat/room/fan")
     public String fanRoom(
@@ -41,10 +59,8 @@ public class ChatController {
             @RequestParam Long fanId,
             Model model
     ) {
-        User artist = userRepository.findById(artistId)
-                .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-        User fan = userRepository.findById(fanId)
-                .orElseThrow(() -> new IllegalArgumentException("팬을 찾을 수 없습니다."));
+        User artist = getUserOrThrow(artistId, "아티스트");
+        User fan = getUserOrThrow(fanId, "팬");
 
         model.addAttribute("artistId", artistId);
         model.addAttribute("fanId", fanId);
@@ -73,18 +89,15 @@ public class ChatController {
             warning.put("error", true);
             warning.put("message", "부적절한 언어가 포함되어 전송이 제한되었습니다.");
 
-            messagingTemplate.convertAndSend("/topic/chat.error." + request.getSenderId(), (Object) warning);
+            broadcast("/topic/chat.error." + request.getSenderId(), warning);
 
             return;
         }
 
-        User artist = userRepository.findById(request.getArtistId())
-                .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-        User sender = userRepository.findById(request.getSenderId())
-                .orElseThrow(() -> new IllegalArgumentException("보낸 사람을 찾을 수 없습니다."));
+        User artist = getUserOrThrow(request.getArtistId(), "아티스트");
+        User sender = getUserOrThrow(request.getSenderId(), "보낸 사람");
         User fan = request.getFanId() != null
-                ? userRepository.findById(request.getFanId())
-                .orElseThrow(() -> new IllegalArgumentException("팬을 찾을 수 없습니다."))
+                ? getUserOrThrow(request.getFanId(), "팬")
                 : null;
 
         if (fan != null && !chatQuotaService.tryConsume(fan, artist)) {
@@ -92,7 +105,7 @@ public class ChatController {
             warning.put("error", true);
             warning.put("message", "오늘 보낼 수 있는 메시지 횟수를 다 사용했습니다. 내일 다시 채워집니다.");
 
-            messagingTemplate.convertAndSend("/topic/chat.error." + request.getSenderId(), (Object) warning);
+            broadcast("/topic/chat.error." + request.getSenderId(), warning);
 
             return;
         }
@@ -113,14 +126,14 @@ public class ChatController {
 
         if (fan == null) {
             // 아티스트가 보낸 방송 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
-            messagingTemplate.convertAndSend("/topic/chat." + artist.getId(), (Object) payload);
+            broadcast("/topic/chat." + artist.getId(), payload);
         } else {
             // 팬이 보낸 개인 메시지 - 일단 그 팬 개인 채널에는 무조건 전달
-            messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".fan." + fan.getId(), (Object) payload);
+            broadcast("/topic/chat." + artist.getId() + ".fan." + fan.getId(), payload);
 
             // 도배 방지를 위해 30% 확률로만 아티스트의 추천 피드에도 노출
             if (Math.random() < 0.3) {
-                messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".artistFeed", (Object) payload);
+                broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
             }
         }
     }
@@ -131,12 +144,8 @@ public class ChatController {
             @RequestParam(defaultValue = "3") Long testUserId,
             Model model
     ) {
-        User requester = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
-
-        if (requester.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
-        }
+        User requester = getUserOrThrow(testUserId, "테스트용 유저");
+        requireAdmin(requester);
 
         model.addAttribute("keywords", chatFilterService.getAllKeywords());
         model.addAttribute("testUserId", testUserId);
@@ -150,12 +159,8 @@ public class ChatController {
             @RequestParam String keyword,
             @RequestParam(defaultValue = "3") Long testUserId
     ) {
-        User requester = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
-
-        if (requester.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
-        }
+        User requester = getUserOrThrow(testUserId, "테스트용 유저");
+        requireAdmin(requester);
 
         chatFilterService.addKeyword(keyword);
 
@@ -168,12 +173,8 @@ public class ChatController {
             @PathVariable Long id,
             @RequestParam(defaultValue = "3") Long testUserId
     ) {
-        User requester = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
-
-        if (requester.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
-        }
+        User requester = getUserOrThrow(testUserId, "테스트용 유저");
+        requireAdmin(requester);
 
         chatFilterService.deleteKeyword(id);
 
@@ -184,8 +185,7 @@ public class ChatController {
     @PostMapping("/chat/room/artist/ai-fan")
     @ResponseBody
     public Map<String, Object> generateAiFan(@RequestParam Long artistId) {
-        User artist = userRepository.findById(artistId)
-                .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+        User artist = getUserOrThrow(artistId, "아티스트");
         User aiFan = userRepository.findById(4L)
                 .orElseThrow(() -> new IllegalStateException("AI 팬 계정이 없습니다."));
 
@@ -200,7 +200,7 @@ public class ChatController {
         payload.put("content", saved.getContent());
         payload.put("createdAt", saved.getCreatedAt().toString());
 
-        messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".artistFeed", (Object) payload);
+        broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
 
         return Map.of("success", true);
     }
