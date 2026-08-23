@@ -17,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -162,12 +163,21 @@ public class ChatController {
     @PostMapping("/chat/admin/keywords")
     public String addKeyword(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "3") Long testUserId
+            @RequestParam(defaultValue = "3") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
     ) {
         User requester = getUserOrThrow(testUserId, "테스트용 유저");
         requireAdmin(requester);
 
         chatFilterService.addKeyword(keyword);
+
+        // fetch로 온 요청(비동기 등록)이면 목록 부분(fragment)만 새로 그려서 돌려줌
+        if ("fetch".equals(requestedWith)) {
+            model.addAttribute("keywords", chatFilterService.getAllKeywords());
+            model.addAttribute("testUserId", testUserId);
+            return "keywordManage :: keywordListFragment";
+        }
 
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
     }
@@ -176,12 +186,21 @@ public class ChatController {
     @PostMapping("/chat/admin/keywords/{id}/delete")
     public String deleteKeyword(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "3") Long testUserId
+            @RequestParam(defaultValue = "3") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
     ) {
         User requester = getUserOrThrow(testUserId, "테스트용 유저");
         requireAdmin(requester);
 
         chatFilterService.deleteKeyword(id);
+
+        // fetch로 온 요청(비동기 삭제)이면 목록 부분(fragment)만 새로 그려서 돌려줌
+        if ("fetch".equals(requestedWith)) {
+            model.addAttribute("keywords", chatFilterService.getAllKeywords());
+            model.addAttribute("testUserId", testUserId);
+            return "keywordManage :: keywordListFragment";
+        }
 
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
     }

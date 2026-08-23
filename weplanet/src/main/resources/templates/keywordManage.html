@@ -8,23 +8,62 @@
 
 <h1>금칙어 관리 (관리자 전용)</h1>
 
-<form th:action="@{/chat/admin/keywords}" method="post">
+<form id="keywordAddForm">
     <input type="hidden" name="testUserId" th:value="${testUserId}">
     <input type="text" name="keyword" placeholder="등록할 금칙어">
     <button type="submit">등록</button>
 </form>
 
-<ul>
-    <li th:each="kw : ${keywords}">
-        <span th:text="${kw.keyword}"></span>
-        <form th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}" method="post" style="display:inline;">
-            <input type="hidden" name="testUserId" th:value="${testUserId}">
-            <button type="submit">삭제</button>
-        </form>
-    </li>
-</ul>
+<!-- 등록/삭제 후 페이지 전체를 새로고침하지 않고, 이 목록 부분(fragment)만 fetch로 다시 받아와서 교체함 -->
+<div id="keywordListArea" th:fragment="keywordListFragment">
+    <ul>
+        <li th:each="kw : ${keywords}">
+            <span th:text="${kw.keyword}"></span>
+            <form class="keyword-delete-form" th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}" method="post"
+                  style="display:inline;">
+                <input type="hidden" name="testUserId" th:value="${testUserId}">
+                <button type="submit">삭제</button>
+            </form>
+        </li>
+    </ul>
 
-<p th:if="${#lists.isEmpty(keywords)}">등록된 금칙어가 없습니다.</p>
+    <p th:if="${#lists.isEmpty(keywords)}">등록된 금칙어가 없습니다.</p>
+</div>
+
+<script th:inline="javascript">
+    const testUserId = /*[[${testUserId}]]*/ 3;
+
+    // 등록/삭제 둘 다 페이지 전체 새로고침 없이, 목록 부분(#keywordListArea)만 fetch로 다시 받아와서 교체함.
+    // 삭제 폼은 목록이 갱신될 때마다 새로 생기므로, 이벤트 위임(document에 걸어둠) 방식 사용
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+
+        if (form.id !== 'keywordAddForm' && !form.classList.contains('keyword-delete-form')) {
+            return;
+        }
+
+        e.preventDefault();
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'},
+            body: new URLSearchParams(new FormData(form))
+        })
+            .then(function (response) {
+                return response.text();
+            })
+            .then(function (html) {
+                document.getElementById('keywordListArea').outerHTML = html;
+
+                if (form.id === 'keywordAddForm') {
+                    form.reset();
+                }
+            });
+    });
+
+    // 등록 폼은 action이 비어있으니(별도 지정 안 함) 여기서 채워줌
+    document.getElementById('keywordAddForm').action = '/chat/admin/keywords';
+</script>
 
 </body>
 </html>
