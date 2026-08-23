@@ -9,6 +9,20 @@
 
 <h1 th:text="${post.title}"></h1>
 <div id="contentViewer"></div>
+
+<!-- 첨부파일 목록 - 이미지는 바로 보여주고, 그 외 파일은 다운로드 링크로 -->
+<div th:if="${not #lists.isEmpty(attachments)}">
+    <h4>첨부파일</h4>
+    <div th:each="file : ${attachments}">
+        <div th:if="${file.image}">
+            <img th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}" style="max-width:400px;">
+        </div>
+        <div th:unless="${file.image}">
+            <a th:href="@{'/uploads/' + ${file.storedName}}" th:text="${file.originalName}" download></a>
+        </div>
+    </div>
+</div>
+
 <p>작성일: <span th:text="${post.createdAt}"></span></p>
 
 <a th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
@@ -93,6 +107,21 @@
                 <option value="2">2번(아티스트)으로 삭제 시도</option>
             </select>
             <button type="submit">삭제</button>
+        </form>
+
+        <form th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+              method="post" style="display:inline;">
+            <select name="testUserId">
+                <option value="1">1번(팬)으로 신고</option>
+                <option value="2">2번(아티스트)으로 신고</option>
+            </select>
+            <select name="reason">
+                <option value="SPAM">스팸</option>
+                <option value="ABUSE">욕설/혐오</option>
+                <option value="SEXUAL">음란물</option>
+                <option value="ETC">기타</option>
+            </select>
+            <button type="submit">댓글 신고</button>
         </form>
     </li>
 </ul>

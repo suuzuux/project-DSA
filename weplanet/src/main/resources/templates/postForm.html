@@ -10,7 +10,7 @@
 <h1 th:text="${post} != null ? '게시글 수정' : ${boardType} + ' 게시판 글쓰기'"></h1>
 
 <form th:action="${post} != null ? @{/posts/detail/{id}/edit(id=${post.id})} : @{/posts/{boardType}/new(boardType=${boardType})}"
-      method="post" id="postForm">
+      method="post" enctype="multipart/form-data" id="postForm">
     <p>
         테스트 작성자
         <select name="testUserId">
@@ -26,6 +26,12 @@
     <!-- 실제로 서버에 전송되는 값은 이 hidden textarea. 폼 제출 직전에 에디터 내용을 여기로 복사함 -->
     <textarea name="content" id="contentInput" style="display:none;"
               th:text="${post} != null ? ${post.content} : ''"></textarea>
+
+    <!-- 첨부파일 - 새 글 작성할 때만 노출 (수정 화면에서는 아직 미지원) -->
+    <p th:if="${post} == null">
+        첨부파일 (이미지/일반파일 여러 개 선택 가능)
+        <input type="file" name="files" multiple>
+    </p>
 
     <p><input type="submit" th:value="${post} != null ? '수정' : '작성'"></p>
 </form>

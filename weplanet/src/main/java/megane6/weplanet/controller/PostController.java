@@ -16,6 +16,7 @@ import megane6.weplanet.service.SummaryService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -77,6 +78,7 @@ public class PostController {
             @PathVariable String boardType,
             @RequestParam String title,
             @RequestParam String content,
+            @RequestParam(required = false) List<MultipartFile> files,
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
@@ -90,7 +92,8 @@ public class PostController {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
         }
 
-        postService.createPost(type, title, content, tempAuthor);
+        Post post = postService.createPost(type, title, content, tempAuthor);
+        postService.saveAttachments(post, files);
 
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
 
@@ -108,6 +111,7 @@ public class PostController {
 
         model.addAttribute("post", post);
         model.addAttribute("comments", comments);
+        model.addAttribute("attachments", postService.getAttachments(post));
 
         return "postDetail";
     }
@@ -137,6 +141,22 @@ public class PostController {
         User requester = getUserOrThrow(testUserId);
 
         commentService.deleteComment(commentId, requester);
+
+        return "redirect:/posts/detail/" + id;
+    }
+
+    // 댓글 신고 - 게시글 신고와 완전히 같은 방식 (같은 사람이 같은 댓글 중복 신고 시 예외)
+    @PostMapping("/posts/detail/{id}/comment/{commentId}/report")
+    public String reportComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @RequestParam ReportReason reason,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Comment comment = commentService.getComment(commentId);
+        User reporter = getUserOrThrow(testUserId);
+
+        reportService.reportComment(comment, reporter, reason);
 
         return "redirect:/posts/detail/" + id;
     }
