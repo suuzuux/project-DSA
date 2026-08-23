@@ -10,6 +10,8 @@
 
 <h1>내 채팅방 (아티스트 화면)</h1>
 
+<button id="aiFanButton" type="button">AI 팬 메시지 생성 (시연용)</button>
+
 <div id="messages" style="border:1px solid #ccc; height:300px; overflow-y:auto; padding:8px;"></div>
 
 <input type="text" id="messageInput" placeholder="팬들에게 방송할 메시지를 입력하세요">
@@ -56,6 +58,12 @@
         }));
 
         document.getElementById('messageInput').value = '';
+    });
+
+    document.getElementById('aiFanButton').addEventListener('click', function () {
+        fetch('/chat/room/artist/ai-fan?artistId=' + artistId, {
+            method: 'POST'
+        });
     });
 </script>
 

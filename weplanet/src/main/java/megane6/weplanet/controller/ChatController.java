@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.AiFanChatService;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
 import megane6.weplanet.service.ChatQuotaService;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,6 +32,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatFilterService chatFilterService;
     private final ChatQuotaService chatQuotaService;
+    private final AiFanChatService aiFanChatService;
 
     // 팬 전용 채팅방 화면 - 이 팬 개인 채널 + 아티스트 방송 채널만 구독
     @GetMapping("/chat/room/fan")
@@ -48,6 +51,16 @@ public class ChatController {
         model.addAttribute("remaining", chatQuotaService.getRemaining(fan, artist));
 
         return "fanChatRoom";
+    }
+
+    // 아티스트 전용 채팅방 화면 - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독
+    @GetMapping("/chat/room/artist")
+    public String artistRoom(
+            @RequestParam Long artistId,
+            Model model
+    ) {
+        model.addAttribute("artistId", artistId);
+        return "artistChatRoom";
     }
 
     // 브라우저가 /app/chat.send 로 보낸 메시지를 저장하고, 채팅방 구독자들에게 실시간 방송
@@ -165,5 +178,30 @@ public class ChatController {
         chatFilterService.deleteKeyword(id);
 
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
+    }
+
+    // AI 팬 메시지 생성 (시연용) - 실제 팬이 아니라 아티스트 화면을 채우기 위한 가짜 메시지, 비동기 처리
+    @PostMapping("/chat/room/artist/ai-fan")
+    @ResponseBody
+    public Map<String, Object> generateAiFan(@RequestParam Long artistId) {
+        User artist = userRepository.findById(artistId)
+                .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+        User aiFan = userRepository.findById(4L)
+                .orElseThrow(() -> new IllegalStateException("AI 팬 계정이 없습니다."));
+
+        String content = aiFanChatService.generateFanMessage();
+
+        ChatMessage saved = chatMessageService.saveMessage(artist, aiFan, aiFan, content);
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("senderId", aiFan.getId());
+        payload.put("senderNickname", aiFan.getNickname());
+        payload.put("fanId", aiFan.getId());
+        payload.put("content", saved.getContent());
+        payload.put("createdAt", saved.getCreatedAt().toString());
+
+        messagingTemplate.convertAndSend("/topic/chat." + artist.getId() + ".artistFeed", (Object) payload);
+
+        return Map.of("success", true);
     }
 }
