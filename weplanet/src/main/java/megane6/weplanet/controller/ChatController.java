@@ -8,6 +8,7 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
+import megane6.weplanet.service.ChatQuotaService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -28,6 +29,7 @@ public class ChatController {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatFilterService chatFilterService;
+    private final ChatQuotaService chatQuotaService;
 
     // 팬 전용 채팅방 화면 - 이 팬 개인 채널 + 아티스트 방송 채널만 구독
     @GetMapping("/chat/room/fan")
@@ -36,19 +38,16 @@ public class ChatController {
             @RequestParam Long fanId,
             Model model
     ) {
+        User artist = userRepository.findById(artistId)
+                .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+        User fan = userRepository.findById(fanId)
+                .orElseThrow(() -> new IllegalArgumentException("팬을 찾을 수 없습니다."));
+
         model.addAttribute("artistId", artistId);
         model.addAttribute("fanId", fanId);
-        return "fanChatRoom";
-    }
+        model.addAttribute("remaining", chatQuotaService.getRemaining(fan, artist));
 
-    // 아티스트 전용 채팅방 화면 - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독
-    @GetMapping("/chat/room/artist")
-    public String artistRoom(
-            @RequestParam Long artistId,
-            Model model
-    ) {
-        model.addAttribute("artistId", artistId);
-        return "artistChatRoom";
+        return "fanChatRoom";
     }
 
     // 브라우저가 /app/chat.send 로 보낸 메시지를 저장하고, 채팅방 구독자들에게 실시간 방송
@@ -75,6 +74,16 @@ public class ChatController {
                 .orElseThrow(() -> new IllegalArgumentException("팬을 찾을 수 없습니다."))
                 : null;
 
+        if (fan != null && !chatQuotaService.tryConsume(fan, artist)) {
+            Map<String, Object> warning = new HashMap<>();
+            warning.put("error", true);
+            warning.put("message", "오늘 보낼 수 있는 메시지 횟수를 다 사용했습니다. 내일 다시 채워집니다.");
+
+            messagingTemplate.convertAndSend("/topic/chat.error." + request.getSenderId(), (Object) warning);
+
+            return;
+        }
+
         ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent());
 
         // 엔티티를 그대로 방송하지 않고, 화면에 필요한 값만 뽑아서 보냄 (User 안에 비밀번호 등 민감정보가 있어서)
@@ -84,6 +93,10 @@ public class ChatController {
         payload.put("fanId", fan != null ? fan.getId() : null);
         payload.put("content", saved.getContent());
         payload.put("createdAt", saved.getCreatedAt().toString());
+
+        if (fan != null) {
+            payload.put("remaining", chatQuotaService.getRemaining(fan, artist));
+        }
 
         if (fan == null) {
             // 아티스트가 보낸 방송 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달

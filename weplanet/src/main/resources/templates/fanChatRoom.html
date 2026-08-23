@@ -10,6 +10,8 @@
 
 <h1>아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
 
+<p>오늘 남은 메시지 수: <span id="remainingCount" th:text="${remaining}"></span></p>
+
 <div id="messages" style="border:1px solid #ccc; height:300px; overflow-y:auto; padding:8px;"></div>
 
 <input type="text" id="messageInput" placeholder="메시지를 입력하세요">
@@ -36,7 +38,12 @@
 
         // 나(이 팬)와 아티스트만 보는 개인 채널
         stompClient.subscribe('/topic/chat.' + artistId + '.fan.' + fanId, function (message) {
-            appendMessage(JSON.parse(message.body));
+            const data = JSON.parse(message.body);
+            appendMessage(data);
+
+            if (data.remaining !== undefined) {
+                document.getElementById('remainingCount').textContent = data.remaining;
+            }
         });
 
         // 필터에 걸려서 거부된 내 메시지에 대한 경고
