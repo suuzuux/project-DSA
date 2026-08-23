@@ -1,8 +1,8 @@
-package megane6.weplanet.domain.dto;
+package megane6.weplanet.domain.dto.media;
 
 import lombok.*;
-import megane6.weplanet.domain.entity.BoardMediaEntity;
-import megane6.weplanet.domain.entity.BoardMediaFileEntity;
+import megane6.weplanet.domain.entity.media.BoardMediaEntity;
+import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;

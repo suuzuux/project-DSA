@@ -1,6 +1,6 @@
-package megane6.weplanet.repository;
+package megane6.weplanet.repository.media;
 
-import megane6.weplanet.domain.entity.BoardMediaEntity;
+import megane6.weplanet.domain.entity.media.BoardMediaEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

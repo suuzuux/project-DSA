@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>미디어</title>
+</head>
+<body>
+    <h1>미디어 (읽기 전용)</h1>
+
+    <p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
+
+    <div th:each="m : ${list.content}">
+        <hr/>
+        <h3 th:text="${m.title}">제목</h3>
+        <p th:text="${m.content}">설명</p>
+
+        <div>
+            <span th:each="f : ${m.files}">
+                <a th:href="@{/board/media/file/{id}(id=${f.id})}" target="_blank">
+                    <img th:if="${f.mediaType == 'IMAGE'}"
+                         th:src="@{/board/media/file/{id}(id=${f.id})}"
+                         th:alt="${f.originalName}" width="180"/>
+                    <video th:if="${f.mediaType == 'VIDEO'}"
+                           th:src="@{/board/media/file/{id}(id=${f.id})}"
+                           width="180" muted></video>
+                </a>
+            </span>
+        </div>
+
+        <small th:text="${#temporals.format(m.createdAt, 'yyyy-MM-dd')} + ' · 첨부 ' + ${m.fileCount} + '개'">날짜 · 개수</small>
+    </div>
+
+    <!-- 페이지네이션 -->
+    <div th:if="${list.totalPages > 1}">
+        <hr/>
+        <span th:each="i : ${#numbers.sequence(0, list.totalPages - 1)}">
+            <a th:href="@{/board/media(groupId=${groupId}, page=${i})}" th:text="${i + 1}">1</a>
+        </span>
+    </div>
+</body>
+</html>

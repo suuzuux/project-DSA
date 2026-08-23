@@ -1,4 +1,4 @@
-package megane6.weplanet.domain.entity;
+package megane6.weplanet.domain.entity.media;
 
 
 import jakarta.persistence.*;

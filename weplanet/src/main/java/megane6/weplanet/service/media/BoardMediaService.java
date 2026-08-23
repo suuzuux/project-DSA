@@ -1,18 +1,18 @@
-package megane6.weplanet.service;
+package megane6.weplanet.service.media;
 
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import megane6.weplanet.domain.dto.BoardMediaDTO;
-import megane6.weplanet.domain.dto.BoardMediaViewDTO;
-import megane6.weplanet.domain.entity.BoardMediaEntity;
-import megane6.weplanet.domain.entity.BoardMediaFileEntity;
-import megane6.weplanet.repository.BoardMediaFileRepository;
-import megane6.weplanet.repository.BoardMediaRepository;
+import megane6.weplanet.domain.dto.media.BoardMediaDTO;
+import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
+import megane6.weplanet.domain.entity.media.BoardMediaEntity;
+import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
+import megane6.weplanet.repository.media.BoardMediaFileRepository;
+import megane6.weplanet.repository.media.BoardMediaRepository;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class BoardMediaService {
 	private final FileStorageService storage;
 
 	/** 게시글 생성: 제목/내용 + 파일 여러 개를 한 게시글로 저장 */
-	@org.springframework.transaction.annotation.Transactional
+
 	public Long create(BoardMediaDTO dto, Long uploaderId) {
 		List<MultipartFile> valid = validated(dto.getFiles());
 		if (valid.isEmpty()) {
@@ -91,7 +91,7 @@ public class BoardMediaService {
 	}
 
 	/** 게시글 소프트 삭제 (기록/파일은 남기고 목록에서만 숨김) */
-	@org.springframework.transaction.annotation.Transactional
+
 	public void softDelete(Long id) {
 		getActive(id).setDeletedAt(LocalDateTime.now());
 	}

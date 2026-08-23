@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8"/>
+	<title>미디어 관리 (소속사)</title>
+	<style>
+		/* 모달: 평소 숨김, .open 일 때만 표시 */
+		.modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); }
+		.modal-backdrop.open { display:block; }
+		.modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+			background:#fff; padding:20px; border-radius:10px; width:420px; max-width:90%; }
+		.modal h2 { margin-top:0; }
+	</style>
+</head>
+<body>
+<h1>미디어 (소속사)</h1>
+
+<p th:if="${msg}" th:text="${msg}" style="color:green;"></p>
+<p th:if="${error}" th:text="${error}" style="color:red;"></p>
+
+<!-- 상단 버튼: 팬 화면과 동일한 목록 + 이 두 버튼만 추가 -->
+<div>
+	<button type="button" onclick="openWriteModal()">글쓰기</button>
+	<button type="button" onclick="alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">순서 편집</button>
+</div>
+
+<!-- 목록 (팬 읽기 전용 화면과 동일) -->
+<p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
+
+<div th:each="m : ${list.content}">
+	<hr/>
+	<h3 th:text="${m.title}">제목</h3>
+	<p th:text="${m.content}">설명</p>
+	<div>
+            <span th:each="f : ${m.files}">
+                <a th:href="@{/board/media/file/{id}(id=${f.id})}" target="_blank">
+                    <img th:if="${f.mediaType == 'IMAGE'}"
+                         th:src="@{/board/media/file/{id}(id=${f.id})}" width="150"/>
+                    <video th:if="${f.mediaType == 'VIDEO'}"
+                           th:src="@{/board/media/file/{id}(id=${f.id})}" width="150" muted></video>
+                </a>
+            </span>
+	</div>
+	<small th:text="${#temporals.format(m.createdAt, 'yyyy-MM-dd')} + ' · 첨부 ' + ${m.fileCount} + '개'">날짜 · 개수</small>
+</div>
+
+<!-- 페이지네이션 -->
+<div th:if="${list.totalPages > 1}">
+	<hr/>
+	<span th:each="i : ${#numbers.sequence(0, list.totalPages - 1)}">
+            <a th:href="@{/board/media(groupId=${groupId}, page=${i}, role='AGENCY')}" th:text="${i + 1}">1</a>
+        </span>
+</div>
+
+<!-- ===== 글쓰기 모달 (평소 숨김) ===== -->
+<div id="writeModal" class="modal-backdrop" onclick="closeWriteModalOnBackdrop(event)">
+	<div class="modal">
+		<h2>새 미디어 글쓰기</h2>
+		<form th:action="@{/board/media/upload(role='AGENCY')}" method="post" enctype="multipart/form-data">
+			<input type="hidden" name="groupId" th:value="${groupId}"/>
+			<p>제목: <input type="text" name="title" required/></p>
+			<p>설명:<br/><textarea name="content" rows="3" cols="40"></textarea></p>
+			<p>파일(여러 개 가능):<br/>
+				<input type="file" name="files" accept="image/*,video/*" multiple required/></p>
+			<button type="submit">등록</button>
+			<button type="button" onclick="closeWriteModal()">취소</button>
+		</form>
+	</div>
+</div>
+
+<script>
+	function openWriteModal() {
+		document.getElementById('writeModal').classList.add('open');
+	}
+	function closeWriteModal() {
+		document.getElementById('writeModal').classList.remove('open');
+	}
+	// 어두운 배경(폼 바깥)을 클릭하면 닫기
+	function closeWriteModalOnBackdrop(e) {
+		if (e.target.id === 'writeModal') closeWriteModal();
+	}
+</script>
+</body>
+</html>

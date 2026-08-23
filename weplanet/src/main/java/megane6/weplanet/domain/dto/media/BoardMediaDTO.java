@@ -1,4 +1,4 @@
-package megane6.weplanet.domain.dto;
+package megane6.weplanet.domain.dto.media;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
