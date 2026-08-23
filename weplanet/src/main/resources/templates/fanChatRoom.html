@@ -53,8 +53,9 @@
         });
     });
 
-    document.getElementById('sendButton').addEventListener('click', function () {
+    function sendMessage() {
         const content = document.getElementById('messageInput').value;
+        if (!content) return;
 
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             artistId: artistId,
@@ -64,6 +65,15 @@
         }));
 
         document.getElementById('messageInput').value = '';
+    }
+
+    document.getElementById('sendButton').addEventListener('click', sendMessage);
+
+    // 입력창에서 엔터 치면 클릭한 것과 동일하게 전송
+    document.getElementById('messageInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
     });
 </script>
 
