@@ -84,49 +84,76 @@
 
 <h3>댓글</h3>
 
-<form th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
-    <select name="testUserId">
-        <option value="1">1번 - 팬 계정</option>
-        <option value="2">2번 - 아티스트 계정</option>
-    </select>
-    <input type="text" name="content" placeholder="댓글을 입력하세요">
-    <button type="submit">댓글 작성</button>
-</form>
+<div id="commentSection" th:fragment="commentsFragment">
+    <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
+        <select name="testUserId">
+            <option value="1">1번 - 팬 계정</option>
+            <option value="2">2번 - 아티스트 계정</option>
+        </select>
+        <input type="text" name="content" placeholder="댓글을 입력하세요">
+        <button type="submit">댓글 작성</button>
+    </form>
 
+    <ul>
+        <li th:each="comment : ${comments}">
+            <span th:text="${comment.author.nickname}"></span> :
+            <span th:text="${comment.content}"></span>
+            (<span th:text="${comment.createdAt}"></span>)
 
-<ul>
-    <li th:each="comment : ${comments}">
-        <span th:text="${comment.author.nickname}"></span> :
-        <span th:text="${comment.content}"></span>
-        (<span th:text="${comment.createdAt}"></span>)
+            <form class="comment-delete-form"
+                  th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
+                  method="post" style="display:inline;">
+                <select name="testUserId">
+                    <option value="1">1번(팬)으로 삭제 시도</option>
+                    <option value="2">2번(아티스트)으로 삭제 시도</option>
+                </select>
+                <button type="submit">삭제</button>
+            </form>
 
-        <form th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
-              method="post" style="display:inline;">
-            <select name="testUserId">
-                <option value="1">1번(팬)으로 삭제 시도</option>
-                <option value="2">2번(아티스트)으로 삭제 시도</option>
-            </select>
-            <button type="submit">삭제</button>
-        </form>
+            <form th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+                  method="post" style="display:inline;">
+                <select name="testUserId">
+                    <option value="1">1번(팬)으로 신고</option>
+                    <option value="2">2번(아티스트)으로 신고</option>
+                </select>
+                <select name="reason">
+                    <option value="SPAM">스팸</option>
+                    <option value="ABUSE">욕설/혐오</option>
+                    <option value="SEXUAL">음란물</option>
+                    <option value="ETC">기타</option>
+                </select>
+                <button type="submit">댓글 신고</button>
+            </form>
+        </li>
+    </ul>
 
-        <form th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
-              method="post" style="display:inline;">
-            <select name="testUserId">
-                <option value="1">1번(팬)으로 신고</option>
-                <option value="2">2번(아티스트)으로 신고</option>
-            </select>
-            <select name="reason">
-                <option value="SPAM">스팸</option>
-                <option value="ABUSE">욕설/혐오</option>
-                <option value="SEXUAL">음란물</option>
-                <option value="ETC">기타</option>
-            </select>
-            <button type="submit">댓글 신고</button>
-        </form>
-    </li>
-</ul>
+    <p th:if="${#lists.isEmpty(comments)}">등록된 댓글이 없습니다.</p>
+</div>
 
-<p th:if="${#lists.isEmpty(comments)}">등록된 댓글이 없습니다.</p>
+<script>
+    // 댓글 작성/삭제 폼은 페이지 전체를 새로고침하지 않고,
+    // 댓글 영역(#commentSection)만 fetch로 다시 받아와서 교체함.
+    // 댓글 삭제 폼은 목록이 갱신될 때마다 새로 생기므로, 이벤트 위임(document에 걸어둠) 방식 사용
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
+
+        if (form.id === 'commentForm' || form.classList.contains('comment-delete-form')) {
+            e.preventDefault();
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {'X-Requested-With': 'fetch'},
+                body: new URLSearchParams(new FormData(form))
+            })
+                .then(function (response) {
+                    return response.text();
+                })
+                .then(function (html) {
+                    document.getElementById('commentSection').outerHTML = html;
+                });
+        }
+    });
+</script>
 
 <a th:href="@{/}">홈으로</a>
 

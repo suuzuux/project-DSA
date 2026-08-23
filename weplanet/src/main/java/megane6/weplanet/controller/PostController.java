@@ -43,6 +43,7 @@ public class PostController {
     public String list(
             @PathVariable String boardType,
             @RequestParam(defaultValue = "latest") String sort,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
 
@@ -56,6 +57,11 @@ public class PostController {
         model.addAttribute("posts", posts);
         model.addAttribute("boardType", type);
         model.addAttribute("sort", sort);
+
+        // fetch로 온 요청(정렬 버튼 클릭)이면 목록 부분(fragment)만 돌려줌 - 페이지 전체 새로고침 방지
+        if ("fetch".equals(requestedWith)) {
+            return "postList :: postListFragment";
+        }
 
         return "postList";
     }
@@ -121,12 +127,21 @@ public class PostController {
     public String addComment(
             @PathVariable Long id,
             @RequestParam String content,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
     ) {
         Post post = postService.getPost(id);
         User author = getUserOrThrow(testUserId);
 
         commentService.createComment(post, author, content);
+
+        // fetch로 온 요청(비동기 댓글 작성)이면 댓글 영역(fragment)만 새로 그려서 돌려줌
+        if ("fetch".equals(requestedWith)) {
+            model.addAttribute("post", post);
+            model.addAttribute("comments", commentService.getComments(post));
+            return "postDetail :: commentsFragment";
+        }
 
         return "redirect:/posts/detail/" + id;
     }
@@ -136,11 +151,21 @@ public class PostController {
     public String deleteComment(
             @PathVariable Long id,
             @PathVariable Long commentId,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
     ) {
         User requester = getUserOrThrow(testUserId);
 
         commentService.deleteComment(commentId, requester);
+
+        // fetch로 온 요청(비동기 댓글 삭제)이면 댓글 영역(fragment)만 새로 그려서 돌려줌
+        if ("fetch".equals(requestedWith)) {
+            Post post = postService.getPost(id);
+            model.addAttribute("post", post);
+            model.addAttribute("comments", commentService.getComments(post));
+            return "postDetail :: commentsFragment";
+        }
 
         return "redirect:/posts/detail/" + id;
     }

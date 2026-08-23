@@ -12,28 +12,64 @@
 
 <p>
     정렬 :
-    <a th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}">최신순</a>
+    <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}">최신순</a>
     |
-    <a th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}">인기순</a>
-    (현재: <span th:text="${sort}"></span>)
+    <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}">인기순</a>
+    (현재: <span id="currentSort" th:text="${sort}"></span>)
 </p>
 
-<table border="1">
-    <tr>
-        <th>번호</th>
-        <th>제목</th>
-        <th>좋아요</th>
-        <th>작성일</th>
-    </tr>
-    <tr th:each="post : ${posts}">
-        <td th:text="${post.id}"></td>
-        <td><a th:href="@{/posts/detail/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
-        <td th:text="${post.likeCount}"></td>
-        <td th:text="${post.createdAt}"></td>
-    </tr>
-</table>
+<!-- 정렬 버튼 클릭 시 이 안쪽만 fetch로 새로 받아서 교체함 (페이지 전체 새로고침 없음) -->
+<div id="postListArea" th:fragment="postListFragment">
+    <table border="1">
+        <tr>
+            <th>번호</th>
+            <th>제목</th>
+            <th>좋아요</th>
+            <th>작성일</th>
+        </tr>
+        <tr th:each="post : ${posts}">
+            <td th:text="${post.id}"></td>
+            <td><a th:href="@{/posts/detail/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
+            <td th:text="${post.likeCount}"></td>
+            <td th:text="${post.createdAt}"></td>
+        </tr>
+    </table>
 
-<p th:if="${#lists.isEmpty(posts)}">등록된 게시글이 없습니다.</p>
+    <p th:if="${#lists.isEmpty(posts)}">등록된 게시글이 없습니다.</p>
+</div>
+
+<script>
+    // 정렬 링크를 눌러도 페이지 전체를 새로 불러오지 않고,
+    // 목록 부분(#postListArea)만 fetch로 받아와서 통째로 교체함
+    function loadList(url, pushHistory) {
+        fetch(url, {headers: {'X-Requested-With': 'fetch'}})
+            .then(function (response) {
+                return response.text();
+            })
+            .then(function (html) {
+                document.getElementById('postListArea').outerHTML = html;
+
+                const sortValue = new URL(url, window.location.origin).searchParams.get('sort') || 'latest';
+                document.getElementById('currentSort').textContent = sortValue;
+
+                if (pushHistory) {
+                    history.pushState({}, '', url);
+                }
+            });
+    }
+
+    document.querySelectorAll('.sort-link').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            loadList(this.getAttribute('href'), true);
+        });
+    });
+
+    // 브라우저 뒤로가기/앞으로가기를 눌렀을 때도 새로고침 없이 목록만 다시 불러옴
+    window.addEventListener('popstate', function () {
+        loadList(window.location.href, false);
+    });
+</script>
 
 </body>
 </html>
