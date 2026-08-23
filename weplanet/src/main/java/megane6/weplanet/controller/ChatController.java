@@ -83,6 +83,11 @@ public class ChatController {
     @MessageMapping("/chat.send")
     public void send(ChatMessageRequest request) {
 
+        // 빈 메시지나 잘못된 요청은 조용히 무시 (금칙어 검사에서 content가 null이면 NPE 나는 것 방지)
+        if (request.getContent() == null || request.getContent().isBlank()) {
+            return;
+        }
+
         // 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람에게만 경고를 돌려줌
         if (chatFilterService.containsBannedWord(request.getContent())) {
             Map<String, Object> warning = new HashMap<>();
@@ -186,8 +191,8 @@ public class ChatController {
     @ResponseBody
     public Map<String, Object> generateAiFan(@RequestParam Long artistId) {
         User artist = getUserOrThrow(artistId, "아티스트");
-        User aiFan = userRepository.findById(4L)
-                .orElseThrow(() -> new IllegalStateException("AI 팬 계정이 없습니다."));
+        User aiFan = userRepository.findByUsername("aifan_bot")
+                .orElseThrow(() -> new IllegalStateException("AI 팬 계정(username=aifan_bot)이 없습니다."));
 
         String content = aiFanChatService.generateFanMessage();
 
