@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>화평님 테스트 링크 모음</title>
+</head>
+<body>
+
+<h1>테스트 링크 모음 (개인 개발용)</h1>
+<p>이 페이지는 다른 팀원 화면과 무관한 개인 테스트용입니다. 병합 충돌 걱정 없이 자유롭게 수정하세요.</p>
+
+<h2>게시판 (FEED)</h2>
+<ul>
+    <li><a th:href="@{/posts/fan}">팬 게시판</a></li>
+    <li><a th:href="@{/posts/artist}">아티스트 게시판</a></li>
+    <li><a th:href="@{/posts/fan/new}">팬 게시판 글쓰기</a></li>
+    <li><a th:href="@{/posts/artist/new}">아티스트 게시판 글쓰기</a></li>
+</ul>
+
+<h2>실시간 채팅 (CHAT)</h2>
+<ul>
+    <li><a th:href="@{/chat/room/artist(artistId=2)}">아티스트(2번) 채팅방 화면</a></li>
+    <li><a th:href="@{/chat/room/fan(artistId=2,fanId=1)}">팬(1번) 채팅방 화면</a></li>
+    <li><a th:href="@{/chat/admin/keywords(testUserId=3)}">금칙어 관리 (관리자)</a></li>
+</ul>
+
+<h2>테스트 계정 참고</h2>
+<ul>
+    <li>1번 - 팬 (testuser)</li>
+    <li>2번 - 아티스트 (testartist)</li>
+    <li>3번 - 관리자 (testadmin)</li>
+    <li>4번 - AI팬 봇 (aifan_bot)</li>
+</ul>
+
+</body>
+</html>
