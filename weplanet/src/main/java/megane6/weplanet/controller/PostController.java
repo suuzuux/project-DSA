@@ -13,11 +13,11 @@ import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
@@ -171,17 +171,23 @@ public class PostController {
     }
 
     // 댓글 신고 - 게시글 신고와 완전히 같은 방식 (같은 사람이 같은 댓글 중복 신고 시 예외)
+    // 비동기(fetch) 요청이면 페이지 이동 없이 결과(JSON)만 반환 - 신고는 그 자리에서 성공/실패만 알려주면 충분
     @PostMapping("/posts/detail/{id}/comment/{commentId}/report")
-    public String reportComment(
+    public Object reportComment(
             @PathVariable Long id,
             @PathVariable Long commentId,
             @RequestParam ReportReason reason,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Comment comment = commentService.getComment(commentId);
         User reporter = getUserOrThrow(testUserId);
 
         reportService.reportComment(comment, reporter, reason);
+
+        if ("fetch".equals(requestedWith)) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "댓글 신고가 접수되었습니다."));
+        }
 
         return "redirect:/posts/detail/" + id;
     }
@@ -220,16 +226,22 @@ public class PostController {
     }
 
     // 게시글 신고 - 같은 사람이 같은 글 중복 신고 시 예외
+    // 비동기(fetch) 요청이면 페이지 이동 없이 결과(JSON)만 반환
     @PostMapping("/posts/detail/{id}/report")
-    public String reportPost(
+    public Object reportPost(
             @PathVariable Long id,
             @RequestParam ReportReason reason,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Post post = postService.getPost(id);
         User reporter = getUserOrThrow(testUserId);
 
         reportService.reportPost(post, reporter, reason);
+
+        if ("fetch".equals(requestedWith)) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "게시글 신고가 접수되었습니다."));
+        }
 
         return "redirect:/posts/detail/" + id;
     }
@@ -264,16 +276,13 @@ public class PostController {
     }
 
     // AI 자동 요약 - 게시글 내용을 요약해서 보여줌 (저장하지 않고 요청할 때마다 새로 생성)
+    // 비동기(fetch) 처리 - AI 응답을 기다리는 동안 화면이 멈추지 않고, 결과만 그 자리에 표시됨
     @PostMapping("/posts/detail/{id}/summarize")
-    public String summarizePost(
-            @PathVariable Long id,
-            RedirectAttributes redirectAttributes
-    ) {
+    @ResponseBody
+    public Map<String, Object> summarizePost(@PathVariable Long id) {
         Post post = postService.getPost(id);
         String summary = summaryService.summarize(post.getContent());
 
-        redirectAttributes.addFlashAttribute("summary", summary);
-
-        return "redirect:/posts/detail/" + id;
+        return Map.of("summary", summary);
     }
 }

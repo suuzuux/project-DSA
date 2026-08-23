@@ -35,7 +35,7 @@
     <button type="submit">게시글 삭제</button>
 </form>
 
-<form th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post" style="display:inline;">
+<form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post" style="display:inline;">
     <select name="testUserId">
         <option value="1">1번(팬)으로 신고</option>
         <option value="2">2번(아티스트)으로 신고</option>
@@ -48,15 +48,11 @@
     </select>
     <button type="submit">게시글 신고</button>
 </form>
+<span id="postReportMsg"></span>
 
-<form th:action="@{/posts/detail/{id}/summarize(id=${post.id})}" method="post" style="display:inline;">
-    <button type="submit">AI 요약보기</button>
-</form>
+<button id="summarizeButton" type="button">AI 요약보기</button>
 
-<div th:if="${summary}">
-    <h4>AI 요약</h4>
-    <p th:text="${summary}"></p>
-</div>
+<div id="summaryArea"></div>
 
 <select id="likeUserId">
     <option value="1">1번 - 팬 계정</option>
@@ -76,6 +72,47 @@
             .then(response => response.json())
             .then(data => {
                 document.getElementById('likeCount').textContent = data.likeCount;
+            });
+    });
+
+    // 게시글 신고 - 페이지 이동 없이, 그 자리에서 성공/실패 메시지만 표시
+    document.getElementById('postReportForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const msg = document.getElementById('postReportMsg');
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'},
+            body: new URLSearchParams(new FormData(form))
+        })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    return {ok: response.ok, data: data};
+                });
+            })
+            .then(function (result) {
+                msg.textContent = result.data.message;
+                msg.style.color = result.ok ? 'green' : 'red';
+            });
+    });
+
+    // AI 요약 - 클릭하는 동안 화면이 멈추지 않고, 로딩 문구를 보여줬다가 결과로 교체
+    document.getElementById('summarizeButton').addEventListener('click', function () {
+        const area = document.getElementById('summaryArea');
+        area.innerHTML = '<p>AI가 요약을 만들고 있어요...</p>';
+
+        fetch(`/posts/detail/${postId}/summarize`, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'}
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                area.innerHTML = '<h4>AI 요약</h4><p id="summaryText"></p>';
+                // textContent로 넣어서 응답 내용이 혹시 HTML 태그를 포함해도 그대로 텍스트로만 표시됨 (XSS 방지)
+                document.getElementById('summaryText').textContent = data.summary;
             });
     });
 </script>
@@ -110,7 +147,8 @@
                 <button type="submit">삭제</button>
             </form>
 
-            <form th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+            <form class="comment-report-form"
+                  th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
                   method="post" style="display:inline;">
                 <select name="testUserId">
                     <option value="1">1번(팬)으로 신고</option>
@@ -124,6 +162,7 @@
                 </select>
                 <button type="submit">댓글 신고</button>
             </form>
+            <span class="comment-report-msg"></span>
         </li>
     </ul>
 
@@ -150,6 +189,27 @@
                 })
                 .then(function (html) {
                     document.getElementById('commentSection').outerHTML = html;
+                });
+        }
+
+        // 댓글 신고는 목록을 다시 그릴 필요 없이, 그 자리에 성공/실패 메시지만 표시
+        if (form.classList.contains('comment-report-form')) {
+            e.preventDefault();
+            const msg = form.nextElementSibling; // 폼 바로 뒤에 있는 <span class="comment-report-msg">
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {'X-Requested-With': 'fetch'},
+                body: new URLSearchParams(new FormData(form))
+            })
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        return {ok: response.ok, data: data};
+                    });
+                })
+                .then(function (result) {
+                    msg.textContent = result.data.message;
+                    msg.style.color = result.ok ? 'green' : 'red';
                 });
         }
     });
