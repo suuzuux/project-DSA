@@ -32,6 +32,12 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
 
+    // 테스트용 유저 조회 공통 헬퍼 - 없으면 예외 (로그인 완성되면 이 메서드 자체가 통째로 없어질 예정)
+    private User getUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + userId + ")가 없습니다."));
+    }
+
     @GetMapping("/posts/{boardType}")
     public String list(
             @PathVariable String boardType,
@@ -77,8 +83,7 @@ public class PostController {
 
         // 임시 - 로그인 기능 완성 전까지는 폼에서 넘어온 testUserId로 작성자를 선택
         // 형준님 로그인 완성되면 이 블록 전체를 세션에서 꺼낸 실제 User로 교체 예정
-        User tempAuthor = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User tempAuthor = getUserOrThrow(testUserId);
 
         // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 아티스트만 작성 가능
         if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
@@ -115,8 +120,7 @@ public class PostController {
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
         Post post = postService.getPost(id);
-        User author = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User author = getUserOrThrow(testUserId);
 
         commentService.createComment(post, author, content);
 
@@ -130,8 +134,7 @@ public class PostController {
             @PathVariable Long commentId,
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
-        User requester = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User requester = getUserOrThrow(testUserId);
 
         commentService.deleteComment(commentId, requester);
 
@@ -146,8 +149,7 @@ public class PostController {
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
         Post post = postService.getPost(id);
-        User user = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User user = getUserOrThrow(testUserId);
 
         boolean liked = postService.toggleLike(post, user);
         log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
@@ -165,8 +167,7 @@ public class PostController {
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
         Post post = postService.getPost(id);
-        User requester = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User requester = getUserOrThrow(testUserId);
 
         postService.deletePost(post, requester);
 
@@ -181,8 +182,7 @@ public class PostController {
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
         Post post = postService.getPost(id);
-        User reporter = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User reporter = getUserOrThrow(testUserId);
 
         reportService.reportPost(post, reporter, reason);
 
@@ -211,8 +211,7 @@ public class PostController {
             @RequestParam(defaultValue = "1") Long testUserId
     ) {
         Post post = postService.getPost(id);
-        User requester = userRepository.findById(testUserId)
-                .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + testUserId + ")가 없습니다."));
+        User requester = getUserOrThrow(testUserId);
 
         postService.updatePost(post, title, content, requester);
 
