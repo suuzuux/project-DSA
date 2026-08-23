@@ -7,39 +7,46 @@
 <body>
 
 <h1>금칙어 관리 (관리자 전용)</h1>
+<hr>
 
 <form id="keywordAddForm">
     <input type="hidden" name="testUserId" th:value="${testUserId}">
-    <input type="text" name="keyword" placeholder="등록할 금칙어">
+    <b>등록할 금칙어</b>
+    <input type="text" name="keyword" placeholder="예: 바보">
     <button type="submit">등록</button>
 </form>
 
 <!-- 등록/삭제 후 페이지 전체를 새로고침하지 않고, 이 목록 부분(fragment)만 fetch로 다시 받아와서 교체함 -->
 <div id="keywordListArea" th:fragment="keywordListFragment">
-    <ul>
-        <li th:each="kw : ${keywords}">
-            <span th:text="${kw.keyword}"></span>
-            <form class="keyword-delete-form" th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}" method="post"
-                  style="display:inline;">
-                <input type="hidden" name="testUserId" th:value="${testUserId}">
-                <button type="submit">삭제</button>
-            </form>
-        </li>
-    </ul>
+    <table border="1" cellpadding="6" cellspacing="0" th:if="${not #lists.isEmpty(keywords)}">
+        <tr>
+            <th>금칙어</th>
+            <th>삭제</th>
+        </tr>
+        <tr th:each="kw : ${keywords}">
+            <td th:text="${kw.keyword}"></td>
+            <td>
+                <form class="keyword-delete-form" th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}"
+                      method="post">
+                    <input type="hidden" name="testUserId" th:value="${testUserId}">
+                    <button type="submit">삭제</button>
+                </form>
+            </td>
+        </tr>
+    </table>
 
-    <p th:if="${#lists.isEmpty(keywords)}">등록된 금칙어가 없습니다.</p>
+    <p th:if="${#lists.isEmpty(keywords)}"><i>등록된 금칙어가 없습니다.</i></p>
 </div>
 
 <script th:inline="javascript">
-    const testUserId = /*[[${testUserId}]]*/ 3;
-
     // 등록/삭제 둘 다 페이지 전체 새로고침 없이, 목록 부분(#keywordListArea)만 fetch로 다시 받아와서 교체함.
-    // 삭제 폼은 목록이 갱신될 때마다 새로 생기므로, 이벤트 위임(document에 걸어둠) 방식 사용
+    // 등록 폼은 하나뿐이지만, 삭제 폼은 금칙어 개수만큼 여러 개 생기고 목록이 갱신될 때마다 새로 만들어지므로
+    // document 전체에 이벤트를 걸어두고 "어떤 폼이 제출됐는지"를 안에서 확인하는 방식(이벤트 위임)을 씀
     document.addEventListener('submit', function (e) {
         const form = e.target;
 
         if (form.id !== 'keywordAddForm' && !form.classList.contains('keyword-delete-form')) {
-            return;
+            return; // 이 화면과 관련 없는 다른 폼이면 그냥 지나감
         }
 
         e.preventDefault();
@@ -56,12 +63,12 @@
                 document.getElementById('keywordListArea').outerHTML = html;
 
                 if (form.id === 'keywordAddForm') {
-                    form.reset();
+                    form.reset(); // 등록 후 입력창을 비워줌
                 }
             });
     });
 
-    // 등록 폼은 action이 비어있으니(별도 지정 안 함) 여기서 채워줌
+    // 등록 폼(<form id="keywordAddForm">)에는 action 속성을 안 적어뒀으므로, 여기서 직접 지정해줌
     document.getElementById('keywordAddForm').action = '/chat/admin/keywords';
 </script>
 

@@ -24,12 +24,23 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 실시간 채팅(CHAT) 관련 화면과 메시지 처리를 담당하는 컨트롤러.
+ * <p>
+ * 이 컨트롤러는 두 가지 종류의 메서드가 섞여 있음.
+ * ① @GetMapping/@PostMapping 메서드들 : 지금까지 배운 것과 똑같은 일반 HTTP 요청/응답
+ * (채팅방 화면 보여주기, 금칙어 관리 화면 등)
+ * ② @MessageMapping 메서드(send) : 일반 HTTP가 아니라, 웹소켓(WebSocketConfig 참고)을 통해
+ * 실시간으로 오가는 메시지를 처리하는 부분. 브라우저가 fetch()가 아니라
+ * stompClient.send(...)로 보낸 메시지가 여기로 들어옴.
+ */
 @Controller
 @RequiredArgsConstructor
 public class ChatController {
 
     private final ChatMessageService chatMessageService;
     private final UserRepository userRepository;
+    // 실시간으로 연결된 브라우저들에게 메시지를 "방송"할 때 쓰는 도구
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatFilterService chatFilterService;
     private final ChatQuotaService chatQuotaService;
@@ -48,12 +59,17 @@ public class ChatController {
         }
     }
 
-    // 웹소켓 방송 공통 헬퍼 - payload를 (Object)로 캐스팅해서 넘기는 부분을 한 곳으로 모음
+    /**
+     * 웹소켓으로 연결된 브라우저들에게 실시간 메시지를 보내는 공통 헬퍼.
+     * <p>
+     * destination : 어느 채널로 보낼지 (예: "/topic/chat.2" - 2번 아티스트 채널을 구독 중인 모두에게 감)
+     * payload : 보낼 내용물(누가, 무슨 말을, 언제 했는지 등을 담은 자료 상자)
+     */
     private void broadcast(String destination, Map<String, Object> payload) {
         messagingTemplate.convertAndSend(destination, (Object) payload);
     }
 
-    // 팬 전용 채팅방 화면 - 이 팬 개인 채널 + 아티스트 방송 채널만 구독
+    // 팬 전용 채팅방 화면 (CHAT-02) - 이 팬의 개인 채널 + 아티스트 방송 채널을 화면에서 구독하게 됨
     @GetMapping("/chat/room/fan")
     public String fanRoom(
             @RequestParam Long artistId,
@@ -70,7 +86,7 @@ public class ChatController {
         return "fanChatRoom";
     }
 
-    // 아티스트 전용 채팅방 화면 - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독
+    // 아티스트 전용 채팅방 화면 (CHAT-02) - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독하게 됨
     @GetMapping("/chat/room/artist")
     public String artistRoom(
             @RequestParam Long artistId,
@@ -80,7 +96,17 @@ public class ChatController {
         return "artistChatRoom";
     }
 
-    // 브라우저가 /app/chat.send 로 보낸 메시지를 저장하고, 채팅방 구독자들에게 실시간 방송
+    /**
+     * 브라우저가 웹소켓의 "/app/chat.send" 채널로 보낸 메시지를 처리함.
+     * <p>
+     *
+     * @MessageMapping("/chat.send") : @PostMapping과 비슷한 역할이지만, HTTP 요청이 아니라
+     * 웹소켓으로 온 메시지를 받을 때 씀. WebSocketConfig에서 "/app"을 접두사로 정해뒀기 때문에,
+     * 실제로는 "/app/chat.send"로 온 메시지가 이 메서드로 연결됨.
+     * <p>
+     * 이 메서드는 return 값이 없음(void). 일반 컨트롤러처럼 "화면을 보여주는" 게 목적이 아니라,
+     * 메시지를 검사하고 저장한 뒤 broadcast(...)로 관련된 사람들에게 실시간으로 뿌려주는 게 목적이기 때문.
+     */
     @MessageMapping("/chat.send")
     public void send(ChatMessageRequest request) {
 
@@ -89,12 +115,13 @@ public class ChatController {
             return;
         }
 
-        // 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람에게만 경고를 돌려줌
+        // CHAT-03 : 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람 본인에게만 경고를 돌려줌
         if (chatFilterService.containsBannedWord(request.getContent())) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
             warning.put("message", "부적절한 언어가 포함되어 전송이 제한되었습니다.");
 
+            // "/topic/chat.error.보낸사람ID" 채널은 그 사람만 구독하고 있으므로, 본인에게만 경고가 도착함
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
 
             return;
@@ -106,6 +133,7 @@ public class ChatController {
                 ? getUserOrThrow(request.getFanId(), "팬")
                 : null;
 
+        // CHAT-05 : 팬이 보낸 메시지인 경우에만 하루 전송 한도를 체크함 (아티스트 방송은 한도 없음)
         if (fan != null && !chatQuotaService.tryConsume(fan, artist)) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
@@ -118,7 +146,8 @@ public class ChatController {
 
         ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent());
 
-        // 엔티티를 그대로 방송하지 않고, 화면에 필요한 값만 뽑아서 보냄 (User 안에 비밀번호 등 민감정보가 있어서)
+        // 엔티티(ChatMessage)를 그대로 방송하지 않고, 화면에 필요한 값만 뽑아서 새 자료 상자(payload)에 담아 보냄
+        // (User 엔티티 안에는 비밀번호 등 민감한 정보가 들어있어서, 그걸 그대로 브라우저에 보내면 안 되기 때문)
         Map<String, Object> payload = new HashMap<>();
         payload.put("senderId", sender.getId());
         payload.put("senderNickname", sender.getNickname());
@@ -130,21 +159,23 @@ public class ChatController {
             payload.put("remaining", chatQuotaService.getRemaining(fan, artist));
         }
 
+        // CHAT-02 비대칭 수신 : 방송이냐 개인 메시지냐에 따라 어느 채널로 보낼지가 달라짐
         if (fan == null) {
-            // 아티스트가 보낸 방송 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
+            // 아티스트가 보낸 방송(공지) 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
             broadcast("/topic/chat." + artist.getId(), payload);
         } else {
-            // 팬이 보낸 개인 메시지 - 일단 그 팬 개인 채널에는 무조건 전달
+            // 팬이 보낸 개인 메시지 - 그 팬 개인 채널(본인+아티스트만 구독)에는 무조건 전달됨
             broadcast("/topic/chat." + artist.getId() + ".fan." + fan.getId(), payload);
 
-            // 도배 방지를 위해 30% 확률로만 아티스트의 추천 피드에도 노출
+            // Math.random() : 0.0 이상 1.0 미만의 랜덤 소수를 만들어줌.
+            // 도배 방지를 위해, 30% 확률로만 아티스트가 보는 "추천 피드" 채널에도 추가로 노출시킴
             if (Math.random() < 0.3) {
                 broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
             }
         }
     }
 
-    // 금칙어 관리 화면 - 관리자만 접근 가능
+    // 금칙어 관리 화면 (CHAT-04) - 관리자만 접근 가능
     @GetMapping("/chat/admin/keywords")
     public String keywordList(
             @RequestParam(defaultValue = "3") Long testUserId,
@@ -159,7 +190,7 @@ public class ChatController {
         return "keywordManage";
     }
 
-    // 금칙어 등록
+    // 금칙어 등록 - fetch로 온 요청이면 목록 부분(fragment)만 새로 그려서 페이지 새로고침 없이 갱신
     @PostMapping("/chat/admin/keywords")
     public String addKeyword(
             @RequestParam String keyword,
@@ -172,7 +203,6 @@ public class ChatController {
 
         chatFilterService.addKeyword(keyword);
 
-        // fetch로 온 요청(비동기 등록)이면 목록 부분(fragment)만 새로 그려서 돌려줌
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("keywords", chatFilterService.getAllKeywords());
             model.addAttribute("testUserId", testUserId);
@@ -182,7 +212,7 @@ public class ChatController {
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
     }
 
-    // 금칙어 삭제
+    // 금칙어 삭제 - 등록과 같은 방식
     @PostMapping("/chat/admin/keywords/{id}/delete")
     public String deleteKeyword(
             @PathVariable Long id,
@@ -195,7 +225,6 @@ public class ChatController {
 
         chatFilterService.deleteKeyword(id);
 
-        // fetch로 온 요청(비동기 삭제)이면 목록 부분(fragment)만 새로 그려서 돌려줌
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("keywords", chatFilterService.getAllKeywords());
             model.addAttribute("testUserId", testUserId);
@@ -205,7 +234,8 @@ public class ChatController {
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
     }
 
-    // AI 팬 메시지 생성 (시연용) - 실제 팬이 아니라 아티스트 화면을 채우기 위한 가짜 메시지, 비동기 처리
+    // AI 팬 메시지 생성 (CHAT-06, 선택 기능/시연용) - 실제 팬이 아니라
+    // 채팅방이 한산할 때 화면을 채워 보여주기 위한 가짜 메시지. 이건 웹소켓이 아니라 일반 fetch로 호출됨
     @PostMapping("/chat/room/artist/ai-fan")
     @ResponseBody
     public Map<String, Object> generateAiFan(@RequestParam Long artistId) {
@@ -224,6 +254,8 @@ public class ChatController {
         payload.put("content", saved.getContent());
         payload.put("createdAt", saved.getCreatedAt().toString());
 
+        // fetch로 온 요청이지만, 결과는 요청 보낸 사람에게 직접 응답하는 대신
+        // 웹소켓 채널로 방송해서 화면에 실시간으로 나타나게 함 (채팅 메시지들과 같은 방식으로 보이도록)
         broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
 
         return Map.of("success", true);

@@ -17,6 +17,9 @@ import java.util.Map;
  * <p>
  * fetch(비동기)로 온 요청이면 화면 이동 없이 JSON({"success":false,"message":"..."})으로 돌려줘서,
  * 관리자 아님/이미 신고함 같은 경우도 페이지 전체 새로고침 없이 그 자리에서 실패 메시지를 보여줄 수 있게 함.
+ * <p>
+ * @ControllerAdvice : "모든 컨트롤러를 감시하고 있다가, 어디서든 예외가 터지면 이 클래스가 대신 처리한다"는 표시.
+ * 즉 ChatController, PostController 안에서 try-catch를 일일이 안 써도, 여기 한 곳에서 예외 처리를 몰아서 담당함.
  */
 @Slf4j
 @ControllerAdvice
