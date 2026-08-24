@@ -1,0 +1,6 @@
+SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/weplanet?useSSL=false&serverTimezone=Asia/Seoul&useUnicode=true&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+SPRING_DATASOURCE_USERNAME=root
+SPRING_DATASOURCE_PASSWORD=root
+GEMINI_API_KEY=AQ.Ab8RN6KfPRQP-0wCf_jjx0_rl_B_1lqwLELj-9dPK53XZLz1tw
+
+API키는 하루 20회제한이라 자기꺼 쓰고싶으시면 따로 만들어서 쓰시면됨
