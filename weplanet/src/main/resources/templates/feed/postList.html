@@ -27,10 +27,50 @@
 <div class="community-body" style="grid-template-columns:220px minmax(0,1fr);width:min(100% - 40px, 1120px);margin:16px auto 0;">
 
     <aside class="community-aside">
-        <a class="btn btn--primary btn--block" th:href="@{/posts/{boardType}/new(boardType=${boardType})}">포스트 작성하기</a>
+        <button type="button" class="btn btn--primary btn--block" id="openWriteModalBtn">포스트 작성하기</button>
     </aside>
 
     <div class="community-main">
+        <!-- 와이어프레임 기준: 글쓰기는 목록 위에 뜨는 모달(팝업) -->
+        <div class="modal-backdrop" id="writeModalBackdrop">
+            <div class="modal modal--wide" onclick="event.stopPropagation()">
+                <div class="modal__head">
+                    <span class="modal__title">포스트 작성하기</span>
+                    <button type="button" class="modal__close" id="closeWriteModalBtn">✕</button>
+                </div>
+
+                <form id="writeModalForm" th:action="@{/posts/{boardType}/new(boardType=${boardType})}" method="post" enctype="multipart/form-data">
+                    <!--
+                        제목(title)은 DB에 필수 컬럼이라 완전히 없앨 순 없지만, 와이어프레임엔 별도
+                        제목 입력창이 없어서 - 등록 직전에 자바스크립트가 본문 앞부분을 잘라 자동으로 채워 넣음
+                    -->
+                    <input type="hidden" name="title" id="writeModalTitle">
+
+                    <select name="testUserId" class="form-select" style="margin-bottom:10px;width:auto;">
+                        <option value="1">1번 - 팬 계정</option>
+                        <option value="2">2번 - 아티스트 계정</option>
+                    </select>
+
+                    <textarea name="content" id="writeModalContent" class="form-textarea" maxlength="1000"
+                              placeholder="포스트를 남겨보세요…" style="min-height:220px;"></textarea>
+                    <p class="text-xs text-muted" style="text-align:right;margin-top:4px;">
+                        <span id="writeModalCharCount">0</span> / 1000
+                    </p>
+                    <p id="writeModalError" class="form-error" style="display:none;"></p>
+
+                    <div class="flex-between" style="margin-top:10px;">
+                        <label style="cursor:pointer;font-size:20px;" title="이미지 첨부">
+                            🖼️
+                            <input type="file" name="files" id="writeModalFiles" multiple accept="image/*,application/pdf,.txt,.zip" style="display:none;">
+                        </label>
+                        <span id="writeModalFileCount" class="text-xs text-muted"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn--primary btn--block" style="margin-top:14px;" id="writeModalSubmit" disabled>등록하기</button>
+                </form>
+            </div>
+        </div>
+
         <div class="flex-between" style="margin-bottom:12px;">
             <a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a>
             <div class="flex-center">
@@ -136,6 +176,88 @@
     // 이때도 페이지를 통째로 새로 불러오는 대신, 목록 부분만 다시 fetch로 불러옴
     window.addEventListener('popstate', function () {
         loadList(window.location.href, false);
+    });
+
+    // ===================================================================
+    // 글쓰기 모달 (와이어프레임 36번: 목록 위에 뜨는 팝업)
+    // ===================================================================
+    const writeModalBackdrop = document.getElementById('writeModalBackdrop');
+    const writeModalForm = document.getElementById('writeModalForm');
+    const writeModalContent = document.getElementById('writeModalContent');
+    const writeModalCharCount = document.getElementById('writeModalCharCount');
+    const writeModalSubmit = document.getElementById('writeModalSubmit');
+    const writeModalError = document.getElementById('writeModalError');
+    const writeModalFiles = document.getElementById('writeModalFiles');
+    const writeModalFileCount = document.getElementById('writeModalFileCount');
+
+    function openWriteModal() {
+        writeModalForm.reset();
+        writeModalCharCount.textContent = '0';
+        writeModalFileCount.textContent = '';
+        writeModalError.style.display = 'none';
+        writeModalSubmit.disabled = true;
+        writeModalBackdrop.classList.add('is-open');
+        writeModalContent.focus();
+    }
+
+    function closeWriteModal() {
+        writeModalBackdrop.classList.remove('is-open');
+    }
+
+    document.getElementById('openWriteModalBtn').addEventListener('click', openWriteModal);
+    document.getElementById('closeWriteModalBtn').addEventListener('click', closeWriteModal);
+    // 배경(모달 바깥 어두운 영역)을 클릭하면 닫힘 - 모달 박스 자체 클릭은 stopPropagation()으로 막아둠(위 markup 참고)
+    writeModalBackdrop.addEventListener('click', closeWriteModal);
+
+    // 글자수 세기 + 등록 버튼 활성/비활성 (공백만 있으면 비활성, 1000자 넘으면 비활성)
+    writeModalContent.addEventListener('input', function () {
+        const text = writeModalContent.value;
+        writeModalCharCount.textContent = text.length;
+        writeModalSubmit.disabled = text.trim().length === 0 || text.length > 1000;
+    });
+
+    // 첨부파일 10개 제한
+    writeModalFiles.addEventListener('change', function () {
+        if (writeModalFiles.files.length > 10) {
+            writeModalError.textContent = '이미지는 최대 10개까지 첨부할 수 있어요.';
+            writeModalError.style.display = 'block';
+            writeModalFiles.value = '';
+            writeModalFileCount.textContent = '';
+        } else {
+            writeModalError.style.display = 'none';
+            writeModalFileCount.textContent = writeModalFiles.files.length > 0 ? writeModalFiles.files.length + '개 선택됨' : '';
+        }
+    });
+
+    // 폼 제출 - 페이지 이동 없이 fetch로 등록하고, 성공하면 목록만 새로 그려서 갱신
+    writeModalForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        // 제목이 별도로 없는 와이어프레임이라, 본문 앞부분(최대 30자)을 잘라서 자동으로 제목으로 씀
+        const content = writeModalContent.value.trim();
+        document.getElementById('writeModalTitle').value = content.length > 30 ? content.slice(0, 30) + '…' : content;
+
+        writeModalSubmit.disabled = true;
+
+        fetch(writeModalForm.action, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'},
+            body: new FormData(writeModalForm) // 파일 첨부까지 포함해서 그대로 전송 (multipart/form-data)
+        })
+            .then(function (response) {
+                if (response.ok) {
+                    return response.text().then(function (html) {
+                        document.getElementById('postListArea').outerHTML = html;
+                        closeWriteModal();
+                    });
+                }
+                // 실패 시(글자수 초과, 서버 검증 실패 등) - GlobalExceptionHandler가 JSON으로 에러 메시지를 돌려줌
+                return response.json().then(function (data) {
+                    writeModalError.textContent = data.message || '등록에 실패했어요.';
+                    writeModalError.style.display = 'block';
+                    writeModalSubmit.disabled = false;
+                });
+            });
     });
 </script>
 

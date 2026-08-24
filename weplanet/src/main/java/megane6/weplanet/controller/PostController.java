@@ -149,7 +149,9 @@ public class PostController {
             // List<MultipartFile> : 폼에서 <input type="file" multiple>로 여러 개 고른 파일들이
             // 하나의 리스트로 담겨서 들어옴. required=false라서 파일을 하나도 안 골라도 에러 안 남
             @RequestParam(required = false) List<MultipartFile> files,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
     ) {
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
@@ -170,6 +172,12 @@ public class PostController {
         postService.saveAttachments(post, files);
 
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
+
+        // 와이어프레임 기준: 글쓰기가 목록 위에 뜨는 모달이라, fetch로 왔으면 페이지 이동 없이
+        // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
+        if ("fetch".equals(requestedWith)) {
+            return list(boardType, "latest", "fetch", model);
+        }
 
         return "redirect:/posts/" + boardType;
     }
