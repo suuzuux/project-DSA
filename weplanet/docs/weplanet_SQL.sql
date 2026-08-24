@@ -1,3 +1,6 @@
+USE weplanet;
+
+
 CREATE TABLE agencies (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     name         VARCHAR(100) NOT NULL,
@@ -156,3 +159,232 @@ CREATE TABLE board_media_files (
         REFERENCES board_media(id) ON DELETE CASCADE,
     CONSTRAINT ck_bmf_media_type CHECK (media_type IN ('IMAGE','VIDEO'))
 ) COMMENT = '게시글 첨부 미디어';
+
+
+-- ============================================================
+-- weplanet 프로젝트 - FEED(게시판) + CHAT(실시간 채팅) 테이블 생성 스크립트
+-- 담당: 김화평
+-- 전제조건: users 테이블이 이미 존재해야 함
+-- ============================================================
+
+
+-- ---------- FEED (게시판) ----------
+
+CREATE TABLE IF NOT EXISTS post (
+                                    id BIGINT NOT NULL AUTO_INCREMENT,
+                                    board_type ENUM('ARTIST', 'FAN') NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    author_id BIGINT DEFAULT NULL,
+    like_count INT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    KEY idx_post_author (author_id),
+
+    CONSTRAINT fk_post_author
+    FOREIGN KEY (author_id)
+    REFERENCES users(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS comment (
+                                       id BIGINT NOT NULL AUTO_INCREMENT,
+                                       content VARCHAR(500) NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+    author_id BIGINT NOT NULL,
+    post_id BIGINT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    KEY idx_comment_author (author_id),
+    KEY idx_comment_post (post_id),
+
+    CONSTRAINT fk_comment_author
+    FOREIGN KEY (author_id)
+    REFERENCES users(id),
+
+    CONSTRAINT fk_comment_post
+    FOREIGN KEY (post_id)
+    REFERENCES post(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS post_like (
+                                         id BIGINT NOT NULL AUTO_INCREMENT,
+                                         created_at DATETIME(6) NOT NULL,
+    post_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_post_like (post_id, user_id),
+
+    KEY idx_post_like_user (user_id),
+
+    CONSTRAINT fk_post_like_post
+    FOREIGN KEY (post_id)
+    REFERENCES post(id),
+
+    CONSTRAINT fk_post_like_user
+    FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS report (
+                                      id BIGINT NOT NULL AUTO_INCREMENT,
+                                      created_at DATETIME(6) NOT NULL,
+    reason ENUM('ABUSE', 'ETC', 'SEXUAL', 'SPAM') NOT NULL,
+    post_id BIGINT NOT NULL,
+    reporter_id BIGINT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_report (post_id, reporter_id),
+
+    KEY idx_report_reporter (reporter_id),
+
+    CONSTRAINT fk_report_post
+    FOREIGN KEY (post_id)
+    REFERENCES post(id),
+
+    CONSTRAINT fk_report_reporter
+    FOREIGN KEY (reporter_id)
+    REFERENCES users(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS comment_report (
+                                              id BIGINT NOT NULL AUTO_INCREMENT,
+                                              created_at DATETIME(6) NOT NULL,
+    reason ENUM('ABUSE', 'ETC', 'SEXUAL', 'SPAM') NOT NULL,
+    comment_id BIGINT NOT NULL,
+    reporter_id BIGINT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_comment_report (comment_id, reporter_id),
+
+    KEY idx_comment_report_reporter (reporter_id),
+
+    CONSTRAINT fk_comment_report_comment
+    FOREIGN KEY (comment_id)
+    REFERENCES comment(id),
+
+    CONSTRAINT fk_comment_report_reporter
+    FOREIGN KEY (reporter_id)
+    REFERENCES users(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS post_attachment (
+                                               id BIGINT NOT NULL AUTO_INCREMENT,
+                                               content_type VARCHAR(100) DEFAULT NULL,
+    created_at DATETIME(6) NOT NULL,
+    file_size BIGINT DEFAULT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    post_id BIGINT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_post_attachment_stored (stored_name),
+
+    KEY idx_post_attachment_post (post_id),
+
+    CONSTRAINT fk_post_attachment_post
+    FOREIGN KEY (post_id)
+    REFERENCES post(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+-- ---------- CHAT (실시간 채팅) ----------
+
+CREATE TABLE IF NOT EXISTS chat_message (
+                                            id BIGINT NOT NULL AUTO_INCREMENT,
+                                            content TEXT NOT NULL,
+                                            created_at DATETIME(6) NOT NULL,
+    artist_id BIGINT NOT NULL,
+    fan_id BIGINT DEFAULT NULL,
+    sender_id BIGINT NOT NULL,
+
+    PRIMARY KEY (id),
+
+    KEY idx_chat_message_artist (artist_id),
+    KEY idx_chat_message_fan (fan_id),
+    KEY idx_chat_message_sender (sender_id),
+
+    CONSTRAINT fk_chat_message_artist
+    FOREIGN KEY (artist_id)
+    REFERENCES users(id),
+
+    CONSTRAINT fk_chat_message_fan
+    FOREIGN KEY (fan_id)
+    REFERENCES users(id),
+
+    CONSTRAINT fk_chat_message_sender
+    FOREIGN KEY (sender_id)
+    REFERENCES users(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS chat_quota (
+                                          id BIGINT NOT NULL AUTO_INCREMENT,
+                                          charged_date DATE NOT NULL,
+                                          remaining_count INT NOT NULL,
+                                          artist_id BIGINT NOT NULL,
+                                          fan_id BIGINT NOT NULL,
+
+                                          PRIMARY KEY (id),
+
+    UNIQUE KEY uk_chat_quota (fan_id, artist_id),
+
+    KEY idx_chat_quota_artist (artist_id),
+
+    CONSTRAINT fk_chat_quota_fan
+    FOREIGN KEY (fan_id)
+    REFERENCES users(id),
+
+    CONSTRAINT fk_chat_quota_artist
+    FOREIGN KEY (artist_id)
+    REFERENCES users(id)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS filter_keyword (
+                                              id BIGINT NOT NULL AUTO_INCREMENT,
+                                              keyword VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_filter_keyword (keyword)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
