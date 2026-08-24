@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    <!-- 와이어프레임 기준: 하단에 좋아요/댓글 아이콘 고정, 숫자는 0이면 표시 안 함 -->
+    <!-- 와이어프레임 기준: 하단에 좋아요/댓글/북마크 아이콘 고정, 숫자는 0이면 표시 안 함 -->
     <div class="post-card__actions">
         <span style="display:flex;align-items:center;gap:6px;">
             <select id="likeUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:12px;width:auto;">
@@ -61,6 +61,13 @@
         </span>
         <span th:if="${#lists.size(comments) > 0}">💬 <span th:text="${#lists.size(comments)}"></span></span>
         <span th:unless="${#lists.size(comments) > 0}">💬</span>
+
+        <!-- 북마크 - 좋아요와 같은 testUserId 선택값을 그대로 씀 -->
+        <button id="bookmarkButton" type="button"
+                th:classappend="${bookmarked} ? ' is-active'"
+                style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;margin-left:auto;">
+            <span id="bookmarkIcon" th:text="${bookmarked} ? '🔖' : '📑'"></span>
+        </button>
     </div>
 </article>
 
@@ -245,6 +252,21 @@
             })
             .then(function (data) {
                 document.getElementById('likeCount').textContent = data.likeCount > 0 ? data.likeCount : '';
+            });
+    });
+
+    // ----- 북마크 버튼 (좋아요와 같은 testUserId 선택값을 그대로 씀) -----
+    document.getElementById('bookmarkButton').addEventListener('click', function () {
+        const testUserId = document.getElementById('likeUserId').value;
+        const btn = this;
+
+        fetch(`/posts/detail/${postId}/bookmark?testUserId=${testUserId}`, {method: 'POST'})
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                document.getElementById('bookmarkIcon').textContent = data.bookmarked ? '🔖' : '📑';
+                btn.classList.toggle('is-active', data.bookmarked);
             });
     });
 

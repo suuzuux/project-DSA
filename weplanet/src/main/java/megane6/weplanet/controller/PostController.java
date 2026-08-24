@@ -186,14 +186,17 @@ public class PostController {
     @GetMapping("/posts/detail/{id}")
     public String detail(
             @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Long testUserId,
             Model model
     ) {
         Post post = postService.getPost(id);
         List<Comment> comments = commentService.getComments(post);
+        User currentTestUser = getUserOrThrow(testUserId);
 
         model.addAttribute("post", post);
         model.addAttribute("comments", comments);
         model.addAttribute("attachments", postService.getAttachments(post));
+        model.addAttribute("bookmarked", postService.isBookmarked(post, currentTestUser));
         addCommentAttributes(model, post);
 
         return "feed/postDetail";
@@ -310,6 +313,24 @@ public class PostController {
                 "liked", liked,
                 "likeCount", post.getLikeCount()
         );
+    }
+
+    /**
+     * 북마크 토글 - 좋아요 토글과 완전히 같은 방식.
+     */
+    @PostMapping("/posts/detail/{id}/bookmark")
+    @ResponseBody
+    public Map<String, Object> bookmark(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Long testUserId
+    ) {
+        Post post = postService.getPost(id);
+        User user = getUserOrThrow(testUserId);
+
+        boolean bookmarked = postService.toggleBookmark(post, user);
+        log.debug("북마크 토글: postId={}, userId={}, 결과={}", id, testUserId, bookmarked ? "눌림" : "취소");
+
+        return Map.of("bookmarked", bookmarked);
     }
 
     // 게시글 삭제 - 본인 글만 삭제 가능. 삭제 후에는 그 게시글이 있던 게시판 목록으로 돌아감

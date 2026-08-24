@@ -2,11 +2,13 @@ package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.BoardType;
+import megane6.weplanet.domain.entity.Bookmark;
 import megane6.weplanet.domain.entity.Like;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.PostAttachment;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.repository.BookmarkRepository;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.repository.LikeRepository;
@@ -33,6 +35,7 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
+    private final BookmarkRepository bookmarkRepository;
     private final CommentRepository commentRepository;
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
@@ -127,6 +130,29 @@ public class PostService {
         }
     }
 
+    // 북마크 토글 - 좋아요 토글과 완전히 같은 방식. 단, 게시글에 별도 카운트 컬럼을 안 두고
+    // 매번 실제 개수를 세는 방식(getBookmarkCount)으로 처리함 (좋아요보다 조회 빈도가 낮을 거라 판단)
+    public boolean toggleBookmark(Post post, User user) {
+        Optional<Bookmark> existing = bookmarkRepository.findByPostAndUser(post, user);
+
+        if (existing.isPresent()) {
+            bookmarkRepository.delete(existing.get());
+            return false; // 북마크가 취소됐음을 컨트롤러에 알려줌
+        } else {
+            Bookmark bookmark = Bookmark.builder()
+                    .post(post)
+                    .user(user)
+                    .build();
+            bookmarkRepository.save(bookmark);
+            return true; // 북마크가 새로 눌렸음을 컨트롤러에 알려줌
+        }
+    }
+
+    // 지금 이 유저가 이 게시글을 북마크해뒀는지 여부 (상세 화면 진입 시 아이콘 채워진 상태로 보여주기 위함)
+    public boolean isBookmarked(Post post, User user) {
+        return bookmarkRepository.findByPostAndUser(post, user).isPresent();
+    }
+
     /**
      * 게시글 삭제 - 작성자 본인만 삭제 가능.
      * <p>
@@ -152,6 +178,7 @@ public class PostService {
         // 댓글의 신고 기록(comment_report)은 댓글(comment)보다 먼저 지워야 하므로 순서가 중요함
         commentReportRepository.deleteByComment_Post(post);
         likeRepository.deleteByPost(post);
+        bookmarkRepository.deleteByPost(post);
         commentRepository.deleteByPost(post);
         reportRepository.deleteByPost(post);
         postAttachmentRepository.deleteByPost(post);
