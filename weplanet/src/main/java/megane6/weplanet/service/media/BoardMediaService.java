@@ -2,154 +2,175 @@ package megane6.weplanet.service.media;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import megane6.weplanet.domain.dto.media.BoardMediaDTO;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
 import megane6.weplanet.domain.entity.media.BoardMediaEntity;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
 import megane6.weplanet.repository.media.BoardMediaFileRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
 
 @Slf4j
+@Service
 @RequiredArgsConstructor
 @Transactional
-@Service
 public class BoardMediaService {
-	private static final Set<String> ALLOWED = Set.of(
-			"image/jpeg", "image/png", "image/gif", "image/webp",
-			"video/mp4", "video/webm", "video/quicktime"
-	);
 
-	private final BoardMediaRepository boardRepository;
-	private final BoardMediaFileRepository fileRepository;
-	private final FileStorageService storage;
+    private final BoardMediaRepository boardMediaRepository;
+    private final BoardMediaFileRepository boardMediaFileRepository;
+    private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
 
-	/** 게시글 생성: 제목/내용 + 파일 여러 개를 한 게시글로 저장 */
+    // 허용하는 파일 형식(MIME)
+    private static final List<String> ALLOWED_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "video/mp4", "video/webm", "video/quicktime"
+    );
 
-	public Long create(BoardMediaDTO dto, Long uploaderId) {
-		List<MultipartFile> valid = validated(dto.getFiles());
-		if (valid.isEmpty()) {
-			throw new IllegalArgumentException("파일을 최소 1개 첨부해 주세요.");
-		}
-		LocalDateTime now = LocalDateTime.now();
+    // ── 저장(업로드) : 게시글 + 파일 여러 개를 한 번에 저장 ──
+    public Long create(Long groupId, Long uploaderId, String title, String content,
+                       List<MultipartFile> files) {
 
-		BoardMediaEntity post = new BoardMediaEntity();
-		post.setGroupId(dto.getGroupId());
-		post.setUploaderId(uploaderId);
-		post.setTitle(dto.getTitle());
-		post.setContent(dto.getContent());
-		post.setCreatedAt(now);
-		post.setUpdatedAt(now);
+        LocalDateTime now = LocalDateTime.now();
 
-		int order = 0;
-		for (MultipartFile f : valid) {
-			post.addFile(toFileEntity(f, order++, now));
-		}
-		return boardRepository.save(post).getId(); // cascade 로 파일도 함께 저장
-	}
+        // 1) 게시글 먼저 만든다
+        BoardMediaEntity post = BoardMediaEntity.builder()
+                .groupId(groupId)
+                .uploaderId(uploaderId)
+                .title(title)
+                .content(content)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
 
-	/** 편집: 제목/내용 수정 + 새 파일이 오면 뒤에 추가 */
-	@org.springframework.transaction.annotation.Transactional
-	public void edit(Long id, BoardMediaDTO dto) {
-		BoardMediaEntity post = getActive(id);
-		post.setTitle(dto.getTitle());
-		post.setContent(dto.getContent());
+        // 2) 파일들을 하나씩 저장하고 게시글에 붙인다
+        int order = 0;
+        if (files != null) {
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) {
+                    continue; // 빈 칸은 건너뜀
+                }
+                String contentType = file.getContentType();
+                if (!ALLOWED_TYPES.contains(contentType)) {
+                    throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
+                }
 
-		List<MultipartFile> valid = validated(dto.getFiles());
-		if (!valid.isEmpty()) {
-			int order = post.getFiles().stream()
-					.mapToInt(BoardMediaFileEntity::getSortOrder).max().orElse(-1) + 1;
-			LocalDateTime now = LocalDateTime.now();
-			for (MultipartFile f : valid) {
-				post.addFile(toFileEntity(f, order++, now));
-			}
-		}
-		post.setUpdatedAt(LocalDateTime.now());
-	}
+                String storedName = fileStorageService.store(file); // 디스크에 저장
 
-	/** 첨부 1개만 삭제 (파일 교체/제거용) */
-	@org.springframework.transaction.annotation.Transactional
-	public void deleteFile(Long postId, Long fileId) {
-		BoardMediaEntity post = getActive(postId);
-		post.getFiles().removeIf(f -> {
-			if (f.getId().equals(fileId)) {
-				storage.delete(f.getStoredName()); // 디스크 파일 제거
-				return true;                        // orphanRemoval 로 행 삭제
-			}
-			return false;
-		});
-	}
+                BoardMediaFileEntity fileEntity = BoardMediaFileEntity.builder()
+                        .originalName(file.getOriginalFilename())
+                        .storedName(storedName)
+                        .contentType(contentType)
+                        .mediaType(contentType.startsWith("image/") ? "IMAGE" : "VIDEO")
+                        .fileSize(file.getSize())
+                        .sortOrder(order)
+                        .createdAt(now)
+                        .build();
 
-	/** 게시글 소프트 삭제 (기록/파일은 남기고 목록에서만 숨김) */
+                post.addFile(fileEntity);
+                order++;
+            }
+        }
 
-	public void softDelete(Long id) {
-		getActive(id).setDeletedAt(LocalDateTime.now());
-	}
+        if (post.getFiles().isEmpty()) {
+            throw new IllegalArgumentException("파일을 최소 1개 첨부해 주세요.");
+        }
 
-	/** 목록 (뷰 DTO 로 변환) */
-	@org.springframework.transaction.annotation.Transactional(readOnly = true)
-	public Page<BoardMediaViewDTO> list(Long groupId, int page, int size) {
-		return boardRepository
-				.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId, PageRequest.of(page, size))
-				.map(BoardMediaViewDTO::from);
-	}
+        boardMediaRepository.save(post); // cascade 로 파일도 함께 저장
+        return post.getId();
+    }
 
-	@org.springframework.transaction.annotation.Transactional(readOnly = true)
-	public BoardMediaViewDTO getView(Long id) {
-		return BoardMediaViewDTO.from(getActive(id));
-	}
+    // ── 수정 : 제목/내용 변경 (+ 새 파일이 오면 뒤에 추가) ──
+    public void edit(Long id, String title, String content, List<MultipartFile> files) {
+        BoardMediaEntity post = getActivePost(id);
+        post.setTitle(title);
+        post.setContent(content);
+        post.setUpdatedAt(LocalDateTime.now());
 
-	// ── 파일 스트리밍 ──
-	@org.springframework.transaction.annotation.Transactional(readOnly = true)
-	public BoardMediaFileEntity getFile(Long fileId) {
-		return fileRepository.findById(fileId)
-				.orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
-	}
-	public Resource loadResource(BoardMediaFileEntity f) {
-		return storage.loadAsResource(f.getStoredName());
-	}
+        if (files != null) {
+            LocalDateTime now = LocalDateTime.now();
+            int order = post.getFiles().size(); // 기존 파일 뒤부터 순서 매김
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) {
+                    continue;
+                }
+                String contentType = file.getContentType();
+                if (!ALLOWED_TYPES.contains(contentType)) {
+                    throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
+                }
+                String storedName = fileStorageService.store(file);
 
-	// ── 내부 헬퍼 ──
-	private BoardMediaEntity getActive(Long id) {
-		return boardRepository.findByIdAndDeletedAtIsNull(id)
-				.orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));
-	}
+                BoardMediaFileEntity fileEntity = BoardMediaFileEntity.builder()
+                        .originalName(file.getOriginalFilename())
+                        .storedName(storedName)
+                        .contentType(contentType)
+                        .mediaType(contentType.startsWith("image/") ? "IMAGE" : "VIDEO")
+                        .fileSize(file.getSize())
+                        .sortOrder(order)
+                        .createdAt(now)
+                        .build();
 
-	/** 비어있지 않은 파일만 걸러 형식 검증 (저장 전에 전부 검사) */
-	private List<MultipartFile> validated(List<MultipartFile> files) {
-		List<MultipartFile> result = new ArrayList<>();
-		if (files == null) return result;
-		for (MultipartFile f : files) {
-			if (f == null || f.isEmpty()) continue;
-			String ct = f.getContentType();
-			if (ct == null || !ALLOWED.contains(ct)) {
-				throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + ct);
-			}
-			result.add(f);
-		}
-		return result;
-	}
+                post.addFile(fileEntity);
+                order++;
+            }
+        }
+        // @Transactional 안에서 값만 바꿔도 자동 저장되지만, 명확하게 저장 호출
+        boardMediaRepository.save(post);
+    }
 
-	private BoardMediaFileEntity toFileEntity(MultipartFile f, int order, LocalDateTime now) {
-		String ct = f.getContentType();
-		BoardMediaFileEntity fe = new BoardMediaFileEntity();
-		fe.setStoredName(storage.store(f));
-		fe.setOriginalName(f.getOriginalFilename());
-		fe.setContentType(ct);
-		fe.setMediaType(Objects.requireNonNull(ct).startsWith("image/") ? "IMAGE" : "VIDEO");
-		fe.setFileSize(f.getSize());
-		fe.setSortOrder(order);
-		fe.setCreatedAt(now);
-		return fe;
-	}
+    // ── 삭제 : 소프트 삭제(기록/파일은 남기고 목록에서만 숨김) ──
+    public void softDelete(Long id) {
+        BoardMediaEntity post = getActivePost(id);
+        post.setDeletedAt(LocalDateTime.now());
+        boardMediaRepository.save(post);
+    }
+
+    // ── 목록 조회 : 엔티티 → 화면용 DTO 로 변환 ──
+    @Transactional(readOnly = true)
+    public List<BoardMediaViewDTO> list(Long groupId) {
+        List<BoardMediaEntity> posts =
+                boardMediaRepository.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId);
+
+        List<BoardMediaViewDTO> result = new ArrayList<>();
+        for (BoardMediaEntity post : posts) {
+            result.add(toViewDTO(post));
+        }
+        return result;
+    }
+
+    // ── 파일 서빙 : 화면에서 이미지/영상을 불러올 때 ──
+    @Transactional(readOnly = true)
+    public BoardMediaFileEntity getFile(Long fileId) {
+        return boardMediaFileRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
+    }
+
+    public Resource loadResource(BoardMediaFileEntity file) {
+        return fileStorageService.loadAsResource(file.getStoredName());
+    }
+
+    // ── 내부 헬퍼 ──
+    private BoardMediaEntity getActivePost(Long id) {
+        return boardMediaRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));
+    }
+
+    private BoardMediaViewDTO toViewDTO(BoardMediaEntity post) {
+        return BoardMediaViewDTO.builder()
+                .id(post.getId())
+                .groupId(post.getGroupId())
+                .uploaderId(post.getUploaderId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .createdAt(post.getCreatedAt())
+                .fileCount(post.getFiles().size())
+                .files(new ArrayList<>(post.getFiles())) // 파일 목록 복사해서 담기
+                .build();
+    }
 }

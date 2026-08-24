@@ -5,38 +5,43 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+// 게시글 첨부 미디어 (board_media_files 테이블). 게시글 1개에 여러 개.
+@Entity
+@Table(name = "board_media_files")
 @Getter
 @Setter
-@Entity
-@Table(name = "board_media")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BoardMediaFileEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "board_id", nullable = false)
-	private BoardMediaEntity board;
+    // 어느 게시글의 첨부인지. LAZY = 필요할 때만 게시글을 불러옴.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "board_id", nullable = false)
+    private BoardMediaEntity board;
 
-	private String originalName;
+    @Column(name = "original_name")
+    private String originalName;      // 원본 파일명
 
-	@Column(nullable = false)
-	private String storedName;
+    @Column(name = "stored_name", nullable = false)
+    private String storedName;        // 저장된 파일명(UUID 등)
 
-	private String contentType;
+    @Column(name = "content_type")
+    private String contentType;       // MIME (image/png ...)
 
-	@Column(nullable = false, length = 20)
-	private String mediaType;      // "IMAGE" / "VIDEO"
+    @Column(name = "media_type", nullable = false, length = 20)
+    private String mediaType;         // "IMAGE" 또는 "VIDEO"
 
-	private Long fileSize;
+    @Column(name = "file_size")
+    private Long fileSize;
 
-	@Column(nullable = false)
-	private int sortOrder;         // 표시 순서 (0부터)
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder;        // 게시글 안에서의 표시 순서(0부터)
 
-	@Column(nullable = false)
-	private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }

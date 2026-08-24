@@ -2,40 +2,32 @@
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>미디어</title>
+    <title>미디어 (팬)</title>
 </head>
 <body>
-    <h1>미디어 (읽기 전용)</h1>
 
-    <p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
+<h1>미디어</h1>
 
-    <div th:each="m : ${list.content}">
-        <hr/>
-        <h3 th:text="${m.title}">제목</h3>
-        <p th:text="${m.content}">설명</p>
+<p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
 
-        <div>
-            <span th:each="f : ${m.files}">
-                <a th:href="@{/board/media/file/{id}(id=${f.id})}" target="_blank">
-                    <img th:if="${f.mediaType == 'IMAGE'}"
-                         th:src="@{/board/media/file/{id}(id=${f.id})}"
-                         th:alt="${f.originalName}" width="180"/>
-                    <video th:if="${f.mediaType == 'VIDEO'}"
-                           th:src="@{/board/media/file/{id}(id=${f.id})}"
-                           width="180" muted></video>
-                </a>
-            </span>
-        </div>
+<!-- 게시글 목록 -->
+<div th:each="post : ${list}">
+    <hr/>
+    <h3 th:text="${post.title}">제목</h3>
+    <p th:text="${post.content}">설명</p>
 
-        <small th:text="${#temporals.format(m.createdAt, 'yyyy-MM-dd')} + ' · 첨부 ' + ${m.fileCount} + '개'">날짜 · 개수</small>
-    </div>
-
-    <!-- 페이지네이션 -->
-    <div th:if="${list.totalPages > 1}">
-        <hr/>
-        <span th:each="i : ${#numbers.sequence(0, list.totalPages - 1)}">
-            <a th:href="@{/board/media(groupId=${groupId}, page=${i})}" th:text="${i + 1}">1</a>
+    <!-- 첨부파일들 (이미지/영상) -->
+    <div>
+        <span th:each="file : ${post.files}">
+            <img th:if="${file.mediaType == 'IMAGE'}"
+                 th:src="@{/board/media/file/{id}(id=${file.id})}" width="150"/>
+            <video th:if="${file.mediaType == 'VIDEO'}"
+                   th:src="@{/board/media/file/{id}(id=${file.id})}" width="150" controls></video>
         </span>
     </div>
+
+    <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
+</div>
+
 </body>
 </html>
