@@ -85,19 +85,31 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;		// 탈퇴(소프트 삭제) 처리 시각
 	
-	private User(String username, String password, String realName, String nickname, String email) {
+	private User(String username, String password, String realName, String nickname, String email, Role role) {
 		this.username = username;
 		this.password = password;
 		this.realName = realName;
 		this.nickname = nickname;
 		this.email	  = email;
-		this.role = Role.FAN;
+		this.role = role;
 		this.status = UserStatus.ACTIVE;
 	}
 	
 	// 공개 회원가입에서 쓰는 팩토리 - 선택 항목(gender/phone/birthDate/주소)은 나중에 마이페이지에서 채움
 	public static User createFan(String username, String encodedPassword, String realName, String nickname, String email) {
-		return new User(username, encodedPassword, realName, nickname, email);
+		return new User(username, encodedPassword, realName, nickname, email, Role.FAN);
+	}
+	
+	public static User createArtist(String username, String encodedPassword, String realName, String nickname, String email) {
+		return new User(username, encodedPassword, realName, nickname, email, Role.ARTIST);
+	}
+	
+	public static User createAgencyStaff(String username, String encodedPassword, String realName, String nickname, String email) {
+		return new User(username, encodedPassword, realName, nickname, email, Role.AGENCY);
+	}
+	
+	public static User createAdmin(String username, String encodedPassword, String realName, String nickname, String email) {
+		return new User(username, encodedPassword, realName, nickname, email, Role.ADMIN);
 	}
 	
 	@PrePersist
@@ -110,5 +122,13 @@ public class User {
 	@PreUpdate
 	public void preUpdate() {
 		this.updatedAt = LocalDateTime.now();
+	}
+	
+	public boolean isLoginable() {
+		return this.status == UserStatus.ACTIVE || this.status == UserStatus.DORMANT;
+	}
+	
+	public void recordLogin() {
+		this.lastLoginAt = LocalDateTime.now();
 	}
 }
