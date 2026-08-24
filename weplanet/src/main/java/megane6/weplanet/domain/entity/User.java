@@ -52,6 +52,9 @@ public class User {
 	
 	@Column(name = "phone_hash", length = 64)
 	private String phoneHash;	// 지금은 평문 단계라 사용 안 함, 암호화 붙일 때 채움
+
+	@Column(name = "phone_verified_at")
+	private LocalDateTime phoneVerifiedAt;	// 휴대폰 본인인증 완료 시각
 	
 	@Column(name = "birth_date")
 	private LocalDate birthDate;	// 본인인증
@@ -130,5 +133,9 @@ public class User {
 	
 	public void recordLogin() {
 		this.lastLoginAt = LocalDateTime.now();
+	}
+
+	public boolean isPhoneVerified() {
+		return this.phoneVerifiedAt != null;
 	}
 }
