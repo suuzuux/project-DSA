@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시판</title>
+</head>
+<body>
+
+<h1 th:text="${boardType} + ' 게시판'"></h1>
+
+<a th:href="@{/}">홈으로</a>
+
+<p>
+    정렬 :
+    <a th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}">최신순</a>
+    |
+    <a th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}">인기순</a>
+    (현재: <span th:text="${sort}"></span>)
+</p>
+
+<table border="1">
+    <tr>
+        <th>번호</th>
+        <th>제목</th>
+        <th>좋아요</th>
+        <th>작성일</th>
+    </tr>
+    <tr th:each="post : ${posts}">
+        <td th:text="${post.id}"></td>
+        <td><a th:href="@{/posts/detail/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
+        <td th:text="${post.likeCount}"></td>
+        <td th:text="${post.createdAt}"></td>
+    </tr>
+</table>
+
+<p th:if="${#lists.isEmpty(posts)}">등록된 게시글이 없습니다.</p>
+
+</body>
+</html>

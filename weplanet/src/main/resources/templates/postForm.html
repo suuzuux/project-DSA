@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>글쓰기</title>
+</head>
+<body>
+
+<h1 th:text="${boardType} + ' 게시판 글쓰기'"></h1>
+
+<form th:action="@{/posts/{boardType}/new(boardType=${boardType})}" method="post">
+    <p>
+        테스트 작성자
+        <select name="testUserId">
+            <option value="1">1번 - 팬 계정</option>
+            <option value="2">2번 - 아티스트 계정</option>
+        </select>
+    </p>
+    <p>제목 <input type="text" name="title"></p>
+    <p>내용 <textarea name="content"></textarea></p>
+    <p><input type="submit" value="작성"></p>
+</form>
+
+</body>
+</html>
