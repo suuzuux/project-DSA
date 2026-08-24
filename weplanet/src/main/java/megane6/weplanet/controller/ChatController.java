@@ -116,6 +116,7 @@ public class ChatController {
             map.put("hasConversation", item.isHasConversation());
             map.put("lastMessage", item.getLastMessage());
             map.put("lastMessageTime", item.getLastMessageTime() != null ? item.getLastMessageTime().toString() : null);
+            map.put("membershipExpired", item.isMembershipExpired());
             return map;
         }).toList();
     }
@@ -223,6 +224,7 @@ public class ChatController {
         result.put("artistNickname", artist.getNickname());
         result.put("remaining", chatQuotaService.getRemaining(fan, artist));
         result.put("messages", messages);
+        result.put("membershipExpired", chatMessageService.isMembershipExpired(fan, artist));
         return result;
     }
 

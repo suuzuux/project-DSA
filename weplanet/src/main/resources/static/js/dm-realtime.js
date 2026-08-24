@@ -57,7 +57,7 @@
         btn.className = "dm-list-item";
         btn.setAttribute("data-open-room", item.artistId);
         btn.setAttribute("data-artist-id", item.artistId);
-        btn.setAttribute("data-room-expired", "false");
+        btn.setAttribute("data-room-expired", item.membershipExpired ? "true" : "false");
 
         const avatarWrap = document.createElement("div");
         avatarWrap.className = "dm-list-item__avatar";
@@ -197,6 +197,13 @@
                     data.messages.forEach(function (m) {
                         appendBubble(messages, m);
                     });
+                }
+
+                // 와이어프레임 19번: 서버가 최종 판단한 만료 여부로 배너를 확실하게 맞춰줌
+                // (shell.js가 클릭 시점에 이미 한 번 처리해주지만, 서버 응답이 더 정확한 최신 값이라 덮어씀)
+                const banner = document.getElementById("dmExpiredBanner");
+                if (banner) {
+                    banner.classList.toggle("hidden", !data.membershipExpired);
                 }
 
                 unsubscribeAll();

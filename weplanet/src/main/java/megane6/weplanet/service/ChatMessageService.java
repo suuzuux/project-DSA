@@ -3,9 +3,11 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.DmInboxItem;
 import megane6.weplanet.domain.entity.ChatMessage;
+import megane6.weplanet.domain.entity.Membership;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.ChatMessageRepository;
+import megane6.weplanet.repository.MembershipRepository;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
+    private final MembershipRepository membershipRepository;
 
     // 채팅 메시지 저장 - fan이 null이면 아티스트가 전체 팬에게 보낸 방송 메시지
     public ChatMessage saveMessage(User artist, User fan, User sender, String content) {
@@ -61,6 +64,7 @@ public class ChatMessageService {
                     .lastMessage(message.getContent())
                     .lastMessageTime(message.getCreatedAt())
                     .hasConversation(true)
+                    .membershipExpired(isMembershipExpired(fan, message.getArtist()))
                     .build());
         }
 
@@ -84,5 +88,14 @@ public class ChatMessageService {
     // DM 방을 열었을 때 지난 대화 이력을 보여주기 위한 조회
     public List<ChatMessage> getConversation(User artist, User fan) {
         return chatMessageRepository.findByArtistAndFanOrderByCreatedAtAsc(artist, fan);
+    }
+
+    // 와이어프레임 19번: 이 팬의 이 아티스트 멤버십이 만료됐는지 확인.
+    // 멤버십 기록 자체가 없으면(한 번도 가입한 적 없으면) "만료됨"으로 취급하지 않음 - 애초에 구독한 적이 없는 것과
+    // "구독했다가 끝난 것"은 다른 의미라, 배너는 실제로 만료된 경우에만 보여주는 게 맞다고 판단함
+    public boolean isMembershipExpired(User fan, User artist) {
+        return membershipRepository.findByFanAndArtist(fan, artist)
+                .map(Membership::isExpired)
+                .orElse(false);
     }
 }
