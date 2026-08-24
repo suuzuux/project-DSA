@@ -40,7 +40,10 @@
         </ul>
     </div>
 
-    <p class="post-card__time" style="margin-top:12px;">작성일: <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></span></p>
+    <p class="post-card__time" style="margin-top:12px;"
+       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}">
+        작성일: <span th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+    </p>
 
     <div class="post-card__actions" style="flex-wrap:wrap;">
         <a class="btn btn--ghost btn--sm" th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
@@ -75,7 +78,7 @@
                 <option value="1">1번 - 팬 계정</option>
                 <option value="2">2번 - 아티스트 계정</option>
             </select>
-            <button id="likeButton" type="button" class="btn btn--accent btn--sm">♥ <b id="likeCount" th:text="${post.likeCount}"></b></button>
+            <button id="likeButton" type="button" class="btn btn--accent btn--sm">♥ <b id="likeCount" th:text="${post.likeCount > 0 ? post.likeCount : ''}"></b></button>
         </span>
     </div>
 
@@ -98,7 +101,7 @@
                 return response.json(); // 서버가 돌려준 응답을 JSON 객체로 변환
             })
             .then(function (data) {
-                document.getElementById('likeCount').textContent = data.likeCount;
+                document.getElementById('likeCount').textContent = data.likeCount > 0 ? data.likeCount : '';
             });
     });
 
@@ -156,48 +159,110 @@
 -->
 <div id="commentSection" th:fragment="commentsFragment">
     <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post"
-          style="display:flex;gap:8px;margin:12px 0 16px;">
+          style="display:flex;gap:8px;margin:12px 0 4px;">
         <select name="testUserId" class="form-select" style="width:auto;min-height:40px;">
             <option value="1">1번 - 팬 계정</option>
             <option value="2">2번 - 아티스트 계정</option>
         </select>
-        <input type="text" name="content" class="form-input" placeholder="댓글을 입력하세요" style="min-height:40px;">
+        <input type="text" name="content" id="commentContentInput" class="form-input" maxlength="100"
+               placeholder="댓글을 입력하세요" style="min-height:40px;">
         <button type="submit" class="btn btn--primary btn--sm">댓글 작성</button>
     </form>
+    <p class="text-xs text-muted" style="text-align:right;margin-bottom:16px;">
+        <span id="commentCharCount">0</span> / 100
+    </p>
+    <script>
+        // 댓글 입력창 글자수 카운터 (댓글 목록이 fetch로 통째로 바뀔 때마다 이 script도 같이 다시 실행됨)
+        (function () {
+            const input = document.getElementById('commentContentInput');
+            const counter = document.getElementById('commentCharCount');
+            if (input && counter) {
+                input.addEventListener('input', function () {
+                    counter.textContent = input.value.length;
+                });
+            }
+        })();
+    </script>
 
-    <div class="table-wrap" th:if="${not #lists.isEmpty(comments)}">
-        <table class="data-table">
-            <tr>
-                <th>작성자</th>
-                <th>내용</th>
-                <th>작성일</th>
-                <th>삭제</th>
-                <th>신고</th>
-            </tr>
-            <tr th:each="comment : ${comments}">
-                <td th:text="${comment.author.nickname}"></td>
-                <td th:text="${comment.content}"></td>
-                <td th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
-                <td>
+    <!-- 아티스트 댓글 - 와이어프레임: 항상 최상단 별도 박스, 화살표로 접기/펼치기 -->
+    <div th:if="${not #lists.isEmpty(artistComments)}" style="margin-bottom:16px;">
+        <div class="flex-between" style="cursor:pointer;" onclick="document.getElementById('artistCommentBox').classList.toggle('is-collapsed'); this.querySelector('.collapse-arrow').textContent = this.querySelector('.collapse-arrow').textContent === '▲' ? '▼' : '▲';">
+            <strong class="text-sm">아티스트 댓글 <span th:text="${#lists.size(artistComments)}"></span></strong>
+            <span class="collapse-arrow text-sm">▲</span>
+        </div>
+        <div id="artistCommentBox" class="stack" style="margin-top:8px;">
+            <div class="comment-item" th:each="comment : ${artistComments}"
+                 style="background:var(--wp-brand-soft);border-radius:8px;padding:10px 12px;">
+                <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+                <div class="comment-item__body">
+                    <div class="comment-item__meta">
+                        <strong th:text="${comment.author.nickname}"></strong> <span class="badge-verified">✓</span>
+                        · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                                th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                    </div>
+                    <p class="comment-item__text" th:text="${comment.content}"></p>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                        <form class="comment-delete-form" style="display:flex;gap:4px;"
+                              th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
+                              method="post">
+                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
+                                <option value="1">1번(팬)</option>
+                                <option value="2">2번(아티스트)</option>
+                            </select>
+                            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        </form>
+                        <form class="comment-report-form" style="display:flex;gap:4px;"
+                              th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+                              method="post">
+                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
+                                <option value="1">1번(팬)</option>
+                                <option value="2">2번(아티스트)</option>
+                            </select>
+                            <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
+                                <option value="SPAM">스팸</option>
+                                <option value="ABUSE">욕설/혐오</option>
+                                <option value="SEXUAL">음란물</option>
+                                <option value="ETC">기타</option>
+                            </select>
+                            <button type="submit" class="btn btn--ghost btn--sm">신고</button>
+                        </form>
+                        <b class="comment-report-msg text-xs"></b>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 전체 댓글 (아티스트 댓글 제외) -->
+    <strong class="text-sm">전체 댓글 <span th:text="${#lists.size(otherComments)}"></span></strong>
+    <div class="stack" style="margin-top:8px;" th:if="${not #lists.isEmpty(otherComments)}">
+        <div class="comment-item" th:each="comment : ${otherComments}">
+            <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+            <div class="comment-item__body">
+                <div class="comment-item__meta">
+                    <strong th:text="${comment.author.nickname}"></strong>
+                    · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                            th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                </div>
+                <p class="comment-item__text" th:text="${comment.content}"></p>
+                <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
                     <form class="comment-delete-form" style="display:flex;gap:4px;"
                           th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
                           method="post">
-                        <select name="testUserId" class="form-select" style="min-height:30px;padding:2px 6px;">
+                        <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
                             <option value="1">1번(팬)</option>
                             <option value="2">2번(아티스트)</option>
                         </select>
                         <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
                     </form>
-                </td>
-                <td>
                     <form class="comment-report-form" style="display:flex;gap:4px;"
                           th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
                           method="post">
-                        <select name="testUserId" class="form-select" style="min-height:30px;padding:2px 6px;">
+                        <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
                             <option value="1">1번(팬)</option>
                             <option value="2">2번(아티스트)</option>
                         </select>
-                        <select name="reason" class="form-select" style="min-height:30px;padding:2px 6px;">
+                        <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
                             <option value="SPAM">스팸</option>
                             <option value="ABUSE">욕설/혐오</option>
                             <option value="SEXUAL">음란물</option>
@@ -206,13 +271,18 @@
                         <button type="submit" class="btn btn--ghost btn--sm">신고</button>
                     </form>
                     <b class="comment-report-msg text-xs"></b>
-                </td>
-            </tr>
-        </table>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <p th:if="${#lists.isEmpty(comments)}" class="text-muted"><i>등록된 댓글이 없습니다.</i></p>
+    <p th:if="${#lists.isEmpty(otherComments)}" class="text-muted" style="margin-top:8px;"><i>등록된 댓글이 없습니다.</i></p>
 </div>
+
+<style>
+    /* 아티스트 댓글 접기 상태 - JS가 이 클래스를 토글해서 여닫음 */
+    #artistCommentBox.is-collapsed { display: none; }
+</style>
 
 <script>
     // 댓글 작성 폼과 댓글 삭제 폼은 여러 개(댓글 개수만큼) 반복해서 화면에 생기고,

@@ -23,6 +23,11 @@ public class CommentService {
         return commentRepository.findByPostOrderByCreatedAtAsc(post);
     }
 
+    // 댓글 개수만 조회 (게시글 목록 카드에서 "댓글 0개면 숫자 자체를 숨김" 처리용)
+    public long getCommentCount(Post post) {
+        return commentRepository.countByPost(post);
+    }
+
     // 댓글 단건 조회 (없으면 예외) - 댓글 신고 기능에서 사용
     public Comment getComment(Long commentId) {
         return commentRepository.findById(commentId)

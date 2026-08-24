@@ -23,8 +23,8 @@
         <button id="aiFanButton" type="button" class="btn btn--soft btn--sm">AI 팬 메시지 생성 (시연용)</button>
     </div>
 
-    <div id="messages" class="stack" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
-         background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;"></div>
+    <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
+         background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;"></div>
 
     <!-- hidden : CSS의 display:none이 아니라, 순수 HTML 속성으로 태그를 숨기는 방법 -->
     <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
@@ -35,15 +35,40 @@
     </div>
 </div>
 
+<!-- 와이어프레임 스타일 채팅 말풍선 - 내(아티스트)가 보낸 메시지는 오른쪽(민트), 팬이 보낸 메시지는 왼쪽(연회색) -->
+<style>
+    .chat-row { display: flex; gap: 8px; max-width: 80%; }
+    .chat-row--me { align-self: flex-end; flex-direction: row-reverse; }
+    .chat-row--other { align-self: flex-start; }
+    .chat-bubble { padding: 8px 12px; border-radius: 14px; font-size: var(--wp-fs-sm); }
+    .chat-row--me .chat-bubble { background: var(--wp-brand); color: #fff; border-bottom-right-radius: 4px; }
+    .chat-row--other .chat-bubble { background: var(--wp-paper); color: var(--wp-ink); border-bottom-left-radius: 4px; }
+    .chat-meta { font-size: 11px; color: var(--wp-muted); margin-bottom: 3px; }
+    .chat-row--me .chat-meta { text-align: right; }
+</style>
+
 <script th:inline="javascript">
     const artistId = /*[[${artistId}]]*/ 0;
 
     const socket = new SockJS('/ws-chat');
     const stompClient = Stomp.over(socket);
 
+    // 내(아티스트)가 보낸 메시지는 오른쪽, 팬이 보낸 메시지는 왼쪽 말풍선으로 그림
     function appendMessage(data) {
         const div = document.getElementById('messages');
-        div.innerHTML += '<p><b>' + data.senderNickname + '</b> : ' + data.content + '</p>';
+        const isMe = data.senderId === artistId;
+        const time = (data.createdAt.split('T')[1] || '').slice(0, 5);
+
+        const row = document.createElement('div');
+        row.className = 'chat-row ' + (isMe ? 'chat-row--me' : 'chat-row--other');
+        row.innerHTML =
+            '<div>' +
+            '<div class="chat-meta">' + data.senderNickname + ' · ' + time + '</div>' +
+            '<div class="chat-bubble"></div>' +
+            '</div>';
+        row.querySelector('.chat-bubble').textContent = data.content;
+
+        div.appendChild(row);
         div.scrollTop = div.scrollHeight;
     }
 
