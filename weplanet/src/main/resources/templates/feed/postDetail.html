@@ -3,85 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <title>게시글 상세</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
 </head>
 <body>
 
-<h1 th:text="${post.title}"></h1>
+<header class="site-header">
+    <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+</header>
 
-<!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
-<div id="contentViewer"></div>
+<div class="container container--narrow section">
 
-<!-- 첨부파일 목록 - 이미지 파일은 화면에 바로 보여주고, 그 외 파일(pdf, txt 등)은 다운로드 링크로 보여줌 -->
-<div th:if="${not #lists.isEmpty(attachments)}">
-    <hr>
-    <h4>첨부파일</h4>
-    <ul>
-        <li th:each="file : ${attachments}">
-            <!-- th:if / th:unless : PostAttachment.isImage()가 true/false냐에 따라 둘 중 하나만 화면에 그려짐 -->
-            <span th:if="${file.image}">
-                <img th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}" width="300">
-            </span>
-            <span th:unless="${file.image}">
-                <a th:href="@{'/uploads/' + ${file.storedName}}" th:text="${file.originalName}" download></a>
-            </span>
-        </li>
-    </ul>
-</div>
+<article class="post-card">
+    <h1 class="post-card__name" style="font-size:var(--wp-fs-xl);margin-bottom:12px;" th:text="${post.title}"></h1>
 
-<hr>
-<p>작성일: <span th:text="${post.createdAt}"></span></p>
+    <!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
+    <div id="contentViewer" class="post-card__body"></div>
 
-<!--
-    아래 표(table)는 오직 "버튼들을 한 줄에 나란히 보기 좋게 배치"하기 위한 용도로만 씀.
-    (CSS를 안 쓰기로 했기 때문에, 옛날 방식대로 <table>로 여러 요소를 가로로 줄 세움)
--->
-<table border="1" cellpadding="6" cellspacing="0">
-    <tr>
-        <td><a th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a></td>
+    <!-- 첨부파일 목록 - 이미지 파일은 화면에 바로 보여주고, 그 외 파일(pdf, txt 등)은 다운로드 링크로 보여줌 -->
+    <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media">
+        <h4 class="text-sm text-muted" style="margin:12px 0 8px;">첨부파일</h4>
+        <ul class="stack">
+            <li th:each="file : ${attachments}">
+                <!-- th:if / th:unless : PostAttachment.isImage()가 true/false냐에 따라 둘 중 하나만 화면에 그려짐 -->
+                <span th:if="${file.image}">
+                    <img th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}" width="300">
+                </span>
+                <span th:unless="${file.image}">
+                    <a class="translate-link" th:href="@{'/uploads/' + ${file.storedName}}" th:text="${file.originalName}" download></a>
+                </span>
+            </li>
+        </ul>
+    </div>
 
-        <td>
-            <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post">
-                <select name="testUserId">
-                    <option value="1">1번(팬)으로 삭제 시도</option>
-                    <option value="2">2번(아티스트)으로 삭제 시도</option>
-                </select>
-                <button type="submit">게시글 삭제</button>
-            </form>
-        </td>
+    <p class="post-card__time" style="margin-top:12px;">작성일: <span th:text="${post.createdAt}"></span></p>
 
-        <td>
-            <form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post">
-                <select name="testUserId">
-                    <option value="1">1번(팬)으로 신고</option>
-                    <option value="2">2번(아티스트)으로 신고</option>
-                </select>
-                <select name="reason">
-                    <option value="SPAM">스팸</option>
-                    <option value="ABUSE">욕설/혐오</option>
-                    <option value="SEXUAL">음란물</option>
-                    <option value="ETC">기타</option>
-                </select>
-                <button type="submit">게시글 신고</button>
-            </form>
-            <b id="postReportMsg"></b>
-        </td>
+    <div class="post-card__actions" style="flex-wrap:wrap;">
+        <a class="btn btn--ghost btn--sm" th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
 
-        <td>
-            <button id="summarizeButton" type="button">AI 요약보기</button>
-        </td>
+        <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
+            <select name="testUserId" class="form-select" style="min-height:34px;padding:4px 8px;">
+                <option value="1">1번(팬)으로 삭제 시도</option>
+                <option value="2">2번(아티스트)으로 삭제 시도</option>
+            </select>
+            <button type="submit" class="btn btn--ghost btn--sm">게시글 삭제</button>
+        </form>
 
-        <td>
-            <select id="likeUserId">
+        <form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
+            <select name="testUserId" class="form-select" style="min-height:34px;padding:4px 8px;">
+                <option value="1">1번(팬)으로 신고</option>
+                <option value="2">2번(아티스트)으로 신고</option>
+            </select>
+            <select name="reason" class="form-select" style="min-height:34px;padding:4px 8px;">
+                <option value="SPAM">스팸</option>
+                <option value="ABUSE">욕설/혐오</option>
+                <option value="SEXUAL">음란물</option>
+                <option value="ETC">기타</option>
+            </select>
+            <button type="submit" class="btn btn--ghost btn--sm">게시글 신고</button>
+        </form>
+        <b id="postReportMsg" class="text-xs"></b>
+
+        <button id="summarizeButton" type="button" class="btn btn--soft btn--sm">AI 요약보기</button>
+
+        <span style="display:flex;gap:6px;align-items:center;">
+            <select id="likeUserId" class="form-select" style="min-height:34px;padding:4px 8px;">
                 <option value="1">1번 - 팬 계정</option>
                 <option value="2">2번 - 아티스트 계정</option>
             </select>
-            <button id="likeButton" type="button">좋아요 (<b id="likeCount" th:text="${post.likeCount}"></b>)</button>
-        </td>
-    </tr>
-</table>
+            <button id="likeButton" type="button" class="btn btn--accent btn--sm">♥ <b id="likeCount" th:text="${post.likeCount}"></b></button>
+        </span>
+    </div>
 
-<div id="summaryArea"></div>
+    <div id="summaryArea"></div>
+</article>
 
 <script th:inline="javascript">
     // Thymeleaf가 이 부분(/*[[${post.id}]]*/)을 서버에서 실제 게시글 번호로 바꿔치기해줌.
@@ -149,68 +148,70 @@
     });
 </script>
 
-<hr>
-<h3>댓글</h3>
+<h3 class="section__title" style="margin-top:24px;font-size:var(--wp-fs-lg);">댓글</h3>
 
 <!--
     이 div 안쪽(댓글 작성 폼 + 댓글 목록 전체)이 "commentsFragment"라는 이름표가 붙은 부분임.
     댓글을 쓰거나 지우면, 페이지 전체가 아니라 이 부분만 새로 받아와서 통째로 교체함
 -->
 <div id="commentSection" th:fragment="commentsFragment">
-    <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
-        <select name="testUserId">
+    <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post"
+          style="display:flex;gap:8px;margin:12px 0 16px;">
+        <select name="testUserId" class="form-select" style="width:auto;min-height:40px;">
             <option value="1">1번 - 팬 계정</option>
             <option value="2">2번 - 아티스트 계정</option>
         </select>
-        <input type="text" name="content" placeholder="댓글을 입력하세요">
-        <button type="submit">댓글 작성</button>
+        <input type="text" name="content" class="form-input" placeholder="댓글을 입력하세요" style="min-height:40px;">
+        <button type="submit" class="btn btn--primary btn--sm">댓글 작성</button>
     </form>
 
-    <table border="1" cellpadding="6" cellspacing="0" th:if="${not #lists.isEmpty(comments)}">
-        <tr>
-            <th>작성자</th>
-            <th>내용</th>
-            <th>작성일</th>
-            <th>삭제</th>
-            <th>신고</th>
-        </tr>
-        <tr th:each="comment : ${comments}">
-            <td th:text="${comment.author.nickname}"></td>
-            <td th:text="${comment.content}"></td>
-            <td th:text="${comment.createdAt}"></td>
-            <td>
-                <form class="comment-delete-form"
-                      th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
-                      method="post">
-                    <select name="testUserId">
-                        <option value="1">1번(팬)</option>
-                        <option value="2">2번(아티스트)</option>
-                    </select>
-                    <button type="submit">삭제</button>
-                </form>
-            </td>
-            <td>
-                <form class="comment-report-form"
-                      th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
-                      method="post">
-                    <select name="testUserId">
-                        <option value="1">1번(팬)</option>
-                        <option value="2">2번(아티스트)</option>
-                    </select>
-                    <select name="reason">
-                        <option value="SPAM">스팸</option>
-                        <option value="ABUSE">욕설/혐오</option>
-                        <option value="SEXUAL">음란물</option>
-                        <option value="ETC">기타</option>
-                    </select>
-                    <button type="submit">신고</button>
-                </form>
-                <b class="comment-report-msg"></b>
-            </td>
-        </tr>
-    </table>
+    <div class="table-wrap" th:if="${not #lists.isEmpty(comments)}">
+        <table class="data-table">
+            <tr>
+                <th>작성자</th>
+                <th>내용</th>
+                <th>작성일</th>
+                <th>삭제</th>
+                <th>신고</th>
+            </tr>
+            <tr th:each="comment : ${comments}">
+                <td th:text="${comment.author.nickname}"></td>
+                <td th:text="${comment.content}"></td>
+                <td th:text="${comment.createdAt}"></td>
+                <td>
+                    <form class="comment-delete-form" style="display:flex;gap:4px;"
+                          th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
+                          method="post">
+                        <select name="testUserId" class="form-select" style="min-height:30px;padding:2px 6px;">
+                            <option value="1">1번(팬)</option>
+                            <option value="2">2번(아티스트)</option>
+                        </select>
+                        <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                    </form>
+                </td>
+                <td>
+                    <form class="comment-report-form" style="display:flex;gap:4px;"
+                          th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+                          method="post">
+                        <select name="testUserId" class="form-select" style="min-height:30px;padding:2px 6px;">
+                            <option value="1">1번(팬)</option>
+                            <option value="2">2번(아티스트)</option>
+                        </select>
+                        <select name="reason" class="form-select" style="min-height:30px;padding:2px 6px;">
+                            <option value="SPAM">스팸</option>
+                            <option value="ABUSE">욕설/혐오</option>
+                            <option value="SEXUAL">음란물</option>
+                            <option value="ETC">기타</option>
+                        </select>
+                        <button type="submit" class="btn btn--ghost btn--sm">신고</button>
+                    </form>
+                    <b class="comment-report-msg text-xs"></b>
+                </td>
+            </tr>
+        </table>
+    </div>
 
-    <p th:if="${#lists.isEmpty(comments)}"><i>등록된 댓글이 없습니다.</i></p>
+    <p th:if="${#lists.isEmpty(comments)}" class="text-muted"><i>등록된 댓글이 없습니다.</i></p>
 </div>
 
 <script>
@@ -261,8 +262,9 @@
     });
 </script>
 
-<hr>
-<p><a th:href="@{/}">&lt;&lt; 홈으로</a></p>
+<p style="margin-top:20px;"><a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a></p>
+
+</div>
 
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 <script th:inline="javascript">

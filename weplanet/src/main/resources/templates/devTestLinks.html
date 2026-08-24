@@ -3,34 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <title>화평님 테스트 링크 모음</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
 <body>
 
-<h1>테스트 링크 모음 (개인 개발용)</h1>
-<p>이 페이지는 다른 팀원 화면과 무관한 개인 테스트용입니다. 병합 충돌 걱정 없이 자유롭게 수정하세요.</p>
+<header class="site-header">
+    <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+</header>
 
-<h2>게시판 (FEED)</h2>
-<ul>
-    <li><a th:href="@{/posts/fan}">팬 게시판</a></li>
-    <li><a th:href="@{/posts/artist}">아티스트 게시판</a></li>
-    <li><a th:href="@{/posts/fan/new}">팬 게시판 글쓰기</a></li>
-    <li><a th:href="@{/posts/artist/new}">아티스트 게시판 글쓰기</a></li>
-</ul>
+<div class="container container--narrow section">
+    <h1 class="section__title">테스트 링크 모음 (개인 개발용)</h1>
+    <p class="text-muted" style="margin:8px 0 20px;">이 페이지는 다른 팀원 화면과 무관한 개인 테스트용입니다. 병합 충돌 걱정 없이 자유롭게 수정하세요.</p>
 
-<h2>실시간 채팅 (CHAT)</h2>
-<ul>
-    <li><a th:href="@{/chat/room/artist(artistId=2)}">아티스트(2번) 채팅방 화면</a></li>
-    <li><a th:href="@{/chat/room/fan(artistId=2,fanId=1)}">팬(1번) 채팅방 화면</a></li>
-    <li><a th:href="@{/chat/admin/keywords(testUserId=3)}">금칙어 관리 (관리자)</a></li>
-</ul>
+    <div class="section__head"><h3 class="section__title" style="font-size:var(--wp-fs-md);">게시판 (FEED)</h3></div>
+    <div class="stack" style="margin-bottom:24px;">
+        <a class="rising-card" th:href="@{/posts/fan}"><div class="rising-card__info"><strong>팬 게시판</strong></div></a>
+        <a class="rising-card" th:href="@{/posts/artist}"><div class="rising-card__info"><strong>아티스트 게시판</strong></div></a>
+        <a class="rising-card" th:href="@{/posts/fan/new}"><div class="rising-card__info"><strong>팬 게시판 글쓰기</strong></div></a>
+        <a class="rising-card" th:href="@{/posts/artist/new}"><div class="rising-card__info"><strong>아티스트 게시판 글쓰기</strong></div></a>
+    </div>
 
-<h2>테스트 계정 참고</h2>
-<ul>
-    <li>1번 - 팬 (testuser)</li>
-    <li>2번 - 아티스트 (testartist)</li>
-    <li>3번 - 관리자 (testadmin)</li>
-    <li>4번 - AI팬 봇 (aifan_bot)</li>
-</ul>
+    <div class="section__head"><h3 class="section__title" style="font-size:var(--wp-fs-md);">실시간 채팅 (CHAT)</h3></div>
+    <div class="stack" style="margin-bottom:24px;">
+        <a class="rising-card" th:href="@{/chat/room/artist(artistId=2)}"><div class="rising-card__info"><strong>아티스트(2번) 채팅방 화면</strong></div></a>
+        <a class="rising-card" th:href="@{/chat/room/fan(artistId=2,fanId=1)}"><div class="rising-card__info"><strong>팬(1번) 채팅방 화면</strong></div></a>
+        <a class="rising-card" th:href="@{/chat/admin/keywords(testUserId=3)}"><div class="rising-card__info"><strong>금칙어 관리 (관리자)</strong></div></a>
+    </div>
+
+    <div class="section__head"><h3 class="section__title" style="font-size:var(--wp-fs-md);">테스트 계정 참고</h3></div>
+    <ul class="stack" style="font-size:var(--wp-fs-sm);color:var(--wp-ink-soft);">
+        <li>1번 - 팬 (testuser)</li>
+        <li>2번 - 아티스트 (testartist)</li>
+        <li>3번 - 관리자 (testadmin)</li>
+        <li>4번 - AI팬 봇 (aifan_bot)</li>
+    </ul>
+</div>
 
 </body>
 </html>

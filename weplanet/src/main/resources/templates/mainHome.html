@@ -3,36 +3,60 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
 <body>
-<h1>WePlanet</h1>
 
-<div>
-    <span sec:authorize="isAnonymous()">
-        <a th:href="@{/signup}">회원가입</a>
-        <a th:href="@{/login}">로그인</a>
-    </span>
+<header class="site-header">
+    <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
 
-    <span sec:authorize="isAuthenticated()">
-        <span sec:authentication="name">사용자</span>님 환영합니다
+    <div class="header-actions">
+        <span sec:authorize="isAnonymous()">
+            <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
+            <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+        </span>
 
-        <form th:action="@{/logout}" method="post" style="display:inline;">
-            <button type="submit">로그아웃</button>
-        </form>
-    </span>
+        <span sec:authorize="isAuthenticated()" style="display:flex;align-items:center;gap:10px;">
+            <span sec:authentication="name" style="font-weight:600;font-size:var(--wp-fs-sm);">사용자</span>님 환영합니다
+            <form th:action="@{/logout}" method="post" style="display:inline;">
+                <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+            </form>
+        </span>
+    </div>
+</header>
+
+<div class="container section">
+    <div class="section__head">
+        <h2 class="section__title">게시판</h2>
+    </div>
+    <div class="grid-2">
+        <a class="rising-card" th:href="@{/posts/fan}">
+            <div class="rising-card__info">
+                <strong>팬 게시판</strong>
+                <span>팬들이 남긴 이야기 보기</span>
+            </div>
+        </a>
+        <a class="rising-card" th:href="@{/posts/artist}">
+            <div class="rising-card__info">
+                <strong>아티스트 게시판</strong>
+                <span>아티스트 소식 보기</span>
+            </div>
+        </a>
+    </div>
+
+    <div class="section__head" style="margin-top:24px;">
+        <h3 class="section__title" style="font-size:var(--wp-fs-md);">글쓰기</h3>
+    </div>
+    <div style="display:flex;gap:10px;">
+        <a class="btn btn--soft btn--sm" th:href="@{/posts/fan/new}">팬 게시판 글쓰기</a>
+        <a class="btn btn--soft btn--sm" th:href="@{/posts/artist/new}">아티스트 게시판 글쓰기</a>
+    </div>
 </div>
-
-<ul>
-    <li><a th:href="@{/posts/fan}">팬 게시판</a></li>
-    <li><a th:href="@{/posts/artist}">아티스트 게시판</a></li>
-</ul>
-
-<h3>글쓰기</h3>
-<ul>
-    <li><a th:href="@{/posts/fan/new}">팬 게시판 글쓰기</a></li>
-    <li><a th:href="@{/posts/artist/new}">아티스트 게시판 글쓰기</a></li>
-</ul>
 
 </body>
 </html>

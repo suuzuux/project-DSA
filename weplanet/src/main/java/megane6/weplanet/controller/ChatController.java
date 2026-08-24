@@ -83,7 +83,7 @@ public class ChatController {
         model.addAttribute("fanId", fanId);
         model.addAttribute("remaining", chatQuotaService.getRemaining(fan, artist));
 
-        return "fanChatRoom";
+        return "chat/fanChatRoom";
     }
 
     // 아티스트 전용 채팅방 화면 (CHAT-02) - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독하게 됨
@@ -93,7 +93,7 @@ public class ChatController {
             Model model
     ) {
         model.addAttribute("artistId", artistId);
-        return "artistChatRoom";
+        return "chat/artistChatRoom";
     }
 
     /**
@@ -187,7 +187,7 @@ public class ChatController {
         model.addAttribute("keywords", chatFilterService.getAllKeywords());
         model.addAttribute("testUserId", testUserId);
 
-        return "keywordManage";
+        return "chat/keywordManage";
     }
 
     // 금칙어 등록 - fetch로 온 요청이면 목록 부분(fragment)만 새로 그려서 페이지 새로고침 없이 갱신
@@ -206,7 +206,7 @@ public class ChatController {
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("keywords", chatFilterService.getAllKeywords());
             model.addAttribute("testUserId", testUserId);
-            return "keywordManage :: keywordListFragment";
+            return "chat/keywordManage :: keywordListFragment";
         }
 
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
@@ -228,7 +228,7 @@ public class ChatController {
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("keywords", chatFilterService.getAllKeywords());
             model.addAttribute("testUserId", testUserId);
-            return "keywordManage :: keywordListFragment";
+            return "chat/keywordManage :: keywordListFragment";
         }
 
         return "redirect:/chat/admin/keywords?testUserId=" + testUserId;

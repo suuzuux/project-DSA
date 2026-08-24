@@ -3,32 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <title>아티스트 채팅방</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
 
-<h1>내 채팅방 (아티스트 화면)</h1>
+<header class="site-header">
+    <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+</header>
 
-<p>
-    <button id="aiFanButton" type="button">AI 팬 메시지 생성 (시연용)</button>
-</p>
-<hr>
+<div class="container container--narrow section">
+    <div class="section__head">
+        <h1 class="section__title">내 채팅방 (아티스트 화면)</h1>
+        <button id="aiFanButton" type="button" class="btn btn--soft btn--sm">AI 팬 메시지 생성 (시연용)</button>
+    </div>
 
-<!-- 표(table) 하나로 감싸서 대화 내용이 담기는 상자처럼 보이게 함 (CSS 없이 테두리를 만드는 방법) -->
-<table border="1" cellpadding="8" cellspacing="0" width="100%">
-    <tr>
-        <td>
-            <div id="messages"></div>
-        </td>
-    </tr>
-</table>
+    <div id="messages" class="stack" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
+         background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;"></div>
 
-<!-- hidden : CSS의 display:none이 아니라, 순수 HTML 속성으로 태그를 숨기는 방법 -->
-<p id="warningBanner" hidden></p>
+    <!-- hidden : CSS의 display:none이 아니라, 순수 HTML 속성으로 태그를 숨기는 방법 -->
+    <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
 
-<input type="text" id="messageInput" placeholder="팬들에게 방송할 메시지를 입력하세요">
-<button id="sendButton">방송 보내기</button>
+    <div style="display:flex;gap:8px;">
+        <input type="text" id="messageInput" class="form-input" placeholder="팬들에게 방송할 메시지를 입력하세요">
+        <button id="sendButton" class="btn btn--primary">방송 보내기</button>
+    </div>
+</div>
 
 <script th:inline="javascript">
     const artistId = /*[[${artistId}]]*/ 0;
