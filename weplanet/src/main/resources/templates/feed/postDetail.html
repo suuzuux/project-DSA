@@ -337,6 +337,24 @@
 </div>
 
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<style>
+    /* 유튜브 링크가 본문에 있으면 이 박스 안에 실제 영상 플레이어로 바꿔서 보여줌 (16:9 반응형) */
+    .video-embed {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+        margin: 10px 0;
+        border-radius: var(--wp-radius-sm);
+        background: #000;
+    }
+    .video-embed iframe {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        border: 0;
+    }
+</style>
 <script th:inline="javascript">
     // 게시글 본문(마크다운 문법으로 저장된 텍스트)을, 사람이 보기 좋은 형태로 그려주는
     // 외부 라이브러리(Toast UI Editor)를 "뷰어 모드"로 초기화하는 코드
@@ -345,6 +363,65 @@
         viewer: true,
         initialValue: /*[[${post.content}]]*/ ''
     });
+
+    // 와이어프레임 기준: 본문에 유튜브 링크가 있으면 링크 대신 실제 영상을 띄워줌.
+    // Toast UI 뷰어가 렌더링을 끝낸 직후에 실행되도록 setTimeout(fn, 0)으로 한 틱 미룸
+    setTimeout(embedYoutubeLinks, 0);
+
+    function embedYoutubeLinks() {
+        const container = document.getElementById('contentViewer');
+        // watch?v=..., youtu.be/... 두 가지 형태의 유튜브 주소에서 11자리 영상 ID만 뽑아내는 정규식
+        const ytPattern = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([\w-]{11})|youtu\.be\/([\w-]{11}))/;
+
+        function makeEmbed(videoId) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'video-embed';
+            wrapper.innerHTML = '<iframe src="https://www.youtube.com/embed/' + videoId + '" ' +
+                'title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+            return wrapper;
+        }
+
+        // ① 마크다운이 자동으로 링크(<a>)로 만들어준 경우 - 링크 전체를 영상으로 교체
+        container.querySelectorAll('a').forEach(function (a) {
+            const m = a.href.match(ytPattern);
+            if (m) {
+                a.replaceWith(makeEmbed(m[1] || m[2]));
+            }
+        });
+
+        // ② 링크로 안 잡히고 그냥 글자로만 남아있는 유튜브 주소 처리 (자동 링크가 안 걸린 경우 대비)
+        const globalYtPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}[^\s<]*|youtu\.be\/[\w-]{11}[^\s<]*))/g;
+        const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+        const textNodes = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+        textNodes.forEach(function (node) {
+            const text = node.nodeValue;
+            globalYtPattern.lastIndex = 0;
+            if (!globalYtPattern.test(text)) return;
+            globalYtPattern.lastIndex = 0;
+
+            const frag = document.createDocumentFragment();
+            let lastIndex = 0;
+            let match;
+            while ((match = globalYtPattern.exec(text)) !== null) {
+                if (match.index > lastIndex) {
+                    frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+                }
+                const single = match[0].match(ytPattern);
+                if (single) {
+                    frag.appendChild(makeEmbed(single[1] || single[2]));
+                } else {
+                    frag.appendChild(document.createTextNode(match[0]));
+                }
+                lastIndex = globalYtPattern.lastIndex;
+            }
+            if (lastIndex < text.length) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            }
+            node.parentNode.replaceChild(frag, node);
+        });
+    }
 </script>
 
 </body>
