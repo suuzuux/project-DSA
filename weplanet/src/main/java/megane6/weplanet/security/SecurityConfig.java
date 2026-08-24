@@ -30,7 +30,10 @@ public class SecurityConfig {
             "/posts/**",
             "/chat/**",
             "/dev/**",
-            "/uploads/**"
+            "/uploads/**",
+            "/css/**",
+            "/js/**",
+            "/img/**"
     );
     
     private final LoginSuccessHandler loginSuccessHandler;
