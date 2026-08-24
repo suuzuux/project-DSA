@@ -16,36 +16,58 @@
     </a>
 </header>
 
-<div class="container container--narrow section">
+<div class="community-body" style="grid-template-columns:minmax(0,1fr) 380px;width:min(100% - 40px, 1160px);margin:16px auto;align-items:start;">
 
+<div class="community-main">
 <article class="post-card">
-    <h1 class="post-card__name" style="font-size:var(--wp-fs-xl);margin-bottom:12px;" th:text="${post.title}"></h1>
+    <div class="post-card__head">
+        <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+        <div class="post-card__meta">
+            <div class="post-card__name">
+                <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+            </div>
+            <div class="post-card__time"
+                 th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                 th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+        </div>
+    </div>
+
+    <h1 style="font-size:var(--wp-fs-lg);margin:12px 0 6px;" th:text="${post.title}"></h1>
 
     <!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
     <div id="contentViewer" class="post-card__body"></div>
 
-    <!-- 첨부파일 목록 - 이미지 파일은 화면에 바로 보여주고, 그 외 파일(pdf, txt 등)은 다운로드 링크로 보여줌 -->
-    <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media">
-        <h4 class="text-sm text-muted" style="margin:12px 0 8px;">첨부파일</h4>
-        <ul class="stack">
-            <li th:each="file : ${attachments}">
-                <!-- th:if / th:unless : PostAttachment.isImage()가 true/false냐에 따라 둘 중 하나만 화면에 그려짐 -->
-                <span th:if="${file.image}">
-                    <img th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}" width="300">
-                </span>
-                <span th:unless="${file.image}">
-                    <a class="translate-link" th:href="@{'/uploads/' + ${file.storedName}}" th:text="${file.originalName}" download></a>
-                </span>
-            </li>
-        </ul>
+    <!-- 첨부파일 - 이미지는 와이어프레임처럼 큼직한 "사진" 영역으로, 그 외 파일(pdf 등)은 다운로드 링크로 보여줌 -->
+    <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media" style="margin-top:12px;">
+        <div th:each="file : ${attachments}">
+            <img th:if="${file.image}" th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}"
+                 style="width:100%;border-radius:var(--wp-radius-sm);margin-bottom:6px;">
+            <a th:unless="${file.image}" class="translate-link" th:href="@{'/uploads/' + ${file.storedName}}"
+               th:text="${file.originalName}" download></a>
+        </div>
     </div>
 
-    <p class="post-card__time" style="margin-top:12px;"
-       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}">
-        작성일: <span th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
-    </p>
+    <!-- 와이어프레임 기준: 하단에 좋아요/댓글 아이콘 고정, 숫자는 0이면 표시 안 함 -->
+    <div class="post-card__actions">
+        <span style="display:flex;align-items:center;gap:6px;">
+            <select id="likeUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:12px;width:auto;">
+                <option value="1">1번 - 팬 계정</option>
+                <option value="2">2번 - 아티스트 계정</option>
+            </select>
+            <button id="likeButton" type="button" style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;">
+                ♥ <span id="likeCount" th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
+            </button>
+        </span>
+        <span th:if="${#lists.size(comments) > 0}">💬 <span th:text="${#lists.size(comments)}"></span></span>
+        <span th:unless="${#lists.size(comments) > 0}">💬</span>
+    </div>
+</article>
 
-    <div class="post-card__actions" style="flex-wrap:wrap;">
+<!-- 테스트/관리용 도구 - 실제 서비스 화면(와이어프레임)엔 없는, testUserId 기반 개발용 버튼 모음 -->
+<div class="post-card" style="margin-top:12px;">
+    <p class="text-xs text-muted" style="margin-bottom:10px;">테스트 도구 (실제 화면에는 없음)</p>
+    <div class="post-card__actions" style="flex-wrap:wrap;border-top:none;padding-top:0;">
         <a class="btn btn--ghost btn--sm" th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
 
         <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
@@ -72,120 +94,42 @@
         <b id="postReportMsg" class="text-xs"></b>
 
         <button id="summarizeButton" type="button" class="btn btn--soft btn--sm">AI 요약보기</button>
+    </div>
+    <div id="summaryArea"></div>
+</div>
+</div>
 
-        <span style="display:flex;gap:6px;align-items:center;">
-            <select id="likeUserId" class="form-select" style="min-height:34px;padding:4px 8px;">
+<aside class="community-aside" id="commentSection" th:fragment="commentsFragment">
+    <div class="post-card">
+        <p class="form-label" style="margin-bottom:8px;">댓글 작성</p>
+        <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
+            <select name="testUserId" class="form-select" style="margin-bottom:8px;">
                 <option value="1">1번 - 팬 계정</option>
                 <option value="2">2번 - 아티스트 계정</option>
             </select>
-            <button id="likeButton" type="button" class="btn btn--accent btn--sm">♥ <b id="likeCount" th:text="${post.likeCount > 0 ? post.likeCount : ''}"></b></button>
-        </span>
+            <input type="text" name="content" id="commentContentInput" class="form-input" maxlength="100"
+                   placeholder="댓글을 입력하세요.">
+            <p class="text-xs text-muted" style="text-align:right;margin-top:4px;">
+                <span id="commentCharCount">0</span> / 100
+            </p>
+            <button type="submit" class="btn btn--primary btn--block btn--sm" style="margin-top:6px;">등록</button>
+        </form>
+        <script>
+            // 댓글 입력창 글자수 카운터 (댓글 목록이 fetch로 통째로 바뀔 때마다 이 script도 같이 다시 실행됨)
+            (function () {
+                const input = document.getElementById('commentContentInput');
+                const counter = document.getElementById('commentCharCount');
+                if (input && counter) {
+                    input.addEventListener('input', function () {
+                        counter.textContent = input.value.length;
+                    });
+                }
+            })();
+        </script>
     </div>
 
-    <div id="summaryArea"></div>
-</article>
-
-<script th:inline="javascript">
-    // Thymeleaf가 이 부분(/*[[${post.id}]]*/)을 서버에서 실제 게시글 번호로 바꿔치기해줌.
-    // 그래서 자바스크립트에서도 "지금 보고 있는 게시글이 몇 번인지" 알 수 있음
-    const postId = /*[[${post.id}]]*/ 0;
-
-    // ----- 좋아요 버튼 -----
-    document.getElementById('likeButton').addEventListener('click', function () {
-        const testUserId = document.getElementById('likeUserId').value;
-
-        // method: 'POST' 만 지정하고 X-Requested-With 헤더는 안 붙였는데도 되는 이유:
-        // 좋아요 기능은 처음부터 항상 JSON만 돌려주는 컨트롤러(@ResponseBody)라서, 굳이 구분할 필요가 없기 때문
-        fetch(`/posts/detail/${postId}/like?testUserId=${testUserId}`, {method: 'POST'})
-            .then(function (response) {
-                return response.json(); // 서버가 돌려준 응답을 JSON 객체로 변환
-            })
-            .then(function (data) {
-                document.getElementById('likeCount').textContent = data.likeCount > 0 ? data.likeCount : '';
-            });
-    });
-
-    // ----- 게시글 신고 폼 -----
-    document.getElementById('postReportForm').addEventListener('submit', function (e) {
-        e.preventDefault(); // 폼의 기본 동작(페이지 이동)을 막음
-        const form = e.target;
-        const msg = document.getElementById('postReportMsg');
-
-        fetch(form.action, {
-            method: 'POST',
-            headers: {'X-Requested-With': 'fetch'}, // "이건 fetch 요청이야" 라고 서버에 알려주는 표시
-            // new FormData(form) : 폼 안의 select/input 값들을 자동으로 긁어모아줌
-            // new URLSearchParams(...) : 그 값들을 "키=값&키=값" 형태의 문자열로 바꿔줌 (일반 폼 전송과 같은 형식)
-            body: new URLSearchParams(new FormData(form))
-        })
-            .then(function (response) {
-                // response.ok : 응답 상태코드가 200번대(성공)면 true, 아니면(400/403 등) false
-                return response.json().then(function (data) {
-                    return {ok: response.ok, data: data};
-                });
-            })
-            .then(function (result) {
-                // 성공/실패를 문구로 명확하게 구분해서 보여줌
-                msg.textContent = (result.ok ? '[성공] ' : '[실패] ') + result.data.message;
-            });
-    });
-
-    // ----- AI 요약 버튼 -----
-    document.getElementById('summarizeButton').addEventListener('click', function () {
-        const area = document.getElementById('summaryArea');
-        area.innerHTML = '<p>AI가 요약을 만들고 있어요...</p>';
-
-        fetch(`/posts/detail/${postId}/summarize`, {
-            method: 'POST',
-            headers: {'X-Requested-With': 'fetch'}
-        })
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                area.innerHTML = '<hr><h4>AI 요약</h4><p id="summaryText"></p>';
-                // textContent로 넣는 이유 : 만약 AI 응답 안에 우연히 <script> 같은 HTML 태그가 섞여 있어도
-                // 그걸 진짜 태그로 실행하지 않고, 화면에 글자 그대로만 보여주기 위함 (보안 - XSS 공격 방지)
-                document.getElementById('summaryText').textContent = data.summary;
-            });
-    });
-</script>
-
-<h3 class="section__title" style="margin-top:24px;font-size:var(--wp-fs-lg);">댓글</h3>
-
-<!--
-    이 div 안쪽(댓글 작성 폼 + 댓글 목록 전체)이 "commentsFragment"라는 이름표가 붙은 부분임.
-    댓글을 쓰거나 지우면, 페이지 전체가 아니라 이 부분만 새로 받아와서 통째로 교체함
--->
-<div id="commentSection" th:fragment="commentsFragment">
-    <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post"
-          style="display:flex;gap:8px;margin:12px 0 4px;">
-        <select name="testUserId" class="form-select" style="width:auto;min-height:40px;">
-            <option value="1">1번 - 팬 계정</option>
-            <option value="2">2번 - 아티스트 계정</option>
-        </select>
-        <input type="text" name="content" id="commentContentInput" class="form-input" maxlength="100"
-               placeholder="댓글을 입력하세요" style="min-height:40px;">
-        <button type="submit" class="btn btn--primary btn--sm">댓글 작성</button>
-    </form>
-    <p class="text-xs text-muted" style="text-align:right;margin-bottom:16px;">
-        <span id="commentCharCount">0</span> / 100
-    </p>
-    <script>
-        // 댓글 입력창 글자수 카운터 (댓글 목록이 fetch로 통째로 바뀔 때마다 이 script도 같이 다시 실행됨)
-        (function () {
-            const input = document.getElementById('commentContentInput');
-            const counter = document.getElementById('commentCharCount');
-            if (input && counter) {
-                input.addEventListener('input', function () {
-                    counter.textContent = input.value.length;
-                });
-            }
-        })();
-    </script>
-
     <!-- 아티스트 댓글 - 와이어프레임: 항상 최상단 별도 박스, 화살표로 접기/펼치기 -->
-    <div th:if="${not #lists.isEmpty(artistComments)}" style="margin-bottom:16px;">
+    <div th:if="${not #lists.isEmpty(artistComments)}" class="post-card" style="margin-top:12px;">
         <div class="flex-between" style="cursor:pointer;" onclick="document.getElementById('artistCommentBox').classList.toggle('is-collapsed'); this.querySelector('.collapse-arrow').textContent = this.querySelector('.collapse-arrow').textContent === '▲' ? '▼' : '▲';">
             <strong class="text-sm">아티스트 댓글 <span th:text="${#lists.size(artistComments)}"></span></strong>
             <span class="collapse-arrow text-sm">▲</span>
@@ -234,49 +178,51 @@
     </div>
 
     <!-- 전체 댓글 (아티스트 댓글 제외) -->
-    <strong class="text-sm">전체 댓글 <span th:text="${#lists.size(otherComments)}"></span></strong>
-    <div class="stack" style="margin-top:8px;" th:if="${not #lists.isEmpty(otherComments)}">
-        <div class="comment-item" th:each="comment : ${otherComments}">
-            <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
-            <div class="comment-item__body">
-                <div class="comment-item__meta">
-                    <strong th:text="${comment.author.nickname}"></strong>
-                    · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                            th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
-                </div>
-                <p class="comment-item__text" th:text="${comment.content}"></p>
-                <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                    <form class="comment-delete-form" style="display:flex;gap:4px;"
-                          th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
-                          method="post">
-                        <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                            <option value="1">1번(팬)</option>
-                            <option value="2">2번(아티스트)</option>
-                        </select>
-                        <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
-                    </form>
-                    <form class="comment-report-form" style="display:flex;gap:4px;"
-                          th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
-                          method="post">
-                        <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                            <option value="1">1번(팬)</option>
-                            <option value="2">2번(아티스트)</option>
-                        </select>
-                        <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                            <option value="SPAM">스팸</option>
-                            <option value="ABUSE">욕설/혐오</option>
-                            <option value="SEXUAL">음란물</option>
-                            <option value="ETC">기타</option>
-                        </select>
-                        <button type="submit" class="btn btn--ghost btn--sm">신고</button>
-                    </form>
-                    <b class="comment-report-msg text-xs"></b>
+    <div class="post-card" style="margin-top:12px;">
+        <strong class="text-sm">전체 댓글 <span th:text="${#lists.size(otherComments)}"></span></strong>
+        <div class="stack" style="margin-top:8px;" th:if="${not #lists.isEmpty(otherComments)}">
+            <div class="comment-item" th:each="comment : ${otherComments}">
+                <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+                <div class="comment-item__body">
+                    <div class="comment-item__meta">
+                        <strong th:text="${comment.author.nickname}"></strong>
+                        · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                                th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+                    </div>
+                    <p class="comment-item__text" th:text="${comment.content}"></p>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                        <form class="comment-delete-form" style="display:flex;gap:4px;"
+                              th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
+                              method="post">
+                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
+                                <option value="1">1번(팬)</option>
+                                <option value="2">2번(아티스트)</option>
+                            </select>
+                            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        </form>
+                        <form class="comment-report-form" style="display:flex;gap:4px;"
+                              th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+                              method="post">
+                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
+                                <option value="1">1번(팬)</option>
+                                <option value="2">2번(아티스트)</option>
+                            </select>
+                            <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
+                                <option value="SPAM">스팸</option>
+                                <option value="ABUSE">욕설/혐오</option>
+                                <option value="SEXUAL">음란물</option>
+                                <option value="ETC">기타</option>
+                            </select>
+                            <button type="submit" class="btn btn--ghost btn--sm">신고</button>
+                        </form>
+                        <b class="comment-report-msg text-xs"></b>
+                    </div>
                 </div>
             </div>
         </div>
+        <p th:if="${#lists.isEmpty(otherComments)}" class="text-muted" style="margin-top:8px;"><i>등록된 댓글이 없습니다.</i></p>
     </div>
-
-    <p th:if="${#lists.isEmpty(otherComments)}" class="text-muted" style="margin-top:8px;"><i>등록된 댓글이 없습니다.</i></p>
+</aside>
 </div>
 
 <style>
@@ -284,15 +230,69 @@
     #artistCommentBox.is-collapsed { display: none; }
 </style>
 
-<script>
+<script th:inline="javascript">
+    // Thymeleaf가 이 부분(/*[[${post.id}]]*/)을 서버에서 실제 게시글 번호로 바꿔치기해줌.
+    // 그래서 자바스크립트에서도 "지금 보고 있는 게시글이 몇 번인지" 알 수 있음
+    const postId = /*[[${post.id}]]*/ 0;
+
+    // ----- 좋아요 버튼 -----
+    document.getElementById('likeButton').addEventListener('click', function () {
+        const testUserId = document.getElementById('likeUserId').value;
+
+        fetch(`/posts/detail/${postId}/like?testUserId=${testUserId}`, {method: 'POST'})
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                document.getElementById('likeCount').textContent = data.likeCount > 0 ? data.likeCount : '';
+            });
+    });
+
+    // ----- 게시글 신고 폼 -----
+    document.getElementById('postReportForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const msg = document.getElementById('postReportMsg');
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'},
+            body: new URLSearchParams(new FormData(form))
+        })
+            .then(function (response) {
+                return response.json().then(function (data) {
+                    return {ok: response.ok, data: data};
+                });
+            })
+            .then(function (result) {
+                msg.textContent = (result.ok ? '[성공] ' : '[실패] ') + result.data.message;
+            });
+    });
+
+    // ----- AI 요약 버튼 -----
+    document.getElementById('summarizeButton').addEventListener('click', function () {
+        const area = document.getElementById('summaryArea');
+        area.innerHTML = '<p>AI가 요약을 만들고 있어요...</p>';
+
+        fetch(`/posts/detail/${postId}/summarize`, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'}
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                area.innerHTML = '<hr><h4>AI 요약</h4><p id="summaryText"></p>';
+                document.getElementById('summaryText').textContent = data.summary;
+            });
+    });
+
     // 댓글 작성 폼과 댓글 삭제 폼은 여러 개(댓글 개수만큼) 반복해서 화면에 생기고,
     // 댓글 목록이 갱신될 때마다 새로 만들어지므로, 폼 하나하나에 직접 이벤트를 걸지 않고
     // "document 전체에 이벤트를 걸어두고, 그 안에서 어떤 폼이 제출됐는지 확인하는" 방식(이벤트 위임)을 씀.
-    // 이렇게 하면 나중에 새로 생긴 폼에도 자동으로 이 로직이 적용됨.
     document.addEventListener('submit', function (e) {
         const form = e.target;
 
-        // 댓글 작성 폼 또는 댓글 삭제 폼이면 -> 댓글 영역 전체를 새로 받아와서 교체
         if (form.id === 'commentForm' || form.classList.contains('comment-delete-form')) {
             e.preventDefault();
 
@@ -309,10 +309,8 @@
                 });
         }
 
-        // 댓글 신고 폼이면 -> 목록을 다시 그릴 필요 없이, 그 자리에 성공/실패 메시지만 표시
         if (form.classList.contains('comment-report-form')) {
             e.preventDefault();
-            // form.nextElementSibling : 이 폼 바로 다음에 있는 태그(<b class="comment-report-msg">)를 가리킴
             const msg = form.nextElementSibling;
 
             fetch(form.action, {
@@ -332,9 +330,7 @@
     });
 </script>
 
-<p style="margin-top:20px;"><a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a></p>
-
-</div>
+<p style="width:min(100% - 40px, 1160px);margin:16px auto;"><a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a></p>
 
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 <style>
@@ -365,12 +361,10 @@
     });
 
     // 와이어프레임 기준: 본문에 유튜브 링크가 있으면 링크 대신 실제 영상을 띄워줌.
-    // Toast UI 뷰어가 렌더링을 끝낸 직후에 실행되도록 setTimeout(fn, 0)으로 한 틱 미룸
     setTimeout(embedYoutubeLinks, 0);
 
     function embedYoutubeLinks() {
         const container = document.getElementById('contentViewer');
-        // watch?v=..., youtu.be/... 두 가지 형태의 유튜브 주소에서 11자리 영상 ID만 뽑아내는 정규식
         const ytPattern = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([\w-]{11})|youtu\.be\/([\w-]{11}))/;
 
         function makeEmbed(videoId) {
@@ -381,7 +375,6 @@
             return wrapper;
         }
 
-        // ① 마크다운이 자동으로 링크(<a>)로 만들어준 경우 - 링크 전체를 영상으로 교체
         container.querySelectorAll('a').forEach(function (a) {
             const m = a.href.match(ytPattern);
             if (m) {
@@ -389,7 +382,6 @@
             }
         });
 
-        // ② 링크로 안 잡히고 그냥 글자로만 남아있는 유튜브 주소 처리 (자동 링크가 안 걸린 경우 대비)
         const globalYtPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}[^\s<]*|youtu\.be\/[\w-]{11}[^\s<]*))/g;
         const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
         const textNodes = [];
