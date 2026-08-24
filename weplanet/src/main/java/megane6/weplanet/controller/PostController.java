@@ -99,17 +99,24 @@ public class PostController {
 
         log.debug("게시판 조회: {}, 정렬: {}, 게시글 수: {}", type, sort, posts.size());
 
-        // 게시글 목록 카드에 댓글 개수도 같이 보여주기 위해, 게시글 id별 댓글 개수를 미리 계산해둠
-        // (와이어프레임: 좋아요/댓글 숫자가 0이면 숫자 자체를 표시하지 않음)
+        // 게시글 목록 카드에 댓글 개수 + 대표 이미지(첫 번째 이미지 첨부파일)도 같이 보여주기 위해 미리 계산해둠
+        // (와이어프레임: 좋아요/댓글 숫자가 0이면 숫자 자체를 표시하지 않음, 카드 안에 사진 영역 표시)
         Map<Long, Long> commentCounts = new HashMap<>();
+        Map<Long, String> thumbnailUrls = new HashMap<>();
         for (Post post : posts) {
             commentCounts.put(post.getId(), commentService.getCommentCount(post));
+
+            postService.getAttachments(post).stream()
+                    .filter(a -> a.isImage())
+                    .findFirst()
+                    .ifPresent(a -> thumbnailUrls.put(post.getId(), a.getStoredName()));
         }
 
         model.addAttribute("posts", posts);
         model.addAttribute("boardType", type);
         model.addAttribute("sort", sort);
         model.addAttribute("commentCounts", commentCounts);
+        model.addAttribute("thumbnailUrls", thumbnailUrls);
 
         // 정렬 버튼을 클릭했을 때(자바스크립트 fetch로 온 요청)는,
         // "postList.html 안에서 postListFragment 라는 이름표가 붙은 부분만" 잘라서 돌려줌
