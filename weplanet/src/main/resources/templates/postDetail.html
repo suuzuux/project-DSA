@@ -3,54 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <title>게시글 상세</title>
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
 </head>
 <body>
 
 <h1 th:text="${post.title}"></h1>
-<p th:text="${post.content}"></p>
-<p>작성일: <span th:text="${post.createdAt}"></span></p>
 
-<form th:action="@{/posts/detail/{id}/like(id=${post.id})}" method="post">
-    <select name="testUserId">
-        <option value="1">1번 - 팬 계정</option>
-        <option value="2">2번 - 아티스트 계정</option>
-    </select>
-    <button type="submit">좋아요 (<span th:text="${post.likeCount}"></span>)</button>
-</form>
+<!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
+<div id="contentViewer"></div>
+
+<!-- 첨부파일 목록 - 이미지 파일은 화면에 바로 보여주고, 그 외 파일(pdf, txt 등)은 다운로드 링크로 보여줌 -->
+<div th:if="${not #lists.isEmpty(attachments)}">
+    <hr>
+    <h4>첨부파일</h4>
+    <ul>
+        <li th:each="file : ${attachments}">
+            <!-- th:if / th:unless : PostAttachment.isImage()가 true/false냐에 따라 둘 중 하나만 화면에 그려짐 -->
+            <span th:if="${file.image}">
+                <img th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}" width="300">
+            </span>
+            <span th:unless="${file.image}">
+                <a th:href="@{'/uploads/' + ${file.storedName}}" th:text="${file.originalName}" download></a>
+            </span>
+        </li>
+    </ul>
+</div>
 
 <hr>
+<p>작성일: <span th:text="${post.createdAt}"></span></p>
 
+<!--
+    아래 표(table)는 오직 "버튼들을 한 줄에 나란히 보기 좋게 배치"하기 위한 용도로만 씀.
+    (CSS를 안 쓰기로 했기 때문에, 옛날 방식대로 <table>로 여러 요소를 가로로 줄 세움)
+-->
+<table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+        <td><a th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a></td>
+
+        <td>
+            <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post">
+                <select name="testUserId">
+                    <option value="1">1번(팬)으로 삭제 시도</option>
+                    <option value="2">2번(아티스트)으로 삭제 시도</option>
+                </select>
+                <button type="submit">게시글 삭제</button>
+            </form>
+        </td>
+
+        <td>
+            <form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post">
+                <select name="testUserId">
+                    <option value="1">1번(팬)으로 신고</option>
+                    <option value="2">2번(아티스트)으로 신고</option>
+                </select>
+                <select name="reason">
+                    <option value="SPAM">스팸</option>
+                    <option value="ABUSE">욕설/혐오</option>
+                    <option value="SEXUAL">음란물</option>
+                    <option value="ETC">기타</option>
+                </select>
+                <button type="submit">게시글 신고</button>
+            </form>
+            <b id="postReportMsg"></b>
+        </td>
+
+        <td>
+            <button id="summarizeButton" type="button">AI 요약보기</button>
+        </td>
+
+        <td>
+            <select id="likeUserId">
+                <option value="1">1번 - 팬 계정</option>
+                <option value="2">2번 - 아티스트 계정</option>
+            </select>
+            <button id="likeButton" type="button">좋아요 (<b id="likeCount" th:text="${post.likeCount}"></b>)</button>
+        </td>
+    </tr>
+</table>
+
+<div id="summaryArea"></div>
+
+<script th:inline="javascript">
+    // Thymeleaf가 이 부분(/*[[${post.id}]]*/)을 서버에서 실제 게시글 번호로 바꿔치기해줌.
+    // 그래서 자바스크립트에서도 "지금 보고 있는 게시글이 몇 번인지" 알 수 있음
+    const postId = /*[[${post.id}]]*/ 0;
+
+    // ----- 좋아요 버튼 -----
+    document.getElementById('likeButton').addEventListener('click', function () {
+        const testUserId = document.getElementById('likeUserId').value;
+
+        // method: 'POST' 만 지정하고 X-Requested-With 헤더는 안 붙였는데도 되는 이유:
+        // 좋아요 기능은 처음부터 항상 JSON만 돌려주는 컨트롤러(@ResponseBody)라서, 굳이 구분할 필요가 없기 때문
+        fetch(`/posts/detail/${postId}/like?testUserId=${testUserId}`, {method: 'POST'})
+            .then(function (response) {
+                return response.json(); // 서버가 돌려준 응답을 JSON 객체로 변환
+            })
+            .then(function (data) {
+                document.getElementById('likeCount').textContent = data.likeCount;
+            });
+    });
+
+    // ----- 게시글 신고 폼 -----
+    document.getElementById('postReportForm').addEventListener('submit', function (e) {
+        e.preventDefault(); // 폼의 기본 동작(페이지 이동)을 막음
+        const form = e.target;
+        const msg = document.getElementById('postReportMsg');
+
+        fetch(form.action, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'}, // "이건 fetch 요청이야" 라고 서버에 알려주는 표시
+            // new FormData(form) : 폼 안의 select/input 값들을 자동으로 긁어모아줌
+            // new URLSearchParams(...) : 그 값들을 "키=값&키=값" 형태의 문자열로 바꿔줌 (일반 폼 전송과 같은 형식)
+            body: new URLSearchParams(new FormData(form))
+        })
+            .then(function (response) {
+                // response.ok : 응답 상태코드가 200번대(성공)면 true, 아니면(400/403 등) false
+                return response.json().then(function (data) {
+                    return {ok: response.ok, data: data};
+                });
+            })
+            .then(function (result) {
+                // 성공/실패를 문구로 명확하게 구분해서 보여줌
+                msg.textContent = (result.ok ? '[성공] ' : '[실패] ') + result.data.message;
+            });
+    });
+
+    // ----- AI 요약 버튼 -----
+    document.getElementById('summarizeButton').addEventListener('click', function () {
+        const area = document.getElementById('summaryArea');
+        area.innerHTML = '<p>AI가 요약을 만들고 있어요...</p>';
+
+        fetch(`/posts/detail/${postId}/summarize`, {
+            method: 'POST',
+            headers: {'X-Requested-With': 'fetch'}
+        })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                area.innerHTML = '<hr><h4>AI 요약</h4><p id="summaryText"></p>';
+                // textContent로 넣는 이유 : 만약 AI 응답 안에 우연히 <script> 같은 HTML 태그가 섞여 있어도
+                // 그걸 진짜 태그로 실행하지 않고, 화면에 글자 그대로만 보여주기 위함 (보안 - XSS 공격 방지)
+                document.getElementById('summaryText').textContent = data.summary;
+            });
+    });
+</script>
+
+<hr>
 <h3>댓글</h3>
 
-<form th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
-    <select name="testUserId">
-        <option value="1">1번 - 팬 계정</option>
-        <option value="2">2번 - 아티스트 계정</option>
-    </select>
-    <input type="text" name="content" placeholder="댓글을 입력하세요">
-    <button type="submit">댓글 작성</button>
-</form>
+<!--
+    이 div 안쪽(댓글 작성 폼 + 댓글 목록 전체)이 "commentsFragment"라는 이름표가 붙은 부분임.
+    댓글을 쓰거나 지우면, 페이지 전체가 아니라 이 부분만 새로 받아와서 통째로 교체함
+-->
+<div id="commentSection" th:fragment="commentsFragment">
+    <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
+        <select name="testUserId">
+            <option value="1">1번 - 팬 계정</option>
+            <option value="2">2번 - 아티스트 계정</option>
+        </select>
+        <input type="text" name="content" placeholder="댓글을 입력하세요">
+        <button type="submit">댓글 작성</button>
+    </form>
 
-<ul>
-    <li th:each="comment : ${comments}">
-        <span th:text="${comment.author.nickname}"></span> :
-        <span th:text="${comment.content}"></span>
-        (<span th:text="${comment.createdAt}"></span>)
+    <table border="1" cellpadding="6" cellspacing="0" th:if="${not #lists.isEmpty(comments)}">
+        <tr>
+            <th>작성자</th>
+            <th>내용</th>
+            <th>작성일</th>
+            <th>삭제</th>
+            <th>신고</th>
+        </tr>
+        <tr th:each="comment : ${comments}">
+            <td th:text="${comment.author.nickname}"></td>
+            <td th:text="${comment.content}"></td>
+            <td th:text="${comment.createdAt}"></td>
+            <td>
+                <form class="comment-delete-form"
+                      th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
+                      method="post">
+                    <select name="testUserId">
+                        <option value="1">1번(팬)</option>
+                        <option value="2">2번(아티스트)</option>
+                    </select>
+                    <button type="submit">삭제</button>
+                </form>
+            </td>
+            <td>
+                <form class="comment-report-form"
+                      th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
+                      method="post">
+                    <select name="testUserId">
+                        <option value="1">1번(팬)</option>
+                        <option value="2">2번(아티스트)</option>
+                    </select>
+                    <select name="reason">
+                        <option value="SPAM">스팸</option>
+                        <option value="ABUSE">욕설/혐오</option>
+                        <option value="SEXUAL">음란물</option>
+                        <option value="ETC">기타</option>
+                    </select>
+                    <button type="submit">신고</button>
+                </form>
+                <b class="comment-report-msg"></b>
+            </td>
+        </tr>
+    </table>
 
-        <form th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
-              method="post" style="display:inline;">
-            <select name="testUserId">
-                <option value="1">1번(팬)으로 삭제 시도</option>
-                <option value="2">2번(아티스트)으로 삭제 시도</option>
-            </select>
-            <button type="submit">삭제</button>
-        </form>
-    </li>
-</ul>
+    <p th:if="${#lists.isEmpty(comments)}"><i>등록된 댓글이 없습니다.</i></p>
+</div>
 
-<p th:if="${#lists.isEmpty(comments)}">등록된 댓글이 없습니다.</p>
+<script>
+    // 댓글 작성 폼과 댓글 삭제 폼은 여러 개(댓글 개수만큼) 반복해서 화면에 생기고,
+    // 댓글 목록이 갱신될 때마다 새로 만들어지므로, 폼 하나하나에 직접 이벤트를 걸지 않고
+    // "document 전체에 이벤트를 걸어두고, 그 안에서 어떤 폼이 제출됐는지 확인하는" 방식(이벤트 위임)을 씀.
+    // 이렇게 하면 나중에 새로 생긴 폼에도 자동으로 이 로직이 적용됨.
+    document.addEventListener('submit', function (e) {
+        const form = e.target;
 
-<a th:href="@{/}">홈으로</a>
+        // 댓글 작성 폼 또는 댓글 삭제 폼이면 -> 댓글 영역 전체를 새로 받아와서 교체
+        if (form.id === 'commentForm' || form.classList.contains('comment-delete-form')) {
+            e.preventDefault();
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {'X-Requested-With': 'fetch'},
+                body: new URLSearchParams(new FormData(form))
+            })
+                .then(function (response) {
+                    return response.text();
+                })
+                .then(function (html) {
+                    document.getElementById('commentSection').outerHTML = html;
+                });
+        }
+
+        // 댓글 신고 폼이면 -> 목록을 다시 그릴 필요 없이, 그 자리에 성공/실패 메시지만 표시
+        if (form.classList.contains('comment-report-form')) {
+            e.preventDefault();
+            // form.nextElementSibling : 이 폼 바로 다음에 있는 태그(<b class="comment-report-msg">)를 가리킴
+            const msg = form.nextElementSibling;
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: {'X-Requested-With': 'fetch'},
+                body: new URLSearchParams(new FormData(form))
+            })
+                .then(function (response) {
+                    return response.json().then(function (data) {
+                        return {ok: response.ok, data: data};
+                    });
+                })
+                .then(function (result) {
+                    msg.textContent = (result.ok ? '[성공] ' : '[실패] ') + result.data.message;
+                });
+        }
+    });
+</script>
+
+<hr>
+<p><a th:href="@{/}">&lt;&lt; 홈으로</a></p>
+
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script th:inline="javascript">
+    // 게시글 본문(마크다운 문법으로 저장된 텍스트)을, 사람이 보기 좋은 형태로 그려주는
+    // 외부 라이브러리(Toast UI Editor)를 "뷰어 모드"로 초기화하는 코드
+    new toastui.Editor.factory({
+        el: document.querySelector('#contentViewer'),
+        viewer: true,
+        initialValue: /*[[${post.content}]]*/ ''
+    });
+</script>
 
 </body>
 </html>
