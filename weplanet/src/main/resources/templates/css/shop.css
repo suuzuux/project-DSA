@@ -1,0 +1,296 @@
+/**
+ * ============================================================
+ * WePlaNet Shop – 상점 전용 스타일
+ * ------------------------------------------------------------
+ * 와이어프레임에 Shop 전용 페이지는 없으나, 메뉴(P13)·커뮤니티
+ * 헤더(🧺)·멤버십 혜택(Shop 콘텐츠 구매) 맥락으로 구성한 목업.
+ * ============================================================
+ */
+
+/* ---------- Shop 헤더 서브 ---------- */
+.shop-header {
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--wp-hairline);
+  margin-bottom: 24px;
+}
+
+.shop-header h1 {
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.shop-header p {
+  color: var(--wp-muted);
+  font-size: var(--wp-fs-sm);
+}
+
+.shop-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+/* ---------- 필터 / 탭 ---------- */
+.shop-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.shop-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 360px;
+}
+
+/* ---------- 상품 그리드 ---------- */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.product-card {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  overflow: hidden;
+  transition: border-color var(--wp-fast), transform var(--wp-fast);
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card:hover {
+  border-color: var(--wp-brand);
+  transform: translateY(-2px);
+}
+
+.product-card__thumb {
+  aspect-ratio: 1;
+  background: linear-gradient(145deg, #e8eeed, #ddd5c8);
+  display: grid;
+  place-items: center;
+  color: var(--wp-muted);
+  font-size: var(--wp-fs-xs);
+  position: relative;
+}
+
+.product-card__badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+}
+
+.product-card__body {
+  padding: 14px 16px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.product-card__artist {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wp-brand);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.product-card__title {
+  font-weight: 700;
+  font-size: var(--wp-fs-sm);
+  line-height: 1.35;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card__price {
+  font-weight: 800;
+  font-size: var(--wp-fs-md);
+  margin-top: auto;
+}
+
+.product-card__price small {
+  font-size: var(--wp-fs-xs);
+  font-weight: 500;
+  color: var(--wp-muted);
+}
+
+/* ---------- 아티스트별 Shop 진입 ---------- */
+.shop-artist-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+}
+
+.shop-artist-chip {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  background: var(--wp-surface);
+  min-width: 88px;
+  text-align: center;
+  font-size: var(--wp-fs-xs);
+  font-weight: 600;
+  color: var(--wp-ink-soft);
+}
+
+.shop-artist-chip:hover,
+.shop-artist-chip.is-active {
+  border-color: var(--wp-brand);
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand-dark);
+}
+
+.shop-artist-chip .avatar {
+  width: 48px;
+  height: 48px;
+}
+
+/* ---------- 상품 상세 ---------- */
+.product-detail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .product-detail {
+    grid-template-columns: 1fr;
+  }
+}
+
+.product-detail__gallery {
+  aspect-ratio: 1;
+  background: linear-gradient(145deg, #e8eeed, #ddd5c8);
+  border-radius: var(--wp-radius);
+  border: 1px solid var(--wp-hairline);
+  display: grid;
+  place-items: center;
+  color: var(--wp-muted);
+}
+
+.product-detail__info h1 {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.product-detail__price {
+  font-size: var(--wp-fs-2xl);
+  font-weight: 800;
+  margin: 16px 0;
+}
+
+.product-detail__desc {
+  color: var(--wp-ink-soft);
+  font-size: var(--wp-fs-sm);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.product-detail__options {
+  margin-bottom: 20px;
+}
+
+.product-detail__options label {
+  display: block;
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.membership-notice {
+  padding: 14px 16px;
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-accent-soft);
+  border: 1px solid #e8c4a8;
+  font-size: var(--wp-fs-sm);
+  margin-bottom: 16px;
+}
+
+.membership-notice a {
+  color: var(--wp-accent);
+  font-weight: 700;
+}
+
+/* ---------- 장바구니 ---------- */
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cart-table th,
+.cart-table td {
+  padding: 14px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--wp-hairline);
+  font-size: var(--wp-fs-sm);
+}
+
+.cart-table th {
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cart-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cart-product__thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-brand-soft);
+  flex-shrink: 0;
+}
+
+.cart-summary {
+  max-width: 360px;
+  margin-left: auto;
+  margin-top: 24px;
+  padding: 20px;
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+}
+
+.cart-summary__row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: var(--wp-fs-sm);
+}
+
+.cart-summary__total {
+  font-size: var(--wp-fs-lg);
+  font-weight: 800;
+  border-top: 1px solid var(--wp-hairline);
+  margin-top: 8px;
+  padding-top: 12px;
+}

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    [와이어프레임 연계] WePlaNet Shop (상점)
+    ------------------------------------------------------------
+    PDF에는 Shop 전용 화면은 없고, 아래 맥락으로 구성:
+    - P13 메뉴: 🧺 Shop
+    - P27 멤버십: Shop 내 아티스트 콘텐츠 구매 혜택
+    - 커뮤니티 헤더 🧺 아이콘
+    - 메인 배너: 공식 MD 선예매
+  -->
+  <title>WePlaNet Shop</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+  <link rel="stylesheet" href="../css/shop.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" href="home.html">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <a class="icon-btn" href="shop-cart.html" aria-label="장바구니" title="장바구니">🛒</a>
+      <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">🔔</button>
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+      <a class="btn btn--ghost btn--sm" href="index.html">로그아웃</a>
+    </div>
+  </header>
+
+  <main class="container section">
+    <header class="shop-header">
+      <h1>WePlaNet Shop</h1>
+      <p>아티스트 공식 MD · 디지털 콘텐츠 · 멤버십 전용 상품</p>
+      <div class="shop-header__actions">
+        <a class="btn btn--soft btn--sm" href="membership.html">멤버십 혜택 보기</a>
+        <a class="btn btn--ghost btn--sm" href="shop-cart.html">장바구니 (2)</a>
+      </div>
+    </header>
+
+    <!-- 아티스트별 Shop -->
+    <section aria-label="아티스트 Shop">
+      <p class="drawer-menu__section-title" style="margin-bottom:10px;">아티스트 Shop</p>
+      <div class="shop-artist-row">
+        <a class="shop-artist-chip is-active" href="shop.html">
+          <div class="avatar">ALL</div>
+          전체
+        </a>
+        <a class="shop-artist-chip" href="shop.html?artist=riize">
+          <div class="avatar">RZ</div>
+          RIIZE
+        </a>
+        <a class="shop-artist-chip" href="shop.html?artist=cortis">
+          <div class="avatar">CT</div>
+          CORTIS
+        </a>
+        <a class="shop-artist-chip" href="shop.html?artist=aespa">
+          <div class="avatar">AE</div>
+          aespa
+        </a>
+        <a class="shop-artist-chip" href="shop.html?artist=treasure">
+          <div class="avatar">TR</div>
+          TREASURE
+        </a>
+      </div>
+    </section>
+
+    <!-- 필터 -->
+    <div class="shop-filters">
+      <div class="chip-row">
+        <button type="button" class="chip is-active">전체</button>
+        <button type="button" class="chip">MD · 굿즈</button>
+        <button type="button" class="chip">디지털</button>
+        <button type="button" class="chip">멤버십 전용</button>
+      </div>
+      <input class="form-input shop-search" type="search" placeholder="상품명 검색" />
+    </div>
+
+    <!-- 프로모 배너 -->
+    <div class="cta-banner mb-24">
+      <div>
+        <p>2026 공식 투어 MD 선예매</p>
+        <p class="text-sm text-muted mt-8">멤버십 회원 우선 구매 · 8/25 ~ 9/1</p>
+      </div>
+      <a class="btn btn--accent btn--sm" href="shop-detail.html">상품 보기</a>
+    </div>
+
+    <!-- 상품 목록 -->
+    <section>
+      <div class="section__head">
+        <h2 class="section__title">인기 상품</h2>
+        <select class="form-select" style="width:auto;min-height:36px;">
+          <option>인기순</option>
+          <option>최신순</option>
+          <option>가격 낮은순</option>
+          <option>가격 높은순</option>
+        </select>
+      </div>
+
+      <div class="product-grid">
+        <a class="product-card" href="shop-detail.html">
+          <div class="product-card__thumb">상품 이미지</div>
+          <div class="product-card__body">
+            <span class="product-card__artist">RIIZE</span>
+            <h3 class="product-card__title">2026 RIIZE OFFICIAL LIGHT STICK Ver.2</h3>
+            <p class="product-card__price">₩ 59,000</p>
+          </div>
+        </a>
+
+        <a class="product-card" href="shop-detail.html">
+          <div class="product-card__thumb">
+            <span class="product-card__badge tag tag--member">멤버십</span>
+            상품 이미지
+          </div>
+          <div class="product-card__body">
+            <span class="product-card__artist">RIIZE</span>
+            <h3 class="product-card__title">멤버십 전용 포토카드 세트 (8종)</h3>
+            <p class="product-card__price">₩ 28,000</p>
+          </div>
+        </a>
+
+        <a class="product-card" href="shop-detail.html">
+          <div class="product-card__thumb">상품 이미지</div>
+          <div class="product-card__body">
+            <span class="product-card__artist">CORTIS</span>
+            <h3 class="product-card__title">2026 CORTIS TOUR 티셔츠 (Black)</h3>
+            <p class="product-card__price">₩ 45,000</p>
+          </div>
+        </a>
+
+        <a class="product-card" href="shop-detail.html">
+          <div class="product-card__thumb">
+            <span class="product-card__badge tag tag--member">멤버십</span>
+            상품 이미지
+          </div>
+          <div class="product-card__body">
+            <span class="product-card__artist">CORTIS</span>
+            <h3 class="product-card__title">BIRTHDAY PARTY 한정 응원봉 파우치</h3>
+            <p class="product-card__price">₩ 32,000</p>
+          </div>
+        </a>
+
+        <a class="product-card" href="shop-detail.html">
+          <div class="product-card__thumb">상품 이미지</div>
+          <div class="product-card__body">
+            <span class="product-card__artist">aespa</span>
+            <h3 class="product-card__title">SYNK : COMPLæXITY 공식 프로그램북</h3>
+            <p class="product-card__price">₩ 18,000</p>
+          </div>
+        </a>
+
+        <a class="product-card" href="shop-detail.html">
+          <div class="product-card__thumb">상품 이미지</div>
+          <div class="product-card__body">
+            <span class="product-card__artist">TREASURE</span>
+            <h3 class="product-card__title">TREASURE MAP Vol.87 디지털 패키지</h3>
+            <p class="product-card__price">₩ 12,000 <small>다운로드</small></p>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+    /* chip 필터 목업 */
+    document.querySelectorAll(".shop-filters .chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        document.querySelectorAll(".shop-filters .chip").forEach((c) => c.classList.remove("is-active"));
+        chip.classList.add("is-active");
+      });
+    });
+  </script>
+</body>
+</html>

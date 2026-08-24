@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    [와이어프레임] ADMIN ACCOUNT (67~71은 표지만 존재 → 통합 관리 대시보드로 구성)
+    회원 / 아티스트·소속사 / 커뮤니티 / 신고 통합 관리 진입점
+  -->
+  <title>ADMIN Dashboard | WePlaNet</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
+</head>
+<body>
+  <div class="portal-shell">
+    <aside class="portal-sidebar portal-sidebar--admin">
+      <div class="portal-sidebar__org">
+        <div class="agency">WePlaNet</div>
+        <div class="artist">ADMIN</div>
+      </div>
+      <nav class="portal-sidebar__nav">
+        <a class="is-active" href="dashboard.html">대시보드</a>
+        <a href="#" onclick="alert('회원 관리 (목업)');return false;">회원 관리</a>
+        <a href="#" onclick="alert('아티스트 / 소속사 관리 (목업)');return false;">아티스트 · 소속사</a>
+        <a href="#" onclick="alert('커뮤니티 관리 (목업)');return false;">커뮤니티</a>
+        <a href="#" onclick="alert('신고 내역 (목업)');return false;">신고 내역</a>
+      </nav>
+      <div class="portal-sidebar__footer">
+        <a href="login.html">로그아웃</a>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <h1>최고관리자 대시보드</h1>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-card__label">전체 회원</div>
+          <div class="stat-card__value">2.4M</div>
+          <div class="stat-card__sub">오늘 +12,480</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">활성 커뮤니티</div>
+          <div class="stat-card__value">186</div>
+          <div class="stat-card__sub">신규 승인 대기 4</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">소속사 계정</div>
+          <div class="stat-card__value">42</div>
+          <div class="stat-card__sub">아티스트 계정 1,204</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">미처리 신고</div>
+          <div class="stat-card__value">37</div>
+          <div class="stat-card__sub" style="color:var(--wp-danger);">우선 처리 필요</div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <section class="panel">
+          <h2 class="panel__title">최근 가입 · 승인 요청</h2>
+          <div class="table-wrap" style="border:none;">
+            <table class="data-table">
+              <thead>
+                <tr><th>구분</th><th>이름</th><th>요청일</th><th></th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>커뮤니티</td>
+                  <td>NEW ARTIST A</td>
+                  <td>2026.08.23</td>
+                  <td><button type="button" class="btn btn--primary btn--sm">승인</button></td>
+                </tr>
+                <tr>
+                  <td>소속사</td>
+                  <td>Agency X</td>
+                  <td>2026.08.22</td>
+                  <td><button type="button" class="btn btn--primary btn--sm">승인</button></td>
+                </tr>
+                <tr>
+                  <td>아티스트</td>
+                  <td>artist_y</td>
+                  <td>2026.08.21</td>
+                  <td><button type="button" class="btn btn--ghost btn--sm">검토</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="panel__title">빠른 이동</h2>
+          <div class="stack">
+            <a class="btn btn--ghost btn--block" href="../portal/login.html">아티스트/에이전시 포털</a>
+            <a class="btn btn--ghost btn--block" href="../index.html">팬 메인</a>
+            <a class="btn btn--ghost btn--block" href="../../index.html">목업 사이트맵</a>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

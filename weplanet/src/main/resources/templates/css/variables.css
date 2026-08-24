@@ -1,0 +1,62 @@
+/**
+ * ============================================================
+ * WePlaNet – Design Tokens (CSS Variables)
+ * ------------------------------------------------------------
+ * 와이어프레임(FAN / ARTIST·AGENCY / ADMIN) 공통 색·간격·타이포.
+ * 모든 컴포넌트는 여기 토큰을 우선 사용한다.
+ * ============================================================
+ */
+
+:root {
+  /* ---------- Brand & Surface ---------- */
+  --wp-ink: #14181f;           /* 본문·헤더 기본 글자 */
+  --wp-ink-soft: #3a4250;      /* 보조 본문 */
+  --wp-muted: #6b7380;         /* 힌트·메타 정보 */
+  --wp-faint: #9aa1ab;         /* 플레이스홀더 */
+  --wp-paper: #f7f5f2;         /* 페이지 배경 (따뜻한 오프화이트) */
+  --wp-surface: #ffffff;       /* 카드·패널 배경 */
+  --wp-hairline: #e6e2dc;      /* 얇은 구분선 */
+  --wp-line: #d4cfc7;          /* 기본 테두리 */
+
+  /* 브랜드 액센트: 딥 틸 (보라/인디고 그라데이션 금지) */
+  --wp-brand: #0f6b6b;
+  --wp-brand-dark: #0a4f4f;
+  --wp-brand-soft: #e6f3f3;
+  --wp-accent: #c45c26;        /* CTA·강조 (따뜻한 코랄-브라운) */
+  --wp-accent-soft: #f8ebe3;
+
+  /* 상태 */
+  --wp-danger: #b42318;
+  --wp-danger-soft: #fef3f2;
+  --wp-success: #0f6b4a;
+  --wp-live: #e11d48;          /* LIVE 뱃지 */
+
+  /* ---------- Typography ---------- */
+  --wp-font: "Pretendard", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Segoe UI", sans-serif;
+  --wp-font-display: "Pretendard", "Apple SD Gothic Neo", sans-serif;
+
+  --wp-fs-xs: 12px;
+  --wp-fs-sm: 13px;
+  --wp-fs-md: 15px;
+  --wp-fs-lg: 18px;
+  --wp-fs-xl: 24px;
+  --wp-fs-2xl: 32px;
+  --wp-fs-3xl: 40px;
+
+  /* ---------- Layout ---------- */
+  --wp-header-h: 64px;
+  --wp-sidebar-w: 280px;
+  --wp-max: 1120px;
+  --wp-radius: 10px;           /* 와이어프레임은 각진 편 → 약한 라운드만 */
+  --wp-radius-sm: 6px;
+
+  /* ---------- Motion ---------- */
+  --wp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --wp-fast: 160ms;
+  --wp-med: 280ms;
+
+  /* ---------- Elevation (그림자 최소화) ---------- */
+  --wp-shadow: 0 1px 0 rgba(20, 24, 31, 0.06);
+  --wp-shadow-modal: 0 16px 48px rgba(20, 24, 31, 0.18);
+}

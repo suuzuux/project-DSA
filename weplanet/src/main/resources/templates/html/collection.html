@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 나의 컬렉션 (업적/뱃지) + 상세 모달 -->
+  <title>WePlaNet – 나의 컬렉션</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" href="home.html">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn">🌐</button>
+      <a class="btn btn--ghost btn--sm" href="index.html">로그아웃</a>
+      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
+    </div>
+  </header>
+
+  <main class="container section">
+    <div class="flex-between mb-24">
+      <h1 class="section__title" style="font-size:var(--wp-fs-2xl);">My Collection <span class="text-muted" style="font-size:var(--wp-fs-lg);">6</span></h1>
+      <a class="btn btn--ghost btn--sm" href="home.html">← 홈</a>
+    </div>
+
+    <div class="collection-grid">
+      <!-- 카드 반복: 아티스트별 뱃지 요약 -->
+      <article class="collection-card">
+        <div class="collection-card__head">
+          <div>
+            <strong>RIIZE</strong>
+            <p class="text-xs text-muted mt-8">뱃지 8 · 스페셜 2</p>
+          </div>
+          <button type="button" class="btn btn--soft btn--sm" data-modal-open="collectionDetail">전체보기 →</button>
+        </div>
+        <div class="badge-row">
+          <div class="badge-icon" title="뱃지">🏅</div>
+          <div class="badge-icon">⭐</div>
+          <div class="badge-icon">🎤</div>
+        </div>
+      </article>
+
+      <article class="collection-card">
+        <div class="collection-card__head">
+          <div>
+            <strong>CORTIS</strong>
+            <p class="text-xs text-muted mt-8">뱃지 5 · 스페셜 1</p>
+          </div>
+          <button type="button" class="btn btn--soft btn--sm" data-modal-open="collectionDetail">전체보기 →</button>
+        </div>
+        <div class="badge-row">
+          <div class="badge-icon">🎧</div>
+          <div class="badge-icon">💿</div>
+          <div class="badge-icon">🌙</div>
+        </div>
+      </article>
+
+      <article class="collection-card">
+        <div class="collection-card__head">
+          <div>
+            <strong>aespa</strong>
+            <p class="text-xs text-muted mt-8">뱃지 12 · 스페셜 3</p>
+          </div>
+          <button type="button" class="btn btn--soft btn--sm" data-modal-open="collectionDetail">전체보기 →</button>
+        </div>
+        <div class="badge-row">
+          <div class="badge-icon">⚡</div>
+          <div class="badge-icon">🖤</div>
+          <div class="badge-icon">🎮</div>
+        </div>
+      </article>
+
+      <article class="collection-card">
+        <div class="collection-card__head">
+          <div>
+            <strong>TREASURE</strong>
+            <p class="text-xs text-muted mt-8">뱃지 4 · 스페셜 0</p>
+          </div>
+          <button type="button" class="btn btn--soft btn--sm" data-modal-open="collectionDetail">전체보기 →</button>
+        </div>
+        <div class="badge-row">
+          <div class="badge-icon">💎</div>
+          <div class="badge-icon">🗺️</div>
+          <div class="badge-icon">🔥</div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <!-- 상세 모달: 배지 달성율 -->
+  <div class="modal-backdrop" id="collectionDetail" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal__head">
+        <h2 class="modal__title">RIIZE · Badge 8 / 14</h2>
+        <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+      </div>
+      <p class="text-sm mb-16">배지 달성율 <strong>64%</strong></p>
+      <div class="progress mb-16"><span style="width:64%"></span></div>
+      <div class="badge-row" style="flex-wrap:wrap;">
+        <div class="badge-icon">🏅</div><div class="badge-icon">⭐</div><div class="badge-icon">🎤</div>
+        <div class="badge-icon">📷</div><div class="badge-icon">💌</div><div class="badge-icon">🎂</div>
+        <div class="badge-icon">🌈</div><div class="badge-icon">🎯</div>
+        <div class="badge-icon" style="opacity:.35;" title="미획득">?</div>
+        <div class="badge-icon" style="opacity:.35;">?</div>
+        <div class="badge-icon" style="opacity:.35;">?</div>
+        <div class="badge-icon" style="opacity:.35;">?</div>
+        <div class="badge-icon" style="opacity:.35;">?</div>
+        <div class="badge-icon" style="opacity:.35;">?</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+</body>
+</html>

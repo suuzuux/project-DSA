@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 스케줄 관리 캘린더 -->
+  <title>스케줄 관리 | Artist Portal</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
+  <style>
+    /* 페이지 한정: 월간 스케줄 그리드 */
+    .sched-cal { background: var(--wp-surface); border: 1px solid var(--wp-hairline); border-radius: var(--wp-radius); overflow: hidden; }
+    .sched-cal__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--wp-hairline); }
+    .sched-cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+    .sched-cal__dow { padding: 10px; text-align: center; font-size: 11px; font-weight: 700; color: var(--wp-muted); background: var(--wp-paper); }
+    .sched-cal__cell { min-height: 100px; padding: 8px; border-top: 1px solid var(--wp-hairline); border-right: 1px solid var(--wp-hairline); font-size: 12px; }
+    .sched-cal__cell:nth-child(7n) { border-right: none; }
+    .sched-cal__num { font-weight: 700; margin-bottom: 6px; color: var(--wp-ink-soft); }
+    .sched-cal__event { background: var(--wp-brand-soft); color: var(--wp-brand-dark); padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; line-height: 1.3; }
+  </style>
+</head>
+<body>
+  <div class="portal-shell">
+    <aside class="portal-sidebar">
+      <div class="portal-sidebar__org">
+        <div class="agency">SM Entertainment.</div>
+        <div class="artist">Aespa</div>
+      </div>
+      <nav class="portal-sidebar__nav">
+        <a href="dashboard.html">📊 대시보드</a>
+        <a href="notices.html">📢 공지사항 관리</a>
+        <a class="is-active" href="schedule.html">📆 스케줄 관리</a>
+        <a href="media.html">🎬 미디어 관리</a>
+        <a href="profile.html">👤 프로필 관리</a>
+        <a href="reports.html">⚙ 신고함 / 차단</a>
+      </nav>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <h1>스케줄 관리</h1>
+        <div class="flex-center">
+          <select class="form-select" style="width:auto;min-height:38px;"><option>Aespa</option></select>
+          <button type="button" class="btn btn--primary btn--sm" onclick="alert('일정 추가 (목업)')">+ 일정 추가</button>
+        </div>
+      </div>
+
+      <div class="sched-cal">
+        <div class="sched-cal__head">
+          <button type="button" class="icon-btn">◀</button>
+          <strong>2026 - 08</strong>
+          <button type="button" class="icon-btn">▶</button>
+        </div>
+        <div class="sched-cal__grid">
+          <div class="sched-cal__dow">SUN</div><div class="sched-cal__dow">MON</div><div class="sched-cal__dow">TUE</div>
+          <div class="sched-cal__dow">WED</div><div class="sched-cal__dow">THU</div><div class="sched-cal__dow">FRI</div><div class="sched-cal__dow">SAT</div>
+
+          <div class="sched-cal__cell"><div class="sched-cal__num">1</div><div class="sched-cal__event">MBC 쇼!음악중심</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">2</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">3</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">4</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">5</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">6</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">7</div></div>
+
+          <div class="sched-cal__cell"><div class="sched-cal__num">8</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">9</div><div class="sched-cal__event">SBS 인기가요</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">10</div><div class="sched-cal__event">KBS 뮤직뱅크</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">11</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">12</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">13</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">14</div></div>
+
+          <div class="sched-cal__cell"><div class="sched-cal__num">15</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">16</div><div class="sched-cal__event">SBS 인기가요</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">17</div><div class="sched-cal__event">KBS 뮤직뱅크</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">18</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">19</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">20</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">21</div></div>
+
+          <div class="sched-cal__cell"><div class="sched-cal__num">22</div><div class="sched-cal__event">SBS 인기가요</div><div class="sched-cal__event">KBS 키스 더 라디오</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">23</div><div class="sched-cal__event">KBS 뮤직뱅크</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">24</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">25</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">26</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">27</div><div class="sched-cal__event">M! Countdown 사전녹화</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">28</div></div>
+
+          <div class="sched-cal__cell"><div class="sched-cal__num">29</div><div class="sched-cal__event">SYNK : COMPLæXITY</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">30</div><div class="sched-cal__event">SYNK : COMPLæXITY</div></div>
+          <div class="sched-cal__cell"><div class="sched-cal__num">31</div></div>
+          <div class="sched-cal__cell"></div><div class="sched-cal__cell"></div><div class="sched-cal__cell"></div><div class="sched-cal__cell"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

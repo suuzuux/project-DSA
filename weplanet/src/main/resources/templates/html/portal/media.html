@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 미디어 관리 목록 -->
+  <title>미디어 관리 | Artist Portal</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
+</head>
+<body>
+  <div class="portal-shell">
+    <aside class="portal-sidebar">
+      <div class="portal-sidebar__org">
+        <div class="agency">HYBE</div>
+        <div class="artist">CORTIS</div>
+      </div>
+      <nav class="portal-sidebar__nav">
+        <a href="dashboard.html">📊 대시보드</a>
+        <a href="notices.html">📢 공지사항 관리</a>
+        <a href="schedule.html">📆 스케줄 관리</a>
+        <a class="is-active" href="media.html">🎬 미디어 관리</a>
+        <a href="profile.html">👤 프로필 관리</a>
+        <a href="reports.html">⚙ 신고함 / 차단</a>
+      </nav>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <h1>미디어 관리</h1>
+        <div class="flex-center">
+          <select class="form-select" style="width:auto;min-height:38px;"><option>CORTIS</option></select>
+          <a class="btn btn--primary btn--sm" href="media-form.html">등록하기</a>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>카테고리</th>
+              <th>제목</th>
+              <th>업로드일자</th>
+              <th>공개대상</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tag tag--public">VIDEO</span></td>
+              <td>'What You Want' Conceptual Performance Film</td>
+              <td>2026.08.22</td>
+              <td><span class="tag tag--public">전체공개</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag--member">PHOTO</span></td>
+              <td>2026 CORTIS TOUR IN INCHEON Photo Sketch</td>
+              <td>2026.08.22</td>
+              <td><span class="tag tag--member">멤버십전용</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag--public">VIDEO</span></td>
+              <td>Rehearsal B-side Cam (250530 ver.)</td>
+              <td>2026.08.20</td>
+              <td><span class="tag tag--private">비공개</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag--public">PHOTO</span></td>
+              <td>제목 예시</td>
+              <td>2026.08.18</td>
+              <td><span class="tag tag--public">공개</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="pagination">
+        <span class="is-active">1</span>
+        <a href="#">2</a><a href="#">3</a><a href="#">4</a><a href="#">5</a>
+      </nav>
+    </main>
+  </div>
+</body>
+</html>

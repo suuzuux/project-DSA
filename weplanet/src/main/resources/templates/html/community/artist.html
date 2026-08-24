@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] Artist 게시판 -->
+  <title>RIIZE – Artist | WePlaNet</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/community.css" />
+  <link rel="stylesheet" href="../../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="../">
+  <header class="community-top">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+    <div class="community-top__left">
+      <a class="home-link" href="../home.html">🏠</a>
+      <span class="avatar avatar--sm">RZ</span>
+      <h1 class="community-top__name">RIIZE</h1>
+    </div>
+    <div class="community-top__right">
+      <button type="button" class="icon-btn">🌐</button>
+      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
+      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
+      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
+    </div>
+  </header>
+
+  <div class="community-body" style="margin-top:20px;">
+    <div class="community-main">
+      <nav class="tabs">
+        <a href="highlight.html">Highlight</a>
+        <a href="notice.html">Notice</a>
+        <a href="fan.html">Fan</a>
+        <a class="is-active" href="artist.html">Artist</a>
+        <a href="media.html">Media</a>
+        <a href="live.html">Live</a>
+      </nav>
+
+      <div class="feed">
+        <article class="post-card">
+          <div class="post-card__head">
+            <div class="avatar">원</div>
+            <div class="post-card__meta">
+              <div class="post-card__name">원빈 <span class="badge-verified">✓</span></div>
+              <div class="post-card__time">2026.08.21 15:24</div>
+            </div>
+          </div>
+          <p class="post-card__body">아티스트가 작성한 게시글 내용이 보일 영역</p>
+          <div class="post-card__media"><div class="media-ph" style="aspect-ratio:16/9;">사진 영역</div></div>
+          <div class="post-card__actions">
+            <button type="button" data-like>♥ <span data-like-count>100000</span></button>
+            <a href="fan-detail.html">💬 98k</a>
+          </div>
+        </article>
+        <article class="post-card">
+          <div class="post-card__head">
+            <div class="avatar">성</div>
+            <div class="post-card__meta">
+              <div class="post-card__name">성찬 <span class="badge-verified">✓</span></div>
+              <div class="post-card__time">2026.08.21 15:24</div>
+            </div>
+          </div>
+          <p class="post-card__body">오늘도 브리즈 고마워!</p>
+          <div class="post-card__actions">
+            <button type="button" data-like>♥ <span data-like-count>52000</span></button>
+            <span>💬 4.2k</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <aside class="community-aside">
+      <div class="membership-card membership-card--joined">
+        <p class="membership-card__status">✔ 가입중</p>
+        <h3 class="membership-card__title">RIIZE Membership</h3>
+        <p class="membership-card__period">2025.11.27 ~ 2026.11.26 (KST)</p>
+        <button type="button" class="btn btn--ghost btn--block btn--sm" data-modal-open="membershipDetailModal">Membership 상세보기</button>
+      </div>
+    </aside>
+  </div>
+  <script src="../../js/main.js"></script>
+  <script src="../../js/shell.js"></script>
+</body>
+</html>

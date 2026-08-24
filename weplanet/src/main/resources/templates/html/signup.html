@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 메인 – 회원가입 방법 선택 -->
+  <title>WePlaNet – 회원가입</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <a class="auth-card__back" href="index.html">← 뒤로</a>
+    <div class="flex-between mb-16">
+      <span></span>
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+    </div>
+
+    <h1 class="auth-card__title">위플래닛의 모든 서비스,<br />가입 한 번으로<br />간편하게 즐겨요!</h1>
+    <p class="auth-card__brand">We<span>Pla</span>Net</p>
+
+    <div class="stack">
+      <button type="button" class="btn btn--sns" onclick="location.href='home.html'">
+        <span class="sns-icon sns-icon--google">G</span> Google로 가입하기
+      </button>
+      <button type="button" class="btn btn--sns" onclick="location.href='home.html'">
+        <span class="sns-icon sns-icon--kakao">K</span> Kakao로 가입하기
+      </button>
+      <button type="button" class="btn btn--sns" onclick="location.href='home.html'">
+        <span class="sns-icon sns-icon--line">L</span> LINE으로 가입하기
+      </button>
+    </div>
+
+    <div class="auth-divider">또는</div>
+
+    <a class="btn btn--primary btn--block btn--lg" href="signup-id.html">아이디로 가입하기</a>
+
+    <p class="text-sm text-muted mt-24" style="text-align:center;">
+      이미 계정이 있나요? <a href="login.html" style="color:var(--wp-brand);font-weight:700;">로그인</a>
+    </p>
+  </div>
+</body>
+</html>

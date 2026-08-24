@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] Fan 게시글 + 댓글 / 아티스트 댓글 구분 -->
+  <title>Fan 게시글 | WePlaNet</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/community.css" />
+  <link rel="stylesheet" href="../../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="../">
+  <header class="community-top">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+    <div class="community-top__left">
+      <a class="home-link" href="../home.html">🏠</a>
+      <span class="avatar avatar--sm">RZ</span>
+      <h1 class="community-top__name">RIIZE</h1>
+    </div>
+    <div class="community-top__right">
+      <button type="button" class="icon-btn">🌐</button>
+      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
+      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
+      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
+    </div>
+  </header>
+
+  <main class="container section" style="max-width:720px;">
+    <a class="section__link mb-16" href="fan.html" style="display:inline-block;">← Fan 게시판</a>
+
+    <article class="post-card">
+      <div class="post-card__head">
+        <div class="avatar">팬</div>
+        <div class="post-card__meta">
+          <div class="post-card__name">팬 닉네임 <span class="badge-verified">✓</span></div>
+          <div class="post-card__time">2026.08.21 15:24</div>
+        </div>
+      </div>
+      <p class="post-card__body">팬이 작성한 게시글 내용이 보일 영역</p>
+      <a class="translate-link" href="#">번역보기</a>
+      <div class="post-card__media mt-12"><div class="media-ph" style="aspect-ratio:16/10;">사진</div></div>
+      <div class="post-card__actions">
+        <button type="button" data-like>♥ <span data-like-count>42</span></button>
+        <button type="button">💬</button>
+      </div>
+    </article>
+
+    <!-- 댓글 작성 -->
+    <div class="comment-box">
+      <p class="form-label">댓글 작성</p>
+      <textarea class="form-textarea" data-count maxlength="100" placeholder="댓글을 입력하세요." style="min-height:80px;"></textarea>
+      <div class="comment-box__actions">
+        <span class="char-count text-xs text-muted">0 / 100</span>
+        <div class="flex-center">
+          <button type="button" class="btn btn--ghost btn--sm">취소</button>
+          <button type="button" class="btn btn--primary btn--sm" onclick="alert('댓글 등록 (목업)')">등록</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="comment-list">
+      <div class="comment-list__head">
+        <span>전체 댓글 24</span>
+        <button type="button" class="text-sm" title="정렬">🔃</button>
+      </div>
+
+      <div class="comment-item">
+        <div class="avatar avatar--sm">팬</div>
+        <div class="comment-item__body">
+          <div class="comment-item__meta"><strong>팬 닉네임 ✓</strong> · 2026.08.21 15:24</div>
+          <p class="comment-item__text">팬이 작성한 댓글 내용이 보일 영역</p>
+          <a class="translate-link" href="#">번역보기</a>
+          <div class="post-card__actions" style="border:none;padding-top:6px;">
+            <button type="button" data-like>♥ <span data-like-count>3</span></button>
+            <button type="button">💬</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="comment-item">
+        <div class="avatar avatar--sm">팬</div>
+        <div class="comment-item__body">
+          <div class="comment-item__meta"><strong>팬 닉네임 ✓</strong> · 2026.08.21 15:24</div>
+          <p class="comment-item__text">팬이 작성한 댓글 내용이 보일 영역</p>
+        </div>
+      </div>
+
+      <div class="comment-list__head mt-16">
+        <span>아티스트 댓글 1</span>
+      </div>
+      <div class="comment-item" style="background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;">
+        <div class="avatar avatar--sm">아</div>
+        <div class="comment-item__body">
+          <div class="comment-item__meta"><strong>아티스트 닉네임 ✓</strong> · 2026.08.21 15:24</div>
+          <p class="comment-item__text">아티스트가 작성한 댓글 내용이 보일 영역</p>
+          <a class="translate-link" href="#">번역보기</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script src="../../js/main.js"></script>
+  <script src="../../js/shell.js"></script>
+</body>
+</html>

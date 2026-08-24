@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [Shop] 상품 상세 – 옵션 선택 · 장바구니 · 멤버십 전용 안내 -->
+  <title>상품 상세 | WePlaNet Shop</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+  <link rel="stylesheet" href="../css/shop.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" href="shop.html">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net Shop</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <a class="icon-btn" href="shop-cart.html" aria-label="장바구니">🛒</a>
+      <button type="button" class="icon-btn">🌐</button>
+    </div>
+  </header>
+
+  <main class="container section">
+    <a class="section__link mb-16" href="shop.html" style="display:inline-block;">← Shop 목록</a>
+
+    <article class="product-detail">
+      <div class="product-detail__gallery">상품 이미지 영역</div>
+
+      <div class="product-detail__info">
+        <p class="text-sm" style="color:var(--wp-brand);font-weight:700;">RIIZE · Official MD</p>
+        <h1>2026 RIIZE OFFICIAL LIGHT STICK Ver.2</h1>
+        <p class="text-sm text-muted">공식 응원봉 · 배터리 별도 · 국내/해외 배송</p>
+        <p class="product-detail__price">₩ 59,000</p>
+
+        <!-- 멤버십 전용 상품 예시 (주석 토글 가능) -->
+        <div class="membership-notice hidden" id="memberOnlyNotice">
+          <strong>멤버십 전용 상품</strong><br />
+          RIIZE Membership 가입 회원만 구매할 수 있습니다.
+          <a href="membership.html">멤버십 가입하기 ›</a>
+        </div>
+
+        <p class="product-detail__desc">
+          2026 RIIZE 공식 응원봉 Ver.2입니다. 콘서트·팬미팅 현장 및 WePlaNet
+          연동 앱에서 응원 연출에 사용할 수 있습니다. 멤버십 회원은 선예매 기간에
+          우선 구매 가능합니다.
+        </p>
+
+        <div class="product-detail__options">
+          <label for="qty">수량</label>
+          <select class="form-select" id="qty" style="max-width:120px;">
+            <option>1</option>
+            <option>2</option>
+            <option>3</option>
+            <option>4</option>
+            <option>5</option>
+          </select>
+        </div>
+
+        <div class="product-detail__options">
+          <label for="color">색상</label>
+          <select class="form-select" id="color" style="max-width:200px;">
+            <option>Original Blue</option>
+            <option>Limited Silver</option>
+          </select>
+        </div>
+
+        <div class="stack">
+          <button type="button" class="btn btn--primary btn--block btn--lg" onclick="location.href='shop-cart.html'">
+            장바구니 담기
+          </button>
+          <button type="button" class="btn btn--accent btn--block" onclick="alert('결제 페이지 (목업)')">
+            바로 구매
+          </button>
+          <a class="btn btn--ghost btn--block" href="community/highlight.html">RIIZE 커뮤니티로</a>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+</body>
+</html>

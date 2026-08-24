@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    [와이어프레임] 최고 관리자 로그인
+    AUTHORIZED PERSONNEL ONLY · 아이디/비번/보안 인증번호
+  -->
+  <title>ADMIN LOGIN | WePlaNet</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
+</head>
+<body class="admin-login">
+  <div class="admin-login__card">
+    <p class="admin-login__eyebrow">AUTHORIZED PERSONNEL ONLY</p>
+    <h1 class="admin-login__title">ADMIN LOGIN</h1>
+    <p class="admin-login__desc">
+      서비스 전체를 안전하게 관리합니다.<br />
+      회원, 아티스트, 소속사, 커뮤니티와 신고 내역을 통합 관리하는 최고관리자 전용 공간입니다.
+    </p>
+
+    <form data-mock-submit="dashboard.html">
+      <div class="form-group">
+        <label class="form-label" for="adminId">관리자 아이디</label>
+        <input class="form-input" id="adminId" placeholder="아이디 입력" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="adminPw">비밀번호</label>
+        <input class="form-input" id="adminPw" type="password" placeholder="비밀번호 입력" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="otp">보안 인증번호</label>
+        <div class="form-row">
+          <input class="form-input" id="otp" inputmode="numeric" placeholder="숫자만 입력" />
+          <button type="button" class="btn btn--ghost btn--sm" onclick="alert('인증번호 발송 (목업)')">인증</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn--primary btn--block btn--lg">관리자 시스템 접속 →</button>
+    </form>
+
+    <p class="text-xs mt-24" style="color:#5a7a78;text-align:center;">
+      <a href="../../index.html" style="color:#7a9593;">← 목업 사이트맵으로</a>
+    </p>
+  </div>
+  <script src="../../js/main.js"></script>
+</body>
+</html>

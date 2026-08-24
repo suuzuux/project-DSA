@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 신고함 / 차단 관리 -->
+  <title>신고함 / 차단 | Artist Portal</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
+</head>
+<body>
+  <div class="portal-shell">
+    <aside class="portal-sidebar">
+      <div class="portal-sidebar__org">
+        <div class="agency">YG Entertainment.</div>
+        <div class="artist">TREASURE</div>
+      </div>
+      <nav class="portal-sidebar__nav">
+        <a href="dashboard.html">📊 대시보드</a>
+        <a href="notices.html">📢 공지사항 관리</a>
+        <a href="schedule.html">📆 스케줄 관리</a>
+        <a href="media.html">🎬 미디어 관리</a>
+        <a href="profile.html">👤 프로필 관리</a>
+        <a class="is-active" href="reports.html">⚙ 신고함 / 차단</a>
+      </nav>
+      <div class="portal-sidebar__footer">
+        <a href="../community/highlight.html">← 커뮤니티 이동</a>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <h1>신고함 / 차단 관리</h1>
+        <a class="btn btn--ghost btn--sm" href="dashboard.html">← 뒤로 가기</a>
+      </div>
+
+      <div class="chip-row mb-16">
+        <button type="button" class="chip is-active">신고 대기 (12)</button>
+        <button type="button" class="chip">처리 완료</button>
+        <button type="button" class="chip">차단 목록</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>유형</th>
+              <th>대상</th>
+              <th>사유</th>
+              <th>접수일</th>
+              <th>조치</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>게시글</td>
+              <td>팬닉네임_A</td>
+              <td>스팸 / 광고</td>
+              <td>2026.08.22</td>
+              <td>
+                <button type="button" class="btn btn--ghost btn--sm" onclick="alert('숨김 (목업)')">숨김</button>
+                <button type="button" class="btn btn--ghost btn--sm" onclick="alert('차단 (목업)')">차단</button>
+              </td>
+            </tr>
+            <tr>
+              <td>댓글</td>
+              <td>팬닉네임_B</td>
+              <td>욕설 / 혐오</td>
+              <td>2026.08.21</td>
+              <td>
+                <button type="button" class="btn btn--ghost btn--sm">숨김</button>
+                <button type="button" class="btn btn--ghost btn--sm">차단</button>
+              </td>
+            </tr>
+            <tr>
+              <td>게시글</td>
+              <td>팬닉네임_C</td>
+              <td>개인정보 노출</td>
+              <td>2026.08.20</td>
+              <td>
+                <button type="button" class="btn btn--ghost btn--sm">숨김</button>
+                <button type="button" class="btn btn--ghost btn--sm">차단</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

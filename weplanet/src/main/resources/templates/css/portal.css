@@ -1,0 +1,404 @@
+/**
+ * ============================================================
+ * WePlaNet – Artist / Agency Portal & Admin
+ * ------------------------------------------------------------
+ * 대시보드형 레이아웃 (사이드바 + 메인). 팬 UI와 톤은 맞추되
+ * 정보 밀도를 높인 관리 화면용.
+ * ============================================================
+ */
+
+/* ---------- Portal login split ---------- */
+.portal-login {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+}
+
+@media (max-width: 900px) {
+  .portal-login {
+    grid-template-columns: 1fr;
+  }
+}
+
+.portal-login__visual {
+  background:
+    linear-gradient(160deg, rgba(15, 107, 107, 0.92), rgba(20, 24, 31, 0.88)),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  color: #fff;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.portal-login__visual h1 {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.2;
+  max-width: 420px;
+}
+
+.portal-login__visual p {
+  margin-top: 14px;
+  opacity: 0.85;
+  max-width: 380px;
+  line-height: 1.55;
+}
+
+.portal-login__form-wrap {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  background: var(--wp-paper);
+}
+
+.portal-login__form {
+  width: min(100%, 400px);
+}
+
+.role-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius-sm);
+  padding: 4px;
+  margin-bottom: 24px;
+}
+
+.role-tabs button {
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: var(--wp-fs-sm);
+  color: var(--wp-muted);
+}
+
+.role-tabs button.is-active {
+  background: var(--wp-brand);
+  color: #fff;
+}
+
+/* 프로필 선택 그리드 (아티스트 로그인 후) */
+.profile-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.profile-pick {
+  aspect-ratio: 1;
+  border: 2px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  display: grid;
+  place-items: center;
+  background: var(--wp-surface);
+  font-weight: 700;
+  color: var(--wp-brand-dark);
+  transition: border-color var(--wp-fast);
+}
+
+.profile-pick:hover,
+.profile-pick.is-selected {
+  border-color: var(--wp-brand);
+  background: var(--wp-brand-soft);
+}
+
+/* ---------- App shell (sidebar) ---------- */
+.portal-shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+@media (max-width: 860px) {
+  .portal-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+
+  .portal-sidebar__nav {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .portal-sidebar__nav a {
+    padding: 8px 10px !important;
+  }
+}
+
+.portal-sidebar {
+  background: #15201f;
+  color: #d7e0df;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.portal-sidebar__org {
+  padding: 0 8px;
+}
+
+.portal-sidebar__org .agency {
+  font-size: var(--wp-fs-xs);
+  opacity: 0.65;
+  margin-bottom: 2px;
+}
+
+.portal-sidebar__org .artist {
+  font-weight: 800;
+  font-size: var(--wp-fs-lg);
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.portal-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.portal-sidebar__nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--wp-radius-sm);
+  font-size: var(--wp-fs-sm);
+  font-weight: 500;
+  color: #b7c4c2;
+}
+
+.portal-sidebar__nav a:hover,
+.portal-sidebar__nav a.is-active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.portal-sidebar__footer {
+  padding: 8px;
+  font-size: var(--wp-fs-xs);
+}
+
+.portal-sidebar__footer a {
+  color: #8aa;
+}
+
+.portal-main {
+  padding: 28px 32px 48px;
+  background: var(--wp-paper);
+}
+
+.portal-main__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.portal-main__head h1 {
+  font-size: var(--wp-fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.artist-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--wp-fs-sm);
+}
+
+.artist-select select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--wp-line);
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-surface);
+}
+
+/* ---------- Dashboard stats ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  padding: 18px;
+}
+
+.stat-card__label {
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.stat-card__value {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.stat-card__sub {
+  margin-top: 6px;
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-success);
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  padding: 18px;
+}
+
+.panel__title {
+  font-weight: 800;
+  margin-bottom: 14px;
+  font-size: var(--wp-fs-md);
+}
+
+.bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  gap: 8px;
+  align-items: center;
+  font-size: var(--wp-fs-xs);
+}
+
+.bar-row__track {
+  height: 8px;
+  background: var(--wp-hairline);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bar-row__track > span {
+  display: block;
+  height: 100%;
+  background: var(--wp-brand);
+}
+
+.queue-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--wp-hairline);
+  font-size: var(--wp-fs-sm);
+}
+
+.queue-list li:last-child {
+  border-bottom: none;
+}
+
+.queue-count {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--wp-accent-soft);
+  color: #8a3d14;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: var(--wp-fs-xs);
+}
+
+/* ---------- Admin dark login ---------- */
+.admin-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background: #0b1110;
+  color: #e8eeed;
+}
+
+.admin-login__card {
+  width: min(100%, 420px);
+  border: 1px solid #243230;
+  border-radius: 12px;
+  padding: 32px 28px;
+  background: #121a19;
+}
+
+.admin-login__card .form-input {
+  background: #0b1110;
+  border-color: #2a3a38;
+  color: #e8eeed;
+}
+
+.admin-login__card .form-label {
+  color: #9bb;
+}
+
+.admin-login__eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #5a7a78;
+  margin-bottom: 10px;
+}
+
+.admin-login__title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 8px;
+}
+
+.admin-login__desc {
+  font-size: var(--wp-fs-sm);
+  color: #7a9593;
+  margin-bottom: 28px;
+  line-height: 1.5;
+}
+
+/* Admin shell – slightly darker sidebar accent */
+.portal-sidebar--admin {
+  background: #0e1615;
+  border-right: 1px solid #1c2a28;
+}

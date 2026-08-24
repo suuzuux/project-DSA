@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] Fan 게시판 – 포스트 / 작성 모달 -->
+  <title>RIIZE – Fan | WePlaNet</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/community.css" />
+  <link rel="stylesheet" href="../../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="../">
+  <header class="community-top">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+    <div class="community-top__left">
+      <a class="home-link" href="../home.html">🏠</a>
+      <span class="avatar avatar--sm">RZ</span>
+      <h1 class="community-top__name">RIIZE</h1>
+    </div>
+    <div class="community-top__right">
+      <button type="button" class="icon-btn">🌐</button>
+      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
+      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
+      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
+    </div>
+  </header>
+
+  <div class="community-body" style="margin-top:20px;">
+    <div class="community-main">
+      <nav class="tabs">
+        <a href="highlight.html">Highlight</a>
+        <a href="notice.html">Notice</a>
+        <a class="is-active" href="fan.html">Fan</a>
+        <a href="artist.html">Artist</a>
+        <a href="media.html">Media</a>
+        <a href="live.html">Live</a>
+      </nav>
+
+      <div class="board-toolbar">
+        <div class="board-tabs">
+          <a class="is-active" href="fan.html">포스트</a>
+          <a href="project.html">프로젝트</a>
+        </div>
+        <div class="flex-center">
+          <select class="form-select" style="width:auto;min-height:36px;">
+            <option>전체순</option>
+            <option>인기순</option>
+          </select>
+          <button type="button" class="btn btn--primary btn--sm" data-modal-open="writePostModal">포스트 작성하기</button>
+        </div>
+      </div>
+
+      <div class="feed">
+        <article class="post-card">
+          <a href="fan-detail.html" style="display:block;color:inherit;">
+            <div class="post-card__head">
+              <div class="avatar">팬</div>
+              <div class="post-card__meta">
+                <div class="post-card__name">팬 닉네임 <span class="badge-verified" title="멤버십 인증">✓</span></div>
+                <div class="post-card__time">2026.08.21 15:24</div>
+              </div>
+            </div>
+            <p class="post-card__body">팬이 작성한 게시글 내용이 보일 영역</p>
+            <div class="post-card__media"><div class="media-ph" style="aspect-ratio:16/10;">사진 영역</div></div>
+          </a>
+          <div class="post-card__actions">
+            <button type="button" data-like>♥ <span data-like-count>1</span></button>
+            <a href="fan-detail.html">💬</a>
+          </div>
+        </article>
+
+        <article class="post-card">
+          <div class="post-card__head">
+            <div class="avatar">스</div>
+            <div class="post-card__meta">
+              <div class="post-card__name">스즈키 <span class="badge-verified">✓</span></div>
+              <div class="post-card__time">2026.08.21 15:24</div>
+            </div>
+          </div>
+          <p class="post-card__body">#원빈 뭐해</p>
+          <div class="post-card__actions">
+            <button type="button" data-like>♥ <span data-like-count>103</span></button>
+            <span>💬 22</span>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <aside class="community-aside">
+      <div class="membership-card membership-card--joined">
+        <p class="membership-card__status">✔ 가입중</p>
+        <h3 class="membership-card__title">RIIZE Membership</h3>
+        <p class="membership-card__period">2025.11.27 ~ 2026.11.26 (KST)</p>
+        <button type="button" class="btn btn--ghost btn--block btn--sm" data-modal-open="membershipDetailModal">Membership 상세보기</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 포스트 작성 모달 -->
+  <div class="modal-backdrop" id="writePostModal">
+    <div class="modal modal--wide">
+      <div class="modal__head">
+        <h2 class="modal__title">포스트 작성하기</h2>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <textarea class="form-textarea" data-count maxlength="1000" placeholder="포스트를 남겨보세요 …"></textarea>
+      <div class="flex-between mt-8">
+        <span class="char-count text-xs text-muted">0 / 1000</span>
+        <div class="flex-center">
+          <button type="button" class="icon-btn" title="이미지">🖼</button>
+          <button type="button" class="icon-btn" title="링크">🔗</button>
+          <label class="text-xs flex-center"><input type="checkbox" /> Hide from Artists</label>
+        </div>
+      </div>
+      <button type="button" class="btn btn--primary btn--block mt-16" onclick="alert('등록 (목업)');">등록하기</button>
+    </div>
+  </div>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/shell.js"></script>
+</body>
+</html>

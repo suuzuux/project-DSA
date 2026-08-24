@@ -1,0 +1,646 @@
+/**
+ * ============================================================
+ * WePlaNet – Community Styles
+ * ------------------------------------------------------------
+ * 아티스트 커뮤니티 내부 (Highlight / Notice / Fan / Artist /
+ * Media / Live / Profile). 공통 헤더·탭·멤버십 배너 포함.
+ * ============================================================
+ */
+
+/* ---------- Community Top Bar ---------- */
+.community-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  height: var(--wp-header-h);
+  background: var(--wp-surface);
+  border-bottom: 1px solid var(--wp-hairline);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* 햄버거(메뉴)는 community-top 직속 첫 자식으로 삽입됨 */
+.community-top > .menu-toggle {
+  flex-shrink: 0;
+}
+
+.community-top__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  min-width: 0;
+  flex: 1;
+}
+
+.community-top__right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.community-top__left a.home-link {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--wp-paper);
+  color: var(--wp-ink-soft);
+}
+
+.community-top__left a.home-link:hover {
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand);
+}
+
+.community-top__name {
+  font-size: var(--wp-fs-lg);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Hero Header Image ---------- */
+.community-hero {
+  height: 180px;
+  background:
+    linear-gradient(180deg, transparent 30%, rgba(20, 24, 31, 0.55)),
+    linear-gradient(120deg, #1e4d4d, #2a5a6a 50%, #8b4513);
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+  padding: 20px 24px;
+  position: relative;
+}
+
+.community-hero__viewers {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: var(--wp-fs-xs);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 6px 10px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+/* ---------- Community Body Layout ---------- */
+.community-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  width: min(100% - 32px, 1100px);
+  margin: 20px auto 48px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .community-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.community-main {
+  min-width: 0;
+}
+
+.community-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---------- Membership Card ---------- */
+.membership-card {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  padding: 18px;
+}
+
+.membership-card__title {
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.membership-card__desc {
+  font-size: var(--wp-fs-sm);
+  color: var(--wp-muted);
+  margin-bottom: 14px;
+  line-height: 1.45;
+}
+
+.membership-card--joined {
+  border-color: #b8d9d9;
+  background: linear-gradient(180deg, #f3faf9, #fff);
+}
+
+.membership-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--wp-fs-xs);
+  font-weight: 700;
+  color: var(--wp-success);
+  margin-bottom: 8px;
+}
+
+.membership-card__period {
+  font-size: var(--wp-fs-sm);
+  color: var(--wp-ink-soft);
+  margin-bottom: 12px;
+}
+
+/* ---------- About / Calendar widgets ---------- */
+.widget {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  padding: 16px;
+}
+
+.widget__title {
+  font-size: var(--wp-fs-sm);
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.mini-cal__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-weight: 700;
+  font-size: var(--wp-fs-sm);
+}
+
+.mini-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+  font-size: 11px;
+}
+
+.mini-cal__grid .dow {
+  color: var(--wp-faint);
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.mini-cal__grid .day {
+  padding: 6px 0;
+  border-radius: 4px;
+  color: var(--wp-ink-soft);
+}
+
+.mini-cal__grid .day.has-event {
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand-dark);
+  font-weight: 700;
+}
+
+.mini-cal__grid .day.is-today {
+  outline: 1px solid var(--wp-brand);
+}
+
+.cal-event-list {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--wp-hairline);
+}
+
+.cal-event-list li {
+  font-size: var(--wp-fs-xs);
+  padding: 4px 0;
+  color: var(--wp-ink-soft);
+}
+
+.follow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.follow-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.follow-row__name {
+  flex: 1;
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+}
+
+/* ---------- Notice list ---------- */
+.notice-list {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  overflow: hidden;
+}
+
+.notice-list__item {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--wp-hairline);
+  font-size: var(--wp-fs-sm);
+}
+
+.notice-list__item:last-child {
+  border-bottom: none;
+}
+
+.notice-list__item:hover {
+  background: #faf9f7;
+}
+
+.notice-list__date {
+  color: var(--wp-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.notice-list__title {
+  font-weight: 600;
+}
+
+.notice-article {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  padding: 28px;
+}
+
+.notice-article__title {
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.notice-article__date {
+  color: var(--wp-muted);
+  font-size: var(--wp-fs-sm);
+  margin-bottom: 24px;
+}
+
+.notice-article__body {
+  font-size: var(--wp-fs-md);
+  color: var(--wp-ink-soft);
+  line-height: 1.7;
+}
+
+.notice-article__body h3 {
+  margin: 20px 0 8px;
+  color: var(--wp-ink);
+  font-size: var(--wp-fs-md);
+}
+
+.notice-related {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--wp-hairline);
+}
+
+.notice-related h3 {
+  font-size: var(--wp-fs-sm);
+  margin-bottom: 10px;
+}
+
+/* ---------- Fan / Artist feed toolbar ---------- */
+.board-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.board-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--wp-paper);
+  padding: 4px;
+  border-radius: var(--wp-radius-sm);
+}
+
+.board-tabs a,
+.board-tabs button {
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+  color: var(--wp-muted);
+}
+
+.board-tabs .is-active {
+  background: var(--wp-surface);
+  color: var(--wp-ink);
+  box-shadow: var(--wp-shadow);
+}
+
+/* ---------- Comment thread ---------- */
+.comment-box {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  background: var(--wp-paper);
+}
+
+.comment-box__actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.comment-list {
+  margin-top: 20px;
+}
+
+.comment-list__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+}
+
+.comment-item {
+  display: flex;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--wp-hairline);
+}
+
+.comment-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.comment-item__meta {
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+  margin-bottom: 4px;
+}
+
+.comment-item__text {
+  font-size: var(--wp-fs-sm);
+  color: var(--wp-ink-soft);
+}
+
+/* ---------- Project cards ---------- */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.project-card {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  overflow: hidden;
+  transition: border-color var(--wp-fast), transform var(--wp-fast);
+}
+
+.project-card:hover {
+  border-color: var(--wp-brand);
+  transform: translateY(-2px);
+}
+
+.project-card__cover {
+  aspect-ratio: 16 / 10;
+  background: linear-gradient(135deg, #c5d8d7, #e8d5c8);
+  display: grid;
+  place-items: center;
+  color: var(--wp-muted);
+  font-size: var(--wp-fs-xs);
+}
+
+.project-card__body {
+  padding: 14px;
+}
+
+.project-card__title {
+  font-weight: 700;
+  font-size: var(--wp-fs-sm);
+  margin-bottom: 6px;
+}
+
+.project-card__meta {
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+}
+
+.progress {
+  height: 6px;
+  background: var(--wp-hairline);
+  border-radius: 999px;
+  margin: 10px 0 6px;
+  overflow: hidden;
+}
+
+.progress > span {
+  display: block;
+  height: 100%;
+  background: var(--wp-brand);
+  border-radius: inherit;
+}
+
+/* ---------- Media / Live ---------- */
+.media-section {
+  margin-bottom: 28px;
+}
+
+.media-section__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.media-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.media-tile {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius-sm);
+  overflow: hidden;
+}
+
+.media-tile__thumb {
+  aspect-ratio: 16 / 9;
+  background: linear-gradient(145deg, #2a4040, #1a2e2e);
+  color: rgba(255, 255, 255, 0.7);
+  display: grid;
+  place-items: center;
+  font-size: var(--wp-fs-xs);
+  position: relative;
+}
+
+.media-tile__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.media-tile__body {
+  padding: 10px;
+}
+
+.media-tile__title {
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.media-tile__meta {
+  font-size: 11px;
+  color: var(--wp-muted);
+}
+
+.live-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: var(--wp-radius);
+  margin-bottom: 16px;
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+  color: var(--wp-live);
+}
+
+.live-now::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wp-live);
+  animation: pulse 1.4s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ---------- Profile ---------- */
+.profile-cover {
+  height: 140px;
+  background: linear-gradient(120deg, #3d5a5a, #8b6040);
+  border-radius: var(--wp-radius) var(--wp-radius) 0 0;
+}
+
+.profile-panel {
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.profile-panel__info {
+  padding: 0 20px 20px;
+  margin-top: -36px;
+  position: relative;
+}
+
+.profile-panel__stats {
+  display: flex;
+  gap: 20px;
+  margin: 14px 0;
+  font-size: var(--wp-fs-sm);
+}
+
+.profile-panel__stats strong {
+  display: block;
+  font-size: var(--wp-fs-lg);
+}
+
+.profile-panel__stats span {
+  color: var(--wp-muted);
+  font-size: var(--wp-fs-xs);
+}
+
+.profile-tabs {
+  display: flex;
+  border-top: 1px solid var(--wp-hairline);
+}
+
+.profile-tabs a {
+  flex: 1;
+  text-align: center;
+  padding: 12px 8px;
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+  color: var(--wp-muted);
+  border-bottom: 2px solid transparent;
+}
+
+.profile-tabs a.is-active {
+  color: var(--wp-brand);
+  border-bottom-color: var(--wp-brand);
+}
+
+/* ---------- Membership modal content ---------- */
+.membership-benefits {
+  margin: 16px 0 20px;
+  padding: 0;
+}
+
+.membership-benefits li {
+  position: relative;
+  padding: 8px 0 8px 18px;
+  font-size: var(--wp-fs-sm);
+  color: var(--wp-ink-soft);
+  border-bottom: 1px solid var(--wp-hairline);
+}
+
+.membership-benefits li::before {
+  content: "·";
+  position: absolute;
+  left: 4px;
+  font-weight: 800;
+  color: var(--wp-brand);
+}
+
+.membership-price {
+  text-align: center;
+  font-size: var(--wp-fs-xl);
+  font-weight: 800;
+  margin: 16px 0;
+  letter-spacing: -0.02em;
+}
+
+.membership-price small {
+  display: block;
+  font-size: var(--wp-fs-xs);
+  font-weight: 500;
+  color: var(--wp-muted);
+  margin-top: 4px;
+}

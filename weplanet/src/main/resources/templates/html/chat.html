@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    [와이어프레임] 채팅방(DM) 데모 허브
+    - P13: DM 목록 + 구독 혜택 안내
+    - P18: 1:1 채팅방
+    - P19: Membership/DM 구독 만료
+    우측 하단 ✈ FAB 또는 아래 버튼으로 패널을 엽니다.
+  -->
+  <title>WePlaNet – 채팅 (DM)</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" href="home.html">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn">🌐</button>
+      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
+      <a class="btn btn--ghost btn--sm" href="index.html">로그아웃</a>
+    </div>
+  </header>
+
+  <main class="container section" style="max-width:720px;">
+    <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;letter-spacing:-0.03em;">채팅방 (DM)</h1>
+    <p class="text-muted mt-8 mb-24">
+      와이어프레임 P13 · P18 · P19. 로그인 후 메인·커뮤니티 어디서든
+      우측 하단 종이비행기(✈) FAB로 동일한 DM 패널이 열립니다.
+    </p>
+
+    <div class="grid-2">
+      <a class="settings-block" href="chat.html?dm=1" style="display:block;">
+        <strong>① DM 목록 열기</strong>
+        <p class="text-sm text-muted mt-8">메시지 · 추천 아티스트 · 구독 혜택 안내 (P13)</p>
+      </a>
+      <a class="settings-block" href="chat.html?dm=expired" style="display:block;">
+        <strong>② 구독 만료 채팅방</strong>
+        <p class="text-sm text-muted mt-8">“DM 구독 만료” 배너 + 구독하기 → 멤버십 (P19)</p>
+      </a>
+      <button type="button" class="settings-block" style="text-align:left;cursor:pointer;" data-shell-open="menu">
+        <strong>③ 좌측 메뉴 열기</strong>
+        <p class="text-sm text-muted mt-8">햄버거와 동일 · 컬렉션/Shop/멤버십/설정 (P13)</p>
+      </button>
+      <a class="settings-block" href="membership.html" style="display:block;">
+        <strong>④ 멤버십 페이지</strong>
+        <p class="text-sm text-muted mt-8">가입 혜택 · 상세보기 · DM 구독권 (P27/P33)</p>
+      </a>
+    </div>
+
+    <div class="cta-banner mt-24">
+      <p>메인으로 돌아가 FAB로도 열어보세요</p>
+      <a class="btn btn--primary btn--sm" href="home.html">로그인 후 메인</a>
+    </div>
+  </main>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    [와이어프레임] 메인 페이지 – 로그인 후 (P11~13)
+    - 햄버거 → 좌측 메뉴 드로어
+    - ✈ FAB → DM 채팅
+    - 배너 + 주간 스케줄 (일자별 최대 4개)
+  -->
+  <title>WePlaNet – 메인 (로그인 후)</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+      <a class="brand" href="home.html">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="alert('알림 목록 (목업)')">🔔</button>
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+      <a class="btn btn--ghost btn--sm" href="index.html">로그아웃</a>
+    </div>
+  </header>
+
+  <main class="container section">
+    <!-- 가입 유도 -->
+    <div class="cta-banner mb-24">
+      <div>
+        <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
+        <p class="text-sm text-muted mt-8">메뉴(☰)에서 커뮤니티 바로가기 · ✈ 버튼으로 DM</p>
+      </div>
+      <a class="btn btn--primary btn--sm" href="community/highlight.html">커뮤니티 가입하기</a>
+    </div>
+
+    <!-- 배너 / 스케줄 영역 -->
+    <div class="banner mb-24" data-carousel>
+      <div class="banner__track">
+        <div class="banner__slide">
+          <p class="banner__kicker">Event &amp; Schedule</p>
+          <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
+        </div>
+        <div class="banner__slide" style="background:linear-gradient(120deg,#0f3d3d,#c45c26);">
+          <p class="banner__kicker">Membership</p>
+          <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
+        </div>
+      </div>
+      <div class="banner__nav">
+        <button type="button" class="icon-btn" data-carousel-prev>&lt;</button>
+        <button type="button" class="icon-btn" data-carousel-next>&gt;</button>
+      </div>
+      <div class="banner__dots"></div>
+    </div>
+
+    <section class="mb-24">
+      <div class="week-nav">
+        <button type="button" class="icon-btn" aria-label="이전 주">◀</button>
+        <strong>8/17 ~ 8/23</strong>
+        <button type="button" class="icon-btn" aria-label="다음 주">▶</button>
+      </div>
+      <p class="text-xs text-muted mb-8">내가 가입한 모든 아티스트 커뮤니티의 스케줄 · 일자별 최대 4개</p>
+      <div class="week-grid">
+        <div class="week-day">
+          <div class="week-day__label">26-08-17 (월)</div>
+          <div class="week-event">KBS 뮤직뱅크</div>
+          <div class="week-event week-event--alt">RIIZING DAY ep.34</div>
+        </div>
+        <div class="week-day">
+          <div class="week-day__label">26-08-18 (화)</div>
+          <div class="week-event">KBS 뮤직뱅크</div>
+        </div>
+        <div class="week-day">
+          <div class="week-day__label">26-08-19 (수)</div>
+          <div class="week-event">MBC 쇼! 음악중심</div>
+          <div class="week-event">드라마 ‘태양의 후예’</div>
+        </div>
+        <div class="week-day">
+          <div class="week-day__label">26-08-20 (목)</div>
+          <div class="week-event">KBS ‘1박2일’</div>
+        </div>
+        <div class="week-day">
+          <div class="week-day__label">26-08-21 (금)</div>
+          <div class="week-event">3rd Anniversary</div>
+          <div class="week-event week-event--alt">KBS 뮤직뱅크</div>
+        </div>
+        <div class="week-day">
+          <div class="week-day__label">26-08-22 (토)</div>
+          <div class="week-event">KBS 뮤직뱅크</div>
+        </div>
+        <div class="week-day">
+          <div class="week-day__label">26-08-23 (일)</div>
+          <div class="week-event">KBS 뮤직뱅크</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="marquee-block mb-24">
+      <h2 class="marquee-block__title">지금 바로 만나보세요!</h2>
+      <div class="marquee">
+        <div class="marquee__track">
+          <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">RZ</div><div class="artist-chip__name">RIIZE</div></a>
+          <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">CT</div><div class="artist-chip__name">CORTIS</div></a>
+          <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">AE</div><div class="artist-chip__name">aespa</div></a>
+          <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">TR</div><div class="artist-chip__name">TREASURE</div></a>
+          <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">RV</div><div class="artist-chip__name">Red Velvet</div></a>
+          <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">RZ</div><div class="artist-chip__name">RIIZE</div></a>
+          <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">CT</div><div class="artist-chip__name">CORTIS</div></a>
+          <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">AE</div><div class="artist-chip__name">aespa</div></a>
+          <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">TR</div><div class="artist-chip__name">TREASURE</div></a>
+          <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">RV</div><div class="artist-chip__name">Red Velvet</div></a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section__head">
+        <h2 class="section__title">최신 인기 포스트</h2>
+      </div>
+      <div class="feed">
+        <article class="post-card">
+          <div class="post-card__head">
+            <div class="avatar">RZ</div>
+            <div class="post-card__meta">
+              <div class="post-card__name">원빈 <span class="badge-verified">✓</span></div>
+              <div class="post-card__time">2026.08.21 15:24</div>
+            </div>
+          </div>
+          <p class="post-card__body">오늘 뮤뱅 무대 재밌었어! 브리즈 고마워</p>
+          <div class="post-card__actions">
+            <button type="button" data-like>♥ <span data-like-count>1284</span></button>
+            <button type="button">💬 86</button>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+</body>
+</html>

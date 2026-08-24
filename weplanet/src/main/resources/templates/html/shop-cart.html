@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [Shop] 장바구니 – 수량 · 합계 · 결제(목업) -->
+  <title>장바구니 | WePlaNet Shop</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+  <link rel="stylesheet" href="../css/shop.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" href="shop.html">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net Shop</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn">🌐</button>
+    </div>
+  </header>
+
+  <main class="container section">
+    <div class="flex-between mb-24">
+      <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;">장바구니</h1>
+      <a class="btn btn--ghost btn--sm" href="shop.html">← 쇼핑 계속</a>
+    </div>
+
+    <div class="table-wrap mb-24">
+      <table class="cart-table">
+        <thead>
+          <tr>
+            <th>상품</th>
+            <th>수량</th>
+            <th>가격</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="cart-product">
+                <div class="cart-product__thumb"></div>
+                <div>
+                  <strong>2026 RIIZE OFFICIAL LIGHT STICK Ver.2</strong>
+                  <p class="text-xs text-muted">Original Blue</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <select class="form-select" style="width:70px;min-height:36px;">
+                <option selected>1</option>
+                <option>2</option>
+              </select>
+            </td>
+            <td><strong>₩ 59,000</strong></td>
+            <td><button type="button" class="text-danger text-sm" onclick="alert('삭제 (목업)')">삭제</button></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="cart-product">
+                <div class="cart-product__thumb"></div>
+                <div>
+                  <strong>멤버십 전용 포토카드 세트</strong>
+                  <p class="text-xs text-muted"><span class="tag tag--member">멤버십</span> RIIZE</p>
+                </div>
+              </div>
+            </td>
+            <td>
+              <select class="form-select" style="width:70px;min-height:36px;">
+                <option selected>1</option>
+              </select>
+            </td>
+            <td><strong>₩ 28,000</strong></td>
+            <td><button type="button" class="text-danger text-sm">삭제</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <aside class="cart-summary">
+      <div class="cart-summary__row"><span>상품 금액</span><span>₩ 87,000</span></div>
+      <div class="cart-summary__row"><span>배송비</span><span>₩ 3,000</span></div>
+      <div class="cart-summary__row cart-summary__total">
+        <span>결제 예정</span>
+        <span>₩ 90,000</span>
+      </div>
+      <button type="button" class="btn btn--accent btn--block btn--lg mt-16" onclick="alert('결제 (목업)')">
+        주문하기
+      </button>
+      <p class="text-xs text-muted mt-12" style="text-align:center;">
+        멤버십 전용 상품은 가입 상태에서만 결제됩니다.
+      </p>
+    </aside>
+  </main>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+</body>
+</html>

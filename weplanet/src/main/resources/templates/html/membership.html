@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    [와이어프레임] Membership 가입 / 상세 (P27, P33)
+    - 가입 혜택 · 가격 · 결제(목업)
+    - 가입중이면 상세 정보 카드 표시
+    - DM 구독권 혜택 → 채팅 FAB와 연결
+  -->
+  <title>WePlaNet – 멤버십</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" href="home.html">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+      <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">🔔</button>
+      <a class="btn btn--ghost btn--sm" href="index.html">로그아웃</a>
+    </div>
+  </header>
+
+  <main class="container section" style="max-width:640px;">
+    <div class="membership-hero">
+      <div class="membership-hero__badge">🏅</div>
+      <p class="text-sm text-muted mb-8">RIIZE · Official Fanclub</p>
+      <h1>RIIZE 공식 멤버십에 가입하고<br />특별한 혜택을 누려보세요</h1>
+    </div>
+
+    <!-- 가입중 상태 카드 (P33) -->
+    <section class="settings-block">
+      <div class="flex-between mb-16">
+        <div>
+          <p class="membership-card__status" style="color:var(--wp-success);font-weight:700;font-size:13px;">✔ 가입중</p>
+          <strong>RIIZE Membership</strong>
+          <p class="text-sm text-muted mt-8">2025.11.27 ~ 2026.11.26 (KST)</p>
+        </div>
+        <button type="button" class="btn btn--ghost btn--sm" data-modal-open="membershipDetailModal">상세보기</button>
+      </div>
+      <div class="membership-card-detail">
+        <div class="membership-card-detail__row"><span>멤버십 고유 번호</span><strong>WP-RZ-20251127</strong></div>
+        <div class="membership-card-detail__row"><span>이름</span><strong>홍길동</strong></div>
+      </div>
+    </section>
+
+    <!-- 혜택 (P27) -->
+    <section class="settings-block">
+      <h2 class="settings-block__title">멤버십 혜택</h2>
+      <ul class="membership-benefits" style="margin:0;">
+        <li>멤버십 전용 아티스트 공식 상품 구매 기회</li>
+        <li>WePlaNet Shop 내 아티스트 콘텐츠 구매 관련 혜택</li>
+        <li>공연 시 선예매, 추첨제 참여 기회</li>
+        <li>WePlaNet 내 멤버십 전용 독점 콘텐츠</li>
+        <li>멤버와 DM(1:1 채팅) 구독권 혜택</li>
+      </ul>
+      <p class="membership-price">₩ 30,000 / 년<small>VAT 포함 · 갱신/추가 아티스트 멤버십도 동일 플로우</small></p>
+      <button type="button" class="btn btn--accent btn--block btn--lg" data-modal-open="membershipJoinModal">
+        다른 아티스트 멤버십 가입하기
+      </button>
+      <button type="button" class="btn btn--ghost btn--block mt-12" onclick="document.getElementById('fabChat')?.click()">
+        ✈ DM 채팅 열기
+      </button>
+    </section>
+
+    <!-- 만료 시나리오 안내 -->
+    <section class="cta-banner">
+      <div>
+        <p>DM 구독이 만료되면?</p>
+        <p class="text-sm text-muted mt-8">채팅방에서 “DM 구독 만료” 배너와 구독하기 CTA가 표시됩니다. (P19)</p>
+      </div>
+      <a class="btn btn--primary btn--sm" href="chat.html?dm=expired">만료 화면 보기</a>
+    </section>
+  </main>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/shell.js"></script>
+</body>
+</html>

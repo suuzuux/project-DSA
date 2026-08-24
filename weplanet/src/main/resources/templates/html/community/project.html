@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] Fan 프로젝트 목록 / 등록·참여 모달 요약 -->
+  <title>RIIZE – 프로젝트 | WePlaNet</title>
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/community.css" />
+  <link rel="stylesheet" href="../../css/shell.css" />
+</head>
+<body data-shell="fan" data-base="../">
+  <header class="community-top">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+    <div class="community-top__left">
+      <a class="home-link" href="../home.html">🏠</a>
+      <span class="avatar avatar--sm">RZ</span>
+      <h1 class="community-top__name">RIIZE</h1>
+    </div>
+    <div class="community-top__right">
+      <button type="button" class="icon-btn">🌐</button>
+      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
+      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
+      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
+    </div>
+  </header>
+
+  <div class="community-body" style="margin-top:20px;">
+    <div class="community-main">
+      <nav class="tabs">
+        <a href="highlight.html">Highlight</a>
+        <a href="notice.html">Notice</a>
+        <a class="is-active" href="fan.html">Fan</a>
+        <a href="artist.html">Artist</a>
+        <a href="media.html">Media</a>
+        <a href="live.html">Live</a>
+      </nav>
+
+      <div class="board-toolbar">
+        <div class="board-tabs">
+          <a href="fan.html">포스트</a>
+          <a class="is-active" href="project.html">프로젝트</a>
+        </div>
+        <div class="flex-center">
+          <select class="form-select" style="width:auto;min-height:36px;">
+            <option>마감임박순</option>
+            <option>인기순</option>
+            <option>최신순</option>
+          </select>
+          <button type="button" class="btn btn--primary btn--sm" data-modal-open="projectCreateModal">프로젝트 등록하기</button>
+        </div>
+      </div>
+
+      <div class="project-grid">
+        <article class="project-card">
+          <div class="project-card__cover">이미지 영역</div>
+          <div class="project-card__body">
+            <h3 class="project-card__title">생일 카페 펀딩 프로젝트</h3>
+            <p class="project-card__meta">목표 ₩3,000,000 · D-5</p>
+            <div class="progress"><span style="width:72%"></span></div>
+            <p class="text-xs text-muted">72% · 참여자 418</p>
+            <button type="button" class="btn btn--soft btn--block btn--sm mt-12" data-modal-open="projectJoinModal">참여하기</button>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__cover" style="background:linear-gradient(135deg,#e8d5c8,#c5d8d7);">이미지 영역</div>
+          <div class="project-card__body">
+            <h3 class="project-card__title">응원봉 공동구매</h3>
+            <p class="project-card__meta">목표 ₩1,200,000 · D-12</p>
+            <div class="progress"><span style="width:41%"></span></div>
+            <p class="text-xs text-muted">41% · 참여자 156</p>
+            <button type="button" class="btn btn--soft btn--block btn--sm mt-12" data-modal-open="projectJoinModal">참여하기</button>
+          </div>
+        </article>
+        <article class="project-card">
+          <div class="project-card__cover">이미지 영역</div>
+          <div class="project-card__body">
+            <h3 class="project-card__title">팬미팅 현수막</h3>
+            <p class="project-card__meta">목표 ₩800,000 · D-20</p>
+            <div class="progress"><span style="width:95%"></span></div>
+            <p class="text-xs text-muted">95% · 참여자 89</p>
+            <button type="button" class="btn btn--soft btn--block btn--sm mt-12" data-modal-open="projectJoinModal">참여하기</button>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <aside class="community-aside">
+      <div class="membership-card membership-card--joined">
+        <p class="membership-card__status">✔ 가입중</p>
+        <h3 class="membership-card__title">RIIZE Membership</h3>
+        <p class="membership-card__period">2025.11.27 ~ 2026.11.26 (KST)</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- 등록 모달 (다단계 요약: 1화면으로 압축) -->
+  <div class="modal-backdrop" id="projectCreateModal">
+    <div class="modal modal--wide">
+      <div class="modal__head">
+        <h2 class="modal__title">프로젝트 등록하기</h2>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <p class="text-xs text-muted mb-16">와이어프레임 ①~④ 단계를 한 화면에 요약한 목업입니다.</p>
+      <div class="form-group">
+        <label class="form-label">프로젝트 제목</label>
+        <input class="form-input" placeholder="제목을 입력하세요" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">상세 설명</label>
+        <textarea class="form-textarea" placeholder="내용을 입력하세요"></textarea>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">목표 금액</label>
+          <input class="form-input" type="number" placeholder="3000000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">마감일</label>
+          <input class="form-input" type="date" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">대표 이미지</label>
+        <button type="button" class="btn btn--ghost btn--block" onclick="alert('이미지 업로드 (목업)')">사진첩에서 불러오기</button>
+      </div>
+      <button type="button" class="btn btn--primary btn--block" onclick="alert('프로젝트 등록 (목업)')">등록하기</button>
+    </div>
+  </div>
+
+  <!-- 참여 모달 -->
+  <div class="modal-backdrop" id="projectJoinModal">
+    <div class="modal">
+      <div class="modal__head">
+        <h2 class="modal__title">프로젝트 참여하기</h2>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <div class="media-ph mb-16" style="aspect-ratio:16/9;border-radius:8px;">이미지 영역</div>
+      <p class="text-sm text-muted mb-16">상세 설명 내용내용 … 달성하지 못하더라도, 입력한 계좌로 환불해드려요.</p>
+      <div class="form-group">
+        <label class="form-label">참여 금액</label>
+        <input class="form-input" type="number" placeholder="10000" />
+      </div>
+      <button type="button" class="btn btn--accent btn--block" onclick="alert('다음 단계 / 결제 (목업)')">다음으로 →</button>
+    </div>
+  </div>
+
+  <script src="../../js/main.js"></script>
+  <script src="../../js/shell.js"></script>
+</body>
+</html>
