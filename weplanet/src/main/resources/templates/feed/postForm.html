@@ -47,6 +47,9 @@
             <label class="form-label">내용</label>
             <!-- Toast UI Editor(외부 마크다운 에디터 라이브러리)가 이 자리에 화면을 그려줌 -->
             <div id="editor"></div>
+            <p class="text-xs text-muted" style="text-align:right;margin-top:4px;">
+                <span id="contentCharCount">0</span> / 1000
+            </p>
         </div>
 
         <!--
@@ -60,17 +63,21 @@
 
         <!-- 첨부파일 입력창 - 새 글 작성할 때만 보여줌 (수정 화면에서는 파일 첨부 기능 미지원) -->
         <div class="form-group" th:if="${post} == null">
-            <label class="form-label">첨부파일 (이미지/일반파일 여러 개 선택 가능)</label>
-            <input type="file" name="files" multiple>
+            <label class="form-label">첨부파일 (이미지/일반파일, 최대 10개)</label>
+            <input type="file" name="files" id="filesInput" multiple>
+            <p id="fileLimitWarning" class="form-error" style="display:none;color:var(--wp-danger);">이미지는 최대 10개까지 첨부할 수 있어요.</p>
         </div>
 
-        <button type="submit" class="btn btn--primary btn--block" th:text="${post} != null ? '수정' : '작성'"></button>
+        <button type="submit" id="submitButton" class="btn btn--primary btn--block" th:text="${post} != null ? '수정' : '작성'" disabled></button>
     </form>
 </div>
 
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 <script>
     const contentInput = document.getElementById('contentInput');
+    const submitButton = document.getElementById('submitButton');
+    const charCountEl = document.getElementById('contentCharCount');
+    const CONTENT_MAX_LEN = 1000;
 
     // Toast UI Editor 초기화 - 수정 화면이면 기존 내용을(contentInput.value), 새 글이면 빈 값을 넣어서 시작함
     const editor = new toastui.Editor({
@@ -81,11 +88,43 @@
         initialValue: contentInput.value
     });
 
+    // 글자수 세기 + 등록 버튼 활성/비활성 처리
+    // - 공백(0자)이면 버튼 비활성화 (와이어프레임: 공백 상태에서 등록하기 버튼 비활성화)
+    // - 1,000자(공백/줄바꿈 포함) 넘으면 버튼 비활성화 + 안내
+    function refreshCharCount() {
+        const text = editor.getMarkdown();
+        const len = text.length;
+
+        charCountEl.textContent = len;
+        charCountEl.style.color = len > CONTENT_MAX_LEN ? 'var(--wp-danger)' : '';
+
+        const isEmpty = text.trim().length === 0;
+        const isTooLong = len > CONTENT_MAX_LEN;
+        submitButton.disabled = isEmpty || isTooLong;
+    }
+
+    editor.on('change', refreshCharCount);
+    refreshCharCount(); // 처음 화면 진입 시(수정 화면일 때 기존 내용 기준)에도 한 번 계산
+
     // 폼이 제출되기 "직전"에, 에디터 안의 내용을 마크다운 문자열로 꺼내서
     // 숨겨진 textarea(contentInput)에 넣어줌. 그래야 서버로 실제 값이 전송됨
     document.getElementById('postForm').addEventListener('submit', function () {
         contentInput.value = editor.getMarkdown();
     });
+
+    // 첨부파일 최대 10개 제한 - 그 이상 고르면 안내 문구를 보여주고 선택을 비움
+    const filesInput = document.getElementById('filesInput');
+    if (filesInput) {
+        filesInput.addEventListener('change', function () {
+            const warning = document.getElementById('fileLimitWarning');
+            if (filesInput.files.length > 10) {
+                warning.style.display = 'block';
+                filesInput.value = '';
+            } else {
+                warning.style.display = 'none';
+            }
+        });
+    }
 </script>
 
 </body>

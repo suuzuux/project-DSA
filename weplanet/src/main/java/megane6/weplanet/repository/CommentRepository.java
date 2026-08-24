@@ -14,6 +14,9 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 특정 게시글(post)의 댓글을, 작성일(createdAt) 오래된 순(Asc)으로 조회
     List<Comment> findByPostOrderByCreatedAtAsc(Post post);
 
+    // 게시글 목록에서 댓글 개수만 필요할 때 (와이어프레임: 댓글 0개면 숫자 자체를 표시 안 함)
+    long countByPost(Post post);
+
     // 게시글 삭제 시 그 게시글에 달린 댓글을 먼저 지우기 위함 (외래키 제약 때문에 순서가 중요함)
     void deleteByPost(Post post);
 }

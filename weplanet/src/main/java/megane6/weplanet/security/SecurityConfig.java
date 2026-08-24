@@ -29,6 +29,7 @@ public class SecurityConfig {
             "/login",
             "/posts/**",
             "/chat/**",
+            "/ws-chat/**",
             "/dev/**",
             "/uploads/**",
             "/css/**",
