@@ -13,6 +13,7 @@ import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
+import megane6.weplanet.service.TranslateService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -47,6 +48,7 @@ public class PostController {
     private final CommentService commentService;
     private final ReportService reportService;
     private final SummaryService summaryService;
+    private final TranslateService translateService;
 
     // 테스트용 유저 조회 공통 헬퍼 - 없으면 예외.
     // (로그인 기능이 아직 없어서, 화면에서 "테스트 작성자" 드롭다운으로 누구인 척 할지 골라서 testUserId로 넘겨받음.
@@ -412,5 +414,25 @@ public class PostController {
         String summary = summaryService.summarize(post.getContent());
 
         return Map.of("summary", summary);
+    }
+
+    // 게시글 번역보기 (와이어프레임: 게시글/댓글 본문 밑에 있는 "번역보기" 링크)
+    @PostMapping("/posts/detail/{id}/translate")
+    @ResponseBody
+    public Map<String, Object> translatePost(@PathVariable Long id) {
+        Post post = postService.getPost(id);
+        String translated = translateService.translate(post.getContent());
+
+        return Map.of("translated", translated);
+    }
+
+    // 댓글 번역보기 - 게시글 번역과 완전히 같은 방식
+    @PostMapping("/posts/detail/{id}/comment/{commentId}/translate")
+    @ResponseBody
+    public Map<String, Object> translateComment(@PathVariable Long id, @PathVariable Long commentId) {
+        Comment comment = commentService.getComment(commentId);
+        String translated = translateService.translate(comment.getContent());
+
+        return Map.of("translated", translated);
     }
 }

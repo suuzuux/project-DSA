@@ -35,6 +35,10 @@
 
     <h1 style="font-size:var(--wp-fs-lg);margin:12px 0 6px;" th:text="${post.title}"></h1>
 
+    <!-- 와이어프레임 기준: 본문 위에 번역보기 링크 (Gemini로 영어 번역) -->
+    <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" style="margin-top:0;">번역보기</a>
+    <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
+
     <!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
     <div id="contentViewer" class="post-card__body"></div>
 
@@ -152,6 +156,8 @@
                                 th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
                     </div>
                     <p class="comment-item__text" th:text="${comment.content}"></p>
+                    <a href="javascript:void(0)" class="comment-translate-link translate-link" th:attr="data-comment-id=${comment.id}">번역보기</a>
+                    <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs" style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
                         <form class="comment-delete-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
@@ -197,6 +203,8 @@
                                 th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
                     </div>
                     <p class="comment-item__text" th:text="${comment.content}"></p>
+                    <a href="javascript:void(0)" class="comment-translate-link translate-link" th:attr="data-comment-id=${comment.id}">번역보기</a>
+                    <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs" style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
                         <form class="comment-delete-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
@@ -267,6 +275,59 @@
             .then(function (data) {
                 document.getElementById('bookmarkIcon').textContent = data.bookmarked ? '🔖' : '📑';
                 btn.classList.toggle('is-active', data.bookmarked);
+            });
+    });
+
+    // ----- 게시글 번역보기 (Gemini) -----
+    document.getElementById('postTranslateLink').addEventListener('click', function () {
+        const link = this;
+        const textArea = document.getElementById('postTranslatedText');
+
+        // 이미 번역문이 보이는 상태면, 다시 누를 때 원문만 보이게 접어줌 (토글)
+        if (textArea.style.display !== 'none') {
+            textArea.style.display = 'none';
+            link.textContent = '번역보기';
+            return;
+        }
+
+        link.textContent = '번역 중...';
+
+        fetch(`/posts/detail/${postId}/translate`, {method: 'POST'})
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                textArea.textContent = data.translated;
+                textArea.style.display = 'block';
+                link.textContent = '원문보기';
+            });
+    });
+
+    // ----- 댓글 번역보기 (아티스트 댓글/전체 댓글 공통, 이벤트 위임으로 처리) -----
+    document.addEventListener('click', function (e) {
+        if (!e.target.classList.contains('comment-translate-link')) {
+            return;
+        }
+        const link = e.target;
+        const commentId = link.getAttribute('data-comment-id');
+        const textArea = document.getElementById('commentTranslated-' + commentId);
+
+        if (textArea.style.display !== 'none') {
+            textArea.style.display = 'none';
+            link.textContent = '번역보기';
+            return;
+        }
+
+        link.textContent = '번역 중...';
+
+        fetch(`/posts/detail/${postId}/comment/${commentId}/translate`, {method: 'POST'})
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                textArea.textContent = data.translated;
+                textArea.style.display = 'block';
+                link.textContent = '원문보기';
             });
     });
 
