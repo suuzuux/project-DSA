@@ -3,21 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <title>게시판</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
 <body>
 
-<h1 th:text="${boardType} + ' 게시판'"></h1>
-<hr>
+<header class="site-header">
+    <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+</header>
 
-<p><a th:href="@{/}">&lt;&lt; 홈으로</a></p>
+<div class="container section">
+    <div class="section__head">
+        <h1 class="section__title" th:text="${boardType} + ' 게시판'"></h1>
+        <a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a>
+    </div>
 
-<p>
-    <b>정렬</b> :
-    <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}">최신순</a>
-    |
-    <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}">인기순</a>
-    &nbsp;&nbsp;(현재 정렬 기준: <b id="currentSort" th:text="${sort}"></b>)
-</p>
+    <p style="margin-bottom:16px;">
+        <b>정렬</b> :
+        <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}">최신순</a>
+        |
+        <a class="sort-link" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}">인기순</a>
+        &nbsp;&nbsp;(현재 정렬 기준: <b id="currentSort" th:text="${sort}"></b>)
+    </p>
 
 <!--
     이 div 안쪽(표+안내문구)이 "postListFragment"라는 이름표가 붙은 부분임.
@@ -26,22 +36,25 @@
      이 부분만 콕 집어 렌더링해달라고 서버에 요청할 수 있음)
 -->
 <div id="postListArea" th:fragment="postListFragment">
-    <table border="1" cellpadding="8" cellspacing="0">
-        <tr>
-            <th>번호</th>
-            <th>제목</th>
-            <th>좋아요</th>
-            <th>작성일</th>
-        </tr>
-        <tr th:each="post : ${posts}">
-            <td th:text="${post.id}"></td>
-            <td><a th:href="@{/posts/detail/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
-            <td th:text="${post.likeCount}"></td>
-            <td th:text="${post.createdAt}"></td>
-        </tr>
-    </table>
+    <div class="table-wrap" th:if="${not #lists.isEmpty(posts)}">
+        <table class="data-table">
+            <tr>
+                <th>번호</th>
+                <th>제목</th>
+                <th>좋아요</th>
+                <th>작성일</th>
+            </tr>
+            <tr th:each="post : ${posts}">
+                <td th:text="${post.id}"></td>
+                <td><a th:href="@{/posts/detail/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
+                <td th:text="${post.likeCount}"></td>
+                <td th:text="${post.createdAt}"></td>
+            </tr>
+        </table>
+    </div>
 
-    <p th:if="${#lists.isEmpty(posts)}"><i>등록된 게시글이 없습니다.</i></p>
+    <p th:if="${#lists.isEmpty(posts)}" class="text-muted"><i>등록된 게시글이 없습니다.</i></p>
+</div>
 </div>
 
 <script>

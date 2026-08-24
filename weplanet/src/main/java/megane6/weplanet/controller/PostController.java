@@ -80,10 +80,10 @@ public class PostController {
         // "postList.html 안에서 postListFragment 라는 이름표가 붙은 부분만" 잘라서 돌려줌
         // → 페이지 전체가 아니라 게시글 목록 표(<div id="postListArea">)만 바뀌므로 새로고침 없이 정렬이 바뀜
         if ("fetch".equals(requestedWith)) {
-            return "postList :: postListFragment";
+            return "feed/postList :: postListFragment";
         }
 
-        return "postList";
+        return "feed/postList";
     }
 
     // 글쓰기 폼 화면 이동
@@ -95,7 +95,7 @@ public class PostController {
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
         model.addAttribute("boardType", type);
 
-        return "postForm";
+        return "feed/postForm";
     }
 
     // 글쓰기 저장 처리 (FEED-01 권한 구분, FEED-02 작성, FEED-10 파일 첨부)
@@ -140,7 +140,7 @@ public class PostController {
         model.addAttribute("comments", comments);
         model.addAttribute("attachments", postService.getAttachments(post));
 
-        return "postDetail";
+        return "feed/postDetail";
     }
 
     // 댓글 작성 (FEED-04)
@@ -162,7 +162,7 @@ public class PostController {
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("post", post);
             model.addAttribute("comments", commentService.getComments(post));
-            return "postDetail :: commentsFragment";
+            return "feed/postDetail :: commentsFragment";
         }
 
         return "redirect:/posts/detail/" + id;
@@ -185,7 +185,7 @@ public class PostController {
             Post post = postService.getPost(id);
             model.addAttribute("post", post);
             model.addAttribute("comments", commentService.getComments(post));
-            return "postDetail :: commentsFragment";
+            return "feed/postDetail :: commentsFragment";
         }
 
         return "redirect:/posts/detail/" + id;
@@ -290,7 +290,7 @@ public class PostController {
         model.addAttribute("post", post);
         model.addAttribute("boardType", post.getBoardType());
 
-        return "postForm";
+        return "feed/postForm";
     }
 
     // 수정 저장 처리 - 작성자 본인 또는 관리자만 가능

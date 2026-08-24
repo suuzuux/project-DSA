@@ -3,33 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <title>팬 채팅방</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
     <!-- SockJS/Stomp : 웹소켓 연결과 실시간 메시지 송수신을 도와주는 외부 자바스크립트 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body>
 
-<h1>아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
-<p>오늘 남은 메시지 수: <b id="remainingCount" th:text="${remaining}"></b></p>
-<hr>
+<header class="site-header">
+    <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+</header>
 
-<!-- 표(table) 하나로 감싸서 대화 내용이 담기는 상자처럼 보이게 함 (CSS 없이 테두리를 만드는 방법) -->
-<table border="1" cellpadding="8" cellspacing="0" width="100%">
-    <tr>
-        <td>
-            <div id="messages"></div>
-        </td>
-    </tr>
-</table>
+<div class="container container--narrow section">
+    <h1 class="section__title">아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
+    <p class="text-muted" style="margin:8px 0 16px;">오늘 남은 메시지 수: <b id="remainingCount" th:text="${remaining}"></b></p>
 
-<!--
-    hidden : 이 태그를 화면에서 숨기는 순수 HTML 속성 (CSS의 display:none과 달리 style이 아님).
-    자바스크립트에서 warningBanner.hidden = true/false 로 보이거나 숨길 수 있음
--->
-<p id="warningBanner" hidden></p>
+    <div id="messages" class="stack" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
+         background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;"></div>
 
-<input type="text" id="messageInput" placeholder="메시지를 입력하세요">
-<button id="sendButton">보내기</button>
+    <!--
+        hidden : 이 태그를 화면에서 숨기는 순수 HTML 속성 (CSS의 display:none과 달리 style이 아님).
+        자바스크립트에서 warningBanner.hidden = true/false 로 보이거나 숨길 수 있음
+    -->
+    <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
+
+    <div style="display:flex;gap:8px;">
+        <input type="text" id="messageInput" class="form-input" placeholder="메시지를 입력하세요">
+        <button id="sendButton" class="btn btn--primary">보내기</button>
+    </div>
+</div>
 
 <script th:inline="javascript">
     // Thymeleaf가 서버에서 넘겨준 실제 값(아티스트/팬 번호)을 자바스크립트 변수로 바꿔치기해줌
