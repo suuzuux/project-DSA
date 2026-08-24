@@ -40,7 +40,7 @@
         </ul>
     </div>
 
-    <p class="post-card__time" style="margin-top:12px;">작성일: <span th:text="${post.createdAt}"></span></p>
+    <p class="post-card__time" style="margin-top:12px;">작성일: <span th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></span></p>
 
     <div class="post-card__actions" style="flex-wrap:wrap;">
         <a class="btn btn--ghost btn--sm" th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
@@ -177,7 +177,7 @@
             <tr th:each="comment : ${comments}">
                 <td th:text="${comment.author.nickname}"></td>
                 <td th:text="${comment.content}"></td>
-                <td th:text="${comment.createdAt}"></td>
+                <td th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
                 <td>
                     <form class="comment-delete-form" style="display:flex;gap:4px;"
                           th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"

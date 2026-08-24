@@ -48,7 +48,7 @@
                 <td th:text="${post.id}"></td>
                 <td><a th:href="@{/posts/detail/{id}(id=${post.id})}" th:text="${post.title}"></a></td>
                 <td th:text="${post.likeCount}"></td>
-                <td th:text="${post.createdAt}"></td>
+                <td th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
             </tr>
         </table>
     </div>
