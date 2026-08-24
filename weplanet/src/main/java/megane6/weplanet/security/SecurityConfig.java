@@ -20,10 +20,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     
+    // TODO: AUTH-07(로그인 세션 연동) 완료되면 아래 개발용 임시 허용 항목들 제거하고
+    // PostController/ChatController의 getUserOrThrow()를 실제 로그인 세션 기반으로 교체할 것.
+    // (테스트 계정 비밀번호가 아직 더미값이라 실제 로그인이 안 되는 동안, 게시판/채팅 개발·시연을 위해 임시로 열어둠 - 형준님 확인 완료)
     private static final List<String> PUBLIC_URLS = List.of(
             "/",
             "/signup",
-            "/login"
+            "/login",
+            "/posts/**",
+            "/chat/**",
+            "/dev/**",
+            "/uploads/**"
     );
     
     private final LoginSuccessHandler loginSuccessHandler;
