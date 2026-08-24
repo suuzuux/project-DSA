@@ -9,12 +9,14 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
 import megane6.weplanet.service.TranslateService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -57,6 +59,23 @@ public class PostController {
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + userId + ")가 없습니다."));
+    }
+
+    /**
+     * 실제 로그인/테스트 계정 둘 다 지원하는 작성자 판별 헬퍼.
+     * <p>
+     * - 로그인이 되어 있으면(principal != null) → 로그인한 그 사람으로 처리 (testUserId는 무시)
+     * - 로그인이 안 되어 있으면(principal == null, 아직 로그인 안 한 익명 상태) → 화면의
+     *   "테스트 작성자" 드롭다운에서 고른 testUserId로 처리 (기존 방식 그대로 유지)
+     * <p>
+     * 이렇게 두 갈래로 만들어두면, 로그인 기능이 이제 막 생긴 지금 시점에도
+     * 실제 로그인 테스트와 기존 테스트 계정 방식을 화면 재작성 없이 동시에 쓸 수 있음.
+     */
+    private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
+        if (principal != null) {
+            return getUserOrThrow(principal.getId());
+        }
+        return getUserOrThrow(testUserId);
     }
 
     // 와이어프레임 기준: 본문은 공백/줄바꿈 포함 최대 1,000자, 공백만 있는 내용은 등록 불가.
@@ -152,6 +171,7 @@ public class PostController {
             // 하나의 리스트로 담겨서 들어옴. required=false라서 파일을 하나도 안 골라도 에러 안 남
             @RequestParam(required = false) List<MultipartFile> files,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
@@ -162,8 +182,8 @@ public class PostController {
             throw new IllegalArgumentException("첨부파일은 최대 10개까지 등록할 수 있습니다.");
         }
 
-        // 임시 - 로그인 기능 완성 전까지는 폼에서 넘어온 testUserId로 작성자를 선택
-        User tempAuthor = getUserOrThrow(testUserId);
+        // 로그인했으면 로그인한 사람이 작성자, 아니면 "테스트 작성자" 드롭다운으로 고른 사람이 작성자
+        User tempAuthor = resolveAuthor(principal, testUserId);
 
         // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 아티스트만 작성 가능
         if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
@@ -189,16 +209,17 @@ public class PostController {
     public String detail(
             @PathVariable Long id,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             Model model
     ) {
         Post post = postService.getPost(id);
         List<Comment> comments = commentService.getComments(post);
-        User currentTestUser = getUserOrThrow(testUserId);
+        User currentUser = resolveAuthor(principal, testUserId);
 
         model.addAttribute("post", post);
         model.addAttribute("comments", comments);
         model.addAttribute("attachments", postService.getAttachments(post));
-        model.addAttribute("bookmarked", postService.isBookmarked(post, currentTestUser));
+        model.addAttribute("bookmarked", postService.isBookmarked(post, currentUser));
         addCommentAttributes(model, post);
 
         return "feed/postDetail";
@@ -210,11 +231,12 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam String content,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
         Post post = postService.getPost(id);
-        User author = getUserOrThrow(testUserId);
+        User author = resolveAuthor(principal, testUserId);
 
         // 와이어프레임 기준: 댓글은 최대 100자
         if (content == null || content.isBlank()) {
@@ -244,10 +266,11 @@ public class PostController {
             @PathVariable Long id,
             @PathVariable Long commentId,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
-        User requester = getUserOrThrow(testUserId);
+        User requester = resolveAuthor(principal, testUserId);
 
         commentService.deleteComment(commentId, requester);
 
@@ -276,10 +299,11 @@ public class PostController {
             @PathVariable Long commentId,
             @RequestParam ReportReason reason,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Comment comment = commentService.getComment(commentId);
-        User reporter = getUserOrThrow(testUserId);
+        User reporter = resolveAuthor(principal, testUserId);
 
         reportService.reportComment(comment, reporter, reason);
 
@@ -303,10 +327,11 @@ public class PostController {
     @ResponseBody
     public Map<String, Object> like(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User user = getUserOrThrow(testUserId);
+        User user = resolveAuthor(principal, testUserId);
 
         boolean liked = postService.toggleLike(post, user);
         log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
@@ -324,10 +349,11 @@ public class PostController {
     @ResponseBody
     public Map<String, Object> bookmark(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User user = getUserOrThrow(testUserId);
+        User user = resolveAuthor(principal, testUserId);
 
         boolean bookmarked = postService.toggleBookmark(post, user);
         log.debug("북마크 토글: postId={}, userId={}, 결과={}", id, testUserId, bookmarked ? "눌림" : "취소");
@@ -339,10 +365,11 @@ public class PostController {
     @PostMapping("/posts/detail/{id}/delete")
     public String deletePost(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User requester = getUserOrThrow(testUserId);
+        User requester = resolveAuthor(principal, testUserId);
 
         postService.deletePost(post, requester);
 
@@ -355,10 +382,11 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam ReportReason reason,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Post post = postService.getPost(id);
-        User reporter = getUserOrThrow(testUserId);
+        User reporter = resolveAuthor(principal, testUserId);
 
         reportService.reportPost(post, reporter, reason);
 
@@ -388,10 +416,11 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam String title,
             @RequestParam String content,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User requester = getUserOrThrow(testUserId);
+        User requester = resolveAuthor(principal, testUserId);
 
         validateContentLength(content);
         postService.updatePost(post, title, content, requester);
