@@ -659,3 +659,5 @@ CREATE TABLE IF NOT EXISTS fan_project_contribution (
     DEFAULT CHARSET=utf8mb4
     COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE users
+    ADD COLUMN phone_verified_at DATETIME(6) NULL AFTER phone_hash;
