@@ -21,4 +21,5 @@ public class DmInboxItem {
     private String lastMessage;       // 대화 이력이 없으면 null (화면에서 "추천" 칸으로 분류됨)
     private LocalDateTime lastMessageTime;
     private boolean hasConversation;  // true면 "메시지" 칸, false면 "추천" 칸
+    private boolean membershipExpired; // 와이어프레임 19번: 멤버십이 만료됐으면 DM 방에 만료 배너를 보여줌
 }
