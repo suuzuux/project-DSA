@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>아티스트 채팅방</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+
+<h1>내 채팅방 (아티스트 화면)</h1>
+
+<p>
+    <button id="aiFanButton" type="button">AI 팬 메시지 생성 (시연용)</button>
+</p>
+<hr>
+
+<!-- 표(table) 하나로 감싸서 대화 내용이 담기는 상자처럼 보이게 함 (CSS 없이 테두리를 만드는 방법) -->
+<table border="1" cellpadding="8" cellspacing="0" width="100%">
+    <tr>
+        <td>
+            <div id="messages"></div>
+        </td>
+    </tr>
+</table>
+
+<!-- hidden : CSS의 display:none이 아니라, 순수 HTML 속성으로 태그를 숨기는 방법 -->
+<p id="warningBanner" hidden></p>
+
+<input type="text" id="messageInput" placeholder="팬들에게 방송할 메시지를 입력하세요">
+<button id="sendButton">방송 보내기</button>
+
+<script th:inline="javascript">
+    const artistId = /*[[${artistId}]]*/ 0;
+
+    const socket = new SockJS('/ws-chat');
+    const stompClient = Stomp.over(socket);
+
+    function appendMessage(data) {
+        const div = document.getElementById('messages');
+        div.innerHTML += '<p><b>' + data.senderNickname + '</b> : ' + data.content + '</p>';
+        div.scrollTop = div.scrollHeight;
+    }
+
+    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 함 (alert() 팝업 대신 사용)
+    let warningTimer = null;
+
+    function showWarning(message) {
+        const banner = document.getElementById('warningBanner');
+        banner.textContent = '[경고] ' + message;
+        banner.hidden = false;
+
+        clearTimeout(warningTimer);
+        warningTimer = setTimeout(function () {
+            banner.hidden = true;
+        }, 3500);
+    }
+
+    stompClient.connect({}, function () {
+        // 내가 방송한 메시지가 그대로 나에게도 되돌아오는 채널
+        stompClient.subscribe('/topic/chat.' + artistId, function (message) {
+            appendMessage(JSON.parse(message.body));
+        });
+
+        // 팬들이 보낸 개인 메시지 중, 30% 확률로 추려진 것만 도착하는 채널 (도배 방지용)
+        stompClient.subscribe('/topic/chat.' + artistId + '.artistFeed', function (message) {
+            appendMessage(JSON.parse(message.body));
+        });
+
+        // 필터에 걸려서 거부된 내 메시지에 대한 경고를 받는 채널
+        stompClient.subscribe('/topic/chat.error.' + artistId, function (message) {
+            const data = JSON.parse(message.body);
+            showWarning(data.message);
+        });
+    });
+
+    function sendBroadcast() {
+        const content = document.getElementById('messageInput').value;
+        if (!content) return;
+
+        // fanId를 null로 보내면, 서버(ChatController.send)가 "이건 방송 메시지구나"라고 판단함
+        stompClient.send('/app/chat.send', {}, JSON.stringify({
+            artistId: artistId,
+            fanId: null,
+            senderId: artistId,
+            content: content
+        }));
+
+        document.getElementById('messageInput').value = '';
+    }
+
+    document.getElementById('sendButton').addEventListener('click', sendBroadcast);
+
+    document.getElementById('messageInput').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            sendBroadcast();
+        }
+    });
+
+    // AI 팬 메시지 생성 버튼 - 이건 웹소켓이 아니라 일반 fetch로 서버에 요청을 보냄.
+    // 서버가 메시지를 만들어서 위쪽 "artistFeed" 채널로 직접 방송해주므로,
+    // 여기서는 따로 응답을 받아서 화면에 그릴 필요 없이 요청만 보내면 됨
+    document.getElementById('aiFanButton').addEventListener('click', function () {
+        fetch('/chat/room/artist/ai-fan?artistId=' + artistId, {
+            method: 'POST'
+        });
+    });
+</script>
+
+</body>
+</html>
