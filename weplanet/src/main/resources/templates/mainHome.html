@@ -1,11 +1,27 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
 </head>
 <body>
 <h1>WePlanet</h1>
+
+<div>
+    <span sec:authorize="isAnonymous()">
+        <a th:href="@{/signup}">회원가입</a>
+        <a th:href="@{/login}">로그인</a>
+    </span>
+
+    <span sec:authorize="isAuthenticated()">
+        <span sec:authentication="name">사용자</span>님 환영합니다
+
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+            <button type="submit">로그아웃</button>
+        </form>
+    </span>
+</div>
 
 <ul>
     <li><a th:href="@{/posts/fan}">팬 게시판</a></li>
