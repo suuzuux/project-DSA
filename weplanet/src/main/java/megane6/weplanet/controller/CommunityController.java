@@ -59,6 +59,18 @@ public class CommunityController {
 		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
 		model.addAttribute("artistCommentsWidget", artistComments);
 
+		// "From 아티스트" 위젯 - 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지
+		List<Post> artistPosts = postService.getRecentPosts(BoardType.ARTIST);
+		Map<Long, String> artistPostThumbnails = new HashMap<>();
+		for (Post post : artistPosts) {
+			postService.getAttachments(post).stream()
+					.filter(a -> a.isImage())
+					.findFirst()
+					.ifPresent(a -> artistPostThumbnails.put(post.getId(), a.getStoredName()));
+		}
+		model.addAttribute("artistPosts", artistPosts);
+		model.addAttribute("artistPostThumbnails", artistPostThumbnails);
+
 		return "community/highlight";
 	}
 
