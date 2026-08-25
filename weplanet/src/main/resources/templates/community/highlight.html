@@ -44,7 +44,35 @@
           <h2 class="section__title" th:text="|From ${artist.nickname()}|">From Artist</h2>
           <a class="section__link" th:href="@{/community/{id}/artist(id=${artist.id()})}">더보기</a>
         </div>
-        <p class="text-muted">표시할 아티스트 게시글이 없습니다.</p>
+        <div class="feed feed--grid" th:if="${!artistPosts.isEmpty()}">
+          <article class="post-card" th:each="post : ${artistPosts}">
+            <a th:href="@{/community/{artistId}/artist/{postId}(artistId=${artist.id()}, postId=${post.id})}"
+               style="display:block;color:inherit;">
+              <div class="post-card__head">
+                <div class="avatar avatar--sm" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                <div class="post-card__meta">
+                  <div class="post-card__name">
+                    <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                    <span class="badge-verified">✓</span>
+                  </div>
+                  <div class="post-card__time"
+                       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                       th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+                </div>
+              </div>
+              <p class="post-card__body" th:text="${post.title}"></p>
+              <div th:if="${artistPostThumbnails.get(post.id)} != null" class="post-card__media">
+                <img th:src="@{'/uploads/' + ${artistPostThumbnails.get(post.id)}}" alt=""
+                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:180px;object-fit:cover;">
+              </div>
+            </a>
+            <div class="post-card__actions">
+              <span th:if="${post.likeCount > 0}">♥ <span th:text="${post.likeCount}"></span></span>
+              <span th:unless="${post.likeCount > 0}">♥</span>
+            </div>
+          </article>
+        </div>
+        <p class="text-muted" th:if="${artistPosts.isEmpty()}">표시할 아티스트 게시글이 없습니다.</p>
       </section>
 
       <!-- Artist comments -->
