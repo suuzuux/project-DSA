@@ -1,174 +1,148 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    [와이어프레임] 커뮤니티 – 내 프로필
-    탭: 댓글 / 포스트 / 좋아요 / 북마크 + 프로필 편집 모달
-  -->
-  <title>내 프로필 | WePlaNet</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/community.css" />
-  <link rel="stylesheet" href="../../css/shell.css" />
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!--
+      [와이어프레임 20~23번] 커뮤니티 – 내 프로필
+      탭: 댓글 / 포스트 / 좋아요 / 북마크
+    -->
+    <title th:text="'내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" th:href="@{/css/community.css}"/>
+    <link rel="stylesheet" th:href="@{/css/shell.css}"/>
 </head>
-<body data-shell="fan" data-base="../">
-  <header class="community-top">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-    <div class="community-top__left">
-      <a class="home-link" href="../home.html">🏠</a>
-      <span class="avatar avatar--sm">RZ</span>
-      <h1 class="community-top__name">RIIZE</h1>
-    </div>
-    <div class="community-top__right">
-      <button type="button" class="icon-btn">🌐</button>
-      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
-      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
-      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
-    </div>
-  </header>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
-  <main class="container section" style="max-width:720px;" data-tabs>
+<header th:replace="~{community/fragments/layout :: header}"></header>
+
+<main class="container section" style="max-width:720px;" data-tabs>
     <div class="profile-panel">
-      <div class="profile-cover"></div>
-      <div class="profile-panel__info">
-        <div class="flex-between" style="align-items:flex-end;">
-          <div class="avatar avatar--lg" style="border:3px solid #fff;">나</div>
-          <button type="button" class="btn btn--ghost btn--sm" data-modal-open="editCommunityProfile">프로필 편집</button>
+        <div class="profile-cover"></div>
+        <div class="profile-panel__info">
+            <div class="flex-between" style="align-items:flex-end;">
+                <div class="avatar avatar--lg" style="border:3px solid #fff;"
+                     th:text="${#authentication.name.substring(0,1)}">나
+                </div>
+            </div>
+            <h2 class="mt-12" style="font-size:var(--wp-fs-xl);font-weight:800;">
+                <span th:text="${#authentication.name}">닉네임</span>
+            </h2>
+            <div class="profile-panel__stats">
+                <div><strong th:text="${myFollowingCount}">0</strong><span>팔로잉</span></div>
+            </div>
         </div>
-        <h2 class="mt-12" style="font-size:var(--wp-fs-xl);font-weight:800;">
-          🔒 닉네임 <span class="badge-verified" title="멤버십 가입 인증배지">✓</span>
-        </h2>
-        <p class="text-sm text-muted">D + 372 · 2023.09.13 가입</p>
-        <div class="profile-panel__stats">
-          <div><strong>6</strong><span>팔로잉</span></div>
-          <div><strong>0</strong><span>팔로워</span></div>
-        </div>
-      </div>
-      <nav class="profile-tabs">
-        <a href="#" class="is-active" data-tab="comments">댓글 155</a>
-        <a href="#" data-tab="posts">포스트 2</a>
-        <a href="#" data-tab="likes">좋아요 342</a>
-        <a href="#" data-tab="bookmarks">북마크</a>
-      </nav>
+        <nav class="profile-tabs">
+            <a href="#" class="is-active" data-tab="comments" th:text="|댓글 ${#lists.size(myComments)}|">댓글</a>
+            <a href="#" data-tab="posts" th:text="|포스트 ${#lists.size(myPosts)}|">포스트</a>
+            <a href="#" data-tab="likes" th:text="|좋아요 ${#lists.size(likedPosts)}|">좋아요</a>
+            <a href="#" data-tab="bookmarks">북마크</a>
+        </nav>
     </div>
 
     <div class="flex-between mb-16">
-      <select class="form-select" style="width:auto;min-height:36px;">
-        <option>최신순</option>
-        <option>오래된 순</option>
-      </select>
+        <div>
+            <a class="form-select" style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;"
+               th:href="@{''(sort='latest')}" th:classappend="${sort != 'oldest'} ? ' is-active'">최신순</a>
+            <a class="form-select"
+               style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;margin-left:8px;"
+               th:href="@{''(sort='oldest')}" th:classappend="${sort == 'oldest'} ? ' is-active'">오래된 순</a>
+        </div>
     </div>
 
     <!-- 댓글 히스토리 -->
     <div data-tab-panel="comments">
-      <article class="post-card mb-16">
-        <p class="text-xs text-muted mb-8">원글 · 아티스트 닉네임 ✓ · 아티스트가 작성한 게시글 내용 (한 줄 표시)</p>
-        <div class="post-card__head">
-          <div class="avatar avatar--sm">나</div>
-          <div class="post-card__meta">
-            <div class="post-card__name">팬 닉네임 ✓</div>
-            <div class="post-card__time">2026.08.21 15:24</div>
-          </div>
-        </div>
-        <p class="post-card__body">내가 작성한 댓글 내용이 보일 영역</p>
-        <a class="translate-link" href="#">번역보기</a>
-        <div class="post-card__actions">
-          <button type="button" class="text-danger" onclick="alert('삭제 (목업)')">🗑 삭제하기</button>
-        </div>
-      </article>
+        <article class="post-card mb-16" th:each="comment : ${myComments}">
+            <p class="text-xs text-muted mb-8"
+               th:text="|원글 · ${comment.post.author != null ? comment.post.author.nickname : '(알 수 없음)'} · ${comment.post.title}|">
+                원글</p>
+            <p class="post-card__body" th:text="${comment.content}"></p>
+            <p class="text-xs text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
+            <div class="post-card__actions">
+                <form th:action="@{/posts/detail/{id}/comment/{cid}/delete(id=${comment.post.id}, cid=${comment.id})}"
+                      method="post"
+                      onsubmit="return confirm('삭제할까요?');">
+                    <button type="submit" class="text-danger">🗑 삭제하기</button>
+                </form>
+            </div>
+        </article>
+        <p th:if="${#lists.isEmpty(myComments)}" class="text-muted" style="padding:24px 0;">작성한 댓글이 없습니다.</p>
     </div>
 
     <!-- 포스트 히스토리 -->
     <div class="hidden" data-tab-panel="posts">
-      <article class="post-card">
-        <div class="post-card__head">
-          <div class="avatar">나</div>
-          <div class="post-card__meta">
-            <div class="post-card__name">팬 닉네임 ✓</div>
-            <div class="post-card__time">2026.08.21 15:24</div>
-          </div>
-        </div>
-        <p class="post-card__body">팬이 작성한 게시글 내용 (최대 10줄) …</p>
-        <button type="button" class="translate-link">더 보기</button>
-        <div class="post-card__actions">
-          <button type="button" data-like>♥ <span data-like-count>1</span></button>
-          <button type="button">💬</button>
-          <button type="button">✏ 수정하기</button>
-          <button type="button" class="text-danger">🗑 삭제하기</button>
-        </div>
-      </article>
+        <article class="post-card mb-16" th:each="post : ${myPosts}">
+            <a th:href="${post.boardType.name() == 'FAN'}
+                      ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
+                      : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
+               style="display:block;color:inherit;">
+                <p class="post-card__body" th:text="${post.title}"></p>
+                <p class="text-xs text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
+            </a>
+            <div class="post-card__actions">
+                <span th:if="${post.likeCount > 0}">♥ <span th:text="${post.likeCount}"></span></span>
+                <span th:unless="${post.likeCount > 0}">♥</span>
+                <span th:with="cc=${myPostCommentCounts.get(post.id)}">
+            <span th:if="${cc > 0}">💬 <span th:text="${cc}"></span></span>
+            <span th:unless="${cc > 0}">💬</span>
+          </span>
+            </div>
+        </article>
+        <p th:if="${#lists.isEmpty(myPosts)}" class="text-muted" style="padding:24px 0;">작성한 포스트가 없습니다.</p>
     </div>
 
     <!-- 좋아요 -->
     <div class="hidden" data-tab-panel="likes">
-      <article class="post-card">
-        <div class="post-card__head">
-          <div class="avatar">아</div>
-          <div class="post-card__meta">
-            <div class="post-card__name">아티스트 닉네임 ✓</div>
-            <div class="post-card__time">2026.08.21 15:24</div>
-          </div>
-        </div>
-        <p class="post-card__body">아티스트가 작성한 게시글 내용</p>
-        <a class="translate-link" href="#">번역보기</a>
-      </article>
+        <article class="post-card mb-16" th:each="post : ${likedPosts}">
+            <a th:href="${post.boardType.name() == 'FAN'}
+                      ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
+                      : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
+               style="display:block;color:inherit;">
+                <div class="post-card__head">
+                    <div class="avatar"
+                         th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                    <div class="post-card__meta">
+                        <div class="post-card__name"
+                             th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                    </div>
+                </div>
+                <p class="post-card__body" th:text="${post.title}"></p>
+            </a>
+        </article>
+        <p th:if="${#lists.isEmpty(likedPosts)}" class="text-muted" style="padding:24px 0;">좋아요한 게시글이 없습니다.</p>
     </div>
 
-    <!-- 북마크 빈 상태 -->
+    <!-- 북마크 -->
     <div class="hidden" data-tab-panel="bookmarks">
-      <div class="empty-state">
-        <strong>저장한 북마크가 없습니다</strong>
-        마음에 드는 포스트를 저장해 보세요
-      </div>
+        <article class="post-card mb-16" th:each="post : ${bookmarkedPosts}">
+            <a th:href="${post.boardType.name() == 'FAN'}
+                      ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
+                      : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
+               style="display:block;color:inherit;">
+                <div class="post-card__head">
+                    <div class="avatar"
+                         th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                    <div class="post-card__meta">
+                        <div class="post-card__name"
+                             th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                    </div>
+                </div>
+                <p class="post-card__body" th:text="${post.title}"></p>
+            </a>
+        </article>
+        <div th:if="${#lists.isEmpty(bookmarkedPosts)}" class="empty-state">
+            <strong>저장한 북마크가 없습니다</strong>
+            마음에 드는 포스트를 저장해 보세요
+        </div>
     </div>
-  </main>
+</main>
 
-  <!-- 프로필 편집 모달 -->
-  <div class="modal-backdrop" id="editCommunityProfile">
-    <div class="modal modal--wide">
-      <div class="modal__head">
-        <h2 class="modal__title">프로필 편집</h2>
-        <button type="button" class="modal__close" data-modal-close>✕</button>
-      </div>
-      <div class="form-group">
-        <label class="form-label">프로필 이미지 편집</label>
-        <div class="flex-center">
-          <div class="avatar avatar--lg">나</div>
-          <button type="button" class="btn btn--ghost btn--sm">사진첩에서 불러오기</button>
-          <button type="button" class="btn btn--ghost btn--sm">이미지 삭제하기</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">닉네임</label>
-        <input class="form-input" value="닉네임" maxlength="10" data-count />
-        <p class="char-count form-hint">3 / 10</p>
-      </div>
-      <div class="form-group">
-        <label class="form-label">소개글 (선택)</label>
-        <textarea class="form-textarea" maxlength="30" data-count placeholder="내 프로필에 노출될 소개글을 작성하세요." style="min-height:72px;"></textarea>
-        <p class="char-count form-hint">0 / 30</p>
-      </div>
-      <div class="form-group">
-        <label class="form-label">배경 이미지 편집</label>
-        <div class="media-ph mb-8" style="aspect-ratio:3/1;border-radius:8px;">배경 이미지 영역</div>
-        <div class="flex-center">
-          <button type="button" class="btn btn--ghost btn--sm">사진첩에서 불러오기</button>
-          <button type="button" class="btn btn--ghost btn--sm">이미지 삭제하기</button>
-        </div>
-      </div>
-      <div class="settings-row">
-        <div>
-          <strong>프로필의 콘텐츠 숨기기</strong>
-          <p class="text-xs text-muted">다른 사람이 프로필에 접근해도 콘텐츠·팔로잉/팔로워는 볼 수 없습니다.</p>
-        </div>
-        <button type="button" class="toggle" aria-label="콘텐츠 숨기기"></button>
-      </div>
-      <button type="button" class="btn btn--primary btn--block mt-16" onclick="alert('저장 (목업)')">저장</button>
-    </div>
-  </div>
-
-  <script src="../../js/main.js"></script>
-  <script src="../../js/shell.js"></script>
+<script th:replace="~{community/fragments/layout :: scripts}"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
 </body>
 </html>

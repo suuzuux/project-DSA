@@ -58,6 +58,13 @@ public class PostService {
         return postRepository.findByBoardTypeAndArtistOrderByCreatedAtDesc(boardType, artist);
     }
 
+    // 내 프로필 "포스트 히스토리" 탭 - 내가 쓴 게시글 전체
+    public List<Post> getPostsByAuthor(User author, boolean oldest) {
+        return oldest
+                ? postRepository.findByAuthorOrderByCreatedAtAsc(author)
+                : postRepository.findByAuthorOrderByCreatedAtDesc(author);
+    }
+
     // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 구분 없이 전체 인기 게시글 상위 4개
     public List<Post> getPopularPosts() {
         return postRepository.findTop4ByOrderByLikeCountDescCreatedAtDesc();
