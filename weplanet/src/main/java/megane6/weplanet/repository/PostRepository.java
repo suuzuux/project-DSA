@@ -16,4 +16,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 종류 구분 없이 전체에서 인기순 상위 4개
     List<Post> findTop4ByOrderByLikeCountDescCreatedAtDesc();
+
+    // 하이라이트 "Fan Posts" 위젯용 - 특정 게시판의 최신 게시글 상위 4개
+    List<Post> findTop4ByBoardTypeOrderByCreatedAtDesc(BoardType boardType);
 }
