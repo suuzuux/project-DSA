@@ -10,7 +10,11 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.repository.CommentRepository;
+import megane6.weplanet.repository.LikeRepository;
+import megane6.weplanet.repository.BookmarkRepository;
 import megane6.weplanet.domain.entity.Comment;
+import megane6.weplanet.domain.entity.Like;
+import megane6.weplanet.domain.entity.Bookmark;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
@@ -39,6 +43,8 @@ public class CommunityController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final CommentRepository commentRepository;
+	private final LikeRepository likeRepository;
+	private final BookmarkRepository bookmarkRepository;
 	private final MembershipService membershipService;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
@@ -183,6 +189,53 @@ public class CommunityController {
 	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		populateArtistModel(artistId, principal, model);
 		return "community/live";
+	}
+
+	// 와이어프레임 20~23번: 내 프로필 - 댓글/포스트/좋아요/북마크 히스토리
+	@GetMapping("/community/{artistId}/profile")
+	public String myProfile(
+			@PathVariable Long artistId,
+			@RequestParam(defaultValue = "latest") String sort,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		populateArtistModel(artistId, principal, model);
+		User me = userResolver.resolve(principal, 1L);
+
+		boolean oldest = "oldest".equals(sort);
+
+		List<Comment> myComments = oldest
+				? commentRepository.findByAuthorOrderByCreatedAtAsc(me)
+				: commentRepository.findByAuthorOrderByCreatedAtDesc(me);
+
+		List<Post> myPosts = oldest
+				? postService.getPostsByAuthor(me, true)
+				: postService.getPostsByAuthor(me, false);
+		Map<Long, Long> myPostCommentCounts = new HashMap<>();
+		for (Post post : myPosts) {
+			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
+		}
+
+		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(me).stream()
+				.map(Like::getPost)
+				.toList();
+
+		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(me).stream()
+				.map(Bookmark::getPost)
+				.toList();
+
+		model.addAttribute("myComments", myComments);
+		model.addAttribute("myPosts", myPosts);
+		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
+		model.addAttribute("likedPosts", likedPosts);
+		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
+		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
+		model.addAttribute("sort", sort);
+
+		return "community/profile";
 	}
 
 	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
