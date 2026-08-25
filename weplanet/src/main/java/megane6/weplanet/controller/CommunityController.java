@@ -8,6 +8,8 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.repository.CommentRepository;
+import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,12 +32,13 @@ public class CommunityController {
 	private final PostListModelHelper postListModelHelper;
 	private final PostService postService;
 	private final CommentService commentService;
+	private final CommentRepository commentRepository;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+		User artist = populateArtistModel(artistId, model);
 
 		// "Fan Posts" 위젯 - 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
 		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN);
@@ -51,6 +54,10 @@ public class CommunityController {
 		model.addAttribute("fanPosts", fanPosts);
 		model.addAttribute("fanPostCommentCounts", fanPostCommentCounts);
 		model.addAttribute("fanPostThumbnails", fanPostThumbnails);
+
+		// "Comments by 아티스트" 위젯 - 이 아티스트가 작성한 댓글 최신 4개
+		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
+		model.addAttribute("artistCommentsWidget", artistComments);
 
 		return "community/highlight";
 	}
@@ -125,7 +132,7 @@ public class CommunityController {
 		return "community/live";
 	}
 
-	private void populateArtistModel(Long artistId, Model model) {
+	private User populateArtistModel(Long artistId, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
@@ -136,5 +143,7 @@ public class CommunityController {
 
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
+
+		return artist;
 	}
 }
