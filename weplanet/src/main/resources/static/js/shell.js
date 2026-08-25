@@ -189,7 +189,7 @@
   </div>
 </div>
 
-<!-- ========== 5. 멤버십 상세 모달 (P33) ========== -->
+<!-- ========== 5. 멤버십 상세 모달 (P33) - 실데이터는 클릭 시 fetch로 채움 ========== -->
 <div class="modal-backdrop" id="membershipDetailModal">
   <div class="modal">
     <div class="modal__head">
@@ -197,14 +197,12 @@
       <button type="button" class="modal__close" data-modal-close>✕</button>
     </div>
     <div class="membership-card-detail">
-      <div class="membership-card-detail__row"><span>이름</span><strong>홍길동</strong></div>
-      <div class="membership-card-detail__row"><span>멤버십 고유 번호</span><strong>WP-RZ-20251127</strong></div>
-      <div class="membership-card-detail__row"><span>기간</span><strong>2025.11.27 ~ 2026.11.26 (KST)</strong></div>
+      <div class="membership-card-detail__row"><span>이름</span><strong id="membershipDetailName">-</strong></div>
+      <div class="membership-card-detail__row"><span>멤버십 고유 번호</span><strong id="membershipDetailNo">-</strong></div>
+      <div class="membership-card-detail__row"><span>기간</span><strong id="membershipDetailPeriod">-</strong></div>
     </div>
-    <div class="settings-row"><span>성</span><span>홍</span></div>
-    <div class="settings-row"><span>이름</span><span>길동</span></div>
-    <div class="settings-row"><span>이메일</span><span>hong22@gmail.com</span></div>
-    <div class="settings-row"><span>전화번호</span><span>010-2222-2222</span></div>
+    <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
+    <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
   </div>
 </div>
 `;
@@ -230,6 +228,24 @@
       membershipJoinForm.action = "/community/" + artistMatch[1] + "/membership/join";
     }
   }
+
+  // 멤버십 상세 모달(P33) - "Membership 상세보기" 버튼을 누른 시점에 실제 가입일/만료일/연락처를 받아와 채움.
+  // (예전엔 홍길동/2025.11.27 같은 고정값이 항상 떠 있었음 - 백엔드(/membership/detail)는 이미 실데이터를
+  //  내려주고 있었는데 프론트에서 그걸 부르는 코드가 없었던 것)
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest('[data-modal-open="membershipDetailModal"]')) return;
+    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
+    if (!artistMatch) return;
+    fetch("/community/" + artistMatch[1] + "/membership/detail")
+      .then((res) => res.json())
+      .then((data) => {
+        document.getElementById("membershipDetailName").textContent = data.name || "-";
+        document.getElementById("membershipDetailNo").textContent = data.membershipNo || "-";
+        document.getElementById("membershipDetailPeriod").textContent = data.period || "-";
+        document.getElementById("membershipDetailEmail").textContent = data.email || "-";
+        document.getElementById("membershipDetailPhone").textContent = data.phone || "-";
+      });
+  });
 
   /* ---------------------------------------------------------
    * Controllers
