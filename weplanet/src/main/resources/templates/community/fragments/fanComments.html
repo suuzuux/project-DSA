@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org">
 <body>
-  <div id="commentSection" th:fragment="commentsFragment">
+  <aside id="commentSection" class="community-aside" th:fragment="commentsFragment">
     <!-- 댓글 작성 -->
     <div class="comment-box" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <p class="form-label">댓글 작성</p>
@@ -85,6 +85,6 @@
         </div>
       </div>
     </div>
-  </div>
+  </aside>
 </body>
 </html>
