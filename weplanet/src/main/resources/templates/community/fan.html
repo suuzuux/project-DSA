@@ -64,17 +64,31 @@
 
         <textarea id="writePostContent" name="content" class="form-textarea" data-count maxlength="1000"
                   placeholder="포스트를 남겨보세요 …"></textarea>
+
+        <div id="writePostLinkRow" class="mt-8" style="display:none;">
+          <input type="url" id="writePostLinkUrl" name="linkUrl" class="form-input"
+                 placeholder="https:// 링크를 입력하세요" maxlength="500" />
+        </div>
+
         <div class="flex-between mt-8">
-          <span class="char-count text-xs text-muted">0 / 1000</span>
           <div class="flex-center">
             <label class="icon-btn" title="이미지" style="cursor:pointer;">
               🖼
               <input type="file" id="writePostFiles" name="files" multiple
                      accept="image/*,application/pdf,.txt,.zip" style="display:none;" />
             </label>
+            <button type="button" id="writePostLinkToggleBtn" class="icon-btn" title="링크" aria-pressed="false">🔗</button>
             <span id="writePostFileCount" class="text-xs text-muted"></span>
           </div>
+          <span class="char-count text-xs text-muted">0 / 1000</span>
         </div>
+
+        <div class="flex-between mt-8">
+          <span class="text-sm">Hide from Artists</span>
+          <button type="button" id="writePostHideToggle" class="toggle-managed" role="switch" aria-checked="false"></button>
+          <input type="hidden" id="writePostHiddenFromArtist" name="hiddenFromArtist" value="false" />
+        </div>
+
         <p id="writePostError" class="form-error mt-8" style="display:none;"></p>
         <button type="submit" id="writePostSubmit" class="btn btn--primary btn--block mt-16" disabled>등록하기</button>
       </form>
