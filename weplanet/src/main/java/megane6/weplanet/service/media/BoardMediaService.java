@@ -2,6 +2,7 @@ package megane6.weplanet.service.media;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.dto.media.BoardMediaFileViewDTO;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
 import megane6.weplanet.domain.entity.media.BoardMediaEntity;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
@@ -162,6 +163,15 @@ public class BoardMediaService {
     }
 
     private BoardMediaViewDTO toViewDTO(BoardMediaEntity post) {
+        List<BoardMediaFileViewDTO> fileViews = post.getFiles().stream()
+                .map(file -> BoardMediaFileViewDTO.builder()
+                        .id(file.getId())
+                        .mediaType(file.getMediaType())
+                        .originalName(file.getOriginalName())
+                        .contentType(file.getContentType())
+                        .build())
+                .toList();
+
         return BoardMediaViewDTO.builder()
                 .id(post.getId())
                 .groupId(post.getGroupId())
@@ -169,8 +179,8 @@ public class BoardMediaService {
                 .title(post.getTitle())
                 .content(post.getContent())
                 .createdAt(post.getCreatedAt())
-                .fileCount(post.getFiles().size())
-                .files(new ArrayList<>(post.getFiles())) // 파일 목록 복사해서 담기
+                .fileCount(fileViews.size())
+                .files(fileViews)
                 .build();
     }
 }
