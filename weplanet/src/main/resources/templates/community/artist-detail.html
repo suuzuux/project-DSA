@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${artist.nickname()} + ' – Artist 게시글 | WePlaNet'">Artist 게시글 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link rel="stylesheet" th:href="@{/css/community.css}"/>
+    <link rel="stylesheet" th:href="@{/css/shell.css}"/>
+    <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
+    <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null},
+               data-post-id=${post.id},
+               data-artist-id=${artist.id()}">
+
+<header th:replace="~{community/fragments/layout :: header}"></header>
+
+<div class="community-body">
+    <div class="community-main">
+        <a class="section__link mb-16" style="display:inline-block;"
+           th:href="@{/community/{id}/artist(id=${artist.id()})}">← Artist 게시판</a>
+
+        <article class="post-card">
+            <div class="post-card__head">
+                <div class="avatar"
+                     th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                <div class="post-card__meta">
+                    <div class="post-card__name">
+                        <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                        <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}"
+                              class="badge-verified">✓</span>
+                    </div>
+                    <div class="post-card__time"
+                         th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                         th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+                </div>
+            </div>
+
+            <a href="javascript:void(0)" id="postTranslateLink" class="translate-link">번역보기</a>
+            <p id="postTranslatedText" class="text-sm"
+               style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
+            <div id="contentViewer" class="post-card__body"></div>
+
+            <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media mt-12">
+                <div th:each="file : ${attachments}">
+                    <img th:if="${file.image}" th:src="@{'/uploads/' + ${file.storedName}}"
+                         th:alt="${file.originalName}"
+                         style="width:100%;border-radius:var(--wp-radius-sm);max-height:480px;object-fit:cover;">
+                    <a th:unless="${file.image}" class="translate-link" th:href="@{'/uploads/' + ${file.storedName}}"
+                       th:text="${file.originalName}" download></a>
+                </div>
+            </div>
+
+            <div class="post-card__actions">
+                <button type="button" id="likeButton"
+                        style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;">
+                    ♥ <span id="likeCount" th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
+                </button>
+                <span th:if="${#lists.size(comments) > 0}">💬 <span th:text="${#lists.size(comments)}"></span></span>
+                <span th:unless="${#lists.size(comments) > 0}">💬</span>
+            </div>
+        </article>
+    </div>
+
+    <div th:replace="~{community/fragments/fanComments :: commentsFragment}"></div>
+</div>
+
+<script th:replace="~{community/fragments/layout :: scripts}"></script>
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script th:inline="javascript">
+    new toastui.Editor.factory({
+        el: document.querySelector('#contentViewer'),
+        viewer: true,
+        initialValue: /*[[${post.content}]]*/ ''
+    });
+</script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+<script th:src="@{/js/dm-realtime.js}"></script>
+<script th:src="@{/js/community-post-detail.js}"></script>
+</body>
+</html>

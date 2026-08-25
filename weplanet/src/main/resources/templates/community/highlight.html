@@ -56,7 +56,7 @@
           <article class="post-card" th:each="comment : ${artistCommentsWidget}">
             <a th:href="${comment.post.boardType.name() == 'FAN'}
                           ? @{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${comment.post.id})}
-                          : @{/posts/detail/{id}(id=${comment.post.id})}"
+                          : @{/community/{artistId}/artist/{postId}(artistId=${artist.id()}, postId=${comment.post.id})}"
                style="display:block;color:inherit;">
               <div class="post-card__head">
                 <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
