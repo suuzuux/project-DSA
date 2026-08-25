@@ -200,7 +200,6 @@ CREATE TABLE IF NOT EXISTS post (
     DEFAULT CHARSET=utf8mb4
     COLLATE=utf8mb4_unicode_ci;
 
-
 CREATE TABLE IF NOT EXISTS comment (
                                        id BIGINT NOT NULL AUTO_INCREMENT,
                                        content VARCHAR(500) NOT NULL,
@@ -407,7 +406,7 @@ CREATE TABLE IF NOT EXISTS filter_keyword (
 CREATE TABLE IF NOT EXISTS fan_badge_ownership (
     id BIGINT NOT NULL AUTO_INCREMENT,
     fan_id BIGINT NOT NULL,
-    group_id BIGINT NOT NULL,
+    artist_id BIGINT NOT NULL,
     badge_code VARCHAR(50) NOT NULL,
     badge_name VARCHAR(100) NOT NULL,
     badge_type VARCHAR(20) NOT NULL,
@@ -418,14 +417,14 @@ CREATE TABLE IF NOT EXISTS fan_badge_ownership (
 
     PRIMARY KEY (id),
 
-    UNIQUE KEY uk_fan_badge_ownership (fan_id, group_id, badge_code),
-    KEY idx_fan_badge_count (fan_id, group_id, badge_type, revoked_at),
+    UNIQUE KEY uk_fan_badge_ownership (fan_id, artist_id, badge_code),
+    KEY idx_fan_badge_count (fan_id, artist_id, badge_type, revoked_at),
     KEY idx_fan_badge_awarded_by (awarded_by),
 
     CONSTRAINT fk_fan_badge_fan
         FOREIGN KEY (fan_id) REFERENCES users(id),
-    CONSTRAINT fk_fan_badge_group
-        FOREIGN KEY (group_id) REFERENCES artist_groups(id),
+    CONSTRAINT fk_fan_badge_artist
+        FOREIGN KEY (artist_id) REFERENCES users(id),
     CONSTRAINT fk_fan_badge_awarded_by
         FOREIGN KEY (awarded_by) REFERENCES users(id),
     CONSTRAINT ck_fan_badge_type
@@ -440,7 +439,7 @@ CREATE TABLE IF NOT EXISTS fan_badge_ownership (
 
 CREATE TABLE IF NOT EXISTS fan_project (
     id BIGINT NOT NULL AUTO_INCREMENT,
-    group_id BIGINT NOT NULL,
+    artist_id BIGINT NOT NULL,
     creator_id BIGINT NOT NULL,
     title VARCHAR(20) NOT NULL,
     event_type VARCHAR(30) NOT NULL,
@@ -468,13 +467,13 @@ CREATE TABLE IF NOT EXISTS fan_project (
 
     PRIMARY KEY (id),
 
-    KEY idx_fan_project_group_status (group_id, status, funding_start_at),
+    KEY idx_fan_project_artist_status (artist_id, status, funding_start_at),
     KEY idx_fan_project_creator (creator_id, created_at),
     KEY idx_fan_project_funding_end (status, funding_end_at),
     KEY idx_fan_project_reviewer (reviewed_by, reviewed_at),
 
-    CONSTRAINT fk_fan_project_group
-        FOREIGN KEY (group_id) REFERENCES artist_groups(id),
+    CONSTRAINT fk_fan_project_artist
+        FOREIGN KEY (artist_id) REFERENCES users(id),
     CONSTRAINT fk_fan_project_creator
         FOREIGN KEY (creator_id) REFERENCES users(id),
     CONSTRAINT fk_fan_project_reviewer
@@ -658,6 +657,3 @@ CREATE TABLE IF NOT EXISTS fan_project_contribution (
     ENGINE=InnoDB
     DEFAULT CHARSET=utf8mb4
     COLLATE=utf8mb4_unicode_ci;
-
-ALTER TABLE users
-    ADD COLUMN phone_verified_at DATETIME(6) NULL AFTER phone_hash;

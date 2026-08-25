@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.ProjectImage;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,13 @@ public class ProjectService {
 	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
 		// 1. 로그인 회원 조회
 		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("로그인 정보를 찾을 수 없습니다."));
+		if (creator.getRole() != Role.FAN) {
+			throw new IllegalStateException("팬 회원만 프로젝트를 등록할 수 있습니다.");
+		}
+
+		User artist = ur.findById(dto.getArtistId())
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("아티스트 정보를 찾을 수 없습니다."));
 		
 		// 2. 휴대폰 본인인증 여부 확인
 		if (!creator.isPhoneVerified()) {
@@ -42,14 +50,14 @@ public class ProjectService {
 		}
 		
 		// 3. 뱃지 개수 확인
-		long basicBadgeCount = fbr.countByFan_IdAndGroupIdAndBadgeTypeAndRevokedAtIsNull(
+		long basicBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
 				creator.getId(),
-				dto.getGroupId(),
+				artist.getId(),
 				FanBadgeType.BASIC
 		);
-		long specialBadgeCount = fbr.countByFan_IdAndGroupIdAndBadgeTypeAndRevokedAtIsNull(
+		long specialBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
 				creator.getId(),
-				dto.getGroupId(),
+				artist.getId(),
 				FanBadgeType.SPECIAL
 		);
 		if (basicBadgeCount < MIN_BASIC_BADGE_COUNT ||  specialBadgeCount < MIN_SPECIAL_BADGE_COUNT) {
@@ -58,7 +66,7 @@ public class ProjectService {
 		
 		// 4. Project 저장
 		Project project = Project.createPending(
-				dto.getGroupId(),
+				artist,
 				creator,
 				dto.getTitle(),
 				dto.getEventType(),

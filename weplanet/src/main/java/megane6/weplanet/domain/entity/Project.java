@@ -20,6 +20,7 @@ import megane6.weplanet.domain.entity.enumfolder.FanProjectEligibilityRule;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectEventType;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import megane6.weplanet.domain.entity.enumfolder.IdentityVerificationMethod;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 
 import java.time.LocalDateTime;
 
@@ -36,9 +37,10 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // artist_groups Entity가 아직 없으므로 현재는 FK 값만 매핑한다.
-    @Column(name = "group_id", nullable = false)
-    private Long groupId;
+    // 팀 공통 커뮤니티와 동일하게 users.id(ARTIST)를 프로젝트 대상 아티스트로 사용한다.
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "artist_id", nullable = false)
+    private User artist;
 
     // username이 아닌 users.id(PK)가 creator_id에 저장된다.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -105,7 +107,7 @@ public class Project {
     private LocalDateTime deletedAt;
 
     private Project(
-            Long groupId,
+            User artist,
             User creator,
             String title,
             FanProjectEventType eventType,
@@ -118,7 +120,7 @@ public class Project {
             LocalDateTime identityVerifiedAt
     ) {
         validateCreation(
-                groupId,
+                artist,
                 creator,
                 title,
                 eventType,
@@ -131,7 +133,7 @@ public class Project {
                 identityVerifiedAt
         );
 
-        this.groupId = groupId;
+        this.artist = artist;
         this.creator = creator;
         this.title = title;
         this.eventType = eventType;
@@ -148,7 +150,7 @@ public class Project {
     }
 
     public static Project createPending(
-            Long groupId,
+            User artist,
             User creator,
             String title,
             FanProjectEventType eventType,
@@ -161,7 +163,7 @@ public class Project {
             LocalDateTime identityVerifiedAt
     ) {
         return new Project(
-                groupId,
+                artist,
                 creator,
                 title,
                 eventType,
@@ -176,7 +178,7 @@ public class Project {
     }
 
     private static void validateCreation(
-            Long groupId,
+            User artist,
             User creator,
             String title,
             FanProjectEventType eventType,
@@ -188,8 +190,8 @@ public class Project {
             int basicBadgeCount,
             LocalDateTime identityVerifiedAt
     ) {
-        if (groupId == null || creator == null) {
-            throw new IllegalArgumentException("아티스트 그룹과 프로젝트 개설자는 필수입니다.");
+        if (artist == null || artist.getRole() != Role.ARTIST || creator == null) {
+            throw new IllegalArgumentException("아티스트와 프로젝트 개설자는 필수입니다.");
         }
         if (title == null || title.isBlank() || title.length() > 20) {
             throw new IllegalArgumentException("프로젝트 제목은 1자 이상 20자 이하로 입력해야 합니다.");

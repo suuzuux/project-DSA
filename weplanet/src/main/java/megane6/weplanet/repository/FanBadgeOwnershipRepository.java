@@ -5,9 +5,9 @@ import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FanBadgeOwnershipRepository extends JpaRepository<FanBadgeOwnership, Long> {
-    long countByFan_IdAndGroupIdAndBadgeTypeAndRevokedAtIsNull(
+    long countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
             Long fanId,
-            Long groupId,
+            Long artistId,
             FanBadgeType badgeType
     );
 }

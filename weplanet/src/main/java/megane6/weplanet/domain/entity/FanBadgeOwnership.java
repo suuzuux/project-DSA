@@ -33,9 +33,10 @@ public class FanBadgeOwnership {
     @JoinColumn(name = "fan_id", nullable = false)
     private User fan;
 
-    // artist_groups Entity가 아직 없으므로 현재는 FK 값만 매핑한다.
-    @Column(name = "group_id", nullable = false)
-    private Long groupId;
+    // 팀 공통 커뮤니티가 users.id(ARTIST)를 기준으로 동작하므로 같은 아티스트를 참조한다.
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "artist_id", nullable = false)
+    private User artist;
 
     @Column(name = "badge_code", nullable = false, length = 50)
     private String badgeCode;
@@ -63,14 +64,14 @@ public class FanBadgeOwnership {
 
     private FanBadgeOwnership(
             User fan,
-            Long groupId,
+            User artist,
             String badgeCode,
             String badgeName,
             FanBadgeType badgeType,
             User awardedBy
     ) {
-        if (fan == null || groupId == null || badgeType == null) {
-            throw new IllegalArgumentException("팬, 아티스트 그룹, 뱃지 유형은 필수입니다.");
+        if (fan == null || artist == null || badgeType == null) {
+            throw new IllegalArgumentException("팬, 아티스트, 뱃지 유형은 필수입니다.");
         }
         if (badgeCode == null || badgeCode.isBlank()) {
             throw new IllegalArgumentException("뱃지 코드는 필수입니다.");
@@ -80,7 +81,7 @@ public class FanBadgeOwnership {
         }
 
         this.fan = fan;
-        this.groupId = groupId;
+        this.artist = artist;
         this.badgeCode = badgeCode;
         this.badgeName = badgeName;
         this.badgeType = badgeType;
@@ -89,7 +90,7 @@ public class FanBadgeOwnership {
 
     public static FanBadgeOwnership award(
             User fan,
-            Long groupId,
+            User artist,
             String badgeCode,
             String badgeName,
             FanBadgeType badgeType,
@@ -97,7 +98,7 @@ public class FanBadgeOwnership {
     ) {
         return new FanBadgeOwnership(
                 fan,
-                groupId,
+                artist,
                 badgeCode,
                 badgeName,
                 badgeType,

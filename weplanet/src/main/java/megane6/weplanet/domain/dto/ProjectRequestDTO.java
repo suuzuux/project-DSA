@@ -22,8 +22,8 @@ import java.time.LocalDateTime;
 @Setter
 public class ProjectRequestDTO {
 
-    @NotNull(message = "아티스트 그룹을 선택해주세요.")
-    private Long groupId;
+    @NotNull(message = "아티스트를 선택해주세요.")
+    private Long artistId;
 
     @NotBlank(message = "프로젝트 제목을 입력해주세요.")
     @Size(max = 20, message = "프로젝트 제목은 20자 이하로 입력해주세요.")
