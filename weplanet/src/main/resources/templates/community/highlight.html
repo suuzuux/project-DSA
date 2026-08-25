@@ -52,7 +52,29 @@
         <div class="section__head">
           <h2 class="section__title" th:text="|Comments by ${artist.nickname()}|">Comments</h2>
         </div>
-        <p class="text-muted">표시할 댓글이 없습니다.</p>
+        <div class="feed feed--grid" th:if="${!artistCommentsWidget.isEmpty()}">
+          <article class="post-card" th:each="comment : ${artistCommentsWidget}">
+            <a th:href="${comment.post.boardType.name() == 'FAN'}
+                          ? @{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${comment.post.id})}
+                          : @{/posts/detail/{id}(id=${comment.post.id})}"
+               style="display:block;color:inherit;">
+              <div class="post-card__head">
+                <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+                <div class="post-card__meta">
+                  <div class="post-card__name">
+                    <span th:text="${comment.author.nickname}"></span>
+                    <span class="badge-verified">✓</span>
+                  </div>
+                  <div class="post-card__time"
+                       th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                       th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+                </div>
+              </div>
+              <p class="post-card__body" th:text="${comment.content}"></p>
+            </a>
+          </article>
+        </div>
+        <p class="text-muted" th:if="${artistCommentsWidget.isEmpty()}">표시할 댓글이 없습니다.</p>
       </section>
 
       <!-- Fan posts preview -->
