@@ -16,6 +16,7 @@ import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
 import megane6.weplanet.service.TranslateService;
+import megane6.weplanet.service.portal.ArtistBlockService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -54,6 +55,7 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
     private final TranslateService translateService;
+    private final ArtistBlockService artistBlockService;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
         return userResolver.resolve(principal, testUserId);
@@ -182,6 +184,10 @@ public class PostController {
                     .filter(user -> user.getRole() == Role.ARTIST)
                     .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 
+            if (type == BoardType.FAN) {
+                artistBlockService.requireNotBlocked(communityArtist, tempAuthor);
+            }
+
             // 커뮤니티 게시글은 해당 커뮤니티에만 귀속. ARTIST 보드는 그 커뮤니티 본인만 작성 가능
             if (type == BoardType.ARTIST && !tempAuthor.getId().equals(communityArtist.getId())) {
                 throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
@@ -248,6 +254,10 @@ public class PostController {
     ) {
         Post post = postService.getPost(id);
         User author = resolveAuthor(principal, testUserId);
+
+        if (post.getArtist() != null && author.getRole() == Role.FAN) {
+            artistBlockService.requireNotBlocked(post.getArtist(), author);
+        }
 
         // 와이어프레임 기준: 댓글은 최대 100자
         if (content == null || content.isBlank()) {

@@ -1,101 +1,51 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    [와이어프레임] 아티스트 / 에이전시 로그인
-    탭: 아티스트 | 소속사 담당자 + 프로필 선택 모달
-  -->
-  <title>Artist & Agency Portal – 로그인</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/portal.css" />
+  <title>Artist Portal – 로그인</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
   <div class="portal-login">
     <aside class="portal-login__visual">
       <p class="text-xs" style="letter-spacing:0.12em;text-transform:uppercase;opacity:.7;margin-bottom:12px;">
-        ARTIST &amp; AGENCY PORTAL
+        ARTIST PORTAL
       </p>
       <h1>아티스트와 팬을<br />더 가까이 연결합니다.</h1>
       <p>공식 콘텐츠, 커뮤니티, 일정, 미디어를 하나의 공간에서 관리하세요.</p>
-      <a href="../index.html" class="mt-24" style="color:#9fd;font-size:13px;">← 메인 사이트로 이동</a>
+      <a th:href="@{/}" class="mt-24" style="color:#9fd;font-size:13px;">← 메인 사이트로 이동</a>
     </aside>
 
-    <div class="portal-login__form-wrap" data-tabs>
+    <div class="portal-login__form-wrap">
       <div class="portal-login__form">
-        <div class="role-tabs">
-          <button type="button" class="is-active" data-tab="artist">아티스트</button>
-          <button type="button" data-tab="agency">소속사 담당자</button>
-        </div>
+        <h2 class="auth-card__title" style="margin-bottom:24px;">아티스트 로그인</h2>
 
-        <!-- 아티스트 로그인 -->
-        <form data-tab-panel="artist" data-mock-submit="#" id="artistLoginForm">
+        <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
+          아이디 또는 비밀번호가 올바르지 않습니다.
+        </p>
+
+        <form th:action="@{/login}" method="post">
+          <input type="hidden" name="portalLogin" value="true" />
           <div class="form-group">
-            <label class="form-label" for="artistEmail">아티스트 계정</label>
-            <input class="form-input" id="artistEmail" type="email" placeholder="artist@domain.com" value="artist@domain.com" />
+            <label class="form-label" for="artistId">아티스트 계정</label>
+            <input class="form-input" id="artistId" name="username" type="text"
+                   placeholder="아이디 입력" required autocomplete="username" />
           </div>
           <div class="form-group">
             <label class="form-label" for="artistPw">비밀번호</label>
-            <input class="form-input" id="artistPw" type="password" placeholder="비밀번호 입력" />
+            <input class="form-input" id="artistPw" name="password" type="password"
+                   placeholder="비밀번호 입력" required autocomplete="current-password" />
           </div>
-          <button type="button" class="btn btn--primary btn--block btn--lg" data-modal-open="profilePickModal">
-            아티스트로 로그인
-          </button>
+          <button type="submit" class="btn btn--primary btn--block btn--lg">아티스트로 로그인</button>
         </form>
 
-        <!-- 소속사 로그인 -->
-        <form class="hidden" data-tab-panel="agency" data-mock-submit="dashboard.html">
-          <div class="form-group">
-            <label class="form-label" for="agencyEmail">소속사 업무 이메일</label>
-            <input class="form-input" id="agencyEmail" type="email" placeholder="manager@agency.com" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="agencyPw">비밀번호</label>
-            <input class="form-input" id="agencyPw" type="password" placeholder="비밀번호 입력" />
-          </div>
-          <button type="submit" class="btn btn--primary btn--block btn--lg">소속사 담당자로 로그인</button>
-        </form>
+        <p class="text-sm text-muted mt-16" style="text-align:center;">
+          팬 계정으로 로그인하면 메인 페이지로 이동합니다.
+        </p>
       </div>
     </div>
   </div>
-
-  <!-- 아티스트: 프로필 선택 -->
-  <div class="modal-backdrop" id="profilePickModal">
-    <div class="modal">
-      <div class="modal__head">
-        <h2 class="modal__title">프로필 선택</h2>
-        <button type="button" class="modal__close" data-modal-close>✕</button>
-      </div>
-      <p class="text-sm text-muted mb-8">개인 비밀번호를 입력한 뒤 아티스트 이름으로 로그인합니다.</p>
-      <div class="profile-pick-grid">
-        <button type="button" class="profile-pick is-selected">원빈</button>
-        <button type="button" class="profile-pick">소희</button>
-        <button type="button" class="profile-pick">성찬</button>
-        <button type="button" class="profile-pick">앤톤</button>
-        <button type="button" class="profile-pick">원식</button>
-        <button type="button" class="profile-pick">쇼타로</button>
-      </div>
-      <div class="form-group">
-        <label class="form-label">개인 비밀번호</label>
-        <input class="form-input" type="password" placeholder="비밀번호 입력" />
-      </div>
-      <div class="flex-center" style="justify-content:flex-end;">
-        <button type="button" class="btn btn--ghost" data-modal-close>취소</button>
-        <a class="btn btn--primary" href="dashboard.html">시작하기</a>
-      </div>
-    </div>
-  </div>
-
-  <script src="../../js/main.js"></script>
-  <script>
-    // 프로필 픽 선택 UI (목업)
-    document.querySelectorAll(".profile-pick").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".profile-pick").forEach((b) => b.classList.remove("is-selected"));
-        btn.classList.add("is-selected");
-      });
-    });
-  </script>
 </body>
 </html>

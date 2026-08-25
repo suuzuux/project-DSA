@@ -28,6 +28,7 @@ public class SecurityConfig {
             "/home",
             "/signup",
             "/login",
+            "/portal/login",
             "/posts/**",
             "/chat/**",
             "/ws-chat/**",
@@ -50,7 +51,17 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_URLS.toArray(String[]::new)).permitAll()
+                        .requestMatchers("/portal/**").authenticated()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, exception) -> {
+                            if (request.getRequestURI().startsWith("/portal")) {
+                                response.sendRedirect("/portal/login");
+                            } else {
+                                response.sendRedirect("/login");
+                            }
+                        })
                 )
                 .formLogin(formLogin -> formLogin
                         .loginPage("/login")
@@ -58,6 +69,13 @@ public class SecurityConfig {
                         .passwordParameter("password")
                         .loginProcessingUrl("/login")
                         .successHandler(loginSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            if ("true".equals(request.getParameter("portalLogin"))) {
+                                response.sendRedirect("/portal/login?error");
+                            } else {
+                                response.sendRedirect("/login?error");
+                            }
+                        })
                         .permitAll()
                 )
                 .logout(logout -> logout

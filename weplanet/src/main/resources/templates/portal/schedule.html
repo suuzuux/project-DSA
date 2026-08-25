@@ -1,38 +1,26 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 스케줄 관리 캘린더 -->
   <title>스케줄 관리 | Artist Portal</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/portal.css" />
-  <style>
-    /* 페이지 한정: 월간 스케줄 그리드 */
-    .sched-cal { background: var(--wp-surface); border: 1px solid var(--wp-hairline); border-radius: var(--wp-radius); overflow: hidden; }
-    .sched-cal__head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--wp-hairline); }
-    .sched-cal__grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-    .sched-cal__dow { padding: 10px; text-align: center; font-size: 11px; font-weight: 700; color: var(--wp-muted); background: var(--wp-paper); }
-    .sched-cal__cell { min-height: 100px; padding: 8px; border-top: 1px solid var(--wp-hairline); border-right: 1px solid var(--wp-hairline); font-size: 12px; }
-    .sched-cal__cell:nth-child(7n) { border-right: none; }
-    .sched-cal__num { font-weight: 700; margin-bottom: 6px; color: var(--wp-ink-soft); }
-    .sched-cal__event { background: var(--wp-brand-soft); color: var(--wp-brand-dark); padding: 4px 6px; border-radius: 4px; margin-bottom: 4px; line-height: 1.3; }
-  </style>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">SM Entertainment.</div>
-        <div class="artist">Aespa</div>
+        <div class="agency">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a href="dashboard.html">📊 대시보드</a>
-        <a href="notices.html">📢 공지사항 관리</a>
-        <a class="is-active" href="schedule.html">📆 스케줄 관리</a>
-        <a href="media.html">🎬 미디어 관리</a>
-        <a href="profile.html">👤 프로필 관리</a>
-        <a href="reports.html">⚙ 신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
     </aside>
 
@@ -40,58 +28,69 @@
       <div class="portal-main__head">
         <h1>스케줄 관리</h1>
         <div class="flex-center">
-          <select class="form-select" style="width:auto;min-height:38px;"><option>Aespa</option></select>
-          <button type="button" class="btn btn--primary btn--sm" onclick="alert('일정 추가 (목업)')">+ 일정 추가</button>
+          <a class="btn btn--ghost btn--sm" th:href="@{/portal/schedule(month=${prevMonth})}">이전 달</a>
+          <strong th:text="${selectedMonth}">2026-08</strong>
+          <a class="btn btn--ghost btn--sm" th:href="@{/portal/schedule(month=${nextMonth})}">다음 달</a>
         </div>
       </div>
 
-      <div class="sched-cal">
-        <div class="sched-cal__head">
-          <button type="button" class="icon-btn">◀</button>
-          <strong>2026 - 08</strong>
-          <button type="button" class="icon-btn">▶</button>
+      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+      <form class="settings-block" style="max-width:800px;margin-bottom:20px;" th:action="@{/portal/schedules}" method="post">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="title">일정 제목</label>
+            <input class="form-input" id="title" name="title" placeholder="예: 팬사인회" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="scheduleAt">일시</label>
+            <input class="form-input" id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+          </div>
         </div>
-        <div class="sched-cal__grid">
-          <div class="sched-cal__dow">SUN</div><div class="sched-cal__dow">MON</div><div class="sched-cal__dow">TUE</div>
-          <div class="sched-cal__dow">WED</div><div class="sched-cal__dow">THU</div><div class="sched-cal__dow">FRI</div><div class="sched-cal__dow">SAT</div>
-
-          <div class="sched-cal__cell"><div class="sched-cal__num">1</div><div class="sched-cal__event">MBC 쇼!음악중심</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">2</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">3</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">4</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">5</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">6</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">7</div></div>
-
-          <div class="sched-cal__cell"><div class="sched-cal__num">8</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">9</div><div class="sched-cal__event">SBS 인기가요</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">10</div><div class="sched-cal__event">KBS 뮤직뱅크</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">11</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">12</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">13</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">14</div></div>
-
-          <div class="sched-cal__cell"><div class="sched-cal__num">15</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">16</div><div class="sched-cal__event">SBS 인기가요</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">17</div><div class="sched-cal__event">KBS 뮤직뱅크</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">18</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">19</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">20</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">21</div></div>
-
-          <div class="sched-cal__cell"><div class="sched-cal__num">22</div><div class="sched-cal__event">SBS 인기가요</div><div class="sched-cal__event">KBS 키스 더 라디오</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">23</div><div class="sched-cal__event">KBS 뮤직뱅크</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">24</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">25</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">26</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">27</div><div class="sched-cal__event">M! Countdown 사전녹화</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">28</div></div>
-
-          <div class="sched-cal__cell"><div class="sched-cal__num">29</div><div class="sched-cal__event">SYNK : COMPLæXITY</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">30</div><div class="sched-cal__event">SYNK : COMPLæXITY</div></div>
-          <div class="sched-cal__cell"><div class="sched-cal__num">31</div></div>
-          <div class="sched-cal__cell"></div><div class="sched-cal__cell"></div><div class="sched-cal__cell"></div><div class="sched-cal__cell"></div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label" for="location">장소</label>
+            <input class="form-input" id="location" name="location" placeholder="예: 서울 올림픽홀" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="description">설명</label>
+            <input class="form-input" id="description" name="description" placeholder="간단한 설명" />
+          </div>
         </div>
+        <div class="flex-center" style="justify-content:flex-end;">
+          <button type="submit" class="btn btn--primary">일정 추가</button>
+        </div>
+      </form>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>일시</th>
+              <th>제목</th>
+              <th>장소</th>
+              <th>설명</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${#lists.isEmpty(schedules)}">
+              <td colspan="5" class="text-sm text-muted">선택한 달에 등록된 일정이 없습니다.</td>
+            </tr>
+            <tr th:each="schedule : ${schedules}">
+              <td th:text="${#temporals.format(schedule.scheduleAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 19:00</td>
+              <td th:text="${schedule.title}">일정 제목</td>
+              <td th:text="${schedule.location != null ? schedule.location : '-'}">장소</td>
+              <td th:text="${schedule.description != null ? schedule.description : '-'}">설명</td>
+              <td>
+                <form th:action="@{/portal/schedules/{id}/delete(id=${schedule.id})}" method="post">
+                  <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                </form>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </main>
   </div>
