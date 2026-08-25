@@ -659,3 +659,9 @@ CREATE TABLE IF NOT EXISTS fan_project_contribution (
 
 ALTER TABLE users
     ADD COLUMN phone_verified_at DATETIME(6) NULL AFTER phone_hash;
+
+ALTER TABLE post
+    ADD COLUMN artist_id BIGINT NULL AFTER board_type,
+    ADD KEY idx_post_artist (artist_id),
+    ADD CONSTRAINT fk_post_artist
+        FOREIGN KEY (artist_id) REFERENCES users(id);
