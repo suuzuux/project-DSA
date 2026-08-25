@@ -7,7 +7,7 @@
   <!--
     [와이어프레임] 커뮤니티 – Highlight
     탭: Highlight | Notice | Fan | Artist | Media | Live
-    우측: Membership / Calendar / About
+    우측: Membership / About (Calendar는 우하단 플로팅 버튼)
   -->
   <title th:text="${artist.nickname()} + ' – Highlight | WePlaNet'">Highlight | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
@@ -29,23 +29,13 @@
     <div class="community-main">
       <nav th:replace="~{community/fragments/layout :: tabs('highlight')}"></nav>
 
-      <!-- Notice 미리보기 -->
-      <section class="widget mb-16">
-        <div class="flex-between mb-8">
-          <h2 class="widget__title">📢 Notice</h2>
-          <a class="section__link" th:href="@{/community/{id}/notice(id=${artist.id()})}">더보기</a>
-        </div>
-        <p class="text-muted text-sm">등록된 공지가 없습니다.</p>
-      </section>
-
       <!-- From Artist -->
       <section class="mb-16">
         <div class="section__head">
           <h2 class="section__title" th:text="|From ${artist.nickname()}|">From Artist</h2>
-          <a class="section__link" th:href="@{/community/{id}/artist(id=${artist.id()})}">더보기</a>
         </div>
-        <div class="feed feed--grid" th:if="${!artistPosts.isEmpty()}">
-          <article class="post-card" th:each="post : ${artistPosts}">
+        <div th:if="${!artistPosts.isEmpty()}" th:with="post=${artistPosts[0]}">
+          <article class="post-card">
             <a th:href="@{/community/{artistId}/artist/{postId}(artistId=${artist.id()}, postId=${post.id})}"
                style="display:block;color:inherit;">
               <div class="post-card__head">
@@ -63,7 +53,7 @@
               <p class="post-card__body" th:text="${post.title}"></p>
               <div th:if="${artistPostThumbnails.get(post.id)} != null" class="post-card__media">
                 <img th:src="@{'/uploads/' + ${artistPostThumbnails.get(post.id)}}" alt=""
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:180px;object-fit:cover;">
+                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:320px;object-fit:cover;">
               </div>
             </a>
             <div class="post-card__actions">
@@ -73,6 +63,7 @@
           </article>
         </div>
         <p class="text-muted" th:if="${artistPosts.isEmpty()}">표시할 아티스트 게시글이 없습니다.</p>
+        <a class="btn btn--ghost btn--block mt-8" th:href="@{/community/{id}/artist(id=${artist.id()})}">더보기</a>
       </section>
 
       <!-- Artist comments -->
@@ -156,7 +147,7 @@
       </section>
     </div>
 
-    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(false, true)}"></aside>
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>

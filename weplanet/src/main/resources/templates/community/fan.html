@@ -37,15 +37,13 @@
           <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;margin-left:8px;"
              th:href="@{/community/{id}/fan(id=${artist.id()}, sort='popular')}"
              th:classappend="${sort == 'popular'} ? ' is-active'">인기순</a>
-          <button type="button" class="btn btn--primary btn--sm" data-modal-open="writePostModal"
-                  style="margin-left:8px;" sec:authorize="isAuthenticated()">포스트 작성하기</button>
         </div>
       </div>
 
       <div th:replace="~{community/fragments/postList :: postListFragment}"></div>
     </div>
 
-    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(true, false)}"></aside>
   </div>
 
   <!-- 포스트 작성 모달 -->
