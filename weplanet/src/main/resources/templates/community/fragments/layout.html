@@ -42,7 +42,11 @@
        th:classappend="${active == 'live'} ? ' is-active'">Live</a>
   </nav>
 
-  <aside th:fragment="sidebarAside" class="community-aside">
+  <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
+    <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
+    </th:block>
+
     <div class="membership-card">
       <h3 class="membership-card__title">🏅 <span th:text="|${artist.nickname()} Membership|">Membership</span></h3>
 
@@ -65,12 +69,7 @@
       </th:block>
     </div>
 
-    <div class="widget">
-      <h3 class="widget__title">Calendar</h3>
-      <p class="text-muted text-sm">표시할 일정이 없습니다.</p>
-    </div>
-
-    <div class="widget">
+    <div class="widget" th:if="${showAbout}">
       <h3 class="widget__title">About</h3>
       <div class="flex-center mb-16">
         <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
