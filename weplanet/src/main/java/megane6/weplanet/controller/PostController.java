@@ -79,7 +79,8 @@ public class PostController {
             if ("fetch".equals(requestedWith)) {
                 return "community/fragments/fanComments :: commentsFragment";
             }
-            return "redirect:/community/" + artistId + "/fan/" + post.getId();
+            String tab = post.getBoardType() == BoardType.ARTIST ? "artist" : "fan";
+            return "redirect:/community/" + artistId + "/" + tab + "/" + post.getId();
         }
 
         if ("fetch".equals(requestedWith)) {
@@ -168,16 +169,30 @@ public class PostController {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
         }
 
-        Post post = postService.createPost(type, title, content, tempAuthor);
+        User communityArtist = null;
+        if (artistId != null) {
+            communityArtist = userRepository.findById(artistId)
+                    .filter(user -> user.getRole() == Role.ARTIST)
+                    .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+
+            // 커뮤니티 게시글은 해당 커뮤니티에만 귀속. ARTIST 보드는 그 커뮤니티 본인만 작성 가능
+            if (type == BoardType.ARTIST && !tempAuthor.getId().equals(communityArtist.getId())) {
+                throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
+            }
+        }
+
+        Post post = postService.createPost(type, title, content, tempAuthor, communityArtist);
         postService.saveAttachments(post, files);
 
-        log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
+        log.debug("게시글 작성 완료 : boardType={}, title={}, author={}, artistId={}",
+                type, title, tempAuthor.getUsername(), artistId);
 
         // 와이어프레임 기준: 글쓰기가 목록 위에 뜨는 모달이라, fetch로 왔으면 페이지 이동 없이
         // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
         if ("fetch".equals(requestedWith)) {
-            if (artistId != null) {
-                postListModelHelper.populate(model, type, "latest");
+            if (communityArtist != null) {
+                model.addAttribute("artist", ArtistCardView.from(communityArtist));
+                postListModelHelper.populate(model, type, "latest", communityArtist);
                 return "community/fragments/postList :: postListFragment";
             }
             return list(boardType, "latest", "fetch", model);
