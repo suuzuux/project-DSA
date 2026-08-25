@@ -9,17 +9,21 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
+import megane6.weplanet.service.TranslateService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -46,6 +50,7 @@ public class PostController {
     private final CommentService commentService;
     private final ReportService reportService;
     private final SummaryService summaryService;
+    private final TranslateService translateService;
 
     // 테스트용 유저 조회 공통 헬퍼 - 없으면 예외.
     // (로그인 기능이 아직 없어서, 화면에서 "테스트 작성자" 드롭다운으로 누구인 척 할지 골라서 testUserId로 넘겨받음.
@@ -54,6 +59,49 @@ public class PostController {
     private User getUserOrThrow(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("테스트용 유저(id=" + userId + ")가 없습니다."));
+    }
+
+    /**
+     * 실제 로그인/테스트 계정 둘 다 지원하는 작성자 판별 헬퍼.
+     * <p>
+     * - 로그인이 되어 있으면(principal != null) → 로그인한 그 사람으로 처리 (testUserId는 무시)
+     * - 로그인이 안 되어 있으면(principal == null, 아직 로그인 안 한 익명 상태) → 화면의
+     *   "테스트 작성자" 드롭다운에서 고른 testUserId로 처리 (기존 방식 그대로 유지)
+     * <p>
+     * 이렇게 두 갈래로 만들어두면, 로그인 기능이 이제 막 생긴 지금 시점에도
+     * 실제 로그인 테스트와 기존 테스트 계정 방식을 화면 재작성 없이 동시에 쓸 수 있음.
+     */
+    private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
+        if (principal != null) {
+            return getUserOrThrow(principal.getId());
+        }
+        return getUserOrThrow(testUserId);
+    }
+
+    // 와이어프레임 기준: 본문은 공백/줄바꿈 포함 최대 1,000자, 공백만 있는 내용은 등록 불가.
+    // 프론트(JS)에서도 막지만, 서버에서도 한 번 더 검증해서 API를 직접 호출하는 우회를 막음
+    private void validateContentLength(String content) {
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("내용을 입력해주세요.");
+        }
+        if (content.length() > 1000) {
+            throw new IllegalArgumentException("내용은 1,000자를 초과할 수 없습니다.");
+        }
+    }
+
+    // 댓글 목록을 "아티스트가 쓴 댓글"과 "그 외(팬 등) 댓글"로 나눠서 모델에 담는 공통 헬퍼.
+    // 와이어프레임 기준: 아티스트 댓글은 항상 화면 맨 위 별도 박스에 고정 표시, 나머지는 그 아래 "전체 댓글"에 표시
+    private void addCommentAttributes(Model model, Post post) {
+        List<Comment> comments = commentService.getComments(post);
+        List<Comment> artistComments = comments.stream()
+                .filter(c -> c.getAuthor().getRole() == Role.ARTIST)
+                .toList();
+        List<Comment> otherComments = comments.stream()
+                .filter(c -> c.getAuthor().getRole() != Role.ARTIST)
+                .toList();
+
+        model.addAttribute("artistComments", artistComments);
+        model.addAttribute("otherComments", otherComments);
     }
 
     // 게시판 목록 화면 (FEED-02, FEED-03)
@@ -72,9 +120,24 @@ public class PostController {
 
         log.debug("게시판 조회: {}, 정렬: {}, 게시글 수: {}", type, sort, posts.size());
 
+        // 게시글 목록 카드에 댓글 개수 + 대표 이미지(첫 번째 이미지 첨부파일)도 같이 보여주기 위해 미리 계산해둠
+        // (와이어프레임: 좋아요/댓글 숫자가 0이면 숫자 자체를 표시하지 않음, 카드 안에 사진 영역 표시)
+        Map<Long, Long> commentCounts = new HashMap<>();
+        Map<Long, String> thumbnailUrls = new HashMap<>();
+        for (Post post : posts) {
+            commentCounts.put(post.getId(), commentService.getCommentCount(post));
+
+            postService.getAttachments(post).stream()
+                    .filter(a -> a.isImage())
+                    .findFirst()
+                    .ifPresent(a -> thumbnailUrls.put(post.getId(), a.getStoredName()));
+        }
+
         model.addAttribute("posts", posts);
         model.addAttribute("boardType", type);
         model.addAttribute("sort", sort);
+        model.addAttribute("commentCounts", commentCounts);
+        model.addAttribute("thumbnailUrls", thumbnailUrls);
 
         // 정렬 버튼을 클릭했을 때(자바스크립트 fetch로 온 요청)는,
         // "postList.html 안에서 postListFragment 라는 이름표가 붙은 부분만" 잘라서 돌려줌
@@ -107,12 +170,20 @@ public class PostController {
             // List<MultipartFile> : 폼에서 <input type="file" multiple>로 여러 개 고른 파일들이
             // 하나의 리스트로 담겨서 들어옴. required=false라서 파일을 하나도 안 골라도 에러 안 남
             @RequestParam(required = false) List<MultipartFile> files,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
     ) {
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
-        // 임시 - 로그인 기능 완성 전까지는 폼에서 넘어온 testUserId로 작성자를 선택
-        User tempAuthor = getUserOrThrow(testUserId);
+        validateContentLength(content);
+        if (files != null && files.size() > 10) {
+            throw new IllegalArgumentException("첨부파일은 최대 10개까지 등록할 수 있습니다.");
+        }
+
+        // 로그인했으면 로그인한 사람이 작성자, 아니면 "테스트 작성자" 드롭다운으로 고른 사람이 작성자
+        User tempAuthor = resolveAuthor(principal, testUserId);
 
         // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 아티스트만 작성 가능
         if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
@@ -124,6 +195,12 @@ public class PostController {
 
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
 
+        // 와이어프레임 기준: 글쓰기가 목록 위에 뜨는 모달이라, fetch로 왔으면 페이지 이동 없이
+        // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
+        if ("fetch".equals(requestedWith)) {
+            return list(boardType, "latest", "fetch", model);
+        }
+
         return "redirect:/posts/" + boardType;
     }
 
@@ -131,14 +208,19 @@ public class PostController {
     @GetMapping("/posts/detail/{id}")
     public String detail(
             @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             Model model
     ) {
         Post post = postService.getPost(id);
         List<Comment> comments = commentService.getComments(post);
+        User currentUser = resolveAuthor(principal, testUserId);
 
         model.addAttribute("post", post);
         model.addAttribute("comments", comments);
         model.addAttribute("attachments", postService.getAttachments(post));
+        model.addAttribute("bookmarked", postService.isBookmarked(post, currentUser));
+        addCommentAttributes(model, post);
 
         return "feed/postDetail";
     }
@@ -149,11 +231,20 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam String content,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
         Post post = postService.getPost(id);
-        User author = getUserOrThrow(testUserId);
+        User author = resolveAuthor(principal, testUserId);
+
+        // 와이어프레임 기준: 댓글은 최대 100자
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+        }
+        if (content.length() > 100) {
+            throw new IllegalArgumentException("댓글은 100자를 초과할 수 없습니다.");
+        }
 
         commentService.createComment(post, author, content);
 
@@ -162,6 +253,7 @@ public class PostController {
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("post", post);
             model.addAttribute("comments", commentService.getComments(post));
+            addCommentAttributes(model, post);
             return "feed/postDetail :: commentsFragment";
         }
 
@@ -174,10 +266,11 @@ public class PostController {
             @PathVariable Long id,
             @PathVariable Long commentId,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
-        User requester = getUserOrThrow(testUserId);
+        User requester = resolveAuthor(principal, testUserId);
 
         commentService.deleteComment(commentId, requester);
 
@@ -185,6 +278,7 @@ public class PostController {
             Post post = postService.getPost(id);
             model.addAttribute("post", post);
             model.addAttribute("comments", commentService.getComments(post));
+            addCommentAttributes(model, post);
             return "feed/postDetail :: commentsFragment";
         }
 
@@ -205,10 +299,11 @@ public class PostController {
             @PathVariable Long commentId,
             @RequestParam ReportReason reason,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Comment comment = commentService.getComment(commentId);
-        User reporter = getUserOrThrow(testUserId);
+        User reporter = resolveAuthor(principal, testUserId);
 
         reportService.reportComment(comment, reporter, reason);
 
@@ -232,10 +327,11 @@ public class PostController {
     @ResponseBody
     public Map<String, Object> like(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User user = getUserOrThrow(testUserId);
+        User user = resolveAuthor(principal, testUserId);
 
         boolean liked = postService.toggleLike(post, user);
         log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
@@ -246,14 +342,34 @@ public class PostController {
         );
     }
 
+    /**
+     * 북마크 토글 - 좋아요 토글과 완전히 같은 방식.
+     */
+    @PostMapping("/posts/detail/{id}/bookmark")
+    @ResponseBody
+    public Map<String, Object> bookmark(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        Post post = postService.getPost(id);
+        User user = resolveAuthor(principal, testUserId);
+
+        boolean bookmarked = postService.toggleBookmark(post, user);
+        log.debug("북마크 토글: postId={}, userId={}, 결과={}", id, testUserId, bookmarked ? "눌림" : "취소");
+
+        return Map.of("bookmarked", bookmarked);
+    }
+
     // 게시글 삭제 - 본인 글만 삭제 가능. 삭제 후에는 그 게시글이 있던 게시판 목록으로 돌아감
     @PostMapping("/posts/detail/{id}/delete")
     public String deletePost(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User requester = getUserOrThrow(testUserId);
+        User requester = resolveAuthor(principal, testUserId);
 
         postService.deletePost(post, requester);
 
@@ -266,10 +382,11 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam ReportReason reason,
             @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Post post = postService.getPost(id);
-        User reporter = getUserOrThrow(testUserId);
+        User reporter = resolveAuthor(principal, testUserId);
 
         reportService.reportPost(post, reporter, reason);
 
@@ -299,11 +416,13 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam String title,
             @RequestParam String content,
-            @RequestParam(defaultValue = "1") Long testUserId
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User requester = getUserOrThrow(testUserId);
+        User requester = resolveAuthor(principal, testUserId);
 
+        validateContentLength(content);
         postService.updatePost(post, title, content, requester);
 
         return "redirect:/posts/detail/" + id;
@@ -324,5 +443,25 @@ public class PostController {
         String summary = summaryService.summarize(post.getContent());
 
         return Map.of("summary", summary);
+    }
+
+    // 게시글 번역보기 (와이어프레임: 게시글/댓글 본문 밑에 있는 "번역보기" 링크)
+    @PostMapping("/posts/detail/{id}/translate")
+    @ResponseBody
+    public Map<String, Object> translatePost(@PathVariable Long id) {
+        Post post = postService.getPost(id);
+        String translated = translateService.translate(post.getContent());
+
+        return Map.of("translated", translated);
+    }
+
+    // 댓글 번역보기 - 게시글 번역과 완전히 같은 방식
+    @PostMapping("/posts/detail/{id}/comment/{commentId}/translate")
+    @ResponseBody
+    public Map<String, Object> translateComment(@PathVariable Long id, @PathVariable Long commentId) {
+        Comment comment = commentService.getComment(commentId);
+        String translated = translateService.translate(comment.getContent());
+
+        return Map.of("translated", translated);
     }
 }

@@ -2,6 +2,7 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ChatMessageRequest;
+import megane6.weplanet.domain.dto.DmInboxItem;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -94,6 +96,29 @@ public class ChatController {
     ) {
         model.addAttribute("artistId", artistId);
         return "chat/artistChatRoom";
+    }
+
+    /**
+     * DM 인박스 목록 (와이어프레임 13번) - 이 팬이 대화 나눈 아티스트들 + 아직 대화 안 나눈 아티스트("추천").
+     * 메인 페이지 우측 하단 플로팅 위젯(shell.js)이 열릴 때 이 API를 호출해서 실제 데이터로 채움.
+     */
+    @GetMapping("/chat/inbox")
+    @ResponseBody
+    public List<Map<String, Object>> inbox(@RequestParam Long fanId) {
+        User fan = getUserOrThrow(fanId, "팬");
+
+        List<DmInboxItem> items = chatMessageService.getInboxForFan(fan);
+
+        return items.stream().map(item -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("artistId", item.getArtistId());
+            map.put("artistNickname", item.getArtistNickname());
+            map.put("hasConversation", item.isHasConversation());
+            map.put("lastMessage", item.getLastMessage());
+            map.put("lastMessageTime", item.getLastMessageTime() != null ? item.getLastMessageTime().toString() : null);
+            map.put("membershipExpired", item.isMembershipExpired());
+            return map;
+        }).toList();
     }
 
     /**
@@ -173,6 +198,34 @@ public class ChatController {
                 broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
             }
         }
+    }
+
+    /**
+     * DM 방 하나를 열 때 필요한 데이터(지난 대화 이력 + 오늘 남은 전송 횟수)를 한 번에 내려줌.
+     * 플로팅 위젯(shell.js)이 DM 목록에서 아티스트를 클릭하면 이 API로 방 데이터를 채운 뒤 화면을 그림.
+     */
+    @GetMapping("/chat/room-data")
+    @ResponseBody
+    public Map<String, Object> roomData(@RequestParam Long artistId, @RequestParam Long fanId) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+        User fan = getUserOrThrow(fanId, "팬");
+
+        List<Map<String, Object>> messages = chatMessageService.getConversation(artist, fan).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("artistNickname", artist.getNickname());
+        result.put("remaining", chatQuotaService.getRemaining(fan, artist));
+        result.put("messages", messages);
+        result.put("membershipExpired", chatMessageService.isMembershipExpired(fan, artist));
+        return result;
     }
 
     // 금칙어 관리 화면 (CHAT-04) - 관리자만 접근 가능

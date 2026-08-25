@@ -22,8 +22,8 @@
     <h1 class="section__title">아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
     <p class="text-muted" style="margin:8px 0 16px;">오늘 남은 메시지 수: <b id="remainingCount" th:text="${remaining}"></b></p>
 
-    <div id="messages" class="stack" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
-         background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;"></div>
+    <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
+         background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;"></div>
 
     <!--
         hidden : 이 태그를 화면에서 숨기는 순수 HTML 속성 (CSS의 display:none과 달리 style이 아님).
@@ -37,6 +37,18 @@
     </div>
 </div>
 
+<!-- 와이어프레임 스타일 채팅 말풍선 - 내가 보낸 메시지는 오른쪽(민트), 상대 메시지는 왼쪽(연회색) -->
+<style>
+    .chat-row { display: flex; gap: 8px; max-width: 80%; }
+    .chat-row--me { align-self: flex-end; flex-direction: row-reverse; }
+    .chat-row--other { align-self: flex-start; }
+    .chat-bubble { padding: 8px 12px; border-radius: 14px; font-size: var(--wp-fs-sm); }
+    .chat-row--me .chat-bubble { background: var(--wp-brand); color: #fff; border-bottom-right-radius: 4px; }
+    .chat-row--other .chat-bubble { background: var(--wp-paper); color: var(--wp-ink); border-bottom-left-radius: 4px; }
+    .chat-meta { font-size: 11px; color: var(--wp-muted); margin-bottom: 3px; }
+    .chat-row--me .chat-meta { text-align: right; }
+</style>
+
 <script th:inline="javascript">
     // Thymeleaf가 서버에서 넘겨준 실제 값(아티스트/팬 번호)을 자바스크립트 변수로 바꿔치기해줌
     const artistId = /*[[${artistId}]]*/ 0;
@@ -47,9 +59,27 @@
     const stompClient = Stomp.over(socket);
 
     // 채팅 메시지 하나를 화면(messages) 밑에 이어붙이는 함수
+    // 내가 보낸 메시지(senderId === fanId)는 오른쪽 말풍선, 상대(아티스트)가 보낸 메시지는 왼쪽 말풍선으로 그림
     function appendMessage(data) {
         const div = document.getElementById('messages');
-        div.innerHTML += '<p><b>' + data.senderNickname + '</b> : ' + data.content + '</p>';
+        const isMe = data.senderId === fanId;
+        // 서버가 보내주는 createdAt은 "2026-08-24T15:43:21.123456" 형식의 문자열.
+        // new Date(...)로 파싱하면 브라우저마다 마이크로초 자릿수 처리가 달라질 수 있어서,
+        // 문자열에서 "T" 뒤 시:분만 그대로 잘라 씀 (더 안전함)
+        const time = (data.createdAt.split('T')[1] || '').slice(0, 5);
+
+        const row = document.createElement('div');
+        row.className = 'chat-row ' + (isMe ? 'chat-row--me' : 'chat-row--other');
+        row.innerHTML =
+            '<div>' +
+            '<div class="chat-meta">' + data.senderNickname + ' · ' + time + '</div>' +
+            '<div class="chat-bubble"></div>' +
+            '</div>';
+        // textContent로 넣는 이유 : 메시지 내용에 우연히 <script> 같은 태그가 섞여도
+        // 진짜 태그로 실행되지 않고 화면에 글자 그대로만 보이게 하기 위함 (XSS 방지)
+        row.querySelector('.chat-bubble').textContent = data.content;
+
+        div.appendChild(row);
         div.scrollTop = div.scrollHeight; // 항상 최신 메시지가 보이도록 스크롤을 맨 아래로 내림
     }
 
