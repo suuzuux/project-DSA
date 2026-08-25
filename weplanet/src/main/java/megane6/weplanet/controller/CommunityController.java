@@ -11,12 +11,14 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.service.CommentService;
+import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -33,12 +35,13 @@ public class CommunityController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final CommentRepository commentRepository;
+	private final MembershipService membershipService;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
-	public String highlight(@PathVariable Long artistId, Model model) {
-		User artist = populateArtistModel(artistId, model);
+	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		User artist = populateArtistModel(artistId, principal, model);
 
 		// "Fan Posts" 위젯 - 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
 		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN);
@@ -79,9 +82,10 @@ public class CommunityController {
 			@PathVariable Long artistId,
 			@RequestParam(defaultValue = "latest") String sort,
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
+		populateArtistModel(artistId, principal, model);
 		postListModelHelper.populate(model, BoardType.FAN, sort);
 
 		if ("fetch".equals(requestedWith)) {
@@ -97,7 +101,7 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
+		populateArtistModel(artistId, principal, model);
 
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != BoardType.FAN) {
@@ -115,9 +119,10 @@ public class CommunityController {
 			@PathVariable Long artistId,
 			@RequestParam(defaultValue = "latest") String sort,
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
+		populateArtistModel(artistId, principal, model);
 		postListModelHelper.populate(model, BoardType.ARTIST, sort);
 
 		if ("fetch".equals(requestedWith)) {
@@ -133,7 +138,7 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
+		populateArtistModel(artistId, principal, model);
 
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != BoardType.ARTIST) {
@@ -147,24 +152,45 @@ public class CommunityController {
 	}
 
 	@GetMapping("/community/{artistId}/notice")
-	public String notice(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		populateArtistModel(artistId, principal, model);
 		return "community/notice";
 	}
 
 	@GetMapping("/community/{artistId}/media")
-	public String media(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		populateArtistModel(artistId, principal, model);
 		return "community/media";
 	}
 
 	@GetMapping("/community/{artistId}/live")
-	public String live(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		populateArtistModel(artistId, principal, model);
 		return "community/live";
 	}
 
-	private User populateArtistModel(Long artistId, Model model) {
+	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
+	@PostMapping("/community/{artistId}/membership/join")
+	public String joinMembership(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+
+		User artist = userRepository.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+		User fan = userResolver.resolve(principal, 1L);
+
+		membershipService.join(fan, artist);
+
+		return "redirect:/community/" + artistId + "/highlight";
+	}
+
+	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
@@ -175,6 +201,15 @@ public class CommunityController {
 
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
+
+		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
+		if (principal != null) {
+			User currentUser = userResolver.resolve(principal, 1L);
+			membershipService.getMembership(currentUser, artist).ifPresent(membership -> {
+				model.addAttribute("membershipActive", !membership.isExpired());
+				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());
+			});
+		}
 
 		return artist;
 	}
