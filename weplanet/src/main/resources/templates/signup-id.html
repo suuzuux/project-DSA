@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,11 +9,11 @@
     에러는 박스 밑 빨간 글씨 (.form-error)
   -->
   <title>WePlaNet – 아이디로 회원가입</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
 <body class="auth-page">
   <div class="auth-card" style="width:min(100%,480px);">
-    <a class="auth-card__back" href="signup.html">← 뒤로</a>
+    <a class="auth-card__back" th:href="@{/login}">← 뒤로</a>
     <div class="flex-between">
       <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
       <button type="button" class="icon-btn" aria-label="언어">🌐</button>
@@ -21,45 +21,60 @@
 
     <h1 class="auth-card__title mt-16">회원가입</h1>
 
-    <form id="signupForm" novalidate>
+    <p th:if="${errorMessage}" th:text="${errorMessage}" class="text-sm" style="color:#c45c26;margin-top:8px;"></p>
+
+    <form id="signupForm" th:action="@{/signup}" th:object="${signupRequestDto}" method="post" novalidate>
       <!-- 아이디 -->
-      <div class="form-group">
+      <div class="form-group" th:classappend="${#fields.hasErrors('username')} ? ' is-invalid'">
         <label class="form-label" for="userId">아이디</label>
         <div class="form-row">
-          <input class="form-input" id="userId" name="userId" type="text" placeholder="아이디 입력" autocomplete="username" />
+          <input class="form-input" id="userId" th:field="*{username}" type="text" placeholder="아이디 입력" autocomplete="username" />
           <button type="button" class="btn btn--ghost btn--sm" onclick="alert('중복 확인 (목업): 사용 가능')">중복 확인</button>
         </div>
-        <p class="form-hint">조건: 5~15자 이내, 영문·숫자</p>
-        <p class="form-error"></p>
+        <p class="form-hint">조건: 4~20자 이내, 영문·숫자</p>
+        <p class="form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
+        <p class="form-error" th:unless="${#fields.hasErrors('username')}"></p>
       </div>
 
       <!-- 비밀번호 -->
-      <div class="form-group">
+      <div class="form-group" th:classappend="${#fields.hasErrors('password')} ? ' is-invalid'">
         <label class="form-label" for="password">비밀번호</label>
-        <input class="form-input" id="password" name="password" type="password" placeholder="비밀번호 입력" autocomplete="new-password" />
-        <p class="form-hint">영문, 숫자, 특수문자 포함 8~15자</p>
-        <p class="form-error"></p>
+        <input class="form-input" id="password" th:field="*{password}" type="password" placeholder="비밀번호 입력" autocomplete="new-password" />
+        <p class="form-hint">영문, 숫자 포함 8~20자</p>
+        <p class="form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+        <p class="form-error" th:unless="${#fields.hasErrors('password')}"></p>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" th:classappend="${#fields.hasErrors('passwordConfirm')} ? ' is-invalid'">
         <label class="form-label" for="passwordConfirm">비밀번호 확인</label>
-        <input class="form-input" id="passwordConfirm" name="passwordConfirm" type="password" placeholder="비밀번호 입력" />
-        <p class="form-error"></p>
+        <input class="form-input" id="passwordConfirm" th:field="*{passwordConfirm}" type="password" placeholder="비밀번호 입력" />
+        <p class="form-error" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></p>
+        <p class="form-error" th:unless="${#fields.hasErrors('passwordConfirm')}"></p>
+      </div>
+
+      <!-- 이름 -->
+      <div class="form-group" th:classappend="${#fields.hasErrors('realName')} ? ' is-invalid'">
+        <label class="form-label" for="realName">이름</label>
+        <input class="form-input" id="realName" th:field="*{realName}" type="text" placeholder="이름 입력" />
+        <p class="form-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></p>
+        <p class="form-error" th:unless="${#fields.hasErrors('realName')}"></p>
       </div>
 
       <!-- 이메일 -->
-      <div class="form-group">
+      <div class="form-group" th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'">
         <label class="form-label" for="email">이메일</label>
-        <input class="form-input" id="email" name="email" type="email" placeholder="your@email.com" />
-        <p class="form-error"></p>
+        <input class="form-input" id="email" th:field="*{email}" type="email" placeholder="your@email.com" />
+        <p class="form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+        <p class="form-error" th:unless="${#fields.hasErrors('email')}"></p>
       </div>
 
       <!-- 닉네임 -->
-      <div class="form-group">
+      <div class="form-group" th:classappend="${#fields.hasErrors('nickname')} ? ' is-invalid'">
         <label class="form-label" for="nickname">닉네임</label>
-        <input class="form-input" id="nickname" name="nickname" type="text" placeholder="상큼한고양이331" maxlength="10" />
-        <p class="form-hint">원하는 닉네임을 설정하세요. 계정 설정에서 언제든 변경할 수 있어요. (3~10자)</p>
-        <p class="form-error"></p>
+        <input class="form-input" id="nickname" th:field="*{nickname}" type="text" placeholder="상큼한고양이331" maxlength="10" />
+        <p class="form-hint">원하는 닉네임을 설정하세요. 비워두면 자동 생성됩니다. (3~10자)</p>
+        <p class="form-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></p>
+        <p class="form-error" th:unless="${#fields.hasErrors('nickname')}"></p>
       </div>
 
       <!-- 약관 -->
@@ -86,8 +101,13 @@
 
       <button type="submit" class="btn btn--primary btn--block btn--lg">가입하기</button>
     </form>
+
+    <p class="text-sm text-muted" style="margin-top:20px;text-align:center;">
+      이미 계정이 있으신가요?
+      <a th:href="@{/login}" style="color:var(--wp-brand);font-weight:600;">로그인</a>
+    </p>
   </div>
 
-  <script src="../js/main.js"></script>
+  <script th:src="@{/js/main.js}"></script>
 </body>
 </html>

@@ -1,49 +1,61 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!--
-    [와이어프레임] 메인 페이지 – 로그인 전
-    - 상단: 로고 / 언어 / 로그인
-    - 이벤트·광고 배너 캐러셀
-    - "지금 바로 만나보세요!" 아티스트 마퀴 (R→L)
-    - 최신 인기 포스트 / 급상승 커뮤니티
-    - 회원가입 CTA
+    메인 페이지 – 로그인 전/후 통합
+    - 햄버거 메뉴는 로그인 여부와 무관하게 표시
+    - 헤더·본문 일부는 sec:authorize 로 분기
+    - 아티스트 목록은 DB(Role.ARTIST) 기준
   -->
-  <title>WePlaNet – 메인 (로그인 전)</title>
-  <link rel="stylesheet" href="../css/style.css" />
+  <title>WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
 </head>
-<body>
-  <!-- ========== Header ========== -->
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null}">
+
   <header class="site-header">
-    <a class="brand" href="index.html">
-      <span class="brand__mark">W</span>
-      <span class="brand__text">We<span>Pla</span>Net</span>
-    </a>
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+      <a class="brand" th:href="@{/}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net</span>
+      </a>
+    </div>
     <div class="header-actions">
-      <!-- 언어 선택 (목업) -->
-      <button type="button" class="icon-btn" title="언어" aria-label="언어 선택">🌐</button>
-      <a class="btn btn--primary btn--sm" href="login.html">로그인</a>
+      <th:block sec:authorize="isAuthenticated()">
+        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="alert('알림 목록 (목업)')">🔔</button>
+      </th:block>
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+      <th:block sec:authorize="isAnonymous()">
+        <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
+        <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+      </th:block>
+      <th:block sec:authorize="isAuthenticated()">
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+          <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+        </form>
+      </th:block>
     </div>
   </header>
 
-  <main class="page">
-    <div class="container section">
-      <!-- ========== Banner ========== -->
-      <div class="banner" data-carousel aria-label="이벤트 및 광고 배너">
+  <main class="container section">
+
+    <!-- ===== 로그인 전 ===== -->
+    <th:block sec:authorize="isAnonymous()">
+      <div class="banner mb-24" data-carousel aria-label="이벤트 및 광고 배너">
         <div class="banner__track">
           <div class="banner__slide">
-            <p class="banner__kicker">Event</p>
-            <h2 class="banner__title">위플래닛 신규 멤버십 오픈 기념 이벤트</h2>
+            <p class="banner__kicker">WePlaNet</p>
+            <h2 class="banner__title">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
           </div>
-          <div class="banner__slide" style="background: linear-gradient(120deg,#1a3a4a,#0f6b6b 60%,#c45c26);">
-            <p class="banner__kicker">Shop</p>
-            <h2 class="banner__title">공식 MD 선예매 – WePlaNet Shop</h2>
-          </div>
-          <div class="banner__slide" style="background: linear-gradient(120deg,#2a1a14,#6b3a1f 50%,#0f6b6b);">
-            <p class="banner__kicker">Live</p>
-            <h2 class="banner__title">아티스트 라이브 주간 편성표 공개</h2>
+          <div class="banner__slide" style="background:linear-gradient(120deg,#1a3a4a,#0f6b6b 60%,#c45c26);">
+            <p class="banner__kicker">Community</p>
+            <h2 class="banner__title">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
           </div>
         </div>
         <div class="banner__nav">
@@ -53,114 +65,108 @@
         <div class="banner__dots"></div>
       </div>
 
-      <!-- ========== Artist Marquee ========== -->
-      <section class="marquee-block">
-        <h2 class="marquee-block__title">지금 바로 만나보세요!</h2>
-        <div class="marquee" aria-label="아티스트 로고 슬라이드">
-          <!-- 트랙을 두 번 이어 붙여 무한 스크롤처럼 보이게 함 -->
-          <div class="marquee__track">
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">RZ</div><div class="artist-chip__name">RIIZE</div></a>
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">CT</div><div class="artist-chip__name">CORTIS</div></a>
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">AE</div><div class="artist-chip__name">aespa</div></a>
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">TR</div><div class="artist-chip__name">TREASURE</div></a>
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">RV</div><div class="artist-chip__name">Red Velvet</div></a>
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">NJ</div><div class="artist-chip__name">NewJeans</div></a>
-            <a class="artist-chip" href="community/highlight.html"><div class="artist-chip__logo">BP</div><div class="artist-chip__name">BLACKPINK</div></a>
-            <!-- duplicate -->
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">RZ</div><div class="artist-chip__name">RIIZE</div></a>
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">CT</div><div class="artist-chip__name">CORTIS</div></a>
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">AE</div><div class="artist-chip__name">aespa</div></a>
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">TR</div><div class="artist-chip__name">TREASURE</div></a>
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">RV</div><div class="artist-chip__name">Red Velvet</div></a>
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">NJ</div><div class="artist-chip__name">NewJeans</div></a>
-            <a class="artist-chip" href="community/highlight.html" aria-hidden="true"><div class="artist-chip__logo">BP</div><div class="artist-chip__name">BLACKPINK</div></a>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== Popular Posts ========== -->
-      <section class="section">
+      <section class="section mb-24">
         <div class="section__head">
-          <h2 class="section__title">최신 인기 포스트</h2>
-          <a class="section__link" href="login.html">더보기</a>
+          <h2 class="section__title">커뮤니티 탐색</h2>
         </div>
-        <div class="feed">
-          <article class="post-card">
-            <div class="post-card__head">
-              <div class="avatar">아</div>
-              <div class="post-card__meta">
-                <div class="post-card__name">아티스트 닉네임 <span class="badge-verified" title="인증">✓</span></div>
-                <div class="post-card__time">2026.08.21 15:24</div>
-              </div>
+        <div class="rising-grid" th:if="${!artists.isEmpty()}">
+          <a class="rising-card" th:each="artist : ${artists}" th:href="@{/community/{id}(id=${artist.id()})}">
+            <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+            <div class="rising-card__info">
+              <strong th:text="${artist.nickname()}">아티스트</strong>
+              <span>커뮤니티 둘러보기</span>
             </div>
-            <p class="post-card__body">아티스트가 작성한 게시글 내용이 보일 영역입니다. 로그인하면 커뮤니티에서 더 많은 콘텐츠를 볼 수 있어요.</p>
-            <div class="post-card__media post-card__media--2">
-              <div class="media-ph">이미지</div>
-              <div class="media-ph media-ph--more" data-more="+2">이미지</div>
-            </div>
-          </article>
-
-          <article class="post-card">
-            <div class="post-card__head">
-              <div class="avatar">미</div>
-              <div class="post-card__meta">
-                <div class="post-card__name">미남이소희 <span class="badge-verified">✓</span></div>
-                <div class="post-card__time">2026.08.20 23:17</div>
-              </div>
-            </div>
-            <p class="post-card__body">가요대전 summer ~! 여름에 가요대전은 새롭네 ㅎㅎ 오늘…</p>
-          </article>
+          </a>
         </div>
+        <p class="text-muted" style="padding:24px 0;" th:if="${artists.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
       </section>
 
-      <!-- ========== Rising Communities ========== -->
-      <section class="section">
-        <div class="section__head">
-          <h2 class="section__title">급상승 커뮤니티</h2>
-        </div>
-        <div class="rising-grid">
-          <a class="rising-card" href="community/highlight.html">
-            <div class="avatar avatar--lg">RZ</div>
-            <div class="rising-card__info">
-              <strong>RIIZE</strong>
-              <span>2023.09.13 데뷔 · 가입자 225K</span>
-            </div>
-          </a>
-          <a class="rising-card" href="community/highlight.html">
-            <div class="avatar avatar--lg">CT</div>
-            <div class="rising-card__info">
-              <strong>CORTIS</strong>
-              <span>2025.01.01 데뷔 · 가입자 98K</span>
-            </div>
-          </a>
-          <a class="rising-card" href="community/highlight.html">
-            <div class="avatar avatar--lg">AE</div>
-            <div class="rising-card__info">
-              <strong>aespa</strong>
-              <span>2020.11.17 데뷔 · 가입자 410K</span>
-            </div>
-          </a>
-          <a class="rising-card" href="community/highlight.html">
-            <div class="avatar avatar--lg">TR</div>
-            <div class="rising-card__info">
-              <strong>TREASURE</strong>
-              <span>2020.08.07 데뷔 · 가입자 312K</span>
-            </div>
-          </a>
-        </div>
-      </section>
-
-      <!-- ========== Signup CTA ========== -->
       <section class="cta-banner mb-24">
         <div>
           <p>회원가입 후 다양한 서비스를 이용해보세요!</p>
           <p class="text-sm text-muted mt-8">아티스트 커뮤니티 · 스케줄 · 미디어 · 멤버십</p>
         </div>
-        <a class="btn btn--accent" href="signup.html">회원가입</a>
+        <a class="btn btn--accent" th:href="@{/signup}">회원가입</a>
       </section>
-    </div>
+    </th:block>
+
+    <!-- ===== 로그인 후 ===== -->
+    <th:block sec:authorize="isAuthenticated()">
+      <div class="cta-banner mb-24">
+        <div>
+          <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
+          <p class="text-sm text-muted mt-8">메뉴(☰)에서 커뮤니티 바로가기 · ✈ 버튼으로 DM</p>
+        </div>
+        <a class="btn btn--primary btn--sm"
+           th:if="${!artists.isEmpty()}"
+           th:href="@{/community/{id}(id=${artists[0].id()})}">커뮤니티 가입하기</a>
+        <a class="btn btn--primary btn--sm"
+           th:if="${artists.isEmpty()}"
+           th:href="@{/posts/fan}">커뮤니티 가입하기</a>
+      </div>
+
+      <div class="banner mb-24" data-carousel>
+        <div class="banner__track">
+          <div class="banner__slide">
+            <p class="banner__kicker">Event &amp; Schedule</p>
+            <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
+          </div>
+          <div class="banner__slide" style="background:linear-gradient(120deg,#0f3d3d,#c45c26);">
+            <p class="banner__kicker">Membership</p>
+            <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
+          </div>
+        </div>
+        <div class="banner__nav">
+          <button type="button" class="icon-btn" data-carousel-prev>&lt;</button>
+          <button type="button" class="icon-btn" data-carousel-next>&gt;</button>
+        </div>
+        <div class="banner__dots"></div>
+      </div>
+
+      <section class="mb-24">
+        <div class="week-nav">
+          <button type="button" class="icon-btn" aria-label="이전 주">◀</button>
+          <strong>이번 주 스케줄</strong>
+          <button type="button" class="icon-btn" aria-label="다음 주">▶</button>
+        </div>
+        <p class="text-muted" style="padding:24px 0;">표시할 스케줄이 없습니다.</p>
+      </section>
+
+      <section class="mb-24">
+        <div class="section__head">
+          <h2 class="section__title">최신 인기 포스트</h2>
+        </div>
+        <p class="text-muted" style="padding:24px 0;">표시할 포스트가 없습니다.</p>
+      </section>
+
+      <section class="marquee-block mb-24">
+        <h2 class="marquee-block__title">지금 바로 만나보세요!</h2>
+        <div class="marquee" th:if="${!artists.isEmpty()}">
+          <div class="marquee__track">
+            <th:block th:each="artist : ${artists}">
+              <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}">
+                <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
+                <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
+              </a>
+            </th:block>
+            <!-- 무한 스크롤용 복제 -->
+            <th:block th:each="artist : ${artists}">
+              <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}" aria-hidden="true">
+                <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
+                <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
+              </a>
+            </th:block>
+          </div>
+        </div>
+        <p class="text-muted" style="padding:16px 0;" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
+      </section>
+    </th:block>
   </main>
 
-  <script src="../js/main.js"></script>
+  <script th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
+  </script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
 </body>
 </html>

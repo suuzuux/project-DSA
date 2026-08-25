@@ -1,43 +1,24 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] Live – Now Streaming + Replay -->
-  <title>RIIZE – Live | WePlaNet</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/community.css" />
-  <link rel="stylesheet" href="../../css/shell.css" />
+  <title th:text="${artist.nickname()} + ' – Live | WePlaNet'">Live | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/community.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
 </head>
-<body data-shell="fan" data-base="../">
-  <header class="community-top">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-    <div class="community-top__left">
-      <a class="home-link" href="../home.html">🏠</a>
-      <span class="avatar avatar--sm">RZ</span>
-      <h1 class="community-top__name">RIIZE</h1>
-    </div>
-    <div class="community-top__right">
-      <button type="button" class="icon-btn">🌐</button>
-      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
-      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
-      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
-    </div>
-  </header>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null}">
 
-  <div class="community-body" style="margin-top:20px;">
+  <header th:replace="~{community/fragments/layout :: header}"></header>
+  <div th:replace="~{community/fragments/layout :: hero}"></div>
+
+  <div class="community-body">
     <div class="community-main">
-      <nav class="tabs">
-        <a href="highlight.html">Highlight</a>
-        <a href="notice.html">Notice</a>
-        <a href="fan.html">Fan</a>
-        <a href="artist.html">Artist</a>
-        <a href="media.html">Media</a>
-        <a class="is-active" href="live.html">Live</a>
-      </nav>
-
-      <!-- 실시간 라이브 있을 때만 표시 -->
-      <div class="live-now">🟠 Now Streaming · 원빈이 라이브 중입니다</div>
+      <nav th:replace="~{community/fragments/layout :: tabs('live')}"></nav>
 
       <div class="board-toolbar">
         <h2 class="section__title" style="margin:0;">Live Replay</h2>
@@ -48,62 +29,17 @@
           </select>
           <select class="form-select" style="width:auto;min-height:36px;">
             <option>전체 연도</option>
-            <option>2026</option>
-            <option>2025</option>
-            <option>2024</option>
           </select>
         </div>
       </div>
 
-      <div class="feed">
-        <article class="post-card">
-          <div class="flex-center mb-12">
-            <div class="media-tile__thumb" style="width:160px;border-radius:8px;flex-shrink:0;">
-              <span class="media-tile__badge tag tag--live">LIVE</span>썸네일
-            </div>
-            <div>
-              <div class="post-card__name">원빈 <span class="badge-verified">✓</span></div>
-              <div class="post-card__time">2026.08.21 15:24</div>
-              <strong class="mt-8" style="display:block;">스케줄 전 잠깐</strong>
-            </div>
-          </div>
-        </article>
-
-        <article class="post-card">
-          <div class="flex-center mb-12">
-            <div class="media-tile__thumb" style="width:160px;border-radius:8px;flex-shrink:0;">썸네일</div>
-            <div>
-              <div class="post-card__name">성찬 <span class="badge-verified">✓</span></div>
-              <div class="post-card__time">2026.08.21 23:14</div>
-              <strong class="mt-8" style="display:block;">팬미팅 끝나고~</strong>
-              <p class="text-xs text-muted mt-8">재생 235K · 좋아요 628K · 채팅 77.3K</p>
-            </div>
-          </div>
-        </article>
-
-        <article class="post-card">
-          <div class="flex-center mb-12">
-            <div class="media-tile__thumb" style="width:160px;border-radius:8px;flex-shrink:0;">썸네일</div>
-            <div>
-              <div class="post-card__name">소희 <span class="badge-verified">✓</span></div>
-              <div class="post-card__time">2026.08.23 15:24</div>
-              <strong class="mt-8" style="display:block;">라이브 제목</strong>
-              <p class="text-xs text-muted mt-8">재생 · 좋아요 · 채팅 통계 영역</p>
-            </div>
-          </div>
-        </article>
-      </div>
+      <p class="text-muted" style="padding:24px 0;">표시할 라이브가 없습니다.</p>
     </div>
-
-    <aside class="community-aside">
-      <div class="membership-card membership-card--joined">
-        <p class="membership-card__status">✔ 가입중</p>
-        <h3 class="membership-card__title">RIIZE Membership</h3>
-        <p class="membership-card__period">2025.11.27 ~ 2026.11.26 (KST)</p>
-      </div>
-    </aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
   </div>
-  <script src="../../js/main.js"></script>
-  <script src="../../js/shell.js"></script>
+
+  <script th:replace="~{community/fragments/layout :: scripts}"></script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
 </body>
 </html>

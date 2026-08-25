@@ -20,7 +20,7 @@ public class AuthController {
 	@GetMapping("/signup")
 	public String signupForm(Model model) {
 		model.addAttribute("signupRequestDto", new SignupRequestDto());
-		return "signup";
+		return "signup-id";
 	}
 	
 	@PostMapping("/signup")
@@ -28,19 +28,19 @@ public class AuthController {
 						 BindingResult bindingResult,
 						 Model model) {
 		if (bindingResult.hasErrors()) {
-			return "signup";
+			return "signup-id";
 		}
 		try {
 			userService.signup(signupRequestDto);
 		} catch (IllegalArgumentException e) {
 			model.addAttribute("errorMessage", e.getMessage());
-			return "signup";
+			return "signup-id";
 		}
 		return "redirect:/login";
 	}
 	
 	@GetMapping("/login")
 	public String loginForm() {
-		return "login";
+		return "login-id";
 	}
 }

@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- [와이어프레임] 운영 대시보드 -->
   <title>대시보드 | Artist Portal</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/portal.css" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
   <div class="portal-shell">
@@ -16,7 +16,7 @@
         <div class="artist">RIIZE</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a class="is-active" href="dashboard.html">📊 대시보드</a>
+        <a class="is-active" th:href="@{/}">📊 대시보드</a>
         <a href="notices.html">📢 공지사항 관리</a>
         <a href="schedule.html">📆 스케줄 관리</a>
         <a href="media.html">🎬 미디어 관리</a>
@@ -25,7 +25,7 @@
       </nav>
       <div class="portal-sidebar__footer">
         <a href="../community/highlight.html">← 커뮤니티 이동</a><br /><br />
-        <a href="login.html">로그아웃</a>
+        <a th:href="@{/logout}">로그아웃</a>
       </div>
     </aside>
 

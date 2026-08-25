@@ -1,84 +1,81 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] Artist 게시판 -->
-  <title>RIIZE – Artist | WePlaNet</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/community.css" />
-  <link rel="stylesheet" href="../../css/shell.css" />
+  <title th:text="${artist.nickname()} + ' – Artist | WePlaNet'">Artist | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/community.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
 </head>
-<body data-shell="fan" data-base="../">
-  <header class="community-top">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-    <div class="community-top__left">
-      <a class="home-link" href="../home.html">🏠</a>
-      <span class="avatar avatar--sm">RZ</span>
-      <h1 class="community-top__name">RIIZE</h1>
-    </div>
-    <div class="community-top__right">
-      <button type="button" class="icon-btn">🌐</button>
-      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
-      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
-      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
-    </div>
-  </header>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null}">
 
-  <div class="community-body" style="margin-top:20px;">
-    <div class="community-main">
-      <nav class="tabs">
-        <a href="highlight.html">Highlight</a>
-        <a href="notice.html">Notice</a>
-        <a href="fan.html">Fan</a>
-        <a class="is-active" href="artist.html">Artist</a>
-        <a href="media.html">Media</a>
-        <a href="live.html">Live</a>
-      </nav>
+  <header th:replace="~{community/fragments/layout :: header}"></header>
+  <div th:replace="~{community/fragments/layout :: hero}"></div>
 
-      <div class="feed">
-        <article class="post-card">
-          <div class="post-card__head">
-            <div class="avatar">원</div>
-            <div class="post-card__meta">
-              <div class="post-card__name">원빈 <span class="badge-verified">✓</span></div>
-              <div class="post-card__time">2026.08.21 15:24</div>
-            </div>
-          </div>
-          <p class="post-card__body">아티스트가 작성한 게시글 내용이 보일 영역</p>
-          <div class="post-card__media"><div class="media-ph" style="aspect-ratio:16/9;">사진 영역</div></div>
-          <div class="post-card__actions">
-            <button type="button" data-like>♥ <span data-like-count>100000</span></button>
-            <a href="fan-detail.html">💬 98k</a>
-          </div>
-        </article>
-        <article class="post-card">
-          <div class="post-card__head">
-            <div class="avatar">성</div>
-            <div class="post-card__meta">
-              <div class="post-card__name">성찬 <span class="badge-verified">✓</span></div>
-              <div class="post-card__time">2026.08.21 15:24</div>
-            </div>
-          </div>
-          <p class="post-card__body">오늘도 브리즈 고마워!</p>
-          <div class="post-card__actions">
-            <button type="button" data-like>♥ <span data-like-count>52000</span></button>
-            <span>💬 4.2k</span>
-          </div>
-        </article>
+  <div class="community-body">
+    <div class="community-main" id="communityPostBoard"
+         th:attr="data-artist-id=${artist.id()}, data-board-tab='artist'">
+      <nav th:replace="~{community/fragments/layout :: tabs('artist')}"></nav>
+
+      <div class="board-toolbar">
+        <div class="flex-center">
+          <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;"
+             th:href="@{/community/{id}/artist(id=${artist.id()}, sort='latest')}"
+             th:classappend="${sort == 'latest'} ? ' is-active'">전체순</a>
+          <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;margin-left:8px;"
+             th:href="@{/community/{id}/artist(id=${artist.id()}, sort='popular')}"
+             th:classappend="${sort == 'popular'} ? ' is-active'">인기순</a>
+          <button type="button" class="btn btn--primary btn--sm" data-modal-open="writePostModal"
+                  style="margin-left:8px;" sec:authorize="hasRole('ARTIST')">포스트 작성하기</button>
+        </div>
       </div>
+
+      <div th:replace="~{community/fragments/postList :: postListFragment}"></div>
     </div>
 
-    <aside class="community-aside">
-      <div class="membership-card membership-card--joined">
-        <p class="membership-card__status">✔ 가입중</p>
-        <h3 class="membership-card__title">RIIZE Membership</h3>
-        <p class="membership-card__period">2025.11.27 ~ 2026.11.26 (KST)</p>
-        <button type="button" class="btn btn--ghost btn--block btn--sm" data-modal-open="membershipDetailModal">Membership 상세보기</button>
-      </div>
-    </aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
   </div>
-  <script src="../../js/main.js"></script>
-  <script src="../../js/shell.js"></script>
+
+  <!-- 아티스트 포스트 작성 모달 -->
+  <div class="modal-backdrop" id="writePostModal" sec:authorize="hasRole('ARTIST')">
+    <div class="modal modal--wide" onclick="event.stopPropagation()">
+      <div class="modal__head">
+        <h2 class="modal__title">포스트 작성하기</h2>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <form id="writePostForm"
+            th:action="@{/posts/artist/new(artistId=${artist.id()})}"
+            method="post"
+            enctype="multipart/form-data">
+        <input type="hidden" name="title" id="writePostTitle" />
+        <input type="hidden" name="artistId" th:value="${artist.id()}" />
+
+        <textarea id="writePostContent" name="content" class="form-textarea" data-count maxlength="1000"
+                  placeholder="아티스트 포스트를 남겨보세요 …"></textarea>
+        <div class="flex-between mt-8">
+          <span class="char-count text-xs text-muted">0 / 1000</span>
+          <div class="flex-center">
+            <label class="icon-btn" title="이미지" style="cursor:pointer;">
+              🖼
+              <input type="file" id="writePostFiles" name="files" multiple
+                     accept="image/*,application/pdf,.txt,.zip" style="display:none;" />
+            </label>
+            <span id="writePostFileCount" class="text-xs text-muted"></span>
+          </div>
+        </div>
+        <p id="writePostError" class="form-error mt-8" style="display:none;"></p>
+        <button type="submit" id="writePostSubmit" class="btn btn--primary btn--block mt-16" disabled>등록하기</button>
+      </form>
+    </div>
+  </div>
+
+  <script th:replace="~{community/fragments/layout :: scripts}"></script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/community-posts.js}"></script>
 </body>
 </html>
