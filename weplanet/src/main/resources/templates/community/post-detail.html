@@ -65,6 +65,13 @@
         </button>
         <span th:if="${#lists.size(comments) > 0}">💬 <span th:text="${#lists.size(comments)}"></span></span>
         <span th:unless="${#lists.size(comments) > 0}">💬</span>
+
+        <!-- 와이어프레임 35/45번: 북마크 - 백엔드/모델(bookmarked)은 이미 있었는데 버튼만 빠져있었음 -->
+        <button type="button" id="bookmarkButton"
+                th:classappend="${bookmarked} ? ' is-active'"
+                style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;margin-left:auto;">
+          <span id="bookmarkIcon" th:text="${bookmarked} ? '🔖' : '📑'"></span>
+        </button>
       </div>
     </article>
     </div>
