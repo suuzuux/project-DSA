@@ -22,7 +22,8 @@
 
   <header th:replace="~{community/fragments/layout :: header}"></header>
 
-  <main class="container section" style="max-width:720px;">
+  <div class="community-body">
+    <div class="community-main">
     <a class="section__link mb-16" style="display:inline-block;"
        th:href="@{/community/{id}/fan(id=${artist.id()})}">← Fan 게시판</a>
 
@@ -61,9 +62,10 @@
         <span th:unless="${#lists.size(comments) > 0}">💬</span>
       </div>
     </article>
+    </div>
 
     <div th:replace="~{community/fragments/fanComments :: commentsFragment}"></div>
-  </main>
+  </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
