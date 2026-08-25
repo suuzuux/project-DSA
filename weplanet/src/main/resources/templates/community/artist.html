@@ -34,7 +34,8 @@
              th:href="@{/community/{id}/artist(id=${artist.id()}, sort='popular')}"
              th:classappend="${sort == 'popular'} ? ' is-active'">인기순</a>
           <button type="button" class="btn btn--primary btn--sm" data-modal-open="writePostModal"
-                  style="margin-left:8px;" sec:authorize="hasRole('ARTIST')">포스트 작성하기</button>
+                  style="margin-left:8px;"
+                  th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">포스트 작성하기</button>
         </div>
       </div>
 
@@ -44,8 +45,9 @@
     <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
   </div>
 
-  <!-- 아티스트 포스트 작성 모달 -->
-  <div class="modal-backdrop" id="writePostModal" sec:authorize="hasRole('ARTIST')">
+  <!-- 아티스트 포스트 작성 모달 (해당 커뮤니티 아티스트만) -->
+  <div class="modal-backdrop" id="writePostModal"
+       th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title">포스트 작성하기</h2>

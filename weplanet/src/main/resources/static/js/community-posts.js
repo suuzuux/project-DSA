@@ -106,29 +106,39 @@
       body: new FormData(writeForm),
     })
       .then(function (response) {
+        const contentType = response.headers.get("content-type") || "";
         if (response.ok) {
           return response.text().then(function (html) {
             const area = document.getElementById("postListArea");
-            if (area) area.outerHTML = html;
+            if (area && html && html.indexOf("postListArea") !== -1) {
+              area.outerHTML = html;
+            }
             writeModal.classList.remove("is-open");
             resetWriteModal();
             loadList(listBase + "?sort=latest", true);
           });
         }
-        return response.json().then(function (data) {
-          if (errorEl) {
-            errorEl.textContent = data.message || "등록에 실패했습니다.";
-            errorEl.style.display = "block";
-          }
-          submitBtn.disabled = false;
-        });
+        if (contentType.indexOf("application/json") !== -1) {
+          return response.json().then(function (data) {
+            if (errorEl) {
+              errorEl.textContent = data.message || "등록에 실패했습니다.";
+              errorEl.style.display = "block";
+            }
+            submitBtn.disabled = false;
+          });
+        }
+        // 서버 오류 HTML 등이면 목록만 다시 불러와 실제 등록 여부 확인
+        writeModal.classList.remove("is-open");
+        resetWriteModal();
+        loadList(listBase + "?sort=latest", true);
       })
       .catch(function () {
         if (errorEl) {
-          errorEl.textContent = "등록에 실패했습니다.";
+          errorEl.textContent = "등록에 실패했습니다. 목록을 확인해주세요.";
           errorEl.style.display = "block";
         }
         submitBtn.disabled = false;
+        loadList(listBase + "?sort=latest", false);
       });
   });
 })();

@@ -33,6 +33,11 @@ public class Post {
     @Column(nullable = false)
     private BoardType boardType;
 
+    // 어느 아티스트 커뮤니티에 속한 글인지 (users.id, role=ARTIST)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "artist_id")
+    private User artist;
+
     @Column(nullable = false, length = 200)
     private String title;
 
