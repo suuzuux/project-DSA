@@ -116,7 +116,7 @@ public class PostController {
 
         // 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
         boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
-        postListModelHelper.populate(model, type, sort, hideFromArtists);
+        postListModelHelper.populate(model, type, sort, null, hideFromArtists);
 
         log.debug("게시판 조회: {}, 정렬: {}, 게시글 수: {}", type, sort,
                 ((List<?>) model.getAttribute("posts")).size());
@@ -176,27 +176,37 @@ public class PostController {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
         }
 
+        User communityArtist = null;
+        if (artistId != null) {
+            communityArtist = userRepository.findById(artistId)
+                    .filter(user -> user.getRole() == Role.ARTIST)
+                    .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+
+            // 커뮤니티 게시글은 해당 커뮤니티에만 귀속. ARTIST 보드는 그 커뮤니티 본인만 작성 가능
+            if (type == BoardType.ARTIST && !tempAuthor.getId().equals(communityArtist.getId())) {
+                throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
+            }
+        }
+
         // linkUrl/hiddenFromArtist는 팬 게시판일 때만 유효하게 처리 (아티스트 게시판 글엔 항상 무시)
         boolean effectiveHidden = type == BoardType.FAN && hiddenFromArtist;
         String effectiveLinkUrl = (type == BoardType.FAN && linkUrl != null && !linkUrl.isBlank()) ? linkUrl.trim() : null;
 
-        Post post = postService.createPost(type, title, content, tempAuthor, effectiveLinkUrl, effectiveHidden);
+        Post post = postService.createPost(type, title, content, tempAuthor, communityArtist, effectiveLinkUrl, effectiveHidden);
         postService.saveAttachments(post, files);
 
-        log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
+        log.debug("게시글 작성 완료 : boardType={}, title={}, author={}, artistId={}",
+                type, title, tempAuthor.getUsername(), artistId);
 
         // 와이어프레임 기준: 글쓰기가 목록 위에 뜨는 모달이라, fetch로 왔으면 페이지 이동 없이
         // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
         if ("fetch".equals(requestedWith)) {
-            if (artistId != null) {
+            if (communityArtist != null) {
                 // postList 프래그먼트가 FAN/ARTIST 링크를 만들 때 ${artist.id()}를 참조하므로,
                 // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
-                User artistUser = userRepository.findById(artistId)
-                        .filter(user -> user.getRole() == Role.ARTIST)
-                        .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-                model.addAttribute("artist", ArtistCardView.from(artistUser));
+                model.addAttribute("artist", ArtistCardView.from(communityArtist));
                 boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
-                postListModelHelper.populate(model, type, "latest", hideFromArtists);
+                postListModelHelper.populate(model, type, "latest", communityArtist, hideFromArtists);
                 return "community/fragments/postList :: postListFragment";
             }
             return list(boardType, "latest", "fetch", principal, model);

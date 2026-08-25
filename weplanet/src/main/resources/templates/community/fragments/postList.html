@@ -4,9 +4,7 @@
   <div id="postListArea" th:fragment="postListFragment">
     <div class="feed" th:if="${not #lists.isEmpty(posts)}">
       <article class="post-card" th:each="post : ${posts}">
-        <a th:href="${boardType.name() == 'FAN'}
-                      ? @{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${post.id})}
-                      : @{/community/{artistId}/artist/{postId}(artistId=${artist.id()}, postId=${post.id})}"
+		<a th:href="@{/community/{artistId}/{tab}/{postId}(artistId=${artist.id()}, tab=${boardType.name() == 'ARTIST' ? 'artist' : 'fan'}, postId=${post.id})}"
            style="display:block;color:inherit;">
           <div class="post-card__head">
             <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
