@@ -46,6 +46,10 @@
       <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
       <div id="contentViewer" class="post-card__body"></div>
 
+      <!-- 와이어프레임 36번: 포스트 작성 시 첨부한 링크(🔗) -->
+      <a th:if="${post.linkUrl != null}" th:href="${post.linkUrl}" target="_blank" rel="noopener"
+         class="translate-link" style="display:inline-block;margin-top:8px;">🔗 <span th:text="${post.linkUrl}"></span></a>
+
       <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media mt-12">
         <div th:each="file : ${attachments}">
           <img th:if="${file.image}" th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}"
