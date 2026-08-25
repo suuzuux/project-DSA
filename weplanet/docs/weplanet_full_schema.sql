@@ -17,7 +17,6 @@ SET
 FOREIGN_KEY_CHECKS = 0;
 
 -- 1. users
-DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users`
 (
     `id`                bigint                                  NOT NULL AUTO_INCREMENT,
@@ -54,7 +53,6 @@ CREATE TABLE `users`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. admin_action_logs
-DROP TABLE IF EXISTS `admin_action_logs`;
 CREATE TABLE `admin_action_logs`
 (
     `id`          bigint                                 NOT NULL AUTO_INCREMENT,
@@ -72,7 +70,6 @@ CREATE TABLE `admin_action_logs`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 3. admin_profiles
-DROP TABLE IF EXISTS `admin_profiles`;
 CREATE TABLE `admin_profiles`
 (
     `user_id`     bigint                                 NOT NULL,
@@ -86,7 +83,6 @@ CREATE TABLE `admin_profiles`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 4. agencies
-DROP TABLE IF EXISTS `agencies`;
 CREATE TABLE `agencies`
 (
     `id`          bigint                                  NOT NULL AUTO_INCREMENT,
@@ -103,7 +99,6 @@ CREATE TABLE `agencies`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 5. agency_profiles
-DROP TABLE IF EXISTS `agency_profiles`;
 CREATE TABLE `agency_profiles`
 (
     `user_id`     bigint NOT NULL,
@@ -122,7 +117,6 @@ CREATE TABLE `agency_profiles`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 6. artist_groups
-DROP TABLE IF EXISTS `artist_groups`;
 CREATE TABLE `artist_groups`
 (
     `id`          bigint                                  NOT NULL AUTO_INCREMENT,
@@ -142,7 +136,6 @@ CREATE TABLE `artist_groups`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 7. artist_profiles
-DROP TABLE IF EXISTS `artist_profiles`;
 CREATE TABLE `artist_profiles`
 (
     `user_id`     bigint                                 NOT NULL,
@@ -159,7 +152,6 @@ CREATE TABLE `artist_profiles`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 8. board_media
-DROP TABLE IF EXISTS `board_media`;
 CREATE TABLE `board_media`
 (
     `id`          bigint                                  NOT NULL AUTO_INCREMENT,
@@ -178,7 +170,6 @@ CREATE TABLE `board_media`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹별 미디어 게시판';
 
 -- 9. board_media_files
-DROP TABLE IF EXISTS `board_media_files`;
 CREATE TABLE `board_media_files`
 (
     `id`            bigint                                  NOT NULL AUTO_INCREMENT,
@@ -198,7 +189,7 @@ CREATE TABLE `board_media_files`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 첨부 미디어';
 
 -- 10. chat_message
-DROP TABLE IF EXISTS `chat_message`;
+
 CREATE TABLE `chat_message`
 (
     `id`         bigint                          NOT NULL AUTO_INCREMENT,
@@ -217,7 +208,6 @@ CREATE TABLE `chat_message`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 11. chat_quota
-DROP TABLE IF EXISTS `chat_quota`;
 CREATE TABLE `chat_quota`
 (
     `id`              bigint NOT NULL AUTO_INCREMENT,
@@ -233,7 +223,6 @@ CREATE TABLE `chat_quota`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 12. post
-DROP TABLE IF EXISTS `post`;
 CREATE TABLE `post`
 (
     `id`         bigint                                  NOT NULL AUTO_INCREMENT,
@@ -249,7 +238,6 @@ CREATE TABLE `post`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 13. comment
-DROP TABLE IF EXISTS `comment`;
 CREATE TABLE `comment`
 (
     `id`         bigint                                  NOT NULL AUTO_INCREMENT,
@@ -265,7 +253,6 @@ CREATE TABLE `comment`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 14. comment_report
-DROP TABLE IF EXISTS `comment_report`;
 CREATE TABLE `comment_report`
 (
     `id`          bigint NOT NULL AUTO_INCREMENT,
@@ -281,7 +268,6 @@ CREATE TABLE `comment_report`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 15. filter_keyword
-DROP TABLE IF EXISTS `filter_keyword`;
 CREATE TABLE `filter_keyword`
 (
     `id`      bigint                                 NOT NULL AUTO_INCREMENT,
@@ -291,7 +277,6 @@ CREATE TABLE `filter_keyword`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 16. group_members
-DROP TABLE IF EXISTS `group_members`;
 CREATE TABLE `group_members`
 (
     `id`        bigint NOT NULL AUTO_INCREMENT,
@@ -309,7 +294,6 @@ CREATE TABLE `group_members`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 17. membership
-DROP TABLE IF EXISTS `membership`;
 CREATE TABLE `membership`
 (
     `id`         bigint NOT NULL AUTO_INCREMENT,
@@ -325,7 +309,6 @@ CREATE TABLE `membership`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 18. post_attachment
-DROP TABLE IF EXISTS `post_attachment`;
 CREATE TABLE `post_attachment`
 (
     `id`            bigint                                  NOT NULL AUTO_INCREMENT,
@@ -342,7 +325,6 @@ CREATE TABLE `post_attachment`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 19. post_bookmark
-DROP TABLE IF EXISTS `post_bookmark`;
 CREATE TABLE `post_bookmark`
 (
     `id`         bigint NOT NULL AUTO_INCREMENT,
@@ -357,7 +339,6 @@ CREATE TABLE `post_bookmark`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 20. post_like
-DROP TABLE IF EXISTS `post_like`;
 CREATE TABLE `post_like`
 (
     `id`         bigint NOT NULL AUTO_INCREMENT,
@@ -372,7 +353,6 @@ CREATE TABLE `post_like`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 21. report
-DROP TABLE IF EXISTS `report`;
 CREATE TABLE `report`
 (
     `id`          bigint NOT NULL AUTO_INCREMENT,
