@@ -1,22 +1,35 @@
 package megane6.weplanet.controller;
 
-
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.dto.ArtistCardView;
+import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.repository.UserRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.List;
 
 @Slf4j
 @Controller
+@RequiredArgsConstructor
 public class HomeController {
 
-	// fanId : 로그인 기능이 아직 없어서, DM 위젯(플로팅 채팅)에서 "지금 나는 몇 번 팬 계정인가"를
-	// 임시로 알려주기 위한 테스트용 파라미터. 예: /?fanId=1 (기본값도 1)
-	@GetMapping({"","/"})
-	public String home(@RequestParam(defaultValue = "1") Long fanId, Model model) {
-		model.addAttribute("fanId", fanId);
-		return "mainHome";
+	private final UserRepository userRepository;
+
+	@GetMapping({"", "/"})
+	public String home(Model model) {
+		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
+				.map(ArtistCardView::from)
+				.toList();
+		model.addAttribute("artists", artists);
+		return "index";
+	}
+
+	@GetMapping("/home")
+	public String homeAlias() {
+		return "redirect:/";
 	}
 
 }

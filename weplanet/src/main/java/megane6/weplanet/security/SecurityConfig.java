@@ -25,6 +25,7 @@ public class SecurityConfig {
     // (테스트 계정 비밀번호가 아직 더미값이라 실제 로그인이 안 되는 동안, 게시판/채팅 개발·시연을 위해 임시로 열어둠 - 형준님 확인 완료)
     private static final List<String> PUBLIC_URLS = List.of(
             "/",
+            "/home",
             "/signup",
             "/login",
             "/posts/**",
@@ -32,6 +33,7 @@ public class SecurityConfig {
             "/ws-chat/**",
             "/dev/**",
             "/uploads/**",
+            "/community/**",
             "/css/**",
             "/js/**",
             "/img/**"

@@ -158,34 +158,36 @@
   }
 
   /**
-   * 회원가입 목 유효성
-   * - 아이디: 5~15자 영문/숫자
-   * - 비밀번호: 8~15자, 영문+숫자+특수문자
-   * - 닉네임: 3~10자
+   * 회원가입 클라이언트 유효성
+   * - 통과 시 실제 서버(POST /signup)로 제출
    */
   function initSignupValidation() {
     const form = qs("#signupForm");
     if (!form) return;
 
     const rules = {
-      userId: {
-        test: (v) => /^[A-Za-z0-9]{5,15}$/.test(v),
-        msg: "아이디는 영문, 숫자 포함 5~15자 이내로 입력해주세요.",
+      username: {
+        test: (v) => /^[a-zA-Z0-9]{4,20}$/.test(v),
+        msg: "아이디는 영문/숫자 4~20자로 입력해주세요.",
       },
       password: {
-        test: (v) => /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,15}$/.test(v),
-        msg: "비밀번호는 영문, 숫자, 특수문자 포함 8~15자 이내로 입력해주세요.",
+        test: (v) => /^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$/.test(v),
+        msg: "비밀번호는 영문/숫자 포함 8~20자로 입력해주세요.",
       },
       passwordConfirm: {
         test: (v) => v === (qs("#password")?.value || ""),
         msg: "비밀번호가 일치하지 않습니다.",
+      },
+      realName: {
+        test: (v) => v.trim().length > 0,
+        msg: "이름을 입력해주세요.",
       },
       email: {
         test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
         msg: "올바른 이메일 형식으로 입력해주세요.",
       },
       nickname: {
-        test: (v) => v.length >= 3 && v.length <= 10,
+        test: (v) => v.trim() === "" || (v.length >= 3 && v.length <= 10),
         msg: "닉네임은 3~10자로 입력해주세요.",
       },
     };
@@ -197,7 +199,7 @@
       const ok = rules[name].test(input.value.trim());
       group.classList.toggle("is-invalid", !ok);
       const err = qs(".form-error", group);
-      if (err) err.textContent = rules[name].msg;
+      if (err) err.textContent = ok ? "" : rules[name].msg;
       return ok;
     };
 
@@ -206,17 +208,16 @@
     });
 
     form.addEventListener("submit", (e) => {
-      e.preventDefault();
       const ok = Object.keys(rules).every(validateField);
       const requiredAgrees = qsa("[data-agree-required]");
       const agreeOk = requiredAgrees.every((c) => c.checked);
       if (!agreeOk) {
-        alert("필수 약관에 동의해 주세요. (목업)");
+        e.preventDefault();
+        alert("필수 약관에 동의해 주세요.");
         return;
       }
-      if (ok) {
-        // 목업: 가입 성공 → 로그인 후 홈으로
-        window.location.href = "home.html";
+      if (!ok) {
+        e.preventDefault();
       }
     });
   }

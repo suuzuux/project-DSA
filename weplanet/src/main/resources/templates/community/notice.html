@@ -1,75 +1,31 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] Notice + 멤버십 가입 중 상태 -->
-  <title>RIIZE – Notice | WePlaNet</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/community.css" />
-  <link rel="stylesheet" href="../../css/shell.css" />
+  <title th:text="${artist.nickname()} + ' – Notice | WePlaNet'">Notice | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/community.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
 </head>
-<body data-shell="fan" data-base="../">
-  <header class="community-top">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-    <div class="community-top__left">
-      <a class="home-link" href="../home.html">🏠</a>
-      <span class="avatar avatar--sm">RZ</span>
-      <h1 class="community-top__name">RIIZE</h1>
-    </div>
-    <div class="community-top__right">
-      <button type="button" class="icon-btn">🌐</button>
-      <a class="icon-btn" href="../shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
-      <button type="button" class="icon-btn icon-btn--badge">🔔</button>
-      <a class="icon-btn" href="profile.html"><span class="avatar avatar--sm">나</span></a>
-    </div>
-  </header>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null}">
 
-  <div class="community-body" style="margin-top:20px;">
+  <header th:replace="~{community/fragments/layout :: header}"></header>
+  <div th:replace="~{community/fragments/layout :: hero}"></div>
+
+  <div class="community-body">
     <div class="community-main">
-      <nav class="tabs">
-        <a href="highlight.html">Highlight</a>
-        <a class="is-active" href="notice.html">Notice</a>
-        <a href="fan.html">Fan</a>
-        <a href="artist.html">Artist</a>
-        <a href="media.html">Media</a>
-        <a href="live.html">Live</a>
-      </nav>
-
-      <div class="notice-list">
-        <a class="notice-list__item" href="notice-detail.html">
-          <span class="notice-list__date">2026-08-19</span>
-          <span class="notice-list__title">[공지] RIIZE “8/9 (일) 2026 SBS 가요대전 Summer” 참여 안내</span>
-        </a>
-        <a class="notice-list__item" href="notice-detail.html">
-          <span class="notice-list__date">2026-07-20</span>
-          <span class="notice-list__title">[공지] “Ch.RIIZE : ON AIR” 예매 &amp; 입장 주의사항</span>
-        </a>
-        <a class="notice-list__item" href="notice-detail.html">
-          <span class="notice-list__date">2026-06-01</span>
-          <span class="notice-list__title">[공지] 2026 CORTIS TOUR 공식 어플리케이션 업데이트 안내 (샘플)</span>
-        </a>
-        <a class="notice-list__item" href="notice-detail.html">
-          <span class="notice-list__date">2026-05-12</span>
-          <span class="notice-list__title">[공지] 멤버십 전용 콘텐츠 이용 안내</span>
-        </a>
-      </div>
+      <nav th:replace="~{community/fragments/layout :: tabs('notice')}"></nav>
+      <p class="text-muted" style="padding:24px 0;">등록된 공지가 없습니다.</p>
     </div>
-
-    <aside class="community-aside">
-      <!-- 가입중 멤버십 카드 -->
-      <div class="membership-card membership-card--joined">
-        <p class="membership-card__status">✔ 가입중</p>
-        <h3 class="membership-card__title">RIIZE Membership</h3>
-        <p class="membership-card__period">2025.11.27 ~ 2026.11.26 (KST)</p>
-        <button type="button" class="btn btn--ghost btn--block btn--sm" data-modal-open="membershipDetailModal">Membership 상세보기</button>
-      </div>
-    </aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
   </div>
 
-  <!-- 멤버십 상세 모달: shell.js #membershipDetailModal -->
-
-  <script src="../../js/main.js"></script>
-  <script src="../../js/shell.js"></script>
+  <script th:replace="~{community/fragments/layout :: scripts}"></script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
 </body>
 </html>

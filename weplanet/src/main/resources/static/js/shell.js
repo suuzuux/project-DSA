@@ -21,11 +21,50 @@
 
   const base = body.getAttribute("data-base") || "";
   const dmExpired = body.getAttribute("data-dm-expired") === "true";
+  const isAuthenticated = body.getAttribute("data-authenticated") === "true";
+  const nickname = body.getAttribute("data-nickname") || "";
+  const artists = Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : [];
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function communitiesBlockHtml() {
+    if (!artists.length) {
+      return isAuthenticated
+        ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+  <div class="drawer-menu__communities">
+    <p class="text-xs text-muted" style="padding:8px 0;">가입한 커뮤니티가 없습니다.</p>
+  </div>`
+        : "";
+    }
+
+    const links = artists
+      .map((a) => {
+        const logo = escapeHtml(a.logo || "?");
+        const name = escapeHtml(a.nickname || "아티스트");
+        return `<a href="${base}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
+      })
+      .join("");
+
+    return `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+  <div class="drawer-menu__communities">${links}</div>`;
+  }
 
   /* ---------------------------------------------------------
    * HTML 템플릿
    * --------------------------------------------------------- */
   function shellHTML() {
+    const greetBlock = isAuthenticated && nickname
+      ? `<p class="drawer-menu__greet"><em>${escapeHtml(nickname)}</em> 님,<br />좋은 하루예요.</p>`
+      : "";
+
+    const communitiesBlock = communitiesBlockHtml();
+
     return `
 <!-- ========== Shell Backdrop ========== -->
 <div class="shell-backdrop" id="shellBackdrop" hidden></div>
@@ -36,15 +75,8 @@
     <strong>메뉴</strong>
     <button type="button" class="icon-btn" data-shell-close="menu" aria-label="메뉴 닫기">✕</button>
   </div>
-  <p class="drawer-menu__greet"><em>닉네임</em> 님,<br />좋은 하루예요.</p>
-
-  <p class="drawer-menu__section-title">커뮤니티 바로가기</p>
-  <div class="drawer-menu__communities">
-    <a href="${base}community/highlight.html"><span class="avatar avatar--sm">RZ</span> RIIZE</a>
-    <a href="${base}community/highlight.html"><span class="avatar avatar--sm">CT</span> CORTIS</a>
-    <a href="${base}community/highlight.html"><span class="avatar avatar--sm">AE</span> aespa</a>
-    <a href="${base}community/highlight.html"><span class="avatar avatar--sm">TR</span> TREASURE</a>
-  </div>
+  ${greetBlock}
+  ${communitiesBlock}
 
   <nav class="drawer-menu__nav">
     <a href="${base}collection.html"><span class="nav-ico">📛</span> 나의 컬렉션</a>
@@ -78,54 +110,9 @@
         <a href="${base}membership.html">DM 100% 활용방법 ›</a>
       </div>
       <p class="dm-section-label">메시지</p>
-      <button type="button" class="dm-list-item" data-open-room="yuma" data-room-expired="false">
-        <div class="dm-list-item__avatar">
-          <div class="avatar">YU</div>
-          <span class="online-dot"></span>
-        </div>
-        <div class="dm-list-item__meta">
-          <div class="dm-list-item__name">YUMA</div>
-          <div class="dm-list-item__preview">오늘은 일찍 잘려고~</div>
-        </div>
-        <span class="dm-list-item__time">04:24</span>
-      </button>
-      <button type="button" class="dm-list-item" data-open-room="vivi" data-room-expired="false">
-        <div class="dm-list-item__avatar">
-          <div class="avatar">비</div>
-          <span class="online-dot"></span>
-        </div>
-        <div class="dm-list-item__meta">
-          <div class="dm-list-item__name">비비</div>
-          <div class="dm-list-item__preview">스티커를 보냈어요</div>
-        </div>
-        <span class="dm-list-item__time">어제</span>
-      </button>
-
+      <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
       <p class="dm-section-label">추천</p>
-      <button type="button" class="dm-list-item" data-open-room="lara" data-room-expired="true">
-        <div class="dm-list-item__avatar"><div class="avatar">라</div><span class="online-dot"></span></div>
-        <div class="dm-list-item__meta">
-          <div class="dm-list-item__name">라라 라자고팔란</div>
-          <div class="dm-list-item__group">KATSEYE</div>
-        </div>
-        <span class="dm-list-item__time">6일 전</span>
-      </button>
-      <button type="button" class="dm-list-item" data-open-room="ej" data-room-expired="true">
-        <div class="dm-list-item__avatar"><div class="avatar">EJ</div><span class="online-dot"></span></div>
-        <div class="dm-list-item__meta">
-          <div class="dm-list-item__name">EJ</div>
-          <div class="dm-list-item__group">&amp;TEAM</div>
-        </div>
-        <span class="dm-list-item__time">3일 전</span>
-      </button>
-      <button type="button" class="dm-list-item" data-open-room="evan" data-room-expired="false">
-        <div class="dm-list-item__avatar"><div class="avatar">예</div></div>
-        <div class="dm-list-item__meta">
-          <div class="dm-list-item__name">예반</div>
-          <div class="dm-list-item__group">EVAN</div>
-        </div>
-        <span class="dm-list-item__time">2시간 전</span>
-      </button>
+      <p class="text-xs text-muted" style="padding:16px 4px;">추천 아티스트가 없습니다.</p>
     </div>
   </div>
 
@@ -134,7 +121,7 @@
     <div class="dm-header">
       <button type="button" class="icon-btn" id="dmBackBtn" aria-label="목록으로">‹</button>
       <div class="dm-header__title">
-        <span id="dmRoomName">YUMA</span> <span class="badge-verified">✓</span>
+        <span id="dmRoomName">DM</span> <span class="badge-verified">✓</span>
         <small>ARTIST · DM</small>
       </div>
       <button type="button" class="icon-btn" data-shell-alert="검색" aria-label="검색">🔍</button>
@@ -152,34 +139,7 @@
     </div>
 
     <div class="dm-messages" id="dmMessages">
-      <div class="dm-msg">
-        <div class="avatar avatar--sm">YU</div>
-        <div>
-          <div class="dm-msg__meta"><span class="artist-tag">ARTIST</span> YUMA</div>
-          <div class="dm-msg__bubble">오늘은 일찍 잘려고~</div>
-        </div>
-        <span class="dm-msg__time">23:47</span>
-      </div>
-      <div class="dm-msg">
-        <div class="avatar avatar--sm">YU</div>
-        <div>
-          <div class="dm-msg__meta"><span class="artist-tag">ARTIST</span> YUMA</div>
-          <div class="dm-sticker">🐹</div>
-        </div>
-        <span class="dm-msg__time">23:48</span>
-      </div>
-      <div class="dm-msg dm-msg--me">
-        <div class="dm-msg__bubble">잘자요! 내일 뮤뱅 화이팅 ✈️</div>
-        <span class="dm-msg__time">23:50</span>
-      </div>
-      <div class="dm-msg">
-        <div class="avatar avatar--sm">YU</div>
-        <div>
-          <div class="dm-msg__meta"><span class="artist-tag">ARTIST</span> YUMA</div>
-          <div class="dm-msg__bubble">고마워 브리즈 💜</div>
-        </div>
-        <span class="dm-msg__time">23:51</span>
-      </div>
+      <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">대화를 시작해보세요.</p>
     </div>
 
     <form class="dm-composer" id="dmComposer">
