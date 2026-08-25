@@ -13,6 +13,7 @@ import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -38,13 +39,14 @@ public class CommunityController {
 	private final MembershipService membershipService;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
+	private final BoardMediaService boardMediaService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		User artist = populateArtistModel(artistId, principal, model);
 
-		// "Fan Posts" 위젯 - 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
-		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN);
+		// "Fan Posts" 위젯 - 이 커뮤니티 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
+		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN, artist);
 		Map<Long, Long> fanPostCommentCounts = new HashMap<>();
 		Map<Long, String> fanPostThumbnails = new HashMap<>();
 		for (Post post : fanPosts) {
@@ -62,8 +64,8 @@ public class CommunityController {
 		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
 		model.addAttribute("artistCommentsWidget", artistComments);
 
-		// "From 아티스트" 위젯 - 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지
-		List<Post> artistPosts = postService.getRecentPosts(BoardType.ARTIST);
+		// "From 아티스트" 위젯 - 이 커뮤니티 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지
+		List<Post> artistPosts = postService.getRecentPosts(BoardType.ARTIST, artist);
 		Map<Long, String> artistPostThumbnails = new HashMap<>();
 		for (Post post : artistPosts) {
 			postService.getAttachments(post).stream()
@@ -85,8 +87,9 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, principal, model);
-		postListModelHelper.populate(model, BoardType.FAN, sort, userResolver.isArtist(principal));
+		User artist = populateArtistModel(artistId, principal, model);
+		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
+		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal));
 
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -101,17 +104,7 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, principal, model);
-
-		Post post = postService.getPost(postId);
-		if (post.getBoardType() != BoardType.FAN) {
-			throw new IllegalArgumentException("팬 게시글이 아닙니다.");
-		}
-
-		User currentUser = userResolver.resolve(principal, 1L);
-		postDetailModelHelper.populate(model, post, currentUser);
-
-		return "community/fan-detail";
+		return communityPostDetail(artistId, postId, BoardType.FAN, "fan", principal, model);
 	}
 
 	@GetMapping("/community/{artistId}/artist")
@@ -122,8 +115,8 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, principal, model);
-		postListModelHelper.populate(model, BoardType.ARTIST, sort);
+		User artist = populateArtistModel(artistId, principal, model);
+		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
 
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -138,17 +131,34 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
+		return communityPostDetail(artistId, postId, BoardType.ARTIST, "artist", principal, model);
+	}
+
+	// fanDetail/artistDetail 공통 처리 - 게시판 종류뿐 아니라 "이 커뮤니티 소속 글인지"도 검증함
+	// (게시판이 아티스트별로 분리되기 전엔 다른 커뮤니티 글도 보이던 문제가 있었음)
+	private String communityPostDetail(
+			Long artistId,
+			Long postId,
+			BoardType expectedType,
+			String boardTab,
+			AuthenticatedUser principal,
+			Model model
+	) {
 		populateArtistModel(artistId, principal, model);
 
 		Post post = postService.getPost(postId);
-		if (post.getBoardType() != BoardType.ARTIST) {
-			throw new IllegalArgumentException("아티스트 게시글이 아닙니다.");
+		if (post.getBoardType() != expectedType) {
+			throw new IllegalArgumentException("게시판 종류가 맞지 않습니다.");
+		}
+		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
+			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
 		}
 
 		User currentUser = userResolver.resolve(principal, 1L);
 		postDetailModelHelper.populate(model, post, currentUser);
+		model.addAttribute("boardTab", boardTab);
 
-		return "community/artist-detail";
+		return "community/post-detail";
 	}
 
 	@GetMapping("/community/{artistId}/notice")
@@ -160,6 +170,8 @@ public class CommunityController {
 	@GetMapping("/community/{artistId}/media")
 	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		populateArtistModel(artistId, principal, model);
+		model.addAttribute("mediaList", boardMediaService.list(artistId));
+		model.addAttribute("groupId", artistId);
 		return "community/media";
 	}
 
