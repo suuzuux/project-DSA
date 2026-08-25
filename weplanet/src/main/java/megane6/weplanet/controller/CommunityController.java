@@ -12,6 +12,7 @@ import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -35,13 +36,14 @@ public class CommunityController {
 	private final CommentRepository commentRepository;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
+	private final BoardMediaService boardMediaService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, Model model) {
 		User artist = populateArtistModel(artistId, model);
 
-		// "Fan Posts" 위젯 - 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
-		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN);
+		// "Fan Posts" 위젯 - 이 커뮤니티 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
+		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN, artist);
 		Map<Long, Long> fanPostCommentCounts = new HashMap<>();
 		Map<Long, String> fanPostThumbnails = new HashMap<>();
 		for (Post post : fanPosts) {
@@ -69,8 +71,8 @@ public class CommunityController {
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
-		postListModelHelper.populate(model, BoardType.FAN, sort);
+		User artist = populateArtistModel(artistId, model);
+		postListModelHelper.populate(model, BoardType.FAN, sort, artist);
 
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -85,17 +87,42 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
+		return communityPostDetail(artistId, postId, BoardType.FAN, "fan", principal, model);
+	}
+
+	@GetMapping("/community/{artistId}/artist/{postId}")
+	public String artistDetail(
+			@PathVariable Long artistId,
+			@PathVariable Long postId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		return communityPostDetail(artistId, postId, BoardType.ARTIST, "artist", principal, model);
+	}
+
+	private String communityPostDetail(
+			Long artistId,
+			Long postId,
+			BoardType expectedType,
+			String boardTab,
+			AuthenticatedUser principal,
+			Model model
+	) {
 		populateArtistModel(artistId, model);
 
 		Post post = postService.getPost(postId);
-		if (post.getBoardType() != BoardType.FAN) {
-			throw new IllegalArgumentException("팬 게시글이 아닙니다.");
+		if (post.getBoardType() != expectedType) {
+			throw new IllegalArgumentException("게시판 종류가 맞지 않습니다.");
+		}
+		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
+			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
 		}
 
 		User currentUser = userResolver.resolve(principal, 1L);
 		postDetailModelHelper.populate(model, post, currentUser);
+		model.addAttribute("boardTab", boardTab);
 
-		return "community/fan-detail";
+		return "community/post-detail";
 	}
 
 	@GetMapping("/community/{artistId}/artist")
@@ -105,8 +132,8 @@ public class CommunityController {
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
-		postListModelHelper.populate(model, BoardType.ARTIST, sort);
+		User artist = populateArtistModel(artistId, model);
+		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
 
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -123,6 +150,8 @@ public class CommunityController {
 	@GetMapping("/community/{artistId}/media")
 	public String media(@PathVariable Long artistId, Model model) {
 		populateArtistModel(artistId, model);
+		model.addAttribute("mediaList", boardMediaService.list(artistId));
+		model.addAttribute("groupId", artistId);
 		return "community/media";
 	}
 

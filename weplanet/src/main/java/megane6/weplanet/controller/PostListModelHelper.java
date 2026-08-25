@@ -3,6 +3,7 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
+import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import org.springframework.stereotype.Component;
@@ -20,7 +21,13 @@ public class PostListModelHelper {
 	private final CommentService commentService;
 
 	public void populate(Model model, BoardType boardType, String sort) {
-		List<Post> posts = postService.getPostsByBoardType(boardType, sort);
+		populate(model, boardType, sort, null);
+	}
+
+	public void populate(Model model, BoardType boardType, String sort, User artist) {
+		List<Post> posts = artist != null
+				? postService.getPostsByBoardTypeAndArtist(boardType, artist, sort)
+				: postService.getPostsByBoardType(boardType, sort);
 
 		Map<Long, Long> commentCounts = new HashMap<>();
 		Map<Long, String> thumbnailUrls = new HashMap<>();

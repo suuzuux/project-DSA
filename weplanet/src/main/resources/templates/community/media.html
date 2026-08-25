@@ -8,7 +8,6 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
@@ -24,15 +23,89 @@
     <div class="community-main">
       <nav th:replace="~{community/fragments/layout :: tabs('media')}"></nav>
 
-      <div class="chip-row mb-16">
-        <button type="button" class="chip is-active">전체</button>
-        <button type="button" class="chip">멤버십</button>
-        <button type="button" class="chip">인기</button>
+      <div class="board-toolbar">
+        <div class="chip-row" style="margin:0;">
+          <button type="button" class="chip is-active">전체</button>
+          <button type="button" class="chip">멤버십</button>
+          <button type="button" class="chip">인기</button>
+        </div>
+        <button type="button" class="btn btn--primary btn--sm"
+                th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+                data-modal-open="writeMediaModal">미디어 등록</button>
       </div>
 
-      <p class="text-muted" style="padding:24px 0;">표시할 미디어가 없습니다.</p>
+      <p th:if="${msg}" class="text-sm" style="color:var(--wp-brand);margin:8px 0;" th:text="${msg}"></p>
+      <p th:if="${error}" class="form-error" th:text="${error}"></p>
+
+      <div class="feed" th:if="${not #lists.isEmpty(mediaList)}">
+        <article class="post-card" th:each="post : ${mediaList}">
+          <div class="post-card__head">
+            <div class="avatar" th:text="${#strings.substring(artist.nickname(),0,1)}">M</div>
+            <div class="post-card__meta">
+              <div class="post-card__name">
+                <span th:text="${post.title}">제목</span>
+              </div>
+              <div class="post-card__time"
+                   th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                   th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+            </div>
+          </div>
+
+          <p class="post-card__body" th:if="${post.content != null and !#strings.isEmpty(post.content)}"
+             th:text="${post.content}"></p>
+
+          <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
+            <th:block th:each="file : ${post.files}">
+              <img th:if="${file.mediaType == 'IMAGE'}"
+                   th:src="@{/board/media/file/{id}(id=${file.id})}"
+                   th:alt="${file.originalName}"
+                   style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;object-fit:cover;margin-bottom:8px;" />
+              <video th:if="${file.mediaType == 'VIDEO'}"
+                     th:src="@{/board/media/file/{id}(id=${file.id})}"
+                     controls
+                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;margin-bottom:8px;"></video>
+            </th:block>
+          </div>
+
+          <div class="post-card__actions" style="justify-content:space-between;">
+            <span class="text-xs text-muted" th:text="'첨부 ' + ${post.fileCount} + '개'"></span>
+            <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+                  th:action="@{/board/media/{id}/delete(id=${post.id})}"
+                  method="post"
+                  onsubmit="return confirm('삭제할까요?');">
+              <input type="hidden" name="groupId" th:value="${groupId}" />
+              <input type="hidden" name="artistId" th:value="${artist.id()}" />
+              <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+            </form>
+          </div>
+        </article>
+      </div>
+
+      <p th:if="${#lists.isEmpty(mediaList)}" class="text-muted" style="padding:24px 0;">표시할 미디어가 없습니다.</p>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+  </div>
+
+  <!-- 미디어 등록 모달 (해당 커뮤니티 아티스트만) -->
+  <div class="modal-backdrop" id="writeMediaModal"
+       th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">
+    <div class="modal modal--wide" onclick="event.stopPropagation()">
+      <div class="modal__head">
+        <h2 class="modal__title">미디어 등록</h2>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <form th:action="@{/board/media/upload}" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="groupId" th:value="${groupId}" />
+        <input type="hidden" name="artistId" th:value="${artist.id()}" />
+        <label class="form-label">제목</label>
+        <input class="form-input" type="text" name="title" required maxlength="200" placeholder="제목을 입력하세요" />
+        <label class="form-label mt-12">설명</label>
+        <textarea class="form-textarea" name="content" maxlength="2000" placeholder="설명을 입력하세요 (선택)"></textarea>
+        <label class="form-label mt-12">파일 (이미지/영상, 1개 이상)</label>
+        <input class="form-input" type="file" name="files" accept="image/*,video/*" multiple required />
+        <button type="submit" class="btn btn--primary btn--block mt-16">등록하기</button>
+      </form>
+    </div>
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
