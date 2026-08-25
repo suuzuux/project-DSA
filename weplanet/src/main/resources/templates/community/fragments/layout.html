@@ -79,6 +79,20 @@
           <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
         </div>
       </div>
+
+      <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
+      <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
+        <div class="flex-center" style="gap:8px;">
+          <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
+          <span th:text="${other.nickname()}">아티스트</span>
+        </div>
+        <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
+          <input type="hidden" name="returnTo" th:value="${artist.id()}" />
+          <button type="submit" class="btn btn--sm"
+                  th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
+                  th:text="${other.following()} ? '팔로잉 ✔️' : '팔로우'">팔로우</button>
+        </form>
+      </div>
     </div>
   </aside>
 
