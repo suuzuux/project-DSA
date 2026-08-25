@@ -72,13 +72,7 @@
         meta.className = "dm-list-item__meta";
         const name = document.createElement("div");
         name.className = "dm-list-item__name";
-        const nameText = document.createElement("span");
-        nameText.textContent = item.artistNickname || "";
-        const badge = document.createElement("span");
-        badge.className = "badge-verified";
-        badge.textContent = "✓";
-        name.appendChild(nameText);
-        name.appendChild(badge);
+        name.textContent = item.artistNickname || "";
         const preview = document.createElement("div");
         preview.className = item.hasConversation ? "dm-list-item__preview" : "dm-list-item__group";
         preview.textContent = item.hasConversation ? (item.lastMessage || "") : "";
