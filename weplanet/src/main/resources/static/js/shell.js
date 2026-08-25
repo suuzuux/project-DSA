@@ -145,7 +145,6 @@
     <form class="dm-composer" id="dmComposer">
       <button type="button" class="icon-btn" data-shell-alert="첨부" aria-label="첨부">＋</button>
       <input type="text" placeholder="메시지 입력" autocomplete="off" id="dmInput" />
-      <button type="button" class="icon-btn" data-shell-alert="이모지" aria-label="이모지">😊</button>
       <button type="submit" class="send-btn" aria-label="전송">✈</button>
     </form>
   </div>

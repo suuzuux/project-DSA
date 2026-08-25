@@ -169,7 +169,8 @@ public class PostController {
         }
 
         // 로그인했으면 로그인한 사람이 작성자, 아니면 "테스트 작성자" 드롭다운으로 고른 사람이 작성자
-        User tempAuthor = resolveAuthor(principal, testUserId);
+        // (예전엔 testUserId로 비로그인 상태에서도 남의 계정 명의로 글을 쓸 수 있었음 - 이제 실제 로그인을 요구함)
+        User tempAuthor = userResolver.requireAuthenticated(principal);
 
         // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 아티스트만 작성 가능
         if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
@@ -247,7 +248,7 @@ public class PostController {
             Model model
     ) {
         Post post = postService.getPost(id);
-        User author = resolveAuthor(principal, testUserId);
+        User author = userResolver.requireAuthenticated(principal);
 
         // 와이어프레임 기준: 댓글은 최대 100자
         if (content == null || content.isBlank()) {
@@ -273,7 +274,7 @@ public class PostController {
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
-        User requester = resolveAuthor(principal, testUserId);
+        User requester = userResolver.requireAuthenticated(principal);
 
         commentService.deleteComment(commentId, requester);
 
@@ -299,7 +300,7 @@ public class PostController {
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Comment comment = commentService.getComment(commentId);
-        User reporter = resolveAuthor(principal, testUserId);
+        User reporter = userResolver.requireAuthenticated(principal);
 
         reportService.reportComment(comment, reporter, reason);
 
@@ -327,7 +328,7 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User user = resolveAuthor(principal, testUserId);
+        User user = userResolver.requireAuthenticated(principal);
 
         boolean liked = postService.toggleLike(post, user);
         log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
@@ -349,7 +350,7 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User user = resolveAuthor(principal, testUserId);
+        User user = userResolver.requireAuthenticated(principal);
 
         boolean bookmarked = postService.toggleBookmark(post, user);
         log.debug("북마크 토글: postId={}, userId={}, 결과={}", id, testUserId, bookmarked ? "눌림" : "취소");
@@ -365,7 +366,7 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User requester = resolveAuthor(principal, testUserId);
+        User requester = userResolver.requireAuthenticated(principal);
 
         postService.deletePost(post, requester);
 
@@ -382,7 +383,7 @@ public class PostController {
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
         Post post = postService.getPost(id);
-        User reporter = resolveAuthor(principal, testUserId);
+        User reporter = userResolver.requireAuthenticated(principal);
 
         reportService.reportPost(post, reporter, reason);
 
@@ -416,7 +417,7 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        User requester = resolveAuthor(principal, testUserId);
+        User requester = userResolver.requireAuthenticated(principal);
 
         validateContentLength(content);
         postService.updatePost(post, title, content, requester);

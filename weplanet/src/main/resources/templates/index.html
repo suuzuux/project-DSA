@@ -101,16 +101,18 @@
         <div class="section__head">
           <h2 class="section__title">커뮤니티 탐색</h2>
         </div>
-        <div class="rising-grid" th:if="${!artists.isEmpty()}">
-          <a class="rising-card" th:each="artist : ${artists}" th:href="@{/community/{id}(id=${artist.id()})}">
+        <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
+          <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{/community/{id}(id=${artist.id()})}">
             <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
             <div class="rising-card__info">
               <strong th:text="${artist.nickname()}">아티스트</strong>
-              <span>커뮤니티 둘러보기</span>
+              <span th:if="${artist.debutDate() != null}"
+                    th:text="${#temporals.format(artist.debutDate(), 'yyyy.MM.dd')} + ' 데뷔'">데뷔일</span>
+              <span th:text="'가입자수 ' + ${artist.followerCount()} + '명'">가입자수</span>
             </div>
           </a>
         </div>
-        <p class="text-muted" style="padding:24px 0;" th:if="${artists.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
+        <p class="text-muted" style="padding:24px 0;" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
       </section>
 
       <section class="cta-banner mb-24">
