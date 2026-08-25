@@ -22,7 +22,7 @@
 
   <header th:replace="~{community/fragments/layout :: header}"></header>
 
-  <div class="community-body">
+  <div class="community-body community-body--detail">
     <div class="community-main">
     <a class="section__link mb-16" style="display:inline-block;"
        th:href="@{/community/{id}/{tab}(id=${artist.id()}, tab=${boardTab})}"
