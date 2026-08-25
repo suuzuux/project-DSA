@@ -8,10 +8,14 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null}">
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
   <header th:replace="~{community/fragments/layout :: header}"></header>
   <div th:replace="~{community/fragments/layout :: hero}"></div>
@@ -76,6 +80,7 @@
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/dm-realtime.js}"></script>
   <script th:src="@{/js/community-posts.js}"></script>
 </body>
 </html>
