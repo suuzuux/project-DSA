@@ -169,7 +169,9 @@
       <li>멤버와 DM(1:1 채팅) 구독권 혜택</li>
     </ul>
     <p class="membership-price">₩ 30,000 / 년<small>VAT 포함</small></p>
-    <a class="btn btn--accent btn--block btn--lg" href="${base}membership.html">멤버십 가입하기</a>
+    <form id="membershipJoinForm" method="post">
+      <button type="submit" class="btn btn--accent btn--block btn--lg">멤버십 가입하기</button>
+    </form>
   </div>
 </div>
 
@@ -204,6 +206,16 @@
 
   // 헤더에 햄버거가 없으면 brand 앞에 삽입
   ensureMenuToggle();
+
+  // 멤버십 가입 모달(P27)의 실제 가입 폼 action을 현재 커뮤니티 아티스트로 채움
+  // (모달 자체는 페이지 공통 삽입이라 서버 쪽 artist.id()를 직접 못 씀 - URL에서 뽑아옴)
+  const membershipJoinForm = document.getElementById("membershipJoinForm");
+  if (membershipJoinForm) {
+    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
+    if (artistMatch) {
+      membershipJoinForm.action = "/community/" + artistMatch[1] + "/membership/join";
+    }
+  }
 
   /* ---------------------------------------------------------
    * Controllers
