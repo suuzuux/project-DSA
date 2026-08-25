@@ -9,6 +9,15 @@
 
 @import url("./variables.css");
 
+/* 이모지 대신 쓰는 line-icon 공용 스타일. 폰트 크기에 맞춰 같이 커지도록 em 단위 사용 */
+.icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
 /* =========================================================
  * 0. Reset & Base
  * ========================================================= */

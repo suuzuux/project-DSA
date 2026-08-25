@@ -29,7 +29,8 @@
           return response.json();
         })
         .then(function (data) {
-          document.getElementById("bookmarkIcon").textContent = data.bookmarked ? "🔖" : "📑";
+          document.getElementById("bookmarkIconFilled").style.display = data.bookmarked ? "" : "none";
+          document.getElementById("bookmarkIconOutline").style.display = data.bookmarked ? "none" : "";
           btn.classList.toggle("is-active", data.bookmarked);
         });
     });
