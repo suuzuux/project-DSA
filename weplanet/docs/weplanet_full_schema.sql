@@ -392,3 +392,270 @@ INSERT INTO filter_keyword (keyword)
 VALUES ('바보'),
        ('멍청이'),
        ('시발');
+
+
+
+-- ============================================================
+-- FAN PROJECT (팬 프로젝트)
+-- 작성 자격: 스페셜 뱃지 1개 이상 AND 기본 뱃지 5개 이상
+-- 승인 권한: ADMIN만 가능 (AGENCY/ARTIST는 조회도 허용하지 않음)
+-- 결제 방식: 현재 MOCK, 추후 실제 PG 결제/취소/환불로 확장 가능
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS fan_badge_ownership (
+                                                   id BIGINT NOT NULL AUTO_INCREMENT,
+                                                   fan_id BIGINT NOT NULL,
+                                                   group_id BIGINT NOT NULL,
+                                                   badge_code VARCHAR(50) NOT NULL,
+    badge_name VARCHAR(100) NOT NULL,
+    badge_type VARCHAR(20) NOT NULL,
+    awarded_at DATETIME(6) NOT NULL,
+    revoked_at DATETIME(6) NULL,
+    awarded_by BIGINT NULL,
+    created_at DATETIME(6) NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_fan_badge_ownership (fan_id, group_id, badge_code),
+    KEY idx_fan_badge_count (fan_id, group_id, badge_type, revoked_at),
+    KEY idx_fan_badge_awarded_by (awarded_by),
+
+    CONSTRAINT fk_fan_badge_fan
+    FOREIGN KEY (fan_id) REFERENCES users(id),
+    CONSTRAINT fk_fan_badge_group
+    FOREIGN KEY (group_id) REFERENCES artist_groups(id),
+    CONSTRAINT fk_fan_badge_awarded_by
+    FOREIGN KEY (awarded_by) REFERENCES users(id),
+    CONSTRAINT ck_fan_badge_type
+    CHECK (badge_type IN ('BASIC', 'SPECIAL')),
+    CONSTRAINT ck_fan_badge_period
+    CHECK (revoked_at IS NULL OR revoked_at >= awarded_at)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS fan_project (
+                                           id BIGINT NOT NULL AUTO_INCREMENT,
+                                           group_id BIGINT NOT NULL,
+                                           creator_id BIGINT NOT NULL,
+                                           title VARCHAR(20) NOT NULL,
+    event_type VARCHAR(30) NOT NULL,
+    goal_amount BIGINT NOT NULL,
+    funding_start_at DATETIME(6) NOT NULL,
+    funding_end_at DATETIME(6) NOT NULL,
+    description VARCHAR(1000) NOT NULL,
+
+    status VARCHAR(30) NOT NULL DEFAULT 'PENDING_APPROVAL',
+
+    special_badge_count_at_apply INT NOT NULL,
+    basic_badge_count_at_apply INT NOT NULL,
+    eligibility_rule_code VARCHAR(50) NOT NULL DEFAULT 'SPECIAL_1_AND_BASIC_5',
+
+    identity_verification_method VARCHAR(20) NOT NULL DEFAULT 'PHONE',
+    identity_verified_at DATETIME(6) NOT NULL,
+
+    reviewed_by BIGINT NULL,
+    reviewed_at DATETIME(6) NULL,
+    rejection_reason VARCHAR(500) NULL,
+
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    deleted_at DATETIME(6) NULL,
+
+    PRIMARY KEY (id),
+
+    KEY idx_fan_project_group_status (group_id, status, funding_start_at),
+    KEY idx_fan_project_creator (creator_id, created_at),
+    KEY idx_fan_project_funding_end (status, funding_end_at),
+    KEY idx_fan_project_reviewer (reviewed_by, reviewed_at),
+
+    CONSTRAINT fk_fan_project_group
+    FOREIGN KEY (group_id) REFERENCES artist_groups(id),
+    CONSTRAINT fk_fan_project_creator
+    FOREIGN KEY (creator_id) REFERENCES users(id),
+    CONSTRAINT fk_fan_project_reviewer
+    FOREIGN KEY (reviewed_by) REFERENCES users(id),
+    CONSTRAINT ck_fan_project_event_type
+    CHECK (event_type IN ('BIRTHDAY_CAFE', 'BILLBOARD', 'CONCERT', 'ETC')),
+    CONSTRAINT ck_fan_project_goal_amount
+    CHECK (goal_amount BETWEEN 10000 AND 3000000),
+    CONSTRAINT ck_fan_project_funding_period
+    CHECK (funding_end_at > funding_start_at),
+    CONSTRAINT ck_fan_project_status
+    CHECK (status IN (
+           'PENDING_APPROVAL', 'APPROVED', 'REJECTED', 'FUNDING',
+           'FUNDING_CLOSED', 'COMPLETED', 'CANCELLED'
+                     )),
+    CONSTRAINT ck_fan_project_badge_counts
+    CHECK (special_badge_count_at_apply >= 0 AND basic_badge_count_at_apply >= 0),
+    CONSTRAINT ck_fan_project_creation_eligibility
+    CHECK (special_badge_count_at_apply >= 1 AND basic_badge_count_at_apply >= 5),
+    CONSTRAINT ck_fan_project_identity_method
+    CHECK (identity_verification_method = 'PHONE'),
+    CONSTRAINT ck_fan_project_review
+    CHECK (
+(status = 'PENDING_APPROVAL' AND reviewed_by IS NULL AND reviewed_at IS NULL)
+    OR (status NOT IN ('PENDING_APPROVAL', 'APPROVED', 'REJECTED'))
+    OR (status IN ('APPROVED', 'REJECTED') AND reviewed_by IS NOT NULL AND reviewed_at IS NOT NULL)
+    ),
+    CONSTRAINT ck_fan_project_rejection_reason
+    CHECK (status <> 'REJECTED' OR rejection_reason IS NOT NULL)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS fan_project_cover_image (
+                                                       id BIGINT NOT NULL AUTO_INCREMENT,
+                                                       project_id BIGINT NOT NULL,
+                                                       original_name VARCHAR(255) NOT NULL,
+    stored_name VARCHAR(255) NOT NULL,
+    content_type VARCHAR(100) NOT NULL,
+    file_size BIGINT NOT NULL,
+    created_at DATETIME(6) NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_fan_project_cover_project (project_id),
+    UNIQUE KEY uk_fan_project_cover_stored (stored_name),
+
+    CONSTRAINT fk_fan_project_cover_project
+    FOREIGN KEY (project_id) REFERENCES fan_project(id) ON DELETE CASCADE,
+    CONSTRAINT ck_fan_project_cover_type
+    CHECK (content_type LIKE 'image/%'),
+    CONSTRAINT ck_fan_project_cover_size
+    CHECK (file_size > 0)
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+-- 프로젝트 개설자의 실제 정산계좌.
+-- 예금주명은 별도 입력/저장하지 않고 본인인증된 users.real_name을 사용한다.
+-- Toss 가상계좌는 추후 결제 기능에서 별도 관리한다.
+CREATE TABLE IF NOT EXISTS fan_project_settlement_account (
+                                                              id BIGINT NOT NULL AUTO_INCREMENT,
+                                                              project_id BIGINT NOT NULL,
+                                                              bank_code CHAR(3) NOT NULL,
+    account_number_enc VARBINARY(512) NOT NULL,
+    account_number_hmac CHAR(64) NOT NULL,
+    account_number_last4 CHAR(4) NOT NULL,
+    verification_status VARCHAR(20) NOT NULL DEFAULT 'UNVERIFIED',
+    verified_at DATETIME(6) NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_fan_project_settlement_project (project_id),
+    KEY idx_fan_project_settlement_hmac (account_number_hmac),
+
+    CONSTRAINT fk_fan_project_settlement_project
+    FOREIGN KEY (project_id) REFERENCES fan_project(id) ON DELETE CASCADE,
+    CONSTRAINT ck_fan_project_bank_code
+    CHECK (bank_code IN ('004', '088', '011', '090', '020', '081', '092', '032', '031')),
+    CONSTRAINT ck_fan_project_account_last4
+    CHECK (account_number_last4 REGEXP '^[0-9]{4}$'),
+    CONSTRAINT ck_fan_project_account_verification
+    CHECK (verification_status IN ('UNVERIFIED', 'VERIFIED', 'FAILED'))
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS fan_project_fraud_check (
+                                                       id BIGINT NOT NULL AUTO_INCREMENT,
+                                                       project_id BIGINT NOT NULL,
+                                                       target_type VARCHAR(20) NOT NULL,
+    target_fingerprint CHAR(64) NOT NULL,
+    bank_code CHAR(3) NULL,
+    provider VARCHAR(30) NOT NULL DEFAULT 'THECHEAT',
+    provider_result_code INT NULL,
+    result_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    caution_yn CHAR(1) NULL,
+    search_window_start_at DATETIME(6) NULL,
+    search_window_end_at DATETIME(6) NULL,
+    checked_at DATETIME(6) NULL,
+    requested_by BIGINT NULL,
+    created_at DATETIME(6) NOT NULL,
+
+    PRIMARY KEY (id),
+
+    KEY idx_fan_project_fraud_latest (project_id, target_type, checked_at),
+    KEY idx_fan_project_fraud_target (target_fingerprint, checked_at),
+    KEY idx_fan_project_fraud_requester (requested_by),
+
+    CONSTRAINT fk_fan_project_fraud_project
+    FOREIGN KEY (project_id) REFERENCES fan_project(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fan_project_fraud_requester
+    FOREIGN KEY (requested_by) REFERENCES users(id),
+    CONSTRAINT ck_fan_project_fraud_target
+    CHECK (target_type IN ('PHONE', 'ACCOUNT')),
+    CONSTRAINT ck_fan_project_fraud_status
+    CHECK (result_status IN ('PENDING', 'CLEAR', 'CAUTION', 'ERROR')),
+    CONSTRAINT ck_fan_project_fraud_caution
+    CHECK (caution_yn IS NULL OR caution_yn IN ('Y', 'N')),
+    CONSTRAINT ck_fan_project_fraud_bank_code
+    CHECK (bank_code IS NULL OR bank_code REGEXP '^[0-9]{3}$'),
+    CONSTRAINT ck_fan_project_fraud_window
+    CHECK (
+              search_window_start_at IS NULL
+              OR search_window_end_at IS NULL
+              OR search_window_end_at >= search_window_start_at
+          )
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS fan_project_contribution (
+                                                        id BIGINT NOT NULL AUTO_INCREMENT,
+                                                        project_id BIGINT NOT NULL,
+                                                        contributor_id BIGINT NOT NULL,
+                                                        order_no VARCHAR(50) NOT NULL,
+    idempotency_key VARCHAR(64) NOT NULL,
+    payment_provider VARCHAR(30) NOT NULL DEFAULT 'MOCK',
+    provider_transaction_id VARCHAR(255) NULL,
+    amount BIGINT NOT NULL,
+    refund_amount BIGINT NOT NULL DEFAULT 0,
+    payment_status VARCHAR(30) NOT NULL DEFAULT 'READY',
+    paid_at DATETIME(6) NULL,
+    cancelled_at DATETIME(6) NULL,
+    refunded_at DATETIME(6) NULL,
+    refund_reason VARCHAR(500) NULL,
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+
+    PRIMARY KEY (id),
+
+    UNIQUE KEY uk_fan_project_contribution_order (order_no),
+    UNIQUE KEY uk_fan_project_contribution_idempotency (idempotency_key),
+    KEY idx_fan_project_contribution_total (project_id, payment_status),
+    KEY idx_fan_project_contributor_history (contributor_id, created_at),
+
+    CONSTRAINT fk_fan_project_contribution_project
+    FOREIGN KEY (project_id) REFERENCES fan_project(id),
+    CONSTRAINT fk_fan_project_contribution_user
+    FOREIGN KEY (contributor_id) REFERENCES users(id),
+    CONSTRAINT ck_fan_project_contribution_amount
+    CHECK (amount > 0),
+    CONSTRAINT ck_fan_project_contribution_refund
+    CHECK (refund_amount >= 0 AND refund_amount <= amount),
+    CONSTRAINT ck_fan_project_contribution_status
+    CHECK (payment_status IN (
+           'READY', 'PAID', 'FAILED', 'CANCELLED',
+           'REFUND_REQUESTED', 'REFUNDED'
+                             ))
+    )
+    ENGINE=InnoDB
+    DEFAULT CHARSET=utf8mb4
+    COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE users
+    ADD COLUMN phone_verified_at DATETIME(6) NULL AFTER phone_hash;
