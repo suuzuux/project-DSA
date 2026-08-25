@@ -94,7 +94,7 @@
           <p class="form-error"
              style="display:block"
              th:each="error : ${#fields.globalErrors()}"
-             th:text="${error.defaultMessage}">
+             th:text="${error}">
             프로젝트 등록에 실패했습니다.
           </p>
         </div>
