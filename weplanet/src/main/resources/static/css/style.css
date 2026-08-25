@@ -1015,7 +1015,7 @@ p {
   position: fixed;
   inset: 0;
   background: rgba(20, 24, 31, 0.45);
-  z-index: 200;
+  z-index: 400;
   display: none;
   align-items: center;
   justify-content: center;

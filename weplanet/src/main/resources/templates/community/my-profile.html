@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${artist.nickname()} + ' – 내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/community.css}" />
+    <link rel="stylesheet" th:href="@{/css/shell.css}" />
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+
+<header th:replace="~{community/fragments/layout :: header}"></header>
+<div th:replace="~{community/fragments/layout :: hero}"></div>
+
+<div class="community-body">
+    <div class="community-main">
+        <nav th:replace="~{community/fragments/layout :: tabs('')}"></nav>
+
+        <div th:if="${hasProfile}" class="my-profile-card">
+            <label class="my-profile-card__background" title="배경 이미지 변경하기">
+                <img th:if="${backgroundStoredName}" th:src="@{'/uploads/' + ${backgroundStoredName}}" alt="프로필 배경 이미지" />
+                <span th:unless="${backgroundStoredName}" class="my-profile-card__background-placeholder">
+            프로필 배경<br />이미지 영역
+          </span>
+                <input type="file" accept="image/*" id="backgroundFileInput" style="display:none;" />
+            </label>
+
+            <div class="my-profile-card__body">
+                <label class="my-profile-card__avatar" title="프로필 사진 변경하기">
+                    <img th:if="${avatarStoredName}" th:src="@{'/uploads/' + ${avatarStoredName}}" alt="프로필 사진" />
+                    <span th:unless="${avatarStoredName}" class="my-profile-card__avatar-placeholder">👤</span>
+                    <input type="file" accept="image/*" id="avatarFileInput" style="display:none;" />
+                </label>
+
+                <!-- 평소 보이는 조회 화면 -->
+                <div id="myProfileView">
+                    <p class="my-profile-card__nickname" id="myProfileNickname" th:text="${nickname}">닉네임</p>
+                    <p class="my-profile-card__joined-at"
+                       th:text="${#temporals.format(joinedAt, 'yyyy.MM.dd')} + ' 가입'">가입일</p>
+                    <p class="my-profile-card__bio" id="myProfileBio"
+                       th:attr="data-raw-bio=${bio}"
+                       th:text="${bio != null and !#strings.isEmpty(bio)} ? ${bio} : '작성한 소개글이 없습니다.'">
+                        가입 메시지
+                    </p>
+                    <div class="my-profile-card__actions">
+                        <button type="button" class="btn btn--secondary btn--sm" id="myProfileEditBtn">프로필 편집</button>
+                    </div>
+                </div>
+
+                <!-- "프로필 편집" 클릭 시 나타나는 수정 화면 -->
+                <form id="myProfileEditForm" class="my-profile-card__edit hidden" style="display:none;">
+                    <div class="form-group">
+                        <label class="form-label">커뮤니티 닉네임</label>
+                        <input type="text" class="form-input" id="myProfileNicknameInput" name="nickname" maxlength="10" required />
+                        <div class="form-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">소개글 (선택)</label>
+                        <textarea class="form-textarea" id="myProfileBioInput" name="bio" maxlength="30"></textarea>
+                        <div class="form-error"></div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button type="button" class="btn btn--secondary btn--block" id="myProfileCancelBtn">취소</button>
+                        <button type="submit" class="btn btn--accent btn--block" id="myProfileSaveBtn">저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div th:unless="${hasProfile}" class="my-profile-card my-profile-card--empty">
+            <p class="text-muted">아직 이 커뮤니티에 만든 프로필이 없어요.</p>
+            <p class="text-xs text-muted">햄버거 메뉴의 커뮤니티 바로가기에서 이 커뮤니티를 다시 눌러 프로필을 먼저 만들어주세요.</p>
+        </div>
+
+        <!-- 댓글 히스토리 영역 - 다른 담당자 작업 범위, 여기서는 만들지 않음 -->
+    </div>
+
+    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+</div>
+
+<script th:replace="~{community/fragments/layout :: scripts}"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+
+<script th:inline="javascript">
+    (function () {
+      const artistId = /*[[${artist.id()}]]*/ 0;
+
+      function wireUpload(inputId, endpoint, fieldName) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        input.addEventListener("change", function () {
+          if (!input.files.length) return;
+          const formData = new FormData();
+          formData.append(fieldName, input.files[0]);
+          fetch("/community/" + artistId + "/profile/" + endpoint, { method: "POST", body: formData })
+            .then(function (res) {
+              return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+              if (!result.ok) {
+                alert(result.data.message || "이미지 업로드에 실패했습니다.");
+                return;
+              }
+              location.reload();
+            })
+            .catch(function () {
+              alert("이미지 업로드 중 오류가 발생했습니다.");
+            });
+        });
+      }
+
+      wireUpload("backgroundFileInput", "background", "background");
+      wireUpload("avatarFileInput", "avatar", "avatar");
+
+      // 닉네임/소개글 인라인 수정 (조회 <-> 편집 토글)
+      const viewBlock = document.getElementById("myProfileView");
+      const editForm = document.getElementById("myProfileEditForm");
+      const nicknameView = document.getElementById("myProfileNickname");
+      const bioView = document.getElementById("myProfileBio");
+      const nicknameInput = document.getElementById("myProfileNicknameInput");
+      const bioInput = document.getElementById("myProfileBioInput");
+      const editBtn = document.getElementById("myProfileEditBtn");
+      const cancelBtn = document.getElementById("myProfileCancelBtn");
+      const saveBtn = document.getElementById("myProfileSaveBtn");
+
+      if (editBtn && viewBlock && editForm) {
+        const currentBio = bioView.getAttribute("data-raw-bio") || "";
+
+        function enterEditMode() {
+          nicknameInput.value = nicknameView.textContent.trim();
+          bioInput.value = currentBio;
+          viewBlock.style.display = "none";
+          // style.css의 .hidden { display:none !important; } 가 style.display 보다 우선하므로
+          // classList도 반드시 같이 제거해줘야 폼이 실제로 보인다.
+          editForm.classList.remove("hidden");
+          editForm.style.display = "block";
+        }
+
+        function exitEditMode() {
+          editForm.classList.add("hidden");
+          editForm.style.display = "none";
+          viewBlock.style.display = "";
+        }
+
+        editBtn.addEventListener("click", enterEditMode);
+        cancelBtn.addEventListener("click", exitEditMode);
+
+        editForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          const nickname = nicknameInput.value.trim();
+          const bio = bioInput.value.trim();
+
+          saveBtn.disabled = true;
+          saveBtn.textContent = "저장 중...";
+
+          fetch("/community/" + artistId + "/profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nickname: nickname, bio: bio }),
+          })
+            .then(function (res) {
+              return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+              if (!result.ok) {
+                alert(result.data.message || "입력값을 다시 확인해주세요.");
+                return;
+              }
+              location.reload();
+            })
+            .catch(function () {
+              alert("저장 중 오류가 발생했습니다.");
+            })
+            .finally(function () {
+              saveBtn.disabled = false;
+              saveBtn.textContent = "저장";
+            });
+        });
+      }
+    })();
+</script>
+</body>
+</html>
