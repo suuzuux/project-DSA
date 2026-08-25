@@ -2,6 +2,7 @@ package megane6.weplanet.repository;
 
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
+import megane6.weplanet.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -19,4 +20,7 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 게시글 삭제 시 그 게시글에 달린 댓글을 먼저 지우기 위함 (외래키 제약 때문에 순서가 중요함)
     void deleteByPost(Post post);
+
+    // 하이라이트 "Comments by 아티스트" 위젯용 - 특정 유저(아티스트)가 작성한 댓글 중 최신 4개
+    List<Comment> findTop4ByAuthorOrderByCreatedAtDesc(User author);
 }
