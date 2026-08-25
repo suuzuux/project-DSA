@@ -1,18 +1,21 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ChatMessageRequest;
 import megane6.weplanet.domain.dto.DmInboxItem;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.AiFanChatService;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
 import megane6.weplanet.service.ChatQuotaService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,6 +41,7 @@ import java.util.Map;
  */
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 public class ChatController {
 
     private final ChatMessageService chatMessageService;
@@ -133,10 +137,23 @@ public class ChatController {
      * 메시지를 검사하고 저장한 뒤 broadcast(...)로 관련된 사람들에게 실시간으로 뿌려주는 게 목적이기 때문.
      */
     @MessageMapping("/chat.send")
-    public void send(ChatMessageRequest request) {
+    public void send(ChatMessageRequest request, Authentication authentication) {
 
         // 빈 메시지나 잘못된 요청은 조용히 무시 (금칙어 검사에서 content가 null이면 NPE 나는 것 방지)
         if (request.getContent() == null || request.getContent().isBlank()) {
+            return;
+        }
+
+        // 비로그인 상태로 온 메시지는 무시함 (예전엔 프론트가 fanId를 못 구하면 1번으로 기본값 처리해서,
+        // 로그인 안 해도 1번 유저 명의로 메시지가 보내지는 문제가 있었음)
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser me)) {
+            log.warn("비로그인 상태로 채팅 전송 시도 - 무시함 (artistId={})", request.getArtistId());
+            return;
+        }
+
+        // 로그인한 사람과 요청에 담긴 senderId가 다르면(다른 사람 명의로 보내려는 시도) 거부
+        if (!me.getId().equals(request.getSenderId())) {
+            log.warn("senderId 위조 시도 감지: 로그인한 사용자={}, 요청 senderId={}", me.getId(), request.getSenderId());
             return;
         }
 
