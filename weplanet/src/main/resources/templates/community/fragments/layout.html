@@ -44,7 +44,7 @@
 
   <aside th:fragment="sidebarAside" class="community-aside">
     <div class="membership-card">
-      <h3 class="membership-card__title" th:text="|${artist.nickname()} Membership|">Membership</h3>
+      <h3 class="membership-card__title">🏅 <span th:text="|${artist.nickname()} Membership|">Membership</span></h3>
 
       <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <div th:if="${membershipActive}">
