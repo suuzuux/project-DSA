@@ -11,6 +11,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.service.CommentService;
+import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -34,13 +36,14 @@ public class CommunityController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final CommentRepository commentRepository;
+	private final MembershipService membershipService;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 	private final BoardMediaService boardMediaService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
-	public String highlight(@PathVariable Long artistId, Model model) {
-		User artist = populateArtistModel(artistId, model);
+	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		User artist = populateArtistModel(artistId, principal, model);
 
 		// "Fan Posts" 위젯 - 이 커뮤니티 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
 		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN, artist);
@@ -61,6 +64,18 @@ public class CommunityController {
 		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
 		model.addAttribute("artistCommentsWidget", artistComments);
 
+		// "From 아티스트" 위젯 - 이 커뮤니티 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지
+		List<Post> artistPosts = postService.getRecentPosts(BoardType.ARTIST, artist);
+		Map<Long, String> artistPostThumbnails = new HashMap<>();
+		for (Post post : artistPosts) {
+			postService.getAttachments(post).stream()
+					.filter(a -> a.isImage())
+					.findFirst()
+					.ifPresent(a -> artistPostThumbnails.put(post.getId(), a.getStoredName()));
+		}
+		model.addAttribute("artistPosts", artistPosts);
+		model.addAttribute("artistPostThumbnails", artistPostThumbnails);
+
 		return "community/highlight";
 	}
 
@@ -69,10 +84,12 @@ public class CommunityController {
 			@PathVariable Long artistId,
 			@RequestParam(defaultValue = "latest") String sort,
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
-		User artist = populateArtistModel(artistId, model);
-		postListModelHelper.populate(model, BoardType.FAN, sort, artist);
+		User artist = populateArtistModel(artistId, principal, model);
+		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
+		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal));
 
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -90,6 +107,23 @@ public class CommunityController {
 		return communityPostDetail(artistId, postId, BoardType.FAN, "fan", principal, model);
 	}
 
+	@GetMapping("/community/{artistId}/artist")
+	public String artistBoard(
+			@PathVariable Long artistId,
+			@RequestParam(defaultValue = "latest") String sort,
+			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		User artist = populateArtistModel(artistId, principal, model);
+		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
+
+		if ("fetch".equals(requestedWith)) {
+			return "community/fragments/postList :: postListFragment";
+		}
+		return "community/artist";
+	}
+
 	@GetMapping("/community/{artistId}/artist/{postId}")
 	public String artistDetail(
 			@PathVariable Long artistId,
@@ -100,6 +134,8 @@ public class CommunityController {
 		return communityPostDetail(artistId, postId, BoardType.ARTIST, "artist", principal, model);
 	}
 
+	// fanDetail/artistDetail 공통 처리 - 게시판 종류뿐 아니라 "이 커뮤니티 소속 글인지"도 검증함
+	// (게시판이 아티스트별로 분리되기 전엔 다른 커뮤니티 글도 보이던 문제가 있었음)
 	private String communityPostDetail(
 			Long artistId,
 			Long postId,
@@ -108,7 +144,7 @@ public class CommunityController {
 			AuthenticatedUser principal,
 			Model model
 	) {
-		populateArtistModel(artistId, model);
+		populateArtistModel(artistId, principal, model);
 
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != expectedType) {
@@ -125,43 +161,48 @@ public class CommunityController {
 		return "community/post-detail";
 	}
 
-	@GetMapping("/community/{artistId}/artist")
-	public String artistBoard(
-			@PathVariable Long artistId,
-			@RequestParam(defaultValue = "latest") String sort,
-			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
-			Model model
-	) {
-		User artist = populateArtistModel(artistId, model);
-		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
-
-		if ("fetch".equals(requestedWith)) {
-			return "community/fragments/postList :: postListFragment";
-		}
-		return "community/artist";
-	}
-
 	@GetMapping("/community/{artistId}/notice")
-	public String notice(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		populateArtistModel(artistId, principal, model);
 		return "community/notice";
 	}
 
 	@GetMapping("/community/{artistId}/media")
-	public String media(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		populateArtistModel(artistId, principal, model);
 		model.addAttribute("mediaList", boardMediaService.list(artistId));
 		model.addAttribute("groupId", artistId);
 		return "community/media";
 	}
 
 	@GetMapping("/community/{artistId}/live")
-	public String live(@PathVariable Long artistId, Model model) {
-		populateArtistModel(artistId, model);
+	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		populateArtistModel(artistId, principal, model);
 		return "community/live";
 	}
 
-	private User populateArtistModel(Long artistId, Model model) {
+	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
+	@PostMapping("/community/{artistId}/membership/join")
+	public String joinMembership(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+
+		User artist = userRepository.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+		User fan = userResolver.resolve(principal, 1L);
+
+		membershipService.join(fan, artist);
+
+		return "redirect:/community/" + artistId + "/highlight";
+	}
+
+	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
@@ -172,6 +213,15 @@ public class CommunityController {
 
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
+
+		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
+		if (principal != null) {
+			User currentUser = userResolver.resolve(principal, 1L);
+			membershipService.getMembership(currentUser, artist).ifPresent(membership -> {
+				model.addAttribute("membershipActive", !membership.isExpired());
+				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());
+			});
+		}
 
 		return artist;
 	}

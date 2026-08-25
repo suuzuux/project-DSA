@@ -70,16 +70,25 @@ public class PostService {
 
     // 게시글 작성 - Post 객체를 만들어서 DB에 저장하고, 저장된(id가 채워진) 결과를 돌려줌
     public Post createPost(BoardType boardType, String title, String content, User author) {
-        return createPost(boardType, title, content, author, null);
+        return createPost(boardType, title, content, author, null, null, false);
     }
 
+    // 커뮤니티 게시판 글쓰기 - 어느 아티스트 커뮤니티 소속인지(artist)까지 받는 오버로드
     public Post createPost(BoardType boardType, String title, String content, User author, User artist) {
+        return createPost(boardType, title, content, author, artist, null, false);
+    }
+
+    // 36번: 팬 게시판 글쓰기 모달의 🔗 링크 첨부, "Hide from Artists" 토글까지 받는 오버로드
+    public Post createPost(BoardType boardType, String title, String content, User author, User artist,
+                            String linkUrl, boolean hiddenFromArtist) {
         Post post = Post.builder()
                 .boardType(boardType)
                 .title(title)
                 .content(content)
                 .author(author)
                 .artist(artist)
+                .linkUrl(linkUrl)
+                .hiddenFromArtist(hiddenFromArtist)
                 .build();
 
         return postRepository.save(post);

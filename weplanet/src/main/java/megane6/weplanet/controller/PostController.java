@@ -79,7 +79,8 @@ public class PostController {
             if ("fetch".equals(requestedWith)) {
                 return "community/fragments/fanComments :: commentsFragment";
             }
-            String tab = post.getBoardType() == BoardType.ARTIST ? "artist" : "fan";
+            // 게시글 종류(FAN/ARTIST)에 맞는 상세 페이지로 리다이렉트 (예전엔 무조건 /fan/으로 가는 버그가 있었음)
+            String tab = post.getBoardType() == BoardType.FAN ? "fan" : "artist";
             return "redirect:/community/" + artistId + "/" + tab + "/" + post.getId();
         }
 
@@ -106,13 +107,16 @@ public class PostController {
             @PathVariable String boardType,
             @RequestParam(defaultValue = "latest") String sort,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             Model model
     ) {
 
         // URL의 소문자 문자열("fan")을 enum(BoardType.FAN)으로 변환
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
-        postListModelHelper.populate(model, type, sort);
+        // 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
+        boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
+        postListModelHelper.populate(model, type, sort, null, hideFromArtists);
 
         log.debug("게시판 조회: {}, 정렬: {}, 게시글 수: {}", type, sort,
                 ((List<?>) model.getAttribute("posts")).size());
@@ -150,6 +154,9 @@ public class PostController {
             @RequestParam(required = false) List<MultipartFile> files,
             @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
+            // 36번: 팬 게시판 글쓰기 모달의 🔗 링크 첨부 + "Hide from Artists" 토글 (팬 게시판일 때만 의미 있음)
+            @RequestParam(required = false) String linkUrl,
+            @RequestParam(defaultValue = "false") boolean hiddenFromArtist,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
@@ -181,7 +188,11 @@ public class PostController {
             }
         }
 
-        Post post = postService.createPost(type, title, content, tempAuthor, communityArtist);
+        // linkUrl/hiddenFromArtist는 팬 게시판일 때만 유효하게 처리 (아티스트 게시판 글엔 항상 무시)
+        boolean effectiveHidden = type == BoardType.FAN && hiddenFromArtist;
+        String effectiveLinkUrl = (type == BoardType.FAN && linkUrl != null && !linkUrl.isBlank()) ? linkUrl.trim() : null;
+
+        Post post = postService.createPost(type, title, content, tempAuthor, communityArtist, effectiveLinkUrl, effectiveHidden);
         postService.saveAttachments(post, files);
 
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}, artistId={}",
@@ -191,11 +202,14 @@ public class PostController {
         // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
         if ("fetch".equals(requestedWith)) {
             if (communityArtist != null) {
+                // postList 프래그먼트가 FAN/ARTIST 링크를 만들 때 ${artist.id()}를 참조하므로,
+                // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
                 model.addAttribute("artist", ArtistCardView.from(communityArtist));
-                postListModelHelper.populate(model, type, "latest", communityArtist);
+                boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
+                postListModelHelper.populate(model, type, "latest", communityArtist, hideFromArtists);
                 return "community/fragments/postList :: postListFragment";
             }
-            return list(boardType, "latest", "fetch", model);
+            return list(boardType, "latest", "fetch", principal, model);
         }
 
         if (artistId != null) {

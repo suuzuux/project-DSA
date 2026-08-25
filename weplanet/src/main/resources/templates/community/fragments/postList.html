@@ -19,6 +19,9 @@
             </div>
           </div>
           <p class="post-card__body" th:text="${post.title}"></p>
+          <p th:if="${post.linkUrl} != null" class="translate-link" style="margin-top:6px;word-break:break-all;">
+            🔗 <span th:text="${post.linkUrl}"></span>
+          </p>
           <div th:if="${thumbnailUrls.get(post.id)} != null" class="post-card__media">
             <img th:src="@{'/uploads/' + ${thumbnailUrls.get(post.id)}}" alt=""
                  style="width:100%;border-radius:var(--wp-radius-sm);max-height:320px;object-fit:cover;">
