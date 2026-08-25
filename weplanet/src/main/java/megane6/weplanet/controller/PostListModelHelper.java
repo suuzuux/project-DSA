@@ -20,7 +20,17 @@ public class PostListModelHelper {
 	private final CommentService commentService;
 
 	public void populate(Model model, BoardType boardType, String sort) {
+		populate(model, boardType, sort, false);
+	}
+
+	// hideFromArtists=true면, hiddenFromArtist(Hide from Artists 토글)가 켜진 글을 목록에서 뺌
+	// (36번: 아티스트 계정으로 팬 게시판을 볼 때는 숨긴 글이 안 보여야 함)
+	public void populate(Model model, BoardType boardType, String sort, boolean hideFromArtists) {
 		List<Post> posts = postService.getPostsByBoardType(boardType, sort);
+
+		if (hideFromArtists) {
+			posts = posts.stream().filter(post -> !post.isHiddenFromArtist()).toList();
+		}
 
 		Map<Long, Long> commentCounts = new HashMap<>();
 		Map<Long, String> thumbnailUrls = new HashMap<>();

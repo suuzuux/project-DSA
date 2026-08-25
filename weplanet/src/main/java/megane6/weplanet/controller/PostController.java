@@ -107,13 +107,16 @@ public class PostController {
             @PathVariable String boardType,
             @RequestParam(defaultValue = "latest") String sort,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             Model model
     ) {
 
         // URL의 소문자 문자열("fan")을 enum(BoardType.FAN)으로 변환
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
-        postListModelHelper.populate(model, type, sort);
+        // 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
+        boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
+        postListModelHelper.populate(model, type, sort, hideFromArtists);
 
         log.debug("게시판 조회: {}, 정렬: {}, 게시글 수: {}", type, sort,
                 ((List<?>) model.getAttribute("posts")).size());
@@ -151,6 +154,9 @@ public class PostController {
             @RequestParam(required = false) List<MultipartFile> files,
             @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
+            // 36번: 팬 게시판 글쓰기 모달의 🔗 링크 첨부 + "Hide from Artists" 토글 (팬 게시판일 때만 의미 있음)
+            @RequestParam(required = false) String linkUrl,
+            @RequestParam(defaultValue = "false") boolean hiddenFromArtist,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
@@ -170,7 +176,11 @@ public class PostController {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
         }
 
-        Post post = postService.createPost(type, title, content, tempAuthor);
+        // linkUrl/hiddenFromArtist는 팬 게시판일 때만 유효하게 처리 (아티스트 게시판 글엔 항상 무시)
+        boolean effectiveHidden = type == BoardType.FAN && hiddenFromArtist;
+        String effectiveLinkUrl = (type == BoardType.FAN && linkUrl != null && !linkUrl.isBlank()) ? linkUrl.trim() : null;
+
+        Post post = postService.createPost(type, title, content, tempAuthor, effectiveLinkUrl, effectiveHidden);
         postService.saveAttachments(post, files);
 
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}", type, title, tempAuthor.getUsername());
@@ -185,10 +195,11 @@ public class PostController {
                         .filter(user -> user.getRole() == Role.ARTIST)
                         .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
                 model.addAttribute("artist", ArtistCardView.from(artistUser));
-                postListModelHelper.populate(model, type, "latest");
+                boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
+                postListModelHelper.populate(model, type, "latest", hideFromArtists);
                 return "community/fragments/postList :: postListFragment";
             }
-            return list(boardType, "latest", "fetch", model);
+            return list(boardType, "latest", "fetch", principal, model);
         }
 
         if (artistId != null) {

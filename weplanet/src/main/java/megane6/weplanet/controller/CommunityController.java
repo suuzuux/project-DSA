@@ -86,7 +86,7 @@ public class CommunityController {
 			Model model
 	) {
 		populateArtistModel(artistId, principal, model);
-		postListModelHelper.populate(model, BoardType.FAN, sort);
+		postListModelHelper.populate(model, BoardType.FAN, sort, userResolver.isArtist(principal));
 
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";

@@ -55,6 +55,16 @@ public class Post {
     @Column(nullable = false)
     private int likeCount = 0;
 
+    // 팬 게시판 글쓰기 모달의 "Hide from Artists" 토글 - 켜면 아티스트 계정으로 볼 땐 목록에서 숨김
+    // (팬 게시판에서만 의미 있는 값. 아티스트 게시판 글은 항상 false)
+    @Builder.Default
+    @Column(name = "hidden_from_artist", nullable = false)
+    private boolean hiddenFromArtist = false;
+
+    // 팬 게시판 글쓰기 모달의 🔗 링크 첨부 - 선택 입력이라 null 가능
+    @Column(name = "link_url", length = 500)
+    private String linkUrl;
+
     // @PrePersist : 이 엔티티가 DB에 처음 저장되기 "직전"에 스프링이 자동으로 이 메서드를 실행해줌
     // 그래서 게시글 작성할 때 createdAt을 직접 안 넣어줘도 항상 현재 시각이 자동으로 채워짐
     @PrePersist

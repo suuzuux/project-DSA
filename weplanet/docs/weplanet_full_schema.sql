@@ -232,6 +232,8 @@ CREATE TABLE `post`
     `title`      varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
     `author_id`  bigint DEFAULT NULL,
     `like_count` int                                     NOT NULL,
+    `hidden_from_artist` tinyint(1) NOT NULL DEFAULT 0,
+    `link_url`   varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     PRIMARY KEY (`id`),
     KEY          `FK1mpebp1ayl0twrwm7ruiof778` (`author_id`),
     CONSTRAINT `FK1mpebp1ayl0twrwm7ruiof778` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
