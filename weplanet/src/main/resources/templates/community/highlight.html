@@ -61,7 +61,39 @@
           <h2 class="section__title">Fan Posts</h2>
           <a class="section__link" th:href="@{/community/{id}/fan(id=${artist.id()})}">더보기</a>
         </div>
-        <p class="text-muted">표시할 팬 게시글이 없습니다.</p>
+        <div class="feed feed--grid" th:if="${!fanPosts.isEmpty()}">
+          <article class="post-card" th:each="post : ${fanPosts}">
+            <a th:href="@{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${post.id})}"
+               style="display:block;color:inherit;">
+              <div class="post-card__head">
+                <div class="avatar avatar--sm" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                <div class="post-card__meta">
+                  <div class="post-card__name">
+                    <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                    <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+                  </div>
+                  <div class="post-card__time"
+                       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                       th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+                </div>
+              </div>
+              <p class="post-card__body" th:text="${post.title}"></p>
+              <div th:if="${fanPostThumbnails.get(post.id)} != null" class="post-card__media">
+                <img th:src="@{'/uploads/' + ${fanPostThumbnails.get(post.id)}}" alt=""
+                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:180px;object-fit:cover;">
+              </div>
+            </a>
+            <div class="post-card__actions">
+              <span th:if="${post.likeCount > 0}">♥ <span th:text="${post.likeCount}"></span></span>
+              <span th:unless="${post.likeCount > 0}">♥</span>
+              <span th:with="cc=${fanPostCommentCounts.get(post.id)}">
+                <span th:if="${cc > 0}">💬 <span th:text="${cc}"></span></span>
+                <span th:unless="${cc > 0}">💬</span>
+              </span>
+            </div>
+          </article>
+        </div>
+        <p class="text-muted" th:if="${fanPosts.isEmpty()}">표시할 팬 게시글이 없습니다.</p>
       </section>
 
       <!-- Lives preview -->
