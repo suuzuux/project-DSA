@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+  <aside id="commentSection" class="community-aside" th:fragment="commentsFragment">
+    <!-- 댓글 작성 -->
+    <div class="comment-box" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <p class="form-label">댓글 작성</p>
+      <form id="commentForm"
+            th:action="@{/posts/detail/{id}/comment(id=${post.id}, artistId=${artist.id()})}"
+            method="post">
+        <textarea name="content" id="commentContentInput" class="form-textarea" data-count maxlength="100"
+                  placeholder="댓글을 입력하세요." style="min-height:80px;"></textarea>
+        <div class="comment-box__actions">
+          <span class="char-count text-xs text-muted">0 / 100</span>
+          <div class="flex-center">
+            <button type="button" class="btn btn--ghost btn--sm" id="commentCancelBtn">취소</button>
+            <button type="submit" class="btn btn--primary btn--sm">등록</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="comment-list">
+      <div class="comment-list__head">
+        <span>전체 댓글 <span th:text="${#lists.size(otherComments)}">0</span></span>
+      </div>
+
+      <div th:if="${not #lists.isEmpty(otherComments)}">
+        <div class="comment-item" th:each="comment : ${otherComments}">
+          <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+          <div class="comment-item__body">
+            <div class="comment-item__meta">
+              <strong th:text="${comment.author.nickname}"></strong>
+              <span th:if="${comment.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+              · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                      th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+            </div>
+            <p class="comment-item__text" th:text="${comment.content}"></p>
+            <div class="flex-center" style="gap:10px;margin-top:4px;">
+              <a href="javascript:void(0)" class="comment-translate-link translate-link"
+                 th:attr="data-comment-id=${comment.id}">번역보기</a>
+              <form class="comment-delete-form" method="post" style="display:inline;"
+                    sec:authorize="isAuthenticated()"
+                    xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+                    th:if="${#authentication.principal.id == comment.author.id}"
+                    th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
+                <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+              </form>
+            </div>
+            <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs"
+               style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
+          </div>
+        </div>
+      </div>
+
+      <p th:if="${#lists.isEmpty(otherComments)}" class="text-muted text-sm" style="padding:12px 0;">등록된 댓글이 없습니다.</p>
+
+      <div th:if="${not #lists.isEmpty(artistComments)}" class="comment-list__head mt-16">
+        <span>아티스트 댓글 <span th:text="${#lists.size(artistComments)}">0</span></span>
+      </div>
+
+      <div th:each="comment : ${artistComments}" class="comment-item"
+           style="background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;">
+        <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+        <div class="comment-item__body">
+          <div class="comment-item__meta">
+            <strong th:text="${comment.author.nickname}"></strong> <span class="badge-verified">✓</span>
+            · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                    th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
+          </div>
+          <p class="comment-item__text" th:text="${comment.content}"></p>
+          <div class="flex-center" style="gap:10px;margin-top:4px;">
+            <a href="javascript:void(0)" class="comment-translate-link translate-link"
+               th:attr="data-comment-id=${comment.id}">번역보기</a>
+            <form class="comment-delete-form" method="post" style="display:inline;"
+                  sec:authorize="isAuthenticated()"
+                  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+                  th:if="${#authentication.principal.id == comment.author.id}"
+                  th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
+              <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+            </form>
+          </div>
+          <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs"
+             style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
+        </div>
+      </div>
+    </div>
+  </aside>
+</body>
+</html>

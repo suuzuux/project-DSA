@@ -1,22 +1,53 @@
 package megane6.weplanet.controller;
 
-
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.dto.ArtistCardView;
+import megane6.weplanet.domain.entity.Post;
+import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.PostService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
+@RequiredArgsConstructor
 public class HomeController {
 
-	// fanId : 로그인 기능이 아직 없어서, DM 위젯(플로팅 채팅)에서 "지금 나는 몇 번 팬 계정인가"를
-	// 임시로 알려주기 위한 테스트용 파라미터. 예: /?fanId=1 (기본값도 1)
-	@GetMapping({"","/"})
-	public String home(@RequestParam(defaultValue = "1") Long fanId, Model model) {
-		model.addAttribute("fanId", fanId);
-		return "mainHome";
+	private final UserRepository userRepository;
+	private final PostService postService;
+
+	@GetMapping({"", "/"})
+	public String home(Model model) {
+		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
+				.map(ArtistCardView::from)
+				.toList();
+		model.addAttribute("artists", artists);
+
+		// 메인 페이지 "최신 인기 포스트" 위젯 - 게시판 구분 없이 인기순 상위 4개 + 각 게시글 대표 이미지(있으면)
+		List<Post> popularPosts = postService.getPopularPosts();
+		Map<Long, String> popularPostThumbnails = new HashMap<>();
+		for (Post post : popularPosts) {
+			postService.getAttachments(post).stream()
+					.filter(a -> a.isImage())
+					.findFirst()
+					.ifPresent(a -> popularPostThumbnails.put(post.getId(), a.getStoredName()));
+		}
+		model.addAttribute("popularPosts", popularPosts);
+		model.addAttribute("popularPostThumbnails", popularPostThumbnails);
+
+		return "index";
+	}
+
+	@GetMapping("/home")
+	public String homeAlias() {
+		return "redirect:/";
 	}
 
 }

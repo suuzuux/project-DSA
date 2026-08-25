@@ -50,6 +50,16 @@ public class PostService {
         return postRepository.findByBoardTypeOrderByCreatedAtDesc(boardType);
     }
 
+    // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 구분 없이 전체 인기 게시글 상위 4개
+    public List<Post> getPopularPosts() {
+        return postRepository.findTop4ByOrderByLikeCountDescCreatedAtDesc();
+    }
+
+    // 하이라이트 "Fan Posts" 위젯용 - 특정 게시판의 최신 게시글 상위 4개
+    public List<Post> getRecentPosts(BoardType boardType) {
+        return postRepository.findTop4ByBoardTypeOrderByCreatedAtDesc(boardType);
+    }
+
     // 게시글 작성 - Post 객체를 만들어서 DB에 저장하고, 저장된(id가 채워진) 결과를 돌려줌
     public Post createPost(BoardType boardType, String title, String content, User author) {
         Post post = Post.builder()
