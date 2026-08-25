@@ -179,6 +179,12 @@ public class PostController {
         // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
         if ("fetch".equals(requestedWith)) {
             if (artistId != null) {
+                // postList 프래그먼트가 FAN/ARTIST 링크를 만들 때 ${artist.id()}를 참조하므로,
+                // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
+                User artistUser = userRepository.findById(artistId)
+                        .filter(user -> user.getRole() == Role.ARTIST)
+                        .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+                model.addAttribute("artist", ArtistCardView.from(artistUser));
                 postListModelHelper.populate(model, type, "latest");
                 return "community/fragments/postList :: postListFragment";
             }
