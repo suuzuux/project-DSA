@@ -28,7 +28,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -239,8 +241,7 @@ public class CommunityController {
 	}
 
 	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
-	@PostMapping("/community/{artistId}/membership/join")
-	public String joinMembership(
+	@PostMapping("/community/{artistId}/membership/join")public String joinMembership(
 			@PathVariable Long artistId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -257,6 +258,41 @@ public class CommunityController {
 		membershipService.join(fan, artist);
 
 		return "redirect:/community/" + artistId + "/highlight";
+	}
+
+	// "Membership 상세보기" 모달(P33) - 목업 데이터(홍길동/고정 날짜) 대신 실제 가입일/만료일/연락처로 채워서 보여줌.
+	// 모달 자체는 shell.js가 페이지 공통으로 그려두는 거라 여기서 뷰를 새로 만들지 않고 JSON만 내려줌.
+	@GetMapping("/community/{artistId}/membership/detail")
+	@ResponseBody
+	public Map<String, Object> membershipDetail(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		Map<String, Object> result = new HashMap<>();
+		if (principal == null) {
+			return result;
+		}
+
+		User artist = userRepository.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElse(null);
+		if (artist == null) {
+			return result;
+		}
+
+		User fan = userResolver.resolve(principal, 1L);
+		DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+
+		membershipService.getMembership(fan, artist).ifPresent(membership -> {
+			result.put("name", fan.getRealName());
+			result.put("email", fan.getEmail());
+			result.put("phone", fan.getPhone());
+			result.put("membershipNo", "WP-" + artistId + "-" + membership.getId());
+			result.put("period",
+					membership.getCreatedAt().format(dateFormat) + " ~ " + membership.getExpiresAt().format(dateFormat) + " (KST)");
+		});
+
+		return result;
 	}
 
 	// 와이어프레임 26번: About 위젯의 팔로우/팔로잉 버튼
