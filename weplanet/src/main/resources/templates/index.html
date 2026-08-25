@@ -32,9 +32,13 @@
     </div>
     <div class="header-actions">
       <th:block sec:authorize="isAuthenticated()">
-        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="alert('알림 목록 (목업)')">🔔</button>
+        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="alert('알림 목록 (목업)')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        </button>
       </th:block>
-      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+      <button type="button" class="icon-btn" aria-label="언어">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+      </button>
       <th:block sec:authorize="isAnonymous()">
         <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
         <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
@@ -134,7 +138,7 @@
       <div class="cta-banner mb-24">
         <div>
           <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
-          <p class="text-sm text-muted mt-8">메뉴(☰)에서 커뮤니티 바로가기 · ✈ 버튼으로 DM</p>
+          <p class="text-sm text-muted mt-8">메뉴에서 커뮤니티 바로가기 · DM 버튼으로 채팅</p>
         </div>
         <a class="btn btn--primary btn--sm"
            th:if="${!artists.isEmpty()}"
@@ -219,9 +223,9 @@
       <div class="flex-center" style="gap:12px;font-size:var(--wp-fs-md);">
         <span class="text-xs text-muted">WePlaNet SNS</span>
         <a href="#" class="icon-btn" aria-label="X">𝕏</a>
-        <a href="#" class="icon-btn" aria-label="Instagram">📷</a>
+        <a href="#" class="icon-btn" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
         <a href="#" class="icon-btn" aria-label="YouTube">▶</a>
-        <a href="#" class="icon-btn" aria-label="TikTok">🎵</a>
+        <a href="#" class="icon-btn" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18a4 4 0 1 0 4-4V2h4a6 6 0 0 0 6 6"></path></svg></a>
       </div>
       <p class="text-xs text-muted">© 2026 WePlaNet Inc. All rights reserved.</p>
     </div>
