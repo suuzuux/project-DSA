@@ -783,6 +783,7 @@ p {
 }
 
 .rising-card__info span {
+  display: block;
   font-size: var(--wp-fs-xs);
   color: var(--wp-muted);
 }
