@@ -13,7 +13,7 @@
       <a class="icon-btn" href="/shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
       <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">🔔</button>
-        <a class="icon-btn" th:href="@{/}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
+        <a class="icon-btn" th:href="@{/community/{id}/profile(id=${artist.id()})}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
       </th:block>
       <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
