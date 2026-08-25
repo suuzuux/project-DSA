@@ -79,7 +79,9 @@ public class PostController {
             if ("fetch".equals(requestedWith)) {
                 return "community/fragments/fanComments :: commentsFragment";
             }
-            return "redirect:/community/" + artistId + "/fan/" + post.getId();
+            // 게시글 종류(FAN/ARTIST)에 맞는 상세 페이지로 리다이렉트 (예전엔 무조건 /fan/으로 가는 버그가 있었음)
+            String tab = post.getBoardType() == BoardType.FAN ? "fan" : "artist";
+            return "redirect:/community/" + artistId + "/" + tab + "/" + post.getId();
         }
 
         if ("fetch".equals(requestedWith)) {

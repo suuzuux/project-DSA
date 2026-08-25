@@ -114,6 +114,26 @@ public class CommunityController {
 		return "community/artist";
 	}
 
+	@GetMapping("/community/{artistId}/artist/{postId}")
+	public String artistDetail(
+			@PathVariable Long artistId,
+			@PathVariable Long postId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		populateArtistModel(artistId, model);
+
+		Post post = postService.getPost(postId);
+		if (post.getBoardType() != BoardType.ARTIST) {
+			throw new IllegalArgumentException("아티스트 게시글이 아닙니다.");
+		}
+
+		User currentUser = userResolver.resolve(principal, 1L);
+		postDetailModelHelper.populate(model, post, currentUser);
+
+		return "community/artist-detail";
+	}
+
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, Model model) {
 		populateArtistModel(artistId, model);
