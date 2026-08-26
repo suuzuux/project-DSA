@@ -11,88 +11,204 @@
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
         <div class="artist" th:text="${artist.nickname}">아티스트</div>
+        <div class="agency" th:text="${isAgency} ? '에이전시 포털' : 'WePlaNet'">WePlaNet</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
-        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
-        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
-        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
-        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
-        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">신고함 / 차단</a>
       </nav>
+      <div class="portal-sidebar__footer">
+        <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
+        <a th:href="@{/logout}">로그아웃</a>
+      </div>
     </aside>
 
-    <main class="portal-main">
+    <main class="portal-main portal-main--schedule">
       <div class="portal-main__head">
         <h1>스케줄 관리</h1>
-        <div class="flex-center">
-          <a class="btn btn--ghost btn--sm" th:href="@{/portal/schedule(month=${prevMonth})}">이전 달</a>
-          <strong th:text="${selectedMonth}">2026-08</strong>
-          <a class="btn btn--ghost btn--sm" th:href="@{/portal/schedule(month=${nextMonth})}">다음 달</a>
-        </div>
+        <form class="artist-select" th:if="${isAgency}" th:action="@{/portal/schedule}" method="get">
+          <input type="hidden" name="month" th:value="${selectedMonth}" />
+          <label for="managedArtist">관리 아티스트</label>
+          <select id="managedArtist" name="artistId" onchange="this.form.submit()">
+            <option th:each="item : ${managedArtists}"
+                    th:value="${item.id}"
+                    th:text="${item.nickname}"
+                    th:selected="${item.id == artist.id}">아티스트</option>
+          </select>
+        </form>
       </div>
 
-      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
-      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+      <p th:if="${msg}" class="sched-flash sched-flash--ok" th:text="${msg}"></p>
+      <p th:if="${error}" class="sched-flash sched-flash--err" th:text="${error}"></p>
 
-      <form class="settings-block" style="max-width:800px;margin-bottom:20px;" th:action="@{/portal/schedules}" method="post">
-        <div class="grid-2">
-          <div class="form-group">
-            <label class="form-label" for="title">일정 제목</label>
-            <input class="form-input" id="title" name="title" placeholder="예: 팬사인회" required />
+      <section class="month-cal">
+        <div class="month-cal__toolbar">
+          <div class="month-cal__nav">
+            <a class="month-cal__arrow" th:href="@{/portal/schedule(month=${prevMonth}, artistId=${artist.id})}" aria-label="이전 달">‹</a>
+            <strong th:text="${selectedMonth.year} + ' - ' + ${#numbers.formatInteger(selectedMonth.monthValue, 2)}">2026 - 08</strong>
+            <a class="month-cal__arrow" th:href="@{/portal/schedule(month=${nextMonth}, artistId=${artist.id})}" aria-label="다음 달">›</a>
           </div>
+          <div class="month-cal__actions">
+            <a class="btn btn--ghost btn--sm" th:href="@{/portal/schedule(month=${currentMonth}, artistId=${artist.id})}">오늘</a>
+            <button type="button" class="btn btn--ghost" id="openAddSchedule">+ 일정 추가</button>
+          </div>
+        </div>
+
+        <div class="month-cal__legend">
+          <span th:each="cat : ${scheduleCategories}" class="month-chip" th:attr="data-cat=${cat}" th:text="${cat.label}">TV/방송</span>
+        </div>
+
+        <div class="month-cal__weekdays">
+          <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span>
+          <span>THU</span><span>FRI</span><span>SAT</span>
+        </div>
+
+        <div class="month-cal__grid">
+          <div th:each="day : ${calendarDays}"
+               class="month-cal__cell"
+               th:classappend="${!day.inMonth} ? ' is-muted' : (${day.today} ? ' is-today' : '')"
+               th:attr="data-date=${day.date}">
+            <button type="button" class="month-cal__date" th:text="${day.day}" th:attr="data-date=${day.date}">1</button>
+            <div class="month-cal__events">
+              <button type="button"
+                      class="month-chip"
+                      th:each="event, stat : ${day.events}"
+                      th:if="${stat.index < 3}"
+                      th:attr="data-cat=${event.category}, data-event-id=${event.id}, data-title=${event.title}, data-time=${#temporals.format(event.scheduleAt, 'HH:mm')}, data-place=${event.location}, data-desc=${event.description}"
+                      th:text="${event.title}">일정</button>
+              <span class="month-cal__more" th:if="${#lists.size(day.events) > 3}"
+                    th:text="'+' + (${#lists.size(day.events)} - 3)">+1</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="sched-modal" id="addScheduleModal" hidden>
+    <div class="sched-modal__panel" role="dialog" aria-labelledby="addScheduleTitle">
+      <div class="sched-modal__head">
+        <h2 id="addScheduleTitle">일정 추가</h2>
+        <button type="button" class="icon-btn" data-close-modal aria-label="닫기">✕</button>
+      </div>
+      <form th:action="@{/portal/schedules}" method="post">
+        <input type="hidden" name="artistId" th:value="${artist.id}" />
+        <div class="form-group">
+          <label class="form-label" for="category">카테고리</label>
+          <select class="form-input" id="category" name="category" required>
+            <option value="" disabled selected>카테고리 선택</option>
+            <option th:each="cat : ${scheduleCategories}" th:value="${cat.name()}" th:text="${cat.label}">TV/방송</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="title">제목</label>
+          <input class="form-input" id="title" name="title" placeholder="예: KBS 뮤직뱅크" required />
+        </div>
+        <div class="grid-2">
           <div class="form-group">
             <label class="form-label" for="scheduleAt">일시</label>
             <input class="form-input" id="scheduleAt" name="scheduleAt" type="datetime-local" required />
           </div>
-        </div>
-        <div class="grid-2">
           <div class="form-group">
             <label class="form-label" for="location">장소</label>
-            <input class="form-input" id="location" name="location" placeholder="예: 서울 올림픽홀" />
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="description">설명</label>
-            <input class="form-input" id="description" name="description" placeholder="간단한 설명" />
+            <input class="form-input" id="location" name="location" placeholder="예: KBS 신관 공개홀" />
           </div>
         </div>
-        <div class="flex-center" style="justify-content:flex-end;">
-          <button type="submit" class="btn btn--primary">일정 추가</button>
+        <div class="form-group">
+          <label class="form-label" for="ticketUrl">링크 (선택)</label>
+          <input class="form-input" id="ticketUrl" name="ticketUrl" placeholder="티켓 / 유튜브 / 공식 링크" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="description">설명</label>
+          <input class="form-input" id="description" name="description" placeholder="간단한 설명" />
+        </div>
+        <div class="sched-modal__foot">
+          <button type="button" class="btn btn--ghost" data-close-modal>취소</button>
+          <button type="submit" class="btn btn--primary">등록</button>
         </div>
       </form>
-
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>일시</th>
-              <th>제목</th>
-              <th>장소</th>
-              <th>설명</th>
-              <th>관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr th:if="${#lists.isEmpty(schedules)}">
-              <td colspan="5" class="text-sm text-muted">선택한 달에 등록된 일정이 없습니다.</td>
-            </tr>
-            <tr th:each="schedule : ${schedules}">
-              <td th:text="${#temporals.format(schedule.scheduleAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 19:00</td>
-              <td th:text="${schedule.title}">일정 제목</td>
-              <td th:text="${schedule.location != null ? schedule.location : '-'}">장소</td>
-              <td th:text="${schedule.description != null ? schedule.description : '-'}">설명</td>
-              <td>
-                <form th:action="@{/portal/schedules/{id}/delete(id=${schedule.id})}" method="post">
-                  <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
-                </form>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </main>
+    </div>
   </div>
+
+  <div class="sched-modal" id="eventDetailModal" hidden>
+    <div class="sched-modal__panel sched-modal__panel--sm" role="dialog">
+      <div class="sched-modal__head">
+        <h2 id="eventDetailTitle">일정</h2>
+        <button type="button" class="icon-btn" data-close-modal aria-label="닫기">✕</button>
+      </div>
+      <p class="month-chip" id="eventDetailCat"></p>
+      <p class="text-sm" id="eventDetailMeta"></p>
+      <p class="text-sm text-muted" id="eventDetailDesc"></p>
+      <form id="eventDeleteForm" method="post">
+        <input type="hidden" name="artistId" th:value="${artist.id}" />
+        <div class="sched-modal__foot">
+          <button type="button" class="btn btn--ghost" data-close-modal>닫기</button>
+          <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script th:inline="javascript">
+    (function () {
+      var addModal = document.getElementById("addScheduleModal");
+      var detailModal = document.getElementById("eventDetailModal");
+      var datetime = document.getElementById("scheduleAt");
+      var deleteBase = /*[[@{/portal/schedules/}]]*/ "/portal/schedules/";
+
+      function openModal(el) { el.hidden = false; document.body.style.overflow = "hidden"; }
+      function closeModals() {
+        addModal.hidden = true;
+        detailModal.hidden = true;
+        document.body.style.overflow = "";
+      }
+
+      document.getElementById("openAddSchedule").addEventListener("click", function () {
+        openModal(addModal);
+      });
+
+      document.querySelectorAll("[data-close-modal]").forEach(function (btn) {
+        btn.addEventListener("click", closeModals);
+      });
+      [addModal, detailModal].forEach(function (modal) {
+        modal.addEventListener("click", function (e) {
+          if (e.target === modal) closeModals();
+        });
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeModals();
+      });
+
+      document.querySelectorAll(".month-cal__date").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var date = btn.getAttribute("data-date");
+          if (date && datetime) datetime.value = date + "T12:00";
+          openModal(addModal);
+        });
+      });
+
+      document.querySelectorAll(".month-cal__events .month-chip").forEach(function (chip) {
+        chip.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var id = chip.getAttribute("data-event-id");
+          document.getElementById("eventDetailTitle").textContent = chip.getAttribute("data-title") || "일정";
+          var cat = document.getElementById("eventDetailCat");
+          cat.textContent = chip.textContent;
+          cat.setAttribute("data-cat", chip.getAttribute("data-cat") || "");
+          var time = chip.getAttribute("data-time") || "";
+          var place = chip.getAttribute("data-place") || "";
+          document.getElementById("eventDetailMeta").textContent = [time, place].filter(Boolean).join(" · ");
+          document.getElementById("eventDetailDesc").textContent = chip.getAttribute("data-desc") || "";
+          document.getElementById("eventDeleteForm").action = deleteBase + id + "/delete";
+          openModal(detailModal);
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

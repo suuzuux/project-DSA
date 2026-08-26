@@ -452,11 +452,15 @@ public class PostController {
     }
 
     // 게시글 번역보기 (와이어프레임: 게시글/댓글 본문 밑에 있는 "번역보기" 링크)
+    // 헤더 언어(weplanet_lang 쿠키)를 대상 언어로 사용
     @PostMapping("/posts/detail/{id}/translate")
     @ResponseBody
-    public Map<String, Object> translatePost(@PathVariable Long id) {
+    public Map<String, Object> translatePost(
+            @PathVariable Long id,
+            @CookieValue(value = "weplanet_lang", required = false, defaultValue = "en") String lang
+    ) {
         Post post = postService.getPost(id);
-        String translated = translateService.translate(post.getContent());
+        String translated = translateService.translate(post.getContent(), lang);
 
         return Map.of("translated", translated);
     }
@@ -464,9 +468,13 @@ public class PostController {
     // 댓글 번역보기 - 게시글 번역과 완전히 같은 방식
     @PostMapping("/posts/detail/{id}/comment/{commentId}/translate")
     @ResponseBody
-    public Map<String, Object> translateComment(@PathVariable Long id, @PathVariable Long commentId) {
+    public Map<String, Object> translateComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @CookieValue(value = "weplanet_lang", required = false, defaultValue = "en") String lang
+    ) {
         Comment comment = commentService.getComment(commentId);
-        String translated = translateService.translate(comment.getContent());
+        String translated = translateService.translate(comment.getContent(), lang);
 
         return Map.of("translated", translated);
     }

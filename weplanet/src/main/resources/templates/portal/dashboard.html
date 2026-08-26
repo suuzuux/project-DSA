@@ -11,7 +11,7 @@
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
+        <div class="agency" th:text="${isAgency} ? '에이전시 포털' : 'WePlaNet'">WePlaNet</div>
         <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">

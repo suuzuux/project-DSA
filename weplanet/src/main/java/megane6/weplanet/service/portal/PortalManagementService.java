@@ -1,7 +1,10 @@
 package megane6.weplanet.service.portal;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.CalendarDayView;
+import megane6.weplanet.domain.dto.ScheduleEventView;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.ScheduleCategory;
 import megane6.weplanet.domain.entity.portal.ArtistProfile;
 import megane6.weplanet.domain.entity.portal.ArtistSchedule;
 import megane6.weplanet.domain.entity.portal.PortalNotice;
@@ -15,9 +18,15 @@ import megane6.weplanet.repository.portal.PortalNoticeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -71,17 +80,84 @@ public class PortalManagementService {
 
     @Transactional(readOnly = true)
     public List<ArtistSchedule> getSchedulesInMonth(User artist, YearMonth month) {
+        if (artist == null) {
+            return List.of();
+        }
         LocalDateTime start = month.atDay(1).atStartOfDay();
         LocalDateTime end = month.atEndOfMonth().atTime(23, 59, 59);
         return artistScheduleRepository.findByArtistAndScheduleAtBetweenOrderByScheduleAtAsc(artist, start, end);
     }
 
-    public void createSchedule(User artist, String title, String description, String location, LocalDateTime scheduleAt) {
+    @Transactional(readOnly = true)
+    public List<CalendarDayView> getMonthGrid(User artist, YearMonth month) {
+        List<ArtistSchedule> schedules = getSchedulesInMonth(artist, month);
+        Map<LocalDate, List<ArtistSchedule>> byDate = schedules.stream()
+                .collect(Collectors.groupingBy(item -> item.getScheduleAt().toLocalDate(), LinkedHashMap::new, Collectors.toList()));
+
+        LocalDate first = month.atDay(1);
+        int leading = first.getDayOfWeek().getValue() % 7; // Sunday = 0
+        LocalDate cursor = first.minusDays(leading);
+        LocalDate today = LocalDate.now();
+        DateTimeFormatter iso = DateTimeFormatter.ISO_LOCAL_DATE;
+
+        List<CalendarDayView> cells = new ArrayList<>(42);
+        for (int i = 0; i < 42; i++) {
+            LocalDate date = cursor.plusDays(i);
+            cells.add(new CalendarDayView(
+                    date.getDayOfMonth(),
+                    date.format(iso),
+                    YearMonth.from(date).equals(month),
+                    date.equals(today),
+                    byDate.getOrDefault(date, List.of())
+            ));
+        }
+        return cells;
+    }
+
+    public void createSchedule(User artist, ScheduleCategory category, String title, String description,
+                               String location, String ticketUrl, LocalDateTime scheduleAt) {
         validateText(title, "일정 제목을 입력해주세요.");
         if (scheduleAt == null) {
             throw new IllegalArgumentException("일정 일시를 입력해주세요.");
         }
-        artistScheduleRepository.save(ArtistSchedule.create(artist, title, description, location, scheduleAt));
+        artistScheduleRepository.save(ArtistSchedule.create(
+                artist,
+                category == null ? ScheduleCategory.OTHER : category,
+                title,
+                description,
+                location,
+                ticketUrl,
+                scheduleAt
+        ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScheduleEventView> getPublicScheduleEvents() {
+        return artistScheduleRepository.findAllByOrderByScheduleAtAsc().stream()
+                .map(ScheduleEventView::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, List<Map<String, Object>>> getPublicEventsByDate() {
+        Map<String, List<Map<String, Object>>> grouped = new LinkedHashMap<>();
+        for (ScheduleEventView event : getPublicScheduleEvents()) {
+            grouped.computeIfAbsent(event.date(), key -> new ArrayList<>()).add(toCalendarEvent(event));
+        }
+        return grouped;
+    }
+
+    private Map<String, Object> toCalendarEvent(ScheduleEventView event) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        item.put("id", "sch-" + event.id());
+        item.put("artist", String.valueOf(event.artistId()));
+        item.put("type", event.type());
+        item.put("time", event.time());
+        item.put("place", event.location() == null ? "" : event.location());
+        item.put("link", event.ticketUrl());
+        item.put("hasTicketImage", event.ticketUrl() != null && !event.ticketUrl().isBlank());
+        item.put("title", event.localizedTitle());
+        return item;
     }
 
     public void deleteSchedule(User artist, Long scheduleId) {

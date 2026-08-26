@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.ScheduleCategory;
 
 import java.time.LocalDateTime;
 
@@ -22,6 +23,10 @@ public class ArtistSchedule {
     @JoinColumn(name = "artist_id", nullable = false)
     private User artist;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 30)
+    private ScheduleCategory category;
+
     @Column(nullable = false, length = 200)
     private String title;
 
@@ -30,6 +35,9 @@ public class ArtistSchedule {
 
     @Column(length = 255)
     private String location;
+
+    @Column(name = "ticket_url", length = 500)
+    private String ticketUrl;
 
     @Column(name = "schedule_at", nullable = false)
     private LocalDateTime scheduleAt;
@@ -40,22 +48,33 @@ public class ArtistSchedule {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    private ArtistSchedule(User artist, String title, String description, String location, LocalDateTime scheduleAt) {
+    private ArtistSchedule(User artist, ScheduleCategory category, String title, String description,
+                           String location, String ticketUrl, LocalDateTime scheduleAt) {
         this.artist = artist;
-        this.title = title;
-        this.description = description;
-        this.location = location;
-        this.scheduleAt = scheduleAt;
-    }
-
-    public static ArtistSchedule create(User artist, String title, String description, String location, LocalDateTime scheduleAt) {
-        return new ArtistSchedule(artist, title.trim(), blankToNull(description), blankToNull(location), scheduleAt);
-    }
-
-    public void update(String title, String description, String location, LocalDateTime scheduleAt) {
+        this.category = category == null ? ScheduleCategory.OTHER : category;
         this.title = title.trim();
         this.description = blankToNull(description);
         this.location = blankToNull(location);
+        this.ticketUrl = blankToNull(ticketUrl);
+        this.scheduleAt = scheduleAt;
+    }
+
+    public static ArtistSchedule create(User artist, ScheduleCategory category, String title, String description,
+                                        String location, String ticketUrl, LocalDateTime scheduleAt) {
+        return new ArtistSchedule(artist, category, title, description, location, ticketUrl, scheduleAt);
+    }
+
+    public ScheduleCategory getCategory() {
+        return category == null ? ScheduleCategory.OTHER : category;
+    }
+
+    public void update(ScheduleCategory category, String title, String description, String location,
+                       String ticketUrl, LocalDateTime scheduleAt) {
+        this.category = category == null ? ScheduleCategory.OTHER : category;
+        this.title = title.trim();
+        this.description = blankToNull(description);
+        this.location = blankToNull(location);
+        this.ticketUrl = blankToNull(ticketUrl);
         this.scheduleAt = scheduleAt;
     }
 
@@ -64,6 +83,9 @@ public class ArtistSchedule {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (this.category == null) {
+            this.category = ScheduleCategory.OTHER;
+        }
     }
 
     @PreUpdate

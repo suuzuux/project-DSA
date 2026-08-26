@@ -5,6 +5,7 @@ import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.ScheduleCategory;
 import megane6.weplanet.domain.entity.portal.ArtistProfile;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
@@ -16,11 +17,14 @@ import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import jakarta.servlet.http.HttpSession;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -29,6 +33,8 @@ import java.util.List;
 @RequestMapping("/portal")
 @RequiredArgsConstructor
 public class PortalController {
+
+	private static final String SESSION_ARTIST = "portalArtistId";
 
 	private final UserRepository userRepository;
 	private final PortalManagementService portalManagementService;
@@ -42,7 +48,7 @@ public class PortalController {
 		if (principal == null) {
 			return "portal/login";
 		}
-		if (isArtist(principal)) {
+		if (isPortalUser(principal)) {
 			return "redirect:/portal/dashboard";
 		}
 		return "redirect:/";
@@ -151,18 +157,23 @@ public class PortalController {
 
 	@GetMapping("/schedule")
 	public String schedule(@RequestParam(required = false) String month,
+						   @RequestParam(required = false) Long artistId,
 						   @AuthenticationPrincipal AuthenticatedUser principal,
+						   HttpSession session,
 						   Model model) {
-		String redirect = prepareArtistPage(principal, model, "schedule");
+		String redirect = prepareArtistPage(principal, model, "schedule", artistId, session);
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
+		User artist = (User) model.getAttribute("artist");
 		YearMonth selectedMonth = parseMonth(month);
 		model.addAttribute("selectedMonth", selectedMonth);
 		model.addAttribute("prevMonth", selectedMonth.minusMonths(1));
 		model.addAttribute("nextMonth", selectedMonth.plusMonths(1));
 		model.addAttribute("schedules", portalManagementService.getSchedulesInMonth(artist, selectedMonth));
+		model.addAttribute("calendarDays", portalManagementService.getMonthGrid(artist, selectedMonth));
+		model.addAttribute("scheduleCategories", ScheduleCategory.values());
+		model.addAttribute("currentMonth", YearMonth.now());
 		return "portal/schedule";
 	}
 
@@ -170,33 +181,58 @@ public class PortalController {
 	public String createSchedule(@RequestParam String title,
 								 @RequestParam(required = false) String description,
 								 @RequestParam(required = false) String location,
-								 @RequestParam("scheduleAt") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime scheduleAt,
+								 @RequestParam(required = false) String ticketUrl,
+								 @RequestParam(required = false) String category,
+								 @RequestParam(required = false) Long artistId,
+								 @RequestParam("scheduleAt") String scheduleAtRaw,
 								 @AuthenticationPrincipal AuthenticatedUser principal,
+								 HttpSession session,
 								 RedirectAttributes redirectAttributes) {
-		User artist = currentArtist(principal);
-		if (artist == null) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
 			return artistRedirect(principal);
 		}
+		User artist = resolveManagedArtist(actor, artistId, session);
+		if (artist == null) {
+			redirectAttributes.addFlashAttribute("error", "일정을 등록할 아티스트가 없습니다.");
+			return "redirect:/portal/schedule";
+		}
 		try {
-			portalManagementService.createSchedule(artist, title, description, location, scheduleAt);
+			LocalDateTime scheduleAt = parseScheduleAt(scheduleAtRaw);
+			portalManagementService.createSchedule(
+					artist,
+					ScheduleCategory.from(category),
+					title,
+					description,
+					location,
+					ticketUrl,
+					scheduleAt
+			);
 			redirectAttributes.addFlashAttribute("msg", "일정이 등록되었습니다.");
+			return "redirect:/portal/schedule?month=" + YearMonth.from(scheduleAt) + "&artistId=" + artist.getId();
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/portal/schedule";
 		}
-		return "redirect:/portal/schedule";
 	}
 
 	@PostMapping("/schedules/{scheduleId}/delete")
 	public String deleteSchedule(@PathVariable Long scheduleId,
+								 @RequestParam(required = false) Long artistId,
 								 @AuthenticationPrincipal AuthenticatedUser principal,
+								 HttpSession session,
 								 RedirectAttributes redirectAttributes) {
-		User artist = currentArtist(principal);
-		if (artist == null) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
 			return artistRedirect(principal);
+		}
+		User artist = resolveManagedArtist(actor, artistId, session);
+		if (artist == null) {
+			return "redirect:/portal/schedule";
 		}
 		portalManagementService.deleteSchedule(artist, scheduleId);
 		redirectAttributes.addFlashAttribute("msg", "일정이 삭제되었습니다.");
-		return "redirect:/portal/schedule";
+		return "redirect:/portal/schedule?artistId=" + artist.getId();
 	}
 
 	@GetMapping("/media")
@@ -244,7 +280,7 @@ public class PortalController {
 		if (artist == null) {
 			return artistRedirect(principal);
 		}
-		boardMediaService.softDelete(mediaId, artist.getId());
+		boardMediaService.softDelete(mediaId);
 		redirectAttributes.addFlashAttribute("msg", "미디어가 삭제되었습니다.");
 		return "redirect:/portal/media";
 	}
@@ -336,38 +372,100 @@ public class PortalController {
 	}
 
 	private String prepareArtistPage(AuthenticatedUser principal, Model model, String activeMenu) {
+		return prepareArtistPage(principal, model, activeMenu, null, null);
+	}
+
+	private String prepareArtistPage(AuthenticatedUser principal, Model model, String activeMenu, Long artistId, HttpSession session) {
 		if (principal == null) {
 			return "redirect:/portal/login";
 		}
-		if (!isArtist(principal)) {
+		if (!isPortalUser(principal)) {
 			return "redirect:/";
 		}
-		User artist = currentArtist(principal);
-		if (artist == null) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
 			return "redirect:/portal/login";
 		}
-		populateCommon(model, artist, activeMenu);
+		HttpSession activeSession = session != null ? session : currentSession(true);
+		User artist = resolveManagedArtist(actor, artistId, activeSession);
+		if (artist == null) {
+			artist = actor;
+		}
+		populateCommon(model, actor, artist, activeMenu);
 		return null;
 	}
 
 	private User currentArtist(AuthenticatedUser principal) {
-		if (principal == null || !isArtist(principal)) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
+			return null;
+		}
+		return resolveManagedArtist(actor, null, currentSession(false));
+	}
+
+	private HttpSession currentSession(boolean create) {
+		ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		if (attrs == null) {
+			return null;
+		}
+		return attrs.getRequest().getSession(create);
+	}
+
+	private User currentPortalUser(AuthenticatedUser principal) {
+		if (principal == null || !isPortalUser(principal)) {
 			return null;
 		}
 		return userRepository.findById(principal.getId())
-				.filter(user -> user.getRole() == Role.ARTIST)
+				.filter(user -> user.getRole() == Role.ARTIST || user.getRole() == Role.AGENCY)
 				.orElse(null);
+	}
+
+	private User resolveManagedArtist(User actor, Long artistId, HttpSession session) {
+		if (actor == null) {
+			return null;
+		}
+		if (actor.getRole() == Role.ARTIST) {
+			return actor;
+		}
+		List<User> artists = userRepository.findByRole(Role.ARTIST);
+		if (artists.isEmpty()) {
+			return null;
+		}
+		Long selected = artistId;
+		if (selected == null && session != null) {
+			Object stored = session.getAttribute(SESSION_ARTIST);
+			if (stored instanceof Long storedId) {
+				selected = storedId;
+			} else if (stored instanceof Number number) {
+				selected = number.longValue();
+			}
+		}
+		final Long selectedId = selected;
+		User found = artists.stream()
+				.filter(item -> selectedId != null && item.getId().equals(selectedId))
+				.findFirst()
+				.orElse(artists.get(0));
+		if (session != null) {
+			session.setAttribute(SESSION_ARTIST, found.getId());
+		}
+		return found;
 	}
 
 	private String artistRedirect(AuthenticatedUser principal) {
 		return principal == null ? "redirect:/portal/login" : "redirect:/";
 	}
 
-	private void populateCommon(Model model, User artist, String activeMenu) {
+	private void populateCommon(Model model, User actor, User artist, String activeMenu) {
 		ArtistProfile profile = portalManagementService.getOrCreateProfile(artist);
+		model.addAttribute("actor", actor);
 		model.addAttribute("artist", artist);
 		model.addAttribute("artistProfile", profile);
 		model.addAttribute("activeMenu", activeMenu);
+		model.addAttribute("isAgency", actor.getRole() == Role.AGENCY);
+		model.addAttribute("managedArtists", actor.getRole() == Role.AGENCY
+				? userRepository.findByRole(Role.ARTIST)
+				: List.of(artist));
+		model.addAttribute("scheduleCategories", ScheduleCategory.values());
 	}
 
 	private YearMonth parseMonth(String month) {
@@ -379,6 +477,26 @@ public class PortalController {
 		} catch (DateTimeParseException e) {
 			return YearMonth.now();
 		}
+	}
+
+	private LocalDateTime parseScheduleAt(String raw) {
+		if (raw == null || raw.isBlank()) {
+			throw new IllegalArgumentException("일정 일시를 입력해주세요.");
+		}
+		String value = raw.trim();
+		try {
+			return LocalDateTime.parse(value);
+		} catch (DateTimeParseException ignored) {
+			try {
+				return LocalDateTime.parse(value.length() == 16 ? value + ":00" : value);
+			} catch (DateTimeParseException e) {
+				throw new IllegalArgumentException("일정 일시 형식이 올바르지 않습니다.");
+			}
+		}
+	}
+
+	private boolean isPortalUser(AuthenticatedUser principal) {
+		return "ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_AGENCY".equals(principal.getRoleName());
 	}
 
 	private boolean isArtist(AuthenticatedUser principal) {

@@ -11,16 +11,16 @@
   <div class="portal-login">
     <aside class="portal-login__visual">
       <p class="text-xs" style="letter-spacing:0.12em;text-transform:uppercase;opacity:.7;margin-bottom:12px;">
-        ARTIST PORTAL
+        ARTIST / AGENCY PORTAL
       </p>
-      <h1>아티스트와 팬을<br />더 가까이 연결합니다.</h1>
+      <h1>아티스트와 에이전시가<br />팬과 더 가까이 연결합니다.</h1>
       <p>공식 콘텐츠, 커뮤니티, 일정, 미디어를 하나의 공간에서 관리하세요.</p>
       <a th:href="@{/}" class="mt-24" style="color:#9fd;font-size:13px;">← 메인 사이트로 이동</a>
     </aside>
 
     <div class="portal-login__form-wrap">
       <div class="portal-login__form">
-        <h2 class="auth-card__title" style="margin-bottom:24px;">아티스트 로그인</h2>
+        <h2 class="auth-card__title" style="margin-bottom:24px;">아티스트 / 에이전시 로그인</h2>
 
         <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
           아이디 또는 비밀번호가 올바르지 않습니다.
@@ -29,7 +29,7 @@
         <form th:action="@{/login}" method="post">
           <input type="hidden" name="portalLogin" value="true" />
           <div class="form-group">
-            <label class="form-label" for="artistId">아티스트 계정</label>
+            <label class="form-label" for="artistId">아이디</label>
             <input class="form-input" id="artistId" name="username" type="text"
                    placeholder="아이디 입력" required autocomplete="username" />
           </div>
@@ -38,11 +38,12 @@
             <input class="form-input" id="artistPw" name="password" type="password"
                    placeholder="비밀번호 입력" required autocomplete="current-password" />
           </div>
-          <button type="submit" class="btn btn--primary btn--block btn--lg">아티스트로 로그인</button>
+          <button type="submit" class="btn btn--primary btn--block btn--lg">포털 로그인</button>
         </form>
 
         <p class="text-sm text-muted mt-16" style="text-align:center;">
-          팬 계정으로 로그인하면 메인 페이지로 이동합니다.
+          팬 계정으로 로그인하면 메인 페이지로 이동합니다.<br />
+          에이전시 테스트 계정: <strong>agency_wp</strong> / Test1234
         </p>
       </div>
     </div>

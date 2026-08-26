@@ -34,7 +34,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				.ifPresent(user -> user.recordLogin());
 
 		if ("true".equals(request.getParameter("portalLogin"))) {
-			if ("ROLE_ARTIST".equals(principal.getRoleName())) {
+			if ("ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_AGENCY".equals(principal.getRoleName())) {
 				getRedirectStrategy().sendRedirect(request, response, "/portal/dashboard");
 				return;
 			}
