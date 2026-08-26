@@ -89,7 +89,7 @@
 
 <!-- ========== 2. FAB ========== -->
 <div class="fab-stack">
-  <button type="button" class="fab fab--secondary" data-shell-alert="캘린더 (목업)" title="캘린더" aria-label="캘린더">📅</button>
+  <button type="button" class="fab fab--secondary" data-shell-open="calendar" title="캘린더" aria-label="캘린더">📅</button>
   <button type="button" class="fab" id="fabChat" title="채팅 (DM)" aria-label="채팅 열기">✈</button>
 </div>
 
@@ -374,4 +374,16 @@
     showRoom("YUMA", true);
   }
   if (params.get("menu") === "1") openMenu();
+
+  /* 언어 / 알림 / 캘린더 — global_icon_shell_demo 이식본 */
+  (function loadGlobalIcons() {
+    var current = document.currentScript || document.querySelector('script[src*="shell.js"]');
+    var src = current && current.src
+      ? current.src.replace(/shell\.js(\?.*)?$/, "global-icons.js$1")
+      : (base + "js/global-icons.js");
+    if (document.querySelector('script[src*="global-icons.js"]')) return;
+    var s = document.createElement("script");
+    s.src = src;
+    document.body.appendChild(s);
+  })();
 })();

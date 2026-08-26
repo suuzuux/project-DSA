@@ -6,7 +6,7 @@
     <div class="community-top__left">
       <a class="home-link" th:href="@{/}" title="위플래닛 홈">🏠</a>
       <span class="avatar avatar--sm" th:text="${artist.logo()}">AR</span>
-      <h1 class="community-top__name" th:text="${artist.nickname()}">아티스트</h1>
+      <h1 class="community-top__name" th:text="${artist.nickname()}" th:attr="data-artist-id=${artist.id()}">아티스트</h1>
     </div>
     <div class="community-top__right">
       <button type="button" class="icon-btn" aria-label="언어">🌐</button>
@@ -67,7 +67,15 @@
 
     <div class="widget">
       <h3 class="widget__title">Calendar</h3>
-      <p class="text-muted text-sm">표시할 일정이 없습니다.</p>
+      <div class="mini-cal">
+        <div class="mini-cal__nav">
+          <button type="button" class="icon-btn" aria-label="이전 달">◀</button>
+          <span>2026-08</span>
+          <button type="button" class="icon-btn" aria-label="다음 달">▶</button>
+        </div>
+        <div class="mini-cal__grid"></div>
+      </div>
+      <ul class="cal-event-list"></ul>
     </div>
 
     <div class="widget">

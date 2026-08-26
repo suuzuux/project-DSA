@@ -14,6 +14,7 @@ import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.media.BoardMediaService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -40,6 +41,7 @@ public class CommunityController {
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 	private final BoardMediaService boardMediaService;
+	private final PortalManagementService portalManagementService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -163,7 +165,8 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
-		populateArtistModel(artistId, principal, model);
+		User artist = populateArtistModel(artistId, principal, model);
+		model.addAttribute("notices", portalManagementService.getPublishedNotices(artist));
 		return "community/notice";
 	}
 
