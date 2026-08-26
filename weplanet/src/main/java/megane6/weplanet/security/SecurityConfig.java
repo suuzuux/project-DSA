@@ -49,6 +49,10 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/community/*/project",
+                                "/community/*/project/**"
+                        ).authenticated()
                         .requestMatchers(PUBLIC_URLS.toArray(String[]::new)).permitAll()
                         .anyRequest().authenticated()
                 )

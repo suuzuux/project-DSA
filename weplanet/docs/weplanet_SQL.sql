@@ -760,3 +760,53 @@ CREATE TABLE `community_profiles` (
                                       CONSTRAINT `fk_cp_member` FOREIGN KEY (`community_member_id`) REFERENCES `community_members` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `email_verification`;
+CREATE TABLE `email_verification` (
+                                      `id` bigint NOT NULL AUTO_INCREMENT,
+                                      `user_id` bigint DEFAULT NULL,
+                                      `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                                      `purpose` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+                                      `verification_key` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+                                      `code_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+                                      `attempt_count` int NOT NULL DEFAULT 0,
+                                      `expires_at` datetime(6) NOT NULL,
+                                      `verified_at` datetime(6) DEFAULT NULL,
+                                      `consumed_at` datetime(6) DEFAULT NULL,
+                                      `created_at` datetime(6) NOT NULL,
+                                      `updated_at` datetime(6) NOT NULL,
+
+                                      PRIMARY KEY (`id`),
+                                      UNIQUE KEY `uk_email_verification_key` (`verification_key`),
+                                      KEY `idx_email_verification_email`
+                                          (`email`, `purpose`, `created_at`),
+                                      KEY `idx_email_verification_user`
+                                          (`user_id`, `purpose`, `created_at`),
+
+                                      CONSTRAINT `fk_email_verification_user`
+                                          FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+
+                                      CONSTRAINT `ck_email_verification_purpose`
+                                          CHECK (`purpose` IN ('SIGNUP', 'FAN_PROJECT_CREATE')),
+
+                                      CONSTRAINT `ck_email_verification_attempt`
+                                          CHECK (`attempt_count` BETWEEN 0 AND 5),
+
+                                      CONSTRAINT `ck_email_verification_target`
+                                          CHECK (
+                                              (`purpose` = 'SIGNUP' AND `user_id` IS NULL)
+                                                  OR
+                                              (`purpose` = 'FAN_PROJECT_CREATE' AND `user_id` IS NOT NULL)
+                                              ),
+
+                                      CONSTRAINT `ck_email_verification_verified_time`
+                                          CHECK (`verified_at` IS NULL OR `verified_at` <= `expires_at`),
+
+                                      CONSTRAINT `ck_email_verification_consumed_time`
+                                          CHECK (
+                                              `consumed_at` IS NULL
+                                                  OR
+                                              (`verified_at` IS NOT NULL AND `consumed_at` >= `verified_at`)
+                                              )
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;

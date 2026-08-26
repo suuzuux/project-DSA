@@ -31,8 +31,7 @@ public class ProjectRequestDTO {
 
     @NotNull(message = "이벤트 유형을 선택해주세요.")
     private FanProjectEventType eventType;
-
-    @NotNull(message = "대표 이미지를 등록해주세요.")
+    
     private MultipartFile coverImage;
 
     @NotNull(message = "목표 금액을 입력해주세요.")
@@ -56,14 +55,6 @@ public class ProjectRequestDTO {
     @Size(max = 1000, message = "상세 설명은 1,000자 이하로 입력해주세요.")
     private String description;
 
-    // 등록 화면에서 본인인증에 사용하지만 fan_project에는 원문을 저장하지 않는다.
-    @NotBlank(message = "휴대폰 번호를 입력해주세요.")
-    @Pattern(
-            regexp = "^01[016789][0-9]{7,8}$",
-            message = "휴대폰 번호는 하이픈 없이 숫자만 입력해주세요."
-    )
-    private String phoneNumber;
-
     // select의 value는 enum 이름, 표시 문구는 SettlementBank.displayName을 사용한다.
     @NotNull(message = "정산 은행을 선택해주세요.")
     private SettlementBank settlementBank;
@@ -72,7 +63,16 @@ public class ProjectRequestDTO {
     @NotBlank(message = "계좌번호를 입력해주세요.")
     @Pattern(regexp = "^[0-9]{6,30}$", message = "계좌번호는 하이픈 없이 숫자만 입력해주세요.")
     private String accountNumber;
-
+    
+    @AssertTrue(message = "프로젝트 이용사항에 동의합니다.")
+    private boolean projectPolicyAgreed;
+    
+    @AssertTrue(message = "모금·정산 관련 주의사항에 동의합니다.")
+    private boolean settlementPolicyAgreed;
+    
+    @AssertTrue(message = "개인정보 수집·이용 제공에 동의합니다.")
+    private boolean privacyPolicyAgreed;
+    
     @AssertTrue(message = "모금 마감일은 모금 시작일보다 이후여야 합니다.")
     public boolean isFundingPeriodValid() {
         return fundingStartAt == null

@@ -27,7 +27,7 @@ import java.util.List;
 @RequestMapping("/community/{artistId}/project")
 public class ProjectController {
 	private final ProjectService ps;
-	private final UserRepository userRepository;
+	private final UserRepository ur;
 	
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -36,7 +36,6 @@ public class ProjectController {
 			@RequestParam(defaultValue = ProjectService.SORT_DEADLINE) String sort,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model) {
-		ps.assertProjectAreaAccessible(principal);
 		ProjectRequestDTO dto = new ProjectRequestDTO();
 		dto.setArtistId(artistId);
 
@@ -53,11 +52,10 @@ public class ProjectController {
 			@PathVariable Long projectId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model) {
-		ps.assertProjectAreaAccessible(principal);
-		User artist = userRepository.findById(artistId).filter(user -> user.getRole() == Role.ARTIST)
+		User artist = ur.findById(artistId).filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 
-		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
+		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
 				.map(ArtistCardView::from)
 				.toList();
 
@@ -79,7 +77,6 @@ public class ProjectController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model,
 			RedirectAttributes redirectAttributes) {
-		ps.assertProjectAreaAccessible(principal);
 		// 로그인하지 않은 경우
 		if (principal == null) return "redirect:/login";
 		
@@ -138,11 +135,18 @@ public class ProjectController {
 	
 	// 팀 공통 커뮤니티 화면과 등록 폼에서 사용할 모델을 함께 구성한다.
 	private void addPageModel(Long artistId, Model model, String sort, AuthenticatedUser viewer) {
-		User artist = userRepository.findById(artistId)
+		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+		
+		if (viewer != null && Role.FAN.authority().equals(viewer.getRoleName())) {
+			User currentUser = ur.findById(viewer.getId()).orElseThrow(() ->
+							new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+			
+			model.addAttribute("registeredEmail", currentUser.getEmail());
+		}
 
-		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
+		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
 				.map(ArtistCardView::from)
 				.toList();
 

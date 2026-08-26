@@ -3,18 +3,14 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.ArtistFollowCardView;
-import megane6.weplanet.domain.entity.BoardType;
-import megane6.weplanet.domain.entity.Post;
-import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.repository.BookmarkRepository;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.BookmarkRepository;
-import megane6.weplanet.domain.entity.Comment;
-import megane6.weplanet.domain.entity.Like;
-import megane6.weplanet.domain.entity.Bookmark;
+import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.community.CommunityMemberRepository;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
@@ -23,12 +19,7 @@ import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -52,6 +43,8 @@ public class CommunityController {
 	private final AuthenticatedUserResolver userResolver;
 	private final BoardMediaService boardMediaService;
 	private final FollowService followService;
+	
+	private final CommunityMemberRepository cmr;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -328,6 +321,19 @@ public class CommunityController {
 
 		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
 		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
+		boolean projectMenuVisible = false;
+		
+		if (principal != null) {
+			if (Role.ADMIN.authority().equals(principal.getRoleName())) {
+				projectMenuVisible = true;
+			} else if (Role.FAN.authority().equals(principal.getRoleName())
+					&& currentUserForFollow != null) {
+				projectMenuVisible = cmr
+						.existsByFanAndArtist(currentUserForFollow, artist);
+			}
+		}
+		model.addAttribute("projectMenuVisible", projectMenuVisible);
+		
 		Set<Long> followedIds = followService.getFollowedArtistIds(currentUserForFollow);
 		List<ArtistFollowCardView> otherArtists = userRepository.findByRole(Role.ARTIST).stream()
 				.filter(user -> !user.getId().equals(artistId))

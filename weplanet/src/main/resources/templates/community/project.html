@@ -109,7 +109,7 @@
       </p>
     </div>
 
-    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
 
   <!-- 프로젝트 등록 모달 -->
@@ -172,13 +172,12 @@
 
           <div class="form-group"
                th:classappend="${#fields.hasErrors('coverImage')} ? 'is-invalid' : ''">
-            <label class="form-label" for="coverImage">대표 이미지</label>
+            <label class="form-label" for="coverImage">대표 이미지 (선택)</label>
             <input id="coverImage"
                    class="form-input"
                    type="file"
                    th:field="*{coverImage}"
-                   accept="image/*"
-                   required />
+                   accept="image/*"/>
             <p class="form-error" th:errors="*{coverImage}"></p>
           </div>
         </div>
@@ -237,20 +236,18 @@
           <p class="form-error" th:errors="*{description}"></p>
         </div>
 
-        <div class="form-group"
-             th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid' : ''">
-          <label class="form-label" for="phoneNumber">본인인증 휴대폰 번호</label>
-          <input id="phoneNumber"
+        <div class="form-group">
+          <label class="form-label" for="registeredEmail">이메일 인증</label>
+
+          <input id="registeredEmail"
                  class="form-input"
-                 type="tel"
-                 th:field="*{phoneNumber}"
-                 inputmode="numeric"
-                 maxlength="11"
-                 pattern="01[016789][0-9]{7,8}"
-                 required
-                 placeholder="하이픈 없이 숫자만 입력" />
-          <p class="form-error" th:errors="*{phoneNumber}"></p>
-          <p class="form-hint">등록 전 휴대폰 본인인증이 완료된 회원이어야 합니다.</p>
+                 type="email"
+                 th:value="${registeredEmail}"
+                 readonly />
+
+          <p class="form-hint">
+            회원가입 시 입력한 이메일 주소로만 인증할 수 있습니다.
+          </p>
         </div>
 
         <div class="grid-2">
@@ -288,11 +285,48 @@
         </div>
 
         <p class="form-hint mb-16">
-          예금주명은 휴대폰 본인인증으로 확인된 회원 실명을 사용합니다.
+          예금주명은 회원가입 시 입력한 회원 실명을 사용합니다.
         </p>
 
-        <button type="submit" class="btn btn--primary btn--block">
-          프로젝트 등록 신청
+        <div class="form-group">
+          <label>
+            <input id="projectAgreeAll" type="checkbox" />
+            전체 동의
+          </label>
+
+          <label>
+            <input type="checkbox"
+                   class="project-required-agreement"
+                   th:field="*{projectPolicyAgreed}"
+                   required />
+            [필수] 프로젝트 운영 및 이용사항 확인
+          </label>
+          <p class="form-error" th:errors="*{projectPolicyAgreed}"></p>
+
+          <label>
+            <input type="checkbox"
+                   class="project-required-agreement"
+                   th:field="*{settlementPolicyAgreed}"
+                   required />
+            [필수] 모금·정산·환불 관련 주의사항 확인
+          </label>
+          <p class="form-error" th:errors="*{settlementPolicyAgreed}"></p>
+
+          <label>
+            <input type="checkbox"
+                   class="project-required-agreement"
+                   th:field="*{privacyPolicyAgreed}"
+                   required />
+            [필수] 개인정보 수집·이용 동의
+          </label>
+          <p class="form-error" th:errors="*{privacyPolicyAgreed}"></p>
+        </div>
+
+        <button id="projectRequestButton"
+                type="submit"
+                class="btn btn--primary btn--block"
+                disabled>
+          요청하기
         </button>
       </form>
     </div>
@@ -351,6 +385,45 @@
           }
         });
       }
+
+      // 세 가지 필수 동의 항목을 모두 체크해야 요청 버튼을 활성화한다.
+      // 화면 검사는 편의를 위한 것이고, 실제 우회 제출은 DTO의 @AssertTrue가 막는다.
+      const agreeAll = document.getElementById("projectAgreeAll");
+      const requiredAgreements = Array.from(
+        document.querySelectorAll(".project-required-agreement")
+      );
+      const requestButton = document.getElementById("projectRequestButton");
+
+      function updateAgreementState() {
+        const allChecked = requiredAgreements.length > 0
+          && requiredAgreements.every(function (checkbox) {
+            return checkbox.checked;
+          });
+
+        if (agreeAll) {
+          agreeAll.checked = allChecked;
+        }
+
+        if (requestButton) {
+          requestButton.disabled = !allChecked;
+        }
+      }
+
+      if (agreeAll) {
+        agreeAll.addEventListener("change", function () {
+          requiredAgreements.forEach(function (checkbox) {
+            checkbox.checked = agreeAll.checked;
+          });
+          updateAgreementState();
+        });
+      }
+
+      requiredAgreements.forEach(function (checkbox) {
+        checkbox.addEventListener("change", updateAgreementState);
+      });
+
+      // 서버 검증 실패 후 입력값이 다시 표시되는 경우에도 버튼 상태를 맞춘다.
+      updateAgreementState();
     });
   </script>
 </body>

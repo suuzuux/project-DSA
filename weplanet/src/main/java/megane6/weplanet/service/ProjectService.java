@@ -9,10 +9,11 @@ import megane6.weplanet.domain.entity.ProjectImage;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
-import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.*;
+import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +43,7 @@ public class ProjectService {
 	private static final long MIN_SPECIAL_BADGE_COUNT = 1L;
 	private final FileStorageService fs;
 	private final AccountProtectionService aps;
+	private final CommunityMemberRepository cmr;
 
 	// 목록 정렬 기준 - 화면 select의 value와 짝을 이룸
 	public static final String SORT_DEADLINE = "deadline";
@@ -49,18 +51,16 @@ public class ProjectService {
 
 	/**
 	 * 커뮤니티(아티스트)별 프로젝트 목록을 카드용 DTO로 만들어 돌려준다.
-	 * <p>
 	 * 비로그인 사용자는 공개 상태만, FAN은 공개 상태와 자신이 만든 프로젝트,
 	 * ADMIN은 모든 상태를 확인한다. ARTIST와 AGENCY는 프로젝트 영역에 접근할 수 없다.
-	 * <p>
 	 * DTO 변환을 서비스 안에서 끝내는 이유 : Project.creator가 LAZY라서
 	 * 트랜잭션 밖에서 getNickname()을 부르면 LazyInitializationException이 난다.
 	 */
 	public List<ProjectCardView> getProjectCards(User artist, String sort, AuthenticatedUser viewer) {
-		assertProjectAreaAccessible(viewer);
+		assertProjectAreaAccessible(artist, viewer);
 
 		List<Project> projects = pr.findByArtistAndDeletedAtIsNull(artist).stream()
-				.filter(project -> canView(project, viewer))
+				.filter(project -> project.getStatus().isPubliclyVisible())
 				.sorted(projectComparator(sort))
 				.toList();
 
@@ -83,7 +83,7 @@ public class ProjectService {
 	}
 
 	public ProjectDetailView getProjectDetail(Long projectId, User artist, AuthenticatedUser viewer) {
-		assertProjectAreaAccessible(viewer);
+		assertProjectAreaAccessible(artist, viewer);
 		Project project = pr.findById(projectId).orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
 
 		// 소프트 삭제된 프로젝트는 없는 것으로 취급(목록 쿼리의 deletedAt IS NULL과 같은 기준)
@@ -108,9 +108,36 @@ public class ProjectService {
 	 * ARTIST와 AGENCY는 팬 프로젝트 메뉴 및 직접 URL 접근을 허용하지 않는다.
 	 * 비로그인 사용자, FAN, ADMIN은 이후 상태별 공개 규칙에 따라 접근한다.
 	 */
-	public void assertProjectAreaAccessible(AuthenticatedUser viewer) {
+	public void assertProjectAreaAccessible(
+			User artist,
+			AuthenticatedUser viewer
+	) {
+		if (viewer == null) {
+			throw new AccessDeniedException("로그인이 필요합니다.");
+		}
+		
 		if (hasRole(viewer, Role.ARTIST) || hasRole(viewer, Role.AGENCY)) {
-			throw new IllegalStateException("아티스트와 소속사 계정은 팬 프로젝트를 확인할 수 없습니다.");
+			throw new AccessDeniedException(
+					"아티스트와 소속사 계정은 팬 프로젝트를 확인할 수 없습니다."
+			);
+		}
+		
+		// ADMIN은 커뮤니티 가입 여부와 관계없이 심사를 위해 접근 가능
+		if (hasRole(viewer, Role.ADMIN)) {
+			return;
+		}
+		
+		if (!hasRole(viewer, Role.FAN)) {
+			throw new AccessDeniedException("팬 회원만 접근할 수 있습니다.");
+		}
+		
+		User fan = ur.findById(viewer.getId())
+				.orElseThrow(() ->
+						new AccessDeniedException("로그인 회원을 찾을 수 없습니다.")
+				);
+		
+		if (!cmr.existsByFanAndArtist(fan, artist)) {
+			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
 		}
 	}
 
@@ -181,6 +208,10 @@ public class ProjectService {
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트 정보를 찾을 수 없습니다."));
 		
+		if (!cmr.existsByFanAndArtist(creator, artist)) {
+			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
+		}
+		
 		// 2. 휴대폰 본인인증 여부 확인
 		if (!creator.isPhoneVerified()) {
 			throw new IllegalStateException("휴대폰 본인인증을 완료해야 프로젝트를 등록할 수 있습니다.");
@@ -225,25 +256,23 @@ public class ProjectService {
 		
 		// 5. 대표 이미지 저장
 		MultipartFile coverImage = dto.getCoverImage();
-		if (coverImage == null || coverImage.isEmpty()) {
-			throw new IllegalArgumentException("대표 이미지를 등록해주세요.");
+		if (coverImage != null && !coverImage.isEmpty()) {
+			String contentType = coverImage.getContentType();
+			if (contentType == null || !contentType.startsWith("image/")) {
+				throw new IllegalArgumentException("대표 이미지에는 이미지 파일만 등록 가능합니다.");
+			}
+			String originalName = coverImage.getOriginalFilename();
+			if (originalName == null || originalName.isBlank()) {
+				throw new IllegalArgumentException("대표 이미지의 파일명을 확인할 수 없습니다.");
+			}
+			// 실제 파일을 프로젝트의 uploads 폴더에 저장
+			String storedName = fs.store(coverImage);
+			// 파일 정보를 DB에 저장
+			ProjectImage projectImage = ProjectImage.create(
+					savedProject, originalName, storedName, contentType, coverImage.getSize()
+			);
+			pir.save(projectImage);
 		}
-		String contentType = coverImage.getContentType();
-		if (contentType == null || !contentType.startsWith("image/")) {
-			throw new IllegalArgumentException("대표 이미지에는 이미지 파일만 등록 가능합니다.");
-		}
-		String originalName = coverImage.getOriginalFilename();
-		if (originalName == null || originalName.isBlank()) {
-			throw new IllegalArgumentException("대표 이미지의 파일명을 확인할 수 없습니다.");
-		}
-		
-		// 실제 파일을 프로젝트의 uploads 폴더에 저장
-		String storedName = fs.store(coverImage);
-		// 파일 정보를 DB에 저장
-		ProjectImage projectImage = ProjectImage.create(
-				savedProject, originalName, storedName, contentType, coverImage.getSize()
-		);
-		pir.save(projectImage);
 		
 		// 6. 정산계좌 저장
 		AccountProtectionService.ProtectedAccountNumber protectedAccount = aps.protect(dto.getAccountNumber());
