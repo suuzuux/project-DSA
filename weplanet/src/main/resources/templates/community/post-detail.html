@@ -155,6 +155,62 @@
       viewer: true,
       initialValue: /*[[${post.content}]]*/ ''
     });
+
+    // 유튜브 링크 자동 임베드 - 레거시 feed/postDetail.html 로직 그대로 옮김
+    // (전엔 이 페이지에 아예 안 붙어있어서 유튜브 링크가 그냥 텍스트로만 보였음)
+    setTimeout(embedYoutubeLinks, 0);
+
+    function embedYoutubeLinks() {
+      const container = document.getElementById('contentViewer');
+      const ytPattern = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([\w-]{11})|youtu\.be\/([\w-]{11}))/;
+
+      function makeEmbed(videoId) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'video-embed';
+        wrapper.innerHTML = '<iframe src="https://www.youtube.com/embed/' + videoId + '" ' +
+          'title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+        return wrapper;
+      }
+
+      container.querySelectorAll('a').forEach(function (a) {
+        const m = a.href.match(ytPattern);
+        if (m) {
+          a.replaceWith(makeEmbed(m[1] || m[2]));
+        }
+      });
+
+      const globalYtPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}[^\s<]*|youtu\.be\/[\w-]{11}[^\s<]*))/g;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      const textNodes = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+      textNodes.forEach(function (node) {
+        const text = node.nodeValue;
+        globalYtPattern.lastIndex = 0;
+        if (!globalYtPattern.test(text)) return;
+        globalYtPattern.lastIndex = 0;
+
+        const frag = document.createDocumentFragment();
+        let lastIndex = 0;
+        let match;
+        while ((match = globalYtPattern.exec(text)) !== null) {
+          if (match.index > lastIndex) {
+            frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+          }
+          const single = match[0].match(ytPattern);
+          if (single) {
+            frag.appendChild(makeEmbed(single[1] || single[2]));
+          } else {
+            frag.appendChild(document.createTextNode(match[0]));
+          }
+          lastIndex = globalYtPattern.lastIndex;
+        }
+        if (lastIndex < text.length) {
+          frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+        node.parentNode.replaceChild(frag, node);
+      });
+    }
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
