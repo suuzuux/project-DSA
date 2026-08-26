@@ -4,24 +4,16 @@
   <header th:fragment="header" class="community-top">
     <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
     <div class="community-top__left">
-      <a class="home-link" th:href="@{/}" title="위플래닛 홈">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-      </a>
+      <a class="home-link" th:href="@{/}" title="위플래닛 홈">🏠</a>
       <span class="avatar avatar--sm" th:text="${artist.logo()}">AR</span>
-      <h1 class="community-top__name" th:text="${artist.nickname()}">아티스트</h1>
+      <h1 class="community-top__name" th:text="${artist.nickname()}" th:attr="data-artist-id=${artist.id()}">아티스트</h1>
     </div>
     <div class="community-top__right">
-      <button type="button" class="icon-btn" aria-label="언어">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-      </button>
-      <a class="icon-btn" href="/shop.html" aria-label="Shop" title="WePlaNet Shop">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-      </a>
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+      <a class="icon-btn" href="/shop.html" aria-label="Shop" title="WePlaNet Shop">🧺</a>
       <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        </button>
-        <a class="icon-btn" th:href="@{/community/{id}/profile(id=${artist.id()})}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
+        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">🔔</button>
+        <a class="icon-btn" th:href="@{/}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
       </th:block>
       <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
@@ -50,26 +42,20 @@
        th:classappend="${active == 'live'} ? ' is-active'">Live</a>
   </nav>
 
-  <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
-    <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
-    </th:block>
-
+  <aside th:fragment="sidebarAside" class="community-aside">
     <div class="membership-card">
-      <h3 class="membership-card__title">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
-        <span th:text="|${artist.nickname()} Membership|">Membership</span>
-      </h3>
+      <h3 class="membership-card__title" th:text="|${artist.nickname()} Membership|">Membership</h3>
 
       <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <div th:if="${membershipActive}">
-          <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
+          <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✔️ 가입중</p>
           <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
-          <button type="button" class="btn btn--ghost btn--block mt-8" data-modal-open="membershipDetailModal">Membership 상세보기</button>
         </div>
         <div th:unless="${membershipActive}">
           <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-          <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
+          <form th:action="@{/community/{id}/membership/join(id=${artist.id()})}" method="post">
+            <button type="submit" class="btn btn--accent btn--block">Membership 가입하기</button>
+          </form>
         </div>
       </th:block>
 
@@ -79,7 +65,20 @@
       </th:block>
     </div>
 
-    <div class="widget" th:if="${showAbout}">
+    <div class="widget">
+      <h3 class="widget__title">Calendar</h3>
+      <div class="mini-cal">
+        <div class="mini-cal__nav">
+          <button type="button" class="icon-btn" aria-label="이전 달">◀</button>
+          <span>2026-08</span>
+          <button type="button" class="icon-btn" aria-label="다음 달">▶</button>
+        </div>
+        <div class="mini-cal__grid"></div>
+      </div>
+      <ul class="cal-event-list"></ul>
+    </div>
+
+    <div class="widget">
       <h3 class="widget__title">About</h3>
       <div class="flex-center mb-16">
         <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
@@ -87,20 +86,6 @@
           <strong th:text="${artist.nickname()}">아티스트</strong>
           <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
         </div>
-      </div>
-
-      <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
-      <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
-        <div class="flex-center" style="gap:8px;">
-          <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
-          <span th:text="${other.nickname()}">아티스트</span>
-        </div>
-        <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
-          <input type="hidden" name="returnTo" th:value="${artist.id()}" />
-          <button type="submit" class="btn btn--sm"
-                  th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
-                  th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
-        </form>
       </div>
     </div>
   </aside>

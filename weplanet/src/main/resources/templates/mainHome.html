@@ -15,7 +15,10 @@
     data-shell="fan" : 위석현님이 만든 공용 위젯(좌측 메뉴/DM 플로팅 채팅)을 이 페이지에 띄우라는 표시.
     data-fan-id : 로그인 기능이 아직 없어서, "지금 나는 몇 번 팬 계정인가"를 임시로 알려주는 값 (기본 1번)
 -->
-<body data-shell="fan" data-base="" th:attr="data-fan-id=${fanId}">
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-fan-id=${fanId}">
 
 <header class="site-header">
     <a class="brand" th:href="@{/}">
@@ -24,6 +27,8 @@
     </a>
 
     <div class="header-actions">
+        <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">🔔</button>
         <span sec:authorize="isAnonymous()">
             <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
             <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
@@ -64,6 +69,16 @@
         <a class="btn btn--soft btn--sm" th:href="@{/posts/fan/new}">팬 게시판 글쓰기</a>
         <a class="btn btn--soft btn--sm" th:href="@{/posts/artist/new}">아티스트 게시판 글쓰기</a>
     </div>
+
+    <section class="mb-24" style="margin-top:32px;">
+        <div class="week-nav">
+            <button type="button" class="icon-btn" aria-label="이전 주">◀</button>
+            <strong>이번 주 스케줄</strong>
+            <button type="button" class="icon-btn" aria-label="다음 주">▶</button>
+        </div>
+        <p class="text-xs text-muted mb-8">에이전시에서 등록한 아티스트 일정 · 일자별 최대 4개</p>
+        <div class="week-grid"></div>
+    </section>
 </div>
 
 <!-- 테스트용 - 로그인 기능이 아직 없어서, DM 위젯에서 "나"로 사용할 팬 계정을 바꿔볼 수 있게 해둠 -->
@@ -73,6 +88,9 @@
     <a th:href="@{/(fanId=4)}">4번(AI팬봇)</a>
 </p>
 
+<script th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
+</script>
 <script th:src="@{/js/shell.js}"></script>
 <script th:src="@{/js/dm-realtime.js}"></script>
 

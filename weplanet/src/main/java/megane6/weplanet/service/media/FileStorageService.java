@@ -1,8 +1,10 @@
 package megane6.weplanet.service.media;
 
 import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Service
 public interface FileStorageService {
 
 	String store(MultipartFile file);          // 저장 후 저장 파일명 반환

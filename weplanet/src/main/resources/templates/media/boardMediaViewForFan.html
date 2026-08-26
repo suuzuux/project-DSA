@@ -3,48 +3,30 @@
 <head>
     <meta charset="UTF-8"/>
     <title>미디어 (팬)</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
 <body>
 
-<header class="community-top">
-    <div class="community-top__left">
-        <a class="home-link" th:href="@{/}">🏠</a>
-        <h1 class="community-top__name">FAN 게시판</h1>
+<h1>미디어</h1>
+
+<p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
+
+<!-- 게시글 목록 -->
+<div th:each="post : ${list}">
+    <hr/>
+    <h3 th:text="${post.title}">제목</h3>
+    <p th:text="${post.content}">설명</p>
+
+    <!-- 첨부파일들 (이미지/영상) -->
+    <div>
+        <span th:each="file : ${post.files}">
+            <img th:if="${file.mediaType == 'IMAGE'}"
+                 th:src="@{/board/media/file/{id}(id=${file.id})}" width="150"/>
+            <video th:if="${file.mediaType == 'VIDEO'}"
+                   th:src="@{/board/media/file/{id}(id=${file.id})}" width="150" controls></video>
+        </span>
     </div>
-</header>
 
-<nav class="tabs" style="width:min(100% - 40px, 1120px);margin:16px auto 0;">
-    <span class="text-muted">Highlight</span>
-    <span class="text-muted">Notice</span>
-    <a th:href="@{/posts/fan}">Fan</a>
-    <a th:href="@{/posts/artist}">Artist</a>
-    <a class="is-active" th:href="@{/board/media}">Media</a>
-    <span class="text-muted">Live</span>
-</nav>
-
-<div style="width:min(100% - 40px, 1120px);margin:16px auto;">
-    <h1>미디어</h1>
-
-    <p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
-
-    <div th:each="post : ${list}">
-        <hr/>
-        <h3 th:text="${post.title}">제목</h3>
-        <p th:text="${post.content}">설명</p>
-
-        <div>
-            <span th:each="file : ${post.files}">
-                <img th:if="${file.mediaType == 'IMAGE'}"
-                     th:src="@{/board/media/file/{id}(id=${file.id})}" width="150"/>
-                <video th:if="${file.mediaType == 'VIDEO'}"
-                       th:src="@{/board/media/file/{id}(id=${file.id})}" width="150" controls></video>
-            </span>
-        </div>
-
-        <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
-    </div>
+    <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
 </div>
 
 </body>
