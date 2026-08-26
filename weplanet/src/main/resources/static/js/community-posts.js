@@ -60,8 +60,51 @@
   const hideToggleBtn = document.getElementById("writePostHideToggle");
   const hiddenFromArtistEl = document.getElementById("writePostHiddenFromArtist");
 
+  // Toast UI Editor - writePostContent(hidden textarea)가 실제 폼 전송값, 화면엔 이 에디터가 보임.
+  // (예전엔 writePostContent가 그냥 평범한 textarea라 마크다운 리치 편집이 안 됐음)
+  const editorEl = document.getElementById("writePostEditor");
+  let postEditor = null;
+  if (editorEl && window.toastui) {
+    postEditor = new toastui.Editor({
+      el: editorEl,
+      height: "260px",
+      initialEditType: "wysiwyg",
+      previewStyle: "vertical",
+      placeholder: "포스트를 남겨보세요 …",
+      // 이미지 버튼 제외: 기본 동작이 base64로 통째로 마크다운에 박아넣어서 1000자 제한을 훌쩍 넘겨버림.
+      // 진짜 이미지 첨부는 아래 별도 파일 첨부 버튼(writePostFiles, 실제 업로드) 쓰면 됨
+      toolbarItems: [
+        ["heading", "bold", "italic", "strike"],
+        ["hr", "quote"],
+        ["ul", "ol", "task", "indent", "outdent"],
+        ["table", "link"],
+        ["code", "codeblock"],
+      ],
+    });
+    postEditor.on("change", function () {
+      const text = postEditor.getMarkdown();
+      contentEl.value = text;
+      refreshSubmitState();
+      const counter = writeModal.querySelector(".char-count");
+      if (counter) counter.textContent = text.length + " / 1000";
+    });
+  }
+
+  // 제목 + 본문 둘 다 있어야 등록 가능
+  function refreshSubmitState() {
+    if (!submitBtn) return;
+    const titleOk = titleEl && titleEl.value.trim().length > 0;
+    const text = contentEl.value;
+    const contentOk = text.trim().length > 0 && text.length <= 1000;
+    submitBtn.disabled = !(titleOk && contentOk);
+  }
+  if (titleEl) {
+    titleEl.addEventListener("input", refreshSubmitState);
+  }
+
   function resetWriteModal() {
     writeForm.reset();
+    if (postEditor) postEditor.setMarkdown("");
     if (errorEl) errorEl.style.display = "none";
     if (fileCountEl) fileCountEl.textContent = "";
     if (submitBtn) submitBtn.disabled = true;
@@ -104,13 +147,6 @@
     });
   }
 
-  if (contentEl && submitBtn) {
-    contentEl.addEventListener("input", function () {
-      const text = contentEl.value;
-      submitBtn.disabled = text.trim().length === 0 || text.length > 1000;
-    });
-  }
-
   if (filesEl) {
     filesEl.addEventListener("change", function () {
       if (filesEl.files.length > 10) {
@@ -132,8 +168,6 @@
   writeForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const content = contentEl.value.trim();
-    titleEl.value = content.length > 30 ? content.slice(0, 30) + "…" : content;
     submitBtn.disabled = true;
 
     fetch(writeForm.action, {

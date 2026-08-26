@@ -11,6 +11,9 @@
   <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <!-- Toast UI Editor: 포스트 작성 모달의 마크다운 리치 에디터 (예전엔 뷰어만 붙어있고 작성용은 빠져있었음) -->
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
@@ -57,11 +60,13 @@
             th:action="@{/posts/artist/new(artistId=${artist.id()})}"
             method="post"
             enctype="multipart/form-data">
-        <input type="hidden" name="title" id="writePostTitle" />
         <input type="hidden" name="artistId" th:value="${artist.id()}" />
 
-        <textarea id="writePostContent" name="content" class="form-textarea" data-count maxlength="1000"
-                  placeholder="아티스트 포스트를 남겨보세요 …"></textarea>
+        <input type="text" id="writePostTitle" name="title" class="form-input mb-8" maxlength="80"
+               placeholder="제목을 입력하세요" required />
+
+        <textarea id="writePostContent" name="content" hidden maxlength="1000"></textarea>
+        <div id="writePostEditor"></div>
         <div class="flex-between mt-8">
           <span class="char-count text-xs text-muted">0 / 1000</span>
           <div class="flex-center">
