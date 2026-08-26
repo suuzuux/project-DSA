@@ -48,9 +48,14 @@
   }
 
   function communitiesBlockHtml() {
+    const searchBtn = `<button type="button" class="icon-btn" data-shell-open="explore" aria-label="커뮤니티 탐색">🔍</button>`;
+
     if (!artists.length) {
       return isAuthenticated
-        ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+        ? `<div class="drawer-menu__section-head">
+    <p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+    ${searchBtn}
+  </div>
   <div class="drawer-menu__communities">
     <p class="text-xs text-muted" style="padding:8px 0;">가입한 커뮤니티가 없습니다.</p>
   </div>`
@@ -65,7 +70,10 @@
       })
       .join("");
 
-    return `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+    return `<div class="drawer-menu__section-head">
+    <p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+    ${searchBtn}
+  </div>
   <div class="drawer-menu__communities">${links}</div>`;
   }
 
@@ -203,6 +211,71 @@
     </div>
     <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
     <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
+  </div>
+</div>
+
+<!-- ========== 6. 커뮤니티 탐색 패널 (EXPLORE-02) ========== -->
+<div class="explore-panel" id="explorePanel" role="dialog" aria-label="커뮤니티 탐색" aria-hidden="true">
+  <div class="dm-header">
+    <strong class="dm-header__title">커뮤니티 찾기</strong>
+    <button type="button" class="icon-btn" data-shell-close="explore" aria-label="닫기">∨</button>
+  </div>
+  <form class="explore-filters" id="exploreFilterForm">
+    <input type="text" name="nickname" placeholder="아티스트명 검색" />
+    <div class="explore-filters__row">
+      <select name="gender">
+        <option value="">그룹 성별 전체</option>
+        <option value="BOY">보이그룹</option>
+        <option value="GIRL">걸그룹</option>
+        <option value="MIXED">혼성</option>
+        <option value="SOLO">솔로</option>
+      </select>
+      <input type="text" name="nationality" placeholder="국적" />
+    </div>
+    <div class="explore-filters__row">
+      <input type="text" name="category" placeholder="직업/카테고리" />
+      <input type="number" name="minMembers" placeholder="최소 인원" min="0" />
+      <input type="number" name="maxMembers" placeholder="최대 인원" min="0" />
+    </div>
+    <div class="explore-filters__row">
+      <label class="text-xs text-muted">데뷔일 <input type="date" name="debutFrom" /> ~ <input type="date" name="debutTo" /></label>
+    </div>
+    <button type="submit" class="btn btn--primary btn--sm btn--block">검색</button>
+  </form>
+  <div class="explore-results" id="exploreResults">
+    <p class="text-xs text-muted" style="padding:16px;">검색 조건을 입력하거나, 그냥 검색을 눌러 전체 목록을 확인하세요.</p>
+  </div>
+</div>
+
+<!-- ========== 7. 커뮤니티 가입 + 프로필 생성 모달 (EXPLORE-03) ========== -->
+<div class="modal-backdrop" id="communityJoinModal">
+  <div class="modal">
+    <div class="modal__head">
+      <h2 class="modal__title" id="communityJoinTitle">커뮤니티 가입</h2>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <div id="communityJoinStep">
+      <p class="text-sm text-muted" style="padding:8px 0 16px;">가입 처리 중입니다...</p>
+    </div>
+    <form id="communityProfileForm" class="hidden" style="display:none;">
+      <input type="hidden" name="artistId" />
+      <div class="form-group">
+        <label class="form-label">커뮤니티 닉네임</label>
+        <input type="text" class="form-input" name="nickname" maxlength="10" data-count required />
+        <div class="char-count"></div>
+        <div class="form-error"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">소개글 (선택)</label>
+        <textarea class="form-textarea" name="bio" maxlength="30" data-count></textarea>
+        <div class="char-count"></div>
+        <div class="form-error"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn btn--secondary btn--block" data-modal-close>취소</button>
+        <button type="submit" class="btn btn--accent btn--block" id="communityProfileSubmitBtn">가입 완료하고 프로필 만들기</button>
+      </div>
+    </form>
   </div>
 </div>
 `;
@@ -350,11 +423,19 @@
       return;
     }
 
+    const openExploreBtn = e.target.closest('[data-shell-open="explore"]');
+    if (openExploreBtn) {
+      e.preventDefault();
+      openExplore();
+      return;
+    }
+
     const closeTarget = e.target.closest("[data-shell-close]");
     if (closeTarget) {
       const what = closeTarget.getAttribute("data-shell-close");
       if (what === "menu") closeMenu();
       if (what === "dm") closeDm();
+      if (what === "explore") closeExplore();
       return;
     }
 
@@ -374,6 +455,20 @@
       showRoom(name, expired);
       return;
     }
+
+    const exploreJoinBtn = e.target.closest("[data-explore-join]");
+    if (exploreJoinBtn) {
+      startCommunityJoin(Number(exploreJoinBtn.getAttribute("data-explore-join")), exploreJoinBtn.getAttribute("data-explore-name"));
+      return;
+    }
+
+    // main.js의 data-modal-close는 페이지 로드 시점에 없던(shell.js가 나중에 주입한) 모달엔 안 먹히므로 여기서 직접 처리
+    const modalCloseBtn = e.target.closest("[data-modal-close]");
+    if (modalCloseBtn) {
+      const modalBackdrop = modalCloseBtn.closest(".modal-backdrop");
+      if (modalBackdrop) modalBackdrop.classList.remove("is-open");
+      return;
+    }
   });
 
   document.getElementById("fabChat")?.addEventListener("click", openDm);
@@ -382,12 +477,14 @@
   backdrop.addEventListener("click", () => {
     closeMenu();
     closeDm();
+    closeExplore();
   });
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       closeMenu();
       closeDm();
+      closeExplore();
     }
   });
 
@@ -407,12 +504,210 @@
     box.scrollTop = box.scrollHeight;
   });
 
-  // URL ?dm=1 이면 자동 오픈 (chat.html 데모용)
-  const params = new URLSearchParams(location.search);
-  if (params.get("dm") === "1") openDm();
-  if (params.get("dm") === "expired") {
-    openDm();
-    showRoom("YUMA", true);
+  /* ---------------------------------------------------------
+   * 커뮤니티 탐색 (EXPLORE-02/03)
+   * --------------------------------------------------------- */
+  const explorePanel = document.getElementById("explorePanel");
+  const exploreResults = document.getElementById("exploreResults");
+  const exploreFilterForm = document.getElementById("exploreFilterForm");
+  const communityJoinModal = document.getElementById("communityJoinModal");
+  const communityJoinStep = document.getElementById("communityJoinStep");
+  const communityProfileForm = document.getElementById("communityProfileForm");
+
+  // 프로필 입력 폼이 "가입 흐름"으로 열렸는지 "편집 흐름"으로 열렸는지 구분하는 상태
+  // (제출 성공 후 동작이 서로 다름: 가입 흐름은 홈으로 이동, 편집 흐름은 그 자리에서 위젯만 갱신)
+  let profileFormContext = { mode: "join" };
+
+  function openExplore() {
+    explorePanel.classList.add("is-open");
+    explorePanel.setAttribute("aria-hidden", "false");
   }
-  if (params.get("menu") === "1") openMenu();
-})();
+  function closeExplore() {
+    explorePanel.classList.remove("is-open");
+    explorePanel.setAttribute("aria-hidden", "true");
+  }
+
+  function renderExploreResults(list) {
+    if (!list.length) {
+      exploreResults.innerHTML = `<p class="text-xs text-muted" style="padding:16px;">조건에 맞는 커뮤니티가 없습니다.</p>`;
+      return;
+    }
+    exploreResults.innerHTML = list
+      .map((a) => {
+        const meta = [a.genderLabel, a.nationality, a.category, a.memberCount ? `${a.memberCount}인` : null, a.debutDate]
+          .filter(Boolean)
+          .join(" · ");
+        const actionHtml = a.joined
+          ? `<span class="text-xs" style="color:var(--wp-success);font-weight:700;">✔️ 가입중</span>`
+          : `<button type="button" class="btn btn--primary btn--sm" data-explore-join="${a.id}" data-explore-name="${escapeHtml(a.nickname)}">가입하기</button>`;
+        return `<div class="dm-list-item" style="cursor:default;">
+      <span class="avatar avatar--sm">${escapeHtml(a.logo || "?")}</span>
+      <div class="dm-list-item__meta">
+        <div class="dm-list-item__name">${escapeHtml(a.nickname)}</div>
+        <div class="dm-list-item__preview">${escapeHtml(meta || "-")}</div>
+      </div>
+      ${actionHtml}
+    </div>`;
+      })
+      .join("");
+  }
+
+  function runExploreSearch() {
+    const params = new URLSearchParams(new FormData(exploreFilterForm));
+    [...params.keys()].forEach((k) => {
+      if (!params.get(k)) params.delete(k);
+    });
+    fetch(`${base}community/search?${params.toString()}`)
+      .then((res) => res.json())
+      .then(renderExploreResults)
+      .catch(() => {
+        exploreResults.innerHTML = `<p class="text-xs text-muted" style="padding:16px;">검색 중 오류가 발생했습니다.</p>`;
+      });
+  }
+
+  exploreFilterForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    runExploreSearch();
+  });
+
+  // "가입하기" 클릭 - DB에는 아무것도 안 쓰고, 곧바로 닉네임 입력 폼부터 보여줌
+  // (실제 가입 + 프로필 저장은 이 폼을 제출하는 순간에만 일어남 -> 취소하면 아무 흔적도 안 남음)
+  function startCommunityJoin(artistId, artistName) {
+    profileFormContext = { mode: "join" };
+    document.getElementById("communityJoinTitle").textContent = `${artistName || "커뮤니티"} 가입`;
+    communityJoinStep.classList.add("hidden");
+    communityProfileForm.classList.remove("hidden");
+    communityProfileForm.style.display = "block";
+    communityProfileForm.querySelector('[name="artistId"]').value = artistId;
+    communityProfileForm.querySelector('[name="nickname"]').value = "";
+    communityProfileForm.querySelector('[name="bio"]').value = "";
+    communityJoinModal.classList.add("is-open");
+
+    // 이전에 다른 커뮤니티에서 쓰던 닉네임/소개글이 있으면 조용히 채워줌 (없어도 폼은 이미 떠 있음)
+    fetch(`${base}community/my-default-profile`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const nicknameInput = communityProfileForm.querySelector('[name="nickname"]');
+        const bioInput = communityProfileForm.querySelector('[name="bio"]');
+        if (data.defaultNickname && !nicknameInput.value) nicknameInput.value = data.defaultNickname;
+        if (data.defaultBio && !bioInput.value) bioInput.value = data.defaultBio;
+      })
+      .catch(() => {});
+  }
+
+  // 이미 가입된 커뮤니티에서 "프로필 만들기/편집" 버튼으로 바로 진입하는 경로
+  // (가입 처리를 다시 안 하고, 프로필 입력 폼만 곧장 열어줌)
+  function openProfileEditor(artistId, artistName, prefill, onSaved) {
+    profileFormContext = { mode: "edit", onSaved };
+    document.getElementById("communityJoinTitle").textContent = `${artistName || "커뮤니티"} 프로필 편집`;
+    communityJoinStep.classList.add("hidden");
+    communityProfileForm.classList.remove("hidden");
+    communityProfileForm.style.display = "block";
+    communityProfileForm.querySelector('[name="artistId"]').value = artistId;
+    communityProfileForm.querySelector('[name="nickname"]').value = prefill?.nickname || "";
+    communityProfileForm.querySelector('[name="bio"]').value = prefill?.bio || "";
+    communityJoinModal.classList.add("is-open");
+  }
+
+  communityProfileForm?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const artistId = communityProfileForm.querySelector('[name="artistId"]').value;
+    const nickname = communityProfileForm.querySelector('[name="nickname"]').value.trim();
+    const bio = communityProfileForm.querySelector('[name="bio"]').value.trim();
+    const context = profileFormContext || { mode: "join" };
+    const submitBtn = document.getElementById("communityProfileSubmitBtn");
+
+    function saveProfile() {
+      return fetch(`${base}community/${artistId}/profile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname, bio }),
+      }).then((res) => res.json().then((data) => ({ ok: res.ok, data })));
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "처리 중...";
+    }
+
+    // join 모드는 제출하는 이 순간에만 "가입 -> 프로필 저장"을 순서대로 실행 (그 전엔 DB에 아무것도 안 씀)
+    const flow = context.mode === "join"
+      ? fetch(`${base}community/${artistId}/join`, { method: "POST" }).then((res) => {
+          if (res.status === 401) {
+            window.location.href = `${base}login`;
+            return null;
+          }
+          return saveProfile();
+        })
+      : saveProfile();
+
+    flow
+      .then((result) => {
+        if (!result) return;
+        const { ok, data } = result;
+        if (!ok) {
+          alert(data.message || "입력값을 다시 확인해주세요.");
+          return;
+        }
+        if (context.mode === "edit") {
+          communityJoinModal.classList.remove("is-open");
+          alert("프로필이 저장되었습니다.");
+          if (typeof context.onSaved === "function") {
+            fetch(`${base}community/${artistId}/profile`)
+              .then((res) => res.json())
+              .then(context.onSaved)
+              .catch(() => {});
+          }
+          return;
+        }
+        alert("커뮤니티 가입이 완료되었습니다!");
+        window.location.href = `${base}`;
+      })
+      .catch(() => alert("저장 중 오류가 발생했습니다."))
+      .finally(() => {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "가입 완료하고 프로필 만들기";
+        }
+      });
+  });
+
+  /* ---------------------------------------------------------
+   * 내 프로필 위젯 (커뮤니티 페이지 사이드바, EXPLORE-03)
+   * --------------------------------------------------------- */
+  const myProfileWidget = document.getElementById("myProfileWidget");
+
+    function renderMyProfileWidget(data) {
+      const widgetBody = document.getElementById("myProfileWidgetBody");
+      if (!widgetBody || !myProfileWidget) return;
+      const artistId = myProfileWidget.getAttribute("data-artist-id");
+
+      if (!data.joined) {
+        widgetBody.innerHTML = `<p class="text-xs text-muted">이 커뮤니티에 가입하면 프로필을 만들 수 있어요.</p>`;
+        return;
+      }
+
+      // 카드/버튼 없이, 새 페이지로 이동하는 링크 한 줄만 보여줌 (마이페이지에서 조회/수정 다 처리)
+      const linkText = data.hasProfile ? "내 프로필 수정 ›" : "내 프로필 만들기 ›";
+      widgetBody.innerHTML = `<a href="${base}community/${artistId}/my-profile" class="my-profile-link">${linkText}</a>`;
+    }
+      if (myProfileWidget) {
+        fetch(`${base}community/${myProfileWidget.getAttribute("data-artist-id")}/profile`)
+          .then((res) => res.json())
+          .then(renderMyProfileWidget)
+          .catch(() => {
+            document.getElementById("myProfileWidgetBody").innerHTML =
+              `<p class="text-xs text-muted">프로필 정보를 불러오지 못했습니다.</p>`;
+          });
+      }
+
+      // URL ?dm=1 이면 자동 오픈 (chat.html 데모용)
+      const params = new URLSearchParams(location.search);
+      if (params.get("dm") === "1") openDm();
+      if (params.get("dm") === "expired") {
+        openDm();
+        showRoom("YUMA", true);
+      }
+      if (params.get("menu") === "1") openMenu();
+    })();
