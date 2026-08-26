@@ -29,6 +29,18 @@ public class GlobalExceptionHandler {
         return "fetch".equals(request.getHeader("X-Requested-With"));
     }
 
+    // 로그인 안 하고 글쓰기/댓글/좋아요 등을 시도했을 때 - 남의 계정(testUserId 기본값) 명의로 저장되는 걸 막기 위함
+    @ExceptionHandler(AuthenticationRequiredException.class)
+    public Object handleAuthenticationRequired(AuthenticationRequiredException e, HttpServletRequest request) {
+        log.warn("로그인 필요한 요청을 비로그인 상태로 시도함: {}", request.getRequestURI());
+
+        if (isAsync(request)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("success", false, "message", e.getMessage()));
+        }
+
+        return "redirect:/login";
+    }
+
     // 잘못된 요청(존재하지 않는 게시글/유저 id 등)
     @ExceptionHandler(IllegalArgumentException.class)
     public Object handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {

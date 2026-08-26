@@ -23,4 +23,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     // 하이라이트 "Comments by 아티스트" 위젯용 - 특정 유저(아티스트)가 작성한 댓글 중 최신 4개
     List<Comment> findTop4ByAuthorOrderByCreatedAtDesc(User author);
+
+    // 내 프로필 "댓글 히스토리" 탭 - 내가 쓴 댓글 전체를 최신순/오래된순으로
+    List<Comment> findByAuthorOrderByCreatedAtDesc(User author);
+    List<Comment> findByAuthorOrderByCreatedAtAsc(User author);
 }

@@ -26,4 +26,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     // 하이라이트 "Fan Posts" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 4개
     List<Post> findTop4ByBoardTypeAndArtistOrderByCreatedAtDesc(BoardType boardType, User artist);
+
+    // 내 프로필 "포스트 히스토리" 탭 - 내가 쓴 게시글 전체를 최신순/오래된순으로
+    List<Post> findByAuthorOrderByCreatedAtDesc(User author);
+    List<Post> findByAuthorOrderByCreatedAtAsc(User author);
 }

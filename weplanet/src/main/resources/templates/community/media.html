@@ -83,7 +83,7 @@
 
       <p th:if="${#lists.isEmpty(mediaList)}" class="text-muted" style="padding:24px 0;">표시할 미디어가 없습니다.</p>
     </div>
-    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
 
   <!-- 미디어 등록 모달 (해당 커뮤니티 아티스트만) -->

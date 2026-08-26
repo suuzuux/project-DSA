@@ -20,6 +20,22 @@
     });
   }
 
+  const bookmarkButton = document.getElementById("bookmarkButton");
+  if (bookmarkButton) {
+    bookmarkButton.addEventListener("click", function () {
+      const btn = this;
+      fetch("/posts/detail/" + postId + "/bookmark", { method: "POST" })
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          document.getElementById("bookmarkIconFilled").style.display = data.bookmarked ? "" : "none";
+          document.getElementById("bookmarkIconOutline").style.display = data.bookmarked ? "none" : "";
+          btn.classList.toggle("is-active", data.bookmarked);
+        });
+    });
+  }
+
   const translateLink = document.getElementById("postTranslateLink");
   if (translateLink) {
     translateLink.addEventListener("click", function () {

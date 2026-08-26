@@ -19,8 +19,9 @@
             </div>
           </div>
           <p class="post-card__body" th:text="${post.title}"></p>
-          <p th:if="${post.linkUrl} != null" class="translate-link" style="margin-top:6px;word-break:break-all;">
-            🔗 <span th:text="${post.linkUrl}"></span>
+          <p th:if="${post.linkUrl} != null" class="translate-link" style="display:flex;align-items:center;gap:4px;margin-top:6px;word-break:break-all;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            <span th:text="${post.linkUrl}"></span>
           </p>
           <div th:if="${thumbnailUrls.get(post.id)} != null" class="post-card__media">
             <img th:src="@{'/uploads/' + ${thumbnailUrls.get(post.id)}}" alt=""
@@ -28,11 +29,13 @@
           </div>
         </a>
         <div class="post-card__actions">
-          <span th:if="${post.likeCount > 0}">♥ <span th:text="${post.likeCount}"></span></span>
-          <span th:unless="${post.likeCount > 0}">♥</span>
-          <span th:with="cc=${commentCounts.get(post.id)}">
-            <span th:if="${cc > 0}">💬 <span th:text="${cc}"></span></span>
-            <span th:unless="${cc > 0}">💬</span>
+          <span style="display:inline-flex;align-items:center;gap:4px;">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span th:if="${post.likeCount > 0}" th:text="${post.likeCount}"></span>
+          </span>
+          <span th:with="cc=${commentCounts.get(post.id)}" style="display:inline-flex;align-items:center;gap:4px;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+            <span th:if="${cc > 0}" th:text="${cc}"></span>
           </span>
         </div>
       </article>

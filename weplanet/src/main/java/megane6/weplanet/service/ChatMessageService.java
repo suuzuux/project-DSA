@@ -78,6 +78,7 @@ public class ChatMessageService {
                         .artistId(artist.getId())
                         .artistNickname(artist.getNickname())
                         .hasConversation(false)
+                        .membershipExpired(isMembershipExpired(fan, artist))
                         .build());
             }
         }
@@ -90,12 +91,13 @@ public class ChatMessageService {
         return chatMessageRepository.findByArtistAndFanOrderByCreatedAtAsc(artist, fan);
     }
 
-    // 와이어프레임 19번: 이 팬의 이 아티스트 멤버십이 만료됐는지 확인.
-    // 멤버십 기록 자체가 없으면(한 번도 가입한 적 없으면) "만료됨"으로 취급하지 않음 - 애초에 구독한 적이 없는 것과
-    // "구독했다가 끝난 것"은 다른 의미라, 배너는 실제로 만료된 경우에만 보여주는 게 맞다고 판단함
+    // 와이어프레임 19번: 이 팬의 이 아티스트 멤버십이 만료됐는지(=DM 입력창을 막아야 하는지) 확인.
+    // 처음엔 "가입한 적 자체가 없으면 만료가 아니다"로 처리했었는데, 이러면 한 번도 가입 안 한 사람도
+    // 입력창이 그대로 보여서 DM을 보낼 수 있었음(와이어프레임엔 아예 대화창이 없어야 함). 그래서
+    // "멤버십 기록이 없는 것"도 "만료된 것"과 똑같이 취급하도록 수정함 - 둘 다 지금 활성 멤버십이 없다는 점은 같음
     public boolean isMembershipExpired(User fan, User artist) {
         return membershipRepository.findByFanAndArtist(fan, artist)
                 .map(Membership::isExpired)
-                .orElse(false);
+                .orElse(true);
     }
 }
