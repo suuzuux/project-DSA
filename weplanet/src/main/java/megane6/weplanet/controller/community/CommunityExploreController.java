@@ -76,8 +76,8 @@ public class CommunityExploreController {
 	}
 	
 	// 커뮤니티 페이지 사이드바 "내 프로필" 위젯이 호출하는 조회 전용 엔드포인트
-	@GetMapping("/community/{artistId}/profile")
-	public Map<String, Object> myProfile(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal) {
+	@GetMapping("/community/{artistId}/my-profile/widget")
+	public Map<String, Object> myProfileWidget(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) throw new LoginRequiredException();
 		User fan = userResolver.resolve(principal, 1L);
 		return communityExploreService.getMyProfile(fan, artistId);
