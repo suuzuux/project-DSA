@@ -2,7 +2,6 @@ package megane6.weplanet.service.media;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import megane6.weplanet.domain.dto.media.BoardMediaFileViewDTO;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
 import megane6.weplanet.domain.entity.media.BoardMediaEntity;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
@@ -88,8 +87,8 @@ public class BoardMediaService {
     }
 
     // ── 수정 : 제목/내용 변경 (+ 새 파일이 오면 뒤에 추가) ──
-    public void edit(Long id, Long communityGroupId, String title, String content, List<MultipartFile> files) {
-        BoardMediaEntity post = getActivePostInCommunity(id, communityGroupId);
+    public void edit(Long id, String title, String content, List<MultipartFile> files) {
+        BoardMediaEntity post = getActivePost(id);
         post.setTitle(title);
         post.setContent(content);
         post.setUpdatedAt(LocalDateTime.now());
@@ -126,8 +125,8 @@ public class BoardMediaService {
     }
 
     // ── 삭제 : 소프트 삭제(기록/파일은 남기고 목록에서만 숨김) ──
-    public void softDelete(Long id, Long communityGroupId) {
-        BoardMediaEntity post = getActivePostInCommunity(id, communityGroupId);
+    public void softDelete(Long id) {
+        BoardMediaEntity post = getActivePost(id);
         post.setDeletedAt(LocalDateTime.now());
         boardMediaRepository.save(post);
     }
@@ -162,24 +161,7 @@ public class BoardMediaService {
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));
     }
 
-    private BoardMediaEntity getActivePostInCommunity(Long id, Long communityGroupId) {
-        BoardMediaEntity post = getActivePost(id);
-        if (!post.getGroupId().equals(communityGroupId)) {
-            throw new IllegalStateException("다른 커뮤니티의 미디어는 수정/삭제할 수 없습니다.");
-        }
-        return post;
-    }
-
     private BoardMediaViewDTO toViewDTO(BoardMediaEntity post) {
-        List<BoardMediaFileViewDTO> fileViews = post.getFiles().stream()
-                .map(file -> BoardMediaFileViewDTO.builder()
-                        .id(file.getId())
-                        .mediaType(file.getMediaType())
-                        .originalName(file.getOriginalName())
-                        .contentType(file.getContentType())
-                        .build())
-                .toList();
-
         return BoardMediaViewDTO.builder()
                 .id(post.getId())
                 .groupId(post.getGroupId())
@@ -187,8 +169,8 @@ public class BoardMediaService {
                 .title(post.getTitle())
                 .content(post.getContent())
                 .createdAt(post.getCreatedAt())
-                .fileCount(fileViews.size())
-                .files(fileViews)
+                .fileCount(post.getFiles().size())
+                .files(new ArrayList<>(post.getFiles())) // 파일 목록 복사해서 담기
                 .build();
     }
 }
