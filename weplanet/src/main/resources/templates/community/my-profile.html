@@ -79,7 +79,7 @@
         </th:block>
     </div>
 
-    <!-- EXPLORE-03: 내 프로필 위젯 - 데이터는 JS가 /community/{artistId}/profile 을 fetch해서 채움 -->
+    <!-- EXPLORE-03: 내 프로필 위젯 - 데이터는 JS가 /community/{artistId}/my-profile/widget 을 fetch해서 채움 -->
     <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <div class="widget" id="myProfileWidget" th:attr="data-artist-id=${artist.id()}">
             <h3 class="widget__title">내 프로필</h3>

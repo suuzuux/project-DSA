@@ -50,8 +50,8 @@
      th:classappend="${active == 'live'} ? ' is-active'">Live</a>
 </nav>
 
-<aside th:fragment="sidebarAside" class="community-aside">
-  <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
+  <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
   </th:block>
 
@@ -79,7 +79,7 @@
     </th:block>
   </div>
 
-  <!-- EXPLORE-03: 내 프로필 위젯 - 데이터는 JS가 /community/{artistId}/profile 을 fetch해서 채움 -->
+  <!-- EXPLORE-03: 내 프로필 위젯 - 데이터는 JS가 /community/{artistId}/my-profile/widget 을 fetch해서 채움 -->
   <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <div class="widget" id="myProfileWidget" th:attr="data-artist-id=${artist.id()}">
       <h3 class="widget__title">내 프로필</h3>
@@ -92,7 +92,7 @@
     <p class="text-muted text-sm">표시할 일정이 없습니다.</p>
   </div>
 
-  <div class="widget">
+  <div class="widget" th:if="${showAbout}">
     <h3 class="widget__title">About</h3>
     <div class="flex-center mb-16">
       <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
@@ -101,7 +101,7 @@
         <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
       </div>
     </div>
-    <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 - otherArtists가 채워지기 전까지는 빈 목록으로 안전하게 처리 -->
+    <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
     <div th:each="other : ${otherArtists ?: {}}" class="flex-between mb-8" style="align-items:center;">
       <div class="flex-center" style="gap:8px;">
         <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>

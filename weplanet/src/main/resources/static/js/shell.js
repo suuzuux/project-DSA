@@ -654,7 +654,7 @@
           communityJoinModal.classList.remove("is-open");
           alert("프로필이 저장되었습니다.");
           if (typeof context.onSaved === "function") {
-            fetch(`${base}community/${artistId}/profile`)
+            fetch(`${base}community/${artistId}/my-profile/widget`)
               .then((res) => res.json())
               .then(context.onSaved)
               .catch(() => {});
@@ -693,7 +693,7 @@
       widgetBody.innerHTML = `<a href="${base}community/${artistId}/my-profile" class="my-profile-link">${linkText}</a>`;
     }
       if (myProfileWidget) {
-        fetch(`${base}community/${myProfileWidget.getAttribute("data-artist-id")}/profile`)
+        fetch(`${base}community/${myProfileWidget.getAttribute("data-artist-id")}/my-profile/widget`)
           .then((res) => res.json())
           .then(renderMyProfileWidget)
           .catch(() => {
