@@ -16,7 +16,7 @@ import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -40,15 +40,17 @@ public class ProjectRequestDTO {
     @Max(value = 3_000_000, message = "목표 금액은 최대 3,000,000원까지 가능합니다.")
     private Long goalAmount;
 
+    // 화면에서는 날짜(년월일)만 받는다. 시각은 ProjectService에서 붙인다.
+    // (시작일 00:00:00 / 마감일 23:59:59 - fan_project 컬럼은 그대로 DATETIME(6))
     @NotNull(message = "모금 시작일을 입력해주세요.")
-    @FutureOrPresent(message = "모금 시작일은 현재 이후여야 합니다.")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime fundingStartAt;
+    @FutureOrPresent(message = "모금 시작일은 오늘 이후여야 합니다.")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate fundingStartAt;
 
     @NotNull(message = "모금 마감일을 입력해주세요.")
-    @Future(message = "모금 마감일은 현재 이후여야 합니다.")
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime fundingEndAt;
+    @Future(message = "모금 마감일은 오늘 이후여야 합니다.")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate fundingEndAt;
 
     @NotBlank(message = "프로젝트 상세 설명을 입력해주세요.")
     @Size(max = 1000, message = "상세 설명은 1,000자 이하로 입력해주세요.")

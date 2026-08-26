@@ -138,4 +138,20 @@ public class User {
 	public boolean isPhoneVerified() {
 		return this.phoneVerifiedAt != null;
 	}
+
+	/**
+	 * 휴대폰 본인인증 완료 처리 - 인증받은 번호를 함께 보관하고 완료 시각을 남긴다.
+	 * <p>
+	 * 팬 프로젝트 등록(ProjectService)이 isPhoneVerified()를 관문으로 쓰는데,
+	 * 지금까지 이 값을 채워주는 곳이 아무 데도 없어서 등록이 항상 막혀 있었음.
+	 * 실제 본인인증(PASS 등)이 붙기 전까지는 시드/테스트에서 이 메서드로 채운다.
+	 * phoneHash(검색용 SHA-256)는 아직 평문 단계라 채우지 않음.
+	 */
+	public void verifyPhone(String phoneNumber) {
+		if (phoneNumber == null || phoneNumber.isBlank()) {
+			throw new IllegalArgumentException("본인인증할 휴대폰 번호가 필요합니다.");
+		}
+		this.phone = phoneNumber;
+		this.phoneVerifiedAt = LocalDateTime.now();
+	}
 }

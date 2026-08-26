@@ -8,6 +8,7 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" th:href="@{/css/project.css}" />
   <!-- DM 플로팅 위젯 실시간 채팅에서 사용 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
@@ -32,10 +33,13 @@
         </div>
 
         <div class="flex-center">
-          <select class="form-select" style="width:auto;min-height:36px;" aria-label="프로젝트 정렬">
-            <option>마감임박순</option>
-            <option>인기순</option>
-            <option>최신순</option>
+          <!-- 인기순은 후원(모금액) 기능이 붙은 뒤에 추가한다 -->
+          <select id="projectSort"
+                  class="form-select"
+                  style="width:auto;min-height:36px;"
+                  aria-label="프로젝트 정렬">
+            <option value="deadline" th:selected="${sort != 'latest'}">마감임박순</option>
+            <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
           </select>
 
           <button type="button"
@@ -59,8 +63,48 @@
         프로젝트 등록 신청이 완료되었습니다.
       </p>
 
-      <!-- 프로젝트 목록 조회를 연결하기 전의 빈 상태 -->
-      <p class="text-muted" style="padding:24px 0;">
+      <!-- 프로젝트 목록 -->
+      <div class="project-grid" th:if="${!projects.isEmpty()}">
+        <a class="project-card"
+          th:each="project : ${projects}"
+          th:href="@{/community/{artistId}/project/{projectId}
+                    (artistId=${artist.id()}, projectId=${project.id})}">
+
+          <div class="project-card__thumb">
+            <img th:if="${project.coverImageUrl() != null}"
+                 th:src="${project.coverImageUrl()}"
+                 th:alt="${project.title()}" />
+            <span th:if="${project.coverImageUrl() == null}" class="project-card__thumb-empty">🎁</span>
+
+            <span class="project-badge"
+                  th:classappend="'project-badge--' + ${project.statusBadgeCode()}"
+                  th:text="${project.statusLabel()}">승인대기</span>
+          </div>
+
+          <div class="project-card__body">
+            <p class="project-card__type" th:text="${project.eventTypeLabel()}">생일카페</p>
+            <h3 class="project-card__title" th:text="${project.title()}">프로젝트 제목</h3>
+
+            <p class="project-card__meta">
+              <span th:text="${project.creatorNickname()}">개설자</span>
+              <span class="project-card__dot">·</span>
+              <span th:text="${#temporals.format(project.fundingStartAt(), 'yyyy.MM.dd')}">2026.09.01</span>
+              ~
+              <span th:text="${#temporals.format(project.fundingEndAt(), 'yyyy.MM.dd')}">2026.09.30</span>
+            </p>
+
+            <div class="project-card__foot">
+              <strong class="project-card__goal"
+                      th:text="${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')} + '원 목표'">500,000원 목표</strong>
+              <span class="project-card__dday"
+                    th:classappend="${project.isClosed()} ? 'is-closed' : ''"
+                    th:text="${project.dDayLabel()}">D-30</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <p class="text-muted" style="padding:24px 0;" th:if="${projects.isEmpty()}">
         표시할 팬 프로젝트가 없습니다.
       </p>
     </div>
@@ -161,7 +205,7 @@
             <label class="form-label" for="fundingStartAt">모금 시작</label>
             <input id="fundingStartAt"
                    class="form-input"
-                   type="datetime-local"
+                   type="date"
                    th:field="*{fundingStartAt}"
                    required />
             <p class="form-error" th:errors="*{fundingStartAt}"></p>
@@ -172,7 +216,7 @@
             <label class="form-label" for="fundingEndAt">모금 마감</label>
             <input id="fundingEndAt"
                    class="form-input"
-                   type="datetime-local"
+                   type="date"
                    th:field="*{fundingEndAt}"
                    required />
             <p class="form-error" th:errors="*{fundingEndAt}"></p>
@@ -262,9 +306,50 @@
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("projectCreateForm");
       const modal = document.getElementById("projectCreateModal");
+      if (!modal) return;
 
-      if (form && modal && form.querySelector(".is-invalid, [data-global-error]")) {
+      // 등록 실패로 돌아온 경우(에러 표시가 있으면) 모달을 다시 열어서 입력값을 보여줌
+      if (form && form.querySelector(".is-invalid, [data-global-error]")) {
         modal.classList.add("is-open");
+      }
+
+      // 바깥(배경) 클릭으로 닫히지 않게 함.
+      // main.js가 모든 .modal-backdrop에 "배경 클릭 시 닫기"를 걸어두는데,
+      // 이 폼은 입력 항목이 많아서 실수로 한 번 잘못 누르면 작성 내용이 전부 날아감.
+      // document의 캡처 단계는 backdrop 자신의 리스너보다 먼저 실행되므로,
+      // 여기서 전파를 끊으면 main.js의 닫기 핸들러까지 이벤트가 도달하지 않음.
+      document.addEventListener("click", function (e) {
+        if (e.target === modal) {
+          e.stopPropagation();
+        }
+      }, true);
+
+      // 정렬 변경 - ?sort=... 를 붙여 같은 페이지를 다시 요청
+      const sortSelect = document.getElementById("projectSort");
+      if (sortSelect) {
+        sortSelect.addEventListener("change", function () {
+          const url = new URL(window.location.href);
+          url.searchParams.set("sort", sortSelect.value);
+          window.location.href = url.toString();
+        });
+      }
+
+      // 모금 시작일은 오늘 이전을 못 고르게 하고(@FutureOrPresent와 짝),
+      // 마감일은 시작일보다 앞선 날짜를 못 고르게 막아줌 (서버 검증은 그대로 유지)
+      const startInput = document.getElementById("fundingStartAt");
+      const endInput = document.getElementById("fundingEndAt");
+
+      if (startInput && endInput) {
+        const today = new Date().toISOString().slice(0, 10);
+        startInput.min = today;
+        endInput.min = today;
+
+        startInput.addEventListener("change", function () {
+          endInput.min = startInput.value || today;
+          if (endInput.value && endInput.value < endInput.min) {
+            endInput.value = "";
+          }
+        });
       }
     });
   </script>

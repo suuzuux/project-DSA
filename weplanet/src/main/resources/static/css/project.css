@@ -1,0 +1,293 @@
+/* ============================================================
+   팬 프로젝트 목록 카드
+   ------------------------------------------------------------
+   community/project.html 전용. 팀 공용 style.css를 건드리지 않으려고
+   별도 파일로 뺐다. 색/폰트/모서리 값은 variables.css의 --wp-* 를 그대로 쓴다.
+   ============================================================ */
+
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    padding: 8px 0 24px;
+}
+
+.project-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--wp-paper);
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    transition: transform var(--wp-fast) var(--wp-ease),
+    box-shadow var(--wp-fast) var(--wp-ease);
+}
+
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+}
+
+/* ---------- 썸네일 ---------- */
+
+.project-card__thumb {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: var(--wp-faint);
+    overflow: hidden;
+}
+
+.project-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 대표 이미지가 없을 때 자리를 채우는 기본 표시 */
+.project-card__thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 40px;
+    opacity: .35;
+}
+
+/* ---------- 상태 뱃지 ---------- */
+
+.project-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    line-height: 1.4;
+    color: #fff;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(2px);
+}
+
+/* FanProjectStatus.badgeCode 와 짝을 이룸 */
+.project-badge--pending {
+    background: #8a6d3b;
+}
+
+.project-badge--approved {
+    background: #18794e;
+}
+
+.project-badge--rejected {
+    background: var(--wp-danger);
+}
+
+.project-badge--funding {
+    background: var(--wp-brand);
+}
+
+.project-badge--closed {
+    background: #555;
+}
+
+.project-badge--completed {
+    background: #2b6cb0;
+}
+
+.project-badge--cancelled {
+    background: #777;
+}
+
+/* ---------- 본문 ---------- */
+
+.project-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px 14px;
+}
+
+.project-card__type {
+    margin: 0;
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    color: var(--wp-brand);
+}
+
+.project-card__title {
+    margin: 0;
+    font-size: var(--wp-fs-md);
+    line-height: 1.35;
+
+    /* 제목이 길어도 카드 높이가 들쭉날쭉하지 않게 두 줄로 자름 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.project-card__meta {
+    margin: 0;
+    font-size: var(--wp-fs-xs);
+    color: var(--wp-ink-soft);
+}
+
+.project-card__dot {
+    margin: 0 2px;
+}
+
+.project-card__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--wp-hairline);
+}
+
+.project-card__goal {
+    font-size: var(--wp-fs-sm);
+}
+
+.project-card__dday {
+    flex: none;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--wp-brand-soft);
+    color: var(--wp-brand-dark);
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+}
+
+/* 마감된 프로젝트는 강조하지 않음 */
+.project-card__dday.is-closed {
+    background: var(--wp-faint);
+    color: var(--wp-muted);
+}
+
+/* ---------- 카드가 <a>로 바뀌면서 필요한 정리 ---------- */
+
+.project-card {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ---------- 상세 화면 ---------- */
+
+.project-detail {
+    padding-bottom: 32px;
+}
+
+.project-detail__cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 16px;
+    background: var(--wp-faint);
+    border-radius: var(--wp-radius);
+    overflow: hidden;
+}
+
+.project-detail__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.project-detail__title {
+    margin: 4px 0 8px;
+    font-size: var(--wp-fs-xl);
+    line-height: 1.3;
+}
+
+.project-detail__meta {
+    margin: 0 0 20px;
+    font-size: var(--wp-fs-sm);
+    color: var(--wp-ink-soft);
+}
+
+.project-detail__rejected {
+    margin-bottom: 20px;
+    padding: 12px 14px;
+    border-radius: var(--wp-radius-sm);
+    background: var(--wp-danger-soft);
+    color: var(--wp-danger);
+}
+
+.project-detail__rejected strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--wp-fs-sm);
+}
+
+.project-detail__rejected p {
+    margin: 0;
+    font-size: var(--wp-fs-sm);
+}
+
+.project-detail__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 0 0 24px;
+    padding: 16px;
+    background: var(--wp-faint);
+    border-radius: var(--wp-radius);
+}
+
+.project-detail__summary dt {
+    margin-bottom: 4px;
+    font-size: var(--wp-fs-xs);
+    color: var(--wp-muted);
+}
+
+.project-detail__summary dd {
+    margin: 0;
+    font-size: var(--wp-fs-sm);
+    font-weight: 700;
+}
+
+.project-detail__section-title {
+    margin: 0 0 10px;
+    font-size: var(--wp-fs-md);
+}
+
+/* 본문의 줄바꿈을 입력한 그대로 살림 */
+.project-detail__description {
+    margin: 0;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ---------- ADMIN 프로젝트 심사 ---------- */
+
+.project-review {
+    display: grid;
+    gap: 12px;
+    margin-top: 28px;
+    padding: 16px;
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.project-review form {
+    margin: 0;
+}
+
+.project-review__reject {
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--wp-hairline);
+}
+
+.project-review .btn--danger {
+    color: #fff;
+    background: var(--wp-danger);
+    border-color: var(--wp-danger);
+}

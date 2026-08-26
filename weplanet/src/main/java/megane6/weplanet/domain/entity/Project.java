@@ -216,6 +216,46 @@ public class Project {
         }
     }
 
+    /**
+     * ADMIN이 승인대기 프로젝트를 승인한다.
+     */
+    public void approve(User admin) {
+        validatePendingReview(admin);
+        this.status = FanProjectStatus.APPROVED;
+        this.reviewedBy = admin;
+        this.reviewedAt = LocalDateTime.now();
+        this.rejectionReason = null;
+    }
+
+    /**
+     * ADMIN이 승인대기 프로젝트를 사유와 함께 반려한다.
+     */
+    public void reject(User admin, String reason) {
+        validatePendingReview(admin);
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("반려 사유를 입력해주세요.");
+        }
+
+        String trimmedReason = reason.trim();
+        if (trimmedReason.length() > 500) {
+            throw new IllegalArgumentException("반려 사유는 500자 이하로 입력해주세요.");
+        }
+
+        this.status = FanProjectStatus.REJECTED;
+        this.reviewedBy = admin;
+        this.reviewedAt = LocalDateTime.now();
+        this.rejectionReason = trimmedReason;
+    }
+
+    private void validatePendingReview(User admin) {
+        if (admin == null || admin.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("ADMIN만 프로젝트를 승인하거나 반려할 수 있습니다.");
+        }
+        if (this.status != FanProjectStatus.PENDING_APPROVAL) {
+            throw new IllegalStateException("승인대기 상태의 프로젝트만 심사할 수 있습니다.");
+        }
+    }
+
     @PrePersist
     private void prePersist() {
         LocalDateTime now = LocalDateTime.now();

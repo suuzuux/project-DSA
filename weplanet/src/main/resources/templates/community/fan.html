@@ -28,7 +28,8 @@
       <div class="board-toolbar">
         <div class="board-tabs">
           <a class="is-active" th:href="@{/community/{id}/fan(id=${artist.id()})}">포스트</a>
-          <a th:href="@{/community/{id}/project(id=${artist.id()})}">프로젝트</a>
+          <a th:href="@{/community/{id}/project(id=${artist.id()})}"
+             sec:authorize="isAnonymous() or hasAnyRole('FAN', 'ADMIN')">프로젝트</a>
         </div>
         <div class="flex-center">
           <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;"
