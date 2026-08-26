@@ -99,7 +99,14 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		User artist = populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "fan");
+			return "community/membership-required";
+		}
 		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
 		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal));
 
@@ -127,7 +134,14 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		User artist = populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "artist");
+			return "community/membership-required";
+		}
 		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
 
 		if ("fetch".equals(requestedWith)) {
@@ -175,13 +189,27 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "notice");
+			return "community/membership-required";
+		}
 		return "community/notice";
 	}
 
 	@GetMapping("/community/{artistId}/media")
 	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "media");
+			return "community/membership-required";
+		}
 		model.addAttribute("mediaList", boardMediaService.list(artistId));
 		model.addAttribute("groupId", artistId);
 		return "community/media";
@@ -189,7 +217,14 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/live")
 	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "live");
+			return "community/membership-required";
+		}
 		return "community/live";
 	}
 
@@ -260,6 +295,26 @@ public class CommunityController {
 		return "redirect:/community/" + artistId + "/highlight";
 	}
 
+	// 멤버십 해지 (상세보기 모달의 "멤버십 해지" 버튼)
+	@PostMapping("/community/{artistId}/membership/cancel")
+	public String cancelMembership(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+
+		User artist = userRepository.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+		User fan = userResolver.resolve(principal, 1L);
+
+		membershipService.cancel(fan, artist);
+
+		return "redirect:/community/" + artistId + "/highlight";
+	}
+
 	// "Membership 상세보기" 모달(P33) - 목업 데이터(홍길동/고정 날짜) 대신 실제 가입일/만료일/연락처로 채워서 보여줌.
 	// 모달 자체는 shell.js가 페이지 공통으로 그려두는 거라 여기서 뷰를 새로 만들지 않고 JSON만 내려줌.
 	@GetMapping("/community/{artistId}/membership/detail")
@@ -314,6 +369,13 @@ public class CommunityController {
 		return "redirect:/community/" + backTo + "/highlight";
 	}
 
+	// Fan/Artist/Media/Live/Notice 탭 접근 제어: 로그인은 각 라우트에서 먼저 체크하고,
+	// 여기서는 "이 커뮤니티에 무료 가입(팔로우)했는지"만 확인함.
+	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
+	private boolean hasCommunityAccess(User currentUser, Long artistId) {
+		return followService.isFollowing(currentUser, artistId);
+	}
+
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
@@ -334,6 +396,10 @@ public class CommunityController {
 				.map(user -> ArtistFollowCardView.of(user, followedIds.contains(user.getId())))
 				.toList();
 		model.addAttribute("otherArtists", otherArtists);
+
+		// 이 커뮤니티에 무료 가입(팔로우)했는지 - Fan/Artist/Media/Live/Notice 접근 제어 및 하단 배너 표시에 씀
+		// (followedIds는 바로 위에서 다른 아티스트 추천용으로 이미 조회해둔 걸 재사용)
+		model.addAttribute("communityJoined", followedIds.contains(artistId));
 
 		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
 		if (principal != null) {
