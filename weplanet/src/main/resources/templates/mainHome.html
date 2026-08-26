@@ -89,7 +89,11 @@
 </p>
 
 <script th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
+    window.__WEPLANET_ARTISTS__ = [
+      /*[# th:each="a : ${artists}"]*/
+      { "id": /*[[${a.id()}]]*/, "nickname": /*[[${a.nickname()}]]*/, "logo": /*[[${a.logo()}]]*/ },
+      /*[/]*/
+    ];
 </script>
 <script th:src="@{/js/shell.js}"></script>
 <script th:src="@{/js/dm-realtime.js}"></script>

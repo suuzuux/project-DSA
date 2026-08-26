@@ -33,6 +33,21 @@
       .replace(/"/g, "&quot;");
   }
 
+  function artistIdOf(artist) {
+    if (artist == null) return "";
+    const id = artist.id ?? artist.artistId;
+    return id == null || id === "" ? "" : String(id);
+  }
+
+  /** CommunityController GET /community/{artistId}/artist */
+  function artistPageHref(artist) {
+    const id = artistIdOf(artist);
+    if (!id) return "#";
+    const path = "community/" + encodeURIComponent(id) + "/artist";
+    if (!base || base === "/") return "/" + path;
+    return (base.endsWith("/") ? base : base + "/") + path;
+  }
+
   function communitiesBlockHtml() {
     if (!artists.length) {
       return isAuthenticated
@@ -45,9 +60,10 @@
 
     const links = artists
       .map((a) => {
+        if (!artistIdOf(a)) return "";
         const logo = escapeHtml(a.logo || "?");
         const name = escapeHtml(a.nickname || "아티스트");
-        return `<a href="${base}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
+        return `<a href="${artistPageHref(a)}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
       })
       .join("");
 

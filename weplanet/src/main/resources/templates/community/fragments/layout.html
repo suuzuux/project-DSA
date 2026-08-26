@@ -28,21 +28,21 @@
   </div>
 
   <nav th:fragment="tabs(active)" class="tabs" aria-label="커뮤니티 메뉴">
-    <a th:href="@{/community/{id}/highlight(id=${artist.id()})}"
+    <a th:href="@{/community/{artistId}/highlight(artistId=${artist.id()})}"
        th:classappend="${active == 'highlight'} ? ' is-active'">Highlight</a>
-    <a th:href="@{/community/{id}/notice(id=${artist.id()})}"
+    <a th:href="@{/community/{artistId}/notice(artistId=${artist.id()})}"
        th:classappend="${active == 'notice'} ? ' is-active'">Notice</a>
-    <a th:href="@{/community/{id}/fan(id=${artist.id()})}"
+    <a th:href="@{/community/{artistId}/fan(artistId=${artist.id()})}"
        th:classappend="${active == 'fan'} ? ' is-active'">Fan</a>
-    <a th:href="@{/community/{id}/artist(id=${artist.id()})}"
+    <a th:href="@{/community/{artistId}/artist(artistId=${artist.id()})}"
        th:classappend="${active == 'artist'} ? ' is-active'">Artist</a>
-    <a th:href="@{/community/{id}/media(id=${artist.id()})}"
+    <a th:href="@{/community/{artistId}/media(artistId=${artist.id()})}"
        th:classappend="${active == 'media'} ? ' is-active'">Media</a>
-    <a th:href="@{/community/{id}/live(id=${artist.id()})}"
+    <a th:href="@{/community/{artistId}/live(artistId=${artist.id()})}"
        th:classappend="${active == 'live'} ? ' is-active'">Live</a>
   </nav>
 
-  <aside th:fragment="sidebarAside" class="community-aside">
+  <aside th:fragment="sidebarAside(showWrite, showCalendarHint)" class="community-aside">
     <div class="membership-card">
       <h3 class="membership-card__title" th:text="|${artist.nickname()} Membership|">Membership</h3>
 
@@ -53,7 +53,7 @@
         </div>
         <div th:unless="${membershipActive}">
           <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-          <form th:action="@{/community/{id}/membership/join(id=${artist.id()})}" method="post">
+          <form th:action="@{/community/{artistId}/membership/join(artistId=${artist.id()})}" method="post">
             <button type="submit" class="btn btn--accent btn--block">Membership 가입하기</button>
           </form>
         </div>
@@ -91,7 +91,11 @@
   </aside>
 
   <script th:fragment="scripts" th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
+    window.__WEPLANET_ARTISTS__ = [
+      /*[# th:each="a : ${artists}"]*/
+      { "id": /*[[${a.id()}]]*/, "nickname": /*[[${a.nickname()}]]*/, "logo": /*[[${a.logo()}]]*/ },
+      /*[/]*/
+    ];
   </script>
 </body>
 </html>
