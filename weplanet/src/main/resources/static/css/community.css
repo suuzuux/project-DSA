@@ -92,7 +92,7 @@
 /* ---------- Community Body Layout ---------- */
 .community-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 24px;
   width: min(100% - 32px, 1100px);
   margin: 20px auto 48px;
@@ -103,16 +103,43 @@
   .community-body {
     grid-template-columns: 1fr;
   }
+  .community-main,
+  .community-aside {
+    order: 0;
+  }
 }
 
 .community-main {
   min-width: 0;
+  order: 2;
 }
 
 .community-aside {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  order: 1;
+}
+
+/* 게시글 상세(post-detail) 페이지는 예외: 사이드바(Membership 등)가 아니라 본문(왼쪽, 넓게)-댓글(오른쪽) 구성.
+   .community-aside를 재사용하는 #commentSection 폭도 사이드바보다 넓게 별도 지정함 */
+.community-body--detail {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.community-body--detail .community-main {
+  order: 1;
+}
+
+.community-body--detail #commentSection.community-aside {
+  order: 2;
+}
+
+@media (max-width: 960px) {
+  .community-body--detail .community-main,
+  .community-body--detail #commentSection.community-aside {
+    order: 0;
+  }
 }
 
 /* ---------- Membership Card ---------- */
