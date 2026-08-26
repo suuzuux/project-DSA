@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${project.title()} + ' | WePlaNet'">프로젝트 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/community.css}" />
+    <link rel="stylesheet" th:href="@{/css/shell.css}" />
+    <link rel="stylesheet" th:href="@{/css/project.css}" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null},
+               data-artist-id=${artist.id()}">
+
+<header th:replace="~{community/fragments/layout :: header}"></header>
+<div th:replace="~{community/fragments/layout :: hero}"></div>
+
+<div class="community-body">
+    <div class="community-main">
+        <nav th:replace="~{community/fragments/layout :: tabs('fan')}"></nav>
+
+        <a class="section__link mb-16" style="display:inline-block;"
+           th:href="@{/community/{id}/project(id=${artist.id()})}">← 프로젝트 목록</a>
+
+        <p th:if="${successMessage}"
+           th:text="${successMessage}"
+           style="margin:0 0 16px;padding:12px 14px;border-radius:8px;background:#e9f8ef;color:#18794e;font-weight:600;">
+            프로젝트 심사가 완료되었습니다.
+        </p>
+
+        <article class="project-detail">
+
+            <!-- 대표 이미지 -->
+            <div class="project-detail__cover">
+                <img th:if="${project.coverImageUrl() != null}"
+                     th:src="${project.coverImageUrl()}"
+                     th:alt="${project.title()}" />
+                <span th:if="${project.coverImageUrl() == null}"
+                      class="project-card__thumb-empty">🎁</span>
+
+                <span class="project-badge"
+                      th:classappend="'project-badge--' + ${project.statusBadgeCode()}"
+                      th:text="${project.statusLabel()}">승인대기</span>
+            </div>
+
+            <!-- 제목 영역 -->
+            <p class="project-card__type" th:text="${project.eventTypeLabel()}">생일카페</p>
+            <h1 class="project-detail__title" th:text="${project.title()}">프로젝트 제목</h1>
+
+            <p class="project-detail__meta">
+                <span th:text="${project.creatorNickname()}">개설자</span>
+                <span class="project-card__dot">·</span>
+                <span th:text="${#temporals.format(project.createdAt(), 'yyyy.MM.dd')}">2026.08.25</span> 등록
+            </p>
+
+            <!-- 반려된 경우에만 사유 안내 -->
+            <div class="project-detail__rejected" th:if="${project.hasRejectionReason()}">
+                <strong>반려 사유</strong>
+                <p th:text="${project.rejectionReason()}">사유</p>
+            </div>
+
+            <!-- 요약 정보 -->
+            <dl class="project-detail__summary">
+                <div>
+                    <dt>목표 금액</dt>
+                    <dd th:text="${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')} + '원'">500,000원</dd>
+                </div>
+                <div>
+                    <dt>모금 기간</dt>
+                    <dd>
+                        <span th:text="${#temporals.format(project.fundingStartAt(), 'yyyy.MM.dd')}">2026.09.01</span>
+                        ~
+                        <span th:text="${#temporals.format(project.fundingEndAt(), 'yyyy.MM.dd')}">2026.09.30</span>
+                    </dd>
+                </div>
+                <div>
+                    <dt>남은 기간</dt>
+                    <dd>
+              <span class="project-card__dday"
+                    th:classappend="${project.isClosed()} ? 'is-closed' : ''"
+                    th:text="${project.dDayLabel()}">D-30</span>
+                    </dd>
+                </div>
+            </dl>
+
+            <!-- 본문 -->
+            <section class="project-detail__body">
+                <h2 class="project-detail__section-title">프로젝트 소개</h2>
+                <p class="project-detail__description" th:text="${project.description()}">설명</p>
+            </section>
+
+            <!-- 승인대기 프로젝트를 보고 있는 ADMIN에게만 심사 기능을 노출한다. -->
+            <section class="project-review"
+                     sec:authorize="hasRole('ADMIN')"
+                     th:if="${project.statusBadgeCode() == 'pending'}">
+                <h2 class="project-detail__section-title">프로젝트 심사</h2>
+
+                <form th:action="@{/community/{artistId}/project/{projectId}/approve(
+                                  artistId=${artist.id()}, projectId=${project.id()})}"
+                      method="post">
+                    <button type="submit" class="btn btn--primary">승인</button>
+                </form>
+
+                <form class="project-review__reject"
+                      th:action="@{/community/{artistId}/project/{projectId}/reject(
+                                 artistId=${artist.id()}, projectId=${project.id()})}"
+                      method="post">
+                    <label class="form-label" for="rejectionReason">반려 사유</label>
+                    <textarea id="rejectionReason"
+                              name="rejectionReason"
+                              class="form-textarea"
+                              maxlength="500"
+                              required
+                              placeholder="반려 사유를 입력해주세요"></textarea>
+                    <button type="submit" class="btn btn--danger">반려</button>
+                </form>
+            </section>
+
+        </article>
+    </div>
+
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
+</div>
+
+<script th:replace="~{community/fragments/layout :: scripts}"></script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+<script th:src="@{/js/dm-realtime.js}"></script>
+</body>
+</html>

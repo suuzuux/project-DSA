@@ -131,4 +131,8 @@ public class User {
 	public void recordLogin() {
 		this.lastLoginAt = LocalDateTime.now();
 	}
+	
+	public void markEmailVerified(LocalDateTime verifiedAt) {
+		this.emailVerifiedAt = verifiedAt;
+	}
 }
