@@ -14,8 +14,10 @@
     const body = document.body;
     if (body.getAttribute("data-shell") !== "fan") return;
 
-    // 로그인 기능이 아직 없어서, body의 data-fan-id 값을 "지금 나(테스트 팬)"로 사용함
-    const fanId = Number(body.getAttribute("data-fan-id") || "1");
+    // data-fan-id는 실제 로그인한 사람일 때만 서버가 채워줌 (비로그인이면 아예 속성 자체가 없음).
+    // 예전엔 없으면 1번으로 기본값 처리해서, 비로그인 상태로도 1번 계정 명의로 DM이 보내지는 문제가 있었음
+    const fanIdRaw = body.getAttribute("data-fan-id");
+    const fanId = fanIdRaw ? Number(fanIdRaw) : null;
 
     let stompClient = null;
     let currentArtistId = null;
@@ -70,7 +72,13 @@
         meta.className = "dm-list-item__meta";
         const name = document.createElement("div");
         name.className = "dm-list-item__name";
-        name.textContent = item.artistNickname || "";
+        const nameText = document.createElement("span");
+        nameText.textContent = item.artistNickname || "";
+        const badge = document.createElement("span");
+        badge.className = "badge-verified";
+        badge.textContent = "✓";
+        name.appendChild(nameText);
+        name.appendChild(badge);
         const preview = document.createElement("div");
         preview.className = item.hasConversation ? "dm-list-item__preview" : "dm-list-item__group";
         preview.textContent = item.hasConversation ? (item.lastMessage || "") : "";
@@ -130,6 +138,13 @@
     }
 
     function loadInbox() {
+        if (!fanId) {
+            const dmBody = document.querySelector("#dmListView .dm-body");
+            if (dmBody) {
+                dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;">로그인 후 이용할 수 있어요.</p>';
+            }
+            return;
+        }
         fetch("/chat/inbox?fanId=" + fanId)
             .then(function (res) {
                 return res.json();
@@ -184,6 +199,10 @@
     // 아티스트 하나를 골라서 방을 열 때: 지난 대화 이력을 불러오고, 실시간 수신을 새로 구독함
     // (화면 전환/헤더 표시는 shell.js가 이미 처리해줌 - 여기선 메시지 데이터만 채움)
     function openRealRoom(artistId) {
+        if (!fanId) {
+            window.location.href = "/login";
+            return;
+        }
         currentArtistId = Number(artistId);
 
         fetch("/chat/room-data?artistId=" + currentArtistId + "&fanId=" + fanId)
@@ -204,6 +223,12 @@
                 const banner = document.getElementById("dmExpiredBanner");
                 if (banner) {
                     banner.classList.toggle("hidden", !data.membershipExpired);
+                }
+
+                // 와이어프레임 19번: 멤버십 만료 시엔 입력창 자체가 없어야 함 (배너만 있고 메시지는 못 보냄)
+                const composerEl = document.getElementById("dmComposer");
+                if (composerEl) {
+                    composerEl.style.display = data.membershipExpired ? "none" : "";
                 }
 
                 unsubscribeAll();
@@ -242,6 +267,10 @@
 
         newComposer.addEventListener("submit", function (e) {
             e.preventDefault();
+            if (!fanId) {
+                window.location.href = "/login";
+                return;
+            }
             const input = document.getElementById("dmInput");
             const text = input.value.trim();
             if (!text || !currentArtistId) return;

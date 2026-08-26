@@ -25,7 +25,7 @@
       <nav th:replace="~{community/fragments/layout :: tabs('notice')}"></nav>
       <p class="text-muted" style="padding:24px 0;">등록된 공지가 없습니다.</p>
     </div>
-    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>

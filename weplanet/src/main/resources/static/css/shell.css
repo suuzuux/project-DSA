@@ -615,3 +615,64 @@
   color: var(--wp-muted);
   margin-top: 4px;
 }
+
+.drawer-menu__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.drawer-menu__section-head .drawer-menu__section-title {
+  margin-bottom: 0;
+}
+
+/* =========================================================
+ * 6. 커뮤니티 탐색 패널 (EXPLORE-02) - DM 패널과 동일한 톤, 드로어 옆에서 펼쳐짐
+ * ========================================================= */
+.explore-panel {
+  position: fixed;
+  top: 20px;
+  left: calc(min(320px, 88vw) + 12px);
+  z-index: 320;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100vh - 40px);
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: 18px;
+  box-shadow: var(--wp-shadow-modal);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.explore-panel.is-open {
+  display: flex;
+}
+.explore-filters {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--wp-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.explore-filters input,
+.explore-filters select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--wp-line);
+  border-radius: var(--wp-radius-sm);
+  padding: 0 10px;
+  font-size: var(--wp-fs-sm);
+  background: var(--wp-paper);
+}
+.explore-filters__row {
+  display: flex;
+  gap: 8px;
+}
+.explore-filters__row > * {
+  flex: 1;
+  min-width: 0;
+}
+.explore-results {
+  flex: 1;
+  overflow: auto;
+}

@@ -92,7 +92,7 @@
 /* ---------- Community Body Layout ---------- */
 .community-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 24px;
   width: min(100% - 32px, 1100px);
   margin: 20px auto 48px;
@@ -103,16 +103,43 @@
   .community-body {
     grid-template-columns: 1fr;
   }
+  .community-main,
+  .community-aside {
+    order: 0;
+  }
 }
 
 .community-main {
   min-width: 0;
+  order: 2;
 }
 
 .community-aside {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  order: 1;
+}
+
+/* 게시글 상세(post-detail) 페이지는 예외: 사이드바(Membership 등)가 아니라 본문(왼쪽, 넓게)-댓글(오른쪽) 구성.
+   .community-aside를 재사용하는 #commentSection 폭도 사이드바보다 넓게 별도 지정함 */
+.community-body--detail {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.community-body--detail .community-main {
+  order: 1;
+}
+
+.community-body--detail #commentSection.community-aside {
+  order: 2;
+}
+
+@media (max-width: 960px) {
+  .community-body--detail .community-main,
+  .community-body--detail #commentSection.community-aside {
+    order: 0;
+  }
 }
 
 /* ---------- Membership Card ---------- */
@@ -643,4 +670,126 @@
   font-weight: 500;
   color: var(--wp-muted);
   margin-top: 4px;
+}
+
+.my-profile-card {
+  background: var(--wp-surface);
+  border-radius: var(--wp-radius-sm);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.my-profile-card__background {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  background: linear-gradient(135deg, #2b3a42, #6b4b2a);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.my-profile-card__background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.my-profile-card__background-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: var(--wp-fs-sm);
+  line-height: 1.5;
+}
+
+.my-profile-card__body {
+  padding: 0 20px 20px;
+  text-align: center;
+}
+
+.my-profile-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  margin-top: -42px;
+  border-radius: 50%;
+  background: var(--wp-surface);
+  border: 4px solid var(--wp-surface);
+  box-shadow: var(--wp-shadow-modal);
+  cursor: pointer;
+  overflow: hidden;
+  font-size: 32px;
+}
+
+.my-profile-card__avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+}
+
+.my-profile-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.my-profile-card__nickname {
+  margin-top: 12px;
+  font-weight: 800;
+}
+
+.my-profile-card__joined-at {
+  margin-top: 4px;
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+}
+
+.my-profile-card__bio {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--wp-hairline);
+  font-size: var(--wp-fs-sm);
+  color: var(--wp-ink-soft);
+  white-space: pre-line;
+}
+
+.my-profile-card--empty {
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.my-profile-card__actions {
+  margin-top: 16px;
+}
+
+.my-profile-card__edit {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.my-profile-card__edit .form-group {
+  margin-bottom: 12px;
+}
+
+.my-profile-link {
+  display: inline-block;
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+  color: var(--wp-brand);
+  text-decoration: none;
+}
+
+.my-profile-link:hover {
+  text-decoration: underline;
 }
