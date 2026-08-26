@@ -1,189 +1,124 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title th:text="${artist.nickname()} + ' – 내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}" />
-    <link rel="stylesheet" th:href="@{/css/community.css}" />
-    <link rel="stylesheet" th:href="@{/css/shell.css}" />
-</head>
-<body data-shell="fan" data-base="/"
-      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
-               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
-
-<header th:replace="~{community/fragments/layout :: header}"></header>
-<div th:replace="~{community/fragments/layout :: hero}"></div>
-
-<div class="community-body">
-    <div class="community-main">
-        <nav th:replace="~{community/fragments/layout :: tabs('')}"></nav>
-
-        <div th:if="${hasProfile}" class="my-profile-card">
-            <label class="my-profile-card__background" title="배경 이미지 변경하기">
-                <img th:if="${backgroundStoredName}" th:src="@{'/uploads/' + ${backgroundStoredName}}" alt="프로필 배경 이미지" />
-                <span th:unless="${backgroundStoredName}" class="my-profile-card__background-placeholder">
-            프로필 배경<br />이미지 영역
-          </span>
-                <input type="file" accept="image/*" id="backgroundFileInput" style="display:none;" />
-            </label>
-
-            <div class="my-profile-card__body">
-                <label class="my-profile-card__avatar" title="프로필 사진 변경하기">
-                    <img th:if="${avatarStoredName}" th:src="@{'/uploads/' + ${avatarStoredName}}" alt="프로필 사진" />
-                    <span th:unless="${avatarStoredName}" class="my-profile-card__avatar-placeholder">👤</span>
-                    <input type="file" accept="image/*" id="avatarFileInput" style="display:none;" />
-                </label>
-
-                <!-- 평소 보이는 조회 화면 -->
-                <div id="myProfileView">
-                    <p class="my-profile-card__nickname" id="myProfileNickname" th:text="${nickname}">닉네임</p>
-                    <p class="my-profile-card__joined-at"
-                       th:text="${#temporals.format(joinedAt, 'yyyy.MM.dd')} + ' 가입'">가입일</p>
-                    <p class="my-profile-card__bio" id="myProfileBio"
-                       th:attr="data-raw-bio=${bio}"
-                       th:text="${bio != null and !#strings.isEmpty(bio)} ? ${bio} : '작성한 소개글이 없습니다.'">
-                        가입 메시지
-                    </p>
-                    <div class="my-profile-card__actions">
-                        <button type="button" class="btn btn--secondary btn--sm" id="myProfileEditBtn">프로필 편집</button>
-                    </div>
-                </div>
-
-                <!-- "프로필 편집" 클릭 시 나타나는 수정 화면 -->
-                <form id="myProfileEditForm" class="my-profile-card__edit hidden" style="display:none;">
-                    <div class="form-group">
-                        <label class="form-label">커뮤니티 닉네임</label>
-                        <input type="text" class="form-input" id="myProfileNicknameInput" name="nickname" maxlength="10" required />
-                        <div class="form-error"></div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">소개글 (선택)</label>
-                        <textarea class="form-textarea" id="myProfileBioInput" name="bio" maxlength="30"></textarea>
-                        <div class="form-error"></div>
-                    </div>
-                    <div style="display:flex;gap:8px;">
-                        <button type="button" class="btn btn--secondary btn--block" id="myProfileCancelBtn">취소</button>
-                        <button type="submit" class="btn btn--accent btn--block" id="myProfileSaveBtn">저장</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div th:unless="${hasProfile}" class="my-profile-card my-profile-card--empty">
-            <p class="text-muted">아직 이 커뮤니티에 만든 프로필이 없어요.</p>
-            <p class="text-xs text-muted">햄버거 메뉴의 커뮤니티 바로가기에서 이 커뮤니티를 다시 눌러 프로필을 먼저 만들어주세요.</p>
-        </div>
-
-        <!-- 댓글 히스토리 영역 - 다른 담당자 작업 범위, 여기서는 만들지 않음 -->
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+<header th:fragment="header" class="community-top">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+    <div class="community-top__left">
+        <a class="home-link" th:href="@{/}" title="위플래닛 홈">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </a>
+        <span class="avatar avatar--sm" th:text="${artist.logo()}">AR</span>
+        <h1 class="community-top__name" th:text="${artist.nickname()}">아티스트</h1>
     </div>
+    <div class="community-top__right">
+        <button type="button" class="icon-btn" aria-label="언어">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        </button>
+        <a class="icon-btn" href="/shop.html" aria-label="Shop" title="WePlaNet Shop">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+        </a>
+        <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+            <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </button>
+            <a class="icon-btn" th:href="@{/community/{id}/my-profile(id=${artist.id()})}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
+        </th:block>
+        <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+            <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+        </th:block>
+    </div>
+</header>
 
-    <aside th:replace="~{community/fragments/layout :: sidebarAside}"></aside>
+<div th:fragment="hero" class="community-hero">
+    <span class="community-hero__viewers">페이지를 보고 있어요.</span>
+    <strong style="font-size:22px;letter-spacing:-0.02em;"
+            th:text="|${artist.nickname()} Official Community|">Official Community</strong>
 </div>
 
-<script th:replace="~{community/fragments/layout :: scripts}"></script>
-<script th:src="@{/js/main.js}"></script>
-<script th:src="@{/js/shell.js}"></script>
+<nav th:fragment="tabs(active)" class="tabs" aria-label="커뮤니티 메뉴">
+    <a th:href="@{/community/{id}/highlight(id=${artist.id()})}"
+       th:classappend="${active == 'highlight'} ? ' is-active'">Highlight</a>
+    <a th:href="@{/community/{id}/notice(id=${artist.id()})}"
+       th:classappend="${active == 'notice'} ? ' is-active'">Notice</a>
+    <a th:href="@{/community/{id}/fan(id=${artist.id()})}"
+       th:classappend="${active == 'fan'} ? ' is-active'">Fan</a>
+    <a th:href="@{/community/{id}/artist(id=${artist.id()})}"
+       th:classappend="${active == 'artist'} ? ' is-active'">Artist</a>
+    <a th:href="@{/community/{id}/media(id=${artist.id()})}"
+       th:classappend="${active == 'media'} ? ' is-active'">Media</a>
+    <a th:href="@{/community/{id}/live(id=${artist.id()})}"
+       th:classappend="${active == 'live'} ? ' is-active'">Live</a>
+</nav>
 
-<script th:inline="javascript">
-    (function () {
-      const artistId = /*[[${artist.id()}]]*/ 0;
+<aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
+    <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+        <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
+    </th:block>
 
-      function wireUpload(inputId, endpoint, fieldName) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-        input.addEventListener("change", function () {
-          if (!input.files.length) return;
-          const formData = new FormData();
-          formData.append(fieldName, input.files[0]);
-          fetch("/community/" + artistId + "/profile/" + endpoint, { method: "POST", body: formData })
-            .then(function (res) {
-              return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            })
-            .then(function (result) {
-              if (!result.ok) {
-                alert(result.data.message || "이미지 업로드에 실패했습니다.");
-                return;
-              }
-              location.reload();
-            })
-            .catch(function () {
-              alert("이미지 업로드 중 오류가 발생했습니다.");
-            });
-        });
-      }
+    <div class="membership-card">
+        <h3 class="membership-card__title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+            <span th:text="|${artist.nickname()} Membership|">Membership</span>
+        </h3>
 
-      wireUpload("backgroundFileInput", "background", "background");
-      wireUpload("avatarFileInput", "avatar", "avatar");
+        <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+            <div th:if="${membershipActive}">
+                <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
+                <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
+                <button type="button" class="btn btn--ghost btn--block mt-8" data-modal-open="membershipDetailModal">Membership 상세보기</button>
+            </div>
+            <div th:unless="${membershipActive}">
+                <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
+                <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
+            </div>
+        </th:block>
 
-      // 닉네임/소개글 인라인 수정 (조회 <-> 편집 토글)
-      const viewBlock = document.getElementById("myProfileView");
-      const editForm = document.getElementById("myProfileEditForm");
-      const nicknameView = document.getElementById("myProfileNickname");
-      const bioView = document.getElementById("myProfileBio");
-      const nicknameInput = document.getElementById("myProfileNicknameInput");
-      const bioInput = document.getElementById("myProfileBioInput");
-      const editBtn = document.getElementById("myProfileEditBtn");
-      const cancelBtn = document.getElementById("myProfileCancelBtn");
-      const saveBtn = document.getElementById("myProfileSaveBtn");
+        <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+            <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
+            <a class="btn btn--accent btn--block" th:href="@{/login}">Membership 가입하기</a>
+        </th:block>
+    </div>
 
-      if (editBtn && viewBlock && editForm) {
-        const currentBio = bioView.getAttribute("data-raw-bio") || "";
+    <!-- EXPLORE-03: 내 프로필 위젯 - 데이터는 JS가 /community/{artistId}/profile 을 fetch해서 채움 -->
+    <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+        <div class="widget" id="myProfileWidget" th:attr="data-artist-id=${artist.id()}">
+            <h3 class="widget__title">내 프로필</h3>
+            <div id="myProfileWidgetBody" class="text-sm text-muted">불러오는 중...</div>
+        </div>
+    </th:block>
 
-        function enterEditMode() {
-          nicknameInput.value = nicknameView.textContent.trim();
-          bioInput.value = currentBio;
-          viewBlock.style.display = "none";
-          // style.css의 .hidden { display:none !important; } 가 style.display 보다 우선하므로
-          // classList도 반드시 같이 제거해줘야 폼이 실제로 보인다.
-          editForm.classList.remove("hidden");
-          editForm.style.display = "block";
-        }
+    <div class="widget">
+        <h3 class="widget__title">Calendar</h3>
+        <p class="text-muted text-sm">표시할 일정이 없습니다.</p>
+    </div>
 
-        function exitEditMode() {
-          editForm.classList.add("hidden");
-          editForm.style.display = "none";
-          viewBlock.style.display = "";
-        }
+    <div class="widget" th:if="${showAbout}">
+        <h3 class="widget__title">About</h3>
+        <div class="flex-center mb-16">
+            <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+            <div>
+                <strong th:text="${artist.nickname()}">아티스트</strong>
+                <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
+            </div>
+        </div>
+        <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
+        <div th:each="other : ${otherArtists ?: {}}" class="flex-between mb-8" style="align-items:center;">
+            <div class="flex-center" style="gap:8px;">
+                <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
+                <span th:text="${other.nickname()}">아티스트</span>
+            </div>
+            <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
+                <input type="hidden" name="returnTo" th:value="${artist.id()}" />
+                <button type="submit" class="btn btn--sm"
+                        th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
+                        th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
+            </form>
+        </div>
+    </div>
+</aside>
 
-        editBtn.addEventListener("click", enterEditMode);
-        cancelBtn.addEventListener("click", exitEditMode);
-
-        editForm.addEventListener("submit", function (e) {
-          e.preventDefault();
-          const nickname = nicknameInput.value.trim();
-          const bio = bioInput.value.trim();
-
-          saveBtn.disabled = true;
-          saveBtn.textContent = "저장 중...";
-
-          fetch("/community/" + artistId + "/profile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ nickname: nickname, bio: bio }),
-          })
-            .then(function (res) {
-              return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-            })
-            .then(function (result) {
-              if (!result.ok) {
-                alert(result.data.message || "입력값을 다시 확인해주세요.");
-                return;
-              }
-              location.reload();
-            })
-            .catch(function () {
-              alert("저장 중 오류가 발생했습니다.");
-            })
-            .finally(function () {
-              saveBtn.disabled = false;
-              saveBtn.textContent = "저장";
-            });
-        });
-      }
-    })();
+<script th:fragment="scripts" th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
 </script>
 </body>
 </html>
