@@ -102,7 +102,7 @@
           <h2 class="section__title">커뮤니티 탐색</h2>
         </div>
         <div class="rising-grid" th:if="${!artists.isEmpty()}">
-          <a class="rising-card" th:each="artist : ${artists}" th:href="@{/community/{id}(id=${artist.id()})}">
+          <a class="rising-card" th:each="artist : ${artists}" th:href="@{/community/{artistId}/artist(artistId=${artist.id()})}">
             <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
             <div class="rising-card__info">
               <strong th:text="${artist.nickname()}">아티스트</strong>
@@ -131,7 +131,7 @@
         </div>
         <a class="btn btn--primary btn--sm"
            th:if="${!artists.isEmpty()}"
-           th:href="@{/community/{id}(id=${artists[0].id()})}">커뮤니티 가입하기</a>
+           th:href="@{/community/{artistId}/artist(artistId=${artists[0].id()})}">커뮤니티 가입하기</a>
         <a class="btn btn--primary btn--sm"
            th:if="${artists.isEmpty()}"
            th:href="@{/posts/fan}">커뮤니티 가입하기</a>
@@ -170,14 +170,14 @@
         <div class="marquee" th:if="${!artists.isEmpty()}">
           <div class="marquee__track">
             <th:block th:each="artist : ${artists}">
-              <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}">
+              <a class="artist-chip" th:href="@{/community/{artistId}/artist(artistId=${artist.id()})}">
                 <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
                 <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
               </a>
             </th:block>
             <!-- 무한 스크롤용 복제 -->
             <th:block th:each="artist : ${artists}">
-              <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}" aria-hidden="true">
+              <a class="artist-chip" th:href="@{/community/{artistId}/artist(artistId=${artist.id()})}" aria-hidden="true">
                 <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
                 <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
               </a>
@@ -190,7 +190,11 @@
   </main>
 
   <script th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
+    window.__WEPLANET_ARTISTS__ = [
+      /*[# th:each="a : ${artists}"]*/
+      { "id": /*[[${a.id()}]]*/, "nickname": /*[[${a.nickname()}]]*/, "logo": /*[[${a.logo()}]]*/ },
+      /*[/]*/
+    ];
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
