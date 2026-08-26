@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 운영 대시보드 -->
   <title>대시보드 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
@@ -12,72 +11,88 @@
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">SM Entertainment.</div>
-        <div class="artist">RIIZE</div>
+        <div class="agency" th:text="${isAgency} ? '에이전시 포털' : 'WePlaNet'">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a class="is-active" th:href="@{/}">📊 대시보드</a>
-        <a href="notices.html">📢 공지사항 관리</a>
-        <a href="schedule.html">📆 스케줄 관리</a>
-        <a href="media.html">🎬 미디어 관리</a>
-        <a href="profile.html">👤 프로필 관리</a>
-        <a href="reports.html">⚙ 신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
       <div class="portal-sidebar__footer">
-        <a href="../community/highlight.html">← 커뮤니티 이동</a><br /><br />
+        <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
         <a th:href="@{/logout}">로그아웃</a>
       </div>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
-        <h1>운영 대시보드</h1>
-        <div class="artist-select">
-          <label for="artistSel">관리 아티스트</label>
-          <select id="artistSel">
-            <option>RIIZE</option>
-            <option>aespa</option>
-            <option>Red Velvet</option>
-          </select>
+        <div>
+          <h1>운영 대시보드</h1>
+          <p class="text-sm text-muted mt-8" th:text="${artist.username}">artist_username</p>
         </div>
       </div>
 
+      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
+
       <div class="stat-grid">
         <div class="stat-card">
-          <div class="stat-card__label">총 가입자 수</div>
-          <div class="stat-card__value">128,430</div>
-          <div class="stat-card__sub">이번 달 4,208명 증가</div>
+          <div class="stat-card__label">멤버십 가입자 수</div>
+          <div class="stat-card__value" th:text="${membershipCount}">0</div>
+          <div class="stat-card__sub">현재 이 아티스트를 구독 중인 팬 수</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">최근 가입자 수</div>
-          <div class="stat-card__value">1,284</div>
-          <div class="stat-card__sub">최근 7일 · 12.8% 증가</div>
+          <div class="stat-card__label">등록된 공지</div>
+          <div class="stat-card__value" th:text="${noticeCount}">0</div>
+          <div class="stat-card__sub">포털에서 작성한 공지 수</div>
         </div>
         <div class="stat-card">
-          <div class="stat-card__label">오늘 활성 팬</div>
-          <div class="stat-card__value">18,207</div>
-          <div class="stat-card__sub">전체 가입자의 14.2%</div>
+          <div class="stat-card__label">예정된 스케줄</div>
+          <div class="stat-card__value" th:text="${scheduleCount}">0</div>
+          <div class="stat-card__sub">오늘 이후 일정 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">등록 미디어</div>
+          <div class="stat-card__value" th:text="${mediaCount}">0</div>
+          <div class="stat-card__sub">삭제되지 않은 미디어 수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">접수된 신고</div>
+          <div class="stat-card__value" th:text="${reportCount}">0</div>
+          <div class="stat-card__sub">게시글·댓글 신고 합계</div>
         </div>
       </div>
 
       <div class="panel-grid">
         <section class="panel">
-          <h2 class="panel__title">로그인 지역 분포</h2>
-          <div class="bar-list">
-            <div class="bar-row"><span>대한민국</span><div class="bar-row__track"><span style="width:42%"></span></div><span>42%</span></div>
-            <div class="bar-row"><span>일본</span><div class="bar-row__track"><span style="width:28%"></span></div><span>28%</span></div>
-            <div class="bar-row"><span>미국</span><div class="bar-row__track"><span style="width:14%"></span></div><span>14%</span></div>
-            <div class="bar-row"><span>기타</span><div class="bar-row__track"><span style="width:16%"></span></div><span>16%</span></div>
-          </div>
+          <h2 class="panel__title">최근 공지</h2>
+          <ul class="queue-list" th:if="${!#lists.isEmpty(latestNotices)}">
+            <li th:each="notice : ${latestNotices}">
+              <span>
+                <strong th:text="${notice.title}">공지 제목</strong><br />
+                <span class="text-xs text-muted" th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</span>
+              </span>
+              <span class="queue-count" th:text="${notice.published} ? '공개' : '비공개'">공개</span>
+            </li>
+          </ul>
+          <p th:if="${#lists.isEmpty(latestNotices)}" class="text-sm text-muted">등록된 공지가 없습니다.</p>
         </section>
 
         <section class="panel">
-          <h2 class="panel__title">처리 대기중</h2>
-          <ul class="queue-list">
-            <li><span>신고 검토<br /><span class="text-xs text-muted">팬 게시물 및 댓글</span></span><span class="queue-count">12</span></li>
-            <li><span>예약 게시<br /><span class="text-xs text-muted">공지 및 스케줄</span></span><span class="queue-count">12</span></li>
-            <li><span>미디어 검토<br /><span class="text-xs text-muted">업로드 처리 중</span></span><span class="queue-count">12</span></li>
+          <h2 class="panel__title">다가오는 일정</h2>
+          <ul class="queue-list" th:if="${!#lists.isEmpty(upcomingSchedules)}">
+            <li th:each="schedule : ${upcomingSchedules}">
+              <span>
+                <strong th:text="${schedule.title}">일정 제목</strong><br />
+                <span class="text-xs text-muted" th:text="${#temporals.format(schedule.scheduleAt, 'MM.dd HH:mm')}">08.26 19:00</span>
+              </span>
+              <span class="queue-count" th:text="${#temporals.format(schedule.scheduleAt, 'dd')}">26</span>
+            </li>
           </ul>
+          <p th:if="${#lists.isEmpty(upcomingSchedules)}" class="text-sm text-muted">예정된 일정이 없습니다.</p>
         </section>
       </div>
     </main>
