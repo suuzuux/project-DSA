@@ -22,6 +22,10 @@
   const base = body.getAttribute("data-base") || "";
   const dmExpired = body.getAttribute("data-dm-expired") === "true";
   const isAuthenticated = body.getAttribute("data-authenticated") === "true";
+  // 관리자에게만 드로어 메뉴에 "금칙어 관리" 항목을 보여주기 위함.
+  // (각 화면 <body>에서 data-role="ROLE_ADMIN" 형태로 내려줌. 없으면 빈 문자열)
+  const roleName = body.getAttribute("data-role") || "";
+  const isAdmin = roleName === "ROLE_ADMIN";
   const nickname = body.getAttribute("data-nickname") || "";
   const artists = Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : [];
 
@@ -37,6 +41,7 @@
     settings: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>',
     search: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
     heart: '<svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
+    shield: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>',
   };
 
   function escapeHtml(value) {
@@ -79,6 +84,12 @@
 
     const communitiesBlock = communitiesBlockHtml();
 
+    // 금칙어 관리(CHAT-04)는 관리자 전용 화면이라, ADMIN 계정으로 로그인했을 때만 메뉴에 노출함.
+    // (예전엔 메뉴가 없어서 /chat/admin/keywords 주소를 직접 쳐야만 들어갈 수 있었음)
+    const adminBlock = isAdmin
+      ? `<a href="${base}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> 금칙어 관리</a>`
+      : "";
+
     return `
 <!-- ========== Shell Backdrop ========== -->
 <div class="shell-backdrop" id="shellBackdrop" hidden></div>
@@ -98,6 +109,7 @@
     <a href="${base}shop.html"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
     <a href="${base}membership.html"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
     <a href="${base}settings.html"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
+    ${adminBlock}
   </nav>
 </aside>
 
@@ -201,8 +213,14 @@
       <div class="membership-card-detail__row"><span>멤버십 고유 번호</span><strong id="membershipDetailNo">-</strong></div>
       <div class="membership-card-detail__row"><span>기간</span><strong id="membershipDetailPeriod">-</strong></div>
     </div>
+    <!-- [머지 충돌 해결] 이메일/전화번호는 양쪽 동일. 해지 폼은 HEAD에만 있고
+         cancelMembership 엔드포인트가 유지되므로 HEAD 유지 -->
     <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
     <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
+    <form id="membershipCancelForm" method="post" style="margin-top:16px;"
+          onsubmit="return confirm('멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
+      <button type="submit" class="btn btn--ghost btn--block" style="color:var(--wp-danger, #d33);">멤버십 해지</button>
+    </form>
   </div>
 </div>
 `;
@@ -226,6 +244,16 @@
     const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
     if (artistMatch) {
       membershipJoinForm.action = "/community/" + artistMatch[1] + "/membership/join";
+    }
+  }
+
+  // [머지 충돌 해결] 해지 엔드포인트를 유지했으므로 HEAD 유지
+  // 멤버십 해지 폼도 같은 방식으로 action 채움
+  const membershipCancelForm = document.getElementById("membershipCancelForm");
+  if (membershipCancelForm) {
+    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
+    if (artistMatch) {
+      membershipCancelForm.action = "/community/" + artistMatch[1] + "/membership/cancel";
     }
   }
 
