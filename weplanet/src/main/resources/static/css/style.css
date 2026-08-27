@@ -684,18 +684,12 @@ p {
 }
 
 .badge-solo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: var(--wp-brand);
-  color: #fff;
-  font-size: 10px;
+  display: inline;
+  color: var(--wp-brand-dark);
+  font-size: 11px;
   font-weight: 700;
   margin-left: 4px;
   vertical-align: middle;
-  white-space: nowrap;
 }
 
 .post-card__meta {
