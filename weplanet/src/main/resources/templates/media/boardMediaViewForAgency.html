@@ -3,48 +3,62 @@
 <head>
     <meta charset="UTF-8"/>
     <title>미디어 (소속사)</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
 <body>
 
-<h1>미디어 (소속사)</h1>
-
-<!-- 안내 메시지 -->
-<p th:if="${msg}" th:text="${msg}"></p>
-<p th:if="${error}" th:text="${error}"></p>
-
-<!-- 상단 버튼: 글쓰기(팝업 열기) / 편집(순서 편집 - 다음 단계) -->
-<button type="button" onclick="document.getElementById('writeDialog').showModal()">글쓰기</button>
-<button type="button" onclick="alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">편집</button>
-
-<!-- 게시글 목록 (팬 화면과 동일하게 보여줌) -->
-<p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
-
-<div th:each="post : ${list}">
-    <hr/>
-    <h3 th:text="${post.title}">제목</h3>
-    <p th:text="${post.content}">설명</p>
-
-    <div>
-        <span th:each="file : ${post.files}">
-            <img th:if="${file.mediaType == 'IMAGE'}"
-                 th:src="@{/board/media/file/{id}(id=${file.id})}" width="150"/>
-            <video th:if="${file.mediaType == 'VIDEO'}"
-                   th:src="@{/board/media/file/{id}(id=${file.id})}" width="150" controls></video>
-        </span>
+<header class="community-top">
+    <div class="community-top__left">
+        <a class="home-link" th:href="@{/}">🏠</a>
+        <h1 class="community-top__name">ARTIST 게시판</h1>
     </div>
+</header>
 
-    <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
+<nav class="tabs" style="width:min(100% - 40px, 1120px);margin:16px auto 0;">
+    <span class="text-muted">Highlight</span>
+    <span class="text-muted">Notice</span>
+    <a th:href="@{/posts/fan}">Fan</a>
+    <a th:href="@{/posts/artist}">Artist</a>
+    <a class="is-active" th:href="@{/board/media(role='AGENCY')}">Media</a>
+    <span class="text-muted">Live</span>
+</nav>
 
-    <!-- 게시글 삭제 -->
-    <form th:action="@{/board/media/{id}/delete(id=${post.id})}" method="post"
-          onsubmit="return confirm('삭제할까요?');">
-        <input type="hidden" name="groupId" th:value="${groupId}"/>
-        <button type="submit">삭제</button>
-    </form>
+<div style="width:min(100% - 40px, 1120px);margin:16px auto;">
+    <h1>미디어 (소속사)</h1>
+
+    <p th:if="${msg}" th:text="${msg}"></p>
+    <p th:if="${error}" th:text="${error}"></p>
+
+    <button type="button" onclick="document.getElementById('writeDialog').showModal()">글쓰기</button>
+    <button type="button" onclick="alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">편집</button>
+
+    <p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
+
+    <div th:each="post : ${list}">
+        <hr/>
+        <h3 th:text="${post.title}">제목</h3>
+        <p th:text="${post.content}">설명</p>
+
+        <div>
+            <span th:each="file : ${post.files}">
+                <img th:if="${file.mediaType == 'IMAGE'}"
+                     th:src="@{/board/media/file/{id}(id=${file.id})}" width="150"/>
+                <video th:if="${file.mediaType == 'VIDEO'}"
+                       th:src="@{/board/media/file/{id}(id=${file.id})}" width="150" controls></video>
+            </span>
+        </div>
+
+        <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
+
+        <form th:action="@{/board/media/{id}/delete(id=${post.id})}" method="post"
+              onsubmit="return confirm('삭제할까요?');">
+            <input type="hidden" name="groupId" th:value="${groupId}"/>
+            <button type="submit">삭제</button>
+        </form>
+    </div>
 </div>
 
-
-<!-- ===== 글쓰기 팝업 (dialog 태그: CSS 없이 팝업이 됨) ===== -->
 <dialog id="writeDialog">
     <h2>새 미디어 글쓰기</h2>
     <form th:action="@{/board/media/upload}" method="post" enctype="multipart/form-data">

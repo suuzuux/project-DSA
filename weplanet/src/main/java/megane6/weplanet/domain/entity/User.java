@@ -131,9 +131,4 @@ public class User {
 	public void recordLogin() {
 		this.lastLoginAt = LocalDateTime.now();
 	}
-
-	public void changePortalProfile(String nickname, String email) {
-		this.nickname = nickname;
-		this.email = email;
-	}
 }
