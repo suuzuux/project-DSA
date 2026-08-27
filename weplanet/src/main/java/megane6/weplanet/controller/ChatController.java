@@ -108,7 +108,22 @@ public class ChatController {
             @RequestParam Long artistId,
             Model model
     ) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+
+        // 지난 대화 이력 - 예전엔 웹소켓 구독만 하고 이력을 안 내려줘서,
+        // 새로고침하면 그전까지 오간 메시지가 전부 사라져 보였음
+        List<Map<String, Object>> history = chatMessageService.getArtistRoomHistory(artist).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
         model.addAttribute("artistId", artistId);
+        model.addAttribute("history", history);
         return "chat/artistChatRoom";
     }
 
