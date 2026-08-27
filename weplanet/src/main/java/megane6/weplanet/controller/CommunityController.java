@@ -10,16 +10,13 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.BookmarkRepository;
 import megane6.weplanet.domain.entity.Comment;
-import megane6.weplanet.domain.entity.Like;
-import megane6.weplanet.domain.entity.Bookmark;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.media.BoardMediaService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -45,12 +42,13 @@ public class CommunityController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final CommentRepository commentRepository;
-	private final LikeRepository likeRepository;
-	private final BookmarkRepository bookmarkRepository;
 	private final MembershipService membershipService;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 	private final BoardMediaService boardMediaService;
+	private final PortalManagementService portalManagementService;
+	// 머지 충돌 해결: HEAD 쪽 팔로우 기능(cancelMembership/toggleFollow/populateArtistModel 추천 로직)에서 쓰는데
+	// 필드 선언 자체가 누락되어 있었음 - FollowService.java는 이미 존재해서 주입만 추가함
 	private final FollowService followService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
@@ -189,14 +187,16 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		// [머지 충돌 해결] HEAD: 로그인/커뮤니티 가입 여부 접근 제어 + main: 공지 목록 조회 로직 -> 둘 다 필요해서 합침
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		populateArtistModel(artistId, principal, model);
+		User artist = populateArtistModel(artistId, principal, model);
 		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
 			model.addAttribute("gatedTab", "notice");
 			return "community/membership-required";
 		}
+		model.addAttribute("notices", portalManagementService.getPublishedNotices(artist));
 		return "community/notice";
 	}
 
@@ -228,55 +228,9 @@ public class CommunityController {
 		return "community/live";
 	}
 
-	// 와이어프레임 20~23번: 내 프로필 - 댓글/포스트/좋아요/북마크 히스토리
-	@GetMapping("/community/{artistId}/profile")
-	public String myProfile(
-			@PathVariable Long artistId,
-			@RequestParam(defaultValue = "latest") String sort,
-			@AuthenticationPrincipal AuthenticatedUser principal,
-			Model model
-	) {
-		if (principal == null) {
-			return "redirect:/login";
-		}
-		populateArtistModel(artistId, principal, model);
-		User me = userResolver.resolve(principal, 1L);
-
-		boolean oldest = "oldest".equals(sort);
-
-		List<Comment> myComments = oldest
-				? commentRepository.findByAuthorOrderByCreatedAtAsc(me)
-				: commentRepository.findByAuthorOrderByCreatedAtDesc(me);
-
-		List<Post> myPosts = oldest
-				? postService.getPostsByAuthor(me, true)
-				: postService.getPostsByAuthor(me, false);
-		Map<Long, Long> myPostCommentCounts = new HashMap<>();
-		for (Post post : myPosts) {
-			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
-		}
-
-		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(me).stream()
-				.map(Like::getPost)
-				.toList();
-
-		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(me).stream()
-				.map(Bookmark::getPost)
-				.toList();
-
-		model.addAttribute("myComments", myComments);
-		model.addAttribute("myPosts", myPosts);
-		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
-		model.addAttribute("likedPosts", likedPosts);
-		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
-		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
-		model.addAttribute("sort", sort);
-
-		return "community/profile";
-	}
-
 	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
-	@PostMapping("/community/{artistId}/membership/join")public String joinMembership(
+	@PostMapping("/community/{artistId}/membership/join")
+	public String joinMembership(
 			@PathVariable Long artistId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -295,6 +249,7 @@ public class CommunityController {
 		return "redirect:/community/" + artistId + "/highlight";
 	}
 
+	// [머지 충돌 해결] main엔 이 기능들(해지/상세조회/팔로우)이 아예 없었음(이전 버전) -> HEAD 유지
 	// 멤버십 해지 (상세보기 모달의 "멤버십 해지" 버튼)
 	@PostMapping("/community/{artistId}/membership/cancel")
 	public String cancelMembership(
@@ -388,6 +343,7 @@ public class CommunityController {
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
 
+		// [머지 충돌 해결] main엔 이 추천/가입여부 로직이 없었음(이전 버전) -> HEAD 유지
 		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
 		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
 		Set<Long> followedIds = followService.getFollowedArtistIds(currentUserForFollow);

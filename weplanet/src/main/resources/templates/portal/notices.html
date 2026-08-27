@@ -1,43 +1,41 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 공지사항 관리 목록 -->
   <title>공지사항 관리 | Artist Portal</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/portal.css" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">HYBE</div>
-        <div class="artist">CORTIS</div>
+        <div class="agency">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a href="dashboard.html">📊 대시보드</a>
-        <a class="is-active" href="notices.html">📢 공지사항 관리</a>
-        <a href="schedule.html">📆 스케줄 관리</a>
-        <a href="media.html">🎬 미디어 관리</a>
-        <a href="profile.html">👤 프로필 관리</a>
-        <a href="reports.html">⚙ 신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
       <div class="portal-sidebar__footer">
-        <a href="login.html">로그아웃</a>
+        <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
+        <a th:href="@{/logout}">로그아웃</a>
       </div>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
         <h1>공지사항 관리</h1>
-        <div class="flex-center">
-          <div class="artist-select">
-            <select><option>CORTIS</option><option>RIIZE</option></select>
-          </div>
-          <a class="btn btn--primary btn--sm" href="notice-form.html">등록하기</a>
-        </div>
+        <a class="btn btn--primary btn--sm" th:href="@{/portal/notices/new}">등록하기</a>
       </div>
+
+      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
       <div class="table-wrap">
         <table class="data-table">
@@ -46,42 +44,34 @@
               <th>제목</th>
               <th>작성일자</th>
               <th>공개여부</th>
+              <th>관리</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td><a href="notice-form.html">[공지] CORTIS The 2nd EP [GREENGREEN_playextended] 발매 안내</a></td>
-              <td>2026.08.22</td>
-              <td><span class="tag tag--public">공개</span></td>
+            <tr th:if="${#lists.isEmpty(notices)}">
+              <td colspan="4" class="text-sm text-muted">등록된 공지가 없습니다.</td>
             </tr>
-            <tr>
-              <td>[공지] CORTIS The 2nd EP 발매 안내 (초안)</td>
-              <td>2026.08.22</td>
-              <td><span class="tag tag--private">비공개</span></td>
-            </tr>
-            <tr>
-              <td>[공지] 공식 응원봉 사용 안내</td>
-              <td>2026.08.19</td>
-              <td><span class="tag tag--public">공개</span></td>
-            </tr>
-            <tr>
-              <td>[공지] 투어 현장 판매 운영 안내</td>
-              <td>2026.08.15</td>
-              <td><span class="tag tag--public">공개</span></td>
-            </tr>
-            <tr>
-              <td>[공지] 멤버십 전용 콘텐츠 안내</td>
-              <td>2026.08.10</td>
-              <td><span class="tag tag--public">공개</span></td>
+            <tr th:each="notice : ${notices}">
+              <td>
+                <a th:href="@{/portal/notices/{id}/edit(id=${notice.id})}" th:text="${notice.title}">공지 제목</a>
+              </td>
+              <td th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
+              <td>
+                <span class="tag" th:classappend="${notice.published} ? ' tag--public' : ' tag--private'"
+                      th:text="${notice.published} ? '공개' : '비공개'">공개</span>
+              </td>
+              <td>
+                <div class="flex-center">
+                  <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices/{id}/edit(id=${notice.id})}">수정</a>
+                  <form th:action="@{/portal/notices/{id}/delete(id=${notice.id})}" method="post">
+                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  </form>
+                </div>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
-
-      <nav class="pagination" aria-label="페이지">
-        <span class="is-active">1</span>
-        <a href="#">2</a><a href="#">3</a><a href="#">4</a><a href="#">5</a>
-      </nav>
     </main>
   </div>
 </body>
