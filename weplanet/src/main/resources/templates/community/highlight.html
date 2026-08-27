@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -20,6 +20,7 @@
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
                data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
   <header th:replace="~{community/fragments/layout :: header}"></header>
@@ -153,6 +154,8 @@
 
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, true)}"></aside>
   </div>
+
+  <div th:replace="~{community/fragments/layout :: membershipTeaser}"></div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
   <script th:src="@{/js/main.js}"></script>

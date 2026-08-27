@@ -1,7 +1,14 @@
 package megane6.weplanet.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.simp.SimpMessageType;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.ChannelInterceptor;
+import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -40,6 +47,35 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // "/app"으로 시작하는 채널 : 브라우저 -> 서버 방향 (브라우저가 메시지를 보낼 때 쓰는 채널)
         // 예) /app/chat.send  (ChatController의 @MessageMapping("/chat.send")와 연결됨)
         registry.setApplicationDestinationPrefixes("/app");
+    }
+
+    /**
+     * 브라우저 -> 서버 방향으로 들어오는 웹소켓 메시지를 가로채서, 메시지 전송(SEND)은
+     * 로그인한 사용자만 할 수 있도록 막는 부분.
+     * <p>
+     * ChatController.send() 안에서도 로그인 여부를 확인하고 있지만, 그건 "컨트롤러까지 들어온 뒤"의 검사임.
+     * 여기서 미리 걸러주면 비로그인 메시지는 아예 컨트롤러에 도달하지 못함(이중 방어).
+     * <p>
+     * SEND만 막고 CONNECT/SUBSCRIBE는 열어둔 이유 : 구독은 아티스트 채팅방 화면처럼
+     * 로그인 없이 보기만 하는 경우가 있어서, 지금 단계에서 막으면 기존 화면이 깨질 수 있음.
+     */
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(new ChannelInterceptor() {
+            @Override
+            public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                StompHeaderAccessor accessor =
+                        MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+
+                if (accessor != null
+                        && SimpMessageType.MESSAGE.equals(accessor.getMessageType())
+                        && accessor.getUser() == null) {
+                    throw new IllegalStateException("로그인이 필요한 요청입니다.");
+                }
+
+                return message;
+            }
+        });
     }
 
 }

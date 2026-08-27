@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -15,6 +15,7 @@
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
                data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null},
                data-post-id=${post.id},
                data-artist-id=${artist.id()},
@@ -41,6 +42,9 @@
                th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
         </div>
       </div>
+
+      <h1 th:if="${post.title != null and !post.title.isBlank()}"
+          style="font-size:20px;font-weight:700;margin:12px 0 8px;" th:text="${post.title}"></h1>
 
       <a href="javascript:void(0)" id="postTranslateLink" class="translate-link">번역보기</a>
       <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
@@ -80,10 +84,68 @@
           <svg id="bookmarkIconOutline" class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" th:style="${bookmarked} ? 'display:none;' : ''"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
         </button>
       </div>
+
+      <!-- 수정/삭제(작성자 본인만) / 신고(작성자 아닌 로그인 사용자만) -->
+      <div class="flex-center mt-8" style="gap:12px;" th:if="${post.author != null}">
+        <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+          <th:block th:if="${#authentication.principal.id == post.author.id}">
+            <button type="button" class="translate-link" style="background:none;border:none;cursor:pointer;"
+                    data-modal-open="editPostModal">수정</button>
+            <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post"
+                  onsubmit="return confirm('게시글을 삭제할까요?');" style="display:inline;">
+              <button type="submit" class="translate-link"
+                      style="background:none;border:none;cursor:pointer;color:var(--wp-danger, #d33);">삭제</button>
+            </form>
+          </th:block>
+          <button type="button" th:unless="${#authentication.principal.id == post.author.id}"
+                  id="postReportToggle" class="translate-link" style="background:none;border:none;cursor:pointer;">신고</button>
+        </th:block>
+      </div>
+      <div id="postReportRow" style="display:none;margin-top:8px;">
+        <form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post"
+              style="display:flex;gap:8px;align-items:center;">
+          <select name="reason" class="form-select" style="min-height:34px;padding:4px 8px;">
+            <option value="SPAM">스팸</option>
+            <option value="ABUSE">욕설/혐오</option>
+            <option value="SEXUAL">음란물</option>
+            <option value="ETC">기타</option>
+          </select>
+          <button type="submit" class="btn btn--ghost btn--sm">신고하기</button>
+        </form>
+        <span id="postReportMsg" class="text-xs"></span>
+      </div>
+
+      <!-- AI 자동요약 - 백엔드(SummaryService, /posts/detail/{id}/summarize)는 이미 있었는데
+           지금 쓰는 커뮤니티 상세 페이지엔 버튼이 안 붙어있었음. 레거시 feed/postDetail.html에서 로직 그대로 옮김 -->
+      <div class="mt-12">
+        <button id="summarizeButton" type="button" class="btn btn--soft btn--sm">AI 요약보기</button>
+        <div id="summaryArea"></div>
+      </div>
     </article>
     </div>
 
     <div th:replace="~{community/fragments/fanComments :: commentsFragment}"></div>
+  </div>
+
+  <!-- 게시글 수정 모달 (작성자 본인만 열림, th:if로 렌더링 자체를 걸러서 다른 사람 화면엔 안 그려짐) -->
+  <div class="modal-backdrop" id="editPostModal"
+       th:if="${post.author != null and #authentication.name != 'anonymousUser' and #authentication.principal.id == post.author.id}">
+    <div class="modal modal--wide" onclick="event.stopPropagation()">
+      <div class="modal__head">
+        <h2 class="modal__title">게시글 수정</h2>
+        <button type="button" class="modal__close" data-modal-close>✕</button>
+      </div>
+      <form id="editPostForm" th:action="@{/posts/detail/{id}/edit(id=${post.id})}" method="post">
+        <input type="text" id="editPostTitle" name="title" class="form-input mb-8" maxlength="80"
+               th:value="${post.title}" placeholder="제목을 입력하세요" required />
+        <textarea id="editPostContent" name="content" hidden maxlength="1000" th:text="${post.content}"></textarea>
+        <div id="editPostEditor"></div>
+        <div class="flex-between mt-8">
+          <span class="char-count text-xs text-muted" id="editPostCharCount">0 / 1000</span>
+          <button type="submit" class="btn btn--primary btn--sm" id="editPostSubmit">저장</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
@@ -94,6 +156,62 @@
       viewer: true,
       initialValue: /*[[${post.content}]]*/ ''
     });
+
+    // 유튜브 링크 자동 임베드 - 레거시 feed/postDetail.html 로직 그대로 옮김
+    // (전엔 이 페이지에 아예 안 붙어있어서 유튜브 링크가 그냥 텍스트로만 보였음)
+    setTimeout(embedYoutubeLinks, 0);
+
+    function embedYoutubeLinks() {
+      const container = document.getElementById('contentViewer');
+      const ytPattern = /^https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=([\w-]{11})|youtu\.be\/([\w-]{11}))/;
+
+      function makeEmbed(videoId) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'video-embed';
+        wrapper.innerHTML = '<iframe src="https://www.youtube.com/embed/' + videoId + '" ' +
+          'title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+        return wrapper;
+      }
+
+      container.querySelectorAll('a').forEach(function (a) {
+        const m = a.href.match(ytPattern);
+        if (m) {
+          a.replaceWith(makeEmbed(m[1] || m[2]));
+        }
+      });
+
+      const globalYtPattern = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[\w-]{11}[^\s<]*|youtu\.be\/[\w-]{11}[^\s<]*))/g;
+      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      const textNodes = [];
+      while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+      textNodes.forEach(function (node) {
+        const text = node.nodeValue;
+        globalYtPattern.lastIndex = 0;
+        if (!globalYtPattern.test(text)) return;
+        globalYtPattern.lastIndex = 0;
+
+        const frag = document.createDocumentFragment();
+        let lastIndex = 0;
+        let match;
+        while ((match = globalYtPattern.exec(text)) !== null) {
+          if (match.index > lastIndex) {
+            frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+          }
+          const single = match[0].match(ytPattern);
+          if (single) {
+            frag.appendChild(makeEmbed(single[1] || single[2]));
+          } else {
+            frag.appendChild(document.createTextNode(match[0]));
+          }
+          lastIndex = globalYtPattern.lastIndex;
+        }
+        if (lastIndex < text.length) {
+          frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+        node.parentNode.replaceChild(frag, node);
+      });
+    }
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>

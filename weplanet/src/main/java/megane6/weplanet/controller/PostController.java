@@ -282,6 +282,33 @@ public class PostController {
         return renderCommentsResponse(post, artistId, principal, testUserId, requestedWith, model);
     }
 
+    // 댓글 수정 - 작성자 본인만 가능. 응답 방식은 작성/삭제와 동일 (댓글 영역 통째로 다시 그려서 돌려줌)
+    @PostMapping("/posts/detail/{id}/comment/{commentId}/edit")
+    public String editComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @RequestParam String content,
+            @RequestParam(defaultValue = "1") Long testUserId,
+            @RequestParam(required = false) Long artistId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
+            Model model
+    ) {
+        User requester = userResolver.requireAuthenticated(principal);
+
+        if (content == null || content.isBlank()) {
+            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+        }
+        if (content.length() > 100) {
+            throw new IllegalArgumentException("댓글은 100자를 초과할 수 없습니다.");
+        }
+
+        commentService.updateComment(commentId, requester, content);
+
+        Post post = postService.getPost(id);
+        return renderCommentsResponse(post, artistId, principal, testUserId, requestedWith, model);
+    }
+
     /**
      * 댓글 신고 - 게시글 신고와 완전히 같은 방식 (같은 사람이 같은 댓글을 두 번 신고하면 예외).
      * <p>
@@ -309,7 +336,7 @@ public class PostController {
             return ResponseEntity.ok(Map.of("success", true, "message", "댓글 신고가 접수되었습니다."));
         }
 
-        return "redirect:/posts/detail/" + id;
+        return "redirect:" + communityDetailPath(postService.getPost(id));
     }
 
     /**
@@ -358,7 +385,7 @@ public class PostController {
         return Map.of("bookmarked", bookmarked);
     }
 
-    // 게시글 삭제 - 본인 글만 삭제 가능. 삭제 후에는 그 게시글이 있던 게시판 목록으로 돌아감
+    // 게시글 삭제 - 본인 글만 삭제 가능. 삭제 후에는 그 게시글이 있던 커뮤니티 게시판 목록으로 돌아감
     @PostMapping("/posts/detail/{id}/delete")
     public String deletePost(
             @PathVariable Long id,
@@ -367,10 +394,18 @@ public class PostController {
     ) {
         Post post = postService.getPost(id);
         User requester = userResolver.requireAuthenticated(principal);
+        BoardType boardType = post.getBoardType();
+        User artist = post.getArtist();
 
         postService.deletePost(post, requester);
 
-        return "redirect:/posts/" + post.getBoardType().name().toLowerCase();
+        // 예전엔 레거시 /posts/{boardType} 목록으로 보냈었는데, 지금 실제로 쓰는 화면은
+        // 커뮤니티 게시판이라 그쪽으로 돌려보내도록 수정함
+        if (artist != null) {
+            String tab = boardType == BoardType.ARTIST ? "artist" : "fan";
+            return "redirect:/community/" + artist.getId() + "/" + tab;
+        }
+        return "redirect:/posts/" + boardType.name().toLowerCase();
     }
 
     // 게시글 신고 - 같은 사람이 같은 글을 중복 신고하면 예외. 댓글 신고와 완전히 같은 구조
@@ -391,10 +426,10 @@ public class PostController {
             return ResponseEntity.ok(Map.of("success", true, "message", "게시글 신고가 접수되었습니다."));
         }
 
-        return "redirect:/posts/detail/" + id;
+        return "redirect:" + communityDetailPath(post);
     }
 
-    // 수정 폼 화면 이동 - 기존 제목/내용을 미리 채워서 보여줌 (postForm.html을 글쓰기 화면과 공유해서 씀)
+    // 수정 폼 화면 이동 - 레거시 feed 페이지용 (지금 커뮤니티 화면은 상세페이지 안에서 모달로 바로 수정함)
     @GetMapping("/posts/detail/{id}/edit")
     public String editForm(
             @PathVariable Long id,
@@ -422,7 +457,17 @@ public class PostController {
         validateContentLength(content);
         postService.updatePost(post, title, content, requester);
 
-        return "redirect:/posts/detail/" + id;
+        return "redirect:" + communityDetailPath(post);
+    }
+
+    // 게시글이 속한 커뮤니티 상세페이지 경로 - 삭제/신고/수정 후 어디로 돌려보낼지 계산할 때 재사용
+    private String communityDetailPath(Post post) {
+        User artist = post.getArtist();
+        if (artist == null) {
+            return "/posts/detail/" + post.getId();
+        }
+        String tab = post.getBoardType() == BoardType.ARTIST ? "artist" : "fan";
+        return "/community/" + artist.getId() + "/" + tab + "/" + post.getId();
     }
 
     /**
