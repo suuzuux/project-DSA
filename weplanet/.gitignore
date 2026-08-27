@@ -7,6 +7,9 @@ build/
 
 .env
 
+# FEED-10 파일 첨부 기능 - 실제 업로드된 파일들이 쌓이는 폴더 (커밋 대상 아님)
+/uploads/
+
 ### STS ###
 .apt_generated
 .classpath

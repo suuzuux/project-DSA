@@ -569,10 +569,6 @@ p {
   animation: marquee-ltr 28s linear infinite;
 }
 
-.marquee:hover .marquee__track {
-  animation-play-state: paused;
-}
-
 /* 와이어프레임: 오른쪽→왼쪽 모션 */
 @keyframes marquee-ltr {
   from { transform: translateX(0); }
@@ -583,10 +579,6 @@ p {
   width: 88px;
   text-align: center;
   flex-shrink: 0;
-  position: relative;
-  z-index: 1;
-  pointer-events: auto;
-  cursor: pointer;
 }
 
 .artist-chip__logo {
