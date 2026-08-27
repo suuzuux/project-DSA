@@ -5,7 +5,6 @@ import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
@@ -15,8 +14,4 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     // 게시글 삭제 시 그 게시글에 달린 신고를 먼저 지우기 위함
     void deleteByPost(Post post);
-
-    List<Report> findByPost_ArtistOrderByCreatedAtDesc(User artist);
-
-    long countByPost_Artist(User artist);
 }
