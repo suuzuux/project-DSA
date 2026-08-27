@@ -781,33 +781,33 @@ INSERT IGNORE INTO `fan_badge`
   (`badge_code`, `badge_name`, `badge_type`, `icon`, `description`, `sort_order`, `created_at`)
 VALUES
   -- 일반 배지 15종
-  ('BASIC_FIRST_JOIN',    '커뮤니티 첫 가입',      'BASIC', '🎉', '커뮤니티에 처음 가입하면 지급',              1,  NOW(6)),
-  ('BASIC_FIRST_POST',    '첫 게시글 작성',        'BASIC', '✍️', '팬 게시판에 첫 글을 작성하면 지급',           2,  NOW(6)),
-  ('BASIC_COMMENT_5',     '댓글 5개 작성',         'BASIC', '💬', '이 커뮤니티에 댓글을 5개 작성하면 지급',      3,  NOW(6)),
-  ('BASIC_MEDIA_VIEW',    '미디어 시청',           'BASIC', '🎬', 'Media 탭 콘텐츠를 시청하면 지급',             4,  NOW(6)),
-  ('BASIC_DAY_100',       '가입 후 100일',         'BASIC', '💯', '커뮤니티 가입 후 100일이 지나면 지급',        5,  NOW(6)),
-  ('BASIC_DAY_200',       '가입 후 200일',         'BASIC', '📅', '커뮤니티 가입 후 200일이 지나면 지급',        6,  NOW(6)),
-  ('BASIC_DAY_300',       '가입 후 300일',         'BASIC', '🗓️', '커뮤니티 가입 후 300일이 지나면 지급',        7,  NOW(6)),
-  ('BASIC_LIKE_10',       '좋아요 10개',           'BASIC', '👍', '게시글에 좋아요를 10번 누르면 지급',          8,  NOW(6)),
-  ('BASIC_LIKED_5',       '받은 좋아요 5개',       'BASIC', '❤️', '내 게시글이 좋아요를 5개 받으면 지급',        9,  NOW(6)),
-  ('BASIC_FOLLOW_ARTIST', '아티스트 프로필 팔로우', 'BASIC', '⭐', '아티스트 프로필을 팔로우하면 지급',          10, NOW(6)),
-  ('BASIC_SHOP_PURCHASE', '샵 구매',               'BASIC', '🛍️', 'Shop에서 상품을 구매하면 지급',              11, NOW(6)),
-  ('BASIC_LIVE_VIEW',     '라이브 시청',           'BASIC', '📡', 'Live 방송을 시청하면 지급',                  12, NOW(6)),
-  ('BASIC_YEAR_1',        '커뮤니티 가입 후 1년',  'BASIC', '🥉', '커뮤니티 가입 후 1년이 지나면 지급',         13, NOW(6)),
-  ('BASIC_YEAR_2',        '커뮤니티 가입 후 2년',  'BASIC', '🥈', '커뮤니티 가입 후 2년이 지나면 지급',         14, NOW(6)),
-  ('BASIC_YEAR_3',        '커뮤니티 가입 후 3년',  'BASIC', '🥇', '커뮤니티 가입 후 3년이 지나면 지급',         15, NOW(6)),
+  ('BASIC_FIRST_JOIN',    '커뮤니티 첫 가입',      'BASIC', '🎉', '커뮤니티에 처음 가입하면 획득',              1,  NOW(6)),
+  ('BASIC_FIRST_POST',    '첫 게시글 작성',        'BASIC', '✍️', '팬 게시판에 첫 글을 쓰면 획득',           2,  NOW(6)),
+  ('BASIC_COMMENT_5',     '댓글 5개 작성',         'BASIC', '💬', '이 커뮤니티에 댓글 5개를 쓰면 획득',      3,  NOW(6)),
+  ('BASIC_MEDIA_VIEW',    '미디어 시청',           'BASIC', '🎬', 'Media 탭 콘텐츠를 보면 획득',             4,  NOW(6)),
+  ('BASIC_DAY_100',       '가입 후 100일',         'BASIC', '💯', '가입 후 100일이 지나면 획득',        5,  NOW(6)),
+  ('BASIC_DAY_200',       '가입 후 200일',         'BASIC', '📅', '가입 후 200일이 지나면 획득',        6,  NOW(6)),
+  ('BASIC_DAY_300',       '가입 후 300일',         'BASIC', '🗓️', '가입 후 300일이 지나면 획득',        7,  NOW(6)),
+  ('BASIC_LIKE_10',       '좋아요 10개',           'BASIC', '👍', '게시글에 좋아요를 10번 누르면 획득',          8,  NOW(6)),
+  ('BASIC_LIKED_5',       '받은 좋아요 5개',       'BASIC', '❤️', '내 게시글이 좋아요 5개를 받으면 획득',        9,  NOW(6)),
+  ('BASIC_FOLLOW_ARTIST', '아티스트 프로필 팔로우', 'BASIC', '⭐', '아티스트 프로필을 팔로우하면 획득',          10, NOW(6)),
+  ('BASIC_SHOP_PURCHASE', '샵 구매',               'BASIC', '🛍️', 'Shop에서 상품을 구매하면 획득',              11, NOW(6)),
+  ('BASIC_LIVE_VIEW',     '라이브 시청',           'BASIC', '📡', 'Live 방송을 보면 획득',                  12, NOW(6)),
+  ('BASIC_YEAR_1',        '커뮤니티 가입 후 1년',  'BASIC', '🥉', '가입 후 1년이 지나면 획득',         13, NOW(6)),
+  ('BASIC_YEAR_2',        '커뮤니티 가입 후 2년',  'BASIC', '🥈', '가입 후 2년이 지나면 획득',         14, NOW(6)),
+  ('BASIC_YEAR_3',        '커뮤니티 가입 후 3년',  'BASIC', '🥇', '가입 후 3년이 지나면 획득',         15, NOW(6)),
 
   -- 스페셜 배지 10종
-  ('SPECIAL_DEBUT_1',      '아티스트 데뷔 1주년',  'SPECIAL', '🎂', '아티스트 데뷔 1주년을 함께하면 지급',        1,  NOW(6)),
-  ('SPECIAL_DEBUT_2',      '아티스트 데뷔 2주년',  'SPECIAL', '🎊', '아티스트 데뷔 2주년을 함께하면 지급',        2,  NOW(6)),
-  ('SPECIAL_DEBUT_3',      '아티스트 데뷔 3주년',  'SPECIAL', '🏆', '아티스트 데뷔 3주년을 함께하면 지급',        3,  NOW(6)),
-  ('SPECIAL_FOLLOWER_10',  '팔로워 10명 달성',     'SPECIAL', '👥', '내 팔로워가 10명이 되면 지급',               4,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_1', '첫 멤버십 가입',       'SPECIAL', '💎', '멤버십에 처음 가입하면 지급(기간 1년)',      5,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_2', '멤버십 연속 2년',      'SPECIAL', '💠', '멤버십을 2년 연속 유지하면 지급',            6,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_3', '멤버십 연속 3년',      'SPECIAL', '🔷', '멤버십을 3년 연속 유지하면 지급',            7,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_4', '멤버십 연속 4년',      'SPECIAL', '🔶', '멤버십을 4년 연속 유지하면 지급',            8,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_5', '멤버십 연속 5년',      'SPECIAL', '👑', '멤버십을 5년 연속 유지하면 지급',            9,  NOW(6)),
-  ('SPECIAL_PROJECT_CREATE','프로젝트 등록 달성',  'SPECIAL', '🚀', '팬 프로젝트를 등록하면 지급',               10, NOW(6));
+  ('SPECIAL_DEBUT_1',      '아티스트 데뷔 1주년',  'SPECIAL', '🎂', '데뷔 1주년을 함께하면 획득',        1,  NOW(6)),
+  ('SPECIAL_DEBUT_2',      '아티스트 데뷔 2주년',  'SPECIAL', '🎊', '데뷔 2주년을 함께하면 획득',        2,  NOW(6)),
+  ('SPECIAL_DEBUT_3',      '아티스트 데뷔 3주년',  'SPECIAL', '🏆', '데뷔 3주년을 함께하면 획득',        3,  NOW(6)),
+  ('SPECIAL_FOLLOWER_10',  '팔로워 10명 달성',     'SPECIAL', '👥', '내 팔로워가 10명이 되면 획득',               4,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_1', '첫 멤버십 가입',       'SPECIAL', '💎', '멤버십에 처음 가입하면 획득',      5,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_2', '멤버십 연속 2년',      'SPECIAL', '💠', '멤버십을 2년 연속 유지하면 획득',            6,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_3', '멤버십 연속 3년',      'SPECIAL', '🔷', '멤버십을 3년 연속 유지하면 획득',            7,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_4', '멤버십 연속 4년',      'SPECIAL', '🔶', '멤버십을 4년 연속 유지하면 획득',            8,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_5', '멤버십 연속 5년',      'SPECIAL', '👑', '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
+  ('SPECIAL_PROJECT_CREATE','프로젝트 등록 달성',  'SPECIAL', '🚀', '팬 프로젝트를 등록하면 획득',               10, NOW(6));
 
 SET UNIQUE_CHECKS = 1;
 SET FOREIGN_KEY_CHECKS = 1;
