@@ -19,7 +19,6 @@
     <h1 class="section__title" style="margin-bottom:16px;">금칙어 관리 (관리자 전용)</h1>
 
     <form id="keywordAddForm" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
-        <input type="hidden" name="testUserId" th:value="${testUserId}">
         <label class="form-label" style="margin:0;white-space:nowrap;">등록할 금칙어</label>
         <input type="text" name="keyword" class="form-input" placeholder="예: 바보">
         <button type="submit" class="btn btn--primary btn--sm">등록</button>
@@ -38,7 +37,6 @@
                     <td>
                         <form class="keyword-delete-form" th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}"
                               method="post">
-                            <input type="hidden" name="testUserId" th:value="${testUserId}">
                             <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
                         </form>
                     </td>

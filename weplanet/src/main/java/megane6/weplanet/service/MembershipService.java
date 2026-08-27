@@ -37,4 +37,10 @@ public class MembershipService {
     public Optional<Membership> getMembership(User fan, User artist) {
         return membershipRepository.findByFanAndArtist(fan, artist);
     }
+
+    // 멤버십 해지 - 레코드 자체를 지움 (레코드 없음 = DM 접근 시 "미가입"과 동일하게 처리되므로 자연스럽게 막힘)
+    public void cancel(User fan, User artist) {
+        membershipRepository.findByFanAndArtist(fan, artist)
+                .ifPresent(membershipRepository::delete);
+    }
 }

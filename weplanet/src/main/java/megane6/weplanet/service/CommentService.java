@@ -58,4 +58,17 @@ public class CommentService {
         commentReportRepository.deleteByComment(comment);
         commentRepository.delete(comment);
     }
+
+    // 댓글 수정 - 작성자 본인만 가능. 삭제랑 똑같이 권한 체크만 하고 내용만 바꿔치기
+    public Comment updateComment(Long commentId, User requester, String content) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+
+        if (!comment.getAuthor().getId().equals(requester.getId())) {
+            throw new IllegalStateException("본인이 작성한 댓글만 수정할 수 있습니다.");
+        }
+
+        comment.setContent(content);
+        return commentRepository.save(comment);
+    }
 }
