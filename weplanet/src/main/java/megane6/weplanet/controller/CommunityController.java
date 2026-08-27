@@ -2,6 +2,7 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
+import megane6.weplanet.domain.dto.ArtistFollowCardView;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
@@ -9,12 +10,16 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.repository.CommentRepository;
+import megane6.weplanet.repository.LikeRepository;
+import megane6.weplanet.repository.BookmarkRepository;
 import megane6.weplanet.domain.entity.Comment;
+import megane6.weplanet.domain.entity.Like;
+import megane6.weplanet.domain.entity.Bookmark;
 import megane6.weplanet.service.CommentService;
+import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.media.BoardMediaService;
-import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -23,10 +28,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
@@ -37,11 +45,13 @@ public class CommunityController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final CommentRepository commentRepository;
+	private final LikeRepository likeRepository;
+	private final BookmarkRepository bookmarkRepository;
 	private final MembershipService membershipService;
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 	private final BoardMediaService boardMediaService;
-	private final PortalManagementService portalManagementService;
+	private final FollowService followService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -165,8 +175,7 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
-		User artist = populateArtistModel(artistId, principal, model);
-		model.addAttribute("notices", portalManagementService.getPublishedNotices(artist));
+		populateArtistModel(artistId, principal, model);
 		return "community/notice";
 	}
 
@@ -184,9 +193,55 @@ public class CommunityController {
 		return "community/live";
 	}
 
+	// 와이어프레임 20~23번: 내 프로필 - 댓글/포스트/좋아요/북마크 히스토리
+	@GetMapping("/community/{artistId}/profile")
+	public String myProfile(
+			@PathVariable Long artistId,
+			@RequestParam(defaultValue = "latest") String sort,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		populateArtistModel(artistId, principal, model);
+		User me = userResolver.resolve(principal, 1L);
+
+		boolean oldest = "oldest".equals(sort);
+
+		List<Comment> myComments = oldest
+				? commentRepository.findByAuthorOrderByCreatedAtAsc(me)
+				: commentRepository.findByAuthorOrderByCreatedAtDesc(me);
+
+		List<Post> myPosts = oldest
+				? postService.getPostsByAuthor(me, true)
+				: postService.getPostsByAuthor(me, false);
+		Map<Long, Long> myPostCommentCounts = new HashMap<>();
+		for (Post post : myPosts) {
+			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
+		}
+
+		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(me).stream()
+				.map(Like::getPost)
+				.toList();
+
+		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(me).stream()
+				.map(Bookmark::getPost)
+				.toList();
+
+		model.addAttribute("myComments", myComments);
+		model.addAttribute("myPosts", myPosts);
+		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
+		model.addAttribute("likedPosts", likedPosts);
+		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
+		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
+		model.addAttribute("sort", sort);
+
+		return "community/profile";
+	}
+
 	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
-	@PostMapping("/community/{artistId}/membership/join")
-	public String joinMembership(
+	@PostMapping("/community/{artistId}/membership/join")public String joinMembership(
 			@PathVariable Long artistId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -205,6 +260,60 @@ public class CommunityController {
 		return "redirect:/community/" + artistId + "/highlight";
 	}
 
+	// "Membership 상세보기" 모달(P33) - 목업 데이터(홍길동/고정 날짜) 대신 실제 가입일/만료일/연락처로 채워서 보여줌.
+	// 모달 자체는 shell.js가 페이지 공통으로 그려두는 거라 여기서 뷰를 새로 만들지 않고 JSON만 내려줌.
+	@GetMapping("/community/{artistId}/membership/detail")
+	@ResponseBody
+	public Map<String, Object> membershipDetail(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		Map<String, Object> result = new HashMap<>();
+		if (principal == null) {
+			return result;
+		}
+
+		User artist = userRepository.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElse(null);
+		if (artist == null) {
+			return result;
+		}
+
+		User fan = userResolver.resolve(principal, 1L);
+		DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+
+		membershipService.getMembership(fan, artist).ifPresent(membership -> {
+			result.put("name", fan.getRealName());
+			result.put("email", fan.getEmail());
+			result.put("phone", fan.getPhone());
+			result.put("membershipNo", "WP-" + artistId + "-" + membership.getId());
+			result.put("period",
+					membership.getCreatedAt().format(dateFormat) + " ~ " + membership.getExpiresAt().format(dateFormat) + " (KST)");
+		});
+
+		return result;
+	}
+
+	// 와이어프레임 26번: About 위젯의 팔로우/팔로잉 버튼
+	@PostMapping("/community/{artistId}/follow")
+	public String toggleFollow(
+			@PathVariable Long artistId,
+			@RequestParam(required = false) Long returnTo,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User fan = userResolver.resolve(principal, 1L);
+		followService.toggle(fan, artistId);
+
+		// 원래 보고 있던 커뮤니티 페이지로 돌아감 (팔로우 대상 아티스트 페이지로 안 튕기게)
+		Long backTo = returnTo != null ? returnTo : artistId;
+		return "redirect:/community/" + backTo + "/highlight";
+	}
+
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
@@ -216,6 +325,15 @@ public class CommunityController {
 
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
+
+		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
+		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
+		Set<Long> followedIds = followService.getFollowedArtistIds(currentUserForFollow);
+		List<ArtistFollowCardView> otherArtists = userRepository.findByRole(Role.ARTIST).stream()
+				.filter(user -> !user.getId().equals(artistId))
+				.map(user -> ArtistFollowCardView.of(user, followedIds.contains(user.getId())))
+				.toList();
+		model.addAttribute("otherArtists", otherArtists);
 
 		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
 		if (principal != null) {

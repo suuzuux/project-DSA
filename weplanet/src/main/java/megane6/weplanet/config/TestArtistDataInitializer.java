@@ -39,22 +39,6 @@ public class TestArtistDataInitializer implements ApplicationRunner {
 		removeLegacyArtists();
 		seed("artist_hwiwon", "휘원공주", "휘원", "hwiwon@weplanet.test");
 		seed("artist_jungsik", "정식왕자", "정식", "jungsik@weplanet.test");
-		seedAgency();
-	}
-
-	private void seedAgency() {
-		if (userRepository.existsByUsername("agency_wp")) {
-			return;
-		}
-		User agency = User.createAgencyStaff(
-				"agency_wp",
-				passwordEncoder.encode("Test1234"),
-				"기획사",
-				"WePlaNet Agency",
-				"agency@weplanet.test"
-		);
-		userRepository.save(agency);
-		log.info("테스트 에이전시 계정 생성: agency_wp");
 	}
 
 	private void removeLegacyArtists() {

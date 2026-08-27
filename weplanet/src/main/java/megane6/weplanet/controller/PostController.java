@@ -16,7 +16,6 @@ import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
 import megane6.weplanet.service.TranslateService;
-import megane6.weplanet.service.portal.ArtistBlockService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -55,7 +54,6 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
     private final TranslateService translateService;
-    private final ArtistBlockService artistBlockService;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
         return userResolver.resolve(principal, testUserId);
@@ -185,10 +183,6 @@ public class PostController {
                     .filter(user -> user.getRole() == Role.ARTIST)
                     .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 
-            if (type == BoardType.FAN) {
-                artistBlockService.requireNotBlocked(communityArtist, tempAuthor);
-            }
-
             // 커뮤니티 게시글은 해당 커뮤니티에만 귀속. ARTIST 보드는 그 커뮤니티 본인만 작성 가능
             if (type == BoardType.ARTIST && !tempAuthor.getId().equals(communityArtist.getId())) {
                 throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
@@ -255,10 +249,6 @@ public class PostController {
     ) {
         Post post = postService.getPost(id);
         User author = userResolver.requireAuthenticated(principal);
-
-        if (post.getArtist() != null && author.getRole() == Role.FAN) {
-            artistBlockService.requireNotBlocked(post.getArtist(), author);
-        }
 
         // 와이어프레임 기준: 댓글은 최대 100자
         if (content == null || content.isBlank()) {
@@ -453,15 +443,11 @@ public class PostController {
     }
 
     // 게시글 번역보기 (와이어프레임: 게시글/댓글 본문 밑에 있는 "번역보기" 링크)
-    // 헤더 언어(weplanet_lang 쿠키)를 대상 언어로 사용
     @PostMapping("/posts/detail/{id}/translate")
     @ResponseBody
-    public Map<String, Object> translatePost(
-            @PathVariable Long id,
-            @CookieValue(value = "weplanet_lang", required = false, defaultValue = "en") String lang
-    ) {
+    public Map<String, Object> translatePost(@PathVariable Long id) {
         Post post = postService.getPost(id);
-        String translated = translateService.translate(post.getContent(), lang);
+        String translated = translateService.translate(post.getContent());
 
         return Map.of("translated", translated);
     }
@@ -469,13 +455,9 @@ public class PostController {
     // 댓글 번역보기 - 게시글 번역과 완전히 같은 방식
     @PostMapping("/posts/detail/{id}/comment/{commentId}/translate")
     @ResponseBody
-    public Map<String, Object> translateComment(
-            @PathVariable Long id,
-            @PathVariable Long commentId,
-            @CookieValue(value = "weplanet_lang", required = false, defaultValue = "en") String lang
-    ) {
+    public Map<String, Object> translateComment(@PathVariable Long id, @PathVariable Long commentId) {
         Comment comment = commentService.getComment(commentId);
-        String translated = translateService.translate(comment.getContent(), lang);
+        String translated = translateService.translate(comment.getContent());
 
         return Map.of("translated", translated);
     }
