@@ -7,6 +7,7 @@ import megane6.weplanet.domain.dto.DmInboxItem;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.AiFanChatService;
@@ -16,6 +17,7 @@ import megane6.weplanet.service.ChatQuotaService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,6 +65,14 @@ public class ChatController {
         if (requester.getRole() != Role.ADMIN) {
             throw new IllegalStateException("관리자만 접근할 수 있습니다.");
         }
+    }
+
+    // 로그인한 실제 사용자를 꺼냄 - 비로그인이면 GlobalExceptionHandler가 /login으로 보내줌
+    private User requireLoginUser(AuthenticatedUser principal) {
+        if (principal == null) {
+            throw new AuthenticationRequiredException();
+        }
+        return getUserOrThrow(principal.getId(), "로그인 사용자");
     }
 
     /**
@@ -175,6 +185,19 @@ public class ChatController {
                 ? getUserOrThrow(request.getFanId(), "팬")
                 : null;
 
+        // 와이어프레임 19번: 멤버십이 없거나 만료된 팬은 DM을 보낼 수 없음.
+        // 그동안 프론트(dm-realtime.js)에서 입력창만 숨기고 서버 검증이 없어서,
+        // 웹소켓으로 직접 쏘면 미가입자도 전송이 됐음
+        if (fan != null && chatMessageService.isMembershipExpired(fan, artist)) {
+            Map<String, Object> warning = new HashMap<>();
+            warning.put("error", true);
+            warning.put("message", "멤버십에 가입해야 DM을 보낼 수 있습니다.");
+
+            broadcast("/topic/chat.error." + request.getSenderId(), warning);
+
+            return;
+        }
+
         // CHAT-05 : 팬이 보낸 메시지인 경우에만 하루 전송 한도를 체크함 (아티스트 방송은 한도 없음)
         if (fan != null && !chatQuotaService.tryConsume(fan, artist)) {
             Map<String, Object> warning = new HashMap<>();
@@ -246,16 +269,16 @@ public class ChatController {
     }
 
     // 금칙어 관리 화면 (CHAT-04) - 관리자만 접근 가능
+    // 예전엔 testUserId 파라미터로 관리자 여부를 판단해서, ?testUserId=3 만 붙이면
+    // 로그인하지 않은 사람도 금칙어를 등록/삭제할 수 있었음 -> 실제 로그인 계정 기준으로 변경
     @GetMapping("/chat/admin/keywords")
     public String keywordList(
-            @RequestParam(defaultValue = "3") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             Model model
     ) {
-        User requester = getUserOrThrow(testUserId, "테스트용 유저");
-        requireAdmin(requester);
+        requireAdmin(requireLoginUser(principal));
 
         model.addAttribute("keywords", chatFilterService.getAllKeywords());
-        model.addAttribute("testUserId", testUserId);
 
         return "chat/keywordManage";
     }
@@ -264,44 +287,40 @@ public class ChatController {
     @PostMapping("/chat/admin/keywords")
     public String addKeyword(
             @RequestParam String keyword,
-            @RequestParam(defaultValue = "3") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
-        User requester = getUserOrThrow(testUserId, "테스트용 유저");
-        requireAdmin(requester);
+        requireAdmin(requireLoginUser(principal));
 
         chatFilterService.addKeyword(keyword);
 
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("keywords", chatFilterService.getAllKeywords());
-            model.addAttribute("testUserId", testUserId);
             return "chat/keywordManage :: keywordListFragment";
         }
 
-        return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
+        return "redirect:/chat/admin/keywords";
     }
 
     // 금칙어 삭제 - 등록과 같은 방식
     @PostMapping("/chat/admin/keywords/{id}/delete")
     public String deleteKeyword(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "3") Long testUserId,
+            @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
     ) {
-        User requester = getUserOrThrow(testUserId, "테스트용 유저");
-        requireAdmin(requester);
+        requireAdmin(requireLoginUser(principal));
 
         chatFilterService.deleteKeyword(id);
 
         if ("fetch".equals(requestedWith)) {
             model.addAttribute("keywords", chatFilterService.getAllKeywords());
-            model.addAttribute("testUserId", testUserId);
             return "chat/keywordManage :: keywordListFragment";
         }
 
-        return "redirect:/chat/admin/keywords?testUserId=" + testUserId;
+        return "redirect:/chat/admin/keywords";
     }
 
     // AI 팬 메시지 생성 (CHAT-06, 선택 기능/시연용) - 실제 팬이 아니라

@@ -37,8 +37,10 @@ public class GeminiClient {
     private final RestTemplate restTemplate = new RestTemplate();
 
     // Gemini AI 서버의 주소(엔드포인트)
+    // gemini-3.6-flash는 실존하지 않는 모델명이라 호출이 항상 404로 실패했음(AI 요약/번역/팬챗 전부 안내 문구만 반환).
+    // 현재 제공되는 Flash 계열 모델로 교체함
     private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     /**
      * 프롬프트(질문/지시문) 하나를 Gemini에게 보내고, 답변 텍스트만 뽑아서 돌려줌.
@@ -72,6 +74,11 @@ public class GeminiClient {
         } catch (RestClientException e) {
             // Gemini API 하루 사용 한도 초과(HTTP 429), 네트워크 오류 등 - 서비스 전체가 죽지 않고 안내 문구로 대체
             log.warn("Gemini API 호출 실패: {}", e.getMessage());
+            return "지금은 AI 응답을 받아올 수 없어요. 잠시 후 다시 시도해주세요.";
+        } catch (RuntimeException e) {
+            // 안전성 필터로 candidates가 비어 오는 등 응답 구조가 예상과 다른 경우.
+            // RestClientException으로는 안 잡혀서 그대로 두면 NPE가 500 에러로 터졌음
+            log.warn("Gemini 응답 해석 실패: {}", e.toString());
             return "지금은 AI 응답을 받아올 수 없어요. 잠시 후 다시 시도해주세요.";
         }
     }

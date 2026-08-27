@@ -248,9 +248,12 @@
     }
 
     document.addEventListener("click", function (e) {
-        const roomBtn = e.target.closest("[data-artist-id]");
+        // DM 목록 버튼(buildItem)에만 붙는 data-open-room을 기준으로 잡음.
+        // 예전엔 [data-artist-id]로 찾았는데, fan/artist/post-detail 화면은 <body>에도 그 속성이 있어서
+        // 페이지 아무 곳이나 클릭할 때마다 openRealRoom이 실행되고 /chat/room-data가 호출됐음
+        const roomBtn = e.target.closest("[data-open-room]");
         if (roomBtn) {
-            openRealRoom(roomBtn.getAttribute("data-artist-id"));
+            openRealRoom(roomBtn.getAttribute("data-open-room"));
         }
 
         if (e.target.closest("#fabChat")) {
