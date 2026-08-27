@@ -2,13 +2,39 @@
 <html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>처리할 수 없는 요청</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>요청을 처리할 수 없습니다 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
 
-<h1>요청을 처리할 수 없습니다</h1>
-<p th:text="${message}"></p>
-<a href="javascript:history.back()">이전 화면으로</a>
+<header class="site-header">
+    <div class="header-left">
+        <a class="brand" th:href="@{/}">
+            <span class="brand__mark">W</span>
+            <span class="brand__text">We<span>Pla</span>Net</span>
+        </a>
+    </div>
+</header>
+
+<main class="container section" style="max-width:560px;text-align:center;padding-top:72px;">
+    <div style="width:64px;height:64px;border-radius:50%;border:2px solid var(--wp-muted, #8a8a8a);
+                display:inline-flex;align-items:center;justify-content:center;font-size:30px;
+                color:var(--wp-muted, #8a8a8a);margin-bottom:20px;">!</div>
+
+    <h1 style="font-size:20px;font-weight:700;margin-bottom:10px;">요청을 처리할 수 없습니다</h1>
+
+    <p class="text-muted" style="font-size:15px;line-height:1.7;margin-bottom:8px;"
+       th:text="${message}">잠시 후 다시 시도해주세요.</p>
+
+    <p class="text-xs text-muted" th:if="${status != null}"
+       th:text="'오류 코드 ' + ${status}">오류 코드</p>
+
+    <div class="flex-center" style="gap:10px;justify-content:center;margin-top:28px;">
+        <button type="button" class="btn btn--ghost" onclick="history.back()">이전 화면으로</button>
+        <a class="btn btn--primary" th:href="@{/}">홈으로</a>
+    </div>
+</main>
 
 </body>
 </html>

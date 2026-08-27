@@ -92,6 +92,12 @@ public class ChatMessageService {
         return chatMessageRepository.findConversationWithBroadcast(artist, fan);
     }
 
+    // 아티스트 채팅방 화면용 - 이 아티스트 방의 전체 메시지(본인 방송 + 팬들이 보낸 메시지)를 시간순으로.
+    // 아티스트 화면은 그동안 웹소켓 구독만 하고 지난 이력을 안 불러와서, 새로고침하면 화면이 비었음
+    public List<ChatMessage> getArtistRoomHistory(User artist) {
+        return chatMessageRepository.findByArtistOrderByCreatedAtAsc(artist);
+    }
+
     // 와이어프레임 19번: 이 팬의 이 아티스트 멤버십이 만료됐는지(=DM 입력창을 막아야 하는지) 확인.
     // 처음엔 "가입한 적 자체가 없으면 만료가 아니다"로 처리했었는데, 이러면 한 번도 가입 안 한 사람도
     // 입력창이 그대로 보여서 DM을 보낼 수 있었음(와이어프레임엔 아예 대화창이 없어야 함). 그래서
