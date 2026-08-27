@@ -73,57 +73,6 @@
         <div class="banner__dots"></div>
       </div>
 
-      <section class="mb-24">
-        <div class="section__head">
-          <h2 class="section__title">최신 인기 포스트</h2>
-        </div>
-        <div class="feed feed--grid" th:if="${!popularPosts.isEmpty()}">
-          <article class="post-card" th:each="post : ${popularPosts}">
-            <a th:href="${post.boardType.name() == 'FAN'}
-                          ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist.id}, postId=${post.id})}
-                          : @{/community/{artistId}/artist/{postId}(artistId=${post.artist.id}, postId=${post.id})}"
-               style="display:block;color:inherit;">
-              <div class="post-card__head">
-                <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
-                <div class="post-card__meta">
-                  <div class="post-card__name">
-                    <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
-                    <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
-                  </div>
-                  <div class="post-card__time"
-                       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                       th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
-                </div>
-              </div>
-              <p class="post-card__body" th:text="${post.title}"></p>
-              <div th:if="${popularPostThumbnails.get(post.id)} != null" class="post-card__media">
-                <img th:src="@{'/uploads/' + ${popularPostThumbnails.get(post.id)}}" alt=""
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:200px;object-fit:cover;">
-              </div>
-            </a>
-          </article>
-        </div>
-        <p class="text-muted" style="padding:24px 0;" th:if="${popularPosts.isEmpty()}">표시할 포스트가 없습니다.</p>
-      </section>
-
-      <section class="section mb-24">
-        <div class="section__head">
-          <h2 class="section__title">급상승 커뮤니티</h2>
-        </div>
-        <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
-          <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{/community/{id}(id=${artist.id()})}">
-            <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
-            <div class="rising-card__info">
-              <strong th:text="${artist.nickname()}">아티스트</strong>
-              <span th:if="${artist.debutDate() != null}"
-                    th:text="${#temporals.format(artist.debutDate(), 'yyyy.MM.dd')} + ' 데뷔'">데뷔일</span>
-              <span th:text="'가입자수 ' + ${artist.followerCount()} + '명'">가입자수</span>
-            </div>
-          </a>
-        </div>
-        <p class="text-muted" style="padding:24px 0;" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
-      </section>
-
       <section class="cta-banner mb-24">
         <div>
           <p>회원가입 후 다양한 서비스를 이용해보세요!</p>
@@ -197,6 +146,60 @@
         <p class="text-muted" style="padding:16px 0;" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
       </section>
     </th:block>
+
+    <!-- ===== 로그인 여부와 무관한 공통 영역 =====
+         예전엔 이 두 섹션이 isAnonymous() 블록 안에 있어서 로그인하면 사라졌음.
+         메인의 핵심 위젯이라 로그인 상태와 무관하게 항상 보이도록 밖으로 뺐음 -->
+    <section class="mb-24">
+      <div class="section__head">
+        <h2 class="section__title">최신 인기 포스트</h2>
+      </div>
+      <div class="feed feed--grid" th:if="${!popularPosts.isEmpty()}">
+        <article class="post-card" th:each="post : ${popularPosts}">
+          <a th:href="${post.boardType.name() == 'FAN'}
+                        ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist.id}, postId=${post.id})}
+                        : @{/community/{artistId}/artist/{postId}(artistId=${post.artist.id}, postId=${post.id})}"
+             style="display:block;color:inherit;">
+            <div class="post-card__head">
+              <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+              <div class="post-card__meta">
+                <div class="post-card__name">
+                  <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                  <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+                </div>
+                <div class="post-card__time"
+                     th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                     th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+              </div>
+            </div>
+            <p class="post-card__body" th:text="${post.title}"></p>
+            <div th:if="${popularPostThumbnails.get(post.id)} != null" class="post-card__media">
+              <img th:src="@{'/uploads/' + ${popularPostThumbnails.get(post.id)}}" alt=""
+                   style="width:100%;border-radius:var(--wp-radius-sm);max-height:200px;object-fit:cover;">
+            </div>
+          </a>
+        </article>
+      </div>
+      <p class="text-muted" style="padding:24px 0;" th:if="${popularPosts.isEmpty()}">표시할 포스트가 없습니다.</p>
+    </section>
+
+    <section class="section mb-24">
+      <div class="section__head">
+        <h2 class="section__title">급상승 커뮤니티</h2>
+      </div>
+      <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
+        <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{/community/{id}(id=${artist.id()})}">
+          <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+          <div class="rising-card__info">
+            <strong th:text="${artist.nickname()}">아티스트</strong>
+            <span th:if="${artist.debutDate() != null}"
+                  th:text="${#temporals.format(artist.debutDate(), 'yyyy.MM.dd')} + ' 데뷔'">데뷔일</span>
+            <span th:text="'가입자수 ' + ${artist.followerCount()} + '명'">가입자수</span>
+          </div>
+        </a>
+      </div>
+      <p class="text-muted" style="padding:24px 0;" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
+    </section>
   </main>
 
   <!-- 와이어프레임 10번: 하단 푸터 (약관/정책 링크, 사업자 정보, SNS, 저작권) -->
