@@ -1,90 +1,133 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 신고함 / 차단 관리 -->
   <title>신고함 / 차단 | Artist Portal</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/portal.css" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">YG Entertainment.</div>
-        <div class="artist">TREASURE</div>
+        <div class="agency">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a href="dashboard.html">📊 대시보드</a>
-        <a href="notices.html">📢 공지사항 관리</a>
-        <a href="schedule.html">📆 스케줄 관리</a>
-        <a href="media.html">🎬 미디어 관리</a>
-        <a href="profile.html">👤 프로필 관리</a>
-        <a class="is-active" href="reports.html">⚙ 신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
-      <div class="portal-sidebar__footer">
-        <a href="../community/highlight.html">← 커뮤니티 이동</a>
-      </div>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
         <h1>신고함 / 차단 관리</h1>
-        <a class="btn btn--ghost btn--sm" href="dashboard.html">← 뒤로 가기</a>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}">← 대시보드</a>
       </div>
 
-      <div class="chip-row mb-16">
-        <button type="button" class="chip is-active">신고 대기 (12)</button>
-        <button type="button" class="chip">처리 완료</button>
-        <button type="button" class="chip">차단 목록</button>
-      </div>
+      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
 
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>유형</th>
-              <th>대상</th>
-              <th>사유</th>
-              <th>접수일</th>
-              <th>조치</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>게시글</td>
-              <td>팬닉네임_A</td>
-              <td>스팸 / 광고</td>
-              <td>2026.08.22</td>
-              <td>
-                <button type="button" class="btn btn--ghost btn--sm" onclick="alert('숨김 (목업)')">숨김</button>
-                <button type="button" class="btn btn--ghost btn--sm" onclick="alert('차단 (목업)')">차단</button>
-              </td>
-            </tr>
-            <tr>
-              <td>댓글</td>
-              <td>팬닉네임_B</td>
-              <td>욕설 / 혐오</td>
-              <td>2026.08.21</td>
-              <td>
-                <button type="button" class="btn btn--ghost btn--sm">숨김</button>
-                <button type="button" class="btn btn--ghost btn--sm">차단</button>
-              </td>
-            </tr>
-            <tr>
-              <td>게시글</td>
-              <td>팬닉네임_C</td>
-              <td>개인정보 노출</td>
-              <td>2026.08.20</td>
-              <td>
-                <button type="button" class="btn btn--ghost btn--sm">숨김</button>
-                <button type="button" class="btn btn--ghost btn--sm">차단</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <section class="panel mb-16">
+        <h2 class="panel__title">게시글 신고</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>작성자</th>
+                <th>게시글</th>
+                <th>사유</th>
+                <th>접수일</th>
+                <th>조치</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(postReports)}">
+                <td colspan="5" class="text-sm text-muted">접수된 게시글 신고가 없습니다.</td>
+              </tr>
+              <tr th:each="report : ${postReports}">
+                <td th:text="${report.post.author.nickname}">팬닉네임</td>
+                <td th:text="${report.post.title}">게시글 제목</td>
+                <td th:text="${report.reason}">SPAM</td>
+                <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
+                <td>
+                  <form th:action="@{/portal/reports/post/{id}/block(id=${report.id})}" method="post">
+                    <button type="submit" class="btn btn--ghost btn--sm">차단</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel mb-16">
+        <h2 class="panel__title">댓글 신고</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>작성자</th>
+                <th>댓글</th>
+                <th>사유</th>
+                <th>접수일</th>
+                <th>조치</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(commentReports)}">
+                <td colspan="5" class="text-sm text-muted">접수된 댓글 신고가 없습니다.</td>
+              </tr>
+              <tr th:each="report : ${commentReports}">
+                <td th:text="${report.comment.author.nickname}">팬닉네임</td>
+                <td th:text="${report.comment.content}">댓글 내용</td>
+                <td th:text="${report.reason}">SPAM</td>
+                <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
+                <td>
+                  <form th:action="@{/portal/reports/comment/{id}/block(id=${report.id})}" method="post">
+                    <button type="submit" class="btn btn--ghost btn--sm">차단</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">차단 목록</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>차단 계정</th>
+                <th>사유</th>
+                <th>차단일</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(blocks)}">
+                <td colspan="4" class="text-sm text-muted">차단된 계정이 없습니다.</td>
+              </tr>
+              <tr th:each="block : ${blocks}">
+                <td th:text="${block.blockedUser.nickname}">팬닉네임</td>
+                <td th:text="${block.reason != null ? block.reason : '-'}">사유</td>
+                <td th:text="${#temporals.format(block.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
+                <td>
+                  <form th:action="@{/portal/blocks/{id}/delete(id=${block.id})}" method="post">
+                    <button type="submit" class="btn btn--ghost btn--sm">해제</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   </div>
 </body>
