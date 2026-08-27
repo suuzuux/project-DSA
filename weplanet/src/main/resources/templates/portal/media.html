@@ -1,73 +1,82 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 미디어 관리 목록 -->
   <title>미디어 관리 | Artist Portal</title>
-  <link rel="stylesheet" th:href="@{/css/style.css}" />
-  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
 </head>
 <body>
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
-        <div class="artist" th:text="${artist.nickname}">아티스트</div>
+        <div class="agency">HYBE</div>
+        <div class="artist">CORTIS</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
-        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
-        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
-        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
-        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
-        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
+        <a href="dashboard.html">📊 대시보드</a>
+        <a href="notices.html">📢 공지사항 관리</a>
+        <a href="schedule.html">📆 스케줄 관리</a>
+        <a class="is-active" href="media.html">🎬 미디어 관리</a>
+        <a href="profile.html">👤 프로필 관리</a>
+        <a href="reports.html">⚙ 신고함 / 차단</a>
       </nav>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
         <h1>미디어 관리</h1>
-        <a class="btn btn--primary btn--sm" th:href="@{/portal/media/new}">등록하기</a>
+        <div class="flex-center">
+          <select class="form-select" style="width:auto;min-height:38px;"><option>CORTIS</option></select>
+          <a class="btn btn--primary btn--sm" href="media-form.html">등록하기</a>
+        </div>
       </div>
-
-      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
-      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>유형</th>
+              <th>카테고리</th>
               <th>제목</th>
               <th>업로드일자</th>
-              <th>파일 수</th>
-              <th>관리</th>
+              <th>공개대상</th>
             </tr>
           </thead>
           <tbody>
-            <tr th:if="${#lists.isEmpty(mediaList)}">
-              <td colspan="5" class="text-sm text-muted">등록된 미디어가 없습니다.</td>
+            <tr>
+              <td><span class="tag tag--public">VIDEO</span></td>
+              <td>'What You Want' Conceptual Performance Film</td>
+              <td>2026.08.22</td>
+              <td><span class="tag tag--public">전체공개</span></td>
             </tr>
-            <tr th:each="media : ${mediaList}">
-              <td>
-                <span class="tag tag--public"
-                      th:text="${media.files != null && !media.files.isEmpty() ? media.files[0].mediaType : 'MEDIA'}">VIDEO</span>
-              </td>
-              <td th:text="${media.title}">미디어 제목</td>
-              <td th:text="${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
-              <td th:text="${media.fileCount}">1</td>
-              <td>
-                <div class="flex-center">
-                  <a class="btn btn--ghost btn--sm" th:href="@{/community/{artistId}/media(artistId=${artist.id})}">보기</a>
-                  <form th:action="@{/portal/media/{id}/delete(id=${media.id})}" method="post">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
-                  </form>
-                </div>
-              </td>
+            <tr>
+              <td><span class="tag tag--member">PHOTO</span></td>
+              <td>2026 CORTIS TOUR IN INCHEON Photo Sketch</td>
+              <td>2026.08.22</td>
+              <td><span class="tag tag--member">멤버십전용</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag--public">VIDEO</span></td>
+              <td>Rehearsal B-side Cam (250530 ver.)</td>
+              <td>2026.08.20</td>
+              <td><span class="tag tag--private">비공개</span></td>
+            </tr>
+            <tr>
+              <td><span class="tag tag--public">PHOTO</span></td>
+              <td>제목 예시</td>
+              <td>2026.08.18</td>
+              <td><span class="tag tag--public">공개</span></td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <nav class="pagination">
+        <span class="is-active">1</span>
+        <a href="#">2</a><a href="#">3</a><a href="#">4</a><a href="#">5</a>
+      </nav>
     </main>
   </div>
 </body>
