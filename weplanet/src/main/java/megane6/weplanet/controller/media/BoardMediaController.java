@@ -3,11 +3,14 @@ package megane6.weplanet.controller.media;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
+import megane6.weplanet.domain.entity.media.BoardMediaEntity;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -45,15 +48,17 @@ public class BoardMediaController {
                          @RequestParam String title,
                          @RequestParam(required = false) String content,
                          @RequestParam(value = "files", required = false) List<MultipartFile> files,
-                         @RequestParam(defaultValue = "1") Long uploaderId, // 로그인 붙기 전 테스트용
+                         @RequestParam(required = false) Long artistId,
+                         @AuthenticationPrincipal AuthenticatedUser principal,
                          RedirectAttributes redirectAttributes) {
         try {
-            boardMediaService.create(groupId, uploaderId, title, content, files);
+            requireCommunityOwner(principal, communityKey(artistId, groupId));
+            boardMediaService.create(groupId, principal.getId(), title, content, files);
             redirectAttributes.addFlashAttribute("msg", "업로드되었습니다.");
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/board/media?groupId=" + groupId + "&role=AGENCY";
+        return redirectAfterMutation(artistId, groupId);
     }
 
     // ── 수정 ──
@@ -63,24 +68,36 @@ public class BoardMediaController {
                        @RequestParam String title,
                        @RequestParam(required = false) String content,
                        @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                       @RequestParam(required = false) Long artistId,
+                       @AuthenticationPrincipal AuthenticatedUser principal,
                        RedirectAttributes redirectAttributes) {
         try {
-            boardMediaService.edit(id, title, content, files);
+            Long communityId = communityKey(artistId, groupId);
+            requireCommunityOwner(principal, communityId);
+            boardMediaService.edit(id, communityId, title, content, files);
             redirectAttributes.addFlashAttribute("msg", "수정되었습니다.");
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
-        return "redirect:/board/media?groupId=" + groupId + "&role=AGENCY";
+        return redirectAfterMutation(artistId, groupId);
     }
 
     // ── 삭제(소프트 삭제) ──
     @PostMapping("/media/{id}/delete")
     public String delete(@PathVariable Long id,
                          @RequestParam Long groupId,
+                         @RequestParam(required = false) Long artistId,
+                         @AuthenticationPrincipal AuthenticatedUser principal,
                          RedirectAttributes redirectAttributes) {
-        boardMediaService.softDelete(id);
-        redirectAttributes.addFlashAttribute("msg", "삭제되었습니다.");
-        return "redirect:/board/media?groupId=" + groupId + "&role=AGENCY";
+        try {
+            Long communityId = communityKey(artistId, groupId);
+            requireCommunityOwner(principal, communityId);
+            boardMediaService.softDelete(id, communityId);
+            redirectAttributes.addFlashAttribute("msg", "삭제되었습니다.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+        }
+        return redirectAfterMutation(artistId, groupId);
     }
 
     // ── 파일 스트리밍 : <img>, <video> 가 이 주소로 파일을 불러온다 ──
@@ -91,5 +108,31 @@ public class BoardMediaController {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(fileEntity.getContentType()))
                 .body(resource);
+    }
+
+    private Long communityKey(Long artistId, Long groupId) {
+        return artistId != null ? artistId : groupId;
+    }
+
+    private String redirectAfterMutation(Long artistId, Long groupId) {
+        if (artistId != null) {
+            return "redirect:/community/" + artistId + "/media";
+        }
+        return "redirect:/board/media?groupId=" + groupId + "&role=AGENCY";
+    }
+
+    /**
+     * 커뮤니티 미디어는 해당 커뮤니티 아티스트(본인) 또는 소속사만 관리 가능.
+     * group_id / artistId 는 커뮤니티 아티스트 users.id 와 동일하게 쓰인다.
+     */
+    private void requireCommunityOwner(AuthenticatedUser principal, Long communityArtistId) {
+        if (principal == null) {
+            throw new IllegalStateException("로그인이 필요합니다.");
+        }
+        boolean isAgency = "ROLE_AGENCY".equals(principal.getRoleName());
+        boolean isOwner = principal.getId().equals(communityArtistId);
+        if (!isAgency && !isOwner) {
+            throw new IllegalStateException("이 커뮤니티의 아티스트만 미디어를 관리할 수 있습니다.");
+        }
     }
 }

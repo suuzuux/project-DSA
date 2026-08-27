@@ -30,7 +30,7 @@ public class GeminiClient {
 
     // application.properties에 적어둔 gemini.api.key 값을 이 필드에 자동으로 넣어줌
     // (API 키 자체를 코드에 직접 쓰지 않고 설정 파일에서 읽어오는 이유 : 키가 외부에 노출되는 걸 막기 위함)
-    @Value("${gemini.api.key:}")
+    @Value("${gemini.api.key}")
     private String apiKey;
 
     // 외부 서버에 HTTP 요청을 보낼 때 쓰는 스프링 제공 도구
@@ -49,10 +49,6 @@ public class GeminiClient {
      * 실패하면 대신 "지금은 이용할 수 없다"는 안내 문구를 돌려줘서 서비스가 멈추지 않게 함.
      */
     public String generate(String prompt) {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.warn("gemini.api.key 가 없어 AI 호출을 건너뜁니다.");
-            return "지금은 AI 응답을 받아올 수 없어요. 잠시 후 다시 시도해주세요.";
-        }
         try {
             // Gemini가 요구하는 JSON 형식에 맞춰서 요청 내용을 만듦
             Map<String, Object> requestBody = Map.of(

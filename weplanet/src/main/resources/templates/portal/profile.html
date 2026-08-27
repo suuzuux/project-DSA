@@ -1,66 +1,66 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 아티스트 프로필 관리 -->
   <title>프로필 관리 | Artist Portal</title>
-  <link rel="stylesheet" th:href="@{/css/style.css}" />
-  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <link rel="stylesheet" href="../../css/style.css" />
+  <link rel="stylesheet" href="../../css/portal.css" />
 </head>
 <body>
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
-        <div class="artist" th:text="${artist.nickname}">아티스트</div>
+        <div class="agency">YG Entertainment.</div>
+        <div class="artist">TREASURE</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
-        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
-        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
-        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
-        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
-        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
+        <a href="dashboard.html">📊 대시보드</a>
+        <a href="notices.html">📢 공지사항 관리</a>
+        <a href="schedule.html">📆 스케줄 관리</a>
+        <a href="media.html">🎬 미디어 관리</a>
+        <a class="is-active" href="profile.html">👤 프로필 관리</a>
+        <a href="reports.html">⚙ 신고함 / 차단</a>
       </nav>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
         <h1>프로필 관리</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/community/{artistId}(artistId=${artist.id})}">커뮤니티 열기</a>
+        <div class="artist-select">
+          <select><option>TREASURE</option></select>
+        </div>
       </div>
 
-      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
-      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+      <div class="settings-block" style="max-width:640px;">
+        <div class="settings-row">
+          <div>
+            <strong>커뮤니티 헤더 이미지 변경</strong>
+            <p class="text-xs text-muted">커뮤니티 상단 대표 이미지</p>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="alert('업로드 (목업)')">변경</button>
+        </div>
+        <div class="settings-row">
+          <div>
+            <strong>아티스트명 아이콘 변경</strong>
+            <p class="text-xs text-muted">커뮤니티·목록에 노출되는 로고</p>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm">변경</button>
+        </div>
+        <div class="settings-row">
+          <div>
+            <strong>아티스트명 소개란 변경</strong>
+            <p class="text-xs text-muted">About 위젯 소개 문구</p>
+          </div>
+          <button type="button" class="btn btn--ghost btn--sm">변경</button>
+        </div>
+      </div>
 
-      <form class="settings-block" style="max-width:640px;" th:action="@{/portal/profile}" method="post">
-        <div class="form-group">
-          <label class="form-label" for="nickname">표시 이름</label>
-          <input class="form-input" id="nickname" name="nickname" th:value="${artist.nickname}" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="email">이메일</label>
-          <input class="form-input" id="email" name="email" type="email" th:value="${artist.email}" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="intro">소개글</label>
-          <textarea class="form-textarea" id="intro" name="intro"
-                    th:text="${artistProfile.intro != null ? artistProfile.intro : ''}"></textarea>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="headerImageUrl">헤더 이미지 URL</label>
-          <input class="form-input" id="headerImageUrl" name="headerImageUrl"
-                 th:value="${artistProfile.headerImageUrl != null ? artistProfile.headerImageUrl : ''}" />
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="logoImageUrl">로고 이미지 URL</label>
-          <input class="form-input" id="logoImageUrl" name="logoImageUrl"
-                 th:value="${artistProfile.logoImageUrl != null ? artistProfile.logoImageUrl : ''}" />
-        </div>
-        <div class="flex-center" style="justify-content:flex-end;">
-          <button type="submit" class="btn btn--primary">저장</button>
-        </div>
-      </form>
+      <div class="cta-banner" style="max-width:640px;">
+        <p>커뮤니티에서 팬 화면을 확인하세요</p>
+        <a class="btn btn--primary btn--sm" href="../community/highlight.html">커뮤니티 열기</a>
+      </div>
     </main>
   </div>
 </body>
