@@ -2,16 +2,8 @@
  * ============================================================
  * WePlaNet – EXPLORE-02 커뮤니티 검색
  * ------------------------------------------------------------
- * index.html의 #communitySearchModal 안 요소들을 제어함.
- * 검색: GET /community/search (CommunityExploreController)
- * 가입/탈퇴 버튼은 EXPLORE-03에서 다시 추가할 예정.
- * ============================================================
- */
-/**
- * ============================================================
- * WePlaNet – EXPLORE-02 커뮤니티 검색
- * ------------------------------------------------------------
  * 성별/솔로·그룹/인원수/국적/카테고리/데뷔일 필터 전부 포함.
+ * 검색은 "검색" 버튼을 눌렀을 때(또는 키워드칸에서 Enter)만 실행됨.
  * ============================================================
  */
 (function () {
@@ -76,18 +68,18 @@
     }
   }
 
-  let debounceTimer = null;
-  keywordEl?.addEventListener("input", () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(runSearch, 250);
-  });
-
-  [genderEl, memberCountEl, nationalityEl, categoryEl, debutFromEl, debutToEl, soloOnlyEl].forEach((el) => {
-    el?.addEventListener("change", runSearch);
-  });
-
+  // "검색" 버튼을 눌렀을 때만 검색 실행 (필터 변경/입력 중에는 실행 안 함)
   searchBtn?.addEventListener("click", runSearch);
 
+  // 키워드 입력창에서 Enter로도 검색 버튼과 동일하게 동작하도록
+  keywordEl?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      runSearch();
+    }
+  });
+
+  // 검색 모달을 여는 순간에는 필터 없는 전체 목록을 한 번 보여줌
   document.querySelectorAll('[data-modal-open="communitySearchModal"]').forEach((btn) => {
     btn.addEventListener("click", runSearch);
   });
