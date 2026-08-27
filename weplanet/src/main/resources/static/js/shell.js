@@ -26,6 +26,12 @@
   // (각 화면 <body>에서 data-role="ROLE_ADMIN" 형태로 내려줌. 없으면 빈 문자열)
   const roleName = body.getAttribute("data-role") || "";
   const isAdmin = roleName === "ROLE_ADMIN";
+  // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
+  // 예전엔 아티스트로 로그인해도 ✈ 버튼이 팬 위젯을 열어서, 본인을 fanId로 넘기는 바람에
+  // "자기 자신에게 가입한 멤버십"을 찾다가 무조건 '구독 만료' 배너가 떴음
+  const isArtist = roleName === "ROLE_ARTIST";
+  // 로그인한 본인 id (아티스트일 땐 곧 artistId)
+  const myId = body.getAttribute("data-fan-id") || "";
   const nickname = body.getAttribute("data-nickname") || "";
   const artists = Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : [];
 
@@ -116,7 +122,7 @@
 <!-- ========== 2. FAB ========== -->
 <div class="fab-stack">
   <button type="button" class="fab fab--secondary" data-shell-alert="캘린더 (목업)" title="캘린더" aria-label="캘린더">${ICONS.calendar}</button>
-  <button type="button" class="fab" id="fabChat" title="채팅 (DM)" aria-label="채팅 열기">${ICONS.send}</button>
+  <button type="button" class="fab" id="fabChat" title="${isArtist ? "팬 채팅방" : "채팅 (DM)"}" aria-label="채팅 열기">${ICONS.send}</button>
 </div>
 
 <!-- ========== 3. DM 패널 ========== -->
@@ -404,7 +410,15 @@
     }
   });
 
-  document.getElementById("fabChat")?.addEventListener("click", openDm);
+  document.getElementById("fabChat")?.addEventListener("click", () => {
+    // 아티스트는 팬용 DM 위젯이 아니라 아티스트 전용 채팅방 화면으로 이동시킴.
+    // (그동안 이 화면은 링크가 없어서 주소를 직접 입력해야만 들어갈 수 있었음)
+    if (isArtist && myId) {
+      window.location.href = (base && base !== "/" ? base : "/") + "chat/room/artist?artistId=" + encodeURIComponent(myId);
+      return;
+    }
+    openDm();
+  });
   document.getElementById("dmBackBtn")?.addEventListener("click", showList);
 
   backdrop.addEventListener("click", () => {
