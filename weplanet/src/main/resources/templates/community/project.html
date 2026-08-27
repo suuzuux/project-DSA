@@ -236,20 +236,56 @@
           <p class="form-error" th:errors="*{description}"></p>
         </div>
 
-        <div class="form-group">
+        <div class="form-group"
+             th:classappend="${#fields.hasErrors('emailVerificationKey')} ? 'is-invalid' : ''">
+
           <label class="form-label" for="registeredEmail">이메일 인증</label>
 
-          <input type="hidden" th:field="*{emailVerificationKey}" />
-          <p class="form-error" th:errors="*{emailVerificationKey}"></p>
-          <input id="registeredEmail"
-                 class="form-input"
-                 type="email"
-                 th:value="${registeredEmail}"
-                 readonly />
+          <div class="flex-center">
+            <input id="registeredEmail"
+                   class="form-input"
+                   type="text"
+                   th:value="${registeredEmail}"
+                   readonly />
+
+            <button id="projectEmailSendButton"
+                    type="button"
+                    class="btn btn--soft">
+              전송하기
+            </button>
+          </div>
 
           <p class="form-hint">
             회원가입 시 입력한 이메일 주소로만 인증할 수 있습니다.
           </p>
+
+          <input type="hidden" th:field="*{emailVerificationKey}" />
+
+          <div class="flex-center mt-8">
+            <input id="projectEmailCode"
+                   class="form-input"
+                   type="text"
+                   inputmode="numeric"
+                   autocomplete="one-time-code"
+                   maxlength="6"
+                   pattern="[0-9]{6}"
+                   placeholder="인증번호 6자리"
+                   disabled />
+
+            <button id="projectEmailConfirmButton"
+                    type="button"
+                    class="btn btn--soft"
+                    disabled>
+              인증하기
+            </button>
+          </div>
+
+          <p id="projectEmailStatus"
+             class="form-hint"
+             aria-live="polite"></p>
+
+          <p class="form-error"
+             th:errors="*{emailVerificationKey}"></p>
         </div>
 
         <div class="grid-2">
