@@ -37,10 +37,8 @@ public class GeminiClient {
     private final RestTemplate restTemplate = new RestTemplate();
 
     // Gemini AI 서버의 주소(엔드포인트)
-    // gemini-3.6-flash는 실존하지 않는 모델명이라 호출이 항상 404로 실패했음(AI 요약/번역/팬챗 전부 안내 문구만 반환).
-    // 현재 제공되는 Flash 계열 모델로 교체함
     private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
     /**
      * 프롬프트(질문/지시문) 하나를 Gemini에게 보내고, 답변 텍스트만 뽑아서 돌려줌.
