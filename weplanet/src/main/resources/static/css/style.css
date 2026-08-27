@@ -683,6 +683,15 @@ p {
   vertical-align: middle;
 }
 
+.badge-solo {
+  display: inline;
+  color: var(--wp-brand-dark);
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
 .post-card__meta {
   flex: 1;
   min-width: 0;
