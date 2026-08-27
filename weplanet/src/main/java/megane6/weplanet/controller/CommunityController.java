@@ -51,6 +51,8 @@ public class CommunityController {
 	private final PostDetailModelHelper postDetailModelHelper;
 	private final AuthenticatedUserResolver userResolver;
 	private final BoardMediaService boardMediaService;
+	// [머지 충돌 해결] main에서 포털(Portal) 기능이 되돌려지면서 PortalManagementService 클래스 자체가
+	// 삭제됨 -> portalManagementService 필드도 함께 제거 (남기면 타입을 못 찾아 컴파일 실패)
 	private final FollowService followService;
 
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
@@ -99,7 +101,14 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		User artist = populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "fan");
+			return "community/membership-required";
+		}
 		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
 		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal));
 
@@ -127,7 +136,14 @@ public class CommunityController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		User artist = populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "artist");
+			return "community/membership-required";
+		}
 		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
 
 		if ("fetch".equals(requestedWith)) {
@@ -175,13 +191,30 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		// [머지 충돌 해결] HEAD의 로그인/커뮤니티 가입 접근 제어는 유지.
+		// 단, 공지 목록 조회(portalManagementService.getPublishedNotices)는 main에서 포털 기능이
+		// 되돌려지며 서비스 클래스가 삭제되어 제거함 -> 현재 공지 탭은 "등록된 공지가 없습니다"로 표시됨
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "notice");
+			return "community/membership-required";
+		}
 		return "community/notice";
 	}
 
 	@GetMapping("/community/{artistId}/media")
 	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "media");
+			return "community/membership-required";
+		}
 		model.addAttribute("mediaList", boardMediaService.list(artistId));
 		model.addAttribute("groupId", artistId);
 		return "community/media";
@@ -189,7 +222,14 @@ public class CommunityController {
 
 	@GetMapping("/community/{artistId}/live")
 	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "live");
+			return "community/membership-required";
+		}
 		return "community/live";
 	}
 
@@ -260,6 +300,27 @@ public class CommunityController {
 		return "redirect:/community/" + artistId + "/highlight";
 	}
 
+	// [머지 충돌 해결] main엔 이 기능이 없었음(이전 버전) -> HEAD 유지. 포털과 무관하고 MembershipService는 살아있음
+	// 멤버십 해지 (상세보기 모달의 "멤버십 해지" 버튼)
+	@PostMapping("/community/{artistId}/membership/cancel")
+	public String cancelMembership(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+
+		User artist = userRepository.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+		User fan = userResolver.resolve(principal, 1L);
+
+		membershipService.cancel(fan, artist);
+
+		return "redirect:/community/" + artistId + "/highlight";
+	}
+
 	// "Membership 상세보기" 모달(P33) - 목업 데이터(홍길동/고정 날짜) 대신 실제 가입일/만료일/연락처로 채워서 보여줌.
 	// 모달 자체는 shell.js가 페이지 공통으로 그려두는 거라 여기서 뷰를 새로 만들지 않고 JSON만 내려줌.
 	@GetMapping("/community/{artistId}/membership/detail")
@@ -314,6 +375,14 @@ public class CommunityController {
 		return "redirect:/community/" + backTo + "/highlight";
 	}
 
+	// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지. FollowService 기반이라 포털 삭제와 무관
+	// Fan/Artist/Media/Live/Notice 탭 접근 제어: 로그인은 각 라우트에서 먼저 체크하고,
+	// 여기서는 "이 커뮤니티에 무료 가입(팔로우)했는지"만 확인함.
+	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
+	private boolean hasCommunityAccess(User currentUser, Long artistId) {
+		return followService.isFollowing(currentUser, artistId);
+	}
+
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
@@ -326,6 +395,7 @@ public class CommunityController {
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
 
+		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
 		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
 		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
 		Set<Long> followedIds = followService.getFollowedArtistIds(currentUserForFollow);
@@ -334,6 +404,11 @@ public class CommunityController {
 				.map(user -> ArtistFollowCardView.of(user, followedIds.contains(user.getId())))
 				.toList();
 		model.addAttribute("otherArtists", otherArtists);
+
+		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
+		// 이 커뮤니티에 무료 가입(팔로우)했는지 - Fan/Artist/Media/Live/Notice 접근 제어 및 하단 배너 표시에 씀
+		// (followedIds는 바로 위에서 다른 아티스트 추천용으로 이미 조회해둔 걸 재사용)
+		model.addAttribute("communityJoined", followedIds.contains(artistId));
 
 		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
 		if (principal != null) {
