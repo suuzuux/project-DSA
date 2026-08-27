@@ -235,8 +235,16 @@
                 ensureSocket(function () {
                     const personalTopic = "/topic/chat." + currentArtistId + ".fan." + fanId;
                     const errorTopic = "/topic/chat.error." + fanId;
+                    // 아티스트가 보내는 방송(공지) 채널. 서버(ChatController.send)는 fanId가 null인
+                    // 메시지를 "/topic/chat.{artistId}" 로 뿌리는데, 그동안 팬 쪽에서 이 채널을 구독하지
+                    // 않아서 아티스트가 보낸 메시지가 팬 화면에 아예 안 보였음
+                    const broadcastTopic = "/topic/chat." + currentArtistId;
 
                     subscriptions.push(stompClient.subscribe(personalTopic, function (frame) {
+                        appendBubble(messages, JSON.parse(frame.body));
+                    }));
+
+                    subscriptions.push(stompClient.subscribe(broadcastTopic, function (frame) {
                         appendBubble(messages, JSON.parse(frame.body));
                     }));
 
