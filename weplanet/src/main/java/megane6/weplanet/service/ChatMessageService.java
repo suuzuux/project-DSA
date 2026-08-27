@@ -86,9 +86,10 @@ public class ChatMessageService {
         return result;
     }
 
-    // DM 방을 열었을 때 지난 대화 이력을 보여주기 위한 조회
+    // DM 방을 열었을 때 지난 대화 이력을 보여주기 위한 조회.
+    // 1:1 메시지뿐 아니라 아티스트가 전체 팬에게 보낸 방송(fan IS NULL)도 함께 가져옴
     public List<ChatMessage> getConversation(User artist, User fan) {
-        return chatMessageRepository.findByArtistAndFanOrderByCreatedAtAsc(artist, fan);
+        return chatMessageRepository.findConversationWithBroadcast(artist, fan);
     }
 
     // 와이어프레임 19번: 이 팬의 이 아티스트 멤버십이 만료됐는지(=DM 입력창을 막아야 하는지) 확인.
