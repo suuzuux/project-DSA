@@ -238,6 +238,7 @@ public class CommunityController {
 	}
 	
 	// 와이어프레임 20~23번: 내 프로필 - 댓글/포스트/좋아요/북마크 히스토리
+	// 화면에 뜨는 이름은 계정 아이디가 아니라 populateArtistModel이 넣어준 myCommunityProfile(닉네임)을 쓴다.
 	@GetMapping("/community/{artistId}/profile")
 	public String myProfile(
 			@PathVariable Long artistId,
@@ -361,6 +362,7 @@ public class CommunityController {
 	}
 	
 	// 와이어프레임 26번: About 위젯의 팔로우/팔로잉 버튼
+	// 커뮤니티 "가입"과는 별개다. 가입은 /community/{id}/join (닉네임 필요), 여기는 순수 팔로우.
 	@PostMapping("/community/{artistId}/follow")
 	public String toggleFollow(
 			@PathVariable Long artistId,
@@ -379,12 +381,13 @@ public class CommunityController {
 		return "redirect:/community/" + backTo + "/highlight";
 	}
 	
-	// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지. FollowService 기반이라 포털 삭제와 무관
 	// Fan/Artist/Media/Live/Notice 탭 접근 제어: 로그인은 각 라우트에서 먼저 체크하고,
-	// 여기서는 "이 커뮤니티에 무료 가입(팔로우)했는지"만 확인함.
+	// 여기서는 "이 커뮤니티에 가입(CommunityMember)했는지"만 확인함.
+	// 예전엔 Follow 기준이었는데, 검색/커뮤니티 페이지 어디서 가입하든 닉네임을 받도록 통일하면서
+	// 가입 여부의 기준도 CommunityMember로 옮겼음 (Follow는 About 위젯의 팔로우 버튼 전용으로 남김).
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
-		return followService.isFollowing(currentUser, artistId);
+		return communityJoinService.isJoined(currentUser, artistId);
 	}
 	
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
@@ -409,13 +412,11 @@ public class CommunityController {
 				.toList();
 		model.addAttribute("otherArtists", otherArtists);
 		
-		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
-		// 이 커뮤니티에 무료 가입(팔로우)했는지 - Fan/Artist/Media/Live/Notice 접근 제어 및 하단 배너 표시에 씀
-		// (followedIds는 바로 위에서 다른 아티스트 추천용으로 이미 조회해둔 걸 재사용)
-		model.addAttribute("communityJoined", followedIds.contains(artistId));
-		
-		// 드로어 메뉴 "커뮤니티 바로가기" - 전체 아티스트가 아니라 실제로 가입한 커뮤니티만 보여주기 위한 목록
-		// (Follow와는 별개인 CommunityMember/CommunityProfile - EXPLORE-03 가입 API 기준)
+		// 커뮤니티 가입 여부는 CommunityMember/CommunityProfile 기준 (Follow와는 별개)
+		// 한 번 조회해서 세 군데에 재사용한다:
+		//  - joinedArtists       : 드로어 "커뮤니티 바로가기" (가입한 커뮤니티만)
+		//  - communityJoined     : 사이드바 가입 상태 / 하단 가입 유도 배너 / 탭 접근 제어
+		//  - myCommunityProfile  : 내 프로필 화면에 띄울 이 커뮤니티 전용 닉네임 (미가입이면 null)
 		Map<Long, CommunityProfile> joinedProfiles = currentUserForFollow != null
 				? communityJoinService.joinedProfilesByArtistId(currentUserForFollow)
 				: Collections.emptyMap();
@@ -423,6 +424,8 @@ public class CommunityController {
 				.filter(a -> joinedProfiles.containsKey(a.id()))
 				.toList();
 		model.addAttribute("joinedArtists", joinedArtists);
+		model.addAttribute("communityJoined", joinedProfiles.containsKey(artistId));
+		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
 		
 		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
 		if (principal != null) {

@@ -114,6 +114,20 @@ public class CommunityJoinService {
 		communityMemberRepository.delete(member);
 	}
 	
+	// 커뮤니티 페이지에서 "이 커뮤니티에 가입했는지" 판단 - 가입/탭 접근 제어의 기준
+	public boolean isJoined(User fan, Long artistId) {
+		if (fan == null) return false;
+		return communityMemberRepository.existsByFanIdAndArtistId(fan.getId(), artistId);
+	}
+	
+	// 내 프로필 화면에 계정 아이디 대신 이 커뮤니티 전용 닉네임을 띄우기 위해 씀. 미가입이면 null.
+	public CommunityProfile profileOf(User fan, Long artistId) {
+		if (fan == null) return null;
+		return communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
+				.flatMap(member -> communityProfileRepository.findByCommunityMember_Id(member.getId()))
+				.orElse(null);
+	}
+	
 	// 화면에 프로필 카드(닉네임/소개글/아바타/배경) 그릴 때 씀
 	public Map<Long, CommunityProfile> joinedProfilesByArtistId(User fan) {
 		if (fan == null) return Map.of();

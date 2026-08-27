@@ -50,17 +50,32 @@
      th:classappend="${active == 'live'} ? ' is-active'">Live</a>
 </nav>
 
-<!-- [머지 충돌 해결] 양쪽 fragment 파라미터명은 이제 동일. HEAD에만 있던
-     "커뮤니티 가입중 / 가입 취소" 블록은 communityJoined를 계속 쓰므로 유지 -->
+<!-- 커뮤니티 가입 = CommunityMember(닉네임 필수) 기준으로 통일.
+     Follow는 About 위젯의 "다른 아티스트 팔로우"에만 쓰는 별개 개념으로 남겨둠. -->
 <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
-  <!-- 이 커뮤니티(지금 보고 있는 아티스트) 무료 가입 상태 + 취소 -->
   <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <!-- 가입한 상태: 내 커뮤니티 닉네임 + 가입 취소 -->
     <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
-      <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post"
-            style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-        <span style="color:var(--wp-success, #1a8a5c);font-weight:600;font-size:13px;">✓ 커뮤니티 가입중</span>
-        <button type="submit" class="btn btn--ghost btn--sm">가입 취소</button>
-      </form>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="min-width:0;">
+          <span style="color:var(--wp-success, #1a8a5c);font-weight:600;font-size:13px;">✓ 커뮤니티 가입중</span>
+          <p class="text-xs text-muted" style="margin-top:2px;"
+             th:if="${myCommunityProfile != null}"
+             th:text="|닉네임 · ${myCommunityProfile.nickname}|">닉네임</p>
+        </div>
+        <form th:action="@{/community/{id}/leave(id=${artist.id()})}" method="post">
+          <button type="submit" class="btn btn--ghost btn--sm">가입 취소</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 미가입 상태: 검색에서와 동일하게 닉네임 설정 모달로 -->
+    <div th:unless="${communityJoined}" class="widget" style="padding:12px 16px;">
+      <p class="text-xs text-muted" style="margin-bottom:8px;line-height:1.5;">
+        가입하고 이 커뮤니티에서 쓸 닉네임을 정해보세요.
+      </p>
+      <button type="button" class="btn btn--primary btn--block btn--sm" data-join-btn
+              th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">커뮤니티 가입하기</button>
     </div>
   </th:block>
 
@@ -118,19 +133,40 @@
   </div>
 </aside>
 
-<script th:fragment="scripts" th:inline="javascript">
-  window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
-</script>
+<!-- 커뮤니티 가입(닉네임 설정) 모달 - 메인 검색 화면과 커뮤니티 페이지가 이 하나를 공유한다 -->
+<div th:fragment="joinModal" class="modal-backdrop" id="communityJoinModal">
+  <div class="modal">
+    <div class="modal__head">
+      <strong class="modal__title">커뮤니티 가입하기</strong>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <p class="mb-24"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>
+    <div class="form-group" id="communityJoinNicknameGroup">
+      <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
+      <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
+      <p class="form-error" id="communityJoinNicknameError"></p>
+    </div>
+    <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
+  </div>
+</div>
 
-<!-- 커뮤니티 무료 가입(팔로우) 안 한 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
+<!-- 커뮤니티 페이지 공통 하단: 가입 모달 + 드로어용 데이터 + 가입 스크립트 -->
+<th:block th:fragment="scripts">
+  <div th:replace="~{community/fragments/layout :: joinModal}"></div>
+  <script th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+  </script>
+  <script th:src="@{/js/community-join.js}"></script>
+</th:block>
+
+<!-- 커뮤니티 가입 안 한 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
 <div th:fragment="membershipGate" class="community-main" style="text-align:center;padding:96px 20px;">
   <div style="width:56px;height:56px;border-radius:50%;border:2px solid var(--wp-muted, #8a8a8a);
                 display:inline-flex;align-items:center;justify-content:center;font-size:26px;
                 color:var(--wp-muted, #8a8a8a);margin-bottom:18px;">!</div>
   <p class="text-muted" style="font-size:16px;margin-bottom:24px;">커뮤니티 가입자만 이용 가능합니다.</p>
-  <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post">
-    <button type="submit" class="btn btn--accent">커뮤니티 가입하기</button>
-  </form>
+  <button type="button" class="btn btn--accent" data-join-btn
+          th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">커뮤니티 가입하기</button>
 </div>
 
 <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통) -->
@@ -143,9 +179,8 @@
     <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);" th:href="@{/login}">로그인 후 계속 ›</a>
   </th:block>
   <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-    <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post" style="display:inline;">
-      <button type="submit" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);">가입 후 계속 ›</button>
-    </form>
+    <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);"
+            data-join-btn th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">가입 후 계속 ›</button>
   </th:block>
 </div>
 </body>

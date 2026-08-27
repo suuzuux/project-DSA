@@ -206,7 +206,7 @@
   </section>
 </main>
 
-<!-- ========== EXPLORE-02: 커뮤니티 검색 모달 ========== -->
+<!-- ========== EXPLORE-02/05: 커뮤니티 검색 및 목록 모달 ========== -->
 <div class="modal-backdrop" id="communitySearchModal">
   <div class="modal">
     <div class="modal__head">
@@ -242,22 +242,10 @@
   </div>
 </div>
 
-<!-- ========== EXPLORE-03: 커뮤니티 가입 확인 + 닉네임 설정 모달 (탐색/검색 UI 담당: 권형준) ========== -->
-<div class="modal-backdrop" id="communityJoinModal">
-  <div class="modal">
-    <div class="modal__head">
-      <strong class="modal__title">커뮤니티 가입하기</strong>
-      <button type="button" class="modal__close" data-modal-close>✕</button>
-    </div>
-    <p class="mb-24"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>
-    <div class="form-group" id="communityJoinNicknameGroup">
-      <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
-      <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
-      <p class="form-error" id="communityJoinNicknameError"></p>
-    </div>
-    <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
-  </div>
-</div>
+<!-- ========== EXPLORE-03: 커뮤니티 가입(닉네임 설정) 모달 ==========
+     커뮤니티 페이지(community/fragments/layout.html)와 같은 조각을 공유한다.
+     마크업이 두 군데로 갈라지면 id가 어긋날 수 있어 한 곳에서만 관리함 -->
+<div th:replace="~{community/fragments/layout :: joinModal}"></div>
 
 <!-- 와이어프레임 10번: 하단 푸터 (약관/정책 링크, 사업자 정보, SNS, 저작권) -->
 <footer style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
@@ -297,6 +285,7 @@
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
 <script th:src="@{/js/dm-realtime.js}"></script>
+<script th:src="@{/js/community-join.js}"></script>
 <script th:src="@{/js/community-explore.js}"></script>
 </body>
 </html>
