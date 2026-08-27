@@ -29,17 +29,17 @@
       .replace(/"/g, "&quot;");
   }
 
-  function renderCard(a) {
-    const soloBadge = a.solo ? `<span class="badge-verified">솔로</span>` : "";
-    return `<div class="rising-card" style="cursor:default;">
-      <div class="avatar avatar--lg">${escapeHtml(a.logo)}</div>
-      <div class="rising-card__info">
-        <strong>${escapeHtml(a.nickname)} ${soloBadge}</strong>
-        <span>${escapeHtml(a.nationality)} · ${escapeHtml(a.category)}</span>
-      </div>
-    </div>`;
-  }
-
+ function renderCard(a) {
+   const soloBadge = a.solo ? `<span class="badge-solo">솔로</span>` : "";
+   return `<div class="rising-card" style="cursor:default;">
+     <div class="avatar avatar--lg">${escapeHtml(a.logo)}</div>
+     <div class="rising-card__info">
+       <strong>${escapeHtml(a.nickname)} ${soloBadge}</strong>
+       <span>${escapeHtml(a.nationality)} · ${escapeHtml(a.category)}</span>
+     </div>
+   </div>`;
+ }
+ 
   function buildParams() {
     const params = new URLSearchParams();
     if (keywordEl?.value) params.set("keyword", keywordEl.value);
