@@ -6,6 +6,7 @@ import megane6.weplanet.domain.dto.ArtistFollowCardView;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
@@ -19,6 +20,7 @@ import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +42,7 @@ import java.util.Set;
 @Controller
 @RequiredArgsConstructor
 public class CommunityController {
-
+	
 	private final UserRepository userRepository;
 	private final PostListModelHelper postListModelHelper;
 	private final PostService postService;
@@ -54,11 +57,12 @@ public class CommunityController {
 	// [머지 충돌 해결] main에서 포털(Portal) 기능이 되돌려지면서 PortalManagementService 클래스 자체가
 	// 삭제됨 -> portalManagementService 필드도 함께 제거 (남기면 타입을 못 찾아 컴파일 실패)
 	private final FollowService followService;
-
+	private final CommunityJoinService communityJoinService;
+	
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		User artist = populateArtistModel(artistId, principal, model);
-
+		
 		// "Fan Posts" 위젯 - 이 커뮤니티 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
 		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN, artist);
 		Map<Long, Long> fanPostCommentCounts = new HashMap<>();
@@ -73,11 +77,11 @@ public class CommunityController {
 		model.addAttribute("fanPosts", fanPosts);
 		model.addAttribute("fanPostCommentCounts", fanPostCommentCounts);
 		model.addAttribute("fanPostThumbnails", fanPostThumbnails);
-
+		
 		// "Comments by 아티스트" 위젯 - 이 아티스트가 작성한 댓글 최신 4개
 		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
 		model.addAttribute("artistCommentsWidget", artistComments);
-
+		
 		// "From 아티스트" 위젯 - 이 커뮤니티 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지
 		List<Post> artistPosts = postService.getRecentPosts(BoardType.ARTIST, artist);
 		Map<Long, String> artistPostThumbnails = new HashMap<>();
@@ -89,10 +93,10 @@ public class CommunityController {
 		}
 		model.addAttribute("artistPosts", artistPosts);
 		model.addAttribute("artistPostThumbnails", artistPostThumbnails);
-
+		
 		return "community/highlight";
 	}
-
+	
 	@GetMapping("/community/{artistId}/fan")
 	public String fan(
 			@PathVariable Long artistId,
@@ -111,13 +115,13 @@ public class CommunityController {
 		}
 		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
 		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal));
-
+		
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
 		}
 		return "community/fan";
 	}
-
+	
 	@GetMapping("/community/{artistId}/fan/{postId}")
 	public String fanDetail(
 			@PathVariable Long artistId,
@@ -127,7 +131,7 @@ public class CommunityController {
 	) {
 		return communityPostDetail(artistId, postId, BoardType.FAN, "fan", principal, model);
 	}
-
+	
 	@GetMapping("/community/{artistId}/artist")
 	public String artistBoard(
 			@PathVariable Long artistId,
@@ -145,13 +149,13 @@ public class CommunityController {
 			return "community/membership-required";
 		}
 		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
-
+		
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
 		}
 		return "community/artist";
 	}
-
+	
 	@GetMapping("/community/{artistId}/artist/{postId}")
 	public String artistDetail(
 			@PathVariable Long artistId,
@@ -161,7 +165,7 @@ public class CommunityController {
 	) {
 		return communityPostDetail(artistId, postId, BoardType.ARTIST, "artist", principal, model);
 	}
-
+	
 	// fanDetail/artistDetail 공통 처리 - 게시판 종류뿐 아니라 "이 커뮤니티 소속 글인지"도 검증함
 	// (게시판이 아티스트별로 분리되기 전엔 다른 커뮤니티 글도 보이던 문제가 있었음)
 	private String communityPostDetail(
@@ -173,7 +177,7 @@ public class CommunityController {
 			Model model
 	) {
 		populateArtistModel(artistId, principal, model);
-
+		
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != expectedType) {
 			throw new IllegalArgumentException("게시판 종류가 맞지 않습니다.");
@@ -181,14 +185,14 @@ public class CommunityController {
 		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
 			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
 		}
-
+		
 		User currentUser = userResolver.resolve(principal, 1L);
 		postDetailModelHelper.populate(model, post, currentUser);
 		model.addAttribute("boardTab", boardTab);
-
+		
 		return "community/post-detail";
 	}
-
+	
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		// [머지 충돌 해결] HEAD의 로그인/커뮤니티 가입 접근 제어는 유지.
@@ -204,7 +208,7 @@ public class CommunityController {
 		}
 		return "community/notice";
 	}
-
+	
 	@GetMapping("/community/{artistId}/media")
 	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		if (principal == null) {
@@ -219,7 +223,7 @@ public class CommunityController {
 		model.addAttribute("groupId", artistId);
 		return "community/media";
 	}
-
+	
 	@GetMapping("/community/{artistId}/live")
 	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		if (principal == null) {
@@ -232,7 +236,7 @@ public class CommunityController {
 		}
 		return "community/live";
 	}
-
+	
 	// 와이어프레임 20~23번: 내 프로필 - 댓글/포스트/좋아요/북마크 히스토리
 	@GetMapping("/community/{artistId}/profile")
 	public String myProfile(
@@ -246,13 +250,13 @@ public class CommunityController {
 		}
 		populateArtistModel(artistId, principal, model);
 		User me = userResolver.resolve(principal, 1L);
-
+		
 		boolean oldest = "oldest".equals(sort);
-
+		
 		List<Comment> myComments = oldest
 				? commentRepository.findByAuthorOrderByCreatedAtAsc(me)
 				: commentRepository.findByAuthorOrderByCreatedAtDesc(me);
-
+		
 		List<Post> myPosts = oldest
 				? postService.getPostsByAuthor(me, true)
 				: postService.getPostsByAuthor(me, false);
@@ -260,15 +264,15 @@ public class CommunityController {
 		for (Post post : myPosts) {
 			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
 		}
-
+		
 		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(me).stream()
 				.map(Like::getPost)
 				.toList();
-
+		
 		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(me).stream()
 				.map(Bookmark::getPost)
 				.toList();
-
+		
 		model.addAttribute("myComments", myComments);
 		model.addAttribute("myPosts", myPosts);
 		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
@@ -276,10 +280,10 @@ public class CommunityController {
 		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
 		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
 		model.addAttribute("sort", sort);
-
+		
 		return "community/profile";
 	}
-
+	
 	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
 	@PostMapping("/community/{artistId}/membership/join")public String joinMembership(
 			@PathVariable Long artistId,
@@ -289,17 +293,17 @@ public class CommunityController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-
+		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		User fan = userResolver.resolve(principal, 1L);
-
+		
 		membershipService.join(fan, artist);
-
+		
 		return "redirect:/community/" + artistId + "/highlight";
 	}
-
+	
 	// [머지 충돌 해결] main엔 이 기능이 없었음(이전 버전) -> HEAD 유지. 포털과 무관하고 MembershipService는 살아있음
 	// 멤버십 해지 (상세보기 모달의 "멤버십 해지" 버튼)
 	@PostMapping("/community/{artistId}/membership/cancel")
@@ -310,17 +314,17 @@ public class CommunityController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-
+		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		User fan = userResolver.resolve(principal, 1L);
-
+		
 		membershipService.cancel(fan, artist);
-
+		
 		return "redirect:/community/" + artistId + "/highlight";
 	}
-
+	
 	// "Membership 상세보기" 모달(P33) - 목업 데이터(홍길동/고정 날짜) 대신 실제 가입일/만료일/연락처로 채워서 보여줌.
 	// 모달 자체는 shell.js가 페이지 공통으로 그려두는 거라 여기서 뷰를 새로 만들지 않고 JSON만 내려줌.
 	@GetMapping("/community/{artistId}/membership/detail")
@@ -333,17 +337,17 @@ public class CommunityController {
 		if (principal == null) {
 			return result;
 		}
-
+		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElse(null);
 		if (artist == null) {
 			return result;
 		}
-
+		
 		User fan = userResolver.resolve(principal, 1L);
 		DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("yyyy.MM.dd");
-
+		
 		membershipService.getMembership(fan, artist).ifPresent(membership -> {
 			result.put("name", fan.getRealName());
 			result.put("email", fan.getEmail());
@@ -352,10 +356,10 @@ public class CommunityController {
 			result.put("period",
 					membership.getCreatedAt().format(dateFormat) + " ~ " + membership.getExpiresAt().format(dateFormat) + " (KST)");
 		});
-
+		
 		return result;
 	}
-
+	
 	// 와이어프레임 26번: About 위젯의 팔로우/팔로잉 버튼
 	@PostMapping("/community/{artistId}/follow")
 	public String toggleFollow(
@@ -369,12 +373,12 @@ public class CommunityController {
 		}
 		User fan = userResolver.resolve(principal, 1L);
 		followService.toggle(fan, artistId);
-
+		
 		// 원래 보고 있던 커뮤니티 페이지로 돌아감 (팔로우 대상 아티스트 페이지로 안 튕기게)
 		Long backTo = returnTo != null ? returnTo : artistId;
 		return "redirect:/community/" + backTo + "/highlight";
 	}
-
+	
 	// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지. FollowService 기반이라 포털 삭제와 무관
 	// Fan/Artist/Media/Live/Notice 탭 접근 제어: 로그인은 각 라우트에서 먼저 체크하고,
 	// 여기서는 "이 커뮤니티에 무료 가입(팔로우)했는지"만 확인함.
@@ -382,19 +386,19 @@ public class CommunityController {
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
 		return followService.isFollowing(currentUser, artistId);
 	}
-
+	
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-
+		
 		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
 				.map(ArtistCardView::from)
 				.toList();
-
+		
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
-
+		
 		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
 		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
 		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
@@ -404,12 +408,22 @@ public class CommunityController {
 				.map(user -> ArtistFollowCardView.of(user, followedIds.contains(user.getId())))
 				.toList();
 		model.addAttribute("otherArtists", otherArtists);
-
+		
 		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
 		// 이 커뮤니티에 무료 가입(팔로우)했는지 - Fan/Artist/Media/Live/Notice 접근 제어 및 하단 배너 표시에 씀
 		// (followedIds는 바로 위에서 다른 아티스트 추천용으로 이미 조회해둔 걸 재사용)
 		model.addAttribute("communityJoined", followedIds.contains(artistId));
-
+		
+		// 드로어 메뉴 "커뮤니티 바로가기" - 전체 아티스트가 아니라 실제로 가입한 커뮤니티만 보여주기 위한 목록
+		// (Follow와는 별개인 CommunityMember/CommunityProfile - EXPLORE-03 가입 API 기준)
+		Map<Long, CommunityProfile> joinedProfiles = currentUserForFollow != null
+				? communityJoinService.joinedProfilesByArtistId(currentUserForFollow)
+				: Collections.emptyMap();
+		List<ArtistCardView> joinedArtists = artists.stream()
+				.filter(a -> joinedProfiles.containsKey(a.id()))
+				.toList();
+		model.addAttribute("joinedArtists", joinedArtists);
+		
 		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
 		if (principal != null) {
 			User currentUser = userResolver.resolve(principal, 1L);
@@ -418,7 +432,7 @@ public class CommunityController {
 				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());
 			});
 		}
-
+		
 		return artist;
 	}
 }

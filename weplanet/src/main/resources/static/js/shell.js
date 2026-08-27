@@ -57,7 +57,10 @@
       return isAuthenticated
         ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
   <div class="drawer-menu__communities">
-    <p class="text-xs text-muted" style="padding:8px 0;">가입한 커뮤니티가 없습니다.</p>
+    <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
+      아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
+    </p>
+       <a href="${base}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
   </div>`
         : "";
     }

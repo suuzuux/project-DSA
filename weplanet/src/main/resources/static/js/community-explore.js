@@ -1,17 +1,14 @@
 /**
  * ============================================================
- * WePlaNet – EXPLORE-02 커뮤니티 검색 / EXPLORE-03 가입 확인 UI
+ * WePlaNet – EXPLORE-02 커뮤니티 검색 / EXPLORE-03 가입(닉네임 설정) UI
  * ------------------------------------------------------------
- * 성별/솔로·그룹/인원수/국적/카테고리/데뷔일 필터 전부 포함.
+ * 필터는 검색어 / 성별 / 직업/카테고리(아이돌·배우) 세 가지만 제공.
  * 검색은 "검색" 버튼을 눌렀을 때(또는 키워드칸에서 Enter)만 실행됨.
- * 검색 결과 카드를 클릭하면 "가입하시겠습니까?" 예/아니오 모달이 열림.
- * "예"를 누르면 실제 가입 처리는 하지 않고 communityJoinConfirmed
- * 커스텀 이벤트만 쏨 - 실제 가입 API 연결은 화평님 파트에서 이 이벤트를
- * 받아서 처리하면 됨. 예)
- *   document.addEventListener("communityJoinConfirmed", (e) => {
- *     const artistId = e.detail.artistId;
- *     // fetch(`/community/${artistId}/join`, { method: "POST", ... })
- *   });
+ * 검색 결과 각 줄: 이름/아바타 영역을 누르면 해당 커뮤니티 페이지로 이동,
+ * 오른쪽 "가입" 버튼을 누르면 확인 단계 없이 바로 닉네임 입력 모달이 뜸.
+ * "가입하기"를 누르면 실제 /community/{artistId}/join 을 nickname만 담아 호출한다.
+ * 드로어 메뉴의 "커뮤니티 찾아보기"(?openSearch=1)로 들어오면 검색 모달이 자동으로 열림.
+ * 아바타/소개글 편집은 이번 범위에 포함하지 않음 (PROFILE-01에서 별도 진행 예정).
  * ============================================================
  */
 (function () {
@@ -20,12 +17,7 @@
   const resultsEl = document.getElementById("exploreResults");
   const keywordEl = document.getElementById("exploreKeyword");
   const genderEl = document.getElementById("exploreGender");
-  const memberCountEl = document.getElementById("exploreMemberCount");
-  const nationalityEl = document.getElementById("exploreNationality");
   const categoryEl = document.getElementById("exploreCategory");
-  const debutFromEl = document.getElementById("exploreDebutFrom");
-  const debutToEl = document.getElementById("exploreDebutTo");
-  const soloOnlyEl = document.getElementById("exploreSoloOnly");
   const searchBtn = document.getElementById("exploreSearchBtn");
   if (!resultsEl) return;
 
@@ -39,12 +31,16 @@
 
   function renderCard(a) {
     const soloBadge = a.solo ? `<span class="badge-solo">솔로</span>` : "";
-    return `<div class="rising-card" style="cursor:pointer;" data-artist-id="${a.artistId}" data-artist-name="${escapeHtml(a.nickname)}">
-      <div class="avatar avatar--lg">${escapeHtml(a.logo)}</div>
-      <div class="rising-card__info">
-        <strong>${escapeHtml(a.nickname)} ${soloBadge}</strong>
-        <span>${escapeHtml(a.nationality)} · ${escapeHtml(a.category)}</span>
-      </div>
+    return `<div class="rising-card" style="justify-content:space-between;">
+      <a href="/community/${a.artistId}" class="flex-center" style="gap:12px;flex:1;min-width:0;">
+        <div class="avatar avatar--lg">${escapeHtml(a.logo)}</div>
+        <div class="rising-card__info">
+          <strong>${escapeHtml(a.nickname)} ${soloBadge}</strong>
+          <span>${escapeHtml(a.nationality)} · ${escapeHtml(a.category)}</span>
+        </div>
+      </a>
+      <button type="button" class="btn btn--primary btn--sm" data-join-btn
+              data-artist-id="${a.artistId}" data-artist-name="${escapeHtml(a.nickname)}">가입</button>
     </div>`;
   }
 
@@ -52,12 +48,7 @@
     const params = new URLSearchParams();
     if (keywordEl?.value) params.set("keyword", keywordEl.value);
     if (genderEl?.value) params.set("gender", genderEl.value);
-    if (memberCountEl?.value) params.set("memberCount", memberCountEl.value);
-    if (nationalityEl?.value) params.set("nationality", nationalityEl.value);
     if (categoryEl?.value) params.set("category", categoryEl.value);
-    if (debutFromEl?.value) params.set("debutFrom", debutFromEl.value);
-    if (debutToEl?.value) params.set("debutTo", debutToEl.value);
-    if (soloOnlyEl?.checked) params.set("isSolo", "true");
     return params;
   }
 
@@ -92,35 +83,105 @@
     btn.addEventListener("click", runSearch);
   });
 
+  // 드로어 메뉴 "커뮤니티 찾아보기"(?openSearch=1)로 들어온 경우 - 검색 모달을 자동으로 열고 전체 목록을 바로 보여줌
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.get("openSearch") === "1") {
+    document.getElementById("communitySearchModal")?.classList.add("is-open");
+    runSearch();
+  }
+
   /* ---------------------------------------------------------
-   * EXPLORE-03: 검색 결과 카드 클릭 → 가입 확인(예/아니오)
+   * EXPLORE-03: 검색 결과의 "가입" 버튼 → 확인 단계 없이 바로 닉네임 입력 → 실제 가입
    * --------------------------------------------------------- */
   const joinModal = document.getElementById("communityJoinModal");
-  const joinConfirmText = document.getElementById("communityJoinConfirmText");
-  const joinYesBtn = document.getElementById("communityJoinYesBtn");
+  const joinArtistName = document.getElementById("communityJoinArtistName");
+  const joinNicknameInput = document.getElementById("communityJoinNicknameInput");
+  const joinNicknameGroup = document.getElementById("communityJoinNicknameGroup");
+  const joinNicknameError = document.getElementById("communityJoinNicknameError");
+  const joinSubmitBtn = document.getElementById("communityJoinSubmitBtn");
   let selectedArtistId = null;
 
-  // 검색 결과 카드 클릭 → 가입 확인 모달 오픈
-  resultsEl.addEventListener("click", (e) => {
-    const card = e.target.closest(".rising-card[data-artist-id]");
-    if (!card || !joinModal) return;
+  function resetJoinNicknameError() {
+    joinNicknameGroup?.classList.remove("is-invalid");
+    if (joinNicknameError) joinNicknameError.textContent = "";
+  }
 
+  function openJoinModal(artistId, artistName) {
     if (document.body.dataset.authenticated !== "true") {
       window.location.href = "/login";
       return;
     }
-
-    selectedArtistId = card.dataset.artistId;
-    joinConfirmText.textContent = `『${card.dataset.artistName}』 커뮤니티에 가입하시겠습니까?`;
+    selectedArtistId = artistId;
+    if (joinArtistName) joinArtistName.textContent = `『${artistName}』`;
+    if (joinNicknameInput) joinNicknameInput.value = "";
+    resetJoinNicknameError();
     document.getElementById("communitySearchModal")?.classList.remove("is-open");
-    joinModal.classList.add("is-open");
+    joinModal?.classList.add("is-open");
+    joinNicknameInput?.focus();
+  }
+
+  // 검색 결과 줄의 "가입" 버튼 클릭 → 확인 단계 없이 바로 닉네임 입력 모달
+  resultsEl.addEventListener("click", (e) => {
+    const joinBtn = e.target.closest("[data-join-btn]");
+    if (!joinBtn) return;
+    e.preventDefault();
+    openJoinModal(joinBtn.dataset.artistId, joinBtn.dataset.artistName);
   });
 
-  // "예" → 모달만 닫고, 실제 가입 처리는 이 이벤트를 받는 쪽(화평님 파트)에서 진행
-  joinYesBtn?.addEventListener("click", () => {
-    joinModal.classList.remove("is-open");
-    document.dispatchEvent(new CustomEvent("communityJoinConfirmed", {
-      detail: { artistId: selectedArtistId },
-    }));
+  // "가입하기" → 닉네임만 담아 실제 /community/{artistId}/join 호출
+  joinSubmitBtn?.addEventListener("click", async () => {
+    const nickname = (joinNicknameInput?.value || "").trim();
+    resetJoinNicknameError();
+
+    if (!nickname) {
+      joinNicknameGroup?.classList.add("is-invalid");
+      if (joinNicknameError) joinNicknameError.textContent = "닉네임을 입력해주세요.";
+      joinNicknameInput?.focus();
+      return;
+    }
+    if (nickname.length > 10) {
+      joinNicknameGroup?.classList.add("is-invalid");
+      if (joinNicknameError) joinNicknameError.textContent = "닉네임은 10자 이내로 입력해주세요.";
+      joinNicknameInput?.focus();
+      return;
+    }
+
+    joinSubmitBtn.disabled = true;
+    try {
+      const formData = new FormData();
+      formData.set("nickname", nickname);
+
+      const res = await fetch(`/community/${selectedArtistId}/join`, {
+        method: "POST",
+        headers: { "X-Requested-With": "fetch" },
+        body: formData,
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      if (res.ok) {
+        joinModal?.classList.remove("is-open");
+        window.location.reload();
+        return;
+      }
+
+      let message = "가입 중 오류가 발생했습니다.";
+      try {
+        const data = await res.json();
+        if (data?.message) message = data.message;
+      } catch (_) {
+        // JSON 파싱 실패 시 기본 메시지 사용
+      }
+      joinNicknameGroup?.classList.add("is-invalid");
+      if (joinNicknameError) joinNicknameError.textContent = message;
+    } catch (err) {
+      joinNicknameGroup?.classList.add("is-invalid");
+      if (joinNicknameError) joinNicknameError.textContent = "가입 중 오류가 발생했습니다.";
+    } finally {
+      joinSubmitBtn.disabled = false;
+    }
   });
 })();
