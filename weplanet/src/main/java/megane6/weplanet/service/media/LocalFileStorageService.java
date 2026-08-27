@@ -1,6 +1,5 @@
 package megane6.weplanet.service.media;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -16,7 +15,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
-@Slf4j
+/** 로컬 디스크(./uploads)에 저장. 포트폴리오/개발용. */
 @Service
 public class LocalFileStorageService implements FileStorageService {
 
@@ -49,7 +48,7 @@ public class LocalFileStorageService implements FileStorageService {
 			}
 			return storedName;
 		} catch (IOException e) {
-			throw new IllegalStateException("파일 저장에 실패했습니다.", e);
+			throw new RuntimeException("파일 저장에 실패했습니다.", e);
 		}
 	}
 
@@ -59,9 +58,9 @@ public class LocalFileStorageService implements FileStorageService {
 			Path file = root.resolve(storedName).normalize();
 			Resource resource = new UrlResource(file.toUri());
 			if (resource.exists() && resource.isReadable()) return resource;
-			throw new IllegalArgumentException("파일을 찾을 수 없습니다: " + storedName);
+			throw new RuntimeException("파일을 찾을 수 없습니다: " + storedName);
 		} catch (MalformedURLException e) {
-			throw new IllegalArgumentException("파일 경로가 올바르지 않습니다: " + storedName, e);
+			throw new RuntimeException("파일 경로가 올바르지 않습니다: " + storedName, e);
 		}
 	}
 
@@ -73,7 +72,7 @@ public class LocalFileStorageService implements FileStorageService {
 				Files.deleteIfExists(file);
 			}
 		} catch (IOException e) {
-			log.warn("첨부파일 삭제 실패: {}", storedName, e);
+			throw new RuntimeException("파일 삭제에 실패했습니다: " + storedName, e);
 		}
 	}
 }

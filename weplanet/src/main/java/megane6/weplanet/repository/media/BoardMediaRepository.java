@@ -15,4 +15,6 @@ public interface BoardMediaRepository extends JpaRepository<BoardMediaEntity, Lo
 
     // 단건 조회 (삭제 안 된 것만)
     Optional<BoardMediaEntity> findByIdAndDeletedAtIsNull(Long id);
+
+    long countByGroupIdAndDeletedAtIsNull(Long groupId);
 }
