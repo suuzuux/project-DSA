@@ -247,6 +247,21 @@
   </div>
 </div>
 
+<!-- ========== EXPLORE-03: 커뮤니티 가입 확인 모달 (탐색/검색 UI 담당분: 권형준) ========== -->
+<div class="modal-backdrop" id="communityJoinModal">
+  <div class="modal">
+    <div class="modal__head">
+      <strong class="modal__title">커뮤니티 가입</strong>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <p class="mb-24" id="communityJoinConfirmText">이 커뮤니티에 가입하시겠습니까?</p>
+    <div style="display:flex;gap:8px;">
+      <button type="button" class="btn btn--ghost btn--block" data-modal-close>아니오</button>
+      <button type="button" class="btn btn--primary btn--block" id="communityJoinYesBtn">예</button>
+    </div>
+  </div>
+</div>
+
 <!-- 와이어프레임 10번: 하단 푸터 (약관/정책 링크, 사업자 정보, SNS, 저작권) -->
 <footer style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
   <div class="container" style="display:flex;flex-direction:column;gap:16px;">
