@@ -35,20 +35,48 @@
               · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                       th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
             </div>
-            <p class="comment-item__text" th:text="${comment.content}"></p>
+            <p class="comment-item__text" th:id="'commentText-' + ${comment.id}" th:text="${comment.content}"></p>
             <div class="flex-center" style="gap:10px;margin-top:4px;">
               <a href="javascript:void(0)" class="comment-translate-link translate-link"
                  th:attr="data-comment-id=${comment.id}">번역보기</a>
-              <form class="comment-delete-form" method="post" style="display:inline;"
-                    sec:authorize="isAuthenticated()"
-                    xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-                    th:if="${#authentication.principal.id == comment.author.id}"
-                    th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
-                <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+              <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+                        th:if="${#authentication.principal.id == comment.author.id}">
+                <a href="javascript:void(0)" class="comment-edit-toggle translate-link" th:attr="data-comment-id=${comment.id}">수정</a>
+                <form class="comment-delete-form" method="post" style="display:inline;"
+                      th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
+                  <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                </form>
+              </th:block>
+              <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+                <a href="javascript:void(0)" th:unless="${#authentication.principal.id == comment.author.id}"
+                   class="comment-report-toggle translate-link" th:attr="data-comment-id=${comment.id}">신고</a>
+              </th:block>
+            </div>
+            <div th:id="'commentEditRow-' + ${comment.id}" style="display:none;gap:6px;align-items:center;margin-top:4px;">
+              <form class="comment-edit-form" method="post" style="display:flex;gap:6px;align-items:center;flex:1;"
+                    th:attr="data-comment-id=${comment.id}"
+                    th:action="@{/posts/detail/{id}/comment/{commentId}/edit(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
+                <input type="text" name="content" class="form-input" maxlength="100" th:value="${comment.content}"
+                       style="min-height:30px;padding:2px 8px;font-size:var(--wp-fs-xs);" />
+                <button type="submit" class="btn btn--ghost btn--sm">저장</button>
               </form>
             </div>
             <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs"
                style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
+            <div th:id="'commentReportRow-' + ${comment.id}" style="display:none;gap:8px;align-items:center;margin-top:4px;">
+              <form class="comment-report-form" method="post" style="display:flex;gap:6px;align-items:center;"
+                    th:attr="data-comment-id=${comment.id}"
+                    th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}">
+                <select name="reason" class="form-select" style="min-height:30px;padding:2px 6px;font-size:var(--wp-fs-xs);">
+                  <option value="SPAM">스팸</option>
+                  <option value="ABUSE">욕설/혐오</option>
+                  <option value="SEXUAL">음란물</option>
+                  <option value="ETC">기타</option>
+                </select>
+                <button type="submit" class="btn btn--ghost btn--sm">신고하기</button>
+              </form>
+              <span th:id="'commentReportMsg-' + ${comment.id}" class="text-xs"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -68,20 +96,48 @@
             · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                     th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
           </div>
-          <p class="comment-item__text" th:text="${comment.content}"></p>
+          <p class="comment-item__text" th:id="'commentText-' + ${comment.id}" th:text="${comment.content}"></p>
           <div class="flex-center" style="gap:10px;margin-top:4px;">
             <a href="javascript:void(0)" class="comment-translate-link translate-link"
                th:attr="data-comment-id=${comment.id}">번역보기</a>
-            <form class="comment-delete-form" method="post" style="display:inline;"
-                  sec:authorize="isAuthenticated()"
-                  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-                  th:if="${#authentication.principal.id == comment.author.id}"
-                  th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
-              <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+            <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+                      th:if="${#authentication.principal.id == comment.author.id}">
+              <a href="javascript:void(0)" class="comment-edit-toggle translate-link" th:attr="data-comment-id=${comment.id}">수정</a>
+              <form class="comment-delete-form" method="post" style="display:inline;"
+                    th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
+                <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+              </form>
+            </th:block>
+            <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+              <a href="javascript:void(0)" th:unless="${#authentication.principal.id == comment.author.id}"
+                 class="comment-report-toggle translate-link" th:attr="data-comment-id=${comment.id}">신고</a>
+            </th:block>
+          </div>
+          <div th:id="'commentEditRow-' + ${comment.id}" style="display:none;gap:6px;align-items:center;margin-top:4px;">
+            <form class="comment-edit-form" method="post" style="display:flex;gap:6px;align-items:center;flex:1;"
+                  th:attr="data-comment-id=${comment.id}"
+                  th:action="@{/posts/detail/{id}/comment/{commentId}/edit(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
+              <input type="text" name="content" class="form-input" maxlength="100" th:value="${comment.content}"
+                     style="min-height:30px;padding:2px 8px;font-size:var(--wp-fs-xs);" />
+              <button type="submit" class="btn btn--ghost btn--sm">저장</button>
             </form>
           </div>
           <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs"
              style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
+          <div th:id="'commentReportRow-' + ${comment.id}" style="display:none;gap:8px;align-items:center;margin-top:4px;">
+            <form class="comment-report-form" method="post" style="display:flex;gap:6px;align-items:center;"
+                  th:attr="data-comment-id=${comment.id}"
+                  th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}">
+              <select name="reason" class="form-select" style="min-height:30px;padding:2px 6px;font-size:var(--wp-fs-xs);">
+                <option value="SPAM">스팸</option>
+                <option value="ABUSE">욕설/혐오</option>
+                <option value="SEXUAL">음란물</option>
+                <option value="ETC">기타</option>
+              </select>
+              <button type="submit" class="btn btn--ghost btn--sm">신고하기</button>
+            </form>
+            <span th:id="'commentReportMsg-' + ${comment.id}" class="text-xs"></span>
+          </div>
         </div>
       </div>
     </div>
