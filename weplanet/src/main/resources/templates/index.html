@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -23,223 +23,269 @@
                data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
-  <header class="site-header">
-    <div class="header-left">
-      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
-      <a class="brand" th:href="@{/}">
-        <span class="brand__mark">W</span>
-        <span class="brand__text">We<span>Pla</span>Net</span>
-      </a>
-    </div>
-    <div class="header-actions">
-      <th:block sec:authorize="isAuthenticated()">
-        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="alert('알림 목록 (목업)')">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        </button>
-      </th:block>
-      <button type="button" class="icon-btn" aria-label="언어">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-      </button>
-      <th:block sec:authorize="isAnonymous()">
-        <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
-        <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
-      </th:block>
-      <th:block sec:authorize="isAuthenticated()">
-        <form th:action="@{/logout}" method="post" style="display:inline;">
-          <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
-        </form>
-      </th:block>
-    </div>
-  </header>
-
-  <main class="container section">
-
-    <!-- ===== 로그인 전 ===== -->
-    <th:block sec:authorize="isAnonymous()">
-      <div class="banner mb-24" data-carousel aria-label="이벤트 및 광고 배너">
-        <div class="banner__track">
-          <div class="banner__slide">
-            <p class="banner__kicker">WePlaNet</p>
-            <h2 class="banner__title">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
-          </div>
-          <div class="banner__slide" style="background:linear-gradient(120deg,#1a3a4a,#0f6b6b 60%,#c45c26);">
-            <p class="banner__kicker">Community</p>
-            <h2 class="banner__title">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
-          </div>
-        </div>
-        <div class="banner__nav">
-          <button type="button" class="icon-btn" data-carousel-prev aria-label="이전">&lt;</button>
-          <button type="button" class="icon-btn" data-carousel-next aria-label="다음">&gt;</button>
-        </div>
-        <div class="banner__dots"></div>
-      </div>
-
-      <section class="cta-banner mb-24">
-        <div>
-          <p>회원가입 후 다양한 서비스를 이용해보세요!</p>
-          <p class="text-sm text-muted mt-8">아티스트 커뮤니티 · 스케줄 · 미디어 · 멤버십</p>
-        </div>
-        <a class="btn btn--accent" th:href="@{/signup}">회원가입</a>
-      </section>
-    </th:block>
-
-    <!-- ===== 로그인 후 ===== -->
+<header class="site-header">
+  <div class="header-left">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+  <div class="header-actions">
+    <button type="button" class="icon-btn" data-modal-open="communitySearchModal" aria-label="커뮤니티 검색">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </button>
     <th:block sec:authorize="isAuthenticated()">
-      <div class="cta-banner mb-24">
-        <div>
-          <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
-          <p class="text-sm text-muted mt-8">메뉴에서 커뮤니티 바로가기 · DM 버튼으로 채팅</p>
-        </div>
-        <a class="btn btn--primary btn--sm"
-           th:if="${!artists.isEmpty()}"
-           th:href="@{/community/{id}(id=${artists[0].id()})}">커뮤니티 가입하기</a>
-        <a class="btn btn--primary btn--sm"
-           th:if="${artists.isEmpty()}"
-           th:href="@{/posts/fan}">커뮤니티 가입하기</a>
-      </div>
-
-      <div class="banner mb-24" data-carousel>
-        <div class="banner__track">
-          <div class="banner__slide">
-            <p class="banner__kicker">Event &amp; Schedule</p>
-            <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
-          </div>
-          <div class="banner__slide" style="background:linear-gradient(120deg,#0f3d3d,#c45c26);">
-            <p class="banner__kicker">Membership</p>
-            <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
-          </div>
-        </div>
-        <div class="banner__nav">
-          <button type="button" class="icon-btn" data-carousel-prev>&lt;</button>
-          <button type="button" class="icon-btn" data-carousel-next>&gt;</button>
-        </div>
-        <div class="banner__dots"></div>
-      </div>
-
-      <section class="mb-24">
-        <div class="week-nav">
-          <button type="button" class="icon-btn" aria-label="이전 주">◀</button>
-          <strong>이번 주 스케줄</strong>
-          <button type="button" class="icon-btn" aria-label="다음 주">▶</button>
-        </div>
-        <p class="text-muted" style="padding:24px 0;">표시할 스케줄이 없습니다.</p>
-      </section>
-
-      <section class="marquee-block mb-24">
-        <h2 class="marquee-block__title">지금 바로 만나보세요!</h2>
-        <div class="marquee" th:if="${!artists.isEmpty()}">
-          <div class="marquee__track">
-            <th:block th:each="artist : ${artists}">
-              <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}">
-                <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
-                <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
-              </a>
-            </th:block>
-            <!-- 무한 스크롤용 복제 -->
-            <th:block th:each="artist : ${artists}">
-              <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}" aria-hidden="true">
-                <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
-                <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
-              </a>
-            </th:block>
-          </div>
-        </div>
-        <p class="text-muted" style="padding:16px 0;" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
-      </section>
+      <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="WePlaNet.alert('알림 목록 (목업)')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      </button>
     </th:block>
+    <button type="button" class="icon-btn" aria-label="언어">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+    </button>
+    <th:block sec:authorize="isAnonymous()">
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
+      <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+    </th:block>
+    <th:block sec:authorize="isAuthenticated()">
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+      </form>
+    </th:block>
+  </div>
+</header>
 
-    <!-- ===== 로그인 여부와 무관한 공통 영역 =====
-         예전엔 이 두 섹션이 isAnonymous() 블록 안에 있어서 로그인하면 사라졌음.
-         메인의 핵심 위젯이라 로그인 상태와 무관하게 항상 보이도록 밖으로 뺐음 -->
-    <section class="mb-24">
-      <div class="section__head">
-        <h2 class="section__title">최신 인기 포스트</h2>
+<main class="container section">
+
+  <!-- ===== 로그인 전 ===== -->
+  <th:block sec:authorize="isAnonymous()">
+    <div class="banner mb-24" data-carousel aria-label="이벤트 및 광고 배너">
+      <div class="banner__track">
+        <div class="banner__slide">
+          <p class="banner__kicker">WePlaNet</p>
+          <h2 class="banner__title">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
+        </div>
+        <div class="banner__slide" style="background:linear-gradient(120deg,#1a3a4a,#0f6b6b 60%,#c45c26);">
+          <p class="banner__kicker">Community</p>
+          <h2 class="banner__title">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
+        </div>
       </div>
-      <div class="feed feed--grid" th:if="${!popularPosts.isEmpty()}">
-        <article class="post-card" th:each="post : ${popularPosts}">
-          <a th:href="${post.boardType.name() == 'FAN'}
+      <div class="banner__nav">
+        <button type="button" class="icon-btn" data-carousel-prev aria-label="이전">&lt;</button>
+        <button type="button" class="icon-btn" data-carousel-next aria-label="다음">&gt;</button>
+      </div>
+      <div class="banner__dots"></div>
+    </div>
+
+    <section class="cta-banner mb-24">
+      <div>
+        <p>회원가입 후 다양한 서비스를 이용해보세요!</p>
+        <p class="text-sm text-muted mt-8">아티스트 커뮤니티 · 스케줄 · 미디어 · 멤버십</p>
+      </div>
+      <a class="btn btn--accent" th:href="@{/signup}">회원가입</a>
+    </section>
+  </th:block>
+
+  <!-- ===== 로그인 후 ===== -->
+  <th:block sec:authorize="isAuthenticated()">
+    <div class="cta-banner mb-24">
+      <div>
+        <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
+        <p class="text-sm text-muted mt-8">메뉴에서 커뮤니티 바로가기 · DM 버튼으로 채팅</p>
+      </div>
+      <a class="btn btn--primary btn--sm"
+         th:if="${!artists.isEmpty()}"
+         th:href="@{/community/{id}(id=${artists[0].id()})}">커뮤니티 가입하기</a>
+      <a class="btn btn--primary btn--sm"
+         th:if="${artists.isEmpty()}"
+         th:href="@{/posts/fan}">커뮤니티 가입하기</a>
+    </div>
+
+    <div class="banner mb-24" data-carousel>
+      <div class="banner__track">
+        <div class="banner__slide">
+          <p class="banner__kicker">Event &amp; Schedule</p>
+          <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
+        </div>
+        <div class="banner__slide" style="background:linear-gradient(120deg,#0f3d3d,#c45c26);">
+          <p class="banner__kicker">Membership</p>
+          <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
+        </div>
+      </div>
+      <div class="banner__nav">
+        <button type="button" class="icon-btn" data-carousel-prev>&lt;</button>
+        <button type="button" class="icon-btn" data-carousel-next>&gt;</button>
+      </div>
+      <div class="banner__dots"></div>
+    </div>
+
+    <section class="mb-24">
+      <div class="week-nav">
+        <button type="button" class="icon-btn" aria-label="이전 주">◀</button>
+        <strong>이번 주 스케줄</strong>
+        <button type="button" class="icon-btn" aria-label="다음 주">▶</button>
+      </div>
+      <p class="text-muted" style="padding:24px 0;">표시할 스케줄이 없습니다.</p>
+    </section>
+
+    <section class="marquee-block mb-24">
+      <h2 class="marquee-block__title">지금 바로 만나보세요!</h2>
+      <div class="marquee" th:if="${!artists.isEmpty()}">
+        <div class="marquee__track">
+          <th:block th:each="artist : ${artists}">
+            <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}">
+              <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
+              <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
+            </a>
+          </th:block>
+          <!-- 무한 스크롤용 복제 -->
+          <th:block th:each="artist : ${artists}">
+            <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}" aria-hidden="true">
+              <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
+              <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
+            </a>
+          </th:block>
+        </div>
+      </div>
+      <p class="text-muted" style="padding:16px 0;" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
+    </section>
+  </th:block>
+
+  <!-- ===== 로그인 여부와 무관한 공통 영역 =====
+       예전엔 이 두 섹션이 isAnonymous() 블록 안에 있어서 로그인하면 사라졌음.
+       메인의 핵심 위젯이라 로그인 상태와 무관하게 항상 보이도록 밖으로 뺐음 -->
+  <section class="mb-24">
+    <div class="section__head">
+      <h2 class="section__title">최신 인기 포스트</h2>
+    </div>
+    <div class="feed feed--grid" th:if="${!popularPosts.isEmpty()}">
+      <article class="post-card" th:each="post : ${popularPosts}">
+        <a th:href="${post.boardType.name() == 'FAN'}
                         ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist.id}, postId=${post.id})}
                         : @{/community/{artistId}/artist/{postId}(artistId=${post.artist.id}, postId=${post.id})}"
-             style="display:block;color:inherit;">
-            <div class="post-card__head">
-              <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
-              <div class="post-card__meta">
-                <div class="post-card__name">
-                  <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
-                  <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
-                </div>
-                <div class="post-card__time"
-                     th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                     th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+           style="display:block;color:inherit;">
+          <div class="post-card__head">
+            <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+            <div class="post-card__meta">
+              <div class="post-card__name">
+                <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
               </div>
+              <div class="post-card__time"
+                   th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                   th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
             </div>
-            <p class="post-card__body" th:text="${post.title}"></p>
-            <div th:if="${popularPostThumbnails.get(post.id)} != null" class="post-card__media">
-              <img th:src="@{'/uploads/' + ${popularPostThumbnails.get(post.id)}}" alt=""
-                   style="width:100%;border-radius:var(--wp-radius-sm);max-height:200px;object-fit:cover;">
-            </div>
-          </a>
-        </article>
-      </div>
-      <p class="text-muted" style="padding:24px 0;" th:if="${popularPosts.isEmpty()}">표시할 포스트가 없습니다.</p>
-    </section>
-
-    <section class="section mb-24">
-      <div class="section__head">
-        <h2 class="section__title">급상승 커뮤니티</h2>
-      </div>
-      <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
-        <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{/community/{id}(id=${artist.id()})}">
-          <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
-          <div class="rising-card__info">
-            <strong th:text="${artist.nickname()}">아티스트</strong>
-            <span th:if="${artist.debutDate() != null}"
-                  th:text="${#temporals.format(artist.debutDate(), 'yyyy.MM.dd')} + ' 데뷔'">데뷔일</span>
-            <span th:text="'가입자수 ' + ${artist.followerCount()} + '명'">가입자수</span>
+          </div>
+          <p class="post-card__body" th:text="${post.title}"></p>
+          <div th:if="${popularPostThumbnails.get(post.id)} != null" class="post-card__media">
+            <img th:src="@{'/uploads/' + ${popularPostThumbnails.get(post.id)}}" alt=""
+                 style="width:100%;border-radius:var(--wp-radius-sm);max-height:200px;object-fit:cover;">
           </div>
         </a>
-      </div>
-      <p class="text-muted" style="padding:24px 0;" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
-    </section>
-  </main>
-
-  <!-- 와이어프레임 10번: 하단 푸터 (약관/정책 링크, 사업자 정보, SNS, 저작권) -->
-  <footer style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
-    <div class="container" style="display:flex;flex-direction:column;gap:16px;">
-      <nav style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--wp-fs-xs);">
-        <a href="#" class="text-muted">이용약관</a>
-        <a href="#" class="text-muted">서비스 운영정책</a>
-        <a href="#" class="text-muted">유료서비스 이용약관</a>
-        <a href="#" class="text-muted">아동 및 청소년 보호정책</a>
-        <a href="#" class="text-muted">불법촬영물 신고·삭제 요청</a>
-        <a href="#" style="font-weight:700;">개인정보 처리방침</a>
-        <a href="#" class="text-muted">쿠키 정책</a>
-        <a href="#" class="text-muted">쿠키 설정</a>
-        <a href="#" class="text-muted">입점 신청</a>
-        <a href="#" class="text-muted">고객센터</a>
-      </nav>
-      <p class="text-xs text-muted" style="line-height:1.6;">
-        상호 WePlaNet Inc. | 대표자 정휘원 | 전자우편주소 support@weplanet.io<br />
-        WePlaNet Shop에서 판매되는 상품 중에는 WePlaNet Shop에 입점한 개별 판매자가 판매하는 상품이 포함되어 있습니다.
-        개별 판매자가 판매하는 상품의 경우 WePlaNet은 통신판매중개자로서 통신판매의 당사자가 아니며,
-        등록된 상품의 정보 및 거래에 대해 책임을 지지 않습니다.
-      </p>
-      <div class="flex-center" style="gap:12px;font-size:var(--wp-fs-md);">
-        <span class="text-xs text-muted">WePlaNet SNS</span>
-        <a href="#" class="icon-btn" aria-label="X">𝕏</a>
-        <a href="#" class="icon-btn" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
-        <a href="#" class="icon-btn" aria-label="YouTube">▶</a>
-        <a href="#" class="icon-btn" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18a4 4 0 1 0 4-4V2h4a6 6 0 0 0 6 6"></path></svg></a>
-      </div>
-      <p class="text-xs text-muted">© 2026 WePlaNet Inc. All rights reserved.</p>
+      </article>
     </div>
-  </footer>
+    <p class="text-muted" style="padding:24px 0;" th:if="${popularPosts.isEmpty()}">표시할 포스트가 없습니다.</p>
+  </section>
 
-  <script th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
-  </script>
-  <script th:src="@{/js/main.js}"></script>
-  <script th:src="@{/js/shell.js}"></script>
-  <script th:src="@{/js/dm-realtime.js}"></script>
+  <section class="section mb-24">
+    <div class="section__head">
+      <h2 class="section__title">급상승 커뮤니티</h2>
+    </div>
+    <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
+      <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{/community/{id}(id=${artist.id()})}">
+        <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+        <div class="rising-card__info">
+          <strong th:text="${artist.nickname()}">아티스트</strong>
+          <span th:if="${artist.debutDate() != null}"
+                th:text="${#temporals.format(artist.debutDate(), 'yyyy.MM.dd')} + ' 데뷔'">데뷔일</span>
+          <span th:text="'가입자수 ' + ${artist.followerCount()} + '명'">가입자수</span>
+        </div>
+      </a>
+    </div>
+    <p class="text-muted" style="padding:24px 0;" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
+  </section>
+</main>
+
+<!-- ========== EXPLORE-02/05: 커뮤니티 검색 및 목록 모달 ========== -->
+<div class="modal-backdrop" id="communitySearchModal">
+  <div class="modal">
+    <div class="modal__head">
+      <strong class="modal__title">커뮤니티 검색</strong>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+
+    <input type="text" id="exploreKeyword" class="form-input" placeholder="아티스트/그룹명 검색" style="margin-bottom:12px;" />
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label class="text-xs text-muted" for="exploreGender">성별</label>
+        <select id="exploreGender" class="form-input">
+          <option value="">전체</option>
+          <option value="MALE">보이그룹/남성</option>
+          <option value="FEMALE">걸그룹/여성</option>
+          <option value="MIXED">혼성</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-muted" for="exploreCategory">직업/카테고리</label>
+        <select id="exploreCategory" class="form-input">
+          <option value="">전체</option>
+          <option value="아이돌">아이돌</option>
+          <option value="배우">배우</option>
+        </select>
+      </div>
+    </div>
+
+    <button type="button" id="exploreSearchBtn" class="btn btn--primary btn--sm btn--block" style="margin-bottom:12px;">검색</button>
+
+    <div id="exploreResults" class="rising-grid" style="grid-template-columns:1fr;"></div>
+  </div>
+</div>
+
+<!-- ========== EXPLORE-03: 커뮤니티 가입(닉네임 설정) 모달 ==========
+     커뮤니티 페이지(community/fragments/layout.html)와 같은 조각을 공유한다.
+     마크업이 두 군데로 갈라지면 id가 어긋날 수 있어 한 곳에서만 관리함 -->
+<div th:replace="~{community/fragments/layout :: joinModal}"></div>
+
+<!-- 와이어프레임 10번: 하단 푸터 (약관/정책 링크, 사업자 정보, SNS, 저작권) -->
+<footer style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
+  <div class="container" style="display:flex;flex-direction:column;gap:16px;">
+    <nav style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--wp-fs-xs);">
+      <a href="#" class="text-muted">이용약관</a>
+      <a href="#" class="text-muted">서비스 운영정책</a>
+      <a href="#" class="text-muted">유료서비스 이용약관</a>
+      <a href="#" class="text-muted">아동 및 청소년 보호정책</a>
+      <a href="#" class="text-muted">불법촬영물 신고·삭제 요청</a>
+      <a href="#" style="font-weight:700;">개인정보 처리방침</a>
+      <a href="#" class="text-muted">쿠키 정책</a>
+      <a href="#" class="text-muted">쿠키 설정</a>
+      <a href="#" class="text-muted">입점 신청</a>
+      <a href="#" class="text-muted">고객센터</a>
+    </nav>
+    <p class="text-xs text-muted" style="line-height:1.6;">
+      상호 WePlaNet Inc. | 대표자 정휘원 | 전자우편주소 support@weplanet.io<br />
+      WePlaNet Shop에서 판매되는 상품 중에는 WePlaNet Shop에 입점한 개별 판매자가 판매하는 상품이 포함되어 있습니다.
+      개별 판매자가 판매하는 상품의 경우 WePlaNet은 통신판매중개자로서 통신판매의 당사자가 아니며,
+      등록된 상품의 정보 및 거래에 대해 책임을 지지 않습니다.
+    </p>
+    <div class="flex-center" style="gap:12px;font-size:var(--wp-fs-md);">
+      <span class="text-xs text-muted">WePlaNet SNS</span>
+      <a href="#" class="icon-btn" aria-label="X">𝕏</a>
+      <a href="#" class="icon-btn" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
+      <a href="#" class="icon-btn" aria-label="YouTube">▶</a>
+      <a href="#" class="icon-btn" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18a4 4 0 1 0 4-4V2h4a6 6 0 0 0 6 6"></path></svg></a>
+    </div>
+    <p class="text-xs text-muted">© 2026 WePlaNet Inc. All rights reserved.</p>
+  </div>
+</footer>
+
+<script th:inline="javascript">
+  window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+</script>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+<script th:src="@{/js/dm-realtime.js}"></script>
+<script th:src="@{/js/community-join.js}"></script>
+<script th:src="@{/js/community-explore.js}"></script>
 </body>
 </html>

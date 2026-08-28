@@ -26,6 +26,12 @@
   // (각 화면 <body>에서 data-role="ROLE_ADMIN" 형태로 내려줌. 없으면 빈 문자열)
   const roleName = body.getAttribute("data-role") || "";
   const isAdmin = roleName === "ROLE_ADMIN";
+  // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
+  // 예전엔 아티스트로 로그인해도 ✈ 버튼이 팬 위젯을 열어서, 본인을 fanId로 넘기는 바람에
+  // "자기 자신에게 가입한 멤버십"을 찾다가 무조건 '구독 만료' 배너가 떴음
+  const isArtist = roleName === "ROLE_ARTIST";
+  // 로그인한 본인 id (아티스트일 땐 곧 artistId)
+  const myId = body.getAttribute("data-fan-id") || "";
   const nickname = body.getAttribute("data-nickname") || "";
   const artists = Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : [];
 
@@ -57,7 +63,10 @@
       return isAuthenticated
         ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
   <div class="drawer-menu__communities">
-    <p class="text-xs text-muted" style="padding:8px 0;">가입한 커뮤니티가 없습니다.</p>
+    <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
+      아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
+    </p>
+       <a href="${base}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
   </div>`
         : "";
     }
@@ -104,11 +113,11 @@
   ${communitiesBlock}
 
   <nav class="drawer-menu__nav">
-    <a href="${base}collection.html"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
+    <a href="${base}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
     <a href="#" data-shell-alert="공지사항 (목업)"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
-    <a href="${base}shop.html"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
-    <a href="${base}membership.html"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
-    <a href="${base}settings.html"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
+    <a href="${base}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
+    <a href="${base}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
+    <a href="${base}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
     ${adminBlock}
   </nav>
 </aside>
@@ -116,7 +125,7 @@
 <!-- ========== 2. FAB ========== -->
 <div class="fab-stack">
   <button type="button" class="fab fab--secondary" data-shell-alert="캘린더 (목업)" title="캘린더" aria-label="캘린더">${ICONS.calendar}</button>
-  <button type="button" class="fab" id="fabChat" title="채팅 (DM)" aria-label="채팅 열기">${ICONS.send}</button>
+  <button type="button" class="fab" id="fabChat" title="${isArtist ? "팬 채팅방" : "채팅 (DM)"}" aria-label="채팅 열기">${ICONS.send}</button>
 </div>
 
 <!-- ========== 3. DM 패널 ========== -->
@@ -133,7 +142,7 @@
     <div class="dm-body">
       <div class="dm-promo">
         <strong>구독 혜택 안내</strong>
-        <a href="${base}membership.html">DM 100% 활용방법 ›</a>
+        <a href="${base}membership">DM 100% 활용방법 ›</a>
       </div>
       <p class="dm-section-label">메시지</p>
       <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
@@ -161,18 +170,25 @@
         <strong>DM 구독 만료</strong>
         <span>다시 구독하고 새로운 메시지를 받아보세요.</span>
       </div>
-      <a class="dm-expired__cta" href="${base}membership.html">구독하기 ›</a>
+      <a class="dm-expired__cta" href="${base}membership">구독하기 ›</a>
     </div>
 
     <div class="dm-messages" id="dmMessages">
       <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">대화를 시작해보세요.</p>
     </div>
 
+    <!-- 금칙어/전송 한도 초과 등 경고를 화면 안에서 보여주는 배너
+         (예전엔 브라우저 기본 alert을 썼는데, 팬 채팅방 화면과 방식이 달라서 통일함) -->
+    <div class="dm-warning hidden" id="dmWarningBanner" role="alert"></div>
+
     <form class="dm-composer" id="dmComposer">
       <button type="button" class="icon-btn" data-shell-alert="첨부" aria-label="첨부">＋</button>
       <input type="text" placeholder="메시지 입력" autocomplete="off" id="dmInput" />
       <button type="submit" class="send-btn" aria-label="전송">${ICONS.send}</button>
     </form>
+
+    <!-- 오늘 남은 전송 횟수 (CHAT-05 하루 전송 한도) -->
+    <p class="dm-quota" id="dmQuota" hidden>오늘 남은 메시지 <strong id="dmQuotaCount">-</strong>회</p>
   </div>
 </div>
 
@@ -218,7 +234,7 @@
     <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
     <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
     <form id="membershipCancelForm" method="post" style="margin-top:16px;"
-          onsubmit="return confirm('멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
+          onsubmit="return WePlaNet.confirmSubmit(this, '멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
       <button type="submit" class="btn btn--ghost btn--block" style="color:var(--wp-danger, #d33);">멤버십 해지</button>
     </form>
   </div>
@@ -389,7 +405,7 @@
     const alertBtn = e.target.closest("[data-shell-alert]");
     if (alertBtn) {
       e.preventDefault();
-      alert(alertBtn.getAttribute("data-shell-alert"));
+      WePlaNet.alert(alertBtn.getAttribute("data-shell-alert"));
       return;
     }
 
@@ -404,7 +420,15 @@
     }
   });
 
-  document.getElementById("fabChat")?.addEventListener("click", openDm);
+  document.getElementById("fabChat")?.addEventListener("click", () => {
+    // 아티스트는 팬용 DM 위젯이 아니라 아티스트 전용 채팅방 화면으로 이동시킴.
+    // (그동안 이 화면은 링크가 없어서 주소를 직접 입력해야만 들어갈 수 있었음)
+    if (isArtist && myId) {
+      window.location.href = (base && base !== "/" ? base : "/") + "chat/room/artist?artistId=" + encodeURIComponent(myId);
+      return;
+    }
+    openDm();
+  });
   document.getElementById("dmBackBtn")?.addEventListener("click", showList);
 
   backdrop.addEventListener("click", () => {

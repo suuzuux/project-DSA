@@ -1,16 +1,50 @@
 -- ============================================================
--- WePlaNet Schema (WI_schema)
--- 기준: 로컬 weplanet DB 실스키마 + 문서(weplanet_SQL) 보완 테이블
--- 보완: fan_badge_ownership, fan_project*, group_schedule, notification*
--- 용도: 기존 테이블이 있으면 DROP 후 재생성
--- 컬럼 COMMENT: 프로젝트 기능 기준 역할 설명
+-- WePlaNet 통합 스키마 + 테스트 데이터
+-- ------------------------------------------------------------
+-- 이 파일 하나만 실행하면 DB가 완성됩니다.
+-- 기존에 흩어져 있던 SQL 6개를 합친 것입니다.
+--
+--   260826_SQL.sql              (구버전 스키마)
+--   260827_SQL_수정2.sql        (최신 스키마)  <- 본 파일의 기준
+--   260827_SQL_아직ㄴㄴ.sql      (작업중 초안)
+--   260827_seed_badge_test.sql  (배지 소유 시드)
+--   seed_test_accounts.sql      (테스트 계정)
+--   weplanet_SQL.sql            (구버전 스키마)
+--
+-- ------------------------------------------------------------
+-- 구성
+--   [1] 스키마 : 테이블 39개 (DROP -> CREATE) + 배지 카탈로그 25종
+--   [2] 테스트 계정 시드 : 6개 (비밀번호 전부 weplanet1234!)
+--   [3] 배지 소유 / 팔로우 시드
+--
+-- ------------------------------------------------------------
+-- !! 주의 : [1]에 DROP TABLE 이 포함되어 있습니다.
+--          실행하면 기존 데이터가 전부 지워집니다.
+--
+-- 실행 방법 (한글 깨짐 방지를 위해 charset 옵션 필수)
+--   mysql -uroot -p --default-character-set=utf8mb4 weplanet < docs/weplanet_schema.sql
+--
+-- 테스트 계정 (비밀번호 공통: weplanet1234!)
+--   artist_hwiwon   ARTIST  휘원공주
+--   artist_jungsik  ARTIST  정식왕자
+--   asd123          FAN     빛나는여우135
+--   qatest99        FAN     QA테스터
+--   admin_test      ADMIN   관리자테스트   <- 금칙어 관리 화면(/chat/admin/keywords)
+--   aifan_bot       FAN     AI팬봇
 -- ============================================================
 
+USE `weplanet`;
+
+SET NAMES utf8mb4;
+
+
+-- ============================================================
+-- [1] 스키마 + 배지 카탈로그
+-- ============================================================
 CREATE DATABASE IF NOT EXISTS `weplanet`
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE `weplanet`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -43,6 +77,7 @@ DROP TABLE IF EXISTS `fan_project_contribution`;
 DROP TABLE IF EXISTS `fan_project_cover_image`;
 DROP TABLE IF EXISTS `fan_project`;
 DROP TABLE IF EXISTS `fan_badge_ownership`;
+DROP TABLE IF EXISTS `fan_badge`;
 DROP TABLE IF EXISTS `group_schedule`;
 DROP TABLE IF EXISTS `notification_setting`;
 DROP TABLE IF EXISTS `notification`;
@@ -483,6 +518,7 @@ CREATE TABLE `chat_message` (
   `artist_id` bigint NOT NULL COMMENT '대화방 아티스트(users.id)',
   `fan_id` bigint DEFAULT NULL COMMENT '대화방 팬(users.id, 방 식별)',
   `sender_id` bigint NOT NULL COMMENT '실제 발신자(users.id)',
+  `visible_to_artist` tinyint(1) NOT NULL DEFAULT '1' COMMENT '아티스트 화면 노출 여부(CHAT-02 비대칭 수신, 전송 시점에 확정)',
   PRIMARY KEY (`id`),
   KEY `FKckmqpdmndn0mcp8i1bhlhpwki` (`artist_id`),
   KEY `FKn3161qsj1g6xx74stn3ak14nf` (`fan_id`),
@@ -506,29 +542,50 @@ CREATE TABLE `chat_quota` (
   CONSTRAINT `FKryrpa4l7agt3qkw1dwdwkm4o7` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='채팅 전송 횟수 쿼터';
 
--- fan_badge_ownership: 팬 활동 배지 (프로젝트 자격 등)
+-- fan_badge: 배지 카탈로그(마스터). 모든 아티스트 공통이라 artist_id를 두지 않는다.
+--            여기 등록된 행 수가 배지 달성률의 분모가 된다. (현재 BASIC 15 + SPECIAL 10 = 25)
+CREATE TABLE `fan_badge` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '배지 PK',
+  `badge_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 코드(전체 고유)',
+  `badge_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 표시명',
+  `badge_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 유형: BASIC/SPECIAL',
+  `icon` varchar(8) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '🏅' COMMENT '표시용 이모지',
+  `image_url` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배지 이미지 경로. 있으면 이미지, 없으면 icon 이모지로 표시',
+  `description` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '획득 조건 안내 문구',
+  `sort_order` int NOT NULL DEFAULT 0 COMMENT '유형 내 표시 순서(작을수록 앞)',
+  `created_at` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '등록 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_fan_badge_code` (`badge_code`),
+  KEY `idx_fan_badge_list` (`badge_type`, `sort_order`),
+  CONSTRAINT `ck_fan_badge_master_type` CHECK (`badge_type` IN (_utf8mb4'BASIC', _utf8mb4'SPECIAL'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='배지 카탈로그(전 아티스트 공통)';
+
+-- fan_badge_ownership: 팬이 "어느 아티스트 커뮤니티에서" 어떤 배지를 획득했는지
+--                      배지 정의는 fan_badge(공통)이고, 획득은 아티스트별로 따로 쌓인다.
+--                      fan_badge 와는 badge_code 로 연결한다. (FK를 걸지 않은 이유는 문서 하단 참고)
 CREATE TABLE `fan_badge_ownership` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '배지 보유 PK',
   `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
-  `group_id` bigint NOT NULL COMMENT '그룹(artist_groups.id)',
-  `badge_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 코드',
-  `badge_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 표시명',
+  `artist_id` bigint NOT NULL COMMENT '아티스트(users.id) - 커뮤니티 단위',
+  `badge_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 코드(fan_badge.badge_code)',
+  `badge_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '수여 시점 배지명 스냅샷',
   `badge_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 유형: BASIC/SPECIAL',
   `awarded_at` datetime(6) NOT NULL COMMENT '수여 시각',
   `revoked_at` datetime(6) DEFAULT NULL COMMENT '회수 시각(NULL=유효)',
-  `awarded_by` bigint DEFAULT NULL COMMENT '수여자(users.id)',
+  `awarded_by` bigint DEFAULT NULL COMMENT '수여자(users.id), NULL=시스템 자동',
   `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_fan_badge_ownership` (`fan_id`, `group_id`, `badge_code`),
-  KEY `idx_fan_badge_count` (`fan_id`, `group_id`, `badge_type`, `revoked_at`),
+  UNIQUE KEY `uk_fan_badge_ownership` (`fan_id`, `artist_id`, `badge_code`),
+  KEY `idx_fan_badge_count` (`fan_id`, `artist_id`, `badge_type`, `revoked_at`),
   KEY `idx_fan_badge_awarded_by` (`awarded_by`),
-  KEY `fk_fan_badge_group` (`group_id`),
+  KEY `fk_fan_badge_artist` (`artist_id`),
   CONSTRAINT `fk_fan_badge_awarded_by` FOREIGN KEY (`awarded_by`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_fan_badge_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `fk_fan_badge_group` FOREIGN KEY (`group_id`) REFERENCES `artist_groups` (`id`),
+  CONSTRAINT `fk_fan_badge_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
   CONSTRAINT `ck_fan_badge_period` CHECK ((`revoked_at` IS NULL) OR (`revoked_at` >= `awarded_at`)),
   CONSTRAINT `ck_fan_badge_type` CHECK (`badge_type` IN (_utf8mb4'BASIC', _utf8mb4'SPECIAL'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 배지 보유/회수';
+
 
 -- fan_project: 팬 프로젝트 개설·모금 (prjPROJECT)
 CREATE TABLE `fan_project` (
@@ -733,5 +790,130 @@ CREATE TABLE `notification_setting` (
   CONSTRAINT `fk_ns_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='알림 유형별 수신 설정';
 
+-- ------------------------------------------------------------
+-- 배지 카탈로그 25종 (일반 15 + 스페셜 10) - 전 아티스트 공통
+-- 여러 번 실행해도 안전하도록 INSERT IGNORE 사용 (badge_code 가 유니크)
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `fan_badge`
+  (`badge_code`, `badge_name`, `badge_type`, `icon`, `description`, `sort_order`, `created_at`)
+VALUES
+  -- 일반 배지 15종
+  ('BASIC_FIRST_JOIN',    '커뮤니티 첫 가입',      'BASIC', '🎉', '커뮤니티에 처음 가입하면 획득',              1,  NOW(6)),
+  ('BASIC_FIRST_POST',    '첫 게시글 작성',        'BASIC', '✍️', '팬 게시판에 첫 글을 쓰면 획득',           2,  NOW(6)),
+  ('BASIC_COMMENT_5',     '댓글 5개 작성',         'BASIC', '💬', '이 커뮤니티에 댓글 5개를 쓰면 획득',      3,  NOW(6)),
+  ('BASIC_MEDIA_VIEW',    '미디어 시청',           'BASIC', '🎬', 'Media 탭 콘텐츠를 보면 획득',             4,  NOW(6)),
+  ('BASIC_DAY_100',       '가입 후 100일',         'BASIC', '💯', '가입 후 100일이 지나면 획득',        5,  NOW(6)),
+  ('BASIC_DAY_200',       '가입 후 200일',         'BASIC', '📅', '가입 후 200일이 지나면 획득',        6,  NOW(6)),
+  ('BASIC_DAY_300',       '가입 후 300일',         'BASIC', '🗓️', '가입 후 300일이 지나면 획득',        7,  NOW(6)),
+  ('BASIC_LIKE_10',       '좋아요 10개',           'BASIC', '👍', '게시글에 좋아요를 10번 누르면 획득',          8,  NOW(6)),
+  ('BASIC_LIKED_5',       '받은 좋아요 5개',       'BASIC', '❤️', '내 게시글이 좋아요 5개를 받으면 획득',        9,  NOW(6)),
+  ('BASIC_FOLLOW_ARTIST', '아티스트 프로필 팔로우', 'BASIC', '⭐', '아티스트 프로필을 팔로우하면 획득',          10, NOW(6)),
+  ('BASIC_SHOP_PURCHASE', '샵 구매',               'BASIC', '🛍️', 'Shop에서 상품을 구매하면 획득',              11, NOW(6)),
+  ('BASIC_LIVE_VIEW',     '라이브 시청',           'BASIC', '📡', 'Live 방송을 보면 획득',                  12, NOW(6)),
+  ('BASIC_YEAR_1',        '커뮤니티 가입 후 1년',  'BASIC', '🥉', '가입 후 1년이 지나면 획득',         13, NOW(6)),
+  ('BASIC_YEAR_2',        '커뮤니티 가입 후 2년',  'BASIC', '🥈', '가입 후 2년이 지나면 획득',         14, NOW(6)),
+  ('BASIC_YEAR_3',        '커뮤니티 가입 후 3년',  'BASIC', '🥇', '가입 후 3년이 지나면 획득',         15, NOW(6)),
+
+  -- 스페셜 배지 10종
+  ('SPECIAL_DEBUT_1',      '아티스트 데뷔 1주년',  'SPECIAL', '🎂', '데뷔 1주년을 함께하면 획득',        1,  NOW(6)),
+  ('SPECIAL_DEBUT_2',      '아티스트 데뷔 2주년',  'SPECIAL', '🎊', '데뷔 2주년을 함께하면 획득',        2,  NOW(6)),
+  ('SPECIAL_DEBUT_3',      '아티스트 데뷔 3주년',  'SPECIAL', '🏆', '데뷔 3주년을 함께하면 획득',        3,  NOW(6)),
+  ('SPECIAL_FOLLOWER_10',  '팔로워 10명 달성',     'SPECIAL', '👥', '내 팔로워가 10명이 되면 획득',               4,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_1', '첫 멤버십 가입',       'SPECIAL', '💎', '멤버십에 처음 가입하면 획득',      5,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_2', '멤버십 연속 2년',      'SPECIAL', '💠', '멤버십을 2년 연속 유지하면 획득',            6,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_3', '멤버십 연속 3년',      'SPECIAL', '🔷', '멤버십을 3년 연속 유지하면 획득',            7,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_4', '멤버십 연속 4년',      'SPECIAL', '🔶', '멤버십을 4년 연속 유지하면 획득',            8,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_5', '멤버십 연속 5년',      'SPECIAL', '👑', '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
+  ('SPECIAL_PROJECT_CREATE','프로젝트 등록 달성',  'SPECIAL', '🚀', '팬 프로젝트를 등록하면 획득',               10, NOW(6));
+
 SET UNIQUE_CHECKS = 1;
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+-- ============================================================
+-- [2] 테스트 계정 시드
+-- ============================================================
+INSERT IGNORE INTO `users`
+  (`username`, `password`, `role`, `status`, `real_name`, `nickname`, `email`, `created_at`, `updated_at`)
+VALUES
+  ('artist_hwiwon',  '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '휘원',    '휘원공주',      'hwiwon@weplanet.test',  NOW(), NOW()),
+  ('artist_jungsik', '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '정식',    '정식왕자',      'jungsik@weplanet.test', NOW(), NOW()),
+  ('asd123',         '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', '김화평',  '빛나는여우135', 'asdojuasdoa@gmail.com', NOW(), NOW()),
+  ('qatest99',       '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'QA테스터', 'QA테스터',     'qatest99@example.com',  NOW(), NOW()),
+  ('admin_test',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ADMIN',  'ACTIVE', '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(), NOW()),
+  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'AI팬봇', 'AI팬봇', 'aifan_bot@weplanet.test', NOW(), NOW());
+
+-- 이미 계정이 있던 사람(=INSERT IGNORE로 스킵됨)도 비밀번호를 위 해시로 맞추고 싶으면 같이 실행:
+UPDATE `users` SET `password` = '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq'
+WHERE `username` IN ('artist_hwiwon', 'artist_jungsik', 'asd123', 'qatest99', 'admin_test', 'aifan_bot');
+
+
+-- ============================================================
+-- [3] 배지 소유 / 팔로우 시드 (테스트 계정용)
+-- ============================================================
+-- ------------------------------------------------------------
+-- 1) 커뮤니티 가입 (group_follow)
+--    group_id 는 그 아티스트의 users.id 와 같은 값으로 쓴다.
+--    (artist_groups 를 MediaGroupDataInitializer 가 그렇게 시딩해둠)
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `group_follow` (`fan_id`, `group_id`, `created_at`)
+SELECT f.id, a.id, NOW(6)
+FROM `users` f
+         JOIN `users` a ON a.username IN ('artist_hwiwon', 'artist_jungsik')
+WHERE f.username IN ('hwiwhi', 'asd123')
+  AND a.id IN (SELECT id FROM `artist_groups`);
+
+
+-- ------------------------------------------------------------
+-- 2) 획득 배지 - 휘원공주 (일반 8 + 스페셜 2)
+--    badge_name / badge_type 은 카탈로그에서 그대로 복사한다.
+--    (수여 시점 값을 스냅샷으로 남기는 컬럼이라 직접 적지 않고 SELECT 로 가져옴)
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `fan_badge_ownership`
+    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
+SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
+FROM `users` f,
+     `users` a,
+     `fan_badge` b
+WHERE f.username IN ('hwiwhi', 'asd123')
+  AND a.username = 'artist_hwiwon'
+  AND b.badge_code IN (
+    -- 일반 8
+                       'BASIC_FIRST_JOIN',
+                       'BASIC_FIRST_POST',
+                       'BASIC_COMMENT_5',
+                       'BASIC_MEDIA_VIEW',
+                       'BASIC_DAY_100',
+                       'BASIC_LIKE_10',
+                       'BASIC_LIKED_5',
+                       'BASIC_FOLLOW_ARTIST',
+    -- 스페셜 2
+                       'SPECIAL_DEBUT_1',
+                       'SPECIAL_MEMBERSHIP_1'
+    );
+
+
+-- ------------------------------------------------------------
+-- 3) 획득 배지 - 정식왕자 (일반 3, 스페셜 0)
+--    같은 팬이라도 아티스트가 다르면 배지가 따로 쌓인다는 걸 보여주기 위함
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `fan_badge_ownership`
+    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
+SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
+FROM `users` f,
+     `users` a,
+     `fan_badge` b
+WHERE f.username IN ('hwiwhi', 'asd123')
+  AND a.username = 'artist_jungsik'
+  AND b.badge_code IN (
+                       'BASIC_FIRST_JOIN',
+                       'BASIC_FIRST_POST',
+                       'BASIC_MEDIA_VIEW'
+    );
+
+
+-- ------------------------------------------------------------
+-- 확인용
+-- ------------------------------------------------------------
+
+
