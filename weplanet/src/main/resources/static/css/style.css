@@ -1199,8 +1199,7 @@ p {
 }
 
 .toggle,
-.toggle-managed {
-  width: 44px;
+.toggle-managed {  width: 44px;
   height: 26px;
   border-radius: 999px;
   background: var(--wp-line);
@@ -1491,3 +1490,14 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Toast UI 에디터 하단 모드 전환 탭 - 기본 라벨(Markdown/WYSIWYG)을 한글로 바꾸면서
+   글자가 길어져 두 줄로 깨지는 것 방지 (community-posts.js의 relabelEditorModeTabs와 한 쌍) */
+.toastui-editor-mode-switch .tab-item {
+  width: auto;
+  min-width: 88px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
