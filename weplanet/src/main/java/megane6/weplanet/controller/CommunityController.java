@@ -172,7 +172,17 @@ public class CommunityController {
 			AuthenticatedUser principal,
 			Model model
 	) {
+		// 목록(fan/artist/notice/media/live)에는 가입자 전용 차단이 걸려 있었는데 상세에는 빠져 있어서,
+		// 미가입자도 주소창에 /community/1/fan/2 를 직접 치면 글을 그대로 볼 수 있었음.
+		// 목록과 같은 기준으로 로그인 여부 + 커뮤니티 가입 여부를 먼저 확인함
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", boardTab);
+			return "community/membership-required";
+		}
 
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != expectedType) {
@@ -380,6 +390,16 @@ public class CommunityController {
 	// 여기서는 "이 커뮤니티에 무료 가입(팔로우)했는지"만 확인함.
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
+		// 커뮤니티 주인(그 아티스트 본인)은 가입 절차 없이 항상 열람 가능해야 함.
+		// 아티스트는 requireFan 제약 때문에 자기 커뮤니티를 팔로우할 수 없어서,
+		// 팔로우 여부만 보면 정작 본인이 자기 게시판에서 차단당하는 문제가 있었음
+		if (currentUser.getId().equals(artistId)) {
+			return true;
+		}
+		// 관리자는 신고 처리 등을 위해 전체 열람이 필요함
+		if (currentUser.getRole() == Role.ADMIN) {
+			return true;
+		}
 		return followService.isFollowing(currentUser, artistId);
 	}
 
