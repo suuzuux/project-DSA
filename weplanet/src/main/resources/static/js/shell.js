@@ -112,9 +112,9 @@
   <nav class="drawer-menu__nav">
     <a href="${base}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
     <a href="#" data-shell-alert="공지사항 (목업)"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
-    <a href="${base}shop.html"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
-    <a href="${base}membership.html"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
-    <a href="${base}settings.html"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
+    <a href="${base}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
+    <a href="${base}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
+    <a href="${base}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
     ${adminBlock}
   </nav>
 </aside>
@@ -139,7 +139,7 @@
     <div class="dm-body">
       <div class="dm-promo">
         <strong>구독 혜택 안내</strong>
-        <a href="${base}membership.html">DM 100% 활용방법 ›</a>
+        <a href="${base}membership">DM 100% 활용방법 ›</a>
       </div>
       <p class="dm-section-label">메시지</p>
       <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
@@ -167,7 +167,7 @@
         <strong>DM 구독 만료</strong>
         <span>다시 구독하고 새로운 메시지를 받아보세요.</span>
       </div>
-      <a class="dm-expired__cta" href="${base}membership.html">구독하기 ›</a>
+      <a class="dm-expired__cta" href="${base}membership">구독하기 ›</a>
     </div>
 
     <div class="dm-messages" id="dmMessages">

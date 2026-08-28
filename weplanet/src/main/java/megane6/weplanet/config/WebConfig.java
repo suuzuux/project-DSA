@@ -2,6 +2,7 @@ package megane6.weplanet.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -20,5 +21,20 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:uploads/");
+    }
+
+    /**
+     * 별도 로직 없이 화면만 띄우면 되는 정적 페이지들의 주소를 연결해줌.
+     * <p>
+     * templates 안에 .html 파일이 있어도 컨트롤러가 반환해주지 않으면 Thymeleaf가 렌더링하지 않아서
+     * 주소로 접근하면 404가 남. 헤더의 Shop 아이콘이 "/shop.html"로 걸려 있었는데 이 매핑이 없어서
+     * 모든 커뮤니티 화면에서 404가 났었음.
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/shop").setViewName("shop");
+        registry.addViewController("/shop/cart").setViewName("shop-cart");
+        registry.addViewController("/settings").setViewName("settings");
+        registry.addViewController("/membership").setViewName("membership");
     }
 }

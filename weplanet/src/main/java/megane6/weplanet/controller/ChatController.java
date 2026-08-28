@@ -342,7 +342,18 @@ public class ChatController {
     // 채팅방이 한산할 때 화면을 채워 보여주기 위한 가짜 메시지. 이건 웹소켓이 아니라 일반 fetch로 호출됨
     @PostMapping("/chat/room/artist/ai-fan")
     @ResponseBody
-    public Map<String, Object> generateAiFan(@RequestParam Long artistId) {
+    public Map<String, Object> generateAiFan(
+            @RequestParam Long artistId,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        // 이 엔드포인트는 호출될 때마다 Gemini API가 실제로 돌고 chat_message에 저장까지 됨.
+        // 그동안 인증 확인이 없어서 비로그인 상태로 반복 호출하면 API 한도를 소진시킬 수 있었음.
+        // 채팅방을 쓰는 아티스트 본인만 호출할 수 있도록 제한함
+        User requester = requireLoginUser(principal);
+        if (!requester.getId().equals(artistId)) {
+            throw new IllegalStateException("본인 채팅방에서만 사용할 수 있습니다.");
+        }
+
         User artist = getUserOrThrow(artistId, "아티스트");
         User aiFan = userRepository.findByUsername("aifan_bot")
                 .orElseThrow(() -> new IllegalStateException("AI 팬 계정(username=aifan_bot)이 없습니다."));
