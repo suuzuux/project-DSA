@@ -72,7 +72,8 @@ public class CommunityJoinService {
 	@Transactional
 	public void editProfile(User fan, Long artistId, String nickname, String bio,
 							MultipartFile avatar, MultipartFile background,
-							boolean removeAvatar, boolean removeBackground) {
+							boolean removeAvatar, boolean removeBackground,
+							boolean contentHidden) {
 		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElseThrow(() -> new IllegalStateException("가입하지 않은 커뮤니티입니다."));
 		CommunityProfile profile = communityProfileRepository.findByCommunityMember_Id(member.getId())
@@ -115,6 +116,7 @@ public class CommunityJoinService {
 			profile.setBackgroundStoredName(fileStorageService.store(background));
 		}
 		
+		profile.setContentHidden(contentHidden);
 		communityProfileRepository.save(profile);
 	}
 	

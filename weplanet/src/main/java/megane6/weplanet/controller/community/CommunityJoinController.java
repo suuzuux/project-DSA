@@ -41,11 +41,12 @@ public class CommunityJoinController {
 							  @RequestParam(required = false) MultipartFile background,
 							  @RequestParam(defaultValue = "false") boolean removeAvatar,
 							  @RequestParam(defaultValue = "false") boolean removeBackground,
+							  @RequestParam(defaultValue = "false") boolean contentHidden,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
 							  @RequestHeader(value = "Referer", required = false) String referer) {
 		User fan = userResolver.requireAuthenticated(principal);
 		communityJoinService.editProfile(fan, artistId, nickname, bio, avatar, background,
-				removeAvatar, removeBackground);
+				removeAvatar, removeBackground, contentHidden);
 		return "redirect:" + (referer != null ? referer : "/");
 	}
 	

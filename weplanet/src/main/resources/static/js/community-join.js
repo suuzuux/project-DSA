@@ -6,6 +6,7 @@
  * 모두 이 파일 하나를 공유한다. [data-join-btn] 이 붙은 요소면 어디서 눌러도 열린다.
  * (검색 결과처럼 나중에 그려지는 요소도 잡히도록 document 레벨에서 위임 처리)
  * 모달 마크업은 community/fragments/layout.html 의 joinModal 조각 하나뿐이다.
+ * 닉네임칸에서 Enter를 눌러도 "가입하기"와 동일하게 전송된다.
  * ============================================================
  */
 (function () {
@@ -58,7 +59,7 @@
   });
 
   // "가입하기" → 닉네임만 담아 실제 /community/{artistId}/join 호출
-  submitBtn?.addEventListener("click", async () => {
+  async function submitJoin() {
     const nickname = (nicknameInput?.value || "").trim();
     clearError();
 
@@ -105,6 +106,18 @@
       showError("가입 중 오류가 발생했습니다.");
     } finally {
       submitBtn.disabled = false;
+    }
+  }
+
+  submitBtn?.addEventListener("click", submitJoin);
+
+  // 닉네임 입력칸에서 Enter를 눌러도 "가입하기"와 동일하게 동작
+  // (모달 안에 form이 없어서 기본 제출이 일어나지 않으므로 직접 연결한다)
+  // 전송 중에는 버튼이 disabled라, Enter를 연타해도 중복 요청이 나가지 않는다.
+  nicknameInput?.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!submitBtn || !submitBtn.disabled) submitJoin();
     }
   });
 })();

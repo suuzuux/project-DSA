@@ -12,8 +12,10 @@
         2행 2열 : 히스토리 목록
         편집 시 : 오른쪽(탭 줄 포함) 영역을 프로필 편집 패널이 통째로 차지
       이름·소개글·아바타·배경은 모두 이 커뮤니티 전용(community_profiles) 값을 쓴다.
-      PROFILE-01 범위: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 (불러오기 + 삭제).
-      D-DAY, 가입일, 팔로워, 콘텐츠 숨기기(공개범위)는 다음 단계에서 추가 예정.
+      PROFILE-01 범위: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
+      공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다.
+      단 편집 패널에는 실제 설정값이 그대로 보여서 언제든 수정할 수 있다.
+      D-DAY, 가입일, 팔로워, 최애 멤버는 다음 단계에서 추가 예정.
     -->
     <title th:text="'내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -141,10 +143,17 @@
 
 <header th:replace="~{community/fragments/layout :: header}"></header>
 
+<!--
+  avatarName/backgroundName : 실제 저장값 (편집 패널이 씀 - 숨김 중에도 내 설정은 보여야 함)
+  cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
+-->
 <main class="container section" style="max-width:1080px;"
       th:with="displayName=${myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name},
+               contentHidden=${myCommunityProfile != null and myCommunityProfile.contentHidden},
                avatarName=${myCommunityProfile != null ? myCommunityProfile.avatarStoredName : null},
-               backgroundName=${myCommunityProfile != null ? myCommunityProfile.backgroundStoredName : null}">
+               backgroundName=${myCommunityProfile != null ? myCommunityProfile.backgroundStoredName : null},
+               cardAvatar=${contentHidden ? null : avatarName},
+               cardBackground=${contentHidden ? null : backgroundName}">
 
     <div class="profile-layout" data-tabs>
 
@@ -159,9 +168,9 @@
         <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
         <aside class="profile-side profile-card">
 
-            <!-- 프로필 배경 이미지 영역 - 등록한 배경이 있으면 채우고, 없으면 기본 그라데이션 -->
-            <div th:style="${backgroundName != null}
-                           ? |height:240px;background-image:url('/uploads/${backgroundName}');background-size:cover;background-position:center;|
+            <!-- 프로필 배경 이미지 영역 - 숨김이거나 등록한 배경이 없으면 기본 그라데이션 -->
+            <div th:style="${cardBackground != null}
+                           ? |height:240px;background-image:url('/uploads/${cardBackground}');background-size:cover;background-position:center;|
                            : 'height:240px;background:linear-gradient(160deg,#3d5a5a,#8b6040);'"></div>
 
             <div style="padding:0 20px 24px;text-align:center;">
@@ -170,25 +179,32 @@
                 <div class="avatar"
                      style="width:104px;height:104px;margin:-52px auto 0;
                             border:4px solid var(--wp-surface, #fff);font-size:36px;position:relative;">
-                    <img th:if="${avatarName != null}"
-                         th:src="@{'/uploads/' + ${avatarName}}" alt="프로필 이미지"
+                    <img th:if="${cardAvatar != null}"
+                         th:src="@{'/uploads/' + ${cardAvatar}}" alt="프로필 이미지"
                          style="width:100%;height:100%;object-fit:cover;display:block;"/>
-                    <span th:if="${avatarName == null}"
+                    <span th:if="${cardAvatar == null}"
                           th:text="${#strings.substring(displayName, 0, 1)}">나</span>
                 </div>
 
+                <!-- 닉네임 - 숨김 상태에서도 항상 보이는 유일한 정보 -->
                 <h2 style="margin-top:14px;font-size:var(--wp-fs-lg);font-weight:800;word-break:break-all;">
                     <span th:text="${displayName}">닉네임</span>
                 </h2>
 
-                <!-- 소개글 - 와이어프레임엔 자리가 없어 닉네임과 프로필 편집 사이에 배치 -->
+                <!-- 소개글 - 공개범위가 숨김이면 노출하지 않음 -->
                 <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;word-break:break-all;"
-                   th:if="${myCommunityProfile != null and !#strings.isEmpty(myCommunityProfile.bio)}"
+                   th:if="${!contentHidden and myCommunityProfile != null and !#strings.isEmpty(myCommunityProfile.bio)}"
                    th:text="${myCommunityProfile.bio}">소개글</p>
 
-                <p style="margin:16px 0;font-size:var(--wp-fs-sm);">
+                <!-- 팔로잉 - 공개범위가 숨김이면 노출하지 않음 -->
+                <p style="margin:16px 0;font-size:var(--wp-fs-sm);" th:if="${!contentHidden}">
                     <strong th:text="${myFollowingCount}">0</strong>
                     <span class="text-xs text-muted" style="margin-left:4px;">팔로잉</span>
+                </p>
+
+                <!-- 숨김 상태 안내 - 본인에게만 보이는 표시 -->
+                <p class="text-xs text-muted" style="margin:16px 0;line-height:1.5;" th:if="${contentHidden}">
+                    🔒 콘텐츠 숨김 중<br/>다른 사람에게는 닉네임만 보입니다
                 </p>
 
                 <!-- 가입한 커뮤니티에서만 편집 가능 (community_profiles 행이 있어야 수정할 수 있음) -->
@@ -304,7 +320,8 @@
         <!-- ==================== 프로필 편집 패널 (탭 줄 포함 오른쪽 영역 전체) ====================
              모달이 아니라 목록 자리에 그대로 펼쳐진다.
              POST /community/{artistId}/profile/edit 를 사용하며, 파일 업로드라 일반 multipart 폼 전송.
-             서버가 Referer로 되돌려보내 화면이 갱신된다. -->
+             서버가 Referer로 되돌려보내 화면이 갱신된다.
+             여기서는 숨김 여부와 무관하게 실제 저장값(avatarName/backgroundName)을 보여준다. -->
         <div class="profile-edit" th:if="${myCommunityProfile != null}">
 
             <div style="position:relative;text-align:center;margin-bottom:24px;">
@@ -355,7 +372,7 @@
                 <!-- 파일 입력은 감춰두고, 메뉴의 "사진첩에서 불러오기"로 연다 -->
                 <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>
                 <input type="file" id="profileEditBackground" name="background" accept="image/*" class="hidden"/>
-                <!-- "이미지 삭제하기"를 확인하면 true로 바뀌고 폼이 바로 전송된다 -->
+                <!-- "이미지 삭제하기"를 확인하면 true로 바뀌고, 저장할 때 반영된다 -->
                 <input type="hidden" name="removeAvatar" id="removeAvatarFlag" value="false"/>
                 <input type="hidden" name="removeBackground" id="removeBackgroundFlag" value="false"/>
 
@@ -382,9 +399,27 @@
                 </div>
                 <!-- 파일을 고른 뒤에만 파일명이 나타남 -->
                 <p class="text-xs text-muted" style="text-align:center;" data-file-name-for="profileEditAvatar"></p>
-                <p class="text-xs text-muted" style="text-align:center;margin-bottom:24px;" data-file-name-for="profileEditBackground"></p>
+                <p class="text-xs text-muted" style="text-align:center;margin-bottom:20px;" data-file-name-for="profileEditBackground"></p>
 
-                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin:0 -24px;padding:16px 24px;">
+                <!-- PROFILE-01: 프로필 공개범위 (콘텐츠 숨기기)
+                     보이는 스위치는 .toggle-managed(내가 상태를 직접 관리하는 스타일)이고,
+                     실제로 서버에 전송되는 건 아래 감춰둔 체크박스다. -->
+                <input type="checkbox" name="contentHidden" id="profileEditHidden" value="true"
+                       class="hidden" th:checked="${contentHidden}"/>
+                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);padding:18px 0 6px;text-align:left;">
+                    <div class="flex-between" style="align-items:center;gap:12px;">
+                        <strong style="font-size:var(--wp-fs-sm);">프로필의 콘텐츠 숨기기</strong>
+                        <div class="toggle-managed" id="profileEditHiddenToggle"
+                             th:classappend="${contentHidden} ? ' is-on'"
+                             role="switch" tabindex="0" style="cursor:pointer;flex-shrink:0;"></div>
+                    </div>
+                    <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
+                        다른 사람이 내 프로필 공간에 접근할 수는 있지만, 작성한 콘텐츠와 팔로잉, 팔로워 목록은
+                        볼 수 없고, 나를 팔로우할 수도 없습니다.
+                    </p>
+                </div>
+
+                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin:16px -24px 0;padding:16px 24px;">
                     <button type="submit" class="btn btn--primary btn--block">저장</button>
                 </div>
             </form>
@@ -407,21 +442,14 @@
           layout.classList.add("is-editing");
         });
       });
+
       document.querySelectorAll("[data-profile-edit-close]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        layout.classList.remove("is-editing");
-        // 저장하지 않고 닫았으므로 예약해둔 삭제를 되돌린다
-        ["Avatar", "Background"].forEach(function (kind) {
-          var flag = document.getElementById("remove" + kind + "Flag");
-          if (flag) flag.value = "false";
-          var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
-          if (notice) notice.textContent = "";
-          var fileInput = document.getElementById("profileEdit" + kind);
-          if (fileInput) fileInput.value = "";
+        btn.addEventListener("click", function () {
+          layout.classList.remove("is-editing");
+          // 저장하지 않고 닫았으므로 예약해둔 삭제와 고른 파일, 토글 상태를 모두 되돌린다
+          location.reload();
         });
-        location.reload();
       });
-    });
 
       // 글자 수 카운터 (와이어프레임의 "3 / 10", "0 / 30")
       document.querySelectorAll("[data-count-for]").forEach(function (label) {
@@ -476,67 +504,86 @@
         });
       });
 
-       // "이미지 삭제하기" -> 삭제를 예약만 하고, 실제 반영은 "저장"을 눌렀을 때
-    document.querySelectorAll("[data-image-remove]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var kind = btn.getAttribute("data-image-remove"); // "Avatar" | "Background"
-        var label = kind === "Avatar" ? "프로필 이미지" : "배경 이미지";
-        var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
+      // "이미지 삭제하기" -> 삭제를 예약만 하고, 실제 반영은 "저장"을 눌렀을 때
+      document.querySelectorAll("[data-image-remove]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var kind = btn.getAttribute("data-image-remove"); // "Avatar" | "Background"
+          var label = kind === "Avatar" ? "프로필 이미지" : "배경 이미지";
+          var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
 
-        // 아직 등록된 이미지가 없으면 지울 것도 없음
-        if (btn.getAttribute("data-has-image") !== "true") {
-          closeAllMenus();
-          alert("삭제할 " + label + "가 없습니다.");
-          return;
-        }
-
-        if (!confirm(label + "를 삭제하시겠습니까?\n저장을 눌러야 실제로 적용됩니다.")) return;
-
-        closeAllMenus();
-        // 새로 고른 파일이 있으면 취소하고 삭제를 우선한다
-        var fileInput = document.getElementById("profileEdit" + kind);
-        if (fileInput) fileInput.value = "";
-        document.getElementById("remove" + kind + "Flag").value = "true";
-
-        if (notice) notice.textContent = label + " 삭제 예정 · 저장을 눌러야 적용됩니다";
-
-        // 프로필 이미지는 미리보기도 기본 상태로 되돌려 보여줌
-        if (kind === "Avatar") {
-          var preview = document.getElementById("profileEditAvatarPreview");
-          if (preview) {
-            preview.innerHTML = "<span>" + (preview.getAttribute("data-initial") || "") + "</span>";
+          // 아직 등록된 이미지가 없으면 지울 것도 없음
+          if (btn.getAttribute("data-has-image") !== "true") {
+            closeAllMenus();
+            alert("삭제할 " + label + "가 없습니다.");
+            return;
           }
-        }
+
+          if (!confirm(label + "를 삭제하시겠습니까?\n저장을 눌러야 실제로 적용됩니다.")) return;
+
+          closeAllMenus();
+          // 새로 고른 파일이 있으면 취소하고 삭제를 우선한다
+          var fileInput = document.getElementById("profileEdit" + kind);
+          if (fileInput) fileInput.value = "";
+          document.getElementById("remove" + kind + "Flag").value = "true";
+
+          if (notice) notice.textContent = label + " 삭제 예정 · 저장을 눌러야 적용됩니다";
+
+          // 프로필 이미지는 미리보기도 기본 상태로 되돌려 보여줌
+          if (kind === "Avatar") {
+            var preview = document.getElementById("profileEditAvatarPreview");
+            if (preview) {
+              preview.innerHTML = "<span>" + (preview.getAttribute("data-initial") || "") + "</span>";
+            }
+          }
+        });
       });
-    });
 
       // 파일을 고르면 파일명 표시 + 프로필 이미지는 미리보기에 즉시 반영
-    // (새 파일을 고르면 예약해둔 삭제는 취소된다)
-    document.querySelectorAll("[data-file-name-for]").forEach(function (label) {
-      var id = label.getAttribute("data-file-name-for");
-      var input = document.getElementById(id);
-      if (!input) return;
-      var kind = id.replace("profileEdit", ""); // "Avatar" | "Background"
+      // (새 파일을 고르면 예약해둔 삭제는 취소된다)
+      document.querySelectorAll("[data-file-name-for]").forEach(function (label) {
+        var id = label.getAttribute("data-file-name-for");
+        var input = document.getElementById(id);
+        if (!input) return;
+        var kind = id.replace("profileEdit", ""); // "Avatar" | "Background"
 
-      input.addEventListener("change", function () {
-        var file = input.files && input.files[0];
-        label.textContent = file ? file.name : "";
+        input.addEventListener("change", function () {
+          var file = input.files && input.files[0];
+          label.textContent = file ? file.name : "";
 
-        if (file) {
-          var flag = document.getElementById("remove" + kind + "Flag");
-          if (flag) flag.value = "false";
-        }
-
-        if (file && id === "profileEditAvatar") {
-          var preview = document.getElementById("profileEditAvatarPreview");
-          if (preview) {
-            preview.innerHTML =
-              '<img src="' + URL.createObjectURL(file) +
-              '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">';
+          if (file) {
+            var flag = document.getElementById("remove" + kind + "Flag");
+            if (flag) flag.value = "false";
           }
-        }
+
+          if (file && id === "profileEditAvatar") {
+            var preview = document.getElementById("profileEditAvatarPreview");
+            if (preview) {
+              preview.innerHTML =
+                '<img src="' + URL.createObjectURL(file) +
+                '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">';
+            }
+          }
+        });
       });
-      });
+
+      // 공개범위 토글 - 보이는 스위치와 실제로 전송되는 체크박스를 동기화
+      var hiddenToggle = document.getElementById("profileEditHiddenToggle");
+      var hiddenInput = document.getElementById("profileEditHidden");
+      if (hiddenToggle && hiddenInput) {
+        var syncHidden = function () {
+          var on = hiddenToggle.classList.toggle("is-on");
+          hiddenInput.checked = on;
+          hiddenToggle.setAttribute("aria-checked", String(on));
+        };
+        hiddenToggle.addEventListener("click", syncHidden);
+        hiddenToggle.addEventListener("keydown", function (e) {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            syncHidden();
+          }
+        });
+        hiddenToggle.setAttribute("aria-checked", String(hiddenInput.checked));
+      }
     })();
 </script>
 </body>

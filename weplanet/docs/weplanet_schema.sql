@@ -366,6 +366,7 @@ CREATE TABLE `community_profiles` (
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
   `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
+  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
   `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
