@@ -507,6 +507,35 @@
   place-items: center;
 }
 
+/* 금칙어/전송 한도 초과 경고 배너 (브라우저 alert 대신 화면 안에서 알려줌) */
+.dm-warning {
+  flex-shrink: 0;
+  margin: 0 12px 8px;
+  padding: 10px 12px;
+  border-radius: var(--wp-radius-sm, 8px);
+  background: #fdecea;
+  color: #b3261e;
+  border: 1px solid #f5c6c2;
+  font-size: var(--wp-fs-xs, 12px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* 오늘 남은 전송 횟수 */
+.dm-quota {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 14px 10px;
+  font-size: var(--wp-fs-xs, 12px);
+  color: var(--wp-ink-soft, #6b7280);
+  text-align: right;
+}
+
+.dm-quota.is-empty {
+  color: #b3261e;
+  font-weight: 700;
+}
+
 /* =========================================================
  * 4. 멤버십 전용 페이지 / 카드 보강
  * ========================================================= */

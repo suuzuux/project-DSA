@@ -1208,8 +1208,7 @@ p {
 }
 
 .toggle,
-.toggle-managed {
-  width: 44px;
+.toggle-managed {  width: 44px;
   height: 26px;
   border-radius: 999px;
   background: var(--wp-line);
@@ -1499,4 +1498,80 @@ p {
   .grid-2 {
     grid-template-columns: 1fr;
   }
+}
+
+
+/* Toast UI 에디터 하단 모드 전환 탭 - 기본 라벨(Markdown/WYSIWYG)을 한글로 바꾸면서
+   글자가 길어져 두 줄로 깨지는 것 방지 (community-posts.js의 relabelEditorModeTabs와 한 쌍) */
+.toastui-editor-mode-switch .tab-item {
+  width: auto;
+  min-width: 88px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+
+
+/* ===== 공용 알림/확인 다이얼로그 (브라우저 alert/confirm 대체) ===== */
+.wp-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  z-index: 3000;
+  padding: 20px;
+}
+
+.wp-dialog-backdrop[hidden] { display: none; }
+
+.wp-dialog {
+  width: min(100%, 360px);
+  background: var(--wp-surface, #fff);
+  border-radius: var(--wp-radius, 12px);
+  padding: 22px 20px 16px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
+}
+
+.wp-dialog__msg {
+  margin: 0 0 18px;
+  font-size: var(--wp-fs-sm, 14px);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.wp-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.wp-dialog__actions [hidden] { display: none; }
+
+/* 토스트 */
+.wp-toast-root {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3100;
+  pointer-events: none;
+}
+
+.wp-toast {
+  background: rgba(24, 24, 27, 0.92);
+  color: #fff;
+  padding: 11px 18px;
+  border-radius: 999px;
+  font-size: var(--wp-fs-xs, 12px);
+  font-weight: 600;
+  transition: opacity 0.25s, transform 0.25s;
+}
+
+.wp-toast.is-out {
+  opacity: 0;
+  transform: translateY(6px);
 }

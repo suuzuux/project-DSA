@@ -21,6 +21,124 @@
   const qs = (sel, root = document) => root.querySelector(sel);
   const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 
+  /* ---------------------------------------------------------
+   * 공용 알림/확인 다이얼로그 (브라우저 기본 alert/confirm 대체)
+   * -----------------------------------------------------------
+   * 기본 alert/confirm은 브라우저가 그리는 창이라 디자인을 맞출 수 없고,
+   * 화면 전체가 멈춰버려서(모달 블로킹) 자동화 테스트에서도 잡히지 않음.
+   * 그래서 같은 역할을 하는 화면 안 다이얼로그를 직접 만들어서 씀.
+   *
+   *   WePlaNet.alert("메시지")            -> 확인 버튼만 (Promise 반환)
+   *   WePlaNet.confirm("정말?")           -> 확인/취소 (true/false Promise)
+   *   WePlaNet.toast("저장했어요")         -> 잠깐 떴다 사라지는 알림
+   * --------------------------------------------------------- */
+  function ensureDialogRoot() {
+    let root = document.getElementById("wpDialogRoot");
+    if (root) return root;
+
+    root = document.createElement("div");
+    root.id = "wpDialogRoot";
+    root.className = "wp-dialog-backdrop";
+    root.hidden = true;
+    root.innerHTML =
+      '<div class="wp-dialog" role="dialog" aria-modal="true" aria-labelledby="wpDialogMsg">' +
+      '  <p class="wp-dialog__msg" id="wpDialogMsg"></p>' +
+      '  <div class="wp-dialog__actions">' +
+      '    <button type="button" class="btn btn--soft" data-wp-dialog="cancel">취소</button>' +
+      '    <button type="button" class="btn btn--primary" data-wp-dialog="ok">확인</button>' +
+      "  </div>" +
+      "</div>";
+    document.body.appendChild(root);
+    return root;
+  }
+
+  function openDialog(message, withCancel) {
+    const root = ensureDialogRoot();
+    const msgEl = root.querySelector(".wp-dialog__msg");
+    const okBtn = root.querySelector('[data-wp-dialog="ok"]');
+    const cancelBtn = root.querySelector('[data-wp-dialog="cancel"]');
+
+    msgEl.textContent = message;
+    cancelBtn.hidden = !withCancel;
+    root.hidden = false;
+    okBtn.focus();
+
+    return new Promise((resolve) => {
+      function close(result) {
+        root.hidden = true;
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+      function onOk() { close(true); }
+      function onCancel() { close(false); }
+      function onKey(e) {
+        if (e.key === "Escape") close(false);
+        if (e.key === "Enter") close(true);
+      }
+
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  function ensureToastRoot() {
+    let root = document.getElementById("wpToastRoot");
+    if (root) return root;
+    root = document.createElement("div");
+    root.id = "wpToastRoot";
+    root.className = "wp-toast-root";
+    document.body.appendChild(root);
+    return root;
+  }
+
+  window.WePlaNet = window.WePlaNet || {};
+  window.WePlaNet.alert = function (message) {
+    return openDialog(message, false);
+  };
+  window.WePlaNet.confirm = function (message) {
+    return openDialog(message, true);
+  };
+  window.WePlaNet.toast = function (message) {
+    const root = ensureToastRoot();
+    const item = document.createElement("div");
+    item.className = "wp-toast";
+    item.textContent = message;
+    root.appendChild(item);
+    setTimeout(function () {
+      item.classList.add("is-out");
+      setTimeout(function () { item.remove(); }, 250);
+    }, 2600);
+  };
+
+  /**
+   * 폼 제출 전 확인창을 띄우는 헬퍼.
+   * 기존 onsubmit="return confirm('...')" 을 그대로 대체하기 위한 것 -
+   * 우리 확인창은 Promise라서 즉시 true/false를 돌려줄 수 없기 때문에,
+   * 일단 제출을 막고(false 반환) 사용자가 "확인"을 누르면 그때 폼을 다시 제출함.
+   *
+   *   <form onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?')">
+   */
+  window.WePlaNet.confirmSubmit = function (form, message) {
+    if (form.dataset.wpConfirmed === "1") {
+      form.dataset.wpConfirmed = "";
+      return true;
+    }
+    window.WePlaNet.confirm(message).then(function (ok) {
+      if (ok) {
+        form.dataset.wpConfirmed = "1";
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit();
+        } else {
+          form.submit();
+        }
+      }
+    });
+    return false;
+  };
+
   /**
    * data-modal-open / data-modal-close 로 모달 제어
    * 예) <button data-modal-open="membershipModal">
@@ -213,7 +331,7 @@
       const agreeOk = requiredAgrees.every((c) => c.checked);
       if (!agreeOk) {
         e.preventDefault();
-        alert("필수 약관에 동의해 주세요.");
+        window.WePlaNet.alert("필수 약관에 동의해 주세요.");
         return;
       }
       if (!ok) {
@@ -233,7 +351,7 @@
         if (go && go !== "true") {
           window.location.href = go;
         } else {
-          alert("목업 화면입니다. 실제 서버 전송은 하지 않습니다.");
+          window.WePlaNet.alert("목업 화면입니다. 실제 서버 전송은 하지 않습니다.");
         }
       });
     });

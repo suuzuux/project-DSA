@@ -176,7 +176,17 @@ public class CommunityController {
 			AuthenticatedUser principal,
 			Model model
 	) {
+		// 목록(fan/artist/notice/media/live)에는 가입자 전용 차단이 걸려 있었는데 상세에는 빠져 있어서,
+		// 미가입자도 주소창에 /community/1/fan/2 를 직접 치면 글을 그대로 볼 수 있었음.
+		// 목록과 같은 기준으로 로그인 여부 + 커뮤니티 가입 여부를 먼저 확인함
+		if (principal == null) {
+			return "redirect:/login";
+		}
 		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", boardTab);
+			return "community/membership-required";
+		}
 		
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != expectedType) {
@@ -184,6 +194,13 @@ public class CommunityController {
 		}
 		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
 			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
+		}
+		
+		// 36번(Hide from Artists) 필터가 목록에만 있고 상세엔 빠져 있어서,
+		// 아티스트가 주소창에 /community/1/fan/5 를 직접 치면 숨긴 글이 그대로 열렸음.
+		// 가입자 차단이 목록에만 있던 것과 똑같은 종류의 누락. 목록과 같은 기준을 상세에도 적용함
+		if (post.isHiddenFromArtist() && userResolver.isArtist(principal)) {
+			throw new IllegalArgumentException("작성자가 아티스트에게 공개하지 않은 게시글입니다.");
 		}
 		
 		User currentUser = userResolver.resolve(principal, 1L);
@@ -298,7 +315,7 @@ public class CommunityController {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-		User fan = userResolver.resolve(principal, 1L);
+		User fan = requireFan(principal);
 		
 		membershipService.join(fan, artist);
 		
@@ -319,7 +336,7 @@ public class CommunityController {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-		User fan = userResolver.resolve(principal, 1L);
+		User fan = requireFan(principal);
 		
 		membershipService.cancel(fan, artist);
 		
@@ -387,7 +404,27 @@ public class CommunityController {
 	// 가입 여부의 기준도 CommunityMember로 옮겼음 (Follow는 About 위젯의 팔로우 버튼 전용으로 남김).
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
+		// 커뮤니티 주인(그 아티스트 본인)은 가입 절차 없이 항상 열람 가능해야 함.
+		// 아티스트는 팬 전용 가입 절차를 밟을 수 없어서, 가입 여부만 보면
+		// 정작 본인이 자기 게시판에서 차단당하는 문제가 있었음
+		if (currentUser.getId().equals(artistId)) {
+			return true;
+		}
+		// 관리자는 신고 처리 등을 위해 전체 열람이 필요함
+		if (currentUser.getRole() == Role.ADMIN) {
+			return true;
+		}
 		return communityJoinService.isJoined(currentUser, artistId);
+	}
+	
+	// 멤버십 가입/해지는 팬만 할 수 있는 행동임. 화면에서도 hasRole(FAN)으로 버튼을 숨기지만,
+	// 버튼을 숨기는 것만으로는 폼을 직접 호출하는 걸 막을 수 없어서 서버에서도 한 번 더 검증함
+	private User requireFan(AuthenticatedUser principal) {
+		User user = userResolver.resolve(principal, 1L);
+		if (user.getRole() != Role.FAN) {
+			throw new IllegalStateException("팬 계정만 이용할 수 있는 기능입니다.");
+		}
+		return user;
 	}
 	
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {

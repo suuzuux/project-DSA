@@ -196,6 +196,38 @@
         container.scrollTop = container.scrollHeight;
     }
 
+    // 금칙어/한도 초과 경고를 화면 안 배너로 보여줌 (3.5초 뒤 자동 숨김)
+    let warningTimer = null;
+    function showWarning(message) {
+        const banner = document.getElementById("dmWarningBanner");
+        if (!banner) return;
+
+        banner.textContent = "[경고] " + message;
+        banner.classList.remove("hidden");
+
+        clearTimeout(warningTimer);
+        warningTimer = setTimeout(function () {
+            banner.classList.add("hidden");
+        }, 3500);
+    }
+
+    // 오늘 남은 전송 횟수를 입력창 아래에 표시
+    function updateQuota(remaining) {
+        const wrap = document.getElementById("dmQuota");
+        const countEl = document.getElementById("dmQuotaCount");
+        if (!wrap || !countEl) return;
+
+        if (remaining === undefined || remaining === null) {
+            wrap.hidden = true;
+            return;
+        }
+
+        countEl.textContent = remaining;
+        wrap.hidden = false;
+        // 다 쓰면 눈에 띄게 색을 바꿔줌
+        wrap.classList.toggle("is-empty", Number(remaining) <= 0);
+    }
+
     // 아티스트 하나를 골라서 방을 열 때: 지난 대화 이력을 불러오고, 실시간 수신을 새로 구독함
     // (화면 전환/헤더 표시는 shell.js가 이미 처리해줌 - 여기선 메시지 데이터만 채움)
     function openRealRoom(artistId) {
@@ -231,6 +263,9 @@
                     composerEl.style.display = data.membershipExpired ? "none" : "";
                 }
 
+                // 오늘 남은 전송 횟수 표시 (CHAT-05)
+                updateQuota(data.remaining);
+
                 unsubscribeAll();
                 ensureSocket(function () {
                     const personalTopic = "/topic/chat." + currentArtistId + ".fan." + fanId;
@@ -241,7 +276,12 @@
                     const broadcastTopic = "/topic/chat." + currentArtistId;
 
                     subscriptions.push(stompClient.subscribe(personalTopic, function (frame) {
-                        appendBubble(messages, JSON.parse(frame.body));
+                        const payload = JSON.parse(frame.body);
+                        appendBubble(messages, payload);
+                        // 내가 보낸 게 정상 저장되면 서버가 남은 횟수를 같이 내려줌
+                        if (payload.remaining !== undefined) {
+                            updateQuota(payload.remaining);
+                        }
                     }));
 
                     subscriptions.push(stompClient.subscribe(broadcastTopic, function (frame) {
@@ -249,7 +289,11 @@
                     }));
 
                     subscriptions.push(stompClient.subscribe(errorTopic, function (frame) {
-                        alert(JSON.parse(frame.body).message);
+                        // 예전엔 브라우저 기본 alert을 띄웠는데, 팬 채팅방 화면(fanChatRoom.html)은
+                        // 화면 안 배너를 쓰고 있어서 방식이 서로 달랐음 -> 배너로 통일
+                        showWarning(JSON.parse(frame.body).message);
+                        // 한도 초과로 거부된 경우라면 남은 횟수는 0
+                        updateQuota(0);
                     }));
                 });
             });
