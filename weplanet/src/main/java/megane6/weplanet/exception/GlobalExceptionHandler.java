@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -75,6 +76,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalStateException.class)
     public Object handleIllegalState(IllegalStateException e, HttpServletRequest request) {
         log.warn("허용되지 않은 요청: {}", e.getMessage());
+        return respond(request, HttpStatus.FORBIDDEN, e.getMessage());
+    }
+    
+    // 권한 없는 사용자가 주소로 접근 (403)
+    @ExceptionHandler(AccessDeniedException.class)
+    public Object handleAccessDenied(
+            AccessDeniedException e,
+            HttpServletRequest request
+    ) {
+        log.warn("접근 권한이 없는 요청: {} - {}", request.getRequestURI(), e.getMessage());
         return respond(request, HttpStatus.FORBIDDEN, e.getMessage());
     }
 
