@@ -31,7 +31,7 @@
     <p th:if="${error}" th:text="${error}"></p>
 
     <button type="button" onclick="document.getElementById('writeDialog').showModal()">글쓰기</button>
-    <button type="button" onclick="alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">편집</button>
+    <button type="button" onclick="WePlaNet.alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">편집</button>
 
     <p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
 
@@ -52,7 +52,7 @@
         <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
 
         <form th:action="@{/board/media/{id}/delete(id=${post.id})}" method="post"
-              onsubmit="return confirm('삭제할까요?');">
+              onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
             <input type="hidden" name="groupId" th:value="${groupId}"/>
             <button type="submit">삭제</button>
         </form>
@@ -75,5 +75,6 @@
     </form>
 </dialog>
 
+<script th:src="@{/js/main.js}"></script>
 </body>
 </html>

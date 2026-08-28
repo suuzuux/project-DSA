@@ -29,7 +29,7 @@
         <label class="form-label" for="userId">아이디</label>
         <div class="form-row">
           <input class="form-input" id="userId" th:field="*{username}" type="text" placeholder="아이디 입력" autocomplete="username" />
-          <button type="button" class="btn btn--ghost btn--sm" onclick="alert('중복 확인 (목업): 사용 가능')">중복 확인</button>
+          <button type="button" class="btn btn--ghost btn--sm" onclick="WePlaNet.alert('중복 확인 (목업): 사용 가능')">중복 확인</button>
         </div>
         <p class="form-hint">조건: 4~20자 이내, 영문·숫자</p>
         <p class="form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
