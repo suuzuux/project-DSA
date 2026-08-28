@@ -41,7 +41,7 @@
             <a href="#" class="is-active" data-tab="comments" th:text="|댓글 ${#lists.size(myComments)}|">댓글</a>
             <a href="#" data-tab="posts" th:text="|포스트 ${#lists.size(myPosts)}|">포스트</a>
             <a href="#" data-tab="likes" th:text="|좋아요 ${#lists.size(likedPosts)}|">좋아요</a>
-            <a href="#" data-tab="bookmarks">북마크</a>
+            <a href="#" data-tab="bookmarks" th:text="|북마크 ${#lists.size(bookmarkedPosts)}|">북마크</a>
         </nav>
     </div>
 

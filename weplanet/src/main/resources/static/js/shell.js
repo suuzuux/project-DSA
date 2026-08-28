@@ -174,11 +174,18 @@
       <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">대화를 시작해보세요.</p>
     </div>
 
+    <!-- 금칙어/전송 한도 초과 등 경고를 화면 안에서 보여주는 배너
+         (예전엔 브라우저 기본 alert을 썼는데, 팬 채팅방 화면과 방식이 달라서 통일함) -->
+    <div class="dm-warning hidden" id="dmWarningBanner" role="alert"></div>
+
     <form class="dm-composer" id="dmComposer">
       <button type="button" class="icon-btn" data-shell-alert="첨부" aria-label="첨부">＋</button>
       <input type="text" placeholder="메시지 입력" autocomplete="off" id="dmInput" />
       <button type="submit" class="send-btn" aria-label="전송">${ICONS.send}</button>
     </form>
+
+    <!-- 오늘 남은 전송 횟수 (CHAT-05 하루 전송 한도) -->
+    <p class="dm-quota" id="dmQuota" hidden>오늘 남은 메시지 <strong id="dmQuotaCount">-</strong>회</p>
   </div>
 </div>
 

@@ -88,6 +88,37 @@
       const counter = writeModal.querySelector(".char-count");
       if (counter) counter.textContent = text.length + " / 1000";
     });
+
+    // 하단 모드 전환 탭 라벨을 알아보기 쉬운 한글로 교체.
+    // Toast UI 기본값은 "Markdown" / "WYSIWYG"이라 처음 보는 사람은 뭔지 알기 어려움.
+    // (WYSIWYG = 툴바 버튼으로 꾸미는 모드, Markdown = #, ** 같은 기호를 직접 쓰는 모드)
+    relabelEditorModeTabs(editorEl);
+  }
+
+  function relabelEditorModeTabs(root) {
+    const labels = {
+      Markdown: { text: "마크다운", title: "# 제목, **굵게** 같은 기호를 직접 입력하는 모드" },
+      WYSIWYG: { text: "간편 편집", title: "위 툴바 버튼으로 서식을 지정하는 모드 (기호를 직접 쓰지 않아도 됨)" },
+    };
+
+    // 에디터가 그려진 직후에 탭이 붙기 때문에 다음 프레임에 한 번 더 시도함
+    function apply() {
+      const tabs = root.querySelectorAll(".toastui-editor-mode-switch .tab-item");
+      if (!tabs.length) return false;
+      tabs.forEach(function (tab) {
+        const key = tab.textContent.trim();
+        const label = labels[key];
+        if (label) {
+          tab.textContent = label.text;
+          tab.title = label.title;
+        }
+      });
+      return true;
+    }
+
+    if (!apply()) {
+      requestAnimationFrame(apply);
+    }
   }
 
   // 제목 + 본문 둘 다 있어야 등록 가능
