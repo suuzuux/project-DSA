@@ -229,7 +229,7 @@
       .then(function (response) {
         if (!response.ok) {
           return response.json().then(function (data) {
-            alert(data.message || "요청에 실패했습니다.");
+            WePlaNet.alert(data.message || "요청에 실패했습니다.");
           });
         }
         return response.text().then(function (html) {

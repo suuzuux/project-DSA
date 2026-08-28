@@ -32,7 +32,9 @@
       <div class="board-toolbar">
         <div class="board-tabs">
           <a class="is-active" th:href="@{/community/{id}/fan(id=${artist.id()})}">포스트</a>
-          <a href="/community/project.html">프로젝트</a>
+          <!-- 프로젝트 탭은 화면이 아직 없음(/community/project.html 로 걸려 있어 404가 났음).
+               구현되면 th:href="@{/community/{id}/project(id=${artist.id()})}" 로 되살릴 것 -->
+          <span class="text-muted" style="cursor:not-allowed;opacity:.5;" title="준비 중입니다">프로젝트</span>
         </div>
         <div class="flex-center">
           <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;"
