@@ -74,7 +74,7 @@
         div.scrollTop = div.scrollHeight;
     }
 
-    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 함 (alert() 팝업 대신 사용)
+    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 함 (WePlaNet.alert() 팝업 대신 사용)
     let warningTimer = null;
 
     function showWarning(message) {
@@ -144,5 +144,6 @@
     });
 </script>
 
+<script th:src="@{/js/main.js}"></script>
 </body>
 </html>

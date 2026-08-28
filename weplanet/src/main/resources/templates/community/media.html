@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -73,7 +73,7 @@
             <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
                   th:action="@{/board/media/{id}/delete(id=${post.id})}"
                   method="post"
-                  onsubmit="return confirm('삭제할까요?');">
+                  onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
               <input type="hidden" name="groupId" th:value="${groupId}" />
               <input type="hidden" name="artistId" th:value="${artist.id()}" />
               <button type="submit" class="btn btn--ghost btn--sm">삭제</button>

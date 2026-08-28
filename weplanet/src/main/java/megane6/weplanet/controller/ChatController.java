@@ -224,7 +224,12 @@ public class ChatController {
             return;
         }
 
-        ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent());
+        // CHAT-02 비대칭 수신 : 팬 메시지는 30% 확률로만 아티스트 화면에 노출됨(도배 방지).
+        // 실시간 전송과 새로고침 후 히스토리가 어긋나지 않도록, 여기서 한 번 정한 값을
+        // 그대로 DB에 저장해두고 아티스트 화면 히스토리도 이 값을 기준으로 걸러냄
+        boolean visibleToArtist = (fan == null) || (Math.random() < 0.3);
+
+        ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent(), visibleToArtist);
 
         // 엔티티(ChatMessage)를 그대로 방송하지 않고, 화면에 필요한 값만 뽑아서 새 자료 상자(payload)에 담아 보냄
         // (User 엔티티 안에는 비밀번호 등 민감한 정보가 들어있어서, 그걸 그대로 브라우저에 보내면 안 되기 때문)
@@ -247,9 +252,8 @@ public class ChatController {
             // 팬이 보낸 개인 메시지 - 그 팬 개인 채널(본인+아티스트만 구독)에는 무조건 전달됨
             broadcast("/topic/chat." + artist.getId() + ".fan." + fan.getId(), payload);
 
-            // Math.random() : 0.0 이상 1.0 미만의 랜덤 소수를 만들어줌.
-            // 도배 방지를 위해, 30% 확률로만 아티스트가 보는 "추천 피드" 채널에도 추가로 노출시킴
-            if (Math.random() < 0.3) {
+            // 위에서 정해둔 노출 여부에 따라, 아티스트가 보는 "추천 피드" 채널에도 추가로 보냄
+            if (visibleToArtist) {
                 broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
             }
         }

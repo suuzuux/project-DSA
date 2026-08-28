@@ -231,7 +231,7 @@
     <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
     <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
     <form id="membershipCancelForm" method="post" style="margin-top:16px;"
-          onsubmit="return confirm('멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
+          onsubmit="return WePlaNet.confirmSubmit(this, '멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
       <button type="submit" class="btn btn--ghost btn--block" style="color:var(--wp-danger, #d33);">멤버십 해지</button>
     </form>
   </div>
@@ -402,7 +402,7 @@
     const alertBtn = e.target.closest("[data-shell-alert]");
     if (alertBtn) {
       e.preventDefault();
-      alert(alertBtn.getAttribute("data-shell-alert"));
+      WePlaNet.alert(alertBtn.getAttribute("data-shell-alert"));
       return;
     }
 
