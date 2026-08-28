@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -92,7 +92,7 @@
             <button type="button" class="translate-link" style="background:none;border:none;cursor:pointer;"
                     data-modal-open="editPostModal">수정</button>
             <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post"
-                  onsubmit="return confirm('게시글을 삭제할까요?');" style="display:inline;">
+                  onsubmit="return WePlaNet.confirmSubmit(this, '게시글을 삭제할까요?');" style="display:inline;">
               <button type="submit" class="translate-link"
                       style="background:none;border:none;cursor:pointer;color:var(--wp-danger, #d33);">삭제</button>
             </form>
