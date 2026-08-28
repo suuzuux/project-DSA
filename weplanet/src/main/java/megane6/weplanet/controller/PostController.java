@@ -233,6 +233,17 @@ public class PostController {
             Model model
     ) {
         Post post = postService.getPost(id);
+
+        // 이 라우트는 커뮤니티 분리 이전의 구식 상세 화면이라 가입자 확인이 아예 없음.
+        // 그래서 미가입자도 /posts/detail/11 을 직접 치면 커뮤니티 글의 본문과 댓글을 다 볼 수 있었고,
+        // 화면 하단의 "테스트 도구" 블록까지 그대로 노출됐음.
+        // 커뮤니티에 속한 글이면 접근 제어가 걸려 있는 커뮤니티 상세로 넘김
+        // (아티스트가 없는 레거시 전역 게시글은 지금처럼 이 화면을 계속 사용)
+        if (post.getArtist() != null) {
+            String tab = post.getBoardType() == BoardType.FAN ? "fan" : "artist";
+            return "redirect:/community/" + post.getArtist().getId() + "/" + tab + "/" + post.getId();
+        }
+
         User currentUser = resolveAuthor(principal, testUserId);
         postDetailModelHelper.populate(model, post, currentUser);
 
