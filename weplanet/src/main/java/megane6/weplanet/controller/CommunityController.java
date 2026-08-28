@@ -293,7 +293,7 @@ public class CommunityController {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-		User fan = userResolver.resolve(principal, 1L);
+		User fan = requireFan(principal);
 
 		membershipService.join(fan, artist);
 
@@ -314,7 +314,7 @@ public class CommunityController {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-		User fan = userResolver.resolve(principal, 1L);
+		User fan = requireFan(principal);
 
 		membershipService.cancel(fan, artist);
 
@@ -367,7 +367,7 @@ public class CommunityController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		User fan = userResolver.resolve(principal, 1L);
+		User fan = requireFan(principal);
 		followService.toggle(fan, artistId);
 
 		// 원래 보고 있던 커뮤니티 페이지로 돌아감 (팔로우 대상 아티스트 페이지로 안 튕기게)
@@ -381,6 +381,18 @@ public class CommunityController {
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
 		return followService.isFollowing(currentUser, artistId);
+	}
+
+	// 커뮤니티 가입(팔로우)과 멤버십 가입/해지는 "팬"만 할 수 있는 행동임.
+	// 화면(layout.html)에서도 sec:authorize="hasRole('FAN')"로 버튼을 숨기지만,
+	// 버튼을 숨기는 것만으로는 폼을 직접 호출하는 걸 막을 수 없어서 서버에서도 한 번 더 검증함.
+	// (아티스트가 자기 커뮤니티에 가입되거나, 관리자/소속사 계정에 멤버십이 생기는 걸 방지)
+	private User requireFan(AuthenticatedUser principal) {
+		User user = userResolver.resolve(principal, 1L);
+		if (user.getRole() != Role.FAN) {
+			throw new IllegalStateException("팬 계정만 이용할 수 있는 기능입니다.");
+		}
+		return user;
 	}
 
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {

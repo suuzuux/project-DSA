@@ -53,8 +53,11 @@
   <!-- [머지 충돌 해결] 양쪽 fragment 파라미터명은 이제 동일. HEAD에만 있던
        "커뮤니티 가입중 / 가입 취소" 블록은 communityJoined를 계속 쓰므로 유지 -->
   <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
-    <!-- 이 커뮤니티(지금 보고 있는 아티스트) 무료 가입 상태 + 취소 -->
-    <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <!-- 이 커뮤니티(지금 보고 있는 아티스트) 무료 가입 상태 + 취소
+         가입/탈퇴는 팬만 하는 행동이라 hasRole('FAN')으로 제한.
+         예전엔 isAuthenticated()라서 아티스트가 자기 커뮤니티에 "가입하기"가 뜨고
+         관리자/소속사 계정에도 그대로 노출됐음 -->
+    <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
         <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post"
               style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -74,7 +77,8 @@
         <span th:text="|${artist.nickname()} Membership|">Membership</span>
       </h3>
 
-      <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <!-- 멤버십 가입/조회도 팬 전용 (아티스트가 자기 멤버십에 가입할 일은 없음) -->
+      <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
         <div th:if="${membershipActive}">
           <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
           <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
@@ -84,6 +88,11 @@
           <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
           <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
         </div>
+      </th:block>
+
+      <!-- 팬이 아닌 로그인 사용자(아티스트/관리자/소속사)에게는 가입 버튼 대신 안내만 -->
+      <th:block sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+        <p class="membership-card__desc">멤버십은 팬 계정으로 가입할 수 있습니다.</p>
       </th:block>
 
       <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -128,13 +137,19 @@
                 display:inline-flex;align-items:center;justify-content:center;font-size:26px;
                 color:var(--wp-muted, #8a8a8a);margin-bottom:18px;">!</div>
     <p class="text-muted" style="font-size:16px;margin-bottom:24px;">커뮤니티 가입자만 이용 가능합니다.</p>
-    <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post">
+    <!-- 가입 버튼은 팬에게만. 아티스트/관리자에게는 안내 문구만 보여줌 -->
+    <form sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+          th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post">
       <button type="submit" class="btn btn--accent">커뮤니티 가입하기</button>
     </form>
+    <p sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+       class="text-xs text-muted">커뮤니티 가입은 팬 계정으로 할 수 있습니다.</p>
   </div>
 
-  <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통) -->
+  <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 팬에게만).
+       아티스트/관리자/소속사에게는 가입을 권할 이유가 없어서 sec:authorize로 배너 자체를 숨김 -->
   <div th:fragment="membershipTeaser" th:if="${!communityJoined}"
+       sec:authorize="isAnonymous() or hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
        style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #1a8a5c);
               color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:16px;
               flex-wrap:wrap;">
