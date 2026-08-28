@@ -1,34 +1,50 @@
 -- ============================================================
--- WePlaNet 전체 스키마 (260827 수정본)
+-- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
--- 기준 : docs/260826_SQL.sql
--- 변경 : BADGE-1 작업분 반영 (정휘원, 2026-08-27)
---   1) fan_badge 테이블 신설 - 배지 카탈로그(마스터). 달성률의 분모.
---      모든 아티스트 공통이라 artist_id 를 두지 않고 25행만 유지한다.
---   2) fan_badge_ownership.group_id -> artist_id 로 변경
---      (FK: artist_groups -> users) : 팀 커뮤니티가 users.id(ARTIST) 기준으로
---      동작하고 post/membership/chat_message 도 모두 users 를 참조하므로 통일
---   3) 배지 25종(일반 15 + 스페셜 10) 시드 INSERT 추가
+-- 이 파일 하나만 실행하면 DB가 완성됩니다.
+-- 기존에 흩어져 있던 SQL 6개를 합친 것입니다.
 --
--- !! 경고 : DROP TABLE 이 포함되어 있다. 실행하면 기존 데이터가 전부 사라진다.
+--   260826_SQL.sql              (구버전 스키마)
+--   260827_SQL_수정2.sql        (최신 스키마)  <- 본 파일의 기준
+--   260827_SQL_아직ㄴㄴ.sql      (작업중 초안)
+--   260827_seed_badge_test.sql  (배지 소유 시드)
+--   seed_test_accounts.sql      (테스트 계정)
+--   weplanet_SQL.sql            (구버전 스키마)
 --
--- 실행법 (한글/이모지 때문에 charset 옵션 필수)
---   mysql -uroot -proot --default-character-set=utf8mb4 < docs/260827_SQL_수정2.sql
+-- ------------------------------------------------------------
+-- 구성
+--   [1] 스키마 : 테이블 39개 (DROP -> CREATE) + 배지 카탈로그 25종
+--   [2] 테스트 계정 시드 : 6개 (비밀번호 전부 weplanet1234!)
+--   [3] 배지 소유 / 팔로우 시드
+--
+-- ------------------------------------------------------------
+-- !! 주의 : [1]에 DROP TABLE 이 포함되어 있습니다.
+--          실행하면 기존 데이터가 전부 지워집니다.
+--
+-- 실행 방법 (한글 깨짐 방지를 위해 charset 옵션 필수)
+--   mysql -uroot -p --default-character-set=utf8mb4 weplanet < docs/weplanet_schema.sql
+--
+-- 테스트 계정 (비밀번호 공통: weplanet1234!)
+--   artist_hwiwon   ARTIST  휘원공주
+--   artist_jungsik  ARTIST  정식왕자
+--   asd123          FAN     빛나는여우135
+--   qatest99        FAN     QA테스터
+--   admin_test      ADMIN   관리자테스트   <- 금칙어 관리 화면(/chat/admin/keywords)
+--   aifan_bot       FAN     AI팬봇
 -- ============================================================
 
--- ============================================================
--- WePlaNet Schema (WI_schema)
--- 기준: 로컬 weplanet DB 실스키마 + 문서(weplanet_SQL) 보완 테이블
--- 보완: fan_badge_ownership, fan_project*, group_schedule, notification*
--- 용도: 기존 테이블이 있으면 DROP 후 재생성
--- 컬럼 COMMENT: 프로젝트 기능 기준 역할 설명
--- ============================================================
+USE `weplanet`;
 
+SET NAMES utf8mb4;
+
+
+-- ============================================================
+-- [1] 스키마 + 배지 카탈로그
+-- ============================================================
 CREATE DATABASE IF NOT EXISTS `weplanet`
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
-USE `weplanet`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
@@ -811,3 +827,92 @@ VALUES
 
 SET UNIQUE_CHECKS = 1;
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+-- ============================================================
+-- [2] 테스트 계정 시드
+-- ============================================================
+INSERT IGNORE INTO `users`
+  (`username`, `password`, `role`, `status`, `real_name`, `nickname`, `email`, `created_at`, `updated_at`)
+VALUES
+  ('artist_hwiwon',  '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '휘원',    '휘원공주',      'hwiwon@weplanet.test',  NOW(), NOW()),
+  ('artist_jungsik', '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '정식',    '정식왕자',      'jungsik@weplanet.test', NOW(), NOW()),
+  ('asd123',         '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', '김화평',  '빛나는여우135', 'asdojuasdoa@gmail.com', NOW(), NOW()),
+  ('qatest99',       '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'QA테스터', 'QA테스터',     'qatest99@example.com',  NOW(), NOW()),
+  ('admin_test',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ADMIN',  'ACTIVE', '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(), NOW()),
+  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'AI팬봇', 'AI팬봇', 'aifan_bot@weplanet.test', NOW(), NOW());
+
+-- 이미 계정이 있던 사람(=INSERT IGNORE로 스킵됨)도 비밀번호를 위 해시로 맞추고 싶으면 같이 실행:
+UPDATE `users` SET `password` = '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq'
+WHERE `username` IN ('artist_hwiwon', 'artist_jungsik', 'asd123', 'qatest99', 'admin_test', 'aifan_bot');
+
+
+-- ============================================================
+-- [3] 배지 소유 / 팔로우 시드 (테스트 계정용)
+-- ============================================================
+-- ------------------------------------------------------------
+-- 1) 커뮤니티 가입 (group_follow)
+--    group_id 는 그 아티스트의 users.id 와 같은 값으로 쓴다.
+--    (artist_groups 를 MediaGroupDataInitializer 가 그렇게 시딩해둠)
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `group_follow` (`fan_id`, `group_id`, `created_at`)
+SELECT f.id, a.id, NOW(6)
+FROM `users` f
+         JOIN `users` a ON a.username IN ('artist_hwiwon', 'artist_jungsik')
+WHERE f.username IN ('hwiwhi', 'asd123')
+  AND a.id IN (SELECT id FROM `artist_groups`);
+
+
+-- ------------------------------------------------------------
+-- 2) 획득 배지 - 휘원공주 (일반 8 + 스페셜 2)
+--    badge_name / badge_type 은 카탈로그에서 그대로 복사한다.
+--    (수여 시점 값을 스냅샷으로 남기는 컬럼이라 직접 적지 않고 SELECT 로 가져옴)
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `fan_badge_ownership`
+    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
+SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
+FROM `users` f,
+     `users` a,
+     `fan_badge` b
+WHERE f.username IN ('hwiwhi', 'asd123')
+  AND a.username = 'artist_hwiwon'
+  AND b.badge_code IN (
+    -- 일반 8
+                       'BASIC_FIRST_JOIN',
+                       'BASIC_FIRST_POST',
+                       'BASIC_COMMENT_5',
+                       'BASIC_MEDIA_VIEW',
+                       'BASIC_DAY_100',
+                       'BASIC_LIKE_10',
+                       'BASIC_LIKED_5',
+                       'BASIC_FOLLOW_ARTIST',
+    -- 스페셜 2
+                       'SPECIAL_DEBUT_1',
+                       'SPECIAL_MEMBERSHIP_1'
+    );
+
+
+-- ------------------------------------------------------------
+-- 3) 획득 배지 - 정식왕자 (일반 3, 스페셜 0)
+--    같은 팬이라도 아티스트가 다르면 배지가 따로 쌓인다는 걸 보여주기 위함
+-- ------------------------------------------------------------
+INSERT IGNORE INTO `fan_badge_ownership`
+    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
+SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
+FROM `users` f,
+     `users` a,
+     `fan_badge` b
+WHERE f.username IN ('hwiwhi', 'asd123')
+  AND a.username = 'artist_jungsik'
+  AND b.badge_code IN (
+                       'BASIC_FIRST_JOIN',
+                       'BASIC_FIRST_POST',
+                       'BASIC_MEDIA_VIEW'
+    );
+
+
+-- ------------------------------------------------------------
+-- 확인용
+-- ------------------------------------------------------------
+
+
