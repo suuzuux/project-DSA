@@ -6,12 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.ProjectRequestDTO;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectEventType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.ProjectService;
+import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -28,6 +31,7 @@ import java.util.List;
 public class ProjectController {
 	private final ProjectService ps;
 	private final UserRepository ur;
+	private final CommunityJoinService cjs;
 	
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -36,6 +40,20 @@ public class ProjectController {
 			@RequestParam(defaultValue = ProjectService.SORT_DEADLINE) String sort,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		
+		User currentUser = ur.findById(principal.getId())
+				.orElseThrow(() -> new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+		
+		if (currentUser.getRole() == Role.FAN
+				&& !cjs.isJoined(currentUser, artistId)) {
+			
+			addMembershipGateModel(artistId, currentUser, model);
+			return "community/membership-required";
+		}
+		
 		ProjectRequestDTO dto = new ProjectRequestDTO();
 		dto.setArtistId(artistId);
 
@@ -52,6 +70,21 @@ public class ProjectController {
 			@PathVariable Long projectId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		
+		User currentUser = ur.findById(principal.getId())
+				.orElseThrow(() ->
+						new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+		
+		if (currentUser.getRole() == Role.FAN
+				&& !cjs.isJoined(currentUser, artistId)) {
+			
+			addMembershipGateModel(artistId, currentUser, model);
+			return "community/membership-required";
+		}
+		
 		User artist = ur.findById(artistId).filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 
@@ -158,5 +191,33 @@ public class ProjectController {
 		// 목록 - 등록 실패로 폼을 다시 그릴 때도 뒤쪽 목록은 그대로 보여야 하므로 여기서 함께 담는다.
 		model.addAttribute("projects", ps.getProjectCards(artist, sort, viewer));
 		model.addAttribute("sort", sort);
+	}
+	
+	private void addMembershipGateModel(
+			Long artistId,
+			User currentUser,
+			Model model
+	) {
+		User artist = ur.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+		
+		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
+				.map(ArtistCardView::from)
+				.toList();
+		
+		Map<Long, CommunityProfile> joinedProfiles =
+				cjs.joinedProfilesByArtistId(currentUser);
+		
+		List<ArtistCardView> joinedArtists = artists.stream()
+				.filter(item -> joinedProfiles.containsKey(item.id()))
+				.toList();
+		
+		model.addAttribute("artist", ArtistCardView.from(artist));
+		model.addAttribute("artists", artists);
+		model.addAttribute("joinedArtists", joinedArtists);
+		model.addAttribute("communityJoined", false);
+		model.addAttribute("myCommunityProfile", null);
+		model.addAttribute("gatedTab", "fan");
 	}
 }

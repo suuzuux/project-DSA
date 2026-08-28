@@ -250,7 +250,8 @@
 
             <button id="projectEmailSendButton"
                     type="button"
-                    class="btn btn--soft">
+                    class="btn btn--soft"
+                    th:attr="data-url=@{/community/{id}/project/email-verification(id=${artist.id()})}">
               전송하기
             </button>
           </div>
@@ -275,6 +276,7 @@
             <button id="projectEmailConfirmButton"
                     type="button"
                     class="btn btn--soft"
+                    th:attr="data-url=@{/community/{id}/project/email-verification/confirm(id=${artist.id()})}"
                     disabled>
               인증하기
             </button>
@@ -380,6 +382,125 @@
       const modal = document.getElementById("projectCreateModal");
       if (!modal) return;
 
+
+      // 이메일 전송 및 인증
+      const emailSendButton = document.getElementById("projectEmailSendButton");
+      const emailConfirmButton = document.getElementById("projectEmailConfirmButton");
+      const emailCodeInput = document.getElementById("projectEmailCode");
+      const emailStatus = document.getElementById("projectEmailStatus");
+      const emailVerificationKeyInput =
+        document.getElementById("emailVerificationKey");
+
+      let emailVerified = false;
+
+      function showEmailStatus(message, isError) {
+        if (!emailStatus) return;
+
+        emailStatus.textContent = message;
+        emailStatus.className = isError ? "form-error" : "form-hint";
+      }
+
+      emailSendButton?.addEventListener("click", async function () {
+      emailSendButton.disabled = true;
+      emailVerified = false;
+
+      emailVerificationKeyInput.value = "";
+      emailCodeInput.value = "";
+      emailCodeInput.disabled = true;
+      emailConfirmButton.disabled = true;
+
+      showEmailStatus("인증번호를 전송하고 있습니다.", false);
+      updateAgreementState();
+
+      try {
+        const response = await fetch(emailSendButton.dataset.url, {
+          method: "POST",
+          headers: {
+            "X-Requested-With": "fetch"
+          }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "인증번호 전송에 실패했습니다.");
+        }
+
+        emailVerificationKeyInput.value = result.verificationKey;
+        emailCodeInput.disabled = false;
+        emailConfirmButton.disabled = false;
+        emailCodeInput.focus();
+
+        emailSendButton.textContent = "재전송";
+        showEmailStatus(result.message, false);
+      } catch (error) {
+        showEmailStatus(error.message, true);
+      } finally {
+        emailSendButton.disabled = false;
+      }
+    });
+
+    emailConfirmButton?.addEventListener("click", async function () {
+      const code = emailCodeInput.value.trim();
+      const verificationKey = emailVerificationKeyInput.value;
+
+      if (!/^[0-9]{6}$/.test(code)) {
+        showEmailStatus("숫자 6자리 인증번호를 입력해주세요.", true);
+        emailCodeInput.focus();
+        return;
+      }
+
+      if (!verificationKey) {
+        showEmailStatus("인증번호를 먼저 전송해주세요.", true);
+        return;
+      }
+
+      emailConfirmButton.disabled = true;
+
+      try {
+        const body = new URLSearchParams();
+        body.set("verificationKey", verificationKey);
+        body.set("code", code);
+
+        const response = await fetch(emailConfirmButton.dataset.url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-Requested-With": "fetch"
+          },
+          body: body.toString()
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "이메일 인증에 실패했습니다.");
+        }
+
+        if (!result.success) {
+          showEmailStatus(
+              `${result.message} 남은 횟수: ${result.remainingAttempts}회`,
+              true
+          );
+          return;
+        }
+
+        emailVerified = true;
+        emailCodeInput.disabled = true;
+        emailConfirmButton.disabled = true;
+        emailSendButton.disabled = true;
+
+        showEmailStatus(result.message, false);
+        updateAgreementState();
+      } catch (error) {
+        showEmailStatus(error.message, true);
+      } finally {
+        if (!emailVerified) {
+          emailConfirmButton.disabled = false;
+        }
+      }
+    });
+
       // 등록 실패로 돌아온 경우(에러 표시가 있으면) 모달을 다시 열어서 입력값을 보여줌
       if (form && form.querySelector(".is-invalid, [data-global-error]")) {
         modal.classList.add("is-open");
@@ -443,7 +564,7 @@
         }
 
         if (requestButton) {
-          requestButton.disabled = !allChecked;
+          requestButton.disabled = !allChecked || !emailVerified;
         }
       }
 

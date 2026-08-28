@@ -63,7 +63,7 @@ public class ProjectService {
 		assertProjectAreaAccessible(artist, viewer);
 
 		List<Project> projects = pr.findByArtistAndDeletedAtIsNull(artist).stream()
-				.filter(project -> project.getStatus().isPubliclyVisible())
+				.filter(project -> canView(project, viewer))
 				.sorted(projectComparator(sort))
 				.toList();
 
