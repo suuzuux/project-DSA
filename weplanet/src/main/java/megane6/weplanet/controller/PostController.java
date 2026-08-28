@@ -12,6 +12,7 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
+import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
@@ -54,6 +55,8 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
     private final TranslateService translateService;
+    // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부)
+    private final FollowService followService;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
         return userResolver.resolve(principal, testUserId);
@@ -471,6 +474,31 @@ public class PostController {
     }
 
     /**
+     * AI 기능(요약/번역)을 쓸 수 있는지 확인.
+     * <p>
+     * 이 세 엔드포인트는 그동안 principal 파라미터조차 받지 않아서 비로그인 상태로도 호출이 가능했음.
+     * 호출될 때마다 실제로 Gemini API가 돌기 때문에, 외부에서 반복 호출하면 하루 사용 한도가 소진되고
+     * 커뮤니티에 가입하지 않은 사람이 멤버십 전용 게시글 내용을 요약/번역으로 빼갈 수도 있었음.
+     * <p>
+     * 그래서 ① 로그인 여부와 ② 그 게시글이 속한 커뮤니티에 가입(팔로우)했는지를 함께 확인함.
+     */
+    private void requireAiAccess(Post post, AuthenticatedUser principal) {
+        User user = userResolver.requireAuthenticated(principal);
+
+        User artist = post.getArtist();
+        if (artist == null) {
+            return; // 커뮤니티에 속하지 않은 레거시 게시글은 로그인만 확인
+        }
+        // 그 커뮤니티 아티스트 본인은 당연히 열람 가능
+        if (artist.getId().equals(user.getId())) {
+            return;
+        }
+        if (!followService.isFollowing(user, artist.getId())) {
+            throw new IllegalStateException("커뮤니티에 가입해야 이용할 수 있습니다.");
+        }
+    }
+
+    /**
      * AI 자동 요약 - 게시글 내용을 Gemini에게 보내 요약을 받아옴 (저장하지 않고, 버튼 누를 때마다 새로 생성).
      * <p>
      * 이 버튼은 항상 비동기(fetch)로만 동작함. AI가 답을 만드는 데 몇 초 걸릴 수 있는데,
@@ -480,8 +508,12 @@ public class PostController {
      */
     @PostMapping("/posts/detail/{id}/summarize")
     @ResponseBody
-    public Map<String, Object> summarizePost(@PathVariable Long id) {
+    public Map<String, Object> summarizePost(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
         Post post = postService.getPost(id);
+        requireAiAccess(post, principal);
         String summary = summaryService.summarize(post.getContent());
 
         return Map.of("summary", summary);
@@ -490,8 +522,12 @@ public class PostController {
     // 게시글 번역보기 (와이어프레임: 게시글/댓글 본문 밑에 있는 "번역보기" 링크)
     @PostMapping("/posts/detail/{id}/translate")
     @ResponseBody
-    public Map<String, Object> translatePost(@PathVariable Long id) {
+    public Map<String, Object> translatePost(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
         Post post = postService.getPost(id);
+        requireAiAccess(post, principal);
         String translated = translateService.translate(post.getContent());
 
         return Map.of("translated", translated);
@@ -500,7 +536,13 @@ public class PostController {
     // 댓글 번역보기 - 게시글 번역과 완전히 같은 방식
     @PostMapping("/posts/detail/{id}/comment/{commentId}/translate")
     @ResponseBody
-    public Map<String, Object> translateComment(@PathVariable Long id, @PathVariable Long commentId) {
+    public Map<String, Object> translateComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        Post post = postService.getPost(id);
+        requireAiAccess(post, principal);
         Comment comment = commentService.getComment(commentId);
         String translated = translateService.translate(comment.getContent());
 
