@@ -191,6 +191,12 @@ public class CommunityController {
 		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
 			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
 		}
+		// 36번("Hide from Artists")은 목록에만 걸려 있고 상세엔 빠져 있었음.
+		// 그래서 아티스트가 주소창에 /community/1/fan/5 를 직접 치면 숨긴 글이 그대로 열렸음
+		// (가입자 차단이 목록에만 있던 것과 똑같은 종류의 누락). 목록과 같은 기준을 상세에도 적용함
+		if (post.isHiddenFromArtist() && userResolver.isArtist(principal)) {
+			throw new IllegalArgumentException("작성자가 아티스트에게 공개하지 않은 게시글입니다.");
+		}
 
 		User currentUser = userResolver.resolve(principal, 1L);
 		postDetailModelHelper.populate(model, post, currentUser);
