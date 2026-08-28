@@ -7,6 +7,8 @@
     <!--
       [와이어프레임 20~23번] 커뮤니티 – 내 프로필
       탭: 댓글 / 포스트 / 좋아요 / 북마크
+      이름은 계정 아이디가 아니라 이 커뮤니티 전용 닉네임(community_profiles.nickname)을 쓴다.
+      미가입 상태로 들어온 경우에만 계정 이름으로 대체한다.
     -->
     <title th:text="'내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -24,15 +26,19 @@
 <main class="container section" style="max-width:720px;" data-tabs>
     <div class="profile-panel">
         <div class="profile-cover"></div>
-        <div class="profile-panel__info">
+        <div class="profile-panel__info"
+             th:with="displayName=${myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name}">
             <div class="flex-between" style="align-items:flex-end;">
                 <div class="avatar avatar--lg" style="border:3px solid #fff;"
-                     th:text="${#authentication.name.substring(0,1)}">나
+                     th:text="${#strings.substring(displayName, 0, 1)}">나
                 </div>
             </div>
             <h2 class="mt-12" style="font-size:var(--wp-fs-xl);font-weight:800;">
-                <span th:text="${#authentication.name}">닉네임</span>
+                <span th:text="${displayName}">닉네임</span>
             </h2>
+            <p class="text-sm text-muted mt-8"
+               th:if="${myCommunityProfile != null and myCommunityProfile.bio != null}"
+               th:text="${myCommunityProfile.bio}">소개글</p>
             <div class="profile-panel__stats">
                 <div><strong th:text="${myFollowingCount}">0</strong><span>팔로잉</span></div>
             </div>

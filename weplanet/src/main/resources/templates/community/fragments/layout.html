@@ -1,167 +1,195 @@
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org">
 <body>
-  <header th:fragment="header" class="community-top">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-    <div class="community-top__left">
-      <a class="home-link" th:href="@{/}" title="위플래닛 홈">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-      </a>
-      <span class="avatar avatar--sm" th:text="${artist.logo()}">AR</span>
-      <h1 class="community-top__name" th:text="${artist.nickname()}">아티스트</h1>
-    </div>
-    <div class="community-top__right">
-      <button type="button" class="icon-btn" aria-label="언어">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-      </button>
-      <a class="icon-btn" th:href="@{/shop}" aria-label="Shop" title="WePlaNet Shop">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
-      </a>
-      <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        </button>
-        <a class="icon-btn" th:href="@{/community/{id}/profile(id=${artist.id()})}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
-      </th:block>
-      <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
-      </th:block>
-    </div>
-  </header>
-
-  <div th:fragment="hero" class="community-hero">
-    <span class="community-hero__viewers">페이지를 보고 있어요.</span>
-    <strong style="font-size:22px;letter-spacing:-0.02em;"
-            th:text="|${artist.nickname()} Official Community|">Official Community</strong>
+<header th:fragment="header" class="community-top">
+  <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+  <div class="community-top__left">
+    <a class="home-link" th:href="@{/}" title="위플래닛 홈">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    </a>
+    <span class="avatar avatar--sm" th:text="${artist.logo()}">AR</span>
+    <h1 class="community-top__name" th:text="${artist.nickname()}">아티스트</h1>
   </div>
+  <div class="community-top__right">
+    <button type="button" class="icon-btn" aria-label="언어">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+    </button>
+    <a class="icon-btn" href="/shop.html" aria-label="Shop" title="WePlaNet Shop">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+    </a>
+    <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      </button>
+      <a class="icon-btn" th:href="@{/community/{id}/profile(id=${artist.id()})}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
+    </th:block>
+    <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+    </th:block>
+  </div>
+</header>
 
-  <nav th:fragment="tabs(active)" class="tabs" aria-label="커뮤니티 메뉴">
-    <a th:href="@{/community/{id}/highlight(id=${artist.id()})}"
-       th:classappend="${active == 'highlight'} ? ' is-active'">Highlight</a>
-    <a th:href="@{/community/{id}/notice(id=${artist.id()})}"
-       th:classappend="${active == 'notice'} ? ' is-active'">Notice</a>
-    <a th:href="@{/community/{id}/fan(id=${artist.id()})}"
-       th:classappend="${active == 'fan'} ? ' is-active'">Fan</a>
-    <a th:href="@{/community/{id}/artist(id=${artist.id()})}"
-       th:classappend="${active == 'artist'} ? ' is-active'">Artist</a>
-    <a th:href="@{/community/{id}/media(id=${artist.id()})}"
-       th:classappend="${active == 'media'} ? ' is-active'">Media</a>
-    <a th:href="@{/community/{id}/live(id=${artist.id()})}"
-       th:classappend="${active == 'live'} ? ' is-active'">Live</a>
-  </nav>
+<div th:fragment="hero" class="community-hero">
+  <span class="community-hero__viewers">페이지를 보고 있어요.</span>
+  <strong style="font-size:22px;letter-spacing:-0.02em;"
+          th:text="|${artist.nickname()} Official Community|">Official Community</strong>
+</div>
 
-  <!-- [머지 충돌 해결] 양쪽 fragment 파라미터명은 이제 동일. HEAD에만 있던
-       "커뮤니티 가입중 / 가입 취소" 블록은 communityJoined를 계속 쓰므로 유지 -->
-  <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
-    <!-- 이 커뮤니티(지금 보고 있는 아티스트) 무료 가입 상태 + 취소
-         가입/탈퇴는 팬만 하는 행동이라 hasRole('FAN')으로 제한.
-         예전엔 isAuthenticated()라서 아티스트가 자기 커뮤니티에 "가입하기"가 뜨고
-         관리자/소속사 계정에도 그대로 노출됐음 -->
-    <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
-        <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post"
-              style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+<nav th:fragment="tabs(active)" class="tabs" aria-label="커뮤니티 메뉴">
+  <a th:href="@{/community/{id}/highlight(id=${artist.id()})}"
+     th:classappend="${active == 'highlight'} ? ' is-active'">Highlight</a>
+  <a th:href="@{/community/{id}/notice(id=${artist.id()})}"
+     th:classappend="${active == 'notice'} ? ' is-active'">Notice</a>
+  <a th:href="@{/community/{id}/fan(id=${artist.id()})}"
+     th:classappend="${active == 'fan'} ? ' is-active'">Fan</a>
+  <a th:href="@{/community/{id}/artist(id=${artist.id()})}"
+     th:classappend="${active == 'artist'} ? ' is-active'">Artist</a>
+  <a th:href="@{/community/{id}/media(id=${artist.id()})}"
+     th:classappend="${active == 'media'} ? ' is-active'">Media</a>
+  <a th:href="@{/community/{id}/live(id=${artist.id()})}"
+     th:classappend="${active == 'live'} ? ' is-active'">Live</a>
+</nav>
+
+<!-- 커뮤니티 가입 = CommunityMember(닉네임 필수) 기준으로 통일.
+     Follow는 About 위젯의 "다른 아티스트 팔로우"에만 쓰는 별개 개념으로 남겨둠. -->
+<aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
+  <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <!-- 가입한 상태: 내 커뮤니티 닉네임 + 가입 취소 -->
+    <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="min-width:0;">
           <span style="color:var(--wp-success, #1a8a5c);font-weight:600;font-size:13px;">✓ 커뮤니티 가입중</span>
+          <p class="text-xs text-muted" style="margin-top:2px;"
+             th:if="${myCommunityProfile != null}"
+             th:text="|닉네임 · ${myCommunityProfile.nickname}|">닉네임</p>
+        </div>
+        <form th:action="@{/community/{id}/leave(id=${artist.id()})}" method="post">
           <button type="submit" class="btn btn--ghost btn--sm">가입 취소</button>
         </form>
       </div>
-    </th:block>
+    </div>
 
-    <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
-    </th:block>
+    <!-- 미가입 상태: 검색에서와 동일하게 닉네임 설정 모달로 -->
+    <div th:unless="${communityJoined}" class="widget" style="padding:12px 16px;">
+      <p class="text-xs text-muted" style="margin-bottom:8px;line-height:1.5;">
+        가입하고 이 커뮤니티에서 쓸 닉네임을 정해보세요.
+      </p>
+      <button type="button" class="btn btn--primary btn--block btn--sm" data-join-btn
+              th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">커뮤니티 가입하기</button>
+    </div>
+  </th:block>
+  <th:block sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <div class="widget" style="padding:12px 16px;">
+      <p class="text-xs text-muted" style="line-height:1.5;">커뮤니티 가입은 팬 계정만 이용할 수 있습니다.</p>
+    </div>
+  </th:block>
 
-    <div class="membership-card">
-      <h3 class="membership-card__title">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
-        <span th:text="|${artist.nickname()} Membership|">Membership</span>
-      </h3>
+  <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
+  </th:block>
 
-      <!-- 멤버십 가입/조회도 팬 전용 (아티스트가 자기 멤버십에 가입할 일은 없음) -->
-      <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <div th:if="${membershipActive}">
-          <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
-          <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
-          <button type="button" class="btn btn--ghost btn--block mt-8" data-modal-open="membershipDetailModal">Membership 상세보기</button>
-        </div>
-        <div th:unless="${membershipActive}">
-          <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-          <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
-        </div>
-      </th:block>
+  <div class="membership-card">
+    <h3 class="membership-card__title">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+      <span th:text="|${artist.nickname()} Membership|">Membership</span>
+    </h3>
 
-      <!-- 팬이 아닌 로그인 사용자(아티스트/관리자/소속사)에게는 가입 버튼 대신 안내만 -->
-      <th:block sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-        <p class="membership-card__desc">멤버십은 팬 계정으로 가입할 수 있습니다.</p>
-      </th:block>
-
-      <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <div th:if="${membershipActive}">
+        <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
+        <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
+        <button type="button" class="btn btn--ghost btn--block mt-8" data-modal-open="membershipDetailModal">Membership 상세보기</button>
+      </div>
+      <div th:unless="${membershipActive}">
         <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-        <a class="btn btn--accent btn--block" th:href="@{/login}">Membership 가입하기</a>
-      </th:block>
-    </div>
-
-    <div class="widget" th:if="${showAbout}">
-      <h3 class="widget__title">About</h3>
-      <div class="flex-center mb-16">
-        <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
-        <div>
-          <strong th:text="${artist.nickname()}">아티스트</strong>
-          <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
-        </div>
+        <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
       </div>
+    </th:block>
+    <th:block sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <p class="membership-card__desc">멤버십은 팬 계정으로 가입할 수 있습니다.</p>
+    </th:block>
 
-      <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
-      <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
-        <div class="flex-center" style="gap:8px;">
-          <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
-          <span th:text="${other.nickname()}">아티스트</span>
-        </div>
-        <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
-          <input type="hidden" name="returnTo" th:value="${artist.id()}" />
-          <button type="submit" class="btn btn--sm"
-                  th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
-                  th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
-        </form>
+    <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
+      <a class="btn btn--accent btn--block" th:href="@{/login}">Membership 가입하기</a>
+    </th:block>
+  </div>
+
+  <div class="widget" th:if="${showAbout}">
+    <h3 class="widget__title">About</h3>
+    <div class="flex-center mb-16">
+      <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+      <div>
+        <strong th:text="${artist.nickname()}">아티스트</strong>
+        <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
       </div>
     </div>
-  </aside>
 
-  <script th:fragment="scripts" th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${artists}]]*/ [];
+    <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
+    <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
+      <div class="flex-center" style="gap:8px;">
+        <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
+        <span th:text="${other.nickname()}">아티스트</span>
+      </div>
+      <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
+        <input type="hidden" name="returnTo" th:value="${artist.id()}" />
+        <button type="submit" class="btn btn--sm"
+                th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
+                th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
+      </form>
+    </div>
+  </div>
+</aside>
+
+<!-- 커뮤니티 가입(닉네임 설정) 모달 - 메인 검색 화면과 커뮤니티 페이지가 이 하나를 공유한다 -->
+<div th:fragment="joinModal" class="modal-backdrop" id="communityJoinModal">
+  <div class="modal">
+    <div class="modal__head">
+      <strong class="modal__title">커뮤니티 가입하기</strong>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <p class="mb-24"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>
+    <div class="form-group" id="communityJoinNicknameGroup">
+      <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
+      <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
+      <p class="form-error" id="communityJoinNicknameError"></p>
+    </div>
+    <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
+  </div>
+</div>
+
+<!-- 커뮤니티 페이지 공통 하단: 가입 모달 + 드로어용 데이터 + 가입 스크립트 -->
+<th:block th:fragment="scripts">
+  <div th:replace="~{community/fragments/layout :: joinModal}"></div>
+  <script th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
   </script>
+  <script th:src="@{/js/community-join.js}"></script>
+</th:block>
 
-  <!-- 커뮤니티 무료 가입(팔로우) 안 한 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
-  <div th:fragment="membershipGate" class="community-main" style="text-align:center;padding:96px 20px;">
-    <div style="width:56px;height:56px;border-radius:50%;border:2px solid var(--wp-muted, #8a8a8a);
+<!-- 커뮤니티 가입 안 한 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
+<div th:fragment="membershipGate" class="community-main" style="text-align:center;padding:96px 20px;">
+  <div style="width:56px;height:56px;border-radius:50%;border:2px solid var(--wp-muted, #8a8a8a);
                 display:inline-flex;align-items:center;justify-content:center;font-size:26px;
                 color:var(--wp-muted, #8a8a8a);margin-bottom:18px;">!</div>
-    <p class="text-muted" style="font-size:16px;margin-bottom:24px;">커뮤니티 가입자만 이용 가능합니다.</p>
-    <!-- 가입 버튼은 팬에게만. 아티스트/관리자에게는 안내 문구만 보여줌 -->
-    <form sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-          th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post">
-      <button type="submit" class="btn btn--accent">커뮤니티 가입하기</button>
-    </form>
-    <p sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-       class="text-xs text-muted">커뮤니티 가입은 팬 계정으로 할 수 있습니다.</p>
-  </div>
+  <p class="text-muted" style="font-size:16px;margin-bottom:24px;">커뮤니티 가입자만 이용 가능합니다.</p>
+  <button type="button" class="btn btn--accent" data-join-btn
+          th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">커뮤니티 가입하기</button>
+</div>
 
-  <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 팬에게만).
-       아티스트/관리자/소속사에게는 가입을 권할 이유가 없어서 sec:authorize로 배너 자체를 숨김 -->
-  <div th:fragment="membershipTeaser" th:if="${!communityJoined}"
-       sec:authorize="isAnonymous() or hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
-       style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #1a8a5c);
+<!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통) -->
+<div th:fragment="membershipTeaser" th:if="${!communityJoined}"
+     style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #1a8a5c);
               color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:16px;
               flex-wrap:wrap;">
-    <span style="font-weight:600;">가입하고 더 다양한 콘텐츠를 즐겨보세요!</span>
-    <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);" th:href="@{/login}">로그인 후 계속 ›</a>
-    </th:block>
-    <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post" style="display:inline;">
-        <button type="submit" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);">가입 후 계속 ›</button>
-      </form>
-    </th:block>
-  </div>
+  <span style="font-weight:600;">가입하고 더 다양한 콘텐츠를 즐겨보세요!</span>
+  <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);" th:href="@{/login}">로그인 후 계속 ›</a>
+  </th:block>
+  <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);"
+            data-join-btn th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">가입 후 계속 ›</button>
+  </th:block>
+</div>
 </body>
 </html>
