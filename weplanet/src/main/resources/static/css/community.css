@@ -57,8 +57,28 @@
 .community-top__right {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-left: auto;
+}
+
+.community-top__right .icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: var(--wp-ink-soft);
+  transition: background var(--wp-fast) var(--wp-ease), color var(--wp-fast);
+}
+
+.community-top__right .icon-btn:hover {
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand);
+}
+
+.community-top__right .icon-btn .icon {
+  width: 20px;
+  height: 20px;
 }
 
 .community-top__left a.home-link {

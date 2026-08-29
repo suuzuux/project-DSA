@@ -15,4 +15,6 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 	void deleteByFanIdAndArtistId(Long fanId, Long artistId);
 	
 	List<CommunityMember> findByFanId(Long fanId);
+
+	long countByArtistId(Long artistId);
 }
