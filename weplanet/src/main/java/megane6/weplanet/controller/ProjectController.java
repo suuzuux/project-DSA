@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ArtistCardView;
+import megane6.weplanet.domain.dto.ProjectDetailView;
 import megane6.weplanet.domain.dto.ProjectRequestDTO;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
@@ -12,6 +13,7 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.ProjectService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,7 +34,8 @@ public class ProjectController {
 	private final ProjectService ps;
 	private final UserRepository ur;
 	private final CommunityJoinService cjs;
-	
+	private final MembershipService ms;
+
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
 	public String projectPage(
@@ -43,7 +46,7 @@ public class ProjectController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		
+
 		User currentUser = ur.findById(principal.getId())
 				.orElseThrow(() -> new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
 		
@@ -94,9 +97,27 @@ public class ProjectController {
 
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
+		addSidebarModel(currentUser, artist, artists, model);
 		model.addAttribute("project", ps.getProjectDetail(projectId, artist, principal));
 
 		return "community/project-detail";
+	}
+
+	// 프로젝트 카드 클릭 시 상세 모달에 전달할 데이터
+	@GetMapping("/{projectId}/modal")
+	@ResponseBody
+	public ProjectDetailView projectDetailModal(
+			@PathVariable Long artistId,
+			@PathVariable Long projectId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		User artist = ur.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() ->
+						new IllegalArgumentException("아티스트를 찾을 수 없습니다.")
+				);
+
+		return ps.getProjectDetail(projectId, artist, principal);
 	}
 
 	// 프로젝트 등록 처리
@@ -172,16 +193,18 @@ public class ProjectController {
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		
-		if (viewer != null && Role.FAN.authority().equals(viewer.getRoleName())) {
-			User currentUser = ur.findById(viewer.getId()).orElseThrow(() ->
-							new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
-			
+		User currentUser = ur.findById(viewer.getId()).orElseThrow(() ->
+				new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+
+		if (currentUser.getRole() == Role.FAN) {
 			model.addAttribute("registeredEmail", currentUser.getEmail());
+			model.addAttribute("accountHolderName", currentUser.getRealName());
 		}
 
 		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
 				.map(ArtistCardView::from)
 				.toList();
+		addSidebarModel(currentUser, artist, artists, model);
 
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
@@ -206,18 +229,36 @@ public class ProjectController {
 				.map(ArtistCardView::from)
 				.toList();
 		
+		model.addAttribute("artist", ArtistCardView.from(artist));
+		model.addAttribute("artists", artists);
+		addSidebarModel(currentUser, artist, artists, model);
+		model.addAttribute("gatedTab", "fan");
+	}
+
+	private void addSidebarModel(
+			User currentUser,
+			User artist,
+			List<ArtistCardView> artists,
+			Model model
+	) {
 		Map<Long, CommunityProfile> joinedProfiles =
-				cjs.joinedProfilesByArtistId(currentUser);
+				currentUser.getRole() == Role.FAN
+				? cjs.joinedProfilesByArtistId(currentUser) : Map.of();
 		
 		List<ArtistCardView> joinedArtists = artists.stream()
 				.filter(item -> joinedProfiles.containsKey(item.id()))
 				.toList();
 		
-		model.addAttribute("artist", ArtistCardView.from(artist));
-		model.addAttribute("artists", artists);
 		model.addAttribute("joinedArtists", joinedArtists);
-		model.addAttribute("communityJoined", false);
-		model.addAttribute("myCommunityProfile", null);
-		model.addAttribute("gatedTab", "fan");
+		model.addAttribute("communityJoined", joinedProfiles.containsKey(artist.getId()));
+		model.addAttribute("myCommunityProfile", joinedProfiles.get(artist.getId()));
+		model.addAttribute("membershipActive", false);
+
+		if (currentUser.getRole() == Role.FAN) {
+			ms.getMembership(currentUser, artist).ifPresent(membership -> {
+				model.addAttribute("membershipActive", !membership.isExpired());
+				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());
+			});
+		}
 	}
 }

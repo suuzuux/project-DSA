@@ -23,15 +23,26 @@ public record ProjectCardView(
         LocalDate fundingEndAt,
         String coverImageUrl,
         String creatorNickname,
-        long remainingDays
+        long remainingDays,
+        Long fundedAmount,
+        Long participantCount,
+        int progressPercent
 ) {
 
     /**
      * @param coverStoredName 대표 이미지의 저장 파일명. 아직 없으면 null (카드에 기본 배경 표시)
      */
-    public static ProjectCardView from(Project project, String coverStoredName) {
+    public static ProjectCardView from(
+            Project project,
+            String coverStoredName,
+            long fundedAmount,
+            long participantCount
+    ) {
         LocalDate startDate = project.getFundingStartAt().toLocalDate();
         LocalDate endDate = project.getFundingEndAt().toLocalDate();
+        int progressPercent = project.getGoalAmount() <= 0
+                ? 0
+                : (int) Math.min(999, fundedAmount * 100 / project.getGoalAmount());
 
         return new ProjectCardView(
                 project.getId(),
@@ -44,7 +55,10 @@ public record ProjectCardView(
                 endDate,
                 coverStoredName == null ? null : "/uploads/" + coverStoredName,
                 project.getCreator().getNickname(),
-                ChronoUnit.DAYS.between(LocalDate.now(), endDate)
+                ChronoUnit.DAYS.between(LocalDate.now(), endDate),
+                fundedAmount,
+                participantCount,
+                progressPercent
         );
     }
 
@@ -59,5 +73,9 @@ public record ProjectCardView(
             return "마감";
         }
         return remainingDays == 0 ? "D-DAY" : "D-" + remainingDays;
+    }
+
+    public int progressBarPercent() {
+        return Math.min(100, Math.max(0, progressPercent));
     }
 }

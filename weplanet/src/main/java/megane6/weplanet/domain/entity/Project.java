@@ -246,6 +246,29 @@ public class Project {
         this.reviewedAt = LocalDateTime.now();
         this.rejectionReason = trimmedReason;
     }
+    
+    /**
+     * 현재 시각에 맞춰 승인된 프로젝트의 모금 상태를 변경한다.
+     */
+    public void synchronizeFundingStatus(LocalDateTime now) {
+        if (now == null) {
+            throw new IllegalArgumentException("상태 확인 시각이 필요합니다.");
+        }
+        
+        if (status != FanProjectStatus.APPROVED
+                && status != FanProjectStatus.FUNDING) {
+            return;
+        }
+        
+        if (!now.isBefore(fundingEndAt)) {
+            status = FanProjectStatus.FUNDING_CLOSED;
+            return;
+        }
+        
+        if (!now.isBefore(fundingStartAt)) {
+            status = FanProjectStatus.FUNDING;
+        }
+    }
 
     private void validatePendingReview(User admin) {
         if (admin == null || admin.getRole() != Role.ADMIN) {
