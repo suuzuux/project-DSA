@@ -3,12 +3,14 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ProjectCardView;
 import megane6.weplanet.domain.dto.ProjectDetailView;
+import megane6.weplanet.domain.dto.ProjectFundingSummary;
 import megane6.weplanet.domain.dto.ProjectRequestDTO;
 import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.ProjectImage;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
+import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.security.AuthenticatedUser;
@@ -44,6 +46,7 @@ public class ProjectService {
 	private final FileStorageService fs;
 	private final AccountProtectionService aps;
 	private final FanProjectCommunityAccessRepository fcr;
+	private final ProjectContributionRepository pcr;
 	
 	// 이메일
 	private final EmailVerificationService evs;
@@ -79,9 +82,27 @@ public class ProjectService {
 						ProjectImage::getStoredName,
 						(first, second) -> first
 				));
+		Map<Long, ProjectFundingSummary> fundingSummaries = pcr.summarizePaidByProjectIds(
+				projectIds,
+				FanProjectPaymentStatus.PAID
+		).stream().collect(Collectors.toMap(
+				ProjectFundingSummary::projectId,
+				summary -> summary
+		));
 
 		return projects.stream()
-				.map(project -> ProjectCardView.from(project, coverNames.get(project.getId())))
+				.map(project -> {
+					ProjectFundingSummary summary = fundingSummaries.getOrDefault(
+							project.getId(),
+							new ProjectFundingSummary(project.getId(), 0L, 0L)
+					);
+					return ProjectCardView.from(
+							project,
+							coverNames.get(project.getId()),
+							summary.fundedAmount(),
+							summary.participantCount()
+					);
+				})
 				.toList();
 	}
 
@@ -103,8 +124,19 @@ public class ProjectService {
 		String coverStoredName = pir.findByProject_Id(projectId)
 				.map(ProjectImage::getStoredName)
 				.orElse(null);
+		ProjectFundingSummary fundingSummary = pcr.summarizePaidByProjectIds(
+				List.of(projectId),
+				FanProjectPaymentStatus.PAID
+		).stream().findFirst().orElse(
+				new ProjectFundingSummary(projectId, 0L, 0L)
+		);
 
-		return ProjectDetailView.from(project, coverStoredName);
+		return ProjectDetailView.from(
+				project,
+				coverStoredName,
+				fundingSummary.fundedAmount(),
+				fundingSummary.participantCount()
+		);
 	}
 
 	/**

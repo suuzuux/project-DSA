@@ -2,6 +2,7 @@ package megane6.weplanet.repository;
 
 import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,4 +16,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     // 항상 필요하므로 한 번에 가져와 목록 조회 시 N+1 쿼리를 막는다.
     @EntityGraph(attributePaths = "creator")
     List<Project> findByArtistAndDeletedAtIsNull(User artist);
+    
+    List<Project> findByStatusInAndDeletedAtIsNull(
+            List<FanProjectStatus> statuses
+    );
 }

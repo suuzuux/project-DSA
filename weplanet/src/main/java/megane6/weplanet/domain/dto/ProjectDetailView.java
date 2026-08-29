@@ -20,10 +20,21 @@ public record ProjectDetailView(
 		String creatorNickname,
 		LocalDateTime createdAt,
 		String rejectionReason,
-		long remainingDays
+		long remainingDays,
+		Long fundedAmount,
+		Long participantCount,
+		int progressPercent
 ) {
-	public static ProjectDetailView from(Project project, String coverStoredName) {
+	public static ProjectDetailView from(
+			Project project,
+			String coverStoredName,
+			long fundedAmount,
+			long participantCount
+	) {
 		LocalDate endDate = project.getFundingEndAt().toLocalDate();
+		int progressPercent = project.getGoalAmount() <= 0
+				? 0
+				: (int) Math.min(999, fundedAmount * 100 / project.getGoalAmount());
 		return new ProjectDetailView(
 				project.getId(),
 				project.getTitle(),
@@ -38,7 +49,10 @@ public record ProjectDetailView(
 				project.getCreator().getNickname(),
 				project.getCreatedAt(),
 				project.getRejectionReason(),
-				ChronoUnit.DAYS.between(LocalDate.now(), endDate)
+				ChronoUnit.DAYS.between(LocalDate.now(), endDate),
+				fundedAmount,
+				participantCount,
+				progressPercent
 		);
 	}
 

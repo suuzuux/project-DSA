@@ -694,6 +694,9 @@ CREATE TABLE `fan_project_contribution` (
   `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MOCK' COMMENT '결제 제공자',
   `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '제공자 거래 ID',
   `amount` bigint NOT NULL COMMENT '결제 금액(원)',
+  `depositor_name` varbinary(255) NOT NULL COMMENT '입금자명(현재 변환 저장, 추후 암호화)',
+  `is_anonymous` tinyint(1) NOT NULL DEFAULT '0' COMMENT '닉네임 비공개 참여 여부: 0/1',
+  `refund_policy_agreed_at` datetime(6) NOT NULL COMMENT '환불 규정 동의 시각',
   `refund_amount` bigint NOT NULL DEFAULT '0' COMMENT '환불 금액(원)',
   `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY' COMMENT '결제 상태: READY/PAID/FAILED 등',
   `paid_at` datetime(6) DEFAULT NULL COMMENT '결제 완료 시각',
@@ -710,6 +713,7 @@ CREATE TABLE `fan_project_contribution` (
   CONSTRAINT `fk_fan_project_contribution_project` FOREIGN KEY (`project_id`) REFERENCES `fan_project` (`id`),
   CONSTRAINT `fk_fan_project_contribution_user` FOREIGN KEY (`contributor_id`) REFERENCES `users` (`id`),
   CONSTRAINT `ck_fan_project_contribution_amount` CHECK (`amount` > 0),
+  CONSTRAINT `ck_fan_project_contribution_anonymous` CHECK (`is_anonymous` IN (0, 1)),
   CONSTRAINT `ck_fan_project_contribution_refund` CHECK ((`refund_amount` >= 0) AND (`refund_amount` <= `amount`)),
   CONSTRAINT `ck_fan_project_contribution_status` CHECK (`payment_status` IN (
     _utf8mb4'READY', _utf8mb4'PAID', _utf8mb4'FAILED',
