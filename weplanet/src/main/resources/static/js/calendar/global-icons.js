@@ -40,6 +40,8 @@
       langChanged: function (label) { return "언어가 " + label + "(으)로 설정되었습니다"; },
       shopMoveTo: function (name) { return "이동: " + name + " 굿즈샵"; },
       myCommunities: "내 커뮤니티",
+      noJoinedCommunities: "가입한 커뮤니티가 없습니다.",
+      login: "로그인하기",
       markAllRead: "모두 읽음",
       weekHint: "내가 가입한 모든 아티스트 커뮤니티의 스케줄 · 일자별 최대 4개",
     },
@@ -55,6 +57,8 @@
       langChanged: function (label) { return "Language set to " + label; },
       shopMoveTo: function (name) { return "Opening: " + name + " shop"; },
       myCommunities: "My communities",
+      noJoinedCommunities: "You have not joined any communities.",
+      login: "Log in",
       markAllRead: "Mark all read",
       weekHint: "Schedules from every community you joined · up to 4 per day",
     },
@@ -70,6 +74,8 @@
       langChanged: function (label) { return "言語が " + label + " に設定されました"; },
       shopMoveTo: function (name) { return "移動: " + name + " グッズショップ"; },
       myCommunities: "マイコミュニティ",
+      noJoinedCommunities: "参加中のコミュニティはありません。",
+      login: "ログイン",
       markAllRead: "すべて既読",
       weekHint: "参加中の全アーティストコミュニティのスケジュール · 1日最大4件",
     },
@@ -85,6 +91,8 @@
       langChanged: function (label) { return "语言已设置为 " + label; },
       shopMoveTo: function (name) { return "跳转至：" + name + " 官方商店"; },
       myCommunities: "我的社区",
+      noJoinedCommunities: "暂无已加入的社区。",
+      login: "登录",
       markAllRead: "全部已读",
       weekHint: "已加入的所有艺人社区日程 · 每天最多 4 条",
     },
@@ -100,6 +108,8 @@
       langChanged: function (label) { return "Langue définie sur " + label; },
       shopMoveTo: function (name) { return "Redirection : boutique " + name; },
       myCommunities: "Mes communautés",
+      noJoinedCommunities: "Vous n'avez rejoint aucune communauté.",
+      login: "Se connecter",
       markAllRead: "Tout lu",
       weekHint: "Agendas de toutes vos communautés · 4 max. par jour",
     },
@@ -115,6 +125,8 @@
       langChanged: function (label) { return "Idioma configurado en " + label; },
       shopMoveTo: function (name) { return "Abriendo: tienda de " + name; },
       myCommunities: "Mis comunidades",
+      noJoinedCommunities: "No te has unido a ninguna comunidad.",
+      login: "Iniciar sesión",
       markAllRead: "Marcar leídas",
       weekHint: "Agenda de todas tus comunidades · máx. 4 por día",
     },
@@ -411,6 +423,13 @@
     return !!document.querySelector(".community-top__name");
   }
 
+  function isAuthenticatedPage() {
+    var body = document.body;
+    var value = body && body.getAttribute("data-authenticated");
+    if (value !== null) return value === "true";
+    return !!document.querySelector('form[action="/logout"], form[action$="/logout"]');
+  }
+
   function notificationCommunityId() {
     return isCommunityPage() ? detectCommunityId() : state.notificationCommunity;
   }
@@ -458,7 +477,7 @@
   }
 
   function applySchedulePayload(data) {
-    if (data && Array.isArray(data.communities) && data.communities.length) {
+    if (data && Array.isArray(data.communities)) {
       MY_COMMUNITIES = data.communities;
     } else {
       var fromPage = communitiesFromPage();
@@ -477,6 +496,13 @@
   }
 
   function loadSchedulesFromApi() {
+    if (!isAuthenticatedPage()) {
+      MY_COMMUNITIES = [];
+      EVENTS_BY_DATE = {};
+      hydrateMiniCal();
+      hydrateWeekGrid();
+      return Promise.resolve();
+    }
     return fetch(apiUrlForPage("/api/schedules"), { headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
@@ -488,6 +514,10 @@
   }
 
   function loadPostNotifications() {
+    if (!isAuthenticatedPage()) {
+      POST_NOTIFICATIONS = [];
+      return Promise.resolve();
+    }
     return fetch(apiUrlForPage("/api/notifications"), { headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
@@ -631,10 +661,19 @@
     var actions = document.querySelector(".community-top__right") || document.querySelector(".header-actions");
     if (!actions) return;
 
+    var authenticated = isAuthenticatedPage();
     var icons = headerIconButtons();
+    if (!authenticated) {
+      icons.filter(isNotiBtn).forEach(function (btn) {
+        var slot = btn.closest(".wp-global-slot");
+        if (slot) slot.remove();
+        else btn.remove();
+      });
+      icons = headerIconButtons();
+    }
     var searchBtn = icons.filter(isSearchBtn)[0] || null;
     var hasLang = icons.some(isLangBtn);
-    var hasNoti = icons.some(isNotiBtn);
+    var hasNoti = authenticated && icons.some(isNotiBtn);
 
     var anchor = actions.querySelector("a.btn, form, span[sec\\:authorize]") || null;
 
@@ -667,7 +706,7 @@
       langBtn.innerHTML = HEADER_ICONS.language;
     }
     var notiBtn = icons.filter(isNotiBtn)[0] || null;
-    if (!hasNoti) {
+    if (authenticated && !hasNoti) {
       notiBtn = document.createElement("button");
       notiBtn.type = "button";
       notiBtn.className = "icon-btn icon-btn--badge";
@@ -679,8 +718,12 @@
     }
 
     actions.insertBefore(searchBtn, actions.firstElementChild);
-    actions.insertBefore(notiBtn, searchBtn.nextSibling);
-    actions.insertBefore(langBtn, notiBtn.nextSibling);
+    if (authenticated && notiBtn) {
+      actions.insertBefore(notiBtn, searchBtn.nextSibling);
+      actions.insertBefore(langBtn, notiBtn.nextSibling);
+    } else {
+      actions.insertBefore(langBtn, searchBtn.nextSibling);
+    }
   }
 
   function bindHeaderIcons() {
@@ -888,9 +931,21 @@
     backdrop.classList.remove("is-open");
   }
 
+  function loginPrompt() {
+    var ui = t();
+    return '<div class="wp-auth-prompt">' +
+      '<strong>' + esc(ui.noJoinedCommunities) + "</strong>" +
+      '<a class="btn btn--primary btn--sm" href="/login">' + esc(ui.login) + "</a>" +
+    "</div>";
+  }
+
   function renderCalendar() {
     var modal = document.getElementById("wpCalModal");
     if (!modal) return;
+    if (!isAuthenticatedPage()) {
+      modal.innerHTML = loginPrompt();
+      return;
+    }
     var ui = t();
     if (state.detail) {
       modal.innerHTML = renderEventDetail(state.detail, state.selected);
@@ -1108,6 +1163,10 @@
   function hydrateWeekGrid() {
     var grid = document.querySelector(".week-grid");
     if (!grid) return;
+    if (!isAuthenticatedPage()) {
+      grid.innerHTML = loginPrompt();
+      return;
+    }
     var start = mondayOf(state.weekStart);
     var days = weekDays();
     var ui = t();

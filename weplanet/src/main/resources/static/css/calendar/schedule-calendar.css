@@ -241,6 +241,14 @@
   font-size: 13px;
 }
 .wp-noti-item__time { flex: 0 0 auto; color: #8b8fa3; font-size: 11px; }
+.wp-auth-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 16px;
+  text-align: center;
+}
 
 .wp-cal-backdrop {
   position: fixed;
