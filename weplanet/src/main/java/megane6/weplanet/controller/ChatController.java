@@ -108,7 +108,22 @@ public class ChatController {
             @RequestParam Long artistId,
             Model model
     ) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+
+        // 지난 대화 이력 - 예전엔 웹소켓 구독만 하고 이력을 안 내려줘서,
+        // 새로고침하면 그전까지 오간 메시지가 전부 사라져 보였음
+        List<Map<String, Object>> history = chatMessageService.getArtistRoomHistory(artist).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
         model.addAttribute("artistId", artistId);
+        model.addAttribute("history", history);
         return "chat/artistChatRoom";
     }
 
@@ -209,7 +224,12 @@ public class ChatController {
             return;
         }
 
-        ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent());
+        // CHAT-02 비대칭 수신 : 팬 메시지는 30% 확률로만 아티스트 화면에 노출됨(도배 방지).
+        // 실시간 전송과 새로고침 후 히스토리가 어긋나지 않도록, 여기서 한 번 정한 값을
+        // 그대로 DB에 저장해두고 아티스트 화면 히스토리도 이 값을 기준으로 걸러냄
+        boolean visibleToArtist = (fan == null) || (Math.random() < 0.3);
+
+        ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent(), visibleToArtist);
 
         // 엔티티(ChatMessage)를 그대로 방송하지 않고, 화면에 필요한 값만 뽑아서 새 자료 상자(payload)에 담아 보냄
         // (User 엔티티 안에는 비밀번호 등 민감한 정보가 들어있어서, 그걸 그대로 브라우저에 보내면 안 되기 때문)
@@ -232,9 +252,8 @@ public class ChatController {
             // 팬이 보낸 개인 메시지 - 그 팬 개인 채널(본인+아티스트만 구독)에는 무조건 전달됨
             broadcast("/topic/chat." + artist.getId() + ".fan." + fan.getId(), payload);
 
-            // Math.random() : 0.0 이상 1.0 미만의 랜덤 소수를 만들어줌.
-            // 도배 방지를 위해, 30% 확률로만 아티스트가 보는 "추천 피드" 채널에도 추가로 노출시킴
-            if (Math.random() < 0.3) {
+            // 위에서 정해둔 노출 여부에 따라, 아티스트가 보는 "추천 피드" 채널에도 추가로 보냄
+            if (visibleToArtist) {
                 broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
             }
         }
@@ -327,7 +346,18 @@ public class ChatController {
     // 채팅방이 한산할 때 화면을 채워 보여주기 위한 가짜 메시지. 이건 웹소켓이 아니라 일반 fetch로 호출됨
     @PostMapping("/chat/room/artist/ai-fan")
     @ResponseBody
-    public Map<String, Object> generateAiFan(@RequestParam Long artistId) {
+    public Map<String, Object> generateAiFan(
+            @RequestParam Long artistId,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        // 이 엔드포인트는 호출될 때마다 Gemini API가 실제로 돌고 chat_message에 저장까지 됨.
+        // 그동안 인증 확인이 없어서 비로그인 상태로 반복 호출하면 API 한도를 소진시킬 수 있었음.
+        // 채팅방을 쓰는 아티스트 본인만 호출할 수 있도록 제한함
+        User requester = requireLoginUser(principal);
+        if (!requester.getId().equals(artistId)) {
+            throw new IllegalStateException("본인 채팅방에서만 사용할 수 있습니다.");
+        }
+
         User artist = getUserOrThrow(artistId, "아티스트");
         User aiFan = userRepository.findByUsername("aifan_bot")
                 .orElseThrow(() -> new IllegalStateException("AI 팬 계정(username=aifan_bot)이 없습니다."));
