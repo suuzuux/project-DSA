@@ -38,20 +38,15 @@ public class ScheduleApiController {
 	@GetMapping("/schedules")
 	public Map<String, Object> schedules(@AuthenticationPrincipal AuthenticatedUser principal,
 	                                     @RequestParam(required = false) Long artistId) {
-		List<User> artists = userRepository.findByRole(Role.ARTIST);
 		Map<String, Object> body = new LinkedHashMap<>();
 
 		if (principal == null) {
-			body.put("communities", artists.stream()
-					.map(artist -> Map.of(
-							"id", String.valueOf(artist.getId()),
-							"name", artist.getNickname()
-					))
-					.toList());
-			body.put("eventsByDate", portalManagementService.getPublicEventsByDate());
+			body.put("communities", List.of());
+			body.put("eventsByDate", Map.of());
 			return body;
 		}
 
+		List<User> artists = userRepository.findByRole(Role.ARTIST);
 		User me = userResolver.requireAuthenticated(principal);
 		Set<Long> joined = artistId != null
 				? Set.of(artistId)
