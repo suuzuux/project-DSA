@@ -12,16 +12,16 @@
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="artist" th:text="${artist.nickname}">아티스트</div>
         <div class="agency" th:text="${isAgency} ? '에이전시 포털' : 'WePlaNet'">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">대시보드</a>
-        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">공지사항 관리</a>
-        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">스케줄 관리</a>
-        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">미디어 관리</a>
-        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">프로필 관리</a>
-        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
       <div class="portal-sidebar__footer">
         <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
