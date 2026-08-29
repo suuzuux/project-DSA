@@ -22,6 +22,10 @@
         <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
         <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
+      <div class="portal-sidebar__footer">
+        <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
+        <a th:href="@{/logout}">로그아웃</a>
+      </div>
     </aside>
 
     <main class="portal-main">
