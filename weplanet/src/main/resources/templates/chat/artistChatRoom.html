@@ -49,6 +49,8 @@
 
 <script th:inline="javascript">
     const artistId = /*[[${artistId}]]*/ 0;
+    // 서버가 내려준 지난 대화 이력 (새로고침해도 메시지가 남아있도록)
+    const history = /*[[${history}]]*/ [];
 
     const socket = new SockJS('/ws-chat');
     const stompClient = Stomp.over(socket);
@@ -72,7 +74,7 @@
         div.scrollTop = div.scrollHeight;
     }
 
-    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 함 (alert() 팝업 대신 사용)
+    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 함 (WePlaNet.alert() 팝업 대신 사용)
     let warningTimer = null;
 
     function showWarning(message) {
@@ -84,6 +86,11 @@
         warningTimer = setTimeout(function () {
             banner.hidden = true;
         }, 3500);
+    }
+
+    // 페이지를 열자마자 지난 이력을 먼저 그림 (웹소켓 연결 여부와 무관)
+    if (Array.isArray(history)) {
+        history.forEach(appendMessage);
     }
 
     stompClient.connect({}, function () {
@@ -137,5 +144,6 @@
     });
 </script>
 
+<script th:src="@{/js/main.js}"></script>
 </body>
 </html>
