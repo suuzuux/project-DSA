@@ -40,7 +40,7 @@
       langChanged: function (label) { return "언어가 " + label + "(으)로 설정되었습니다"; },
       shopMoveTo: function (name) { return "이동: " + name + " 굿즈샵"; },
       myCommunities: "내 커뮤니티",
-      noJoinedCommunities: "가입한 커뮤니티가 없습니다.",
+      noJoinedCommunities: "아직 가입한 커뮤니티가 없습니다.",
       login: "로그인하기",
       markAllRead: "모두 읽음",
       weekHint: "내가 가입한 모든 아티스트 커뮤니티의 스케줄 · 일자별 최대 4개",
@@ -661,19 +661,10 @@
     var actions = document.querySelector(".community-top__right") || document.querySelector(".header-actions");
     if (!actions) return;
 
-    var authenticated = isAuthenticatedPage();
     var icons = headerIconButtons();
-    if (!authenticated) {
-      icons.filter(isNotiBtn).forEach(function (btn) {
-        var slot = btn.closest(".wp-global-slot");
-        if (slot) slot.remove();
-        else btn.remove();
-      });
-      icons = headerIconButtons();
-    }
     var searchBtn = icons.filter(isSearchBtn)[0] || null;
     var hasLang = icons.some(isLangBtn);
-    var hasNoti = authenticated && icons.some(isNotiBtn);
+    var hasNoti = icons.some(isNotiBtn);
 
     var anchor = actions.querySelector("a.btn, form, span[sec\\:authorize]") || null;
 
@@ -706,7 +697,7 @@
       langBtn.innerHTML = HEADER_ICONS.language;
     }
     var notiBtn = icons.filter(isNotiBtn)[0] || null;
-    if (authenticated && !hasNoti) {
+    if (!hasNoti) {
       notiBtn = document.createElement("button");
       notiBtn.type = "button";
       notiBtn.className = "icon-btn icon-btn--badge";
@@ -718,12 +709,8 @@
     }
 
     actions.insertBefore(searchBtn, actions.firstElementChild);
-    if (authenticated && notiBtn) {
-      actions.insertBefore(notiBtn, searchBtn.nextSibling);
-      actions.insertBefore(langBtn, notiBtn.nextSibling);
-    } else {
-      actions.insertBefore(langBtn, searchBtn.nextSibling);
-    }
+    actions.insertBefore(notiBtn, searchBtn.nextSibling);
+    actions.insertBefore(langBtn, notiBtn.nextSibling);
   }
 
   function bindHeaderIcons() {
@@ -808,8 +795,9 @@
 
   function renderNotiPanel() {
     var ui = t();
+    var guest = !isAuthenticatedPage();
     var list = notificationsForPanel();
-    var filters = isCommunityPage()
+    var filters = guest || isCommunityPage()
       ? ""
       : '<div class="wp-noti-filter" role="group" aria-label="커뮤니티 선택">' +
           [{ id: "all", name: ui.all }].concat(MY_COMMUNITIES).map(function (community) {
@@ -821,7 +809,9 @@
           }).join("") +
         "</div>";
     document.querySelectorAll(".wp-noti-panel").forEach(function (panel) {
-      var body = list.length
+      var body = guest
+        ? loginPrompt()
+        : list.length
         ? list.map(function (n) {
             var artistName = n.artistName || communityName(n.artistId || n.artist);
             var artistAvatar = n.artistLogo || artistLogo(artistName);
@@ -856,7 +846,7 @@
       panel.innerHTML =
         '<div class="wp-noti-panel__head">' +
           "<strong>" + esc(ui.notificationsTitle) + "</strong>" +
-          '<button type="button" class="wp-noti-panel__readall" data-noti-readall>' + esc(ui.markAllRead) + "</button>" +
+          (guest ? "" : '<button type="button" class="wp-noti-panel__readall" data-noti-readall>' + esc(ui.markAllRead) + "</button>") +
         "</div>" +
         filters +
         '<div class="wp-noti-panel__list">' + body + "</div>";
