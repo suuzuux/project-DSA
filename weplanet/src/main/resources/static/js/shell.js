@@ -115,9 +115,9 @@
   <nav class="drawer-menu__nav">
     <a href="${base}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
     <a href="#" data-shell-alert="공지사항 (목업)"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
-    <a href="${base}shop.html"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
-    <a href="${base}membership.html"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
-    <a href="${base}settings.html"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
+    <a href="${base}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
+    <a href="${base}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
+    <a href="${base}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
     ${adminBlock}
   </nav>
 </aside>
@@ -142,7 +142,7 @@
     <div class="dm-body">
       <div class="dm-promo">
         <strong>구독 혜택 안내</strong>
-        <a href="${base}membership.html">DM 100% 활용방법 ›</a>
+        <a href="${base}membership">DM 100% 활용방법 ›</a>
       </div>
       <p class="dm-section-label">메시지</p>
       <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
@@ -170,18 +170,25 @@
         <strong>DM 구독 만료</strong>
         <span>다시 구독하고 새로운 메시지를 받아보세요.</span>
       </div>
-      <a class="dm-expired__cta" href="${base}membership.html">구독하기 ›</a>
+      <a class="dm-expired__cta" href="${base}membership">구독하기 ›</a>
     </div>
 
     <div class="dm-messages" id="dmMessages">
       <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">대화를 시작해보세요.</p>
     </div>
 
+    <!-- 금칙어/전송 한도 초과 등 경고를 화면 안에서 보여주는 배너
+         (예전엔 브라우저 기본 alert을 썼는데, 팬 채팅방 화면과 방식이 달라서 통일함) -->
+    <div class="dm-warning hidden" id="dmWarningBanner" role="alert"></div>
+
     <form class="dm-composer" id="dmComposer">
       <button type="button" class="icon-btn" data-shell-alert="첨부" aria-label="첨부">＋</button>
       <input type="text" placeholder="메시지 입력" autocomplete="off" id="dmInput" />
       <button type="submit" class="send-btn" aria-label="전송">${ICONS.send}</button>
     </form>
+
+    <!-- 오늘 남은 전송 횟수 (CHAT-05 하루 전송 한도) -->
+    <p class="dm-quota" id="dmQuota" hidden>오늘 남은 메시지 <strong id="dmQuotaCount">-</strong>회</p>
   </div>
 </div>
 
@@ -227,7 +234,7 @@
     <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
     <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
     <form id="membershipCancelForm" method="post" style="margin-top:16px;"
-          onsubmit="return confirm('멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
+          onsubmit="return WePlaNet.confirmSubmit(this, '멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
       <button type="submit" class="btn btn--ghost btn--block" style="color:var(--wp-danger, #d33);">멤버십 해지</button>
     </form>
   </div>
@@ -398,7 +405,7 @@
     const alertBtn = e.target.closest("[data-shell-alert]");
     if (alertBtn) {
       e.preventDefault();
-      alert(alertBtn.getAttribute("data-shell-alert"));
+      WePlaNet.alert(alertBtn.getAttribute("data-shell-alert"));
       return;
     }
 

@@ -26,11 +26,18 @@ public class ChatMessageService {
 
     // 채팅 메시지 저장 - fan이 null이면 아티스트가 전체 팬에게 보낸 방송 메시지
     public ChatMessage saveMessage(User artist, User fan, User sender, String content) {
+        return saveMessage(artist, fan, sender, content, true);
+    }
+
+    // visibleToArtist: 팬이 보낸 메시지가 아티스트 화면(추천 피드)에 노출될지 여부.
+    // 실시간 전송과 새로고침 후 히스토리가 서로 달라지지 않도록, 전송 시점에 정한 값을 그대로 저장함
+    public ChatMessage saveMessage(User artist, User fan, User sender, String content, boolean visibleToArtist) {
         ChatMessage message = ChatMessage.builder()
                 .artist(artist)
                 .fan(fan)
                 .sender(sender)
                 .content(content)
+                .visibleToArtist(visibleToArtist)
                 .build();
 
         return chatMessageRepository.save(message);
@@ -92,10 +99,13 @@ public class ChatMessageService {
         return chatMessageRepository.findConversationWithBroadcast(artist, fan);
     }
 
-    // 아티스트 채팅방 화면용 - 이 아티스트 방의 전체 메시지(본인 방송 + 팬들이 보낸 메시지)를 시간순으로.
-    // 아티스트 화면은 그동안 웹소켓 구독만 하고 지난 이력을 안 불러와서, 새로고침하면 화면이 비었음
+    // 아티스트 채팅방 화면용 - 이 아티스트 방의 메시지를 시간순으로.
+    // 단, 팬 메시지는 "노출 대상으로 뽑힌 것(visibleToArtist)"만 보여줌 -
+    // 전부 보여주면 실시간에서 걸러낸 의미가 없어지고 새로고침만 하면 도배가 다 보이게 됨
     public List<ChatMessage> getArtistRoomHistory(User artist) {
-        return chatMessageRepository.findByArtistOrderByCreatedAtAsc(artist);
+        return chatMessageRepository.findByArtistOrderByCreatedAtAsc(artist).stream()
+                .filter(ChatMessage::isVisibleToArtist)
+                .toList();
     }
 
     // 와이어프레임 19번: 이 팬의 이 아티스트 멤버십이 만료됐는지(=DM 입력창을 막아야 하는지) 확인.

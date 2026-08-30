@@ -519,6 +519,7 @@ CREATE TABLE `chat_message` (
   `artist_id` bigint NOT NULL COMMENT '대화방 아티스트(users.id)',
   `fan_id` bigint DEFAULT NULL COMMENT '대화방 팬(users.id, 방 식별)',
   `sender_id` bigint NOT NULL COMMENT '실제 발신자(users.id)',
+  `visible_to_artist` tinyint(1) NOT NULL DEFAULT '1' COMMENT '아티스트 화면 노출 여부(CHAT-02 비대칭 수신, 전송 시점에 확정)',
   PRIMARY KEY (`id`),
   KEY `FKckmqpdmndn0mcp8i1bhlhpwki` (`artist_id`),
   KEY `FKn3161qsj1g6xx74stn3ak14nf` (`fan_id`),
