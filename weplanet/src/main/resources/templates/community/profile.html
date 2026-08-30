@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -162,7 +161,7 @@
             <a href="#" class="is-active" data-tab="comments" th:text="|댓글 ${#lists.size(myComments)}|">댓글</a>
             <a href="#" data-tab="posts" th:text="|포스트 ${#lists.size(myPosts)}|">포스트</a>
             <a href="#" data-tab="likes" th:text="|좋아요 ${#lists.size(likedPosts)}|">좋아요</a>
-            <a href="#" data-tab="bookmarks">북마크</a>
+            <a href="#" data-tab="bookmarks" th:text="|북마크 ${#lists.size(bookmarkedPosts)}|">북마크</a>
         </nav>
 
         <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
@@ -236,7 +235,7 @@
                     <div class="post-card__actions">
                         <form th:action="@{/posts/detail/{id}/comment/{cid}/delete(id=${comment.post.id}, cid=${comment.id})}"
                               method="post"
-                              onsubmit="return confirm('삭제할까요?');">
+                              onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
                             <button type="submit" class="text-danger" style="display:inline-flex;align-items:center;gap:4px;">
                                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
                                 삭제하기
@@ -405,6 +404,7 @@
                      보이는 스위치는 .toggle-managed(내가 상태를 직접 관리하는 스타일)이고,
                      실제로 서버에 전송되는 건 아래 감춰둔 체크박스다. -->
                 <input type="checkbox" name="contentHidden" id="profileEditHidden" value="true"
+                       aria-label="프로필의 콘텐츠 숨기기"
                        class="hidden" th:checked="${contentHidden}"/>
                 <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);padding:18px 0 6px;text-align:left;">
                     <div class="flex-between" style="align-items:center;gap:12px;">
