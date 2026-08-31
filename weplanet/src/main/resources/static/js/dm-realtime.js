@@ -6,6 +6,10 @@
  * 실제 백엔드(ChatController)의 데이터와 웹소켓을 연결해주는 스크립트.
  * shell.js가 먼저 화면을 그려놓은 다음에 이 스크립트가 실행되어야 하므로,
  * html에서는 반드시 shell.js보다 나중에 불러와야 함.
+ *
+ * 팬 쪽은 "아티스트별 1:1 DM 인박스" (CHAT-02 이하 그대로),
+ * 아티스트 쪽은 "자신의 방송 채팅방 1개" (CHAT-02 비대칭 수신, 팬 메시지는 30%만 노출) - 이 둘은
+ * 서로 다른 모델이라서 아티스트는 인박스 목록 없이 DM 버튼을 누르면 바로 자신의 방으로 들어감.
  * ============================================================
  */
 (function () {
@@ -16,11 +20,20 @@
 
     // data-fan-id는 실제 로그인한 사람일 때만 서버가 채워줌 (비로그인이면 아예 속성 자체가 없음).
     // 예전엔 없으면 1번으로 기본값 처리해서, 비로그인 상태로도 1번 계정 명의로 DM이 보내지는 문제가 있었음
+    // 이름은 fanId지만 실제로는 "로그인한 내 계정 id"임 - 아티스트로 로그인했을 때도 이 값이 곧 내 artistId가 됨
     const fanIdRaw = body.getAttribute("data-fan-id");
     const fanId = fanIdRaw ? Number(fanIdRaw) : null;
 
+    // 아티스트 계정으로 로그인했는지 - 아티스트는 팬용 DM 인박스 대신
+    // 자기 자신의 방송 채팅방 하나로 바로 들어가야 하므로 분기가 필요함
+    const roleName = body.getAttribute("data-role") || "";
+    const isArtist = roleName === "ROLE_ARTIST";
+
+    // 관리자는 DM을 주고받을 일이 없는 계정이라(shell.js가 채팅 버튼 자체를 안 그림) 이 스크립트도 아예 동작 안 함
+    if (roleName === "ROLE_ADMIN") return;
+
     let stompClient = null;
-    let currentArtistId = null;
+    let currentArtistId = null; // 팬 화면에서 지금 열려있는 방의 상대 아티스트 id
     let subscriptions = [];
 
     function unsubscribeAll() {
@@ -95,7 +108,7 @@
         return btn;
     }
 
-    // 서버에서 실제 인박스 목록을 받아와서, shell.js가 그려둔 목업 목록을 통째로 실데이터로 갈아끼움
+    // 서버에서 실제 인박스 목록을 받아와서, shell.js가 그려둔 목업 목록을 통째로 실데이터로 갈아끼움 (팬 전용)
     function renderInbox(items) {
         const dmBody = document.querySelector("#dmListView .dm-body");
         if (!dmBody) return;
@@ -152,7 +165,7 @@
             .then(renderInbox);
     }
 
-    // 메시지 하나를 대화창에 말풍선으로 그림 (내가 보낸 건 오른쪽, 아티스트가 보낸 건 왼쪽 - shell.js CSS 클래스 그대로 사용)
+    // 메시지 하나를 대화창에 말풍선으로 그림 (내가 보낸 건 오른쪽, 상대가 보낸 건 왼쪽 - shell.js CSS 클래스 그대로 사용)
     function appendBubble(container, data) {
         const isMe = data.senderId === fanId;
         const row = document.createElement("div");
@@ -165,13 +178,20 @@
             row.appendChild(avatar);
 
             const wrap = document.createElement("div");
+            wrap.className = "dm-msg__content"; // meta 줄 너비에 맞춰 말풍선까지 늘어나지 않도록(내용물 크기로 감싸기 위함)
             const meta = document.createElement("div");
             meta.className = "dm-msg__meta";
-            const tag = document.createElement("span");
-            tag.className = "artist-tag";
-            tag.textContent = "ARTIST";
-            meta.appendChild(tag);
-            meta.appendChild(document.createTextNode(" " + (data.senderNickname || "")));
+            // 아티스트 자신의 방송 채팅방에서는 상대가 여러 팬이라 "ARTIST" 태그가 아니라
+            // 각자의 닉네임만 보여주는 게 맞음 (팬 화면에서는 상대가 항상 그 아티스트 한 명이라 태그 유지)
+            if (!isArtist) {
+                const tag = document.createElement("span");
+                tag.className = "artist-tag";
+                tag.textContent = "ARTIST";
+                meta.appendChild(tag);
+                meta.appendChild(document.createTextNode(" " + (data.senderNickname || "")));
+            } else {
+                meta.appendChild(document.createTextNode(data.senderNickname || ""));
+            }
 
             const bubble = document.createElement("div");
             bubble.className = "dm-msg__bubble";
@@ -198,6 +218,7 @@
 
     // 금칙어/한도 초과 경고를 화면 안 배너로 보여줌 (3.5초 뒤 자동 숨김)
     let warningTimer = null;
+
     function showWarning(message) {
         const banner = document.getElementById("dmWarningBanner");
         if (!banner) return;
@@ -228,7 +249,7 @@
         wrap.classList.toggle("is-empty", Number(remaining) <= 0);
     }
 
-    // 아티스트 하나를 골라서 방을 열 때: 지난 대화 이력을 불러오고, 실시간 수신을 새로 구독함
+    // [팬 전용] 아티스트 하나를 골라서 1:1 DM 방을 열 때: 지난 대화 이력을 불러오고, 실시간 수신을 새로 구독함
     // (화면 전환/헤더 표시는 shell.js가 이미 처리해줌 - 여기선 메시지 데이터만 채움)
     function openRealRoom(artistId) {
         if (!fanId) {
@@ -299,17 +320,80 @@
             });
     }
 
+    // [아티스트 전용] DM 버튼을 누르면 목록 없이 바로 자신의 방송 채팅방으로 들어감.
+    // 팬 개개인과의 1:1 방이 아니라 방 1개(artistId=자기 자신)뿐이라, openRealRoom과는 별도로 다룸.
+    function openArtistBroadcastRoom() {
+        const dmRoomName = document.getElementById("dmRoomName");
+        if (dmRoomName) dmRoomName.textContent = "내 채팅방";
+
+        // "ARTIST · DM" 서브텍스트와 인증뱃지는 "팬이 특정 아티스트와 대화 중"일 때 의미가 있는 표시라
+        // 아티스트 자신의 방송 채팅방에는 어울리지 않으므로 숨김
+        const titleWrap = dmRoomName ? dmRoomName.parentElement : null;
+        if (titleWrap) {
+            const badge = titleWrap.querySelector(".badge-verified");
+            const sub = titleWrap.querySelector("small");
+            if (badge) badge.classList.add("hidden");
+            if (sub) sub.classList.add("hidden");
+        }
+
+        // 아티스트에게는 "멤버십 만료" 개념이 없음(그건 팬이 이 아티스트를 구독했는지에 대한 제약) - 항상 숨김
+        const banner = document.getElementById("dmExpiredBanner");
+        if (banner) banner.classList.add("hidden");
+        const composerEl = document.getElementById("dmComposer");
+        if (composerEl) composerEl.style.display = "";
+        updateQuota(null); // 하루 전송 한도도 팬 전용 제약이라 표시 안 함
+
+        fetch("/chat/room-data/artist?artistId=" + fanId)
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                const messages = document.getElementById("dmMessages");
+                if (messages) {
+                    messages.innerHTML = "";
+                    data.messages.forEach(function (m) {
+                        appendBubble(messages, m);
+                    });
+                }
+
+                unsubscribeAll();
+                ensureSocket(function () {
+                    // 내가 방송한 메시지가 그대로 나에게도 되돌아오는 채널
+                    const broadcastTopic = "/topic/chat." + fanId;
+                    // 팬들이 보낸 메시지 중 30%만 도착하는 채널 (CHAT-02 비대칭 수신 - 도배 방지)
+                    const artistFeedTopic = "/topic/chat." + fanId + ".artistFeed";
+                    const errorTopic = "/topic/chat.error." + fanId;
+
+                    subscriptions.push(stompClient.subscribe(broadcastTopic, function (frame) {
+                        appendBubble(messages, JSON.parse(frame.body));
+                    }));
+
+                    subscriptions.push(stompClient.subscribe(artistFeedTopic, function (frame) {
+                        appendBubble(messages, JSON.parse(frame.body));
+                    }));
+
+                    subscriptions.push(stompClient.subscribe(errorTopic, function (frame) {
+                        showWarning(JSON.parse(frame.body).message);
+                    }));
+                });
+            });
+    }
+
     document.addEventListener("click", function (e) {
-        // DM 목록 버튼(buildItem)에만 붙는 data-open-room을 기준으로 잡음.
+        // DM 목록 버튼(buildItem)에만 붙는 data-open-room을 기준으로 잡음 (팬 전용 - 아티스트는 목록 자체가 없음).
         // 예전엔 [data-artist-id]로 찾았는데, fan/artist/post-detail 화면은 <body>에도 그 속성이 있어서
         // 페이지 아무 곳이나 클릭할 때마다 openRealRoom이 실행되고 /chat/room-data가 호출됐음
         const roomBtn = e.target.closest("[data-open-room]");
-        if (roomBtn) {
+        if (roomBtn && !isArtist) {
             openRealRoom(roomBtn.getAttribute("data-open-room"));
         }
 
         if (e.target.closest("#fabChat")) {
-            loadInbox(); // 위젯을 열 때마다 최신 목록으로 새로고침
+            if (isArtist) {
+                openArtistBroadcastRoom(); // 위젯을 열 때마다 최신 이력으로 새로고침
+            } else {
+                loadInbox(); // 위젯을 열 때마다 최신 목록으로 새로고침
+            }
         }
     });
 
@@ -328,19 +412,35 @@
             }
             const input = document.getElementById("dmInput");
             const text = input.value.trim();
-            if (!text || !currentArtistId) return;
+            if (!text) return;
 
-            ensureSocket(function () {
-                stompClient.send("/app/chat.send", {}, JSON.stringify({
-                    artistId: currentArtistId,
-                    fanId: fanId,
-                    senderId: fanId,
-                    content: text
-                }));
-            });
+            if (isArtist) {
+                // fanId를 null로 보내면 서버(ChatController.send)가 "이건 방송 메시지구나"라고 판단함
+                if (!fanId) return;
+                ensureSocket(function () {
+                    stompClient.send("/app/chat.send", {}, JSON.stringify({
+                        artistId: fanId,
+                        fanId: null,
+                        senderId: fanId,
+                        content: text
+                    }));
+                });
+            } else {
+                if (!currentArtistId) return;
+                ensureSocket(function () {
+                    stompClient.send("/app/chat.send", {}, JSON.stringify({
+                        artistId: currentArtistId,
+                        fanId: fanId,
+                        senderId: fanId,
+                        content: text
+                    }));
+                });
+            }
             input.value = "";
         });
     }
 
-    loadInbox();
+    if (!isArtist) {
+        loadInbox();
+    }
 })();
