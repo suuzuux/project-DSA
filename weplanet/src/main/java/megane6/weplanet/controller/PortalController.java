@@ -11,6 +11,7 @@ import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
@@ -27,6 +28,7 @@ import jakarta.servlet.http.HttpSession;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Controller
@@ -43,6 +45,7 @@ public class PortalController {
 	private final CommentReportRepository commentReportRepository;
 	private final ArtistBlockService artistBlockService;
 	private final megane6.weplanet.service.calendar.ArtistAttendanceService artistAttendanceService;
+	private final CommunityJoinService communityJoinService;
 
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
@@ -324,8 +327,18 @@ public class PortalController {
 			return redirect;
 		}
 		User artist = currentArtist(principal);
-		model.addAttribute("postReports", reportRepository.findByPost_ArtistOrderByCreatedAtDesc(artist));
-		model.addAttribute("commentReports", commentReportRepository.findByComment_Post_ArtistOrderByCreatedAtDesc(artist));
+		List<Report> postReports = reportRepository.findByPost_ArtistOrderByCreatedAtDesc(artist);
+		List<CommentReport> commentReports = commentReportRepository.findByComment_Post_ArtistOrderByCreatedAtDesc(artist);
+
+		// [닉네임 관리] 신고 목록의 "팬 닉네임"은 커뮤니티 가입할 때의 닉네임과 연결한다.
+		// (차단 목록의 닉네임은 ArtistBlock.blockedUser.nickname, 즉 회원가입할 때의 계정 닉네임을 그대로 쓰므로 변경하지 않음)
+		List<User> reportedAuthors = new ArrayList<>();
+		postReports.forEach(r -> reportedAuthors.add(r.getPost().getAuthor()));
+		commentReports.forEach(r -> reportedAuthors.add(r.getComment().getAuthor()));
+
+		model.addAttribute("postReports", postReports);
+		model.addAttribute("commentReports", commentReports);
+		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorId(reportedAuthors, artist.getId()));
 		model.addAttribute("blocks", artistBlockService.getBlocks(artist));
 		return "portal/reports";
 	}
