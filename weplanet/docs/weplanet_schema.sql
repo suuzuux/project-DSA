@@ -381,7 +381,6 @@ CREATE TABLE `community_profiles` (
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
   `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
-  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
   `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
@@ -931,5 +930,19 @@ WHERE f.username IN ('hwiwhi', 'asd123')
 -- ------------------------------------------------------------
 -- 확인용
 -- ------------------------------------------------------------
+CREATE TABLE `community_profiles` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '커뮤니티 프로필 PK',
+  `community_member_id` bigint NOT NULL COMMENT 'community_members.id (1:1)',
+  `nickname` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '해당 커뮤니티 전용 닉네임',
+  `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
+  `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
+  `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
+  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
+  `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cp_member` (`community_member_id`),
+  CONSTRAINT `fk_cp_member` FOREIGN KEY (`community_member_id`) REFERENCES `community_members` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티별 독립 프로필';
 
 
