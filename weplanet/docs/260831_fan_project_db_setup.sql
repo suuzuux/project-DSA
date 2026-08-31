@@ -1,15 +1,80 @@
 -- ============================================================
--- 팬 프로젝트 PR 적용 전 팀원용 DB 설정
+-- 통합 PR 적용 전 팀원용 DB 설정
 -- ============================================================
--- 전제: 최신 main의 users, fan_badge, fan_badge_ownership 테이블이 존재해야 합니다.
+-- 전제: 최신 main의 users, artist_schedule, fan_badge, fan_badge_ownership 테이블이 존재해야 합니다.
 -- 주의: 아래 스크립트는 팬 프로젝트 관련 기존 테스트 데이터를 삭제합니다.
---       users와 배지 데이터는 삭제하지 않습니다.
+--       users, 배지, 아티스트 일정 데이터는 삭제하지 않습니다.
 
 USE `weplanet`;
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 SET UNIQUE_CHECKS = 0;
+
+-- ============================================================
+-- 아티스트 일정·출석 및 사이트 공지
+-- ============================================================
+
+-- 이미 컬럼을 추가한 팀원이 다시 실행해도 오류가 나지 않도록 존재 여부를 확인합니다.
+SELECT COUNT(*) INTO @has_artist_schedule_category
+FROM `information_schema`.`columns`
+WHERE `table_schema` = DATABASE()
+  AND `table_name` = 'artist_schedule'
+  AND `column_name` = 'category';
+
+SET @artist_schedule_category_ddl = IF(
+  @has_artist_schedule_category = 0,
+  'ALTER TABLE `artist_schedule` ADD COLUMN `category` VARCHAR(30) DEFAULT ''OTHER'' COMMENT ''스케줄 카테고리'' AFTER `artist_id`',
+  'DO 0'
+);
+PREPARE artist_schedule_category_stmt FROM @artist_schedule_category_ddl;
+EXECUTE artist_schedule_category_stmt;
+DEALLOCATE PREPARE artist_schedule_category_stmt;
+
+SELECT COUNT(*) INTO @has_artist_schedule_ticket_url
+FROM `information_schema`.`columns`
+WHERE `table_schema` = DATABASE()
+  AND `table_name` = 'artist_schedule'
+  AND `column_name` = 'ticket_url';
+
+SET @artist_schedule_ticket_url_ddl = IF(
+  @has_artist_schedule_ticket_url = 0,
+  'ALTER TABLE `artist_schedule` ADD COLUMN `ticket_url` VARCHAR(500) DEFAULT NULL COMMENT ''티켓 URL'' AFTER `location`',
+  'DO 0'
+);
+PREPARE artist_schedule_ticket_url_stmt FROM @artist_schedule_ticket_url_ddl;
+EXECUTE artist_schedule_ticket_url_stmt;
+DEALLOCATE PREPARE artist_schedule_ticket_url_stmt;
+
+CREATE TABLE IF NOT EXISTS `artist_attendance` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '출석 PK',
+  `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
+  `visit_date` date NOT NULL COMMENT '홈페이지 방문일',
+  `paw_color` varchar(20) NOT NULL COMMENT '고양이 발바닥 색상(hex)',
+  `created_at` datetime NOT NULL COMMENT '등록 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_artist_attendance_artist_date` (`artist_id`, `visit_date`),
+  KEY `idx_artist_attendance_artist_date` (`artist_id`, `visit_date`),
+  CONSTRAINT `fk_artist_attendance_artist`
+    FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  COMMENT='아티스트 홈페이지 출석(발바닥)';
+
+CREATE TABLE IF NOT EXISTS `site_notice` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '홈페이지 공지 PK',
+  `author_id` bigint NOT NULL COMMENT '작성 관리자(users.id)',
+  `title` varchar(200) NOT NULL COMMENT '공지 제목',
+  `content` text NOT NULL COMMENT '공지 본문',
+  `published` bit(1) NOT NULL DEFAULT b'1' COMMENT '게시 여부(1=공개)',
+  `created_at` datetime NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_site_notice_created_at` (`created_at`),
+  KEY `fk_site_notice_author` (`author_id`),
+  CONSTRAINT `fk_site_notice_author`
+    FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  COMMENT='홈페이지 관리 공지사항';
 
 -- 자식 테이블부터 제거해야 외래키 오류가 발생하지 않습니다.
 DROP TABLE IF EXISTS `fan_project_fraud_check`;
@@ -239,6 +304,8 @@ FROM `information_schema`.`tables`
 WHERE `table_schema` = DATABASE()
   AND `table_name` IN (
     'email_verification',
+    'artist_attendance',
+    'site_notice',
     'fan_project',
     'fan_project_cover_image',
     'fan_project_contribution',
@@ -246,3 +313,10 @@ WHERE `table_schema` = DATABASE()
     'fan_project_fraud_check'
   )
 ORDER BY `table_name`;
+
+SELECT `column_name`
+FROM `information_schema`.`columns`
+WHERE `table_schema` = DATABASE()
+  AND `table_name` = 'artist_schedule'
+  AND `column_name` IN ('category', 'ticket_url')
+ORDER BY `column_name`;
