@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.regex.Pattern;
 
 @Service
@@ -45,6 +46,9 @@ public class UserService {
 				nickname,
 				dto.getEmail()
 		);
+		
+		// 실제 회원가입 이메일 인증을 구현하기 전까지 사용하는 모의 인증 처리
+		user.markEmailVerified(LocalDateTime.now());
 		
 		return userRepository.save(user);
 	}

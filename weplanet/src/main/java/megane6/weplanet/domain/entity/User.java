@@ -132,6 +132,10 @@ public class User {
 		this.lastLoginAt = LocalDateTime.now();
 	}
 
+	public void markEmailVerified(LocalDateTime verifiedAt) {
+		this.emailVerifiedAt = verifiedAt;
+	}
+
 	public void changePortalProfile(String nickname, String email) {
 		this.nickname = nickname;
 		this.email = email;

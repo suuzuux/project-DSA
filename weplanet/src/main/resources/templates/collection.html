@@ -72,6 +72,73 @@
   <p class="text-muted" style="padding:32px 0;" th:if="${cards.isEmpty()}">
     가입한 커뮤니티가 없습니다. 커뮤니티에 가입하면 배지를 모을 수 있어요.
   </p>
+
+  <!-- 내가 참여한 팬 프로젝트 -->
+  <section class="project-history">
+    <div class="project-history__head">
+      <h2>내 프로젝트 참여 기록</h2>
+      <span class="text-muted"
+            th:text="${projectParticipations.size()} + '건'">
+      0건
+    </span>
+    </div>
+
+    <div class="project-history__list"
+         th:if="${!projectParticipations.isEmpty()}">
+
+      <article class="project-history-card"
+               th:each="participation : ${projectParticipations}">
+
+        <div class="project-history-card__head">
+          <strong th:text="${participation.projectTitle()}">
+            프로젝트 제목
+          </strong>
+
+          <span class="project-history-card__status"
+                th:text="${participation.paymentStatus() == 'PAID'
+                        ? '참여 완료'
+                        : participation.paymentStatus()}">
+          참여 완료
+        </span>
+        </div>
+
+        <dl class="project-history-card__info">
+          <div>
+            <dt>참여 금액</dt>
+            <dd th:text="${#numbers.formatInteger(
+                          participation.amount(), 0, 'COMMA'
+                        )} + '원'">
+              10,000원
+            </dd>
+          </div>
+
+          <div>
+            <dt>참여 방식</dt>
+            <dd th:text="${participation.anonymous()
+                        ? '익명 참여'
+                        : '닉네임 공개'}">
+              익명 참여
+            </dd>
+          </div>
+
+          <div>
+            <dt>참여 일시</dt>
+            <dd th:text="${#temporals.format(
+                          participation.participatedAt(),
+                          'yyyy.MM.dd HH:mm'
+                        )}">
+              2026.08.29 16:19
+            </dd>
+          </div>
+        </dl>
+      </article>
+    </div>
+
+    <p class="project-history__empty text-muted"
+       th:if="${projectParticipations.isEmpty()}">
+      아직 참여한 팬 프로젝트가 없습니다.
+    </p>
+  </section>
 </main>
 
 <!-- 전체보기 모달 (내용은 자바스크립트가 채움) -->
