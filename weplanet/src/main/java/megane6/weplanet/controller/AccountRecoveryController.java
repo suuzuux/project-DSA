@@ -1,8 +1,9 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.service.AccountRecoveryService;
-import megane6.weplanet.service.email.EmailVerificationService;
+import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,12 +13,13 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Controller
 @RequiredArgsConstructor
 public class AccountRecoveryController {
 	
 	private final AccountRecoveryService accountRecoveryService;
-	private final EmailVerificationService emailVerificationService;
+	private final SignupEmailVerificationService emailVerificationService;
 	
 	@GetMapping("/find-id")
 	public String findIdForm() {
@@ -38,6 +40,7 @@ public class AccountRecoveryController {
 			result.put("success", true);
 			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
 		} catch (Exception e) {
+			log.error("[아이디 찾기] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
 			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
 		}
@@ -83,6 +86,7 @@ public class AccountRecoveryController {
 			result.put("success", true);
 			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
 		} catch (Exception e) {
+			log.error("[비밀번호 재설정] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
 			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
 		}

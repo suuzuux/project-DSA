@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.regex.Pattern;
 
-// [아이디 찾기 / 비밀번호 재설정] EmailVerificationService(이메일 인증)와 짝을 이뤄서 쓰는 서비스.
+// [아이디 찾기 / 비밀번호 재설정] SignupEmailVerificationService(이메일 인증)와 짝을 이뤄서 쓰는 서비스.
 // "이메일 인증이 끝났는지"는 컨트롤러가 EmailVerificationService로 먼저 확인하고,
 // 여기서는 실제 계정 조회/변경 로직만 담당한다.
 @Service

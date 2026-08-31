@@ -3,7 +3,7 @@ package megane6.weplanet.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.SignupRequestDto;
-import megane6.weplanet.service.email.EmailVerificationService;
+import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.UserService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class AuthController {
 	
 	private final UserService userService;
-	private final EmailVerificationService emailVerificationService;
+	private final SignupEmailVerificationService emailVerificationService;
 	
 	// 회원가입 화면의 "중복 확인" 버튼 - 실제로 DB를 조회해서 사용 가능 여부를 JSON으로 알려준다.
 	@PostMapping("/signup/username/check")

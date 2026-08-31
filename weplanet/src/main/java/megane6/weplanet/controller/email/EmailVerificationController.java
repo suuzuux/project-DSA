@@ -1,21 +1,22 @@
 package megane6.weplanet.controller.email;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.service.email.EmailVerificationService;
+import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class EmailVerificationController {
 	
-	private final EmailVerificationService emailVerificationService;
+	private final SignupEmailVerificationService emailVerificationService;
 	private final UserRepository userRepository;
 	
 	@PostMapping("/signup/email/code")
@@ -31,6 +32,7 @@ public class EmailVerificationController {
 			result.put("success", true);
 			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
 		} catch (Exception e) {
+			log.error("[회원가입] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
 			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
 		}

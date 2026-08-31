@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class EmailVerificationService {
+public class SignupEmailVerificationService {
 	
 	private static final int CODE_LENGTH = 6;
 	private static final long EXPIRE_MINUTES = 5;
