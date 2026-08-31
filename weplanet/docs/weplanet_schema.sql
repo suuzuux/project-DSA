@@ -1,3 +1,4 @@
+-- 반영: 2026-08-31, 16:45, 한혜선
 -- ============================================================
 -- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
@@ -13,7 +14,7 @@
 --
 -- ------------------------------------------------------------
 -- 구성
---   [1] 스키마 : 테이블 39개 (DROP -> CREATE) + 배지 카탈로그 25종
+--   [1] 스키마 : 테이블 42개 (DROP -> CREATE) + 배지 카탈로그 25종
 --   [2] 테스트 계정 시드 : 6개 (비밀번호 전부 weplanet1234!)
 --   [3] 배지 소유 / 팔로우 시드
 --
@@ -54,6 +55,7 @@ SET UNIQUE_CHECKS = 0;
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `community_profiles`;
 DROP TABLE IF EXISTS `community_members`;
+DROP TABLE IF EXISTS `board_media_like`;
 DROP TABLE IF EXISTS `board_media_files`;
 DROP TABLE IF EXISTS `board_media`;
 DROP TABLE IF EXISTS `comment_report`;
@@ -65,6 +67,7 @@ DROP TABLE IF EXISTS `post_attachment`;
 DROP TABLE IF EXISTS `post`;
 DROP TABLE IF EXISTS `chat_message`;
 DROP TABLE IF EXISTS `chat_quota`;
+DROP TABLE IF EXISTS `site_notice`;
 DROP TABLE IF EXISTS `portal_notice`;
 DROP TABLE IF EXISTS `artist_block`;
 DROP TABLE IF EXISTS `artist_attendance`;
@@ -360,6 +363,21 @@ CREATE TABLE `portal_notice` (
   CONSTRAINT `fk_portal_notice_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 커뮤니티 공지';
 
+-- site_notice: 홈페이지(사이트) 공지 - 관리자 글쓰기
+CREATE TABLE `site_notice` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '홈페이지 공지 PK',
+  `author_id` bigint NOT NULL COMMENT '작성 관리자(users.id)',
+  `title` varchar(200) NOT NULL COMMENT '공지 제목',
+  `content` text NOT NULL COMMENT '공지 본문',
+  `published` bit(1) NOT NULL DEFAULT b'1' COMMENT '게시 여부(1=공개)',
+  `created_at` datetime NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_site_notice_created_at` (`created_at`),
+  KEY `fk_site_notice_author` (`author_id`),
+  CONSTRAINT `fk_site_notice_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='홈페이지 관리 공지사항';
+
 -- community_members: 커뮤니티 가입 (EXPLORE-03)
 CREATE TABLE `community_members` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '가입 PK',
@@ -500,6 +518,7 @@ CREATE TABLE `board_media` (
   `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '삭제(soft delete) 시각',
+  `like_count` int NOT NULL DEFAULT 0 COMMENT '좋아요 수(비정규화 카운트)',
   PRIMARY KEY (`id`),
   KEY `idx_bm_group` (`group_id`, `created_at`),
   KEY `idx_bm_uploader` (`uploader_id`),
@@ -524,6 +543,19 @@ CREATE TABLE `board_media_files` (
   CONSTRAINT `fk_bmf_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ck_bmf_media_type` CHECK (`media_type` IN (_utf8mb4'IMAGE', _utf8mb4'VIDEO'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 첨부 파일';
+
+-- board_media_like: 미디어 게시글 좋아요
+CREATE TABLE `board_media_like` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '좋아요 PK',
+  `created_at` datetime(6) NOT NULL COMMENT '좋아요 시각',
+  `board_id` bigint NOT NULL COMMENT '미디어 게시글(board_media.id)',
+  `user_id` bigint NOT NULL COMMENT '좋아요한 회원(users.id)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_board_media_like` (`board_id`, `user_id`),
+  KEY `fk_bml_user` (`user_id`),
+  CONSTRAINT `fk_bml_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`),
+  CONSTRAINT `fk_bml_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 좋아요';
 
 -- chat_message: 팬–아티스트 DM (CHAT-01/02)
 CREATE TABLE `chat_message` (

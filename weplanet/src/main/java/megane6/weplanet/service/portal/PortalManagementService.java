@@ -57,6 +57,15 @@ public class PortalManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
     }
 
+    @Transactional(readOnly = true)
+    public PortalNotice getPublishedNotice(User artist, Long noticeId) {
+        PortalNotice notice = getNotice(artist, noticeId);
+        if (!notice.isPublished()) {
+            throw new IllegalArgumentException("공지를 찾을 수 없습니다.");
+        }
+        return notice;
+    }
+
     public PortalNotice saveNotice(User artist, Long noticeId, String title, String content, boolean published) {
         validateText(title, "제목을 입력해주세요.");
         validateText(content, "본문을 입력해주세요.");
