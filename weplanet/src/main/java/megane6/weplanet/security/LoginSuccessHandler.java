@@ -32,6 +32,16 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
 		userRepository.findById(principal.getId())
 				.ifPresent(user -> user.recordLogin());
+
+		if ("true".equals(request.getParameter("portalLogin"))) {
+			if ("ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_AGENCY".equals(principal.getRoleName())) {
+				getRedirectStrategy().sendRedirect(request, response, "/portal/dashboard");
+				return;
+			}
+			getRedirectStrategy().sendRedirect(request, response, "/");
+			return;
+		}
+
 		super.onAuthenticationSuccess(request, response, authentication);
 	}
 }

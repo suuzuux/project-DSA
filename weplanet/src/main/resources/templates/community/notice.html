@@ -24,7 +24,17 @@
   <div class="community-body">
     <div class="community-main">
       <nav th:replace="~{community/fragments/layout :: tabs('notice')}"></nav>
-      <p class="text-muted" style="padding:24px 0;">등록된 공지가 없습니다.</p>
+      <p th:if="${#lists.isEmpty(notices)}" class="text-muted" style="padding:24px 0;">등록된 공지가 없습니다.</p>
+      <article th:each="notice : ${notices}" class="post-card mb-16">
+        <div class="post-card__head">
+          <div class="post-card__meta">
+            <strong class="post-card__title" th:text="${notice.title}">공지 제목</strong>
+            <span class="text-xs text-muted"
+                  th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.29</span>
+          </div>
+        </div>
+        <p class="post-card__excerpt" th:text="${notice.content}">공지 내용</p>
+      </article>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>

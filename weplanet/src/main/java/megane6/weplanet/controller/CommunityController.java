@@ -22,6 +22,8 @@ import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.media.BoardMediaService;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -58,6 +60,8 @@ public class CommunityController {
 	// 삭제됨 -> portalManagementService 필드도 함께 제거 (남기면 타입을 못 찾아 컴파일 실패)
 	private final FollowService followService;
 	private final CommunityJoinService communityJoinService;
+	private final ArtistAttendanceService artistAttendanceService;
+	private final PortalManagementService portalManagementService;
 	
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -212,17 +216,15 @@ public class CommunityController {
 	
 	@GetMapping("/community/{artistId}/notice")
 	public String notice(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
-		// [머지 충돌 해결] HEAD의 로그인/커뮤니티 가입 접근 제어는 유지.
-		// 단, 공지 목록 조회(portalManagementService.getPublishedNotices)는 main에서 포털 기능이
-		// 되돌려지며 서비스 클래스가 삭제되어 제거함 -> 현재 공지 탭은 "등록된 공지가 없습니다"로 표시됨
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		populateArtistModel(artistId, principal, model);
+		User artist = populateArtistModel(artistId, principal, model);
 		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
 			model.addAttribute("gatedTab", "notice");
 			return "community/membership-required";
 		}
+		model.addAttribute("notices", portalManagementService.getPublishedNotices(artist));
 		return "community/notice";
 	}
 	
@@ -446,6 +448,12 @@ public class CommunityController {
 		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
 		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
 		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
+		if (currentUserForFollow != null
+				&& currentUserForFollow.getRole() == Role.ARTIST
+				&& currentUserForFollow.getId().equals(artist.getId())) {
+			artistAttendanceService.recordVisitIfArtist(currentUserForFollow);
+		}
+		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
 		Set<Long> followedIds = followService.getFollowedArtistIds(currentUserForFollow);
 		List<ArtistFollowCardView> otherArtists = userRepository.findByRole(Role.ARTIST).stream()
 				.filter(user -> !user.getId().equals(artistId))

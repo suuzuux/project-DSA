@@ -156,4 +156,8 @@ public class CommunityJoinService {
 		}
 		return result;
 	}
+
+	public long countMembers(Long artistId) {
+		return communityMemberRepository.countByArtistId(artistId);
+	}
 }

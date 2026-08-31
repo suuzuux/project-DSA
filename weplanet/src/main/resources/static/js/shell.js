@@ -124,7 +124,7 @@
 
 <!-- ========== 2. FAB ========== -->
 <div class="fab-stack">
-  <button type="button" class="fab fab--secondary" data-shell-alert="캘린더 (목업)" title="캘린더" aria-label="캘린더">${ICONS.calendar}</button>
+  <button type="button" class="fab fab--secondary" data-shell-open="calendar" title="캘린더" aria-label="캘린더">${ICONS.calendar}</button>
   <button type="button" class="fab" id="fabChat" title="${isArtist ? "팬 채팅방" : "채팅 (DM)"}" aria-label="채팅 열기">${ICONS.send}</button>
 </div>
 
@@ -467,4 +467,23 @@
     showRoom("YUMA", true);
   }
   if (params.get("menu") === "1") openMenu();
+
+  // 스케줄 캘린더 CSS + global-icons (주간 스케줄 / FAB 캘린더 / 커뮤니티 미니캘린더)
+  (function loadScheduleAssets() {
+    if (!document.querySelector('link[href*="schedule-calendar.css"]')) {
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      var cssBase = document.body.getAttribute("data-base") || "/";
+      link.href = cssBase.replace(/\/?$/, "/") + "css/calendar/schedule-calendar.css";
+      document.head.appendChild(link);
+    }
+    if (document.querySelector('script[src*="global-icons.js"]')) return;
+    var current = document.currentScript || document.querySelector('script[src*="shell.js"]');
+    var src = current && current.src
+      ? current.src.replace(/shell\.js(\?.*)?$/, "calendar/global-icons.js$1")
+      : ((document.body.getAttribute("data-base") || "/") + "js/calendar/global-icons.js").replace("//js", "/js");
+    var s = document.createElement("script");
+    s.src = src;
+    document.body.appendChild(s);
+  })();
 })();
