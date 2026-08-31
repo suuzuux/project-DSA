@@ -66,10 +66,14 @@ public class CommunityJoinService {
 				.build());
 	}
 	
-	// EXPLORE-03: 커뮤니티별 프로필 생성/편집, 이미지 편집 - 이미 가입한 상태에서 수정
+	// PROFILE-01: 커뮤니티별 프로필 편집 (닉네임 / 소개글 / 프로필 이미지 / 배경 이미지)
+	// 이미지 규칙 - 삭제 요청이 최우선이고, 그 다음이 새 파일 교체, 둘 다 없으면 기존 이미지를 그대로 둔다.
+	// (화면의 "이미지 삭제하기"가 removeAvatar/removeBackground로 넘어옴)
 	@Transactional
 	public void editProfile(User fan, Long artistId, String nickname, String bio,
-							MultipartFile avatar, MultipartFile background) {
+							MultipartFile avatar, MultipartFile background,
+							boolean removeAvatar, boolean removeBackground,
+							boolean contentHidden) {
 		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElseThrow(() -> new IllegalStateException("가입하지 않은 커뮤니티입니다."));
 		CommunityProfile profile = communityProfileRepository.findByCommunityMember_Id(member.getId())
@@ -87,18 +91,32 @@ public class CommunityJoinService {
 			}
 			profile.setBio(bio);
 		}
-		if (avatar != null && !avatar.isEmpty()) {
+		
+		if (removeAvatar) {
+			if (profile.getAvatarStoredName() != null) {
+				fileStorageService.delete(profile.getAvatarStoredName());
+			}
+			profile.setAvatarStoredName(null);
+		} else if (avatar != null && !avatar.isEmpty()) {
 			if (profile.getAvatarStoredName() != null) {
 				fileStorageService.delete(profile.getAvatarStoredName());
 			}
 			profile.setAvatarStoredName(fileStorageService.store(avatar));
 		}
-		if (background != null && !background.isEmpty()) {
+		
+		if (removeBackground) {
+			if (profile.getBackgroundStoredName() != null) {
+				fileStorageService.delete(profile.getBackgroundStoredName());
+			}
+			profile.setBackgroundStoredName(null);
+		} else if (background != null && !background.isEmpty()) {
 			if (profile.getBackgroundStoredName() != null) {
 				fileStorageService.delete(profile.getBackgroundStoredName());
 			}
 			profile.setBackgroundStoredName(fileStorageService.store(background));
 		}
+		
+		profile.setContentHidden(contentHidden);
 		communityProfileRepository.save(profile);
 	}
 	
@@ -137,5 +155,9 @@ public class CommunityJoinService {
 					.ifPresent(profile -> result.put(member.getArtistId(), profile));
 		}
 		return result;
+	}
+
+	public long countMembers(Long artistId) {
+		return communityMemberRepository.countByArtistId(artistId);
 	}
 }

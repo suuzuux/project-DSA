@@ -15,6 +15,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.stereotype.Controller;
@@ -37,9 +38,14 @@ public class HomeController {
 	private final FollowService followService;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
+	private final ArtistAttendanceService artistAttendanceService;
 	
 	@GetMapping({"", "/"})
 	public String home(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal != null) {
+			artistAttendanceService.recordVisitIfArtist(userResolver.resolve(principal, 1L));
+		}
+
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
 		List<ArtistCardView> artists = artistUsers.stream()
 				.map(ArtistCardView::from)
@@ -61,14 +67,14 @@ public class HomeController {
 				.toList();
 		model.addAttribute("joinedArtists", joinedArtists);
 		
-		// 와이어프레임 10번: 급상승 커뮤니티 - 데뷔일 + 가입자수(팔로워 수)
+		// 급상승 커뮤니티 카드의 가입자 수는 Follow가 아니라 실제 CommunityMember 기준
 		List<RisingCommunityCardView> risingCommunities = artistUsers.stream()
 				.map(user -> {
 					var debutDate = artistGroupRepository.findById(user.getId())
 							.map(ArtistGroup::getDebutDate)
 							.orElse(null);
-					long followerCount = followService.countFollowers(user.getId());
-					return RisingCommunityCardView.of(user, debutDate, followerCount);
+					long memberCount = communityJoinService.countMembers(user.getId());
+					return RisingCommunityCardView.of(user, debutDate, memberCount);
 				})
 				.toList();
 		model.addAttribute("risingCommunities", risingCommunities);

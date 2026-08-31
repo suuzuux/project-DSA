@@ -1,0 +1,395 @@
+/* Schedule / portal month calendar + fan calendar modal + attendance paws */
+
+.sched-flash { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
+.sched-flash--ok { background: #e8f7ef; color: #146c43; }
+.sched-flash--err { background: #fdecea; color: #b42318; }
+.portal-main--schedule .artist-select { display: flex; gap: 8px; align-items: center; }
+
+.month-cal {
+  background: #fff;
+  border: 1px solid #e6e8ee;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.month-cal__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #eceef3;
+}
+.month-cal__nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 800;
+}
+.month-cal__arrow {
+  width: 32px;
+  height: 32px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.month-cal__arrow:hover { background: #f2f3f7; }
+.month-cal__actions { display: flex; align-items: center; gap: 8px; }
+.month-cal__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eceef3;
+}
+.month-cal__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #eceef3;
+  background: #fafbfc;
+}
+.month-cal__weekdays span {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  color: #8b8fa3;
+}
+.month-cal__weekdays span:first-child { color: #d14b4b; }
+.month-cal__weekdays span:last-child { color: #4a7ad2; }
+.month-cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.month-cal__cell {
+  min-height: 112px;
+  border-right: 1px solid #eceef3;
+  border-bottom: 1px solid #eceef3;
+  padding: 8px;
+}
+.month-cal__cell:nth-child(7n) { border-right: none; }
+.month-cal__cell.is-muted { background: #fbfbfd; color: #b7bcc8; }
+.month-cal__cell.is-today { background: #f4fbff; }
+.month-cal__date {
+  display: flex;
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.month-cal__cell.is-today .month-cal__date { background: #111; color: #fff; }
+.month-cal__events { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.month-chip {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.month-cal__legend .month-chip { width: auto; cursor: default; }
+.month-chip[data-cat="TV_BROADCAST"] { background: #d7ecff; color: #1d5fa8; }
+.month-chip[data-cat="YOUTUBE"] { background: #fde8ee; color: #c81e4a; }
+.month-chip[data-cat="CONCERT"] { background: #eee8ff; color: #5b3fd6; }
+.month-chip[data-cat="RADIO"] { background: #d7f3f0; color: #0f6b6b; }
+.month-chip[data-cat="AWARDS"] { background: #fff0d9; color: #b45309; }
+.month-chip[data-cat="PHOTO_MAGAZINE"] { background: #fce7f3; color: #be185d; }
+.month-chip[data-cat="OTHER"] { background: #ececf2; color: #4b4d57; }
+.month-cal__more { font-size: 11px; color: #8b8fa3; }
+
+.sched-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(17, 17, 17, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.sched-modal[hidden] { display: none; }
+.sched-modal__panel {
+  width: min(100%, 480px);
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+}
+.sched-modal__panel--sm { width: min(100%, 360px); }
+.sched-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sched-modal__head h2 { font-size: 18px; font-weight: 800; }
+.sched-modal__foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.wp-global-slot { position: relative; display: inline-flex; }
+.wp-global-slot .icon-btn.is-open { background: #eef1f6; }
+.wp-lang-menu,
+.wp-noti-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 70;
+  background: #fff;
+  border: 1px solid #e6e8ee;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+.wp-lang-menu { min-width: 160px; padding: 6px; }
+.wp-lang-menu__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.wp-lang-menu__item:hover,
+.wp-lang-menu__item.is-active { background: #f3f5f9; }
+.wp-noti-panel { width: min(92vw, 340px); overflow: hidden; }
+.wp-lang-menu[hidden],
+.wp-noti-panel[hidden] { display: none; }
+.wp-noti-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #eceef3;
+  font-weight: 800;
+}
+.wp-noti-panel__list { max-height: 360px; overflow: auto; }
+.wp-noti-empty { padding: 24px 14px; color: #8b8fa3; font-size: 13px; text-align: center; }
+.wp-noti-filter { display: flex; gap: 6px; overflow-x: auto; padding: 9px 14px; border-bottom: 1px solid #eceef3; }
+.wp-noti-filter__chip {
+  flex: 0 0 auto;
+  border: 1px solid #e6e8ee;
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #5b5c6b;
+  font-size: 12px;
+  cursor: pointer;
+}
+.wp-noti-filter__chip.is-active { background: #111; color: #fff; border-color: #111; }
+.wp-noti-item { border-bottom: 1px solid #f0f2f6; padding: 10px 14px; cursor: pointer; }
+.wp-noti-item.is-read { opacity: 0.7; }
+.wp-noti-item__head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.wp-noti-item__artist {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 92px;
+  color: #5b5c6b;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wp-noti-item__line {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+}
+.wp-noti-item__category {
+  flex: 0 0 auto;
+  color: #7c5cff;
+  font-size: 11px;
+  font-weight: 800;
+}
+.wp-noti-item__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.wp-noti-item__time { flex: 0 0 auto; color: #8b8fa3; font-size: 11px; }
+.wp-auth-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 16px;
+  text-align: center;
+}
+
+.wp-cal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(17, 17, 17, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.wp-cal-backdrop[hidden] { display: none; }
+.wp-cal-modal {
+  width: min(100%, 420px);
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+}
+.wp-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-weight: 800;
+}
+.wp-cal-label { font-size: 12px; color: #8b8fa3; margin: 8px 0 6px; font-weight: 700; }
+.wp-cal-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.wp-cal-chip {
+  border: 1px solid #e6e8ee;
+  background: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.wp-cal-chip.is-active { background: #111; color: #fff; border-color: #111; }
+.wp-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-weight: 800;
+}
+.wp-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.wp-cal-dow {
+  text-align: center;
+  font-size: 11px;
+  color: #8b8fa3;
+  font-weight: 700;
+  padding: 4px 0;
+}
+.wp-cal-day {
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  padding: 6px 2px;
+  cursor: pointer;
+  min-height: 42px;
+}
+.wp-cal-day__num {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.wp-cal-day__num.is-selected { background: #111; color: #fff; }
+.wp-cal-day__dots { display: flex; justify-content: center; gap: 2px; min-height: 8px; margin-top: 2px; }
+.wp-cal-dot { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
+.wp-cal-list { border-top: 1px solid #eceef3; padding-top: 10px; }
+.wp-cal-list__date { font-weight: 800; margin-bottom: 8px; }
+.wp-cal-empty { color: #8b8fa3; font-size: 13px; padding: 12px 0; }
+.wp-cal-event {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #eceef3;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.wp-cal-back {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+.wp-cal-type {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.wp-cal-detail-title { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
+.wp-cal-detail-row { display: flex; gap: 8px; margin-bottom: 6px; font-size: 13px; color: #4b4d57; }
+.wp-cal-ticket {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f7f8fb;
+  font-size: 13px;
+}
+.wp-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: #111;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.wp-toast[hidden] { display: none; }
+
+.mini-cal__grid .day.has-paw { position: relative; }
+.mini-cal__grid .day .paw-stamp {
+  display: block;
+  font-size: 11px;
+  line-height: 1;
+  margin-top: 1px;
+}
+
+@media (max-width: 860px) {
+  .month-cal__cell { min-height: 88px; }
+  .month-cal__toolbar { flex-direction: column; align-items: stretch; }
+}

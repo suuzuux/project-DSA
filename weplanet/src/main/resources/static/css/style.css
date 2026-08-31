@@ -163,7 +163,12 @@ p {
 }
 
 .icon-btn--badge::after {
+  display: none;
+}
+
+.wp-noti-bound.has-unread::after {
   content: "";
+  display: block;
   position: absolute;
   top: 8px;
   right: 8px;
