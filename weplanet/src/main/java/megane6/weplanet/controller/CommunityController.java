@@ -268,6 +268,10 @@ public class CommunityController {
 		}
 		populateArtistModel(artistId, principal, model);
 		User me = userResolver.resolve(principal, 1L);
+		if (!hasCommunityAccess(me, artistId)) {
+			model.addAttribute("gatedTab", "profile");
+			return "community/membership-required";
+		}
 		
 		boolean oldest = "oldest".equals(sort);
 		
