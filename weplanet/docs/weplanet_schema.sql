@@ -7,7 +7,7 @@
 --
 -- ------------------------------------------------------------
 -- 구성
---   [1] 스키마 : 테이블 40개 (DROP -> CREATE) + 배지 카탈로그 25종
+--   [1] 스키마 : 테이블 42개 (DROP -> CREATE) + 배지 카탈로그 25종
 --   [2] 테스트 계정 시드 : 6개 (비밀번호 전부 weplanet1234!)
 --   [3] 배지 소유 / 팔로우 시드
 --
@@ -56,6 +56,7 @@ DROP TABLE IF EXISTS `post_attachment`;
 DROP TABLE IF EXISTS `post`;
 DROP TABLE IF EXISTS `chat_message`;
 DROP TABLE IF EXISTS `chat_quota`;
+DROP TABLE IF EXISTS `site_notice`;
 DROP TABLE IF EXISTS `portal_notice`;
 DROP TABLE IF EXISTS `artist_block`;
 DROP TABLE IF EXISTS `artist_attendance`;
@@ -391,6 +392,21 @@ CREATE TABLE `portal_notice` (
   KEY `idx_portal_notice_artist_created_at` (`artist_id`, `created_at`),
   CONSTRAINT `fk_portal_notice_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 커뮤니티 공지';
+
+-- site_notice: 전체 홈페이지 관리 공지사항
+CREATE TABLE `site_notice` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '홈페이지 공지 PK',
+  `author_id` bigint NOT NULL COMMENT '작성 관리자(users.id)',
+  `title` varchar(200) NOT NULL COMMENT '공지 제목',
+  `content` text NOT NULL COMMENT '공지 본문',
+  `published` bit(1) NOT NULL DEFAULT b'1' COMMENT '게시 여부(1=공개)',
+  `created_at` datetime NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_site_notice_created_at` (`created_at`),
+  KEY `fk_site_notice_author` (`author_id`),
+  CONSTRAINT `fk_site_notice_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='홈페이지 관리 공지사항';
 
 -- community_members: 커뮤니티 가입 (EXPLORE-03)
 CREATE TABLE `community_members` (
