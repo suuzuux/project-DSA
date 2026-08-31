@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.media.BoardMediaFileViewDTO;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
+import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.media.BoardMediaEntity;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
+import megane6.weplanet.domain.entity.media.BoardMediaLike;
 import megane6.weplanet.repository.media.BoardMediaFileRepository;
+import megane6.weplanet.repository.media.BoardMediaLikeRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -17,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -26,6 +30,7 @@ public class BoardMediaService {
 
     private final BoardMediaRepository boardMediaRepository;
     private final BoardMediaFileRepository boardMediaFileRepository;
+    private final BoardMediaLikeRepository boardMediaLikeRepository;
     private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
 
     // 허용하는 파일 형식(MIME)
@@ -132,6 +137,15 @@ public class BoardMediaService {
         boardMediaRepository.save(post);
     }
 
+    @Transactional(readOnly = true)
+    public BoardMediaViewDTO getInCommunity(Long id, Long groupId) {
+        BoardMediaEntity post = getActivePost(id);
+        if (!post.getGroupId().equals(groupId)) {
+            throw new IllegalArgumentException("이 커뮤니티의 미디어가 아닙니다.");
+        }
+        return toViewDTO(post);
+    }
+
     // ── 목록 조회 : 엔티티 → 화면용 DTO 로 변환 ──
     @Transactional(readOnly = true)
     public List<BoardMediaViewDTO> list(Long groupId) {
@@ -154,6 +168,29 @@ public class BoardMediaService {
 
     public Resource loadResource(BoardMediaFileEntity file) {
         return fileStorageService.loadAsResource(file.getStoredName());
+    }
+
+    public boolean toggleLike(Long mediaId, User user) {
+        BoardMediaEntity post = getActivePost(mediaId);
+        Optional<BoardMediaLike> existing = boardMediaLikeRepository.findByBoardAndUser(post, user);
+        if (existing.isPresent()) {
+            boardMediaLikeRepository.delete(existing.get());
+            post.setLikeCount(Math.max(0, post.getLikeCount() - 1));
+            boardMediaRepository.save(post);
+            return false;
+        }
+        boardMediaLikeRepository.save(BoardMediaLike.builder()
+                .board(post)
+                .user(user)
+                .build());
+        post.setLikeCount(post.getLikeCount() + 1);
+        boardMediaRepository.save(post);
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    public int getLikeCount(Long mediaId) {
+        return getActivePost(mediaId).getLikeCount();
     }
 
     // ── 내부 헬퍼 ──
@@ -188,6 +225,7 @@ public class BoardMediaService {
                 .content(post.getContent())
                 .createdAt(post.getCreatedAt())
                 .fileCount(fileViews.size())
+                .likeCount(post.getLikeCount())
                 .files(fileViews)
                 .build();
     }

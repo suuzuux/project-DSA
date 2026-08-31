@@ -151,6 +151,31 @@ public class ChatController {
     }
 
     /**
+     * 아티스트 자신의 채팅방(1대다 방송) 데이터를 JSON으로 내려줌 - DM 모달 안에서 쓰기 위함.
+     * 화면(chat/artistChatRoom.html)과 같은 데이터(getArtistRoomHistory)를 쓰지만,
+     * 페이지 이동 없이 모달에서 fetch로 채워야 해서 JSON 버전을 따로 둠.
+     */
+    @GetMapping("/chat/room-data/artist")
+    @ResponseBody
+    public Map<String, Object> artistRoomData(@RequestParam Long artistId) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+
+        List<Map<String, Object>> messages = chatMessageService.getArtistRoomHistory(artist).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("messages", messages);
+        return result;
+    }
+
+    /**
      * 브라우저가 웹소켓의 "/app/chat.send" 채널로 보낸 메시지를 처리함.
      * <p>
      *
@@ -200,10 +225,16 @@ public class ChatController {
                 ? getUserOrThrow(request.getFanId(), "팬")
                 : null;
 
+        // 이 메시지가 "팬 본인이 보낸 것"인지 여부. 아티스트가 특정 팬과의 DM 방에서 답장을 보낼 때도
+        // fan 필드는 채워져 있지만(어느 팬과의 대화인지 구분용), 실제로 보낸 사람은 아티스트이므로
+        // 팬 전용 제약(멤버십/하루 한도)을 걸면 안 됨. 그동안 fan != null만 보고 체크해서,
+        // 아티스트가 멤버십 만료된 팬에게 답장하거나, 그 팬의 한도를 대신 소진시켜버리는 문제가 있었음
+        boolean sentByFan = fan != null && sender.getId().equals(fan.getId());
+
         // 와이어프레임 19번: 멤버십이 없거나 만료된 팬은 DM을 보낼 수 없음.
         // 그동안 프론트(dm-realtime.js)에서 입력창만 숨기고 서버 검증이 없어서,
         // 웹소켓으로 직접 쏘면 미가입자도 전송이 됐음
-        if (fan != null && chatMessageService.isMembershipExpired(fan, artist)) {
+        if (sentByFan && chatMessageService.isMembershipExpired(fan, artist)) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
             warning.put("message", "멤버십에 가입해야 DM을 보낼 수 있습니다.");
@@ -213,8 +244,8 @@ public class ChatController {
             return;
         }
 
-        // CHAT-05 : 팬이 보낸 메시지인 경우에만 하루 전송 한도를 체크함 (아티스트 방송은 한도 없음)
-        if (fan != null && !chatQuotaService.tryConsume(fan, artist)) {
+        // CHAT-05 : 팬이 보낸 메시지인 경우에만 하루 전송 한도를 체크함 (아티스트 방송/답장은 한도 없음)
+        if (sentByFan && !chatQuotaService.tryConsume(fan, artist)) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
             warning.put("message", "오늘 보낼 수 있는 메시지 횟수를 다 사용했습니다. 내일 다시 채워집니다.");

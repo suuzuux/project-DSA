@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공지사항 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+
+<header class="site-header">
+  <div class="header-left">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+  <div class="header-actions">
+    <th:block sec:authorize="isAnonymous()">
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
+      <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+    </th:block>
+    <th:block sec:authorize="isAuthenticated()">
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+      </form>
+    </th:block>
+  </div>
+</header>
+
+<main class="container section">
+  <div class="flex-between mb-24">
+    <h1 class="section__title" style="font-size:var(--wp-fs-xl);">공지사항</h1>
+    <a class="btn btn--ghost btn--sm" th:href="@{/}">← 홈</a>
+  </div>
+
+  <p th:if="${#lists.isEmpty(notices)}" class="text-muted" style="padding:24px 0;">등록된 공지가 없습니다.</p>
+  <article th:each="notice : ${notices}" class="post-card mb-16">
+    <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
+      <div class="post-card__head">
+        <div class="post-card__meta">
+          <strong class="post-card__title" th:text="${notice.title}">공지 제목</strong>
+          <span class="text-xs text-muted"
+                th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31</span>
+        </div>
+      </div>
+      <p class="post-card__excerpt" th:text="${notice.content}">공지 내용</p>
+    </a>
+  </article>
+</main>
+
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+</body>
+</html>

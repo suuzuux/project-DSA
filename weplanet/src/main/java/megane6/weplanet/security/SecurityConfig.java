@@ -40,6 +40,8 @@ public class SecurityConfig {
             "/uploads/**",
             "/community/**",
             "/board/**",
+            "/notices",
+            "/notices/**",
             "/css/**",
             "/js/**",
             "/img/**"
