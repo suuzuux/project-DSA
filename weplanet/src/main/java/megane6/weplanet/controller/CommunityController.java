@@ -227,6 +227,23 @@ public class CommunityController {
 		model.addAttribute("notices", portalManagementService.getPublishedNotices(artist));
 		return "community/notice";
 	}
+
+	@GetMapping("/community/{artistId}/notice/{noticeId}")
+	public String noticeDetail(@PathVariable Long artistId,
+							   @PathVariable Long noticeId,
+							   @AuthenticationPrincipal AuthenticatedUser principal,
+							   Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User artist = populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "notice");
+			return "community/membership-required";
+		}
+		model.addAttribute("notice", portalManagementService.getPublishedNotice(artist, noticeId));
+		return "community/notice-detail";
+	}
 	
 	@GetMapping("/community/{artistId}/media")
 	public String media(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -241,6 +258,24 @@ public class CommunityController {
 		model.addAttribute("mediaList", boardMediaService.list(artistId));
 		model.addAttribute("groupId", artistId);
 		return "community/media";
+	}
+
+	@GetMapping("/community/{artistId}/media/{mediaId}")
+	public String mediaDetail(@PathVariable Long artistId,
+							  @PathVariable Long mediaId,
+							  @AuthenticationPrincipal AuthenticatedUser principal,
+							  Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "media");
+			return "community/membership-required";
+		}
+		model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId));
+		model.addAttribute("groupId", artistId);
+		return "community/media-detail";
 	}
 	
 	@GetMapping("/community/{artistId}/live")
@@ -461,19 +496,16 @@ public class CommunityController {
 				.toList();
 		model.addAttribute("otherArtists", otherArtists);
 		
-		// 커뮤니티 가입 여부는 CommunityMember/CommunityProfile 기준 (Follow와는 별개)
-		// 한 번 조회해서 세 군데에 재사용한다:
-		//  - joinedArtists       : 드로어 "커뮤니티 바로가기" (가입한 커뮤니티만)
-		//  - communityJoined     : 사이드바 가입 상태 / 하단 가입 유도 배너 / 탭 접근 제어
-		//  - myCommunityProfile  : 내 프로필 화면에 띄울 이 커뮤니티 전용 닉네임 (미가입이면 null)
+		// 가입 여부(버튼/배너/드로어)는 CommunityMember 기준. 프로필은 닉네임 표시용.
 		Map<Long, CommunityProfile> joinedProfiles = currentUserForFollow != null
 				? communityJoinService.joinedProfilesByArtistId(currentUserForFollow)
 				: Collections.emptyMap();
+		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(currentUserForFollow);
 		List<ArtistCardView> joinedArtists = artists.stream()
-				.filter(a -> joinedProfiles.containsKey(a.id()))
+				.filter(a -> joinedArtistIds.contains(a.id()))
 				.toList();
 		model.addAttribute("joinedArtists", joinedArtists);
-		model.addAttribute("communityJoined", joinedProfiles.containsKey(artistId));
+		model.addAttribute("communityJoined", joinedArtistIds.contains(artistId));
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
 		
 		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부

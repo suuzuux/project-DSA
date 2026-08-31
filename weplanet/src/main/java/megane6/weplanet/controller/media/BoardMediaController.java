@@ -2,8 +2,9 @@ package megane6.weplanet.controller.media;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.controller.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
-import megane6.weplanet.domain.entity.media.BoardMediaEntity;
+import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.media.BoardMediaService;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Controller
@@ -26,6 +28,7 @@ import java.util.List;
 public class BoardMediaController {
 
     private final BoardMediaService boardMediaService;
+    private final AuthenticatedUserResolver userResolver;
 
     // ── 목록 화면 : role=AGENCY 면 소속사 화면, 아니면 팬(읽기 전용) ──
     @GetMapping("/media")
@@ -100,7 +103,18 @@ public class BoardMediaController {
         return redirectAfterMutation(artistId, groupId);
     }
 
-    // ── 파일 스트리밍 : <img>, <video> 가 이 주소로 파일을 불러온다 ──
+    // ── 좋아요 토글 (팬 게시글 /posts/detail/{id}/like 와 동일) ──
+    @PostMapping("/media/{id}/like")
+    @ResponseBody
+    public Map<String, Object> like(@PathVariable Long id,
+                                    @AuthenticationPrincipal AuthenticatedUser principal) {
+        User user = userResolver.requireAuthenticated(principal);
+        boolean liked = boardMediaService.toggleLike(id, user);
+        return Map.of(
+                "liked", liked,
+                "likeCount", boardMediaService.getLikeCount(id)
+        );
+    }
     @GetMapping("/media/file/{fileId}")
     public ResponseEntity<Resource> file(@PathVariable Long fileId) {
         BoardMediaFileEntity fileEntity = boardMediaService.getFile(fileId);

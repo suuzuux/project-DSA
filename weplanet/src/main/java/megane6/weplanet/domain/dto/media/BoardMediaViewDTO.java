@@ -21,5 +21,6 @@ public class BoardMediaViewDTO {
     private String content;
     private LocalDateTime createdAt;
     private int fileCount;
+    private int likeCount;
     private List<BoardMediaFileViewDTO> files;
 }
