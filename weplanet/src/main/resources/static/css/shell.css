@@ -437,10 +437,19 @@
   border-bottom-left-radius: 4px;
 }
 
+/* 아바타 옆 메타(ARTIST 태그/닉네임) + 말풍선을 감싸는 컨테이너.
+   기본 div(block)로 두면 메타 줄 너비에 맞춰 말풍선까지 늘어나서, 짧은 메시지 뒤에 빈 공간이 남는 문제가 있었음.
+   flex-column + align-items:flex-start로 각 줄이 자기 내용물 너비만큼만 차지하도록 함 */
+.dm-msg__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .dm-msg__meta {
   font-size: 10px;
   color: var(--wp-muted);
-  margin-bottom: 4px;
 }
 
 .dm-msg__meta .artist-tag {
