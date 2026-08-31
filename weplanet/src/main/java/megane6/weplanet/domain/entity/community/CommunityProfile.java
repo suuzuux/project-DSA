@@ -35,6 +35,10 @@ public class CommunityProfile {
 	@Column(name = "background_stored_name")
 	private String backgroundStoredName;
 	
+	@Builder.Default
+	@Column(name = "content_hidden", nullable = false)
+	private boolean contentHidden = false;
+	
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 	

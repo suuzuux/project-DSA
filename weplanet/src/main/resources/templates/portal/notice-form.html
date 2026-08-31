@@ -1,87 +1,65 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 공지사항 등록 + 미리보기 모달 -->
-  <title>공지 등록 | Artist Portal</title>
-  <link rel="stylesheet" href="../../css/style.css" />
-  <link rel="stylesheet" href="../../css/portal.css" />
+  <title th:text="${notice} != null ? '공지 수정 | Artist Portal' : '공지 등록 | Artist Portal'">공지 등록 | Artist Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
   <div class="portal-shell">
     <aside class="portal-sidebar">
       <div class="portal-sidebar__org">
-        <div class="agency">SM Entertainment.</div>
-        <div class="artist">Red Velvet</div>
+        <div class="agency">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
       </div>
       <nav class="portal-sidebar__nav">
-        <a href="dashboard.html">📊 대시보드</a>
-        <a class="is-active" href="notices.html">📢 공지사항 관리</a>
-        <a href="schedule.html">📆 스케줄 관리</a>
-        <a href="media.html">🎬 미디어 관리</a>
-        <a href="profile.html">👤 프로필 관리</a>
-        <a href="reports.html">⚙ 신고함 / 차단</a>
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </nav>
+      <div class="portal-sidebar__footer">
+        <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
+        <a th:href="@{/logout}">로그아웃</a>
+      </div>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
-        <h1>공지사항 등록</h1>
-        <a class="btn btn--ghost btn--sm" href="notices.html">← 뒤로 가기</a>
+        <h1 th:text="${notice} != null ? '공지 수정' : '공지 등록'">공지 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices}">← 뒤로 가기</a>
       </div>
 
-      <form class="settings-block" data-mock-submit="notices.html" style="max-width:800px;">
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+      <form class="settings-block" style="max-width:800px;"
+            th:action="${notice} != null ? @{/portal/notices/{id}(id=${notice.id})} : @{/portal/notices}"
+            method="post">
         <div class="form-group">
-          <label class="form-label">제목</label>
-          <input class="form-input" placeholder="제목을 입력해주세요." />
+          <label class="form-label" for="title">제목</label>
+          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : ''}" placeholder="제목을 입력해주세요." required />
         </div>
         <div class="form-group">
-          <label class="form-label">본문내용</label>
-          <textarea class="form-textarea" style="min-height:220px;" placeholder="본문을 입력해주세요."></textarea>
+          <label class="form-label" for="content">본문내용</label>
+          <textarea class="form-textarea" id="content" name="content" style="min-height:220px;"
+                    placeholder="본문을 입력해주세요." required th:text="${notice != null ? notice.content : ''}"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label">첨부파일</label>
-          <div class="flex-center">
-            <button type="button" class="btn btn--ghost btn--sm">사진</button>
-            <button type="button" class="btn btn--ghost btn--sm">이미지</button>
-            <button type="button" class="btn btn--ghost btn--sm">링크</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">공개여부</label>
-          <select class="form-select" style="max-width:200px;">
-            <option>공개</option>
-            <option>비공개</option>
+          <label class="form-label" for="published">공개여부</label>
+          <select class="form-select" id="published" name="published" style="max-width:200px;">
+            <option value="true" th:selected="${notice == null || notice.published}">공개</option>
+            <option value="false" th:selected="${notice != null && !notice.published}">비공개</option>
           </select>
         </div>
         <div class="flex-center" style="justify-content:flex-end;">
-          <button type="button" class="btn btn--ghost" data-modal-open="noticePreview">미리보기</button>
-          <button type="button" class="btn btn--ghost">예약등록</button>
-          <button type="submit" class="btn btn--primary">바로등록</button>
+          <button type="submit" class="btn btn--primary" th:text="${notice} != null ? '수정 저장' : '바로등록'">바로등록</button>
         </div>
       </form>
     </main>
   </div>
-
-  <div class="modal-backdrop" id="noticePreview">
-    <div class="modal modal--wide">
-      <div class="modal__head">
-        <h2 class="modal__title">미리보기</h2>
-        <button type="button" class="modal__close" data-modal-close>✕</button>
-      </div>
-      <h3 style="font-size:18px;font-weight:800;margin-bottom:8px;">
-        [공지] 2026 CORTIS TOUR &lt;PUT YOUR PHONE DOWN&gt; BIRTHDAY PARTY - 공식 상품 현장 판매 및 운영 안내
-      </h3>
-      <p class="text-xs text-muted mb-16">08.19 15:00</p>
-      <div class="text-sm text-muted" style="line-height:1.7;">
-        <p>안녕하세요, HYBE 입니다.</p>
-        <p class="mt-12">2026년 8월 22일(토) ~ 23일(일) 고려대학교 화정체육관에서 진행되는 공연 현장 공식 상품 구매 방법과 응원봉 연출 관련 안내드립니다.</p>
-        <p class="mt-12"><strong>1. 공연 당일 현장 판매 안내</strong><br />… (본문 미리보기)</p>
-      </div>
-    </div>
-  </div>
-
-  <script src="../../js/main.js"></script>
 </body>
 </html>

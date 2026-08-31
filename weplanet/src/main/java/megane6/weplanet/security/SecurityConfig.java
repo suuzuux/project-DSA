@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 import java.util.List;
 
@@ -28,6 +29,10 @@ public class SecurityConfig {
             "/home",
             "/signup",
             "/login",
+            "/portal/login",
+            "/api/schedules",
+            "/api/notifications",
+            "/api/artists",
             "/posts/**",
             "/chat/**",
             "/ws-chat/**",
@@ -58,6 +63,7 @@ public class SecurityConfig {
                         .passwordParameter("password")
                         .loginProcessingUrl("/login")
                         .successHandler(loginSuccessHandler)
+                        .failureHandler(portalAwareFailureHandler())
                         .permitAll()
                 )
                 .logout(logout -> logout
@@ -73,5 +79,15 @@ public class SecurityConfig {
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    private AuthenticationFailureHandler portalAwareFailureHandler() {
+        return (request, response, exception) -> {
+            if ("true".equals(request.getParameter("portalLogin"))) {
+                response.sendRedirect("/portal/login?error");
+                return;
+            }
+            response.sendRedirect("/login?error");
+        };
     }
 }

@@ -58,6 +58,7 @@ DROP TABLE IF EXISTS `chat_message`;
 DROP TABLE IF EXISTS `chat_quota`;
 DROP TABLE IF EXISTS `portal_notice`;
 DROP TABLE IF EXISTS `artist_block`;
+DROP TABLE IF EXISTS `artist_attendance`;
 DROP TABLE IF EXISTS `artist_schedule`;
 DROP TABLE IF EXISTS `artist_profile`;
 DROP TABLE IF EXISTS `artist_group_profiles`;
@@ -351,9 +352,11 @@ CREATE TABLE `artist_block` (
 CREATE TABLE `artist_schedule` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '일정 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
+  `category` varchar(30) DEFAULT 'OTHER' COMMENT '스케줄 카테고리',
   `title` varchar(200) NOT NULL COMMENT '일정 제목',
   `description` text COMMENT '일정 상세 설명',
   `location` varchar(255) DEFAULT NULL COMMENT '장소',
+  `ticket_url` varchar(500) DEFAULT NULL COMMENT '티켓 URL',
   `schedule_at` datetime NOT NULL COMMENT '일정 일시',
   `created_at` datetime NOT NULL COMMENT '등록 시각',
   `updated_at` datetime NOT NULL COMMENT '수정 시각',
@@ -361,6 +364,19 @@ CREATE TABLE `artist_schedule` (
   KEY `idx_artist_schedule_artist_schedule_at` (`artist_id`, `schedule_at`),
   CONSTRAINT `fk_artist_schedule_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 스케줄';
+
+-- artist_attendance: 아티스트 홈페이지 방문 출석(팬에게 보이는 고양이 발바닥 도장)
+CREATE TABLE `artist_attendance` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '출석 PK',
+  `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
+  `visit_date` date NOT NULL COMMENT '홈페이지 방문일',
+  `paw_color` varchar(20) NOT NULL COMMENT '고양이 발바닥 색상(hex)',
+  `created_at` datetime NOT NULL COMMENT '등록 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_artist_attendance_artist_date` (`artist_id`, `visit_date`),
+  KEY `idx_artist_attendance_artist_date` (`artist_id`, `visit_date`),
+  CONSTRAINT `fk_artist_attendance_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 홈페이지 출석(발바닥)';
 
 -- portal_notice: 커뮤니티 공지 (NOTICE)
 CREATE TABLE `portal_notice` (
@@ -397,6 +413,7 @@ CREATE TABLE `community_profiles` (
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
   `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
+  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
   `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
