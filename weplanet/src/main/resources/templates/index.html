@@ -19,7 +19,7 @@
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
                data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 

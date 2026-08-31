@@ -136,7 +136,7 @@
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
                data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
@@ -228,7 +228,7 @@
             <div data-tab-panel="comments">
                 <article class="post-card mb-16" th:each="comment : ${myComments}">
                     <p class="text-xs text-muted mb-8"
-                       th:text="|원글 · ${comment.post.author != null ? comment.post.author.nickname : '(알 수 없음)'} · ${comment.post.title}|">
+                       th:text="|원글 · ${comment.post.author != null ? authorNicknames.get(comment.post.author.id) : '(알 수 없음)'} · ${comment.post.title}|">
                         원글</p>
                     <p class="post-card__body" th:text="${comment.content}"></p>
                     <p class="text-xs text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
@@ -279,10 +279,10 @@
                        style="display:block;color:inherit;">
                         <div class="post-card__head">
                             <div class="avatar"
-                                 th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                                 th:text="${post.author != null ? #strings.substring(authorNicknames.get(post.author.id),0,1) : '?'}"></div>
                             <div class="post-card__meta">
                                 <div class="post-card__name"
-                                     th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                                     th:text="${post.author != null ? authorNicknames.get(post.author.id) : '(알 수 없음)'}"></div>
                             </div>
                         </div>
                         <p class="post-card__body" th:text="${post.title}"></p>
@@ -300,10 +300,10 @@
                        style="display:block;color:inherit;">
                         <div class="post-card__head">
                             <div class="avatar"
-                                 th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                                 th:text="${post.author != null ? #strings.substring(authorNicknames.get(post.author.id),0,1) : '?'}"></div>
                             <div class="post-card__meta">
                                 <div class="post-card__name"
-                                     th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                                     th:text="${post.author != null ? authorNicknames.get(post.author.id) : '(알 수 없음)'}"></div>
                             </div>
                         </div>
                         <p class="post-card__body" th:text="${post.title}"></p>

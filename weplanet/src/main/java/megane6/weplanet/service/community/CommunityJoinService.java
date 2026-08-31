@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -146,6 +147,28 @@ public class CommunityJoinService {
 				.orElse(null);
 	}
 	
+	// [닉네임 관리] 커뮤니티 화면에서 작성자 이름을 보여줄 때 공통으로 쓰는 헬퍼.
+	// 가입할 때 설정한 커뮤니티 전용 닉네임이 있으면 그걸 쓰고, 없으면(아티스트 본인, 탈퇴한 회원 등)
+	// 계정 닉네임으로 대체한다. "가입할 때 닉네임과 글 쓸 때 닉네임이 다르게 보인다"는 문제의 해결 지점.
+	public String displayNickname(User author, Long artistId) {
+		if (author == null) {
+			return null;
+		}
+		CommunityProfile profile = profileOf(author, artistId);
+		return profile != null ? profile.getNickname() : author.getNickname();
+	}
+
+	// 게시글/댓글 목록을 한 번에 그릴 때 작성자마다 profileOf를 반복 조회하지 않도록 미리 맵으로 계산
+	public Map<Long, String> displayNicknamesByAuthorId(Collection<User> authors, Long artistId) {
+		Map<Long, String> result = new HashMap<>();
+		for (User author : authors) {
+			if (author != null) {
+				result.putIfAbsent(author.getId(), displayNickname(author, artistId));
+			}
+		}
+		return result;
+	}
+
 	// 화면에 프로필 카드(닉네임/소개글/아바타/배경) 그릴 때 씀
 	public Map<Long, CommunityProfile> joinedProfilesByArtistId(User fan) {
 		if (fan == null) return Map.of();
