@@ -99,6 +99,11 @@
       ? `<a href="${base}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> 금칙어 관리</a>`
       : "";
 
+    // 관리자는 DM을 주고받을 일이 없는 계정이라(메시지 발신/수신 대상이 아님) 채팅 버튼 자체를 노출하지 않음
+    const chatFabHtml = isAdmin
+      ? ""
+      : `<button type="button" class="fab" id="fabChat" title="${isArtist ? "팬 채팅방" : "채팅 (DM)"}" aria-label="채팅 열기">${ICONS.send}</button>`;
+
     return `
 <!-- ========== Shell Backdrop ========== -->
 <div class="shell-backdrop" id="shellBackdrop" hidden></div>
@@ -125,7 +130,7 @@
 <!-- ========== 2. FAB ========== -->
 <div class="fab-stack">
   <button type="button" class="fab fab--secondary" data-shell-open="calendar" title="캘린더" aria-label="캘린더">${ICONS.calendar}</button>
-  <button type="button" class="fab" id="fabChat" title="${isArtist ? "팬 채팅방" : "채팅 (DM)"}" aria-label="채팅 열기">${ICONS.send}</button>
+  ${chatFabHtml}
 </div>
 
 <!-- ========== 3. DM 패널 ========== -->
@@ -335,7 +340,13 @@
   function openDm() {
     dmPanel.classList.add("is-open");
     dmPanel.setAttribute("aria-hidden", "false");
-    showList();
+    // 아티스트는 인박스 목록이 없고 자신의 방송 채팅방 하나뿐이라, 목록 화면 없이 바로 방을 보여줌
+    // (실제 데이터 채우기는 dm-realtime.js의 openArtistBroadcastRoom이 #fabChat 클릭 시 처리함)
+    if (isArtist) {
+      showRoom(nickname || "내 채팅방", false);
+    } else {
+      showList();
+    }
     syncBackdrop();
   }
 
@@ -421,15 +432,17 @@
   });
 
   document.getElementById("fabChat")?.addEventListener("click", () => {
-    // 아티스트는 팬용 DM 위젯이 아니라 아티스트 전용 채팅방 화면으로 이동시킴.
-    // (그동안 이 화면은 링크가 없어서 주소를 직접 입력해야만 들어갈 수 있었음)
-    if (isArtist && myId) {
-      window.location.href = (base && base !== "/" ? base : "/") + "chat/room/artist?artistId=" + encodeURIComponent(myId);
-      return;
-    }
+    // 아티스트도 일반 사용자와 동일하게 DM 모달을 연다 (페이지 이동 X).
     openDm();
   });
-  document.getElementById("dmBackBtn")?.addEventListener("click", showList);
+  document.getElementById("dmBackBtn")?.addEventListener("click", () => {
+    // 아티스트는 자신의 방송 채팅방 하나뿐이라 "목록으로 돌아가기"가 없음 - 뒤로가기는 그냥 패널을 닫음
+    if (isArtist) {
+      closeDm();
+    } else {
+      showList();
+    }
+  });
 
   backdrop.addEventListener("click", () => {
     closeMenu();
@@ -459,10 +472,10 @@
     box.scrollTop = box.scrollHeight;
   });
 
-  // URL ?dm=1 이면 자동 오픈 (chat.html 데모용)
+  // URL ?dm=1 이면 자동 오픈 (chat.html 데모용) - 관리자는 DM 자체가 없는 계정이라 이 파라미터를 무시함
   const params = new URLSearchParams(location.search);
-  if (params.get("dm") === "1") openDm();
-  if (params.get("dm") === "expired") {
+  if (!isAdmin && params.get("dm") === "1") openDm();
+  if (!isAdmin && params.get("dm") === "expired") {
     openDm();
     showRoom("YUMA", true);
   }
