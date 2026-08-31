@@ -1,19 +1,138 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <!--
-      [와이어프레임 20~23번] 커뮤니티 – 내 프로필
-      탭: 댓글 / 포스트 / 좋아요 / 북마크
-      이름은 계정 아이디가 아니라 이 커뮤니티 전용 닉네임(community_profiles.nickname)을 쓴다.
-      미가입 상태로 들어온 경우에만 계정 이름으로 대체한다.
+      [와이어프레임 23~24번] 커뮤니티 – 내 프로필
+      Grid 2단 구성.
+        1행 2열 : 탭(댓글·포스트·좋아요·북마크)
+        2행 1열 : 세로형 프로필 카드 (탭 아래 라인부터 시작)
+        2행 2열 : 히스토리 목록
+        편집 시 : 오른쪽(탭 줄 포함) 영역을 프로필 편집 패널이 통째로 차지
+      이름·소개글·아바타·배경은 모두 이 커뮤니티 전용(community_profiles) 값을 쓴다.
+      PROFILE-01 범위: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
+      공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다.
+      단 편집 패널에는 실제 설정값이 그대로 보여서 언제든 수정할 수 있다.
+      D-DAY, 가입일, 팔로워, 최애 멤버는 다음 단계에서 추가 예정.
     -->
     <title th:text="'내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <link rel="stylesheet" th:href="@{/css/community.css}"/>
     <link rel="stylesheet" th:href="@{/css/shell.css}"/>
+    <style>
+        /* 프로필 화면 전용 2단 배치 - 왼쪽 카드가 탭 아래 라인에서 시작하도록 행을 나눔 */
+        .profile-layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            column-gap: 28px;
+            row-gap: 18px;
+            align-items: start;
+        }
+        .profile-layout > .profile-tabs { grid-column: 2; grid-row: 1; margin: 0; }
+        .profile-layout > .profile-side { grid-column: 1; grid-row: 2; }
+        .profile-layout > .profile-body { grid-column: 2; grid-row: 2; }
+        .profile-layout > .profile-edit { grid-column: 2; grid-row: 1 / span 2; display: none; }
+
+        /* 편집 모드 - 탭은 자리를 유지한 채 감추고(카드가 위로 튀지 않게), 목록 대신 편집 패널을 띄움 */
+        .profile-layout.is-editing > .profile-tabs { visibility: hidden; }
+        .profile-layout.is-editing > .profile-body { display: none; }
+        .profile-layout.is-editing > .profile-edit { display: block; }
+
+        .profile-card {
+            background: var(--wp-surface, #fff);
+            border: 1px solid var(--wp-hairline, #e5e5e5);
+            border-radius: var(--wp-radius, 12px);
+            overflow: hidden;
+        }
+        .profile-edit {
+            background: var(--wp-surface, #fff);
+            border: 1px solid var(--wp-hairline, #e5e5e5);
+            border-radius: var(--wp-radius, 12px);
+            padding: 20px 24px 0;
+        }
+
+        /* 편집 패널의 인라인 입력 - 라벨 없이 가운데 정렬, 밑줄만 그리고 오른쪽에 지우기 버튼 */
+        .pe-field {
+            position: relative;
+            border-bottom: 1px solid var(--wp-hairline, #e5e5e5);
+        }
+        .pe-field input {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            outline: none;
+            text-align: center;
+            padding: 8px 32px;
+            font-family: inherit;
+            color: inherit;
+        }
+        .pe-field input#profileEditNickname {
+            font-size: var(--wp-fs-lg);
+            font-weight: 800;
+        }
+        .pe-field input#profileEditBio {
+            font-size: var(--wp-fs-sm);
+        }
+        .pe-clear {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 0;
+            background: var(--wp-hairline, #e5e5e5);
+            color: var(--wp-muted, #8a8a8a);
+            font-size: 11px;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .pe-count {
+            text-align: right;
+            margin: 4px 0 18px;
+        }
+
+        /* 이미지 편집 버튼 - 누르면 "사진첩에서 불러오기 / 이미지 삭제하기" 메뉴가 열림 */
+        .pe-imgbtn { position: relative; }
+        .pe-menu {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: calc(100% + 6px);
+            z-index: 20;
+            min-width: 168px;
+            background: var(--wp-surface, #fff);
+            border: 1px solid var(--wp-hairline, #e5e5e5);
+            border-radius: var(--wp-radius-sm, 8px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+        }
+        .pe-menu button {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            border: 0;
+            background: transparent;
+            text-align: left;
+            font-size: var(--wp-fs-sm);
+            font-family: inherit;
+            color: inherit;
+            cursor: pointer;
+        }
+        .pe-menu button:hover { background: var(--wp-brand-soft, #eef5f3); }
+        .pe-menu button.is-danger { color: var(--wp-danger, #d64545); }
+
+        @media (max-width: 860px) {
+            .profile-layout { grid-template-columns: 1fr; }
+            .profile-layout > .profile-side { grid-column: 1; grid-row: 1; }
+            .profile-layout > .profile-tabs { grid-column: 1; grid-row: 2; }
+            .profile-layout > .profile-body { grid-column: 1; grid-row: 3; }
+            .profile-layout > .profile-edit { grid-column: 1; grid-row: 1 / span 3; }
+            .profile-layout.is-editing > .profile-tabs { display: none; }
+        }
+    </style>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
@@ -23,132 +142,287 @@
 
 <header th:replace="~{community/fragments/layout :: header}"></header>
 
-<main class="container section" style="max-width:720px;" data-tabs>
-    <div class="profile-panel">
-        <div class="profile-cover"></div>
-        <div class="profile-panel__info"
-             th:with="displayName=${myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name}">
-            <div class="flex-between" style="align-items:flex-end;">
-                <div class="avatar avatar--lg" style="border:3px solid #fff;"
-                     th:text="${#strings.substring(displayName, 0, 1)}">나
-                </div>
-            </div>
-            <h2 class="mt-12" style="font-size:var(--wp-fs-xl);font-weight:800;">
-                <span th:text="${displayName}">닉네임</span>
-            </h2>
-            <p class="text-sm text-muted mt-8"
-               th:if="${myCommunityProfile != null and myCommunityProfile.bio != null}"
-               th:text="${myCommunityProfile.bio}">소개글</p>
-            <div class="profile-panel__stats">
-                <div><strong th:text="${myFollowingCount}">0</strong><span>팔로잉</span></div>
-            </div>
-        </div>
-        <nav class="profile-tabs">
+<!--
+  avatarName/backgroundName : 실제 저장값 (편집 패널이 씀 - 숨김 중에도 내 설정은 보여야 함)
+  cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
+-->
+<main class="container section" style="max-width:1080px;"
+      th:with="displayName=${myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name},
+               contentHidden=${myCommunityProfile != null and myCommunityProfile.contentHidden},
+               avatarName=${myCommunityProfile != null ? myCommunityProfile.avatarStoredName : null},
+               backgroundName=${myCommunityProfile != null ? myCommunityProfile.backgroundStoredName : null},
+               cardAvatar=${contentHidden ? null : avatarName},
+               cardBackground=${contentHidden ? null : backgroundName}">
+
+    <div class="profile-layout" data-tabs>
+
+        <!-- ==================== 1행 2열: 탭 ==================== -->
+        <nav class="profile-tabs" style="border-top:0;border-bottom:1px solid var(--wp-hairline, #e5e5e5);">
             <a href="#" class="is-active" data-tab="comments" th:text="|댓글 ${#lists.size(myComments)}|">댓글</a>
             <a href="#" data-tab="posts" th:text="|포스트 ${#lists.size(myPosts)}|">포스트</a>
             <a href="#" data-tab="likes" th:text="|좋아요 ${#lists.size(likedPosts)}|">좋아요</a>
             <a href="#" data-tab="bookmarks" th:text="|북마크 ${#lists.size(bookmarkedPosts)}|">북마크</a>
         </nav>
-    </div>
 
-    <div class="flex-between mb-16">
-        <div>
-            <a class="form-select" style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;"
-               th:href="@{''(sort='latest')}" th:classappend="${sort != 'oldest'} ? ' is-active'">최신순</a>
-            <a class="form-select"
-               style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;margin-left:8px;"
-               th:href="@{''(sort='oldest')}" th:classappend="${sort == 'oldest'} ? ' is-active'">오래된 순</a>
+        <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
+        <aside class="profile-side profile-card">
+
+            <!-- 프로필 배경 이미지 영역 - 숨김이거나 등록한 배경이 없으면 기본 그라데이션 -->
+            <div th:style="${cardBackground != null}
+                           ? |height:240px;background-image:url('/uploads/${cardBackground}');background-size:cover;background-position:center;|
+                           : 'height:240px;background:linear-gradient(160deg,#3d5a5a,#8b6040);'"></div>
+
+            <div style="padding:0 20px 24px;text-align:center;">
+
+                <!-- 프로필(아바타) 이미지 - 배경과 흰 영역의 경계에 걸치도록 위로 끌어올림 -->
+                <div class="avatar"
+                     style="width:104px;height:104px;margin:-52px auto 0;
+                            border:4px solid var(--wp-surface, #fff);font-size:36px;position:relative;">
+                    <img th:if="${cardAvatar != null}"
+                         th:src="@{'/uploads/' + ${cardAvatar}}" alt="프로필 이미지"
+                         style="width:100%;height:100%;object-fit:cover;display:block;"/>
+                    <span th:if="${cardAvatar == null}"
+                          th:text="${#strings.substring(displayName, 0, 1)}">나</span>
+                </div>
+
+                <!-- 닉네임 - 숨김 상태에서도 항상 보이는 유일한 정보 -->
+                <h2 style="margin-top:14px;font-size:var(--wp-fs-lg);font-weight:800;word-break:break-all;">
+                    <span th:text="${displayName}">닉네임</span>
+                </h2>
+
+                <!-- 소개글 - 공개범위가 숨김이면 노출하지 않음 -->
+                <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;word-break:break-all;"
+                   th:if="${!contentHidden and myCommunityProfile != null and !#strings.isEmpty(myCommunityProfile.bio)}"
+                   th:text="${myCommunityProfile.bio}">소개글</p>
+
+                <!-- 팔로잉 - 공개범위가 숨김이면 노출하지 않음 -->
+                <p style="margin:16px 0;font-size:var(--wp-fs-sm);" th:if="${!contentHidden}">
+                    <strong th:text="${myFollowingCount}">0</strong>
+                    <span class="text-xs text-muted" style="margin-left:4px;">팔로잉</span>
+                </p>
+
+                <!-- 숨김 상태 안내 - 본인에게만 보이는 표시 -->
+                <p class="text-xs text-muted" style="margin:16px 0;line-height:1.5;" th:if="${contentHidden}">
+                    🔒 콘텐츠 숨김 중<br/>다른 사람에게는 닉네임만 보입니다
+                </p>
+
+                <!-- 가입한 커뮤니티에서만 편집 가능 (community_profiles 행이 있어야 수정할 수 있음) -->
+                <button type="button" class="btn btn--ghost btn--sm btn--block"
+                        data-profile-edit-open
+                        th:if="${myCommunityProfile != null}">프로필 편집</button>
+            </div>
+        </aside>
+
+        <!-- ==================== 2행 2열: 히스토리 목록 ==================== -->
+        <div class="profile-body">
+
+            <div class="mb-16">
+                <a class="form-select" style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;"
+                   th:href="@{''(sort='latest')}" th:classappend="${sort != 'oldest'} ? ' is-active'">최신순</a>
+                <a class="form-select"
+                   style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;margin-left:8px;"
+                   th:href="@{''(sort='oldest')}" th:classappend="${sort == 'oldest'} ? ' is-active'">오래된 순</a>
+            </div>
+
+            <!-- 댓글 히스토리 -->
+            <div data-tab-panel="comments">
+                <article class="post-card mb-16" th:each="comment : ${myComments}">
+                    <p class="text-xs text-muted mb-8"
+                       th:text="|원글 · ${comment.post.author != null ? comment.post.author.nickname : '(알 수 없음)'} · ${comment.post.title}|">
+                        원글</p>
+                    <p class="post-card__body" th:text="${comment.content}"></p>
+                    <p class="text-xs text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
+                    <div class="post-card__actions">
+                        <form th:action="@{/posts/detail/{id}/comment/{cid}/delete(id=${comment.post.id}, cid=${comment.id})}"
+                              method="post"
+                              onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
+                            <button type="submit" class="text-danger" style="display:inline-flex;align-items:center;gap:4px;">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                                삭제하기
+                            </button>
+                        </form>
+                    </div>
+                </article>
+                <p th:if="${#lists.isEmpty(myComments)}" class="text-muted" style="padding:48px 0;text-align:center;">작성한 댓글이 없습니다.</p>
+            </div>
+
+            <!-- 포스트 히스토리 -->
+            <div class="hidden" data-tab-panel="posts">
+                <article class="post-card mb-16" th:each="post : ${myPosts}">
+                    <a th:href="${post.boardType.name() == 'FAN'}
+                              ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
+                              : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
+                       style="display:block;color:inherit;">
+                        <p class="post-card__body" th:text="${post.title}"></p>
+                        <p class="text-xs text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
+                    </a>
+                    <div class="post-card__actions">
+                        <span style="display:inline-flex;align-items:center;gap:4px;">
+                            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <span th:if="${post.likeCount > 0}" th:text="${post.likeCount}"></span>
+                        </span>
+                        <span th:with="cc=${myPostCommentCounts.get(post.id)}" style="display:inline-flex;align-items:center;gap:4px;">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                            <span th:if="${cc > 0}" th:text="${cc}"></span>
+                        </span>
+                    </div>
+                </article>
+                <p th:if="${#lists.isEmpty(myPosts)}" class="text-muted" style="padding:48px 0;text-align:center;">작성한 포스트가 없습니다.</p>
+            </div>
+
+            <!-- 좋아요 -->
+            <div class="hidden" data-tab-panel="likes">
+                <article class="post-card mb-16" th:each="post : ${likedPosts}">
+                    <a th:href="${post.boardType.name() == 'FAN'}
+                              ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
+                              : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
+                       style="display:block;color:inherit;">
+                        <div class="post-card__head">
+                            <div class="avatar"
+                                 th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                            <div class="post-card__meta">
+                                <div class="post-card__name"
+                                     th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                            </div>
+                        </div>
+                        <p class="post-card__body" th:text="${post.title}"></p>
+                    </a>
+                </article>
+                <p th:if="${#lists.isEmpty(likedPosts)}" class="text-muted" style="padding:48px 0;text-align:center;">좋아요한 게시글이 없습니다.</p>
+            </div>
+
+            <!-- 북마크 -->
+            <div class="hidden" data-tab-panel="bookmarks">
+                <article class="post-card mb-16" th:each="post : ${bookmarkedPosts}">
+                    <a th:href="${post.boardType.name() == 'FAN'}
+                              ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
+                              : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
+                       style="display:block;color:inherit;">
+                        <div class="post-card__head">
+                            <div class="avatar"
+                                 th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
+                            <div class="post-card__meta">
+                                <div class="post-card__name"
+                                     th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                            </div>
+                        </div>
+                        <p class="post-card__body" th:text="${post.title}"></p>
+                    </a>
+                </article>
+                <div th:if="${#lists.isEmpty(bookmarkedPosts)}" class="empty-state" style="padding:48px 0;">
+                    <strong>저장한 북마크가 없습니다</strong>
+                    마음에 드는 포스트를 저장해 보세요
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- 댓글 히스토리 -->
-    <div data-tab-panel="comments">
-        <article class="post-card mb-16" th:each="comment : ${myComments}">
-            <p class="text-xs text-muted mb-8"
-               th:text="|원글 · ${comment.post.author != null ? comment.post.author.nickname : '(알 수 없음)'} · ${comment.post.title}|">
-                원글</p>
-            <p class="post-card__body" th:text="${comment.content}"></p>
-            <p class="text-xs text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
-            <div class="post-card__actions">
-                <form th:action="@{/posts/detail/{id}/comment/{cid}/delete(id=${comment.post.id}, cid=${comment.id})}"
-                      method="post"
-                      onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
-                    <button type="submit" class="text-danger" style="display:inline-flex;align-items:center;gap:4px;">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
-                        삭제하기
-                    </button>
-                </form>
+        <!-- ==================== 프로필 편집 패널 (탭 줄 포함 오른쪽 영역 전체) ====================
+             모달이 아니라 목록 자리에 그대로 펼쳐진다.
+             POST /community/{artistId}/profile/edit 를 사용하며, 파일 업로드라 일반 multipart 폼 전송.
+             서버가 Referer로 되돌려보내 화면이 갱신된다.
+             여기서는 숨김 여부와 무관하게 실제 저장값(avatarName/backgroundName)을 보여준다. -->
+        <div class="profile-edit" th:if="${myCommunityProfile != null}">
+
+            <div style="position:relative;text-align:center;margin-bottom:24px;">
+                <strong style="font-size:var(--wp-fs-lg);font-weight:800;">프로필 편집</strong>
+                <button type="button" class="icon-btn" aria-label="닫기" data-profile-edit-close
+                        style="position:absolute;right:0;top:50%;transform:translateY(-50%);">✕</button>
             </div>
-        </article>
-        <p th:if="${#lists.isEmpty(myComments)}" class="text-muted" style="padding:24px 0;">작성한 댓글이 없습니다.</p>
-    </div>
 
-    <!-- 포스트 히스토리 -->
-    <div class="hidden" data-tab-panel="posts">
-        <article class="post-card mb-16" th:each="post : ${myPosts}">
-            <a th:href="${post.boardType.name() == 'FAN'}
-                      ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
-                      : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
-               style="display:block;color:inherit;">
-                <p class="post-card__body" th:text="${post.title}"></p>
-                <p class="text-xs text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
-            </a>
-            <div class="post-card__actions">
-                <span style="display:inline-flex;align-items:center;gap:4px;">
-                    <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                    <span th:if="${post.likeCount > 0}" th:text="${post.likeCount}"></span>
-                </span>
-                <span th:with="cc=${myPostCommentCounts.get(post.id)}" style="display:inline-flex;align-items:center;gap:4px;">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                    <span th:if="${cc > 0}" th:text="${cc}"></span>
-                </span>
-            </div>
-        </article>
-        <p th:if="${#lists.isEmpty(myPosts)}" class="text-muted" style="padding:24px 0;">작성한 포스트가 없습니다.</p>
-    </div>
+            <form th:action="@{/community/{id}/profile/edit(id=${artist.id()})}"
+                  method="post" enctype="multipart/form-data">
 
-    <!-- 좋아요 -->
-    <div class="hidden" data-tab-panel="likes">
-        <article class="post-card mb-16" th:each="post : ${likedPosts}">
-            <a th:href="${post.boardType.name() == 'FAN'}
-                      ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
-                      : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
-               style="display:block;color:inherit;">
-                <div class="post-card__head">
-                    <div class="avatar"
-                         th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
-                    <div class="post-card__meta">
-                        <div class="post-card__name"
-                             th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                <!-- 아바타 미리보기 - 프로필 이미지를 고르면 즉시 이 자리에 반영됨 -->
+                <div style="text-align:center;margin-bottom:24px;">
+                    <div class="avatar" id="profileEditAvatarPreview"
+                         th:attr="data-initial=${#strings.substring(displayName, 0, 1)}"
+                         style="width:96px;height:96px;margin:0 auto;font-size:34px;">
+                        <img th:if="${avatarName != null}"
+                             th:src="@{'/uploads/' + ${avatarName}}" alt=""
+                             style="width:100%;height:100%;object-fit:cover;display:block;"/>
+                        <span th:if="${avatarName == null}"
+                              th:text="${#strings.substring(displayName, 0, 1)}">나</span>
                     </div>
                 </div>
-                <p class="post-card__body" th:text="${post.title}"></p>
-            </a>
-        </article>
-        <p th:if="${#lists.isEmpty(likedPosts)}" class="text-muted" style="padding:24px 0;">좋아요한 게시글이 없습니다.</p>
-    </div>
 
-    <!-- 북마크 -->
-    <div class="hidden" data-tab-panel="bookmarks">
-        <article class="post-card mb-16" th:each="post : ${bookmarkedPosts}">
-            <a th:href="${post.boardType.name() == 'FAN'}
-                      ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
-                      : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
-               style="display:block;color:inherit;">
-                <div class="post-card__head">
-                    <div class="avatar"
-                         th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
-                    <div class="post-card__meta">
-                        <div class="post-card__name"
-                             th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></div>
+                <!-- 닉네임 -->
+                <div class="pe-field">
+                    <input type="text" id="profileEditNickname" name="nickname"
+                           maxlength="10" autocomplete="off" required
+                           aria-label="닉네임"
+                           th:value="${myCommunityProfile.nickname}"/>
+                    <button type="button" class="pe-clear" aria-label="닉네임 지우기"
+                            data-clear-for="profileEditNickname">✕</button>
+                </div>
+                <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 10</p>
+
+                <!-- 소개글 -->
+                <div class="pe-field">
+                    <input type="text" id="profileEditBio" name="bio"
+                           maxlength="30" autocomplete="off"
+                           aria-label="소개글"
+                           placeholder="(선택) 내 프로필에 노출될 소개글을 작성하세요"
+                           th:value="${myCommunityProfile.bio}"/>
+                    <button type="button" class="pe-clear" aria-label="소개글 지우기"
+                            data-clear-for="profileEditBio">✕</button>
+                </div>
+                <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
+
+                <!-- 파일 입력은 감춰두고, 메뉴의 "사진첩에서 불러오기"로 연다 -->
+                <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>
+                <input type="file" id="profileEditBackground" name="background" accept="image/*" class="hidden"/>
+                <!-- "이미지 삭제하기"를 확인하면 true로 바뀌고, 저장할 때 반영된다 -->
+                <input type="hidden" name="removeAvatar" id="removeAvatarFlag" value="false"/>
+                <input type="hidden" name="removeBackground" id="removeBackgroundFlag" value="false"/>
+
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;">
+                    <div class="pe-imgbtn">
+                        <button type="button" class="btn btn--ghost btn--sm"
+                                data-menu-toggle="peAvatarMenu">프로필 이미지 편집</button>
+                        <div class="pe-menu hidden" id="peAvatarMenu">
+                            <button type="button" data-file-trigger="profileEditAvatar">사진첩에서 불러오기</button>
+                            <button type="button" class="is-danger" data-image-remove="Avatar"
+                                    th:attr="data-has-image=${avatarName != null}">이미지 삭제하기</button>
+                        </div>
+                    </div>
+
+                    <div class="pe-imgbtn">
+                        <button type="button" class="btn btn--ghost btn--sm"
+                                data-menu-toggle="peBackgroundMenu">배경 이미지 편집</button>
+                        <div class="pe-menu hidden" id="peBackgroundMenu">
+                            <button type="button" data-file-trigger="profileEditBackground">사진첩에서 불러오기</button>
+                            <button type="button" class="is-danger" data-image-remove="Background"
+                                    th:attr="data-has-image=${backgroundName != null}">이미지 삭제하기</button>
+                        </div>
                     </div>
                 </div>
-                <p class="post-card__body" th:text="${post.title}"></p>
-            </a>
-        </article>
-        <div th:if="${#lists.isEmpty(bookmarkedPosts)}" class="empty-state">
-            <strong>저장한 북마크가 없습니다</strong>
-            마음에 드는 포스트를 저장해 보세요
+                <!-- 파일을 고른 뒤에만 파일명이 나타남 -->
+                <p class="text-xs text-muted" style="text-align:center;" data-file-name-for="profileEditAvatar"></p>
+                <p class="text-xs text-muted" style="text-align:center;margin-bottom:20px;" data-file-name-for="profileEditBackground"></p>
+
+                <!-- PROFILE-01: 프로필 공개범위 (콘텐츠 숨기기)
+                     보이는 스위치는 .toggle-managed(내가 상태를 직접 관리하는 스타일)이고,
+                     실제로 서버에 전송되는 건 아래 감춰둔 체크박스다. -->
+                <input type="checkbox" name="contentHidden" id="profileEditHidden" value="true"
+                       aria-label="프로필의 콘텐츠 숨기기"
+                       class="hidden" th:checked="${contentHidden}"/>
+                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);padding:18px 0 6px;text-align:left;">
+                    <div class="flex-between" style="align-items:center;gap:12px;">
+                        <strong style="font-size:var(--wp-fs-sm);">프로필의 콘텐츠 숨기기</strong>
+                        <div class="toggle-managed" id="profileEditHiddenToggle"
+                             th:classappend="${contentHidden} ? ' is-on'"
+                             role="switch" tabindex="0" style="cursor:pointer;flex-shrink:0;"></div>
+                    </div>
+                    <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
+                        다른 사람이 내 프로필 공간에 접근할 수는 있지만, 작성한 콘텐츠와 팔로잉, 팔로워 목록은
+                        볼 수 없고, 나를 팔로우할 수도 없습니다.
+                    </p>
+                </div>
+
+                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin:16px -24px 0;padding:16px 24px;">
+                    <button type="submit" class="btn btn--primary btn--block">저장</button>
+                </div>
+            </form>
         </div>
     </div>
 </main>
@@ -156,5 +430,161 @@
 <script th:replace="~{community/fragments/layout :: scripts}"></script>
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
+<script>
+    (function () {
+      "use strict";
+
+      var layout = document.querySelector(".profile-layout");
+
+      // "프로필 편집" -> 오른쪽 영역(탭 줄 포함)을 편집 패널로 교체
+      document.querySelectorAll("[data-profile-edit-open]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          layout.classList.add("is-editing");
+        });
+      });
+
+      document.querySelectorAll("[data-profile-edit-close]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          layout.classList.remove("is-editing");
+          // 저장하지 않고 닫았으므로 예약해둔 삭제와 고른 파일, 토글 상태를 모두 되돌린다
+          location.reload();
+        });
+      });
+
+      // 글자 수 카운터 (와이어프레임의 "3 / 10", "0 / 30")
+      document.querySelectorAll("[data-count-for]").forEach(function (label) {
+        var input = document.getElementById(label.getAttribute("data-count-for"));
+        if (!input) return;
+        var max = input.getAttribute("maxlength");
+        var render = function () {
+          label.textContent = (input.value || "").length + " / " + max;
+        };
+        input.addEventListener("input", render);
+        render();
+      });
+
+      // 입력칸 오른쪽 ✕ - 값 비우기
+      document.querySelectorAll("[data-clear-for]").forEach(function (btn) {
+        var input = document.getElementById(btn.getAttribute("data-clear-for"));
+        if (!input) return;
+        btn.addEventListener("click", function () {
+          input.value = "";
+          input.dispatchEvent(new Event("input"));
+          input.focus();
+        });
+      });
+
+      // 이미지 편집 버튼 -> 메뉴 열고 닫기 (다른 곳을 누르면 닫힘)
+      function closeAllMenus() {
+        document.querySelectorAll(".pe-menu").forEach(function (m) {
+          m.classList.add("hidden");
+        });
+      }
+      document.querySelectorAll("[data-menu-toggle]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var menu = document.getElementById(btn.getAttribute("data-menu-toggle"));
+          var willOpen = menu.classList.contains("hidden");
+          closeAllMenus();
+          if (willOpen) menu.classList.remove("hidden");
+        });
+      });
+      document.addEventListener("click", closeAllMenus);
+      document.querySelectorAll(".pe-menu").forEach(function (menu) {
+        menu.addEventListener("click", function (e) { e.stopPropagation(); });
+      });
+
+      // "사진첩에서 불러오기" -> 내 PC에서 파일 선택
+      document.querySelectorAll("[data-file-trigger]").forEach(function (btn) {
+        var input = document.getElementById(btn.getAttribute("data-file-trigger"));
+        if (!input) return;
+        btn.addEventListener("click", function () {
+          closeAllMenus();
+          input.click();
+        });
+      });
+
+      // "이미지 삭제하기" -> 삭제를 예약만 하고, 실제 반영은 "저장"을 눌렀을 때
+      document.querySelectorAll("[data-image-remove]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var kind = btn.getAttribute("data-image-remove"); // "Avatar" | "Background"
+          var label = kind === "Avatar" ? "프로필 이미지" : "배경 이미지";
+          var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
+
+          // 아직 등록된 이미지가 없으면 지울 것도 없음
+          if (btn.getAttribute("data-has-image") !== "true") {
+            closeAllMenus();
+            alert("삭제할 " + label + "가 없습니다.");
+            return;
+          }
+
+          if (!confirm(label + "를 삭제하시겠습니까?\n저장을 눌러야 실제로 적용됩니다.")) return;
+
+          closeAllMenus();
+          // 새로 고른 파일이 있으면 취소하고 삭제를 우선한다
+          var fileInput = document.getElementById("profileEdit" + kind);
+          if (fileInput) fileInput.value = "";
+          document.getElementById("remove" + kind + "Flag").value = "true";
+
+          if (notice) notice.textContent = label + " 삭제 예정 · 저장을 눌러야 적용됩니다";
+
+          // 프로필 이미지는 미리보기도 기본 상태로 되돌려 보여줌
+          if (kind === "Avatar") {
+            var preview = document.getElementById("profileEditAvatarPreview");
+            if (preview) {
+              preview.innerHTML = "<span>" + (preview.getAttribute("data-initial") || "") + "</span>";
+            }
+          }
+        });
+      });
+
+      // 파일을 고르면 파일명 표시 + 프로필 이미지는 미리보기에 즉시 반영
+      // (새 파일을 고르면 예약해둔 삭제는 취소된다)
+      document.querySelectorAll("[data-file-name-for]").forEach(function (label) {
+        var id = label.getAttribute("data-file-name-for");
+        var input = document.getElementById(id);
+        if (!input) return;
+        var kind = id.replace("profileEdit", ""); // "Avatar" | "Background"
+
+        input.addEventListener("change", function () {
+          var file = input.files && input.files[0];
+          label.textContent = file ? file.name : "";
+
+          if (file) {
+            var flag = document.getElementById("remove" + kind + "Flag");
+            if (flag) flag.value = "false";
+          }
+
+          if (file && id === "profileEditAvatar") {
+            var preview = document.getElementById("profileEditAvatarPreview");
+            if (preview) {
+              preview.innerHTML =
+                '<img src="' + URL.createObjectURL(file) +
+                '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">';
+            }
+          }
+        });
+      });
+
+      // 공개범위 토글 - 보이는 스위치와 실제로 전송되는 체크박스를 동기화
+      var hiddenToggle = document.getElementById("profileEditHiddenToggle");
+      var hiddenInput = document.getElementById("profileEditHidden");
+      if (hiddenToggle && hiddenInput) {
+        var syncHidden = function () {
+          var on = hiddenToggle.classList.toggle("is-on");
+          hiddenInput.checked = on;
+          hiddenToggle.setAttribute("aria-checked", String(on));
+        };
+        hiddenToggle.addEventListener("click", syncHidden);
+        hiddenToggle.addEventListener("keydown", function (e) {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            syncHidden();
+          }
+        });
+        hiddenToggle.setAttribute("aria-checked", String(hiddenInput.checked));
+      }
+    })();
+</script>
 </body>
 </html>
