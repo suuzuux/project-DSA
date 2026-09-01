@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>홈페이지 관리 공지사항 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+  <div class="portal-shell">
+    <aside class="portal-sidebar portal-sidebar--admin">
+      <div class="portal-sidebar__org">
+        <div class="agency">WePlaNet</div>
+        <div class="artist">ADMIN</div>
+      </div>
+      <nav class="portal-sidebar__nav">
+        <a class="is-active" th:href="@{/admin/notices}">📢 공지사항</a>
+        <a th:href="@{/chat/admin/keywords}">금칙어 관리</a>
+      </nav>
+      <div class="portal-sidebar__footer">
+        <a th:href="@{/}">← 홈</a><br /><br />
+        <a th:href="@{/logout}">로그아웃</a>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <h1>홈페이지 관리 공지사항</h1>
+        <a class="btn btn--primary btn--sm" th:href="@{/admin/notices/new}">글쓰기</a>
+      </div>
+
+      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>제목</th>
+              <th>작성일자</th>
+              <th>공개여부</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${#lists.isEmpty(notices)}">
+              <td colspan="4" class="text-sm text-muted">등록된 공지가 없습니다.</td>
+            </tr>
+            <tr th:each="notice : ${notices}">
+              <td>
+                <a th:href="@{/admin/notices/{id}/edit(id=${notice.id})}" th:text="${notice.title}">공지 제목</a>
+              </td>
+              <td th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31 16:00</td>
+              <td>
+                <span class="tag" th:classappend="${notice.published} ? ' tag--public' : ' tag--private'"
+                      th:text="${notice.published} ? '공개' : '비공개'">공개</span>
+              </td>
+              <td>
+                <div class="flex-center">
+                  <a class="btn btn--ghost btn--sm" th:href="@{/admin/notices/{id}/edit(id=${notice.id})}">수정</a>
+                  <form th:action="@{/admin/notices/{id}/delete(id=${notice.id})}" method="post">
+                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+</body>
+</html>

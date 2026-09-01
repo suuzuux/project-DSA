@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${artist.nickname()} + ' – Media | WePlaNet'">미디어 상세 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/community.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null},
+               data-media-id=${mediaPost.id}">
+
+  <header th:replace="~{community/fragments/layout :: header}"></header>
+
+  <div class="community-body community-body--detail">
+    <div class="community-main">
+      <a class="section__link mb-16" style="display:inline-block;"
+         th:href="@{/community/{id}/media(id=${artist.id()})}">← Media 게시판</a>
+
+      <article class="post-card">
+        <div class="post-card__head">
+          <div class="avatar" th:text="${#strings.substring(artist.nickname(),0,1)}">M</div>
+          <div class="post-card__meta">
+            <div class="post-card__name">
+              <span th:text="${artist.nickname()}">아티스트</span>
+              <span class="badge-verified">✓</span>
+            </div>
+            <div class="post-card__time"
+                 th:with="y=${#temporals.year(mediaPost.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                 th:text="${y == curY} ? ${#temporals.format(mediaPost.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(mediaPost.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+          </div>
+        </div>
+
+        <h1 style="font-size:20px;font-weight:700;margin:12px 0 8px;" th:text="${mediaPost.title}">제목</h1>
+        <p class="post-card__body" style="white-space:pre-wrap;"
+           th:if="${mediaPost.content != null and !#strings.isEmpty(mediaPost.content)}"
+           th:text="${mediaPost.content}"></p>
+
+        <div class="post-card__media" th:if="${not #lists.isEmpty(mediaPost.files)}">
+          <th:block th:each="file : ${mediaPost.files}">
+            <img th:if="${file.mediaType == 'IMAGE'}"
+                 th:src="@{/board/media/file/{id}(id=${file.id})}"
+                 th:alt="${file.originalName}"
+                 style="width:100%;border-radius:var(--wp-radius-sm);max-height:480px;object-fit:cover;margin-bottom:8px;" />
+            <video th:if="${file.mediaType == 'VIDEO'}"
+                   th:src="@{/board/media/file/{id}(id=${file.id})}"
+                   controls
+                   style="width:100%;border-radius:var(--wp-radius-sm);max-height:480px;margin-bottom:8px;"></video>
+          </th:block>
+        </div>
+
+        <div class="post-card__actions" style="justify-content:space-between;">
+          <button type="button" id="likeButton" style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;display:inline-flex;align-items:center;gap:4px;">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span id="likeCount" th:text="${mediaPost.likeCount > 0 ? mediaPost.likeCount : ''}"></span>
+          </button>
+          <span class="text-xs text-muted" th:text="'첨부 ' + ${mediaPost.fileCount} + '개'"></span>
+          <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+                th:action="@{/board/media/{id}/delete(id=${mediaPost.id})}"
+                method="post"
+                onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
+            <input type="hidden" name="groupId" th:value="${groupId}" />
+            <input type="hidden" name="artistId" th:value="${artist.id()}" />
+            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+          </form>
+        </div>
+      </article>
+    </div>
+    <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
+  </div>
+
+  <script th:replace="~{community/fragments/layout :: scripts}"></script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/dm-realtime.js}"></script>
+  <script>
+    (function () {
+      var mediaId = document.body.dataset.mediaId;
+      var likeButton = document.getElementById("likeButton");
+      if (!mediaId || !likeButton) return;
+      likeButton.addEventListener("click", function () {
+        fetch("/board/media/" + mediaId + "/like", { method: "POST" })
+          .then(function (response) { return response.json(); })
+          .then(function (data) {
+            document.getElementById("likeCount").textContent = data.likeCount > 0 ? data.likeCount : "";
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

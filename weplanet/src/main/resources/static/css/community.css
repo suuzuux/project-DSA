@@ -319,6 +319,9 @@
   padding: 14px 16px;
   border-bottom: 1px solid var(--wp-hairline);
   font-size: var(--wp-fs-sm);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .notice-list__item:last-child {
@@ -336,7 +339,11 @@
 }
 
 .notice-list__title {
-  font-weight: 600;
+  font-weight: 400;
+}
+
+.notice-list__title.is-pinned {
+  font-weight: 700;
 }
 
 .notice-article {
@@ -364,6 +371,7 @@
   font-size: var(--wp-fs-md);
   color: var(--wp-ink-soft);
   line-height: 1.7;
+  white-space: pre-wrap;
 }
 
 .notice-article__body h3 {

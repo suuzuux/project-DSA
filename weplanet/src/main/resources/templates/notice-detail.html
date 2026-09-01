@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${notice.title} + ' | WePlaNet'">공지 상세 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+
+<header class="site-header">
+  <div class="header-left">
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+  <div class="header-actions">
+    <th:block sec:authorize="isAnonymous()">
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
+      <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+    </th:block>
+    <th:block sec:authorize="isAuthenticated()">
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+      </form>
+    </th:block>
+  </div>
+</header>
+
+<main class="container section" style="max-width:760px;">
+  <a class="section__link mb-16" th:href="@{/notices}" style="display:inline-block;">← 공지사항 목록</a>
+  <article>
+    <h1 class="section__title" style="font-size:var(--wp-fs-xl);margin-bottom:8px;" th:text="${notice.title}">공지 제목</h1>
+    <p class="text-xs text-muted mb-24"
+       th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31</p>
+    <p style="white-space:pre-wrap;line-height:1.7;" th:text="${notice.content}">공지 내용</p>
+  </article>
+</main>
+
+<script th:src="@{/js/main.js}"></script>
+<script th:src="@{/js/shell.js}"></script>
+</body>
+</html>

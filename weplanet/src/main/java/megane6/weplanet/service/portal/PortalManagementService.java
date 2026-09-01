@@ -20,9 +20,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.MonthDay;
+import java.time.Year;
 import java.time.YearMonth;
+import java.time.DateTimeException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,14 +46,16 @@ public class PortalManagementService {
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
 
+    public static final int MAX_PINNED = 5;
+
     @Transactional(readOnly = true)
     public List<PortalNotice> getNotices(User artist) {
-        return portalNoticeRepository.findByArtistOrderByCreatedAtDesc(artist);
+        return portalNoticeRepository.findByArtistOrderByPinnedDescPinOrderAscCreatedAtDesc(artist);
     }
 
     @Transactional(readOnly = true)
     public List<PortalNotice> getPublishedNotices(User artist) {
-        return portalNoticeRepository.findByArtistAndPublishedTrueOrderByCreatedAtDesc(artist);
+        return portalNoticeRepository.findByArtistAndPublishedTrueOrderByPinnedDescPinOrderAscCreatedAtDesc(artist);
     }
 
     @Transactional(readOnly = true)
@@ -57,7 +64,16 @@ public class PortalManagementService {
                 .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
     }
 
-    public PortalNotice saveNotice(User artist, Long noticeId, String title, String content, boolean published) {
+    @Transactional(readOnly = true)
+    public PortalNotice getPublishedNotice(User artist, Long noticeId) {
+        PortalNotice notice = getNotice(artist, noticeId);
+        if (!notice.isPublished()) {
+            throw new IllegalArgumentException("공지를 찾을 수 없습니다.");
+        }
+        return notice;
+    }
+
+    public PortalNotice saveNotice(User artist, Long noticeId, String title, String content, boolean published, boolean pinned) {
         validateText(title, "제목을 입력해주세요.");
         validateText(content, "본문을 입력해주세요.");
         PortalNotice notice = noticeId == null
@@ -66,12 +82,78 @@ public class PortalManagementService {
         if (noticeId != null) {
             notice.update(title, content, published);
         }
+        applyPinState(artist, notice, pinned);
         return portalNoticeRepository.save(notice);
+    }
+
+    public void reorderPinned(User artist, List<Long> ids) {
+        List<PortalNotice> pinned = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
+        if (ids == null || ids.isEmpty() || ids.size() != pinned.size()) {
+            throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+        }
+        Map<Long, PortalNotice> byId = pinned.stream()
+                .collect(Collectors.toMap(PortalNotice::getId, item -> item));
+        List<PortalNotice> reordered = new ArrayList<>(ids.size());
+        int order = 1;
+        for (Long id : ids) {
+            PortalNotice notice = byId.remove(id);
+            if (notice == null) {
+                throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+            }
+            notice.applyPin(true, order++);
+            reordered.add(notice);
+        }
+        if (!byId.isEmpty()) {
+            throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+        }
+        portalNoticeRepository.saveAll(reordered);
+    }
+
+    @Transactional(readOnly = true)
+    public long countPinned(User artist) {
+        return portalNoticeRepository.countByArtistAndPinnedTrue(artist);
     }
 
     public void deleteNotice(User artist, Long noticeId) {
         portalNoticeRepository.delete(getNotice(artist, noticeId));
+        compactPinOrder(artist);
     }
+
+    private void applyPinState(User artist, PortalNotice notice, boolean pinned) {
+        boolean wasPinned = notice.isPinned();
+        if (pinned) {
+            long count = portalNoticeRepository.countByArtistAndPinnedTrue(artist);
+            if (!wasPinned && count >= MAX_PINNED) {
+                throw new IllegalArgumentException("상단 노출은 최대 5개까지 가능합니다.");
+            }
+            if (!wasPinned) {
+                List<PortalNotice> current = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
+                int shift = 2;
+                for (PortalNotice item : current) {
+                    item.applyPin(true, shift++);
+                }
+                notice.applyPin(true, 1);
+            }
+            return;
+        }
+        if (wasPinned) {
+            notice.applyPin(false, null);
+            compactPinOrder(artist);
+        }
+    }
+
+    private void compactPinOrder(User artist) {
+        List<PortalNotice> pinned = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
+        int order = 1;
+        for (PortalNotice item : pinned) {
+            item.applyPin(true, order++);
+        }
+        if (!pinned.isEmpty()) {
+            portalNoticeRepository.saveAll(pinned);
+        }
+    }
+
+    private static final int BIRTHDAY_EXPAND_YEARS_AHEAD = 5;
 
     @Transactional(readOnly = true)
     public List<ArtistSchedule> getSchedules(User artist) {
@@ -79,20 +161,14 @@ public class PortalManagementService {
     }
 
     @Transactional(readOnly = true)
-    public List<ArtistSchedule> getSchedulesInMonth(User artist, YearMonth month) {
-        if (artist == null) {
-            return List.of();
-        }
-        LocalDateTime start = month.atDay(1).atStartOfDay();
-        LocalDateTime end = month.atEndOfMonth().atTime(23, 59, 59);
-        return artistScheduleRepository.findByArtistAndScheduleAtBetweenOrderByScheduleAtAsc(artist, start, end);
-    }
-
-    @Transactional(readOnly = true)
     public List<CalendarDayView> getMonthGrid(User artist, YearMonth month) {
-        List<ArtistSchedule> schedules = getSchedulesInMonth(artist, month);
-        Map<LocalDate, List<ArtistSchedule>> byDate = schedules.stream()
-                .collect(Collectors.groupingBy(item -> item.getScheduleAt().toLocalDate(), LinkedHashMap::new, Collectors.toList()));
+        List<ScheduleEventView> schedules = getScheduleEventsInMonth(artist, month);
+        Map<LocalDate, List<ScheduleEventView>> byDate = schedules.stream()
+                .collect(Collectors.groupingBy(
+                        item -> LocalDate.parse(item.date()),
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
 
         LocalDate first = month.atDay(1);
         int leading = first.getDayOfWeek().getValue() % 7; // Sunday = 0
@@ -116,13 +192,26 @@ public class PortalManagementService {
 
     public void createSchedule(User artist, ScheduleCategory category, String title, String description,
                                String location, String ticketUrl, LocalDateTime scheduleAt) {
-        validateText(title, "일정 제목을 입력해주세요.");
+        ScheduleCategory resolved = category == null ? ScheduleCategory.OTHER : category;
         if (scheduleAt == null) {
-            throw new IllegalArgumentException("일정 일시를 입력해주세요.");
+            throw new IllegalArgumentException(resolved == ScheduleCategory.BIRTHDAY
+                    ? "생일 날짜를 입력해주세요."
+                    : "일정 일시를 입력해주세요.");
         }
+        if (resolved == ScheduleCategory.BIRTHDAY) {
+            LocalDate birthDate = scheduleAt.toLocalDate();
+            if (birthDate.isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("생일은 오늘 이전 날짜만 등록할 수 있습니다.");
+            }
+            scheduleAt = birthDate.atTime(LocalTime.MIDNIGHT);
+            if (title == null || title.isBlank()) {
+                title = artist.getNickname() + " 생일";
+            }
+        }
+        validateText(title, "일정 제목을 입력해주세요.");
         artistScheduleRepository.save(ArtistSchedule.create(
                 artist,
-                category == null ? ScheduleCategory.OTHER : category,
+                resolved,
                 title,
                 description,
                 location,
@@ -133,9 +222,7 @@ public class PortalManagementService {
 
     @Transactional(readOnly = true)
     public List<ScheduleEventView> getPublicScheduleEvents() {
-        return artistScheduleRepository.findAllByOrderByScheduleAtAsc().stream()
-                .map(ScheduleEventView::from)
-                .toList();
+        return expandScheduleEvents(artistScheduleRepository.findAllByOrderByScheduleAtAsc());
     }
 
     @Transactional(readOnly = true)
@@ -153,13 +240,83 @@ public class PortalManagementService {
         if (artistIds == null || artistIds.isEmpty()) {
             return grouped;
         }
-        List<ScheduleEventView> events = artistScheduleRepository.findByArtistIdInOrderByScheduleAtAsc(artistIds).stream()
-                .map(ScheduleEventView::from)
-                .toList();
+        List<ScheduleEventView> events = expandScheduleEvents(
+                artistScheduleRepository.findByArtistIdInOrderByScheduleAtAsc(artistIds));
         for (ScheduleEventView event : events) {
             grouped.computeIfAbsent(event.date(), key -> new ArrayList<>()).add(toCalendarEvent(event));
         }
         return grouped;
+    }
+
+    private List<ScheduleEventView> getScheduleEventsInMonth(User artist, YearMonth month) {
+        if (artist == null) {
+            return List.of();
+        }
+        LocalDateTime start = month.atDay(1).atStartOfDay();
+        LocalDateTime end = month.atEndOfMonth().atTime(23, 59, 59);
+
+        List<ScheduleEventView> events = new ArrayList<>();
+        artistScheduleRepository.findByArtistAndScheduleAtBetweenOrderByScheduleAtAsc(artist, start, end).stream()
+                .filter(item -> item.getCategory() != ScheduleCategory.BIRTHDAY)
+                .map(ScheduleEventView::from)
+                .forEach(events::add);
+
+        appendBirthdayEventsInMonth(events, artist, month);
+        events.sort(Comparator.comparing(ScheduleEventView::date).thenComparing(ScheduleEventView::time));
+        return events;
+    }
+
+    private List<ScheduleEventView> expandScheduleEvents(List<ArtistSchedule> schedules) {
+        int maxYear = Year.now().getValue() + BIRTHDAY_EXPAND_YEARS_AHEAD;
+        List<ScheduleEventView> events = new ArrayList<>();
+        for (ArtistSchedule schedule : schedules) {
+            if (schedule.getCategory() == ScheduleCategory.BIRTHDAY) {
+                appendBirthdayEvents(events, schedule, schedule.getScheduleAt().toLocalDate().getYear(), maxYear);
+                continue;
+            }
+            events.add(ScheduleEventView.from(schedule));
+        }
+        events.sort(Comparator.comparing(ScheduleEventView::date).thenComparing(ScheduleEventView::time));
+        return events;
+    }
+
+    private void appendBirthdayEventsInMonth(List<ScheduleEventView> events, User artist, YearMonth month) {
+        List<ArtistSchedule> birthdays = artistScheduleRepository
+                .findByArtistAndCategoryOrderByScheduleAtAsc(artist, ScheduleCategory.BIRTHDAY);
+        int year = month.getYear();
+        for (ArtistSchedule birthday : birthdays) {
+            LocalDate birthDate = birthday.getScheduleAt().toLocalDate();
+            if (year < birthDate.getYear()) {
+                continue;
+            }
+            LocalDate occurrence = birthdayDateInYear(birthDate, year);
+            if (!YearMonth.from(occurrence).equals(month)) {
+                continue;
+            }
+            events.add(ScheduleEventView.from(
+                    birthday,
+                    occurrence.atTime(birthday.getScheduleAt().toLocalTime())
+            ));
+        }
+    }
+
+    private void appendBirthdayEvents(List<ScheduleEventView> events, ArtistSchedule birthday, int fromYear, int toYear) {
+        LocalDate birthDate = birthday.getScheduleAt().toLocalDate();
+        LocalTime time = birthday.getScheduleAt().toLocalTime();
+        int startYear = Math.max(fromYear, birthDate.getYear());
+        for (int year = startYear; year <= toYear; year++) {
+            LocalDate occurrence = birthdayDateInYear(birthDate, year);
+            events.add(ScheduleEventView.from(birthday, occurrence.atTime(time)));
+        }
+    }
+
+    private LocalDate birthdayDateInYear(LocalDate birthDate, int year) {
+        MonthDay monthDay = MonthDay.from(birthDate);
+        try {
+            return monthDay.atYear(year);
+        } catch (DateTimeException ex) {
+            return LocalDate.of(year, 2, 28);
+        }
     }
 
     private Map<String, Object> toCalendarEvent(ScheduleEventView event) {

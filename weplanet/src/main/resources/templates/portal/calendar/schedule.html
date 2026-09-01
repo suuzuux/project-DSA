@@ -80,7 +80,7 @@
                       class="month-chip"
                       th:each="event, stat : ${day.events}"
                       th:if="${stat.index < 3}"
-                      th:attr="data-cat=${event.category}, data-event-id=${event.id}, data-title=${event.title}, data-time=${#temporals.format(event.scheduleAt, 'HH:mm')}, data-place=${event.location}, data-desc=${event.description}"
+                      th:attr="data-cat=${event.category}, data-event-id=${event.id}, data-title=${event.title}, data-time=${event.time}, data-place=${event.location}, data-desc=${event.description}"
                       th:text="${event.title}">일정</button>
               <span class="month-cal__more" th:if="${#lists.size(day.events) > 3}"
                     th:text="'+' + (${#lists.size(day.events)} - 3)">+1</span>
@@ -112,8 +112,9 @@
         </div>
         <div class="grid-2">
           <div class="form-group">
-            <label class="form-label" for="scheduleAt">일시</label>
+            <label class="form-label" for="scheduleAt" id="scheduleAtLabel">일시</label>
             <input class="form-input" id="scheduleAt" name="scheduleAt" type="datetime-local" required />
+            <p class="form-hint" id="birthdayHint" hidden>태어난 날짜를 입력하면 그해를 포함해 매년 같은 날 반복 표시됩니다.</p>
           </div>
           <div class="form-group">
             <label class="form-label" for="location">장소</label>
@@ -160,7 +161,34 @@
       var addModal = document.getElementById("addScheduleModal");
       var detailModal = document.getElementById("eventDetailModal");
       var datetime = document.getElementById("scheduleAt");
+      var scheduleAtLabel = document.getElementById("scheduleAtLabel");
+      var birthdayHint = document.getElementById("birthdayHint");
+      var categorySelect = document.getElementById("category");
+      var titleInput = document.getElementById("title");
       var deleteBase = /*[[@{/portal/schedules/}]]*/ "/portal/schedules/";
+      var artistName = /*[[${artist.nickname}]]*/ "아티스트";
+
+      function syncBirthdayForm() {
+        var isBirthday = categorySelect && categorySelect.value === "BIRTHDAY";
+        if (!datetime) return;
+        if (isBirthday) {
+          scheduleAtLabel.textContent = "생일";
+          datetime.type = "date";
+          birthdayHint.hidden = false;
+          if (titleInput && !titleInput.value.trim()) {
+            titleInput.placeholder = artistName + " 생일";
+          }
+        } else {
+          scheduleAtLabel.textContent = "일시";
+          datetime.type = "datetime-local";
+          birthdayHint.hidden = true;
+          titleInput.placeholder = "예: KBS 뮤직뱅크";
+        }
+      }
+
+      if (categorySelect) {
+        categorySelect.addEventListener("change", syncBirthdayForm);
+      }
 
       function openModal(el) { el.hidden = false; document.body.style.overflow = "hidden"; }
       function closeModals() {
@@ -170,6 +198,7 @@
       }
 
       document.getElementById("openAddSchedule").addEventListener("click", function () {
+        syncBirthdayForm();
         openModal(addModal);
       });
 
@@ -188,7 +217,14 @@
       document.querySelectorAll(".month-cal__date").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var date = btn.getAttribute("data-date");
-          if (date && datetime) datetime.value = date + "T12:00";
+          if (date && datetime) {
+            if (categorySelect && categorySelect.value === "BIRTHDAY") {
+              datetime.value = date;
+            } else {
+              datetime.value = date + "T12:00";
+            }
+          }
+          syncBirthdayForm();
           openModal(addModal);
         });
       });

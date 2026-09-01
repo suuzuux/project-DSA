@@ -15,7 +15,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -137,6 +139,16 @@ public class CommunityJoinService {
 	public boolean isJoined(User fan, Long artistId) {
 		if (fan == null) return false;
 		return communityMemberRepository.existsByFanIdAndArtistId(fan.getId(), artistId);
+	}
+
+	// 가입한 커뮤니티 목록. 프로필 유무와 관계없이 community_members 기준.
+	public Set<Long> joinedArtistIds(User fan) {
+		if (fan == null) return Set.of();
+		Set<Long> ids = new HashSet<>();
+		for (CommunityMember member : communityMemberRepository.findByFanId(fan.getId())) {
+			ids.add(member.getArtistId());
+		}
+		return ids;
 	}
 	
 	// 내 프로필 화면에 계정 아이디 대신 이 커뮤니티 전용 닉네임을 띄우기 위해 씀. 미가입이면 null.

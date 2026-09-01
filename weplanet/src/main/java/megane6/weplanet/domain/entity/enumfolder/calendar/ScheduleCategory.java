@@ -12,6 +12,7 @@ public enum ScheduleCategory {
 	RADIO("라디오", "radio"),
 	AWARDS("시상식", "awards"),
 	PHOTO_MAGAZINE("촬영/잡지", "photo_magazine"),
+	BIRTHDAY("생일", "birthday"),
 	OTHER("기타", "other");
 
 	private final String label;

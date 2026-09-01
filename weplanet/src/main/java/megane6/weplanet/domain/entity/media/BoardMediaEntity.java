@@ -42,6 +42,10 @@ public class BoardMediaEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt; // 값이 있으면 삭제된 글(소프트 삭제)
 
+    @Builder.Default
+    @Column(name = "like_count", nullable = false)
+    private int likeCount = 0;
+
     // 첨부파일 목록. 게시글을 저장하면 파일도 같이 저장(cascade),
     // 목록에서 빼면 그 파일 행도 삭제(orphanRemoval), sort_order 순으로 정렬.
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
