@@ -1,16 +1,9 @@
--- 반영: 2026-08-31, 16:45, 한혜선
 -- ============================================================
 -- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
 -- 이 파일 하나만 실행하면 DB가 완성됩니다.
--- 기존에 흩어져 있던 SQL 6개를 합친 것입니다.
---
---   260826_SQL.sql              (구버전 스키마)
---   260827_SQL_수정2.sql        (최신 스키마)  <- 본 파일의 기준
---   260827_SQL_아직ㄴㄴ.sql      (작업중 초안)
---   260827_seed_badge_test.sql  (배지 소유 시드)
---   seed_test_accounts.sql      (테스트 계정)
---   weplanet_SQL.sql            (구버전 스키마)
+-- 기존에 흩어져 있던 SQL과 팬 프로젝트 최신 스키마를 합친 것입니다.
+-- 팀 공통 스키마, 팬 프로젝트 최신 스키마, 테스트 계정과 배지 시드를 포함합니다.
 --
 -- ------------------------------------------------------------
 -- 구성
@@ -23,7 +16,7 @@
 --          실행하면 기존 데이터가 전부 지워집니다.
 --
 -- 실행 방법 (한글 깨짐 방지를 위해 charset 옵션 필수)
---   mysql -uroot -p --default-character-set=utf8mb4 weplanet < docs/weplanet_schema.sql
+--   mysql -uroot -p --default-character-set=utf8mb4 < docs/weplanet_schema.sql
 --
 -- 테스트 계정 (비밀번호 공통: weplanet1234!)
 --   artist_hwiwon   ARTIST  휘원공주
@@ -33,9 +26,6 @@
 --   admin_test      ADMIN   관리자테스트   <- 금칙어 관리 화면(/chat/admin/keywords)
 --   aifan_bot       FAN     AI팬봇
 -- ============================================================
-
-SET NAMES utf8mb4;
-
 
 -- ============================================================
 -- [1] 스키마 + 배지 카탈로그
@@ -55,7 +45,6 @@ SET UNIQUE_CHECKS = 0;
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `community_profiles`;
 DROP TABLE IF EXISTS `community_members`;
-DROP TABLE IF EXISTS `board_media_like`;
 DROP TABLE IF EXISTS `board_media_files`;
 DROP TABLE IF EXISTS `board_media`;
 DROP TABLE IF EXISTS `comment_report`;
@@ -79,6 +68,7 @@ DROP TABLE IF EXISTS `fan_project_settlement_account`;
 DROP TABLE IF EXISTS `fan_project_contribution`;
 DROP TABLE IF EXISTS `fan_project_cover_image`;
 DROP TABLE IF EXISTS `fan_project`;
+DROP TABLE IF EXISTS `email_verification`;
 DROP TABLE IF EXISTS `fan_badge_ownership`;
 DROP TABLE IF EXISTS `fan_badge`;
 DROP TABLE IF EXISTS `group_schedule`;
@@ -132,6 +122,46 @@ CREATE TABLE `users` (
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
   CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
+
+-- email_verification: 이메일 인증 기록
+CREATE TABLE email_verification (
+  id bigint NOT NULL AUTO_INCREMENT COMMENT '이메일 인증 PK',
+  user_id bigint DEFAULT NULL COMMENT '프로젝트 인증 회원(users.id), 회원가입 인증은 NULL',
+  email varchar(255) NOT NULL COMMENT '인증 대상 이메일',
+  purpose varchar(30) NOT NULL COMMENT '인증 목적: SIGNUP/FAN_PROJECT_CREATE',
+  verification_key varchar(36) NOT NULL COMMENT '인증 요청 식별 UUID',
+  code_hash varchar(255) NOT NULL COMMENT '인증번호 BCrypt 해시',
+  attempt_count int NOT NULL DEFAULT 0 COMMENT '인증번호 실패 횟수',
+  expires_at datetime(6) NOT NULL COMMENT '인증 만료 시각',
+  verified_at datetime(6) DEFAULT NULL COMMENT '인증 완료 시각',
+  consumed_at datetime(6) DEFAULT NULL COMMENT '회원가입/프로젝트 등록에 사용된 시각',
+  created_at datetime(6) NOT NULL COMMENT '인증 요청 생성 시각',
+  updated_at datetime(6) NOT NULL COMMENT '인증 정보 수정 시각',
+
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_email_verification_key (verification_key),
+  KEY idx_email_verification_email (email, purpose, created_at),
+  KEY idx_email_verification_user (user_id, purpose, created_at),
+
+  CONSTRAINT fk_email_verification_user
+   FOREIGN KEY (user_id) REFERENCES users (id)
+   ON DELETE CASCADE,
+
+  CONSTRAINT ck_email_verification_purpose
+   CHECK (purpose IN ('SIGNUP', 'FAN_PROJECT_CREATE')),
+
+  CONSTRAINT ck_email_verification_attempt_count
+   CHECK (attempt_count BETWEEN 0 AND 5),
+
+  CONSTRAINT ck_email_verification_consumed
+   CHECK (consumed_at IS NULL OR verified_at IS NOT NULL),
+
+  CONSTRAINT ck_email_verification_expiration
+   CHECK (expires_at > created_at)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='회원가입 및 팬 프로젝트 이메일 인증';
 
 -- agencies: 소속사 마스터
 CREATE TABLE `agencies` (
@@ -363,7 +393,7 @@ CREATE TABLE `portal_notice` (
   CONSTRAINT `fk_portal_notice_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 커뮤니티 공지';
 
--- site_notice: 홈페이지(사이트) 공지 - 관리자 글쓰기
+-- site_notice: 전체 홈페이지 관리 공지사항
 CREATE TABLE `site_notice` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '홈페이지 공지 PK',
   `author_id` bigint NOT NULL COMMENT '작성 관리자(users.id)',
@@ -399,6 +429,7 @@ CREATE TABLE `community_profiles` (
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
   `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
+  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
   `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
@@ -518,13 +549,15 @@ CREATE TABLE `board_media` (
   `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '삭제(soft delete) 시각',
-  `like_count` int NOT NULL DEFAULT 0 COMMENT '좋아요 수(비정규화 카운트)',
   PRIMARY KEY (`id`),
   KEY `idx_bm_group` (`group_id`, `created_at`),
   KEY `idx_bm_uploader` (`uploader_id`),
   CONSTRAINT `fk_bm_group` FOREIGN KEY (`group_id`) REFERENCES `artist_groups` (`id`),
   CONSTRAINT `fk_bm_uploader` FOREIGN KEY (`uploader_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹별 미디어 게시판';
+
+ALTER TABLE `board_media`
+    ADD COLUMN `like_count` int NOT NULL DEFAULT 0 COMMENT '좋아요 수(비정규화 카운트)';
 
 -- board_media_files: 미디어 첨부 (이미지/영상)
 CREATE TABLE `board_media_files` (
@@ -543,19 +576,6 @@ CREATE TABLE `board_media_files` (
   CONSTRAINT `fk_bmf_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ck_bmf_media_type` CHECK (`media_type` IN (_utf8mb4'IMAGE', _utf8mb4'VIDEO'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 첨부 파일';
-
--- board_media_like: 미디어 게시글 좋아요
-CREATE TABLE `board_media_like` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '좋아요 PK',
-  `created_at` datetime(6) NOT NULL COMMENT '좋아요 시각',
-  `board_id` bigint NOT NULL COMMENT '미디어 게시글(board_media.id)',
-  `user_id` bigint NOT NULL COMMENT '좋아요한 회원(users.id)',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_board_media_like` (`board_id`, `user_id`),
-  KEY `fk_bml_user` (`user_id`),
-  CONSTRAINT `fk_bml_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`),
-  CONSTRAINT `fk_bml_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 좋아요';
 
 -- chat_message: 팬–아티스트 DM (CHAT-01/02)
 CREATE TABLE `chat_message` (
@@ -637,7 +657,7 @@ CREATE TABLE `fan_badge_ownership` (
 -- fan_project: 팬 프로젝트 개설·모금 (prjPROJECT)
 CREATE TABLE `fan_project` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '프로젝트 PK',
-  `group_id` bigint NOT NULL COMMENT '대상 그룹(artist_groups.id)',
+  `artist_id` bigint NOT NULL COMMENT '대상 아티스트 커뮤니티(users.id)',
   `creator_id` bigint NOT NULL COMMENT '개설 신청자(users.id)',
   `title` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '프로젝트 제목',
   `event_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '이벤트 유형: BIRTHDAY_CAFE/BILLBOARD/CONCERT/ETC',
@@ -649,7 +669,7 @@ CREATE TABLE `fan_project` (
   `special_badge_count_at_apply` int NOT NULL COMMENT '신청 시점 SPECIAL 배지 수(자격 스냅샷)',
   `basic_badge_count_at_apply` int NOT NULL COMMENT '신청 시점 BASIC 배지 수(자격 스냅샷)',
   `eligibility_rule_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'SPECIAL_1_AND_BASIC_5' COMMENT '개설 자격 규칙 코드',
-  `identity_verification_method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PHONE' COMMENT '본인인증 방식(PHONE)',
+  `identity_verification_method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EMAIL' COMMENT '프로젝트 등록 인증 방식(EMAIL)',
   `identity_verified_at` datetime(6) NOT NULL COMMENT '본인인증 완료 시각',
   `reviewed_by` bigint DEFAULT NULL COMMENT '검토자(users.id)',
   `reviewed_at` datetime(6) DEFAULT NULL COMMENT '검토 시각',
@@ -658,19 +678,19 @@ CREATE TABLE `fan_project` (
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '삭제(soft delete) 시각',
   PRIMARY KEY (`id`),
-  KEY `idx_fan_project_group_status` (`group_id`, `status`, `funding_start_at`),
+  KEY `idx_fan_project_artist_status` (`artist_id`, `status`, `funding_start_at`),
   KEY `idx_fan_project_creator` (`creator_id`, `created_at`),
   KEY `idx_fan_project_funding_end` (`status`, `funding_end_at`),
   KEY `idx_fan_project_reviewer` (`reviewed_by`, `reviewed_at`),
   CONSTRAINT `fk_fan_project_creator` FOREIGN KEY (`creator_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `fk_fan_project_group` FOREIGN KEY (`group_id`) REFERENCES `artist_groups` (`id`),
+  CONSTRAINT `fk_fan_project_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_fan_project_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`),
   CONSTRAINT `ck_fan_project_badge_counts` CHECK ((`special_badge_count_at_apply` >= 0) AND (`basic_badge_count_at_apply` >= 0)),
   CONSTRAINT `ck_fan_project_creation_eligibility` CHECK ((`special_badge_count_at_apply` >= 1) AND (`basic_badge_count_at_apply` >= 5)),
   CONSTRAINT `ck_fan_project_event_type` CHECK (`event_type` IN (_utf8mb4'BIRTHDAY_CAFE', _utf8mb4'BILLBOARD', _utf8mb4'CONCERT', _utf8mb4'ETC')),
   CONSTRAINT `ck_fan_project_funding_period` CHECK (`funding_end_at` > `funding_start_at`),
   CONSTRAINT `ck_fan_project_goal_amount` CHECK (`goal_amount` BETWEEN 10000 AND 3000000),
-  CONSTRAINT `ck_fan_project_identity_method` CHECK (`identity_verification_method` = _utf8mb4'PHONE'),
+  CONSTRAINT `ck_fan_project_identity_method` CHECK (`identity_verification_method` = _utf8mb4'EMAIL'),
   CONSTRAINT `ck_fan_project_rejection_reason` CHECK ((`status` <> _utf8mb4'REJECTED') OR (`rejection_reason` IS NOT NULL)),
   CONSTRAINT `ck_fan_project_review` CHECK (
     ((`status` = _utf8mb4'PENDING_APPROVAL') AND (`reviewed_by` IS NULL) AND (`reviewed_at` IS NULL))
@@ -710,6 +730,9 @@ CREATE TABLE `fan_project_contribution` (
   `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MOCK' COMMENT '결제 제공자',
   `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '제공자 거래 ID',
   `amount` bigint NOT NULL COMMENT '결제 금액(원)',
+  `depositor_name` varbinary(255) NOT NULL COMMENT '입금자명(현재 변환 저장, 추후 암호화)',
+  `is_anonymous` tinyint(1) NOT NULL DEFAULT '0' COMMENT '닉네임 비공개 참여 여부: 0/1',
+  `refund_policy_agreed_at` datetime(6) NOT NULL COMMENT '환불 규정 동의 시각',
   `refund_amount` bigint NOT NULL DEFAULT '0' COMMENT '환불 금액(원)',
   `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY' COMMENT '결제 상태: READY/PAID/FAILED 등',
   `paid_at` datetime(6) DEFAULT NULL COMMENT '결제 완료 시각',
@@ -726,6 +749,7 @@ CREATE TABLE `fan_project_contribution` (
   CONSTRAINT `fk_fan_project_contribution_project` FOREIGN KEY (`project_id`) REFERENCES `fan_project` (`id`),
   CONSTRAINT `fk_fan_project_contribution_user` FOREIGN KEY (`contributor_id`) REFERENCES `users` (`id`),
   CONSTRAINT `ck_fan_project_contribution_amount` CHECK (`amount` > 0),
+  CONSTRAINT `ck_fan_project_contribution_anonymous` CHECK (`is_anonymous` IN (0, 1)),
   CONSTRAINT `ck_fan_project_contribution_refund` CHECK ((`refund_amount` >= 0) AND (`refund_amount` <= `amount`)),
   CONSTRAINT `ck_fan_project_contribution_status` CHECK (`payment_status` IN (
     _utf8mb4'READY', _utf8mb4'PAID', _utf8mb4'FAILED',
@@ -761,9 +785,9 @@ CREATE TABLE `fan_project_settlement_account` (
 CREATE TABLE `fan_project_fraud_check` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '사기조회 PK',
   `project_id` bigint NOT NULL COMMENT '프로젝트(fan_project.id)',
-  `target_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '조회 대상: PHONE/ACCOUNT',
+  `target_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '조회 대상: ACCOUNT',
   `target_fingerprint` char(64) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '대상 식별 해시',
-  `bank_code` char(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '은행코드(계좌 조회 시)',
+  `bank_code` char(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '은행코드(계좌 조회 시)',
   `provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'THECHEAT' COMMENT '조회 제공자',
   `provider_result_code` int DEFAULT NULL COMMENT '제공자 결과 코드',
   `result_status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '결과: PENDING/CLEAR/CAUTION/ERROR',
@@ -782,7 +806,7 @@ CREATE TABLE `fan_project_fraud_check` (
   CONSTRAINT `ck_fan_project_fraud_bank_code` CHECK ((`bank_code` IS NULL) OR regexp_like(`bank_code`, _utf8mb4'^[0-9]{3}$')),
   CONSTRAINT `ck_fan_project_fraud_caution` CHECK ((`caution_yn` IS NULL) OR (`caution_yn` IN (_utf8mb4'Y', _utf8mb4'N'))),
   CONSTRAINT `ck_fan_project_fraud_status` CHECK (`result_status` IN (_utf8mb4'PENDING', _utf8mb4'CLEAR', _utf8mb4'CAUTION', _utf8mb4'ERROR')),
-  CONSTRAINT `ck_fan_project_fraud_target` CHECK (`target_type` IN (_utf8mb4'PHONE', _utf8mb4'ACCOUNT')),
+  CONSTRAINT `ck_fan_project_fraud_target` CHECK (`target_type` = _utf8mb4'ACCOUNT'),
   CONSTRAINT `ck_fan_project_fraud_window` CHECK (
     (`search_window_start_at` IS NULL) OR (`search_window_end_at` IS NULL)
     OR (`search_window_end_at` >= `search_window_start_at`)
@@ -881,18 +905,23 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- [2] 테스트 계정 시드
 -- ============================================================
 INSERT IGNORE INTO `users`
-  (`username`, `password`, `role`, `status`, `real_name`, `nickname`, `email`, `created_at`, `updated_at`)
+  (`username`, `password`, `role`, `status`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
-  ('artist_hwiwon',  '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '휘원',    '휘원공주',      'hwiwon@weplanet.test',  NOW(), NOW()),
-  ('artist_jungsik', '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '정식',    '정식왕자',      'jungsik@weplanet.test', NOW(), NOW()),
-  ('asd123',         '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', '김화평',  '빛나는여우135', 'asdojuasdoa@gmail.com', NOW(), NOW()),
-  ('qatest99',       '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'QA테스터', 'QA테스터',     'qatest99@example.com',  NOW(), NOW()),
-  ('admin_test',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ADMIN',  'ACTIVE', '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(), NOW()),
-  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'AI팬봇', 'AI팬봇', 'aifan_bot@weplanet.test', NOW(), NOW());
+  ('artist_hwiwon',  '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '휘원',    '휘원공주',      'hwiwon@weplanet.test',   NOW(6), NOW(6), NOW(6)),
+  ('artist_jungsik', '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', '정식',    '정식왕자',      'jungsik@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('asd123',         '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', '김화평',  '빛나는여우135', 'asdojuasdoa@gmail.com', NOW(6), NOW(6), NOW(6)),
+  ('qatest99',       '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'QA테스터', 'QA테스터',     'qatest99@example.com',  NOW(6), NOW(6), NOW(6)),
+  ('admin_test',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ADMIN',  'ACTIVE', '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', 'AI팬봇', 'AI팬봇', 'aifan_bot@weplanet.test', NOW(6), NOW(6), NOW(6));
 
 -- 이미 계정이 있던 사람(=INSERT IGNORE로 스킵됨)도 비밀번호를 위 해시로 맞추고 싶으면 같이 실행:
 UPDATE `users` SET `password` = '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq'
 WHERE `username` IN ('artist_hwiwon', 'artist_jungsik', 'asd123', 'qatest99', 'admin_test', 'aifan_bot');
+
+-- 테스트 FAN은 회원가입 이메일 인증이 완료된 상태여야 프로젝트용 재인증을 진행할 수 있다.
+UPDATE `users`
+SET `email_verified_at` = COALESCE(`email_verified_at`, NOW(6))
+WHERE `username` IN ('asd123', 'qatest99', 'aifan_bot');
 
 
 -- ============================================================
@@ -962,19 +991,5 @@ WHERE f.username IN ('hwiwhi', 'asd123')
 -- ------------------------------------------------------------
 -- 확인용
 -- ------------------------------------------------------------
-CREATE TABLE `community_profiles` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '커뮤니티 프로필 PK',
-  `community_member_id` bigint NOT NULL COMMENT 'community_members.id (1:1)',
-  `nickname` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '해당 커뮤니티 전용 닉네임',
-  `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
-  `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
-  `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
-  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
-  `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
-  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_cp_member` (`community_member_id`),
-  CONSTRAINT `fk_cp_member` FOREIGN KEY (`community_member_id`) REFERENCES `community_members` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티별 독립 프로필';
 
 

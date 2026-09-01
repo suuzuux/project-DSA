@@ -1,0 +1,614 @@
+/* ============================================================
+   팬 프로젝트 목록 카드
+   ------------------------------------------------------------
+   community/project.html 전용. 팀 공용 style.css를 건드리지 않으려고
+   별도 파일로 뺐다. 색/폰트/모서리 값은 variables.css의 --wp-* 를 그대로 쓴다.
+   ============================================================ */
+
+.project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    padding: 8px 0 24px;
+}
+
+.project-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--wp-paper);
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    transition: transform var(--wp-fast) var(--wp-ease),
+    box-shadow var(--wp-fast) var(--wp-ease);
+}
+
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+}
+
+/* ---------- 썸네일 ---------- */
+
+.project-card__thumb {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: var(--wp-faint);
+    overflow: hidden;
+}
+
+.project-card__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 대표 이미지가 없을 때 자리를 채우는 기본 표시 */
+.project-card__thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 40px;
+    opacity: .35;
+}
+
+/* ---------- 상태 뱃지 ---------- */
+
+.project-badge {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    line-height: 1.4;
+    color: #fff;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(2px);
+}
+
+/* FanProjectStatus.badgeCode 와 짝을 이룸 */
+.project-badge--pending {
+    background: #8a6d3b;
+}
+
+.project-badge--approved {
+    background: #18794e;
+}
+
+.project-badge--rejected {
+    background: var(--wp-danger);
+}
+
+.project-badge--funding {
+    background: var(--wp-brand);
+}
+
+.project-badge--closed {
+    background: #555;
+}
+
+.project-badge--completed {
+    background: #2b6cb0;
+}
+
+.project-badge--cancelled {
+    background: #777;
+}
+
+/* ---------- 본문 ---------- */
+
+.project-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 14px 14px;
+}
+
+.project-card__type {
+    margin: 0;
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    color: var(--wp-brand);
+}
+
+.project-card__title {
+    margin: 0;
+    font-size: var(--wp-fs-md);
+    line-height: 1.35;
+
+    /* 제목이 길어도 카드 높이가 들쭉날쭉하지 않게 두 줄로 자름 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.project-card__meta {
+    margin: 0;
+    font-size: var(--wp-fs-xs);
+    color: var(--wp-ink-soft);
+}
+
+.project-card__dot {
+    margin: 0 2px;
+}
+
+.project-card__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px solid var(--wp-hairline);
+}
+
+.project-card__goal {
+    font-size: var(--wp-fs-sm);
+}
+
+.project-card__dday {
+    flex: none;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: var(--wp-brand-soft);
+    color: var(--wp-brand-dark);
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+}
+
+/* 마감된 프로젝트는 강조하지 않음 */
+.project-card__dday.is-closed {
+    background: var(--wp-faint);
+    color: var(--wp-muted);
+}
+
+/* ---------- 카드가 <a>로 바뀌면서 필요한 정리 ---------- */
+
+.project-card {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ---------- 상세 화면 ---------- */
+
+.project-detail {
+    padding-bottom: 32px;
+}
+
+.project-detail__cover {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    margin-bottom: 16px;
+    background: var(--wp-faint);
+    border-radius: var(--wp-radius);
+    overflow: hidden;
+}
+
+.project-detail__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.project-detail__title {
+    margin: 4px 0 8px;
+    font-size: var(--wp-fs-xl);
+    line-height: 1.3;
+}
+
+.project-detail__meta {
+    margin: 0 0 20px;
+    font-size: var(--wp-fs-sm);
+    color: var(--wp-ink-soft);
+}
+
+.project-detail__rejected {
+    margin-bottom: 20px;
+    padding: 12px 14px;
+    border-radius: var(--wp-radius-sm);
+    background: var(--wp-danger-soft);
+    color: var(--wp-danger);
+}
+
+.project-detail__rejected strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--wp-fs-sm);
+}
+
+.project-detail__rejected p {
+    margin: 0;
+    font-size: var(--wp-fs-sm);
+}
+
+.project-detail__summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 0 0 24px;
+    padding: 16px;
+    background: var(--wp-faint);
+    border-radius: var(--wp-radius);
+}
+
+.project-detail__summary dt {
+    margin-bottom: 4px;
+    font-size: var(--wp-fs-xs);
+    color: var(--wp-muted);
+}
+
+.project-detail__summary dd {
+    margin: 0;
+    font-size: var(--wp-fs-sm);
+    font-weight: 700;
+}
+
+.project-detail__section-title {
+    margin: 0 0 10px;
+    font-size: var(--wp-fs-md);
+}
+
+/* 본문의 줄바꿈을 입력한 그대로 살림 */
+.project-detail__description {
+    margin: 0;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* ---------- ADMIN 프로젝트 심사 ---------- */
+
+.project-review {
+    display: grid;
+    gap: 12px;
+    margin-top: 28px;
+    padding: 16px;
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.project-review form {
+    margin: 0;
+}
+
+.project-review__reject {
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--wp-hairline);
+}
+
+.project-review .btn--danger {
+    color: #fff;
+    background: var(--wp-danger);
+    border-color: var(--wp-danger);
+}
+
+.project-email-status {
+    display: block;
+    margin: 6px 0 0;
+    font-size: var(--wp-fs-xs);
+    font-weight: 600;
+}
+
+.project-email-status[hidden] {
+    display: none;
+}
+
+.project-email-status.is-success {
+    color: #18794e;
+}
+
+.project-email-status.is-error {
+    color: var(--wp-danger);
+}
+
+.project-agreements {
+    display: grid;
+    gap: 10px;
+}
+
+.project-agreements > label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    line-height: 1.5;
+}
+
+.project-agreements > label input {
+    flex: 0 0 auto;
+    margin-top: 4px;
+}
+
+.project-detail-modal__error {
+    margin: 8px 0;
+    color: var(--wp-danger);
+    font-size: var(--wp-fs-sm);
+}
+
+.project-card__progress {
+    display: grid;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.project-card__progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: var(--wp-fs-xs);
+}
+
+.project-card__participants {
+    margin: -2px 0 0;
+    text-align: right;
+    color: var(--wp-muted);
+    font-size: var(--wp-fs-xs);
+}
+
+/* ---------- 프로젝트 모금 현황 ---------- */
+
+.project-funding-progress {
+    display: grid;
+    gap: 7px;
+    margin: 0 0 20px;
+}
+
+.project-funding-progress__labels,
+.project-contribution-summary__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: var(--wp-fs-xs);
+}
+
+.project-funding-progress__track {
+    height: 5px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--wp-faint);
+}
+
+.project-funding-progress__track > span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--wp-brand);
+    transition: width .25s ease;
+}
+
+.project-funding-progress p {
+    margin: 0;
+    text-align: right;
+}
+
+/* ---------- 와이어프레임 43: 펀딩 참여 단계 ---------- */
+
+.project-contribution[hidden],
+.project-participation-modal .project-detail[hidden] {
+    display: none;
+}
+
+.project-contribution {
+    display: grid;
+    gap: 18px;
+}
+
+.project-contribution__back {
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.project-contribution-summary {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.project-contribution-summary__thumb {
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    overflow: hidden;
+    border-radius: var(--wp-radius-sm);
+    background: var(--wp-faint);
+}
+
+.project-contribution-summary__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.project-contribution-summary__body {
+    display: grid;
+    min-width: 0;
+    gap: 8px;
+}
+
+.project-contribution-summary__body > strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-contribution-amounts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.project-contribution-amounts button {
+    padding: 7px 12px;
+    border: 1px solid var(--wp-line);
+    border-radius: 999px;
+    background: var(--wp-surface);
+    color: var(--wp-ink-soft);
+    font-size: var(--wp-fs-xs);
+}
+
+.project-contribution-amounts button:hover,
+.project-contribution-amounts button.is-selected {
+    border-color: var(--wp-ink);
+    background: var(--wp-ink);
+    color: #fff;
+}
+
+.project-mock-account {
+    display: grid;
+    gap: 8px;
+    padding: 14px;
+    border-radius: var(--wp-radius);
+    background: var(--wp-faint);
+}
+
+.project-mock-account > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: var(--wp-fs-xs);
+}
+
+.project-mock-account > div span {
+    color: var(--wp-muted);
+}
+
+.project-mock-account__deadline {
+    color: var(--wp-danger);
+}
+
+.project-mock-account > p {
+    margin: 4px 0 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--wp-hairline);
+    color: var(--wp-muted);
+    font-size: var(--wp-fs-xs);
+}
+
+.project-contribution-agreements {
+    display: grid;
+    gap: 10px;
+}
+
+.project-contribution-agreements > label {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: var(--wp-fs-sm);
+}
+
+.project-contribution-agreements input {
+    flex: none;
+    margin-top: 3px;
+}
+
+.project-contribution-agreements details {
+    padding: 10px 12px;
+    border: 1px solid var(--wp-hairline);
+    border-radius: var(--wp-radius-sm);
+    font-size: var(--wp-fs-xs);
+}
+
+.project-contribution-agreements summary {
+    cursor: pointer;
+    color: var(--wp-brand-dark);
+}
+
+.project-contribution-agreements details p {
+    margin: 8px 0 0;
+    color: var(--wp-muted);
+    line-height: 1.6;
+}
+
+.project-contribution-status {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: var(--wp-radius-sm);
+    font-size: var(--wp-fs-sm);
+    font-weight: 600;
+}
+
+.project-contribution-status.is-success {
+    background: #e9f8ef;
+    color: #18794e;
+}
+
+.project-contribution-status.is-error {
+    background: var(--wp-danger-soft);
+    color: var(--wp-danger);
+}
+
+@media (max-width: 640px) {
+    .project-mock-account > div {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+    }
+}
+
+/* ---------- 프로젝트 상세·참여 모달 ---------- */
+
+.project-participation-modal {
+    width: min(100%, 720px);
+    max-height: min(92vh, 820px);
+}
+
+.project-participation-modal .modal__head {
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--wp-hairline);
+}
+
+.project-participation-modal .project-detail {
+    padding-bottom: 0;
+}
+
+.project-participation-modal .project-detail__cover {
+    max-height: 320px;
+    margin-top: 4px;
+}
+
+.project-participation-modal .project-detail__body {
+    padding: 16px;
+    border: 1px solid var(--wp-hairline);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.project-participation-modal #projectParticipationNextButton {
+    margin-top: 24px;
+}
+
+@media (max-width: 640px) {
+    .project-participation-modal {
+        width: 100%;
+    }
+
+    .project-participation-modal .project-detail__cover {
+        aspect-ratio: 4 / 3;
+    }
+
+    .project-participation-modal .project-detail__summary {
+        grid-template-columns: 1fr;
+    }
+}

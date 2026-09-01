@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.BadgeCollectionView;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CollectionService;
+import megane6.weplanet.service.ProjectContributionService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +21,7 @@ public class CollectionController {
 	 * 항상 고르인 정보(principal)에서 꺼내 씀
 	 */
 	private final CollectionService cs;
+	private final ProjectContributionService pcs;
 	
 	@GetMapping("/collection")
 	public String collection(
@@ -30,6 +32,11 @@ public class CollectionController {
 			return "redirect:/login";
 		}
 		model.addAttribute("cards", cs.getMyCollection(principal.getId()));
+		model.addAttribute(
+				"projectParticipations",
+				pcs.getMyParticipationHistory(principal.getId())
+		);
+		
 		return "collection";
 	}
 	

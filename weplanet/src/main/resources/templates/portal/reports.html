@@ -54,7 +54,7 @@
                 <td colspan="5" class="text-sm text-muted">접수된 게시글 신고가 없습니다.</td>
               </tr>
               <tr th:each="report : ${postReports}">
-                <td th:text="${report.post.author.nickname}">팬닉네임</td>
+                <td th:text="${authorNicknames.get(report.post.author.id)}">팬닉네임</td>
                 <td th:text="${report.post.title}">게시글 제목</td>
                 <td th:text="${report.reason}">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
@@ -87,7 +87,7 @@
                 <td colspan="5" class="text-sm text-muted">접수된 댓글 신고가 없습니다.</td>
               </tr>
               <tr th:each="report : ${commentReports}">
-                <td th:text="${report.comment.author.nickname}">팬닉네임</td>
+                <td th:text="${authorNicknames.get(report.comment.author.id)}">팬닉네임</td>
                 <td th:text="${report.comment.content}">댓글 내용</td>
                 <td th:text="${report.reason}">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
