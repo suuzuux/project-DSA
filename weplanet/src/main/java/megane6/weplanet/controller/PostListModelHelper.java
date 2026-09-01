@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
 
@@ -19,6 +20,7 @@ public class PostListModelHelper {
 
 	private final PostService postService;
 	private final CommentService commentService;
+	private final CommunityJoinService communityJoinService;
 
 	public void populate(Model model, BoardType boardType, String sort) {
 		populate(model, boardType, sort, null, false);
@@ -51,10 +53,20 @@ public class PostListModelHelper {
 					.ifPresent(a -> thumbnailUrls.put(post.getId(), a.getStoredName()));
 		}
 
+		// [닉네임 관리] 목록에 작성자 닉네임을 뿌릴 때, 커뮤니티(artist)별 게시판이면 가입할 때 설정한
+		// 커뮤니티 닉네임을 쓰고, artist가 없는 레거시 전역 게시판이면 계정 닉네임을 그대로 쓴다.
+		List<User> authors = posts.stream().map(Post::getAuthor).toList();
+		Map<Long, String> authorNicknames = artist != null
+				? communityJoinService.displayNicknamesByAuthorId(authors, artist.getId())
+				: authors.stream()
+						.filter(author -> author != null)
+						.collect(java.util.stream.Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
+
 		model.addAttribute("posts", posts);
 		model.addAttribute("boardType", boardType);
 		model.addAttribute("sort", sort);
 		model.addAttribute("commentCounts", commentCounts);
 		model.addAttribute("thumbnailUrls", thumbnailUrls);
+		model.addAttribute("authorNicknames", authorNicknames);
 	}
 }
