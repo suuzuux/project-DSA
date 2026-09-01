@@ -14,7 +14,8 @@
       PROFILE-01 범위: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
       공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다.
       단 편집 패널에는 실제 설정값이 그대로 보여서 언제든 수정할 수 있다.
-      D-DAY, 가입일, 팔로워, 최애 멤버는 다음 단계에서 추가 예정.
+      D-DAY와 가입일은 community_members.joined_at을 기준으로 표시한다.
+      팔로워, 최애 멤버는 다음 단계에서 추가 예정.
     -->
     <title th:text="'내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -44,6 +45,33 @@
             border: 1px solid var(--wp-hairline, #e5e5e5);
             border-radius: var(--wp-radius, 12px);
             overflow: hidden;
+        }
+        .profile-card__cover {
+            position: relative;
+            height: 240px;
+            background-size: cover;
+            background-position: center;
+        }
+        .profile-card__dday {
+            position: absolute;
+            left: 50%;
+            bottom: 66px;
+            transform: translateX(-50%);
+            padding: 5px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.65);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.82);
+            color: var(--wp-ink, #202020);
+            font-size: var(--wp-fs-xs);
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+        }
+        .profile-card__joined-date {
+            margin-top: 6px;
+            color: var(--wp-muted, #8a8a8a);
+            font-size: var(--wp-fs-xs);
         }
         .profile-edit {
             background: var(--wp-surface, #fff);
@@ -168,9 +196,14 @@
         <aside class="profile-side profile-card">
 
             <!-- 프로필 배경 이미지 영역 - 숨김이거나 등록한 배경이 없으면 기본 그라데이션 -->
-            <div th:style="${cardBackground != null}
-                           ? |height:240px;background-image:url('/uploads/${cardBackground}');background-size:cover;background-position:center;|
-                           : 'height:240px;background:linear-gradient(160deg,#3d5a5a,#8b6040);'"></div>
+            <div class="profile-card__cover"
+                 th:style="${cardBackground != null}
+                           ? |background-image:url('/uploads/${cardBackground}');|
+                           : 'background:linear-gradient(160deg,#3d5a5a,#8b6040);'">
+                <span class="profile-card__dday"
+                      th:if="${!contentHidden and communityJoinInfo != null}"
+                      th:text="|D + ${communityJoinInfo.dayNumber}|">D + 1</span>
+            </div>
 
             <div style="padding:0 20px 24px;text-align:center;">
 
@@ -189,6 +222,11 @@
                 <h2 style="margin-top:14px;font-size:var(--wp-fs-lg);font-weight:800;word-break:break-all;">
                     <span th:text="${displayName}">닉네임</span>
                 </h2>
+
+                <!-- 커뮤니티 가입일 - 계정 생성일(users.created_at)과 구분한다. -->
+                <p class="profile-card__joined-date"
+                   th:if="${!contentHidden and communityJoinInfo != null}"
+                   th:text="|${#temporals.format(communityJoinInfo.joinedDate, 'yyyy.MM.dd')} 가입|">2026.09.01 가입</p>
 
                 <!-- 소개글 - 공개범위가 숨김이면 노출하지 않음 -->
                 <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;word-break:break-all;"
