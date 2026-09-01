@@ -1,3 +1,4 @@
+-- 반영: 2026-09-01, 15:52, 한혜선
 -- ============================================================
 -- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
@@ -17,6 +18,9 @@
 --
 -- 실행 방법 (한글 깨짐 방지를 위해 charset 옵션 필수)
 --   mysql -uroot -p --default-character-set=utf8mb4 < docs/weplanet_schema.sql
+--
+-- 기존 DB에 변경분만 적용할 때 (데이터 유지, 팀원 공유용 1회 실행):
+--   docs/20260901_한혜선_증분_DB적용.sql  ← 실행 후 삭제 가능
 --
 -- 테스트 계정 (비밀번호 공통: weplanet1234!)
 --   artist_hwiwon   ARTIST  휘원공주
@@ -353,7 +357,7 @@ CREATE TABLE `artist_block` (
 CREATE TABLE `artist_schedule` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '일정 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
-  `category` varchar(30) DEFAULT 'OTHER' COMMENT '스케줄 카테고리',
+  `category` varchar(30) DEFAULT 'OTHER' COMMENT '스케줄 카테고리(TV_BROADCAST/YOUTUBE/CONCERT/RADIO/AWARDS/PHOTO_MAGAZINE/BIRTHDAY/OTHER)',
   `title` varchar(200) NOT NULL COMMENT '일정 제목',
   `description` text COMMENT '일정 상세 설명',
   `location` varchar(255) DEFAULT NULL COMMENT '장소',
@@ -386,10 +390,13 @@ CREATE TABLE `portal_notice` (
   `title` varchar(200) NOT NULL COMMENT '공지 제목',
   `content` text NOT NULL COMMENT '공지 본문',
   `published` bit(1) NOT NULL DEFAULT b'1' COMMENT '게시 여부(1=공개)',
+  `pinned` bit(1) NOT NULL DEFAULT b'0' COMMENT '목록 상단 노출 여부',
+  `pin_order` int DEFAULT NULL COMMENT '상단 노출 순서(1부터, 작을수록 위, 최대 5개)',
   `created_at` datetime NOT NULL COMMENT '등록 시각',
   `updated_at` datetime NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
   KEY `idx_portal_notice_artist_created_at` (`artist_id`, `created_at`),
+  KEY `idx_portal_notice_artist_pinned` (`artist_id`, `pinned`, `pin_order`),
   CONSTRAINT `fk_portal_notice_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 커뮤니티 공지';
 
@@ -429,7 +436,6 @@ CREATE TABLE `community_profiles` (
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
   `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
-  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
   `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
@@ -988,5 +994,19 @@ WHERE f.username IN ('hwiwhi', 'asd123')
 -- ------------------------------------------------------------
 -- 확인용
 -- ------------------------------------------------------------
+CREATE TABLE `community_profiles` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '커뮤니티 프로필 PK',
+  `community_member_id` bigint NOT NULL COMMENT 'community_members.id (1:1)',
+  `nickname` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '해당 커뮤니티 전용 닉네임',
+  `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
+  `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
+  `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
+  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
+  `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_cp_member` (`community_member_id`),
+  CONSTRAINT `fk_cp_member` FOREIGN KEY (`community_member_id`) REFERENCES `community_members` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티별 독립 프로필';
 
 

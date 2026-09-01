@@ -55,11 +55,48 @@
             <option value="false" th:selected="${notice != null && !notice.published}">비공개</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">상단 노출</label>
+          <input type="hidden" id="pinned" name="pinned" th:value="${notice != null && notice.pinned}">
+          <button type="button" id="pinToggle" class="btn btn--ghost"
+                  th:classappend="${notice != null && notice.pinned} ? ' is-pin-on'"
+                  th:attr="data-pinned=${notice != null && notice.pinned},
+                           data-at-limit=${(notice == null || !notice.pinned) && pinnedCount >= maxPinned}">
+            <span th:text="${notice != null && notice.pinned} ? '상단 노출 중' : '이 글을 목록 최상단에 띄우기'">이 글을 목록 최상단에 띄우기</span>
+          </button>
+          <p class="text-sm text-muted" style="margin-top:8px;">
+            켜면 공지 목록 맨 위에 볼드 제목으로 표시됩니다. 상단 노출은 최대 <span th:text="${maxPinned}">5</span>개까지 가능합니다.
+            (<span th:text="${pinnedCount}">0</span>/<span th:text="${maxPinned}">5</span>)
+          </p>
+        </div>
         <div class="flex-center" style="justify-content:flex-end;">
           <button type="submit" class="btn btn--primary" th:text="${notice} != null ? '수정 저장' : '바로등록'">바로등록</button>
         </div>
       </form>
     </main>
   </div>
+  <script>
+    (function () {
+      var btn = document.getElementById("pinToggle");
+      var input = document.getElementById("pinned");
+      if (!btn || !input) return;
+      var atLimit = btn.getAttribute("data-at-limit") === "true";
+      var label = btn.querySelector("span");
+      function render(on) {
+        input.value = on ? "true" : "false";
+        btn.classList.toggle("is-pin-on", on);
+        if (label) label.textContent = on ? "상단 노출 중" : "이 글을 목록 최상단에 띄우기";
+      }
+      render(btn.getAttribute("data-pinned") === "true");
+      btn.addEventListener("click", function () {
+        var on = input.value === "true";
+        if (!on && atLimit) {
+          alert("상단 노출은 최대 5개까지 가능합니다.");
+          return;
+        }
+        render(!on);
+      });
+    })();
+  </script>
 </body>
 </html>
