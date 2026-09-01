@@ -1,4 +1,4 @@
--- 반영: 2026-09-01, 14:20, 한혜선
+-- 반영: 2026-09-01, 15:32, 한혜선
 -- ============================================================
 -- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
@@ -354,7 +354,7 @@ CREATE TABLE `artist_block` (
 CREATE TABLE `artist_schedule` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '일정 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
-  `category` varchar(30) DEFAULT 'OTHER' COMMENT '스케줄 카테고리',
+  `category` varchar(30) DEFAULT 'OTHER' COMMENT '스케줄 카테고리(TV_BROADCAST/YOUTUBE/CONCERT/RADIO/AWARDS/PHOTO_MAGAZINE/BIRTHDAY/OTHER)',
   `title` varchar(200) NOT NULL COMMENT '일정 제목',
   `description` text COMMENT '일정 상세 설명',
   `location` varchar(255) DEFAULT NULL COMMENT '장소',

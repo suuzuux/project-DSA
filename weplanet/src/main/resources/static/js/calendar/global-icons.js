@@ -165,6 +165,11 @@
       icon: "📷",
       label: { ko: "촬영/잡지", en: "Photo/Magazine", ja: "撮影/雑誌", zh: "拍摄/杂志", fr: "Photo/Magazine", es: "Foto/Revista" },
     },
+    birthday: {
+      color: "#9a6700",
+      icon: "🎂",
+      label: { ko: "생일", en: "Birthday", ja: "誕生日", zh: "生日", fr: "Anniversaire", es: "Cumpleaños" },
+    },
     other: {
       color: "#5b5c6b",
       icon: "📌",

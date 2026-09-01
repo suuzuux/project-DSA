@@ -25,6 +25,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpSession;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -204,7 +205,6 @@ public class PortalController {
 		model.addAttribute("selectedMonth", selectedMonth);
 		model.addAttribute("prevMonth", selectedMonth.minusMonths(1));
 		model.addAttribute("nextMonth", selectedMonth.plusMonths(1));
-		model.addAttribute("schedules", portalManagementService.getSchedulesInMonth(artist, selectedMonth));
 		model.addAttribute("calendarDays", portalManagementService.getMonthGrid(artist, selectedMonth));
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
 		model.addAttribute("currentMonth", YearMonth.now());
@@ -528,6 +528,9 @@ public class PortalController {
 			throw new IllegalArgumentException("일정 일시를 입력해주세요.");
 		}
 		String value = raw.trim();
+		if (value.length() == 10) {
+			return LocalDate.parse(value).atStartOfDay();
+		}
 		try {
 			return LocalDateTime.parse(value);
 		} catch (DateTimeParseException ignored) {

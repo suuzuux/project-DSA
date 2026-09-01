@@ -3,6 +3,7 @@ package megane6.weplanet.domain.dto.calendar;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
 import megane6.weplanet.domain.entity.calendar.ArtistSchedule;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
@@ -24,6 +25,10 @@ public record ScheduleEventView(
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
 	public static ScheduleEventView from(ArtistSchedule schedule) {
+		return from(schedule, schedule.getScheduleAt());
+	}
+
+	public static ScheduleEventView from(ArtistSchedule schedule, LocalDateTime occurrenceAt) {
 		ScheduleCategory category = schedule.getCategory();
 		return new ScheduleEventView(
 				schedule.getId(),
@@ -36,8 +41,8 @@ public record ScheduleEventView(
 				schedule.getDescription(),
 				schedule.getLocation(),
 				schedule.getTicketUrl(),
-				schedule.getScheduleAt().format(DATE),
-				schedule.getScheduleAt().format(TIME)
+				occurrenceAt.format(DATE),
+				occurrenceAt.format(TIME)
 		);
 	}
 
