@@ -88,6 +88,18 @@
 }
 .month-cal__cell.is-today .month-cal__date { background: #111; color: #fff; }
 .month-cal__events { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.month-cal__events .month-chip {
+  cursor: grab;
+}
+.month-cal__events .month-chip.is-dragging {
+  opacity: 0.65;
+  cursor: grabbing;
+}
+.month-cal__cell.is-drop-target {
+  background: #eef8ff;
+  outline: 2px dashed #4a7ad2;
+  outline-offset: -4px;
+}
 .month-chip {
   display: block;
   width: 100%;
@@ -385,7 +397,7 @@
 .mini-cal__grid .day.has-paw { position: relative; }
 .mini-cal__grid .day .paw-stamp {
   display: block;
-  font-size: 11px;
+  font-size: 10px;
   line-height: 1;
   margin-top: 1px;
 }
