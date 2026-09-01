@@ -250,6 +250,33 @@ public class PortalController {
 		}
 	}
 
+	@PostMapping("/schedules/{scheduleId:\\d+}/reschedule")
+	@ResponseBody
+	public Map<String, Object> rescheduleSchedule(@PathVariable Long scheduleId,
+												  @RequestParam String date,
+												  @RequestParam(required = false) Long artistId,
+												  @AuthenticationPrincipal AuthenticatedUser principal,
+												  HttpSession session) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
+			return Map.of("ok", false, "message", "로그인이 필요합니다.");
+		}
+		User artist = resolveManagedArtist(actor, artistId, session);
+		if (artist == null) {
+			return Map.of("ok", false, "message", "일정을 옮길 아티스트가 없습니다.");
+		}
+		try {
+			LocalDate targetDate = LocalDate.parse(date.trim());
+			portalManagementService.rescheduleSchedule(artist, scheduleId, targetDate);
+			return Map.of("ok", true);
+		} catch (Exception e) {
+			if (e instanceof IllegalArgumentException ex) {
+				return Map.of("ok", false, "message", ex.getMessage());
+			}
+			return Map.of("ok", false, "message", "일정을 옮기지 못했습니다.");
+		}
+	}
+
 	@PostMapping("/schedules/{scheduleId}/delete")
 	public String deleteSchedule(@PathVariable Long scheduleId,
 								 @RequestParam(required = false) Long artistId,
