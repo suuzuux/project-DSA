@@ -151,4 +151,11 @@ public class User {
 	public void changePassword(String encodedPassword) {
 		this.password = encodedPassword;
 	}
+
+	// [회원탈퇴] 실제로 로우를 지우지 않고 상태만 WITHDRAWN으로 바꾸는 소프트 삭제.
+	// 게시글/댓글/채팅/후원 내역 등 users.id를 참조하는 다른 테이블의 FK가 깨지지 않도록 하기 위함.
+	public void withdraw() {
+		this.status = UserStatus.WITHDRAWN;
+		this.deletedAt = LocalDateTime.now();
+	}
 }
