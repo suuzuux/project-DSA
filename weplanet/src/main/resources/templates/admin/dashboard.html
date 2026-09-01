@@ -17,19 +17,20 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <a class="is-active" th:href="@{/admin/dashboard}">통합 대시보드</a>
-      <a href="#" onclick="alert('소속사 관리 - 준비 중');return false;">소속사 관리</a>
-      <a href="#" onclick="alert('아티스트 관리 - 준비 중');return false;">아티스트 관리</a>
-      <a href="#" onclick="alert('사용자 관리 - 준비 중');return false;">사용자 관리</a>
-      <a href="#" onclick="alert('통합 신고·제재 - 준비 중');return false;">통합 신고 · 제재</a>
-      <a href="#" onclick="alert('커뮤니티 관리 - 준비 중');return false;">커뮤니티 관리</a>
-      <a href="#" onclick="alert('공지사항 관리 - 준비 중');return false;">공지사항 관리</a>
+      <a class="is-active" th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+      <a href="#" onclick="alert('소속사 권한 - 준비 중');return false;">🏢 소속사 권한</a>
+      <a href="#" onclick="alert('아티스트 권한 - 준비 중');return false;">🎤 아티스트 권한</a>
+      <a href="#" onclick="alert('전체 회원 - 준비 중');return false;">👥 전체 회원</a>
+      <a href="#" onclick="alert('통합 신고·제재 - 준비 중');return false;">🚩 통합 신고 · 제재</a>
+      <a href="#" onclick="alert('전체 공지 - 준비 중');return false;">📢 전체 공지</a>
+      <a href="#" onclick="alert('커뮤니티 운영 - 준비 중');return false;">💬 커뮤니티 운영</a>
+      <a href="#" onclick="alert('관리자 로그 - 준비 중');return false;">🧾 관리자 로그</a>
     </nav>
 
     <div class="portal-sidebar__footer">
       <!-- 로그아웃은 GET 링크가 아니라 POST 폼이어야 한다 (강제 로그아웃 방지) -->
       <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-        <button type="submit" class="btn btn--ghost btn--sm btn--block">로그아웃</button>
+        <button type="submit" class="btn">🚪 로그아웃</button>
       </form>
     </div>
   </aside>
@@ -37,40 +38,179 @@
   <main class="portal-main">
     <div class="portal-main__head">
       <h1>통합 운영 대시보드</h1>
-      <span th:text="${adminNickname} + ' 님'">슈퍼 관리자 님</span>
+      <div class="admin-topbar">
+        <span class="admin-badge">🛡 SUPER ADMIN</span>
+        <span class="admin-profile">
+          <span class="admin-profile__avatar" th:text="${#strings.substring(adminNickname, 0, 1)}">S</span>
+          <span th:text="${adminNickname} + ' 님'">슈퍼 관리자 님</span>
+        </span>
+      </div>
     </div>
 
     <!-- 통계 카드 -->
     <div class="admin-stat-grid">
       <article class="admin-stat">
-        <p class="admin-stat__label">총 가입자</p>
-        <strong class="admin-stat__value"
-                th:text="${#numbers.formatInteger(stats.totalUsers(), 0, 'COMMA')}">0</strong>
+        <span class="admin-stat__icon admin-stat__icon--violet">👥</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">총 가입자</span>
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(stats.totalUsers(), 0, 'COMMA')}">0</strong>
+        </span>
       </article>
       <article class="admin-stat">
-        <p class="admin-stat__label">아티스트</p>
-        <strong class="admin-stat__value"
-                th:text="${#numbers.formatInteger(stats.artistCount(), 0, 'COMMA')}">0</strong>
+        <span class="admin-stat__icon admin-stat__icon--green">➕</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">최근 7일 가입</span>
+          <!-- TODO: 최근 7일 가입자 수 집계 API가 아직 없어 레이아웃 확인용 샘플 값입니다. 연동 시 th:text로 교체하세요. -->
+          <strong class="admin-stat__value">18,420</strong>
+        </span>
       </article>
       <article class="admin-stat">
-        <p class="admin-stat__label">팬 회원</p>
-        <strong class="admin-stat__value"
-                th:text="${#numbers.formatInteger(stats.fanCount(), 0, 'COMMA')}">0</strong>
+        <span class="admin-stat__icon admin-stat__icon--blue">💬</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">활성 커뮤니티</span>
+          <!-- TODO: 활성 커뮤니티 수 집계 API가 아직 없어 레이아웃 확인용 샘플 값입니다. 연동 시 th:text로 교체하세요. -->
+          <strong class="admin-stat__value">86</strong>
+        </span>
       </article>
       <article class="admin-stat admin-stat--alert">
-        <p class="admin-stat__label">신고 접수</p>
-        <strong class="admin-stat__value"
-                th:text="${#numbers.formatInteger(stats.reportCount(), 0, 'COMMA')}">0</strong>
+        <span class="admin-stat__icon admin-stat__icon--orange">🔔</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">미처리 신고</span>
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(stats.reportCount(), 0, 'COMMA')}">0</strong>
+        </span>
+      </article>
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--khaki">🛡</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">권한 승인 대기</span>
+          <!-- TODO: 권한 승인 대기 건수 집계 API가 아직 없어 레이아웃 확인용 샘플 값입니다. 연동 시 th:text로 교체하세요. -->
+          <strong class="admin-stat__value">9</strong>
+        </span>
       </article>
     </div>
 
-    <section class="admin-panel">
-      <h2 class="admin-panel__title">안내</h2>
-      <p class="admin-panel__desc">
-        좌측 메뉴의 각 관리 기능은 순차적으로 연결됩니다.<br />
-        현재는 로그인 · 대시보드 통계 · 로그아웃이 동작합니다.
-      </p>
-    </section>
+    <!-- 가입자 추이 / 로그인 지역 TOP 10 / 권한 승인 대기 -->
+    <!-- TODO: 아래 3개 패널은 아직 대응하는 백엔드 API가 없어 레이아웃 확인용 샘플 데이터입니다. -->
+    <div class="panel-grid panel-grid--3">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">가입자 추이 (최근 30일)</h2>
+        </div>
+        <svg class="admin-line-chart" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="0,92 40,74 80,80 120,22 160,58 200,64 240,46 280,52 320,34" />
+        </svg>
+        <div class="admin-line-chart__axis">
+          <span>04-28</span><span>05-05</span><span>05-12</span><span>05-19</span><span>05-26</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">로그인 지역 TOP 10</h2>
+        <ul class="bar-list">
+          <li class="bar-row">
+            <span>대한민국</span>
+            <span class="bar-row__track"><span style="width:88%"></span></span>
+            <span>54.7%</span>
+          </li>
+          <li class="bar-row">
+            <span>일본</span>
+            <span class="bar-row__track"><span style="width:24%"></span></span>
+            <span>14.6%</span>
+          </li>
+          <li class="bar-row">
+            <span>미국</span>
+            <span class="bar-row__track"><span style="width:16%"></span></span>
+            <span>10.0%</span>
+          </li>
+          <li class="bar-row">
+            <span>인도네시아</span>
+            <span class="bar-row__track"><span style="width:8%"></span></span>
+            <span>5.1%</span>
+          </li>
+          <li class="bar-row">
+            <span>태국</span>
+            <span class="bar-row__track"><span style="width:6%"></span></span>
+            <span>3.9%</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">권한 승인 대기</h2>
+          <a href="#" class="panel__more" onclick="alert('전체 보기 - 준비 중');return false;">전체 보기 ›</a>
+        </div>
+        <ul class="queue-list">
+          <li>
+            <span><strong>소속사 등록</strong><br /><span class="text-xs text-muted">Stellar Entertainment</span></span>
+            <span class="queue-count">1</span>
+          </li>
+          <li>
+            <span><strong>아티스트 등록</strong><br /><span class="text-xs text-muted">LUNA (루나)</span></span>
+            <span class="queue-count">2</span>
+          </li>
+          <li>
+            <span><strong>아티스트 등록</strong><br /><span class="text-xs text-muted">DAYLIGHT</span></span>
+            <span class="queue-count">3</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- 심각 신고 대기 / 서비스 상태 / 최근 관리자 주요 활동 -->
+    <!-- TODO: 아래 3개 패널도 통합 신고·감사 로그·헬스체크 API 연동 전까지 레이아웃 확인용 샘플 데이터입니다. -->
+    <div class="panel-grid panel-grid--3 mt-16">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">심각 신고 대기</h2>
+          <a href="#" class="panel__more" onclick="alert('전체 보기 - 준비 중');return false;">전체 보기 ›</a>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>유형</th><th>대상</th><th>신고 수</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="tag tag--danger">욕설 · 비방</span></td><td>사용자: galaxy_99</td><td>12</td></tr>
+              <tr><td><span class="tag tag--danger">음란성</span></td><td>댓글: abc123</td><td>9</td></tr>
+              <tr><td><span class="tag tag--danger">스토킹 · 협박</span></td><td>사용자: shadow777</td><td>7</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel__title">서비스 상태</h2>
+        <ul class="status-list">
+          <li><span class="status-dot status-dot--ok"></span><span>웹 서비스</span><span class="status-list__value">정상</span></li>
+          <li><span class="status-dot status-dot--ok"></span><span>모바일 앱 (iOS)</span><span class="status-list__value">정상</span></li>
+          <li><span class="status-dot status-dot--ok"></span><span>모바일 앱 (Android)</span><span class="status-list__value">정상</span></li>
+          <li><span class="status-dot status-dot--ok"></span><span>API 서버</span><span class="status-list__value">정상</span></li>
+          <li><span class="status-dot status-dot--ok"></span><span>알림 서비스</span><span class="status-list__value">정상</span></li>
+        </ul>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">최근 관리자 주요 활동</h2>
+          <a href="#" class="panel__more" onclick="alert('전체 보기 - 준비 중');return false;">전체 보기 ›</a>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>관리자</th><th>작업</th><th>대상</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>admin_01</td><td>사용자 제재</td><td>user_89234</td></tr>
+              <tr><td>admin_02</td><td>커뮤니티 정지</td><td>WEPLANET 공식</td></tr>
+              <tr><td>admin_01</td><td>공지 등록</td><td>서비스 점검 안내</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
   </main>
 </div>
 </body>
