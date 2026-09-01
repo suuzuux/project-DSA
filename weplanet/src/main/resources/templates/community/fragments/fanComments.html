@@ -27,10 +27,10 @@
 
       <div th:if="${not #lists.isEmpty(otherComments)}">
         <div class="comment-item" th:each="comment : ${otherComments}">
-          <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+          <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get(comment.author.id),0,1)}"></div>
           <div class="comment-item__body">
             <div class="comment-item__meta">
-              <strong th:text="${comment.author.nickname}"></strong>
+              <strong th:text="${authorNicknames.get(comment.author.id)}"></strong>
               <span th:if="${comment.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
               · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                       th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
@@ -89,10 +89,10 @@
 
       <div th:each="comment : ${artistComments}" class="comment-item"
            style="background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;">
-        <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
+        <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get(comment.author.id),0,1)}"></div>
         <div class="comment-item__body">
           <div class="comment-item__meta">
-            <strong th:text="${comment.author.nickname}"></strong> <span class="badge-verified">✓</span>
+            <strong th:text="${authorNicknames.get(comment.author.id)}"></strong> <span class="badge-verified">✓</span>
             · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                     th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
           </div>

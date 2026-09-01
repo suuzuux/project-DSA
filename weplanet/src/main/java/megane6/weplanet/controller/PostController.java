@@ -71,7 +71,7 @@ public class PostController {
             Model model
     ) {
         User currentUser = userResolver.resolve(principal, testUserId);
-        postDetailModelHelper.populate(model, post, currentUser);
+        postDetailModelHelper.populate(model, post, currentUser, artistId);
 
         if (artistId != null) {
             User artistUser = userRepository.findById(artistId)
