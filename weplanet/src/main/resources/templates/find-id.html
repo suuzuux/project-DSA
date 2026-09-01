@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WePlaNet – 아이디 찾기</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <a class="auth-card__back" th:href="@{/login}">← 뒤로</a>
+  <h1 class="auth-card__title mt-16">아이디 찾기</h1>
+
+  <div id="findIdForm">
+    <div class="form-group">
+      <label class="form-label" for="realName">이름</label>
+      <input class="form-input" id="realName" type="text" placeholder="이름 입력" />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="email">이메일</label>
+      <div class="form-row">
+        <input class="form-input" id="email" type="email" placeholder="가입 시 등록한 이메일" />
+        <button type="button" class="btn btn--ghost btn--sm" id="sendCodeBtn">인증코드 받기</button>
+      </div>
+      <div class="form-row mt-8" id="codeRow" style="display:none;">
+        <input class="form-input" id="code" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
+        <button type="button" class="btn btn--ghost btn--sm" id="verifyBtn">인증하기</button>
+      </div>
+      <p class="text-xs" id="msg" style="margin-top:6px;"></p>
+    </div>
+  </div>
+
+  <div id="resultBox" style="display:none;text-align:center;padding:24px 0;">
+    <p class="text-sm text-muted">회원님의 아이디는</p>
+    <p style="font-size:var(--wp-fs-xl);font-weight:800;margin:8px 0;" id="resultUsername"></p>
+    <a class="btn btn--primary btn--block" th:href="@{/login}">로그인하러 가기</a>
+  </div>
+</div>
+<script th:src="@{/js/main.js}"></script>
+<script>
+  (function () {
+    "use strict";
+    var nameInput = document.getElementById("realName");
+    var emailInput = document.getElementById("email");
+    var sendBtn = document.getElementById("sendCodeBtn");
+    var codeRow = document.getElementById("codeRow");
+    var codeInput = document.getElementById("code");
+    var verifyBtn = document.getElementById("verifyBtn");
+    var msg = document.getElementById("msg");
+    var formBox = document.getElementById("findIdForm");
+    var resultBox = document.getElementById("resultBox");
+    var resultUsername = document.getElementById("resultUsername");
+
+    function setMsg(text, ok) {
+      msg.textContent = text;
+      msg.style.color = ok ? "#2f8f5b" : "#c45c26";
+    }
+
+    sendBtn.addEventListener("click", function () {
+      var name = nameInput.value.trim();
+      var email = emailInput.value.trim();
+      if (!name || !email) {
+        setMsg("이름과 이메일을 모두 입력해주세요.", false);
+        return;
+      }
+      sendBtn.disabled = true;
+      sendBtn.textContent = "발송 중...";
+      fetch("/find-id/code", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "realName=" + encodeURIComponent(name) + "&email=" + encodeURIComponent(email)
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          setMsg(data.message, data.success);
+          if (data.success) {
+            codeRow.style.display = "flex";
+            codeInput.focus();
+          }
+        })
+        .catch(function () { setMsg("요청 중 오류가 발생했습니다.", false); })
+        .finally(function () {
+          sendBtn.disabled = false;
+          sendBtn.textContent = "인증코드 받기";
+        });
+    });
+
+    verifyBtn.addEventListener("click", function () {
+      var name = nameInput.value.trim();
+      var email = emailInput.value.trim();
+      var code = codeInput.value.trim();
+      if (!code) {
+        setMsg("인증코드를 입력해주세요.", false);
+        return;
+      }
+      fetch("/find-id/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "realName=" + encodeURIComponent(name) + "&email=" + encodeURIComponent(email) + "&code=" + encodeURIComponent(code)
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.success) {
+            formBox.style.display = "none";
+            resultUsername.textContent = data.username;
+            resultBox.style.display = "block";
+          } else {
+            setMsg(data.message, false);
+          }
+        })
+        .catch(function () { setMsg("인증 확인 중 오류가 발생했습니다.", false); });
+    });
+  })();
+</script>
+</body>
+</html>
