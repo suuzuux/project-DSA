@@ -402,3 +402,19 @@
   background: #0e1615;
   border-right: 1px solid #1c2a28;
 }
+
+.btn.is-pin-on {
+  background: var(--wp-brand);
+  color: #fff;
+  border-color: var(--wp-brand);
+}
+
+.notice-drag-handle {
+  cursor: grab;
+  color: var(--wp-muted);
+  user-select: none;
+}
+
+tr.js-pinned.is-dragging {
+  opacity: 0.55;
+}

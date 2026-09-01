@@ -1,3 +1,4 @@
+-- 반영: 2026-09-01, 14:20, 한혜선
 -- ============================================================
 -- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
@@ -386,10 +387,13 @@ CREATE TABLE `portal_notice` (
   `title` varchar(200) NOT NULL COMMENT '공지 제목',
   `content` text NOT NULL COMMENT '공지 본문',
   `published` bit(1) NOT NULL DEFAULT b'1' COMMENT '게시 여부(1=공개)',
+  `pinned` bit(1) NOT NULL DEFAULT b'0' COMMENT '목록 상단 노출 여부',
+  `pin_order` int DEFAULT NULL COMMENT '상단 노출 순서(1부터, 작을수록 위, 최대 5개)',
   `created_at` datetime NOT NULL COMMENT '등록 시각',
   `updated_at` datetime NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
   KEY `idx_portal_notice_artist_created_at` (`artist_id`, `created_at`),
+  KEY `idx_portal_notice_artist_pinned` (`artist_id`, `pinned`, `pin_order`),
   CONSTRAINT `fk_portal_notice_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='아티스트 커뮤니티 공지';
 

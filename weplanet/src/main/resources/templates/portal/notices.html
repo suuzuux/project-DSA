@@ -36,24 +36,33 @@
 
       <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+      <p class="text-sm text-muted" style="margin-bottom:12px;">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 5개)</p>
 
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
+              <th style="width:40px;"></th>
               <th>제목</th>
               <th>작성일자</th>
               <th>공개여부</th>
               <th>관리</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="noticeTableBody">
             <tr th:if="${#lists.isEmpty(notices)}">
-              <td colspan="4" class="text-sm text-muted">등록된 공지가 없습니다.</td>
+              <td colspan="5" class="text-sm text-muted">등록된 공지가 없습니다.</td>
             </tr>
-            <tr th:each="notice : ${notices}">
+            <tr th:each="notice : ${notices}"
+                th:attr="data-id=${notice.id}, draggable=${notice.pinned}"
+                th:classappend="${notice.pinned} ? ' js-pinned'">
+              <td class="notice-drag-cell">
+                <span th:if="${notice.pinned}" class="notice-drag-handle" title="드래그하여 순서 변경">☰</span>
+              </td>
               <td>
-                <a th:href="@{/portal/notices/{id}/edit(id=${notice.id})}" th:text="${notice.title}">공지 제목</a>
+                <a th:href="@{/portal/notices/{id}/edit(id=${notice.id})}"
+                   th:text="${notice.title}"
+                   th:style="${notice.pinned} ? 'font-weight:700;' : 'font-weight:400;'">공지 제목</a>
               </td>
               <td th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
               <td>
@@ -74,5 +83,88 @@
       </div>
     </main>
   </div>
+  <script>
+    (function () {
+      var tbody = document.getElementById("noticeTableBody");
+      if (!tbody) return;
+      var dragging = null;
+      var orderBeforeDrag = null;
+
+      function pinnedIds() {
+        return Array.prototype.map.call(tbody.querySelectorAll("tr.js-pinned"), function (row) {
+          return row.getAttribute("data-id");
+        });
+      }
+
+      function persistOrder() {
+        var ids = pinnedIds();
+        if (ids.length === 0) return;
+        fetch("/portal/notices/reorder", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: ids.map(function (id) { return "ids=" + encodeURIComponent(id); }).join("&")
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data.ok) {
+              alert(data.message || "순서를 저장하지 못했습니다.");
+              window.location.reload();
+              return;
+            }
+            orderBeforeDrag = ids.slice();
+          })
+          .catch(function () {
+            alert("순서를 저장하지 못했습니다.");
+            window.location.reload();
+          });
+      }
+
+      tbody.addEventListener("dragstart", function (e) {
+        var row = e.target.closest("tr.js-pinned");
+        if (!row) return;
+        dragging = row;
+        orderBeforeDrag = pinnedIds();
+        row.classList.add("is-dragging");
+        e.dataTransfer.effectAllowed = "move";
+      });
+
+      tbody.addEventListener("dragend", function () {
+        if (dragging) dragging.classList.remove("is-dragging");
+        if (dragging && orderBeforeDrag) {
+          var next = pinnedIds();
+          var changed = next.length !== orderBeforeDrag.length
+            || next.some(function (id, idx) { return id !== orderBeforeDrag[idx]; });
+          if (changed) persistOrder();
+        }
+        dragging = null;
+        orderBeforeDrag = null;
+      });
+
+      tbody.addEventListener("dragover", function (e) {
+        if (!dragging) return;
+        e.preventDefault();
+        var row = e.target.closest("tr.js-pinned");
+        if (row && row !== dragging) {
+          var rect = row.getBoundingClientRect();
+          var before = (e.clientY - rect.top) < rect.height / 2;
+          tbody.insertBefore(dragging, before ? row : row.nextSibling);
+          return;
+        }
+        if (e.target.closest("tr:not(.js-pinned)")) {
+          var pinned = tbody.querySelectorAll("tr.js-pinned");
+          if (pinned.length > 0) {
+            var lastPinned = pinned[pinned.length - 1];
+            if (dragging !== lastPinned.nextSibling) {
+              tbody.insertBefore(dragging, lastPinned.nextSibling);
+            }
+          }
+        }
+      });
+
+      tbody.addEventListener("drop", function (e) {
+        e.preventDefault();
+      });
+    })();
+  </script>
 </body>
 </html>

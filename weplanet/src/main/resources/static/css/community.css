@@ -339,7 +339,11 @@
 }
 
 .notice-list__title {
-  font-weight: 600;
+  font-weight: 400;
+}
+
+.notice-list__title.is-pinned {
+  font-weight: 700;
 }
 
 .notice-article {
