@@ -1341,6 +1341,7 @@ p {
 .tag--public { background: var(--wp-brand-soft); color: var(--wp-brand-dark); }
 .tag--private { background: #eee; color: var(--wp-muted); }
 .tag--member { background: var(--wp-accent-soft); color: #8a3d14; }
+.tag--danger { background: var(--wp-danger-soft); color: var(--wp-danger); }
 .tag--live {
   background: var(--wp-live);
   color: #fff;

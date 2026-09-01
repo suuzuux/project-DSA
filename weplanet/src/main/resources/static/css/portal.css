@@ -175,7 +175,8 @@
   flex: 1;
 }
 
-.portal-sidebar__nav a {
+.portal-sidebar__nav a,
+.portal-sidebar__footer .btn {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -187,7 +188,8 @@
 }
 
 .portal-sidebar__nav a:hover,
-.portal-sidebar__nav a.is-active {
+.portal-sidebar__nav a.is-active,
+.portal-sidebar__footer .btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
@@ -199,6 +201,15 @@
 
 .portal-sidebar__footer a {
   color: #8aa;
+}
+
+/* 로그아웃 버튼 - 좌측 메뉴(.portal-sidebar__nav a)와 동일한 모양이 되도록 버튼 기본 스타일을 리셋 */
+.portal-sidebar__footer .btn {
+  width: 100%;
+  justify-content: flex-start;
+  background: transparent;
+  border: none;
+  min-height: 0;
 }
 
 .portal-main {
@@ -347,54 +358,115 @@
   font-size: var(--wp-fs-xs);
 }
 
-/* ---------- Admin dark login ---------- */
+/* ---------- Admin login (와이어프레임: 좌 비주얼 / 우 로그인 폼 2단 분할) ---------- */
 .admin-login {
   min-height: 100vh;
+  background: var(--wp-surface);
+  color: var(--wp-ink);
+}
+
+.admin-login__split {
   display: grid;
-  place-items: center;
-  padding: 32px 16px;
-  background: #0b1110;
-  color: #e8eeed;
+  grid-template-columns: minmax(280px, 34%) 1fr;
+  min-height: 100vh;
+}
+
+@media (max-width: 860px) {
+  .admin-login__split {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-login__visual {
+    padding: 40px 28px;
+  }
+
+  .admin-login__deco {
+    display: none;
+  }
+}
+
+.admin-login__visual {
+  background: #333333;
+  color: #fff;
+  padding: 56px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.admin-login__visual-title {
+  margin-top: 14px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+}
+
+.admin-login__visual-desc {
+  margin-top: 16px;
+  max-width: 320px;
+  font-size: var(--wp-fs-sm);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.admin-login__deco {
+  width: 100%;
+  max-width: 320px;
+  color: #fff;
+}
+
+.admin-login__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
 }
 
 .admin-login__card {
-  width: min(100%, 420px);
-  border: 1px solid #243230;
-  border-radius: 12px;
-  padding: 32px 28px;
-  background: #121a19;
-}
-
-.admin-login__card .form-input {
-  background: #0b1110;
-  border-color: #2a3a38;
-  color: #e8eeed;
-}
-
-.admin-login__card .form-label {
-  color: #9bb;
+  width: 100%;
+  max-width: 460px;
 }
 
 .admin-login__eyebrow {
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #5a7a78;
+  color: var(--wp-muted);
   margin-bottom: 10px;
+}
+
+.admin-login__visual .admin-login__eyebrow {
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .admin-login__title {
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  margin-bottom: 8px;
+  margin-bottom: 28px;
 }
 
-.admin-login__desc {
-  font-size: var(--wp-fs-sm);
-  color: #7a9593;
-  margin-bottom: 28px;
-  line-height: 1.5;
+.admin-login__notice {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: var(--wp-radius-sm);
+  font-size: 13px;
+}
+
+.admin-login__notice--error {
+  background: var(--wp-danger-soft);
+  color: var(--wp-danger);
+}
+
+.admin-login__notice--success {
+  background: #eafaf3;
+  color: var(--wp-success);
+}
+
+.admin-login__send-btn {
+  margin-bottom: 20px;
 }
 
 /* Admin shell – slightly darker sidebar accent */
@@ -403,33 +475,99 @@
   border-right: 1px solid #1c2a28;
 }
 
+/* ---------- ADMIN 상단바 (SUPER ADMIN 배지 + 프로필) ---------- */
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--wp-line);
+    border-radius: 999px;
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    color: var(--wp-brand-dark);
+    background: var(--wp-brand-soft);
+}
+
+.admin-profile {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--wp-fs-sm);
+    font-weight: 600;
+    color: var(--wp-ink);
+}
+
+.admin-profile__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--wp-brand);
+    color: #fff;
+    font-weight: 800;
+    font-size: var(--wp-fs-sm);
+}
+
 /* ---------- ADMIN 대시보드 통계 ---------- */
 
 .admin-stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
 
 .admin-stat {
-    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
     border: 1px solid var(--wp-line);
     border-radius: var(--wp-radius);
-    background: var(--wp-paper);
+    background: var(--wp-surface);
+}
+
+.admin-stat__icon {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+}
+
+.admin-stat__icon--violet { background: #ece7fb; }
+.admin-stat__icon--green  { background: #e3f6ea; }
+.admin-stat__icon--blue   { background: #e5f0fb; }
+.admin-stat__icon--orange { background: var(--wp-accent-soft); }
+.admin-stat__icon--khaki  { background: #f2eee0; }
+
+.admin-stat__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
 }
 
 .admin-stat__label {
-    margin: 0 0 8px;
-    font-size: var(--wp-fs-sm);
+    font-size: var(--wp-fs-xs);
     color: var(--wp-ink-soft);
 }
 
 .admin-stat__value {
-    font-size: 30px;
+    font-size: 24px;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--wp-brand);
+    color: var(--wp-ink);
 }
 
 /* 신고처럼 주의가 필요한 지표는 색으로 구분 */
@@ -437,21 +575,92 @@
     color: var(--wp-danger);
 }
 
-.admin-panel {
-    padding: 20px;
-    border: 1px solid var(--wp-line);
-    border-radius: var(--wp-radius);
-    background: var(--wp-paper);
+/* ---------- ADMIN 대시보드 패널 (차트 / 리스트 / 테이블) ---------- */
+.panel-grid--3 {
+    grid-template-columns: 1.3fr 1fr 1fr;
 }
 
-.admin-panel__title {
-    margin: 0 0 10px;
-    font-size: var(--wp-fs-md);
+@media (max-width: 1100px) {
+    .panel-grid--3 {
+        grid-template-columns: 1fr;
+    }
 }
 
-.admin-panel__desc {
-    margin: 0;
-    line-height: 1.7;
+.panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.panel__head .panel__title {
+    margin-bottom: 0;
+}
+
+.panel__more {
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    color: var(--wp-brand);
+}
+
+.panel__more:hover {
+    text-decoration: underline;
+}
+
+/* 가입자 추이 미니 라인차트 (샘플 데이터) */
+.admin-line-chart {
+    width: 100%;
+    height: 120px;
+    overflow: visible;
+}
+
+.admin-line-chart polyline {
+    fill: none;
+    stroke: var(--wp-brand);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.admin-line-chart__axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: var(--wp-fs-xs);
+    color: var(--wp-muted);
+}
+
+/* 서비스 상태 리스트 */
+.status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: var(--wp-fs-sm);
-    color: var(--wp-ink-soft);
 }
+
+.status-list li > span:nth-child(2) {
+    flex: 1;
+}
+
+.status-list__value {
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+    color: var(--wp-success);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+}
+
+.status-dot--ok { background: var(--wp-success); }
+.status-dot--warn { background: var(--wp-accent); }
+.status-dot--down { background: var(--wp-danger); }
