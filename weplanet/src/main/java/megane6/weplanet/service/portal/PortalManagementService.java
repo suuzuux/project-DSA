@@ -41,14 +41,16 @@ public class PortalManagementService {
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
 
+    public static final int MAX_PINNED = 5;
+
     @Transactional(readOnly = true)
     public List<PortalNotice> getNotices(User artist) {
-        return portalNoticeRepository.findByArtistOrderByCreatedAtDesc(artist);
+        return portalNoticeRepository.findByArtistOrderByPinnedDescPinOrderAscCreatedAtDesc(artist);
     }
 
     @Transactional(readOnly = true)
     public List<PortalNotice> getPublishedNotices(User artist) {
-        return portalNoticeRepository.findByArtistAndPublishedTrueOrderByCreatedAtDesc(artist);
+        return portalNoticeRepository.findByArtistAndPublishedTrueOrderByPinnedDescPinOrderAscCreatedAtDesc(artist);
     }
 
     @Transactional(readOnly = true)
@@ -66,7 +68,7 @@ public class PortalManagementService {
         return notice;
     }
 
-    public PortalNotice saveNotice(User artist, Long noticeId, String title, String content, boolean published) {
+    public PortalNotice saveNotice(User artist, Long noticeId, String title, String content, boolean published, boolean pinned) {
         validateText(title, "제목을 입력해주세요.");
         validateText(content, "본문을 입력해주세요.");
         PortalNotice notice = noticeId == null
@@ -75,11 +77,75 @@ public class PortalManagementService {
         if (noticeId != null) {
             notice.update(title, content, published);
         }
+        applyPinState(artist, notice, pinned);
         return portalNoticeRepository.save(notice);
+    }
+
+    public void reorderPinned(User artist, List<Long> ids) {
+        List<PortalNotice> pinned = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
+        if (ids == null || ids.isEmpty() || ids.size() != pinned.size()) {
+            throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+        }
+        Map<Long, PortalNotice> byId = pinned.stream()
+                .collect(Collectors.toMap(PortalNotice::getId, item -> item));
+        List<PortalNotice> reordered = new ArrayList<>(ids.size());
+        int order = 1;
+        for (Long id : ids) {
+            PortalNotice notice = byId.remove(id);
+            if (notice == null) {
+                throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+            }
+            notice.applyPin(true, order++);
+            reordered.add(notice);
+        }
+        if (!byId.isEmpty()) {
+            throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+        }
+        portalNoticeRepository.saveAll(reordered);
+    }
+
+    @Transactional(readOnly = true)
+    public long countPinned(User artist) {
+        return portalNoticeRepository.countByArtistAndPinnedTrue(artist);
     }
 
     public void deleteNotice(User artist, Long noticeId) {
         portalNoticeRepository.delete(getNotice(artist, noticeId));
+        compactPinOrder(artist);
+    }
+
+    private void applyPinState(User artist, PortalNotice notice, boolean pinned) {
+        boolean wasPinned = notice.isPinned();
+        if (pinned) {
+            long count = portalNoticeRepository.countByArtistAndPinnedTrue(artist);
+            if (!wasPinned && count >= MAX_PINNED) {
+                throw new IllegalArgumentException("상단 노출은 최대 5개까지 가능합니다.");
+            }
+            if (!wasPinned) {
+                List<PortalNotice> current = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
+                int shift = 2;
+                for (PortalNotice item : current) {
+                    item.applyPin(true, shift++);
+                }
+                notice.applyPin(true, 1);
+            }
+            return;
+        }
+        if (wasPinned) {
+            notice.applyPin(false, null);
+            compactPinOrder(artist);
+        }
+    }
+
+    private void compactPinOrder(User artist) {
+        List<PortalNotice> pinned = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
+        int order = 1;
+        for (PortalNotice item : pinned) {
+            item.applyPin(true, order++);
+        }
+        if (!pinned.isEmpty()) {
+            portalNoticeRepository.saveAll(pinned);
+        }
     }
 
     @Transactional(readOnly = true)

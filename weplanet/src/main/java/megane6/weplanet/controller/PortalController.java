@@ -30,6 +30,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/portal")
@@ -93,10 +94,15 @@ public class PortalController {
 	@GetMapping("/notices/new")
 	public String newNotice(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		String redirect = prepareArtistPage(principal, model, "notices");
-		return redirect != null ? redirect : "portal/notice-form";
+		if (redirect != null) {
+			return redirect;
+		}
+		model.addAttribute("pinnedCount", portalManagementService.countPinned(currentArtist(principal)));
+		model.addAttribute("maxPinned", PortalManagementService.MAX_PINNED);
+		return "portal/notice-form";
 	}
 
-	@GetMapping("/notices/{noticeId}/edit")
+	@GetMapping("/notices/{noticeId:\\d+}/edit")
 	public String editNotice(@PathVariable Long noticeId,
 							 @AuthenticationPrincipal AuthenticatedUser principal,
 							 Model model) {
@@ -106,6 +112,8 @@ public class PortalController {
 		}
 		User artist = currentArtist(principal);
 		model.addAttribute("notice", portalManagementService.getNotice(artist, noticeId));
+		model.addAttribute("pinnedCount", portalManagementService.countPinned(artist));
+		model.addAttribute("maxPinned", PortalManagementService.MAX_PINNED);
 		return "portal/notice-form";
 	}
 
@@ -113,6 +121,7 @@ public class PortalController {
 	public String createNotice(@RequestParam String title,
 							   @RequestParam String content,
 							   @RequestParam(defaultValue = "false") boolean published,
+							   @RequestParam(defaultValue = "false") boolean pinned,
 							   @AuthenticationPrincipal AuthenticatedUser principal,
 							   RedirectAttributes redirectAttributes) {
 		User artist = currentArtist(principal);
@@ -120,7 +129,7 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		try {
-			portalManagementService.saveNotice(artist, null, title, content, published);
+			portalManagementService.saveNotice(artist, null, title, content, published, pinned);
 			redirectAttributes.addFlashAttribute("msg", "공지가 등록되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -129,11 +138,28 @@ public class PortalController {
 		return "redirect:/portal/notices";
 	}
 
-	@PostMapping("/notices/{noticeId}")
+	@PostMapping("/notices/reorder")
+	@ResponseBody
+	public Map<String, Object> reorderNotices(@RequestParam List<Long> ids,
+											  @AuthenticationPrincipal AuthenticatedUser principal) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return Map.of("ok", false, "message", "로그인이 필요합니다.");
+		}
+		try {
+			portalManagementService.reorderPinned(artist, ids);
+			return Map.of("ok", true);
+		} catch (IllegalArgumentException e) {
+			return Map.of("ok", false, "message", e.getMessage());
+		}
+	}
+
+	@PostMapping("/notices/{noticeId:\\d+}")
 	public String updateNotice(@PathVariable Long noticeId,
 							   @RequestParam String title,
 							   @RequestParam String content,
 							   @RequestParam(defaultValue = "false") boolean published,
+							   @RequestParam(defaultValue = "false") boolean pinned,
 							   @AuthenticationPrincipal AuthenticatedUser principal,
 							   RedirectAttributes redirectAttributes) {
 		User artist = currentArtist(principal);
@@ -141,7 +167,7 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		try {
-			portalManagementService.saveNotice(artist, noticeId, title, content, published);
+			portalManagementService.saveNotice(artist, noticeId, title, content, published, pinned);
 			redirectAttributes.addFlashAttribute("msg", "공지가 수정되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -150,7 +176,7 @@ public class PortalController {
 		return "redirect:/portal/notices";
 	}
 
-	@PostMapping("/notices/{noticeId}/delete")
+	@PostMapping("/notices/{noticeId:\\d+}/delete")
 	public String deleteNotice(@PathVariable Long noticeId,
 							   @AuthenticationPrincipal AuthenticatedUser principal,
 							   RedirectAttributes redirectAttributes) {
