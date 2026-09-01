@@ -52,7 +52,7 @@
   </div>
 
   <!-- 포스트 작성 모달 -->
-  <div class="modal-backdrop" id="writePostModal" sec:authorize="isAuthenticated()">
+  <div class="modal-backdrop" id="writePostModal" sec:authorize="hasRole('FAN')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title">포스트 작성하기</h2>
