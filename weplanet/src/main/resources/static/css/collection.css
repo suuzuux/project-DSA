@@ -175,3 +175,99 @@
     overflow-y: auto;
     padding: 4px 2px;
 }
+
+/* ---------- 팬 프로젝트 참여 기록 ---------- */
+
+.project-history {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid var(--wp-line);
+}
+
+.project-history__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.project-history__head h2 {
+    margin: 0;
+    font-size: var(--wp-fs-lg);
+}
+
+.project-history__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.project-history-card {
+    padding: 16px;
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.project-history-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.project-history-card__head strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-history-card__status {
+    flex: none;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--wp-brand-soft);
+    color: var(--wp-brand-dark);
+    font-size: var(--wp-fs-xs);
+    font-weight: 700;
+}
+
+.project-history-card__info {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.project-history-card__info > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.project-history-card__info dt {
+    color: var(--wp-muted);
+    font-size: var(--wp-fs-xs);
+}
+
+.project-history-card__info dd {
+    margin: 0;
+    text-align: right;
+    color: var(--wp-ink-soft);
+    font-size: var(--wp-fs-sm);
+    font-weight: 600;
+}
+
+.project-history__empty {
+    margin: 0;
+    padding: 24px 0;
+}
+
+@media (max-width: 640px) {
+    .project-history__list {
+        grid-template-columns: 1fr;
+    }
+}

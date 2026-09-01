@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -81,6 +82,9 @@ public class CommunityController {
 		model.addAttribute("fanPosts", fanPosts);
 		model.addAttribute("fanPostCommentCounts", fanPostCommentCounts);
 		model.addAttribute("fanPostThumbnails", fanPostThumbnails);
+		// [닉네임 관리] Fan Posts 위젯도 작성자가 팬이라 가입할 때 정한 커뮤니티 닉네임으로 통일해서 보여준다
+		model.addAttribute("fanPostAuthorNicknames", communityJoinService.displayNicknamesByAuthorId(
+				fanPosts.stream().map(Post::getAuthor).toList(), artistId));
 		
 		// "Comments by 아티스트" 위젯 - 이 아티스트가 작성한 댓글 최신 4개
 		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
@@ -208,7 +212,7 @@ public class CommunityController {
 		}
 		
 		User currentUser = userResolver.resolve(principal, 1L);
-		postDetailModelHelper.populate(model, post, currentUser);
+		postDetailModelHelper.populate(model, post, currentUser, artistId);
 		model.addAttribute("boardTab", boardTab);
 		
 		return "community/post-detail";
@@ -332,11 +336,19 @@ public class CommunityController {
 				.map(Bookmark::getPost)
 				.toList();
 		
+		// [닉네임 관리] 내 프로필에서 댓글/좋아요/북마크한 "다른 사람들"의 글이 함께 보이는데,
+		// 그 작성자 닉네임도 이 커뮤니티에서 통용되는 닉네임(가입할 때 닉네임)으로 통일해서 보여준다.
+		List<User> profileAuthors = new ArrayList<>();
+		myComments.forEach(c -> profileAuthors.add(c.getPost().getAuthor()));
+		likedPosts.forEach(post -> profileAuthors.add(post.getAuthor()));
+		bookmarkedPosts.forEach(post -> profileAuthors.add(post.getAuthor()));
+		
 		model.addAttribute("myComments", myComments);
 		model.addAttribute("myPosts", myPosts);
 		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
 		model.addAttribute("likedPosts", likedPosts);
 		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
+		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorId(profileAuthors, artistId));
 		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
 		model.addAttribute("sort", sort);
 		
