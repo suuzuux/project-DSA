@@ -339,6 +339,47 @@ public class PortalManagementService {
         artistScheduleRepository.delete(schedule);
     }
 
+    public void rescheduleSchedule(User artist, Long scheduleId, LocalDate targetDate) {
+        if (targetDate == null) {
+            throw new IllegalArgumentException("옮길 날짜를 입력해주세요.");
+        }
+        ArtistSchedule schedule = artistScheduleRepository.findById(scheduleId)
+                .filter(item -> item.getArtist().getId().equals(artist.getId()))
+                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
+
+        LocalDateTime current = schedule.getScheduleAt();
+        LocalDate currentDate = current.toLocalDate();
+        if (currentDate.equals(targetDate)) {
+            return;
+        }
+
+        LocalDate newDate;
+        if (schedule.getCategory() == ScheduleCategory.BIRTHDAY) {
+            int birthYear = currentDate.getYear();
+            MonthDay targetMonthDay = MonthDay.from(targetDate);
+            try {
+                newDate = targetMonthDay.atYear(birthYear);
+            } catch (DateTimeException ex) {
+                newDate = LocalDate.of(birthYear, 2, 28);
+            }
+            if (newDate.isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("생일은 오늘 이전 날짜만 등록할 수 있습니다.");
+            }
+        } else {
+            newDate = targetDate;
+        }
+
+        schedule.update(
+                schedule.getCategory(),
+                schedule.getTitle(),
+                schedule.getDescription(),
+                schedule.getLocation(),
+                schedule.getTicketUrl(),
+                newDate.atTime(current.toLocalTime())
+        );
+        artistScheduleRepository.save(schedule);
+    }
+
     public ArtistProfile getOrCreateProfile(User artist) {
         return artistProfileRepository.findByArtist(artist)
                 .orElseGet(() -> artistProfileRepository.save(ArtistProfile.create(artist)));
