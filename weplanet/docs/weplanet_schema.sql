@@ -50,8 +50,8 @@ SET UNIQUE_CHECKS = 0;
 DROP TABLE IF EXISTS `community_profiles`;
 DROP TABLE IF EXISTS `community_members`;
 DROP TABLE IF EXISTS `board_media_files`;
-DROP TABLE IF EXISTS `board_media`
-DROP TABLE IF EXISTS `board_media_like`
+DROP TABLE IF EXISTS `board_media_like`;
+DROP TABLE IF EXISTS `board_media`;
 DROP TABLE IF EXISTS `comment_report`;
 DROP TABLE IF EXISTS `comment`;
 DROP TABLE IF EXISTS `report`;
