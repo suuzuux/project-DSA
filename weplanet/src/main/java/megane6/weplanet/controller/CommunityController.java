@@ -3,6 +3,7 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.ArtistFollowCardView;
+import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
@@ -312,6 +313,13 @@ public class CommunityController {
 		if (!hasCommunityAccess(me, artistId)) {
 			model.addAttribute("gatedTab", "profile");
 			return "community/membership-required";
+		}
+
+		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다.
+		// 아티스트 본인이나 관리자는 가입 절차 없이 접근할 수 있으므로 joinedAt이 null일 수 있다.
+		CommunityJoinInfo communityJoinInfo = communityJoinService.joinInfoOf(me, artistId);
+		if (communityJoinInfo != null) {
+			model.addAttribute("communityJoinInfo", communityJoinInfo);
 		}
 		
 		boolean oldest = "oldest".equals(sort);
