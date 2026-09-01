@@ -2,6 +2,7 @@ package megane6.weplanet.repository.calendar;
 
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.calendar.ArtistSchedule;
+import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,6 +16,8 @@ public interface ArtistScheduleRepository extends JpaRepository<ArtistSchedule, 
 
 	List<ArtistSchedule> findByArtistAndScheduleAtBetweenOrderByScheduleAtAsc(
 			User artist, LocalDateTime start, LocalDateTime end);
+
+	List<ArtistSchedule> findByArtistAndCategoryOrderByScheduleAtAsc(User artist, ScheduleCategory category);
 
 	@Query("select s from ArtistSchedule s join fetch s.artist order by s.scheduleAt asc")
 	List<ArtistSchedule> findAllByOrderByScheduleAtAsc();
