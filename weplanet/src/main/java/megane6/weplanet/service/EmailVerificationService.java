@@ -112,6 +112,42 @@ public class EmailVerificationService {
 		);
 	}
 	
+	// 최고관리자 로그인 인증번호 발급
+	// ID/PW가 이미 검증된 뒤 호출. 대상 관리자 확정 및 그 계정에 등록된 이메일로만 발송됨
+	@Transactional
+	public IssuedVerification issueAdminLoginVerification(Long adminId) {
+		User admin = ur.findById(adminId).orElseThrow(() ->
+				new IllegalArgumentException("관리자 계정을 찾을 수 없습니다."));
+		
+		if (admin.getRole() != Role.ADMIN) {
+			throw new IllegalStateException("최고관리자만 사용할 수 있습니다.");
+		}
+		
+		LocalDateTime now = LocalDateTime.now();
+		
+		evr.findTopByUser_IdAndPurposeOrderByCreatedAtDesc(
+				adminId,
+				EmailVerificationPurpose.ADMIN_LOGIN
+		).ifPresent(latest -> assertResendAllowed(latest, now));
+		
+		String rawCode = generateCode();
+		String codeHash = pe.encode(rawCode);
+		
+		EmailVerification saved = evr.save(
+				EmailVerification.createForAdminLogin(
+						admin,
+						codeHash,
+						now.plusMinutes(EXPIRATION_MINUTES)
+				)
+		);
+		
+		return new IssuedVerification(
+				saved.getVerificationKey(),
+				saved.getEmail(),
+				rawCode
+		);
+	}
+	
 	// 회원가입 인증번호 확인
 	@Transactional
 	public VerificationResult confirmSignupVerification(
@@ -149,6 +185,23 @@ public class EmailVerificationService {
 				null
 		);
 		
+		return verifyCode(verification, rawCode);
+	}
+	
+	// 최고관리자 로그인 인증번호
+	@Transactional
+	public VerificationResult confirmAdminLoginVerification(
+			Long adminId,
+			String verificationKey,
+			String rawCode
+	) {
+		EmailVerification verification = findForUpdate(verificationKey);
+		assertTarget(
+				verification,
+				EmailVerificationPurpose.ADMIN_LOGIN,
+				adminId,
+				null
+		);
 		return verifyCode(verification, rawCode);
 	}
 	

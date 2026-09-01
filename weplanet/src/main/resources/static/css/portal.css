@@ -402,3 +402,56 @@
   background: #0e1615;
   border-right: 1px solid #1c2a28;
 }
+
+/* ---------- ADMIN 대시보드 통계 ---------- */
+
+.admin-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.admin-stat {
+    padding: 20px;
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.admin-stat__label {
+    margin: 0 0 8px;
+    font-size: var(--wp-fs-sm);
+    color: var(--wp-ink-soft);
+}
+
+.admin-stat__value {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--wp-brand);
+}
+
+/* 신고처럼 주의가 필요한 지표는 색으로 구분 */
+.admin-stat--alert .admin-stat__value {
+    color: var(--wp-danger);
+}
+
+.admin-panel {
+    padding: 20px;
+    border: 1px solid var(--wp-line);
+    border-radius: var(--wp-radius);
+    background: var(--wp-paper);
+}
+
+.admin-panel__title {
+    margin: 0 0 10px;
+    font-size: var(--wp-fs-md);
+}
+
+.admin-panel__desc {
+    margin: 0;
+    line-height: 1.7;
+    font-size: var(--wp-fs-sm);
+    color: var(--wp-ink-soft);
+}

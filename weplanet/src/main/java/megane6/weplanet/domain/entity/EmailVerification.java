@@ -127,6 +127,25 @@ public class EmailVerification {
 		);
 	}
 	
+	// 최고관리자 로그인 2차 인증
+	public static EmailVerification createForAdminLogin(
+			User admin,
+			String codeHash,
+			LocalDateTime expiresAt
+	) {
+		if (admin == null) {
+			throw new IllegalArgumentException("이메일 인증 회원이 필요합니다.");
+		}
+		
+		return new EmailVerification(
+				admin,
+				admin.getEmail(),
+				EmailVerificationPurpose.ADMIN_LOGIN,
+				codeHash,
+				expiresAt
+		);
+	}
+	
 	public boolean isExpired(LocalDateTime now) {
 		return !now.isBefore(expiresAt);
 	}
