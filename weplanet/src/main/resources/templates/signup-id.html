@@ -29,9 +29,10 @@
         <label class="form-label" for="userId">아이디</label>
         <div class="form-row">
           <input class="form-input" id="userId" th:field="*{username}" type="text" placeholder="아이디 입력" autocomplete="username" />
-          <button type="button" class="btn btn--ghost btn--sm" onclick="WePlaNet.alert('중복 확인 (목업): 사용 가능')">중복 확인</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="checkUsernameBtn">중복 확인</button>
         </div>
         <p class="form-hint">조건: 4~20자 이내, 영문·숫자</p>
+        <p class="text-xs" id="usernameCheckMsg" style="margin-top:6px;"></p>
         <p class="form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('username')}"></p>
       </div>
@@ -63,9 +64,19 @@
       <!-- 이메일 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'">
         <label class="form-label" for="email">이메일</label>
-        <input class="form-input" id="email" th:field="*{email}" type="email" placeholder="your@email.com" />
+        <div class="form-row">
+          <input class="form-input" id="email" th:field="*{email}" type="email" placeholder="your@email.com" />
+          <button type="button" class="btn btn--ghost btn--sm" id="sendEmailCodeBtn">인증코드 받기</button>
+        </div>
         <p class="form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('email')}"></p>
+
+        <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
+          <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
+          <span class="text-xs" id="emailCodeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
+          <button type="button" class="btn btn--ghost btn--sm" id="verifyEmailCodeBtn">인증하기</button>
+        </div>
+        <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>
 
       <!-- 닉네임 -->
@@ -109,5 +120,188 @@
   </div>
 
   <script th:src="@{/js/main.js}"></script>
+  <script>
+    (function () {
+      "use strict";
+      var usernameInput = document.getElementById("userId");
+      var checkUsernameBtn = document.getElementById("checkUsernameBtn");
+      var usernameMsg = document.getElementById("usernameCheckMsg");
+      var usernameChecked = false;
+      var checkedUsername = "";
+
+      var emailInput = document.getElementById("email");
+      var sendBtn = document.getElementById("sendEmailCodeBtn");
+      var codeRow = document.getElementById("emailCodeRow");
+      var codeInput = document.getElementById("emailCode");
+      var verifyBtn = document.getElementById("verifyEmailCodeBtn");
+      var timerEl = document.getElementById("emailCodeTimer");
+      var msg = document.getElementById("emailVerifyMsg");
+      var form = document.getElementById("signupForm");
+      var emailVerified = false;
+      var verifiedEmail = "";
+      var timerInterval = null;
+      var CODE_VALID_SECONDS = 5 * 60; // 서버 EmailVerificationService의 EXPIRE_MINUTES(5분)와 맞춤
+
+      function setUsernameMsg(text, ok) {
+        usernameMsg.textContent = text;
+        usernameMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
+      }
+
+      function setMsg(text, ok) {
+        msg.textContent = text;
+        msg.style.color = ok ? "#2f8f5b" : "#c45c26";
+      }
+
+      checkUsernameBtn.addEventListener("click", function () {
+        var username = usernameInput.value.trim();
+        if (!username) {
+          setUsernameMsg("아이디를 먼저 입력해주세요.", false);
+          return;
+        }
+        usernameChecked = false;
+        checkUsernameBtn.disabled = true;
+
+        fetch("/signup/username/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "username=" + encodeURIComponent(username)
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setUsernameMsg(data.message, data.available);
+            usernameChecked = data.available;
+            checkedUsername = data.available ? username : "";
+          })
+          .catch(function () {
+            setUsernameMsg("중복 확인 중 오류가 발생했습니다.", false);
+          })
+          .finally(function () {
+            checkUsernameBtn.disabled = false;
+          });
+      });
+
+      usernameInput.addEventListener("input", function () {
+        if (usernameChecked && usernameInput.value.trim() !== checkedUsername) {
+          usernameChecked = false;
+          setUsernameMsg("아이디가 변경되어 중복 확인이 초기화되었습니다. 다시 확인해주세요.", false);
+        }
+      });
+
+      function formatTime(seconds) {
+        var m = Math.floor(seconds / 60);
+        var s = seconds % 60;
+        return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+      }
+
+      function startTimer() {
+        clearInterval(timerInterval);
+        var remaining = CODE_VALID_SECONDS;
+        codeInput.disabled = false;
+        verifyBtn.disabled = false;
+        timerEl.textContent = formatTime(remaining);
+        timerInterval = setInterval(function () {
+          remaining -= 1;
+          if (remaining <= 0) {
+            clearInterval(timerInterval);
+            timerEl.textContent = "00:00";
+            codeInput.disabled = true;
+            verifyBtn.disabled = true;
+            setMsg("인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.", false);
+            return;
+          }
+          timerEl.textContent = formatTime(remaining);
+        }, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        timerEl.textContent = "";
+      }
+
+      sendBtn.addEventListener("click", function () {
+        var email = emailInput.value.trim();
+        if (!email) {
+          setMsg("이메일을 먼저 입력해주세요.", false);
+          return;
+        }
+        emailVerified = false;
+        sendBtn.disabled = true;
+        sendBtn.textContent = "발송 중...";
+
+        fetch("/signup/email/code", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "email=" + encodeURIComponent(email)
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setMsg(data.message, data.success);
+            if (data.success) {
+              codeRow.style.display = "flex";
+              codeInput.value = "";
+              codeInput.focus();
+              startTimer();
+            }
+          })
+          .catch(function () {
+            setMsg("이메일 발송 중 오류가 발생했습니다.", false);
+          })
+          .finally(function () {
+            sendBtn.disabled = false;
+            sendBtn.textContent = "인증코드 받기";
+          });
+      });
+
+      verifyBtn.addEventListener("click", function () {
+        var email = emailInput.value.trim();
+        var code = codeInput.value.trim();
+        if (!code) {
+          setMsg("인증코드를 입력해주세요.", false);
+          return;
+        }
+        fetch("/signup/email/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "email=" + encodeURIComponent(email) + "&code=" + encodeURIComponent(code)
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setMsg(data.message, data.success);
+            emailVerified = data.success;
+            verifiedEmail = data.success ? email : "";
+            if (data.success) {
+              stopTimer();
+              codeInput.disabled = true;
+              verifyBtn.disabled = true;
+            }
+          })
+          .catch(function () {
+            setMsg("인증 확인 중 오류가 발생했습니다.", false);
+          });
+      });
+
+      emailInput.addEventListener("input", function () {
+        if (emailVerified && emailInput.value.trim() !== verifiedEmail) {
+          emailVerified = false;
+          stopTimer();
+          setMsg("이메일이 변경되어 인증이 초기화되었습니다. 다시 인증해주세요.", false);
+        }
+      });
+
+      form.addEventListener("submit", function (e) {
+        if (!usernameChecked || usernameInput.value.trim() !== checkedUsername) {
+          e.preventDefault();
+          setUsernameMsg("아이디 중복 확인을 먼저 완료해주세요.", false);
+          usernameInput.focus();
+          return;
+        }
+        if (!emailVerified || emailInput.value.trim() !== verifiedEmail) {
+          e.preventDefault();
+          setMsg("이메일 인증을 먼저 완료해주세요.", false);
+          emailInput.focus();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

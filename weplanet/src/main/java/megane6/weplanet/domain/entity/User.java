@@ -132,8 +132,30 @@ public class User {
 		this.lastLoginAt = LocalDateTime.now();
 	}
 
+	public void markEmailVerified(LocalDateTime verifiedAt) {
+		this.emailVerifiedAt = verifiedAt;
+	}
+
 	public void changePortalProfile(String nickname, String email) {
 		this.nickname = nickname;
 		this.email = email;
+	}
+
+	// 회원정보(마이페이지) 수정에서 이름을 바꿀 때 씀. realName은 암호화 컬럼이라
+	// PlaintextBytesConverter가 저장/조회 시 알아서 변환해줌 - 여기선 평문 그대로 다루면 됨
+	public void changeRealName(String realName) {
+		this.realName = realName;
+	}
+
+	// 회원정보 수정 화면에서 새 비밀번호를 입력했을 때만 호출됨 (호출부에서 이미 인코딩된 값을 넘김)
+	public void changePassword(String encodedPassword) {
+		this.password = encodedPassword;
+	}
+
+	// [회원탈퇴] 실제로 로우를 지우지 않고 상태만 WITHDRAWN으로 바꾸는 소프트 삭제.
+	// 게시글/댓글/채팅/후원 내역 등 users.id를 참조하는 다른 테이블의 FK가 깨지지 않도록 하기 위함.
+	public void withdraw() {
+		this.status = UserStatus.WITHDRAWN;
+		this.deletedAt = LocalDateTime.now();
 	}
 }

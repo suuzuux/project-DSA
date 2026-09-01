@@ -326,6 +326,16 @@ p {
   color: var(--wp-faint);
 }
 
+/* 잠긴 입력칸 (아이디, 잠금 상태의 이메일 등) - 클릭할 수 없다는 걸 색으로 표시 */
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+  background: var(--wp-paper);
+  border-color: var(--wp-hairline);
+  color: var(--wp-muted);
+  cursor: not-allowed;
+}
+
 /* 유효성 에러 (와이어프레임: 박스 밑 빨간 글씨) */
 .form-error {
   margin-top: 6px;
