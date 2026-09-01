@@ -56,6 +56,11 @@ public class UserService {
 	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
 	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
 
+	// 회원가입 화면의 "중복 확인" 버튼용 - 실제로 DB를 조회해서 사용 가능 여부를 알려준다.
+	public boolean isUsernameAvailable(String username) {
+		return !userRepository.existsByUsername(username);
+	}
+
 	// [닉네임 관리] 회원정보(마이페이지) 수정 - 아이디는 로그인 식별자라 여기서 바꾸지 않고,
 	// 닉네임/이름/이메일/비밀번호(선택 입력 시에만)를 갱신한다.
 	// 반환하는 AuthenticatedUser는 호출한 컨트롤러가 SecurityContext를 즉시 갱신할 때 씀 -
