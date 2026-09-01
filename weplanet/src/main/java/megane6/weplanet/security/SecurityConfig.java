@@ -48,7 +48,9 @@ public class SecurityConfig {
             "/board/**",
             "/css/**",
             "/js/**",
-            "/img/**"
+            "/img/**",
+            "/signup-wireframe",
+            "/login-wireframe"
     );
     
     private final LoginSuccessHandler loginSuccessHandler;
