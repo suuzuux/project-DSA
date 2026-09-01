@@ -6,6 +6,7 @@ import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +24,7 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
+	private final SignupEmailVerificationService emailVerificationService;
 	
 	@Transactional
 	public User signup(SignupRequestDto dto) {
@@ -84,11 +86,20 @@ public class UserService {
 				throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
 			}
 		}
-		if (!trimmedEmail.equals(user.getEmail()) && userRepository.existsByEmail(trimmedEmail)) {
-			throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+		if (!trimmedEmail.equals(user.getEmail())) {
+			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
+			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
+			if (!emailVerificationService.isVerified(trimmedEmail)) {
+				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
+			}
+			if (userRepository.existsByEmail(trimmedEmail)) {
+				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+			}
+			user.changePortalProfile(trimmedNickname, trimmedEmail);
+			emailVerificationService.clear(trimmedEmail);
+		} else {
+			user.changePortalProfile(trimmedNickname, user.getEmail());
 		}
-
-		user.changePortalProfile(trimmedNickname, trimmedEmail);
 		user.changeRealName(trimmedRealName);
 
 		// 비밀번호 변경은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
@@ -119,6 +130,12 @@ public class UserService {
 				.enabled(user.isLoginable())
 				.roleName(user.getRole().authority())
 				.build();
+	}
+
+	// [회원탈퇴] 상태만 WITHDRAWN으로 바꾸는 소프트 삭제 - User.withdraw() 참고.
+	@Transactional
+	public void withdraw(User user) {
+		user.withdraw();
 	}
 
 	private static boolean hasText(String value) {
