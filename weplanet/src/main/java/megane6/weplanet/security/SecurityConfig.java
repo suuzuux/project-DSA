@@ -8,7 +8,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
@@ -28,6 +27,7 @@ public class SecurityConfig {
             "/",
             "/home",
             "/signup",
+            "/signup/id",
             "/signup/email/**",
             "/signup/username/**",
             "/find-id",
@@ -35,6 +35,7 @@ public class SecurityConfig {
             "/find-password",
             "/find-password/**",
             "/login",
+            "/login/id",
             "/portal/login",
             "/api/schedules",
             "/api/notifications",
@@ -52,10 +53,14 @@ public class SecurityConfig {
             "/js/**",
             "/img/**",
             "/signup-wireframe",
-            "/login-wireframe"
+            "/login-wireframe",
+            "/oauth2/authorization/**",
+            "/login/oauth2/code/**",
+            "/social-login/**"
     );
     
     private final LoginSuccessHandler loginSuccessHandler;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -76,6 +81,10 @@ public class SecurityConfig {
                         .failureHandler(portalAwareFailureHandler())
                         .permitAll()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
+                        .successHandler(oAuth2LoginSuccessHandler)
+                )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .invalidateHttpSession(true)
@@ -84,11 +93,6 @@ public class SecurityConfig {
                 );
         
         return http.build();
-    }
-    
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {

@@ -49,6 +49,7 @@ SET UNIQUE_CHECKS = 0;
 -- ------------------------------------------------------------
 DROP TABLE IF EXISTS `community_profiles`;
 DROP TABLE IF EXISTS `community_members`;
+DROP TABLE IF EXISTS `board_media_like`;
 DROP TABLE IF EXISTS `board_media_files`;
 DROP TABLE IF EXISTS `board_media`;
 DROP TABLE IF EXISTS `comment_report`;
@@ -116,15 +117,19 @@ CREATE TABLE `users` (
   `created_at` datetime(6) NOT NULL COMMENT '가입 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '정보 수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '탈퇴(soft delete) 시각',
+  `provider` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LOCAL' COMMENT '가입 경로: LOCAL/GOOGLE/KAKAO/LINE',
+  `provider_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 플랫폼 고유 ID (LOCAL 가입자는 NULL)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
   UNIQUE KEY `uk_users_email` (`email`),
   UNIQUE KEY `uk_users_nickname` (`nickname`),
+  UNIQUE KEY `uk_users_provider_provider_id` (`provider`, `provider_id`),
   KEY `idx_users_role_status` (`role`, `status`),
   KEY `idx_users_phone_hash` (`phone_hash`),
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
-  CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN'))
+  CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN')),
+  CONSTRAINT `ck_users_provider` CHECK (`provider` IN (_utf8mb4'LOCAL', _utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
 
 -- email_verification: 이메일 인증 기록
@@ -436,6 +441,7 @@ CREATE TABLE `community_profiles` (
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
   `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
+  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
   `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
@@ -555,6 +561,7 @@ CREATE TABLE `board_media` (
   `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '삭제(soft delete) 시각',
+  `like_count` int NOT NULL DEFAULT 0 COMMENT '좋아요 수(비정규화 카운트)',
   PRIMARY KEY (`id`),
   KEY `idx_bm_group` (`group_id`, `created_at`),
   KEY `idx_bm_uploader` (`uploader_id`),
@@ -579,6 +586,19 @@ CREATE TABLE `board_media_files` (
   CONSTRAINT `fk_bmf_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`) ON DELETE CASCADE,
   CONSTRAINT `ck_bmf_media_type` CHECK (`media_type` IN (_utf8mb4'IMAGE', _utf8mb4'VIDEO'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 첨부 파일';
+
+-- board_media_like: 미디어 게시글 좋아요
+CREATE TABLE `board_media_like` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '좋아요 PK',
+  `board_id` bigint NOT NULL COMMENT '미디어 게시글(board_media.id)',
+  `user_id` bigint NOT NULL COMMENT '좋아요한 회원(users.id)',
+  `created_at` datetime(6) NOT NULL COMMENT '좋아요 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_board_media_like` (`board_id`, `user_id`),
+  KEY `idx_bml_user` (`user_id`),
+  CONSTRAINT `fk_bml_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`),
+  CONSTRAINT `fk_bml_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 좋아요';
 
 -- chat_message: 팬–아티스트 DM (CHAT-01/02)
 CREATE TABLE `chat_message` (
@@ -991,22 +1011,6 @@ WHERE f.username IN ('hwiwhi', 'asd123')
     );
 
 
--- ------------------------------------------------------------
--- 확인용
--- ------------------------------------------------------------
-CREATE TABLE `community_profiles` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '커뮤니티 프로필 PK',
-  `community_member_id` bigint NOT NULL COMMENT 'community_members.id (1:1)',
-  `nickname` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '해당 커뮤니티 전용 닉네임',
-  `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
-  `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
-  `background_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배경 이미지 저장 파일명',
-  `content_hidden` tinyint(1) NOT NULL DEFAULT 0 COMMENT '프로필 콘텐츠 숨기기(1=비공개)',
-  `created_at` datetime(6) NOT NULL COMMENT '생성 시각',
-  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_cp_member` (`community_member_id`),
-  CONSTRAINT `fk_cp_member` FOREIGN KEY (`community_member_id`) REFERENCES `community_members` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티별 독립 프로필';
+
 
 

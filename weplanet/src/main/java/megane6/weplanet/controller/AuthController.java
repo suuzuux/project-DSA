@@ -41,7 +41,13 @@ public class AuthController {
 		return result;
 	}
 	
+	// 회원가입 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택하는 목업 화면)
 	@GetMapping("/signup")
+	public String signupEntry() {
+		return "signup-wireframe";
+	}
+	
+	@GetMapping("/signup/id")
 	public String signupForm(Model model) {
 		model.addAttribute("signupRequestDto", new SignupRequestDto());
 		return "signup-id";
@@ -69,7 +75,13 @@ public class AuthController {
 		return "redirect:/login";
 	}
 	
+	// 로그인 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택하는 목업 화면)
 	@GetMapping("/login")
+	public String loginEntry() {
+		return "login-wireframe";
+	}
+	
+	@GetMapping("/login/id")
 	public String loginForm() {
 		return "login-id";
 	}

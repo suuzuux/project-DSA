@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.convert.PlaintextBytesConverter;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Gender;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -85,7 +86,14 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;		// 탈퇴(소프트 삭제) 처리 시각
 	
-	private User(String username, String password, String realName, String nickname, String email, Role role) {
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private AuthProvider provider;		// 가입 경로 (LOCAL/GOOGLE/KAKAO/LINE)
+	
+	@Column(name = "provider_id", length = 255)
+	private String providerId;		// 소셜 플랫폼 고유 ID (LOCAL 가입자는 null)
+	
+	private User(String username, String password, String realName, String nickname, String email, Role role, AuthProvider provider, String providerId) {
 		this.username = username;
 		this.password = password;
 		this.realName = realName;
@@ -93,6 +101,19 @@ public class User {
 		this.email	  = email;
 		this.role = role;
 		this.status = UserStatus.ACTIVE;
+		this.provider = provider;
+		this.providerId = providerId;
+	}
+	
+	private User(String username, String password, String realName, String nickname, String email, Role role) {
+		this(username, password, realName, nickname, email, role, AuthProvider.LOCAL, null);
+	}
+	
+	// 소셜 로그인(구글 등) 최초 로그인 시 자동 생성되는 팬 계정.
+	// password는 실제 로그인에 쓰이지 않지만 컬럼이 NOT NULL이라, 호출부(OAuth2LoginSuccessHandler)에서
+	// 무작위 값을 BCrypt로 인코딩해서 넘겨준다. realName은 소셜 플랫폼이 제공하는 이름값을 그대로 저장한다.
+	public static User createSocialFan(String username, String encodedPassword, String realName, String nickname, String email, AuthProvider provider, String providerId) {
+		return new User(username, encodedPassword, realName, nickname, email, Role.FAN, provider, providerId);
 	}
 	
 	// 공개 회원가입에서 쓰는 팩토리 - 선택 항목(gender/phone/birthDate/주소)은 나중에 마이페이지에서 채움
