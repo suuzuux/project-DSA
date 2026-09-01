@@ -89,7 +89,7 @@
     </div>
   </th:block>
 
-  <th:block th:if="${showWriteButton}" sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <th:block th:if="${showWriteButton}" sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
   </th:block>
 
