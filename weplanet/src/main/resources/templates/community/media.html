@@ -40,35 +40,38 @@
 
       <div class="feed" th:if="${not #lists.isEmpty(mediaList)}">
         <article class="post-card" th:each="post : ${mediaList}">
-          <div class="post-card__head">
-            <div class="avatar" th:text="${#strings.substring(artist.nickname(),0,1)}">M</div>
-            <div class="post-card__meta">
-              <div class="post-card__name">
-                <span th:text="${post.title}">제목</span>
+          <a th:href="@{/community/{artistId}/media/{mediaId}(artistId=${artist.id()}, mediaId=${post.id})}"
+             style="display:block;color:inherit;">
+            <div class="post-card__head">
+              <div class="avatar" th:text="${#strings.substring(artist.nickname(),0,1)}">M</div>
+              <div class="post-card__meta">
+                <div class="post-card__name">
+                  <span th:text="${post.title}">제목</span>
+                </div>
+                <div class="post-card__time"
+                     th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                     th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
               </div>
-              <div class="post-card__time"
-                   th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                   th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
             </div>
-          </div>
 
-          <p class="post-card__body" th:if="${post.content != null and !#strings.isEmpty(post.content)}"
-             th:text="${post.content}"></p>
+            <p class="post-card__body" th:if="${post.content != null and !#strings.isEmpty(post.content)}"
+               th:text="${post.content}"></p>
 
-          <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
-            <th:block th:each="file : ${post.files}">
-              <img th:if="${file.mediaType == 'IMAGE'}"
-                   th:src="@{/board/media/file/{id}(id=${file.id})}"
-                   th:alt="${file.originalName}"
-                   style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;object-fit:cover;margin-bottom:8px;" />
-              <video th:if="${file.mediaType == 'VIDEO'}"
+            <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
+              <th:block th:each="file : ${post.files}">
+                <img th:if="${file.mediaType == 'IMAGE'}"
                      th:src="@{/board/media/file/{id}(id=${file.id})}"
-                     controls
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;margin-bottom:8px;"></video>
-            </th:block>
-          </div>
+                     th:alt="${file.originalName}"
+                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;object-fit:cover;margin-bottom:8px;" />
+              </th:block>
+            </div>
+          </a>
 
           <div class="post-card__actions" style="justify-content:space-between;">
+            <span style="display:inline-flex;align-items:center;gap:4px;">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              <span th:if="${post.likeCount > 0}" th:text="${post.likeCount}"></span>
+            </span>
             <span class="text-xs text-muted" th:text="'첨부 ' + ${post.fileCount} + '개'"></span>
             <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
                   th:action="@{/board/media/{id}/delete(id=${post.id})}"

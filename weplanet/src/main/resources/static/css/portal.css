@@ -664,3 +664,19 @@
 .status-dot--ok { background: var(--wp-success); }
 .status-dot--warn { background: var(--wp-accent); }
 .status-dot--down { background: var(--wp-danger); }
+
+.btn.is-pin-on {
+  background: var(--wp-brand);
+  color: #fff;
+  border-color: var(--wp-brand);
+}
+
+.notice-drag-handle {
+  cursor: grab;
+  color: var(--wp-muted);
+  user-select: none;
+}
+
+tr.js-pinned.is-dragging {
+  opacity: 0.55;
+}

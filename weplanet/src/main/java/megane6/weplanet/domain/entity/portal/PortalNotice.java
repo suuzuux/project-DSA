@@ -31,6 +31,12 @@ public class PortalNotice {
     @Column(nullable = false)
     private boolean published;
 
+    @Column(nullable = false)
+    private boolean pinned;
+
+    @Column(name = "pin_order")
+    private Integer pinOrder;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -52,6 +58,11 @@ public class PortalNotice {
         this.title = title.trim();
         this.content = content.trim();
         this.published = published;
+    }
+
+    public void applyPin(boolean pinned, Integer pinOrder) {
+        this.pinned = pinned;
+        this.pinOrder = pinOrder;
     }
 
     @PrePersist

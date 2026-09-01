@@ -109,6 +109,7 @@
 .month-chip[data-cat="RADIO"] { background: #d7f3f0; color: #0f6b6b; }
 .month-chip[data-cat="AWARDS"] { background: #fff0d9; color: #b45309; }
 .month-chip[data-cat="PHOTO_MAGAZINE"] { background: #fce7f3; color: #be185d; }
+.month-chip[data-cat="BIRTHDAY"] { background: #fff4cc; color: #9a6700; }
 .month-chip[data-cat="OTHER"] { background: #ececf2; color: #4b4d57; }
 .month-cal__more { font-size: 11px; color: #8b8fa3; }
 

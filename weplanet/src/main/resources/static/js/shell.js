@@ -119,7 +119,7 @@
 
   <nav class="drawer-menu__nav">
     <a href="${base}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
-    <a href="#" data-shell-alert="공지사항 (목업)"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
+    <a href="${isAdmin ? base + "admin/notices" : base + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
     <a href="${base}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
     <a href="${base}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
     <a href="${base}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
