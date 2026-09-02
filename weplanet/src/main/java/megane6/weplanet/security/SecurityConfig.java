@@ -51,6 +51,9 @@ public class SecurityConfig {
             "/board/**",
             "/notices",
             "/notices/**",
+            "/shop",
+            "/shop/**",
+            "/membership",
             "/css/**",
             "/js/**",
             "/img/**"
