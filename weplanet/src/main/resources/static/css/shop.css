@@ -160,6 +160,11 @@
   color: var(--wp-brand-dark);
 }
 
+.shop-artist-chip.is-locked {
+  cursor: default;
+  pointer-events: none;
+}
+
 .shop-artist-chip .avatar {
   width: 48px;
   height: 48px;
