@@ -23,7 +23,12 @@
       </a>
     </div>
     <div class="header-actions">
-      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니" title="장바구니">🛒</a>
+      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니" title="장바구니">
+        🛒
+        <span th:if="${cartItemCount != null && cartItemCount > 0}"
+              class="shop-cart-badge"
+              th:text="${cartItemCount}">0</span>
+      </a>
       <th:block sec:authorize="isAnonymous()">
         <a class="btn btn--ghost btn--sm" th:href="@{/login}">로그인</a>
       </th:block>
@@ -51,7 +56,11 @@
       </th:block>
       <div class="shop-header__actions">
         <a class="btn btn--soft btn--sm" th:href="@{/membership}">멤버십 혜택 보기</a>
-        <a class="btn btn--ghost btn--sm" th:href="@{/shop/cart}">장바구니</a>
+        <a class="btn btn--ghost btn--sm" th:href="@{/shop/cart}">
+          장바구니
+          <span th:if="${cartItemCount != null && cartItemCount > 0}"
+                th:text="'(' + ${cartItemCount} + ')'">(0)</span>
+        </a>
         <a th:if="${communityMode}" class="btn btn--ghost btn--sm" th:href="@{/shop}">전체 굿즈샵 보기</a>
         <a th:if="${communityMode && selectedArtist != null}"
            class="btn btn--ghost btn--sm"

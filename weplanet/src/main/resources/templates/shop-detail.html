@@ -23,7 +23,12 @@
       </a>
     </div>
     <div class="header-actions">
-      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니">🛒</a>
+      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니">
+        🛒
+        <span th:if="${cartItemCount != null && cartItemCount > 0}"
+              class="shop-cart-badge"
+              th:text="${cartItemCount}">0</span>
+      </a>
     </div>
   </header>
 
@@ -60,20 +65,18 @@
 
         <div class="product-detail__options">
           <label for="qty">수량</label>
-          <select class="form-select" id="qty" style="max-width:120px;">
-            <option>1</option>
-            <option>2</option>
-            <option>3</option>
-            <option>4</option>
-            <option>5</option>
+          <select class="form-select" id="qty" name="quantity" form="addToCartForm" style="max-width:120px;">
+            <option th:each="n : ${#numbers.sequence(1, 5)}" th:value="${n}" th:text="${n}">1</option>
           </select>
         </div>
 
         <div class="stack">
-          <button type="button" class="btn btn--primary btn--block btn--lg"
-                  th:onclick="|location.href='@{/shop/cart}'|">
-            장바구니 담기
-          </button>
+          <form id="addToCartForm" th:action="@{/shop/cart/add}" method="post">
+            <input type="hidden" name="productId" th:value="${product.id()}" />
+            <button type="submit" class="btn btn--primary btn--block btn--lg">
+              장바구니 담기
+            </button>
+          </form>
           <button type="button" class="btn btn--accent btn--block"
                   onclick="WePlaNet.alert('결제 페이지 (목업)')">
             바로 구매
@@ -91,5 +94,6 @@
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/shop.js}"></script>
 </body>
 </html>
