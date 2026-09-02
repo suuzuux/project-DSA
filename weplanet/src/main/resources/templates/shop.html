@@ -118,23 +118,9 @@
       </div>
 
       <div class="product-grid" id="shopProductGrid">
-        <a class="product-card"
-           th:each="product : ${products}"
-           th:href="@{/shop/products/{id}(id=${product.id()},from=${communityMode ? 'community' : null})}"
-           th:attr="data-category=${product.category()},data-title=${product.title()}">
-          <div class="product-card__thumb">
-            <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
-            상품 이미지
-          </div>
-          <div class="product-card__body">
-            <span class="product-card__artist" th:text="${product.artistName()}">아티스트</span>
-            <h3 class="product-card__title" th:text="${product.title()}">상품명</h3>
-            <p class="product-card__price">
-              <span th:text="${product.formattedPrice()}">₩ 0</span>
-              <small th:if="${product.priceSuffix() != null}" th:text="${product.priceSuffix()}">다운로드</small>
-            </p>
-          </div>
-        </a>
+        <th:block th:each="product : ${products}">
+          <article th:replace="~{fragments/shop-product-card :: shopProductCard(${product}, ${communityMode})}"></article>
+        </th:block>
       </div>
 
       <p class="text-sm text-muted mt-16" th:if="${#lists.isEmpty(products)}">
@@ -149,6 +135,7 @@
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/shop.js}"></script>
   <script>
     (function () {
       var grid = document.getElementById("shopProductGrid");

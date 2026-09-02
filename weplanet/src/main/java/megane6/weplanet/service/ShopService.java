@@ -9,10 +9,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -53,6 +56,22 @@ public class ShopService {
 				.flatMap(List::stream)
 				.filter(product -> product.id().equals(productId))
 				.findFirst();
+	}
+
+	/** 장바구니 추천 — 담긴 상품 제외, 부족하면 전체에서 채움 */
+	public List<ShopProductView> getRecommendedProducts(Collection<String> excludeProductIds, int limit) {
+		ensureCatalog();
+		List<ShopProductView> all = getProducts(null);
+		Set<String> exclude = excludeProductIds == null
+				? Set.of()
+				: new LinkedHashSet<>(excludeProductIds);
+		List<ShopProductView> candidates = all.stream()
+				.filter(product -> !exclude.contains(product.id()))
+				.toList();
+		if (candidates.isEmpty()) {
+			candidates = all;
+		}
+		return candidates.stream().limit(limit).toList();
 	}
 
 	private void ensureCatalog() {
