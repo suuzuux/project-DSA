@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
+import megane6.weplanet.domain.dto.ShopCartItemView;
 import megane6.weplanet.domain.dto.ShopCartSummaryView;
 import megane6.weplanet.domain.dto.ShopProductView;
 import megane6.weplanet.domain.entity.User;
@@ -25,9 +26,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Controller
 @RequiredArgsConstructor
@@ -102,10 +105,14 @@ public class ShopController {
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		ShopCartSummaryView cart = shopCartService.getCartSummary(me);
+		Set<String> inCartProductIds = cart.items().stream()
+				.map(item -> item.product().id())
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 		populateShellMenu(principal, model);
 		model.addAttribute("cart", cart);
 		model.addAttribute("cartItemCount", cart.items().size());
 		model.addAttribute("shopReturnUrl", resolveShopReturnUrl(session));
+		model.addAttribute("recommendedProducts", shopService.getRecommendedProducts(inCartProductIds, 12));
 		return "shop-cart";
 	}
 
@@ -119,10 +126,13 @@ public class ShopController {
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		shopCartService.addItem(me, productId, quantity);
+		ShopCartSummaryView cart = shopCartService.getCartSummary(me);
 		Map<String, Object> body = new LinkedHashMap<>();
 		body.put("ok", true);
 		body.put("message", "장바구니에 담았습니다.");
 		body.put("cartCount", shopCartService.countItems(me));
+		body.put("addedProductId", productId);
+		body.put("cart", toCartJson(cart));
 		return body;
 	}
 
@@ -193,5 +203,40 @@ public class ShopController {
 		}
 		User me = userResolver.resolve(principal, 1L);
 		model.addAttribute("cartItemCount", shopCartService.countItems(me));
+	}
+
+	private Map<String, Object> toCartJson(ShopCartSummaryView cart) {
+		Map<String, Object> map = new LinkedHashMap<>();
+		map.put("items", cart.items().stream().map(this::toCartItemJson).toList());
+		map.put("subtotal", cart.subtotal());
+		map.put("shippingFee", cart.shippingFee());
+		map.put("total", cart.total());
+		map.put("formattedSubtotal", cart.formattedSubtotal());
+		map.put("formattedShippingFee", cart.formattedShippingFee());
+		map.put("formattedTotal", cart.formattedTotal());
+		map.put("empty", cart.empty());
+		return map;
+	}
+
+	private Map<String, Object> toCartItemJson(ShopCartItemView item) {
+		Map<String, Object> map = new LinkedHashMap<>();
+		map.put("itemId", item.itemId());
+		map.put("quantity", item.quantity());
+		map.put("unitPrice", item.unitPrice());
+		map.put("lineTotal", item.lineTotal());
+		map.put("formattedLineTotal", item.formattedLineTotal());
+		map.put("product", toProductJson(item.product()));
+		return map;
+	}
+
+	private Map<String, Object> toProductJson(ShopProductView product) {
+		Map<String, Object> map = new LinkedHashMap<>();
+		map.put("id", product.id());
+		map.put("title", product.title());
+		map.put("artistName", product.artistName());
+		map.put("categoryLabel", product.categoryLabel());
+		map.put("membershipOnly", product.membershipOnly());
+		map.put("formattedPrice", product.formattedPrice());
+		return map;
 	}
 }
