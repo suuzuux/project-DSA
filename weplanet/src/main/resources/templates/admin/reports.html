@@ -42,9 +42,36 @@
     <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
     <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <a th:href="@{/admin/reports}" class="btn btn--sm btn--primary">통합 신고함</a>
+      <a th:href="@{/admin/reports/suspended}" class="btn btn--sm btn--ghost">제재 대상</a>
+    </div>
     <section class="panel">
+      <form method="get" th:action="@{/admin/reports}"
+            style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        <select name="type">
+          <option value="" th:selected="${selectedType == null}">전체 유형</option>
+          <option value="POST" th:selected="${selectedType == 'POST'}">게시글</option>
+          <option value="COMMENT" th:selected="${selectedType == 'COMMENT'}">댓글</option>
+        </select>
+        <select name="status">
+          <option value="PENDING" th:selected="${selectedStatus == 'PENDING'}">처리 대기</option>
+          <option value="DISMISSED" th:selected="${selectedStatus == 'DISMISSED'}">처리완료(기각)</option>
+        </select>
+        <select name="reason">
+          <option value="" th:selected="${selectedReason == null}">전체 사유</option>
+          <option value="SPAM" th:selected="${selectedReason == 'SPAM'}">스팸</option>
+          <option value="ABUSE" th:selected="${selectedReason == 'ABUSE'}">욕설·혐오</option>
+          <option value="SEXUAL" th:selected="${selectedReason == 'SEXUAL'}">음란물</option>
+          <option value="ETC" th:selected="${selectedReason == 'ETC'}">기타</option>
+        </select>
+        <input type="text" name="keyword" placeholder="작성자 닉네임 검색" th:value="${keyword}" />
+        <button type="submit" class="btn btn--primary btn--sm">검색</button>
+        <a th:href="@{/admin/reports}" class="btn btn--ghost btn--sm">초기화</a>
+      </form>
       <div class="panel__head">
-        <h2 class="panel__title">처리 대기 신고</h2>
+        <h2 class="panel__title"
+            th:text="${selectedStatus == 'PENDING'} ? '처리 대기 신고' : '처리완료 신고'">처리 대기 신고</h2>
         <span class="text-xs text-muted" th:text="${#lists.size(reports)} + '건'">0건</span>
       </div>
 
@@ -53,7 +80,9 @@
           <thead>
             <tr>
               <th>유형</th>
+              <th>상태</th>
               <th>사유</th>
+              <th>신고 수</th>
               <th>대상</th>
               <th>작성자</th>
               <th>신고자</th>
@@ -63,7 +92,7 @@
           </thead>
           <tbody>
             <tr th:if="${#lists.isEmpty(reports)}">
-              <td colspan="7" class="text-sm text-muted">처리 대기 중인 신고가 없습니다.</td>
+              <td colspan="9" class="text-sm text-muted">처리 대기 중인 신고가 없습니다.</td>
             </tr>
             <tr th:each="r : ${reports}" th:with="isPost=${r.targetType.name() == 'POST'}, segment=${isPost ? 'posts' : 'comments'}">
               <td>
@@ -71,23 +100,28 @@
                       th:text="${isPost} ? '게시글' : '댓글'">게시글</span>
               </td>
               <td>
-                <span class="tag tag--danger" th:text="${r.reason}">SPAM</span>
+                <span class="tag" th:classappend="${r.status.name() == 'PENDING'} ? ' tag--danger' : ' tag--public'"
+                      th:text="${r.status.name() == 'PENDING'} ? '대기' : '처리완료'">대기</span>
               </td>
+              <td>
+                <span class="tag tag--danger" th:text="${r.latestReason}">SPAM</span>
+              </td>
+              <td th:text="${r.reportCount} + '건'">1건</td>
               <td>
                 <strong th:text="${r.targetTitle}">제목</strong><br />
                 <span class="text-xs text-muted" th:text="${r.targetExcerpt}">본문 일부</span>
               </td>
               <td th:text="${r.authorNickname}">작성자</td>
-              <td th:text="${r.reporterNickname}">신고자</td>
-              <td th:text="${#temporals.format(r.createdAt, 'yyyy.MM.dd HH:mm')}">2026.09.02 12:00</td>
+              <td th:text="${r.latestReporterNickname} + (${r.reportCount} > 1 ? ' 외 ' + (${r.reportCount} - 1) + '명' : '')">신고자</td>
+              <td th:text="${#temporals.format(r.latestReportedAt, 'yyyy.MM.dd HH:mm')}">2026.09.02 12:00</td>
               <td>
                 <div class="flex-center">
-                  <form th:action="@{/admin/reports/{segment}/{id}/dismiss(segment=${segment},id=${r.reportId})}"
+                  <form th:action="@{/admin/reports/{segment}/{id}/dismiss(segment=${segment},id=${r.targetId})}"
                         method="post">
                     <button type="submit" class="btn btn--ghost btn--sm"
-                            onclick="return confirm('이 신고를 기각할까요? (게시물/댓글은 그대로 유지됩니다)');">기각</button>
+                            onclick="return confirm('이 대상에 걸린 신고를 전부 기각할까요? (게시물/댓글은 그대로 유지됩니다)');">기각</button>
                   </form>
-                  <form th:action="@{/admin/reports/{segment}/{id}/delete-content(segment=${segment},id=${r.reportId})}"
+                  <form th:action="@{/admin/reports/{segment}/{id}/delete-content(segment=${segment},id=${r.targetId})}"
                         method="post">
                     <button type="submit" class="btn btn--ghost btn--sm"
                             onclick="return confirm('신고된 게시물/댓글을 삭제할까요? 되돌릴 수 없습니다.');">대상 삭제</button>
