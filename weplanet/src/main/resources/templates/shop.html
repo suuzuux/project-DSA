@@ -1,182 +1,179 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    [와이어프레임 연계] WePlaNet Shop (상점)
-    ------------------------------------------------------------
-    PDF에는 Shop 전용 화면은 없고, 아래 맥락으로 구성:
-    - P13 메뉴: 🧺 Shop
-    - P27 멤버십: Shop 내 아티스트 콘텐츠 구매 혜택
-    - 커뮤니티 헤더 🧺 아이콘
-    - 메인 배너: 공식 MD 선예매
-  -->
-  <title>WePlaNet Shop</title>
-  <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/shell.css" />
-  <link rel="stylesheet" href="../css/shop.css" />
+  <title th:text="${communityMode && selectedArtist != null ? selectedArtist.nickname() + ' 굿즈샵' : 'WePlaNet Shop'}">WePlaNet Shop</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" th:href="@{/css/shop.css}" />
 </head>
-<body data-shell="fan" data-base="">
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
   <header class="site-header">
     <div class="header-left">
       <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-      <a class="brand" href="home.html">
+      <a class="brand" th:href="@{/}">
         <span class="brand__mark">W</span>
         <span class="brand__text">We<span>Pla</span>Net</span>
       </a>
     </div>
     <div class="header-actions">
-      <a class="icon-btn" href="shop-cart.html" aria-label="장바구니" title="장바구니">🛒</a>
-      <button type="button" class="icon-btn icon-btn--badge" aria-label="알림">🔔</button>
-      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
-      <a class="btn btn--ghost btn--sm" href="index.html">로그아웃</a>
+      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니" title="장바구니">
+        🛒
+        <span th:if="${cartItemCount != null && cartItemCount > 0}"
+              class="shop-cart-badge"
+              th:text="${cartItemCount}">0</span>
+      </a>
+      <th:block sec:authorize="isAnonymous()">
+        <a class="btn btn--ghost btn--sm" th:href="@{/login}">로그인</a>
+      </th:block>
+      <th:block sec:authorize="isAuthenticated()">
+        <form th:action="@{/logout}" method="post" style="display:inline;">
+          <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+        </form>
+      </th:block>
     </div>
   </header>
 
   <main class="container section">
     <header class="shop-header">
-      <h1>WePlaNet Shop</h1>
-      <p>아티스트 공식 MD · 디지털 콘텐츠 · 멤버십 전용 상품</p>
+      <th:block th:if="${communityMode && selectedArtist != null}">
+        <p class="text-xs text-muted mb-8">
+          <a th:href="@{/community/{id}/highlight(id=${selectedArtist.id()})}" th:text="${selectedArtist.nickname() + ' 커뮤니티'}">커뮤니티</a>
+          · 굿즈샵
+        </p>
+        <h1 th:text="${selectedArtist.nickname() + ' 굿즈샵'}">아티스트 굿즈샵</h1>
+        <p>이 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠만 표시됩니다.</p>
+      </th:block>
+      <th:block th:unless="${communityMode}">
+        <h1>WePlaNet Shop</h1>
+        <p>여러 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠 · 멤버십 전용 상품</p>
+      </th:block>
       <div class="shop-header__actions">
-        <a class="btn btn--soft btn--sm" href="membership.html">멤버십 혜택 보기</a>
-        <a class="btn btn--ghost btn--sm" href="shop-cart.html">장바구니 (2)</a>
+        <a class="btn btn--soft btn--sm" th:href="@{/membership}">멤버십 혜택 보기</a>
+        <a class="btn btn--ghost btn--sm" th:href="@{/shop/cart}">
+          장바구니
+          <span th:if="${cartItemCount != null && cartItemCount > 0}"
+                th:text="'(' + ${cartItemCount} + ')'">(0)</span>
+        </a>
+        <a th:if="${communityMode}" class="btn btn--ghost btn--sm" th:href="@{/shop}">전체 굿즈샵 보기</a>
+        <a th:if="${communityMode && selectedArtist != null}"
+           class="btn btn--ghost btn--sm"
+           th:href="@{/community/{id}/highlight(id=${selectedArtist.id()})}">← 커뮤니티</a>
       </div>
     </header>
 
-    <!-- 아티스트별 Shop -->
-    <section aria-label="아티스트 Shop">
+    <!-- 전체 굿즈샵: 아티스트 선택 -->
+    <section th:if="${!communityMode}" aria-label="아티스트 Shop">
       <p class="drawer-menu__section-title" style="margin-bottom:10px;">아티스트 Shop</p>
       <div class="shop-artist-row">
-        <a class="shop-artist-chip is-active" href="shop.html">
+        <a class="shop-artist-chip"
+           th:classappend="${selectedArtistId == null} ? ' is-active'"
+           th:href="@{/shop}">
           <div class="avatar">ALL</div>
           전체
         </a>
-        <a class="shop-artist-chip" href="shop.html?artist=riize">
-          <div class="avatar">RZ</div>
-          RIIZE
-        </a>
-        <a class="shop-artist-chip" href="shop.html?artist=cortis">
-          <div class="avatar">CT</div>
-          CORTIS
-        </a>
-        <a class="shop-artist-chip" href="shop.html?artist=aespa">
-          <div class="avatar">AE</div>
-          aespa
-        </a>
-        <a class="shop-artist-chip" href="shop.html?artist=treasure">
-          <div class="avatar">TR</div>
-          TREASURE
+        <a class="shop-artist-chip"
+           th:each="artist : ${artists}"
+           th:classappend="${selectedArtistId != null && selectedArtistId == artist.id()} ? ' is-active'"
+           th:href="@{/shop(artistId=${artist.id()})}">
+          <div class="avatar" th:text="${artist.logo()}">AR</div>
+          <span th:text="${artist.nickname()}">아티스트</span>
         </a>
       </div>
     </section>
 
-    <!-- 필터 -->
+    <!-- 커뮤니티 굿즈샵: 현재 아티스트 고정 -->
+    <section th:if="${communityMode && selectedArtist != null}" aria-label="아티스트 Shop">
+      <p class="drawer-menu__section-title" style="margin-bottom:10px;">아티스트</p>
+      <div class="shop-artist-row">
+        <span class="shop-artist-chip is-active is-locked" aria-current="true">
+          <div class="avatar" th:text="${selectedArtist.logo()}">AR</div>
+          <span th:text="${selectedArtist.nickname()}">아티스트</span>
+        </span>
+      </div>
+    </section>
+
     <div class="shop-filters">
       <div class="chip-row">
-        <button type="button" class="chip is-active">전체</button>
-        <button type="button" class="chip">MD · 굿즈</button>
-        <button type="button" class="chip">디지털</button>
-        <button type="button" class="chip">멤버십 전용</button>
+        <button type="button" class="chip is-active" data-shop-filter="all">전체</button>
+        <button type="button" class="chip" data-shop-filter="md">MD · 굿즈</button>
+        <button type="button" class="chip" data-shop-filter="digital">디지털</button>
+        <button type="button" class="chip" data-shop-filter="membership">멤버십 전용</button>
       </div>
-      <input class="form-input shop-search" type="search" placeholder="상품명 검색" />
+      <input class="form-input shop-search" type="search" placeholder="상품명 검색" id="shopSearchInput" />
     </div>
 
-    <!-- 프로모 배너 -->
-    <div class="cta-banner mb-24">
-      <div>
-        <p>2026 공식 투어 MD 선예매</p>
-        <p class="text-sm text-muted mt-8">멤버십 회원 우선 구매 · 8/25 ~ 9/1</p>
-      </div>
-      <a class="btn btn--accent btn--sm" href="shop-detail.html">상품 보기</a>
-    </div>
-
-    <!-- 상품 목록 -->
     <section>
       <div class="section__head">
-        <h2 class="section__title">인기 상품</h2>
-        <select class="form-select" style="width:auto;min-height:36px;">
-          <option>인기순</option>
-          <option>최신순</option>
-          <option>가격 낮은순</option>
-          <option>가격 높은순</option>
-        </select>
+        <h2 class="section__title"
+            th:text="${communityMode && selectedArtist != null ? selectedArtist.nickname() + ' 상품' : (selectedArtist != null ? selectedArtist.nickname() + ' 상품' : '전체 상품')}">
+          상품
+        </h2>
       </div>
 
-      <div class="product-grid">
-        <a class="product-card" href="shop-detail.html">
-          <div class="product-card__thumb">상품 이미지</div>
-          <div class="product-card__body">
-            <span class="product-card__artist">RIIZE</span>
-            <h3 class="product-card__title">2026 RIIZE OFFICIAL LIGHT STICK Ver.2</h3>
-            <p class="product-card__price">₩ 59,000</p>
-          </div>
-        </a>
-
-        <a class="product-card" href="shop-detail.html">
-          <div class="product-card__thumb">
-            <span class="product-card__badge tag tag--member">멤버십</span>
-            상품 이미지
-          </div>
-          <div class="product-card__body">
-            <span class="product-card__artist">RIIZE</span>
-            <h3 class="product-card__title">멤버십 전용 포토카드 세트 (8종)</h3>
-            <p class="product-card__price">₩ 28,000</p>
-          </div>
-        </a>
-
-        <a class="product-card" href="shop-detail.html">
-          <div class="product-card__thumb">상품 이미지</div>
-          <div class="product-card__body">
-            <span class="product-card__artist">CORTIS</span>
-            <h3 class="product-card__title">2026 CORTIS TOUR 티셔츠 (Black)</h3>
-            <p class="product-card__price">₩ 45,000</p>
-          </div>
-        </a>
-
-        <a class="product-card" href="shop-detail.html">
-          <div class="product-card__thumb">
-            <span class="product-card__badge tag tag--member">멤버십</span>
-            상품 이미지
-          </div>
-          <div class="product-card__body">
-            <span class="product-card__artist">CORTIS</span>
-            <h3 class="product-card__title">BIRTHDAY PARTY 한정 응원봉 파우치</h3>
-            <p class="product-card__price">₩ 32,000</p>
-          </div>
-        </a>
-
-        <a class="product-card" href="shop-detail.html">
-          <div class="product-card__thumb">상품 이미지</div>
-          <div class="product-card__body">
-            <span class="product-card__artist">aespa</span>
-            <h3 class="product-card__title">SYNK : COMPLæXITY 공식 프로그램북</h3>
-            <p class="product-card__price">₩ 18,000</p>
-          </div>
-        </a>
-
-        <a class="product-card" href="shop-detail.html">
-          <div class="product-card__thumb">상품 이미지</div>
-          <div class="product-card__body">
-            <span class="product-card__artist">TREASURE</span>
-            <h3 class="product-card__title">TREASURE MAP Vol.87 디지털 패키지</h3>
-            <p class="product-card__price">₩ 12,000 <small>다운로드</small></p>
-          </div>
-        </a>
+      <div class="product-grid" id="shopProductGrid">
+        <th:block th:each="product : ${products}">
+          <article th:replace="~{fragments/shop-product-card :: shopProductCard(${product}, ${communityMode})}"></article>
+        </th:block>
       </div>
+
+      <p class="text-sm text-muted mt-16" th:if="${#lists.isEmpty(products)}">
+        표시할 상품이 없습니다.
+      </p>
+      <p class="text-sm text-muted mt-16" id="shopEmptyFilter" hidden>조건에 맞는 상품이 없습니다.</p>
     </section>
   </main>
 
-  <script src="../js/main.js"></script>
-  <script src="../js/shell.js"></script>
+  <script th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+  </script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/shop.js}"></script>
   <script>
-    /* chip 필터 목업 */
-    document.querySelectorAll(".shop-filters .chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        document.querySelectorAll(".shop-filters .chip").forEach((c) => c.classList.remove("is-active"));
-        chip.classList.add("is-active");
+    (function () {
+      var grid = document.getElementById("shopProductGrid");
+      if (!grid) return;
+      var cards = Array.prototype.slice.call(grid.querySelectorAll(".product-card"));
+      var emptyMsg = document.getElementById("shopEmptyFilter");
+      var searchInput = document.getElementById("shopSearchInput");
+      var activeFilter = "all";
+
+      function applyFilters() {
+        var query = (searchInput && searchInput.value || "").trim().toLowerCase();
+        var visible = 0;
+        cards.forEach(function (card) {
+          var category = card.getAttribute("data-category") || "";
+          var title = (card.getAttribute("data-title") || "").toLowerCase();
+          var categoryOk = activeFilter === "all" || category === activeFilter;
+          var searchOk = !query || title.indexOf(query) !== -1;
+          var show = categoryOk && searchOk;
+          card.hidden = !show;
+          if (show) visible++;
+        });
+        if (emptyMsg) emptyMsg.hidden = visible > 0 || cards.length === 0;
+      }
+
+      document.querySelectorAll("[data-shop-filter]").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          document.querySelectorAll("[data-shop-filter]").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          chip.classList.add("is-active");
+          activeFilter = chip.getAttribute("data-shop-filter") || "all";
+          applyFilters();
+        });
       });
-    });
+      if (searchInput) {
+        searchInput.addEventListener("input", applyFilters);
+      }
+    })();
   </script>
 </body>
 </html>
