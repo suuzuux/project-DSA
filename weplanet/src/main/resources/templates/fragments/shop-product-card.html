@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+<article th:fragment="shopProductCard(product, fromCommunity)"
+         class="product-card"
+         th:attr="data-category=${product.category()},data-title=${product.title()},data-product-id=${product.id()}">
+  <div class="product-card__media">
+    <a class="product-card__thumb"
+       th:href="@{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})}">
+      <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
+      상품 이미지
+    </a>
+    <button type="button"
+            class="product-card__cart-btn"
+            data-shop-add-cart="1"
+            th:attr="data-product-id=${product.id()}"
+            aria-label="장바구니 담기"
+            title="장바구니 담기">🛒</button>
+  </div>
+  <a class="product-card__body"
+     th:href="@{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})}">
+    <span class="product-card__artist" th:text="${product.artistName()}">아티스트</span>
+    <h3 class="product-card__title" th:text="${product.title()}">상품명</h3>
+    <p class="product-card__price">
+      <span th:text="${product.formattedPrice()}">₩ 0</span>
+      <small th:if="${product.priceSuffix() != null}" th:text="${product.priceSuffix()}">다운로드</small>
+    </p>
+  </a>
+</article>
+
+<article th:fragment="shopMarqueeCard(product)"
+         class="shop-marquee-card">
+  <div class="shop-marquee-card__media">
+    <a class="shop-marquee-card__thumb"
+       th:href="@{/shop/products/{id}(id=${product.id()})}">
+      <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
+      상품
+    </a>
+    <button type="button"
+            class="product-card__cart-btn product-card__cart-btn--sm"
+            data-shop-add-cart="1"
+            th:attr="data-product-id=${product.id()}"
+            aria-label="장바구니 담기"
+            title="장바구니 담기">🛒</button>
+  </div>
+  <a class="shop-marquee-card__body" th:href="@{/shop/products/{id}(id=${product.id()})}">
+    <strong th:text="${product.title()}">상품명</strong>
+    <span th:text="${product.formattedPrice()}">₩ 0</span>
+  </a>
+</article>
+</body>
+</html>
