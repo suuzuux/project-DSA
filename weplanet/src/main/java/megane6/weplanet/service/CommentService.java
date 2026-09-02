@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.CommentRepository;
 import org.springframework.stereotype.Service;
@@ -45,13 +46,16 @@ public class CommentService {
         return commentRepository.save(comment);
     }
 
-    // 댓글 삭제 - 작성자 본인만 삭제 가능
+    // 댓글 삭제 - 작성자 본인 또는 관리자만 삭제 가능 (관리자는 신고 처리를 위해 남의 댓글도 삭제할 수 있어야 함)
     public void deleteComment(Long commentId, User requester) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
 
-        if (!comment.getAuthor().getId().equals(requester.getId())) {
-            throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
+        boolean isAuthor = comment.getAuthor().getId().equals(requester.getId());
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) {
+            throw new IllegalStateException("본인이 작성한 댓글 또는 관리자만 삭제할 수 있습니다.");
         }
 
         // 댓글을 참조하는 신고 기록을 먼저 지운 뒤에 댓글을 삭제 (외래키 제약 위반 방지)

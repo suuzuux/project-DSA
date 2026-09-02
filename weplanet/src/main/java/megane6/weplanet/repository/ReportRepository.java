@@ -19,4 +19,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByPost_ArtistOrderByCreatedAtDesc(User artist);
 
     long countByPost_Artist(User artist);
+
+    // 관리자 "통합 신고·제재" 목록 - 전체 게시글 신고를 최신순으로
+    List<Report> findAllByOrderByCreatedAtDesc();
 }
