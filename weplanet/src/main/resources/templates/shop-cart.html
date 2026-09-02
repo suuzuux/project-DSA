@@ -1,103 +1,153 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [Shop] 장바구니 – 수량 · 합계 · 결제(목업) -->
   <title>장바구니 | WePlaNet Shop</title>
-  <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/shell.css" />
-  <link rel="stylesheet" href="../css/shop.css" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" th:href="@{/css/shop.css}" />
 </head>
-<body data-shell="fan" data-base="">
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
   <header class="site-header">
     <div class="header-left">
       <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
-      <a class="brand" href="shop.html">
+      <a class="brand" th:href="@{/shop}">
         <span class="brand__mark">W</span>
         <span class="brand__text">We<span>Pla</span>Net Shop</span>
       </a>
     </div>
     <div class="header-actions">
-      <button type="button" class="icon-btn">🌐</button>
+      <a class="icon-btn is-active" th:href="@{/shop/cart}" aria-label="장바구니">🛒</a>
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+      </form>
     </div>
   </header>
 
-  <main class="container section">
-    <div class="flex-between mb-24">
-      <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;">장바구니</h1>
-      <a class="btn btn--ghost btn--sm" href="shop.html">← 쇼핑 계속</a>
-    </div>
-
-    <div class="table-wrap mb-24">
-      <table class="cart-table">
-        <thead>
-          <tr>
-            <th>상품</th>
-            <th>수량</th>
-            <th>가격</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <div class="cart-product">
-                <div class="cart-product__thumb"></div>
-                <div>
-                  <strong>2026 RIIZE OFFICIAL LIGHT STICK Ver.2</strong>
-                  <p class="text-xs text-muted">Original Blue</p>
-                </div>
-              </div>
-            </td>
-            <td>
-              <select class="form-select" style="width:70px;min-height:36px;">
-                <option selected>1</option>
-                <option>2</option>
-              </select>
-            </td>
-            <td><strong>₩ 59,000</strong></td>
-            <td><button type="button" class="text-danger text-sm" onclick="WePlaNet.alert('삭제 (목업)')">삭제</button></td>
-          </tr>
-          <tr>
-            <td>
-              <div class="cart-product">
-                <div class="cart-product__thumb"></div>
-                <div>
-                  <strong>멤버십 전용 포토카드 세트</strong>
-                  <p class="text-xs text-muted"><span class="tag tag--member">멤버십</span> RIIZE</p>
-                </div>
-              </div>
-            </td>
-            <td>
-              <select class="form-select" style="width:70px;min-height:36px;">
-                <option selected>1</option>
-              </select>
-            </td>
-            <td><strong>₩ 28,000</strong></td>
-            <td><button type="button" class="text-danger text-sm">삭제</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <aside class="cart-summary">
-      <div class="cart-summary__row"><span>상품 금액</span><span>₩ 87,000</span></div>
-      <div class="cart-summary__row"><span>배송비</span><span>₩ 3,000</span></div>
-      <div class="cart-summary__row cart-summary__total">
-        <span>결제 예정</span>
-        <span>₩ 90,000</span>
+  <main class="section shop-cart-page" data-shop-cart-page>
+    <div class="container">
+      <div class="flex-between mb-24">
+        <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;">장바구니</h1>
+        <a class="btn btn--ghost btn--sm" th:href="${shopReturnUrl}">← 쇼핑 계속</a>
       </div>
-      <button type="button" class="btn btn--accent btn--block btn--lg mt-16" onclick="WePlaNet.alert('결제 (목업)')">
-        주문하기
-      </button>
-      <p class="text-xs text-muted mt-12" style="text-align:center;">
-        멤버십 전용 상품은 가입 상태에서만 결제됩니다.
-      </p>
-    </aside>
+
+      <p th:if="${message}" class="alert alert--success mb-16" th:text="${message}">알림</p>
+
+      <div th:if="${cart.empty()}" class="shop-cart-empty" id="shopCartEmpty">
+        <p class="text-muted">장바구니에 담긴 상품이 없습니다.</p>
+        <a class="btn btn--primary btn--sm mt-16" th:href="${shopReturnUrl}">굿즈 둘러보기</a>
+      </div>
+    </div>
+
+    <div class="shop-cart-layout-outer"
+         id="shopCartLayout"
+         th:classappend="${cart.empty()} ? ' is-hidden' : ''">
+      <div class="shop-cart-layout">
+        <div class="shop-cart-layout__list">
+          <div class="shop-cart-list">
+            <table class="cart-table">
+              <thead>
+                <tr>
+                  <th class="cart-table__product">상품</th>
+                  <th class="cart-table__qty">수량</th>
+                  <th class="cart-table__price">가격</th>
+                  <th class="cart-table__action"><span class="sr-only">삭제</span></th>
+                </tr>
+              </thead>
+              <tbody id="shopCartTableBody">
+                <tr th:each="item : ${cart.items()}" th:attr="data-product-id=${item.product().id()}">
+                  <td class="cart-table__product">
+                    <div class="cart-product">
+                      <div class="cart-product__thumb"></div>
+                      <div class="cart-product__info">
+                        <a class="cart-product__title"
+                           th:href="@{/shop/products/{id}(id=${item.product().id()})}"
+                           th:text="${item.product().title()}">상품명</a>
+                        <p class="text-xs text-muted cart-product__meta">
+                          <span th:if="${item.product().membershipOnly()}" class="tag tag--member">멤버십</span>
+                          <span th:text="${item.product().artistName()}">아티스트</span>
+                          · <span th:text="${item.product().categoryLabel()}">카테고리</span>
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="cart-table__qty">
+                    <form th:action="@{/shop/cart/{id}/update(id=${item.itemId()})}" method="post" class="cart-qty-form">
+                      <div class="cart-qty-stepper" data-qty-min="1" data-qty-max="5">
+                        <button type="button" class="cart-qty-stepper__btn" data-qty-delta="-1" aria-label="수량 줄이기">−</button>
+                        <output class="cart-qty-stepper__value" th:text="${item.quantity()}">1</output>
+                        <input type="hidden" name="quantity" th:value="${item.quantity()}" />
+                        <button type="button" class="cart-qty-stepper__btn" data-qty-delta="1" aria-label="수량 늘리기">+</button>
+                      </div>
+                    </form>
+                  </td>
+                  <td class="cart-table__price"><strong th:text="${item.formattedLineTotal()}">₩ 0</strong></td>
+                  <td class="cart-table__action">
+                    <form th:action="@{/shop/cart/{id}/remove(id=${item.itemId()})}" method="post" class="cart-remove-form">
+                      <button type="submit" class="cart-remove-btn" aria-label="삭제" title="삭제">
+                        <span class="cart-remove-btn__icon" aria-hidden="true">🗑</span>
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="cart-summary shop-cart-layout__summary" id="shopCartSummary">
+          <div class="cart-summary__row">
+            <span>상품 금액</span>
+            <span id="shopCartSubtotal" th:text="${cart.formattedSubtotal()}">₩ 0</span>
+          </div>
+          <div class="cart-summary__row">
+            <span>배송비</span>
+            <span id="shopCartShipping" th:text="${cart.formattedShippingFee()}">₩ 0</span>
+          </div>
+          <div class="cart-summary__row cart-summary__total">
+            <span>결제 예정</span>
+            <span id="shopCartTotal" th:text="${cart.formattedTotal()}">₩ 0</span>
+          </div>
+          <button type="button" class="btn btn--accent btn--block btn--lg mt-16"
+                  onclick="WePlaNet.alert('결제 페이지 (목업)')">
+            주문하기
+          </button>
+          <p class="text-xs text-muted mt-12" style="text-align:center;">
+            멤버십 전용 상품은 가입 상태에서만 결제됩니다.
+          </p>
+        </aside>
+      </div>
+    </div>
+
+    <div class="container">
+    <section class="shop-recommend" th:if="${!#lists.isEmpty(recommendedProducts)}">
+      <h2 class="section__title shop-recommend__title">추천 상품</h2>
+      <div class="shop-marquee" aria-label="추천 상품">
+        <div class="shop-marquee__track">
+          <th:block th:each="copy : ${#numbers.sequence(1, 2)}">
+            <div class="shop-marquee__group" th:attr="aria-hidden=${copy == 2} ? 'true' : null">
+              <th:block th:each="product : ${recommendedProducts}">
+                <article th:replace="~{fragments/shop-product-card :: shopMarqueeCard(${product})}"></article>
+              </th:block>
+            </div>
+          </th:block>
+        </div>
+      </div>
+    </section>
+    </div>
   </main>
 
-  <script src="../js/main.js"></script>
-  <script src="../js/shell.js"></script>
+  <script th:inline="javascript">
+    window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+  </script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/shop.js}"></script>
 </body>
 </html>

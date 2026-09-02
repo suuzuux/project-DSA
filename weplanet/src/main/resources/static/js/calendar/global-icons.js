@@ -1331,16 +1331,11 @@
     });
   }
 
-  /* ---------- shop on community (toast, existing <a>는 그대로) ---------- */
+  /* ---------- shop on community (navigation only; link goes to /shop/community/{id}) ---------- */
   function bindShopButtons() {
-    document.querySelectorAll('.community-top__right a[aria-label="Shop"], .community-top__right a[title="WePlaNet Shop"]').forEach(function (a) {
+    document.querySelectorAll('.community-top__right a[aria-label="Shop"]').forEach(function (a) {
       if (a.dataset.wpShopBound) return;
       a.dataset.wpShopBound = "1";
-      a.addEventListener("click", function () {
-        var id = detectCommunityId();
-        var name = id === "all" ? "WePlaNet" : communityName(id);
-        showToast(t().shopMoveTo(name));
-      });
     });
   }
 
