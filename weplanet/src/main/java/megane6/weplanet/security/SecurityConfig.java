@@ -38,6 +38,7 @@ public class SecurityConfig {
             "/portal/login",
             "/admin/login",
             "/admin/login/code",
+            "/admin/login/verify",
             "/api/schedules",
             "/api/notifications",
             "/api/artists",

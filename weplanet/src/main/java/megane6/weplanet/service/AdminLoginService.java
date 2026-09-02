@@ -9,6 +9,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 /**
  * 최고관리자 로그인 2단계 인증
  * 1) 아이디/비밀번호 확인 -> 관리자 계정 이메일로 인증번호 발송
@@ -19,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminLoginService {
-	private static final long EXPIRE_MINUTES = 5;
+	// 메일 본문에 안내할 유효시간. EmailVerificationService 의 실제 만료 설정과 같은 값을 쓴다.
+	private static final long EXPIRE_MINUTES = EmailVerificationService.ADMIN_EXPIRATION_MINUTES;
 	
 	private final UserRepository ur;
 	private final PasswordEncoder passwordEncoder;
@@ -44,8 +47,31 @@ public class AdminLoginService {
 				EXPIRE_MINUTES
 		);
 		
-		return new IssuedResult(issued.verificationKey(),
-				maskEmail(issued.recipientEmail()));
+		// 이메일 주소는 화면에 노출하지 않는다. 타이머에 쓸 만료 시각만 내려보낸다.
+		return new IssuedResult(issued.verificationKey(), issued.expiresAt());
+	}
+
+	/**
+	 * [인증하기] 버튼 - 최종 로그인 전에 인증번호만 미리 확인한다.
+	 * <p>
+	 * 여기서 통과하면 인증 기록이 verified 상태가 되고,
+	 * 최종 로그인(confirmCode)에서 다시 확인할 때 그대로 통과된다.
+	 * <p>
+	 * noRollbackFor : 인증번호가 틀렸을 때 던지는 예외로 "실패 횟수 증가"가
+	 * 롤백되면 시도 제한이 무의미해지므로 롤백하지 않도록 지정한다.
+	 */
+	@Transactional(noRollbackFor = {IllegalArgumentException.class, IllegalStateException.class})
+	public void verifyOnly(String username, String rawPassword, String verificationKey, String code) {
+		User admin = authenticate(username, rawPassword);
+
+		EmailVerificationService.VerificationResult result =
+				evs.confirmAdminLoginVerification(admin.getId(), verificationKey, code);
+
+		if (!result.verified()) {
+			throw new IllegalArgumentException(
+					"인증번호가 올바르지 않습니다. (남은 시도 " + result.remainingAttempts() + "회)"
+			);
+		}
 	}
 	
 	/**
@@ -100,15 +126,8 @@ public class AdminLoginService {
 	}
 	
 	// 화면에 "ab****@gmail.com로 보냈습니다."라고 안내하기 위함
-	private String maskEmail(String email) {
-		int at = email.indexOf('@');
-		if (at <= 2) {
-			return "***" + email.substring(Math.max(at, 0));
-		}
-		return email.substring(0, 2) + "****" + email.substring(at);
-	}
-	
-	public record IssuedResult(String verificationKey, String maskedEmail) {
-	
+	// 관리자 이메일은 화면에 노출하지 않는다(계정 정보 유출 방지).
+	// 만료 시각만 내려보내 화면 타이머가 서버 기준으로 돌게 한다.
+	public record IssuedResult(String verificationKey, LocalDateTime expiresAt) {
 	}
 }

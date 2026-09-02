@@ -680,3 +680,42 @@
 tr.js-pinned.is-dragging {
   opacity: 0.55;
 }
+
+/* ---------- ADMIN 로그인 인증번호 ---------- */
+
+/* 입력칸 + [인증하기] + [재전송] 을 한 줄에 배치 */
+.admin-otp-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.admin-otp-status {
+    margin: 8px 0 0;
+    min-height: 18px;
+    font-size: var(--wp-fs-xs);
+    line-height: 1.5;
+    color: #7a9593;
+}
+
+.admin-otp-status.is-success {
+    color: #8fe3c0;
+}
+
+.admin-otp-status.is-error {
+    color: #ff9d9d;
+}
+
+/* 남은 시간 (n분nn초) */
+.admin-otp-left {
+    margin-left: 4px;
+    font-weight: 700;
+}
+
+/* 인증 완료된 입력칸 - 회색으로 잠금 표시 */
+.admin-login__card .form-input.is-locked {
+    background: #1e2726;
+    color: #7a9593;
+    cursor: not-allowed;
+}
