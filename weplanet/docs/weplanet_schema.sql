@@ -587,18 +587,18 @@ CREATE TABLE `board_media_files` (
   CONSTRAINT `ck_bmf_media_type` CHECK (`media_type` IN (_utf8mb4'IMAGE', _utf8mb4'VIDEO'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 첨부 파일';
 
--- board_media_like: 미디어 게시글 좋아요
-CREATE TABLE `board_media_like` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '좋아요 PK',
-  `board_id` bigint NOT NULL COMMENT '미디어 게시글(board_media.id)',
-  `user_id` bigint NOT NULL COMMENT '좋아요한 회원(users.id)',
-  `created_at` datetime(6) NOT NULL COMMENT '좋아요 시각',
+-- board_media_like: 게시판 좋아요
+CREATE TABLE IF NOT EXISTS `board_media_like` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `board_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `created_at` datetime(6) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_board_media_like` (`board_id`, `user_id`),
   KEY `idx_bml_user` (`user_id`),
   CONSTRAINT `fk_bml_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`),
   CONSTRAINT `fk_bml_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 좋아요';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- chat_message: 팬–아티스트 DM (CHAT-01/02)
 CREATE TABLE `chat_message` (
