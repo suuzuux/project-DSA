@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,6 +17,11 @@
 
     <h1 class="auth-card__title">가장 편한 방법으로<br />위플래닛에<br />로그인하세요!</h1>
     <p class="auth-card__brand">We<span>Pla</span>Net</p>
+
+    <!-- 소셜 로그인 시도했는데 가입된 계정이 없는 경우 (OAuth2LoginSuccessHandler -> /login?socialNotFound=true) -->
+    <p th:if="${param.socialNotFound}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      가입된 계정이 없습니다. 먼저 회원가입을 진행해주세요.
+    </p>
 
     <div class="stack">
       <a class="btn btn--sns" href="/social-login/google/login">
