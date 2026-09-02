@@ -179,6 +179,12 @@ public class PostController {
         if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
         }
+        // 팬 게시판도 마찬가지로 팬만 작성 가능 (그동안 이 체크가 없어서 ARTIST/ADMIN/AGENCY 계정도
+        // 로그인만 되어 있으면 팬 게시판에 글을 쓸 수 있었음). 관리자 전용 게시판이 따로 없다고 해서
+        // ADMIN에게 팬 게시판 쓰기 권한을 열어주지 않음 - 필요하면 별도 공지 기능으로 처리
+        if (type == BoardType.FAN && tempAuthor.getRole() != Role.FAN) {
+            throw new IllegalStateException("팬 게시판은 팬 회원만 작성할 수 있습니다.");
+        }
 
         User communityArtist = null;
         if (artistId != null) {

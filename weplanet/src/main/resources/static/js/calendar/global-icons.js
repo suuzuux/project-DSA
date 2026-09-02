@@ -550,16 +550,35 @@
 
   /* ---------- state ---------- */
   var nowInit = new Date();
+  var MINI_CAL_DOT_PALETTE = [
+    "#e11d48", "#7c5cff", "#0f6b6b", "#c45c26", "#1d6fd8",
+    "#9a6700", "#7c3aed", "#16a34a", "#db2777", "#0891b2",
+  ];
+
   var state = {
     calendarOpen: false,
     cursor: new Date(nowInit.getFullYear(), nowInit.getMonth(), 1),
     selected: fmtDate(nowInit.getFullYear(), nowInit.getMonth(), nowInit.getDate()),
+    miniCalHover: null,
     community: "all",
     notificationCommunity: "all",
     detail: null,
     expandedId: null,
     weekStart: nowInit,
   };
+
+  function miniCalDotColor(ev, index) {
+    var key = String(ev.id || index);
+    var hash = 0;
+    for (var i = 0; i < key.length; i++) {
+      hash = ((hash << 5) - hash + key.charCodeAt(i)) | 0;
+    }
+    return MINI_CAL_DOT_PALETTE[Math.abs(hash) % MINI_CAL_DOT_PALETTE.length];
+  }
+
+  function eventTypeMeta(ev) {
+    return EVENT_TYPE_META[ev.type] || EVENT_TYPE_META.other;
+  }
 
   /* ---------- toast ---------- */
   var toastTimer = null;
@@ -1063,6 +1082,31 @@
   }
 
   /* ---------- highlight mini-cal / home week grid (same EVENTS) ---------- */
+  function renderMiniCalEventList(dateStr, community) {
+    var list = document.querySelector(".cal-event-list");
+    if (!list) return;
+    var shown = getFiltered(dateStr, community);
+    if (!shown.length) {
+      list.innerHTML = '<li class="cal-event-list__empty">' + esc(t().noEventsForDate) + "</li>";
+      return;
+    }
+    list.innerHTML = shown.map(function (ev, idx) {
+      var meta = eventTypeMeta(ev);
+      var dotColor = miniCalDotColor(ev, idx);
+      return (
+        '<li class="cal-event-list__item">' +
+          '<button type="button" class="cal-event-list__btn" data-open-event="' + esc(ev.id) + '">' +
+            '<span class="cal-event-list__dot" style="background:' + dotColor + '"></span>' +
+            '<span class="cal-event-list__body">' +
+              '<span class="cal-event-list__cat">' + esc(tr(meta.label)) + "</span>" +
+              '<span class="cal-event-list__title">' + esc(tr(ev.title)) + "</span>" +
+            "</span>" +
+          "</button>" +
+        "</li>"
+      );
+    }).join("");
+  }
+
   function hydrateMiniCal() {
     var grid = document.querySelector(".mini-cal__grid");
     if (!grid) return;
@@ -1089,27 +1133,40 @@
       var cls = "day";
       if (evs.length) cls += " has-event";
       if (attendance) cls += " has-paw";
-      if (dateStr === state.selected) cls += " is-today";
+      if (dateStr === state.selected) cls += " is-selected";
+      var dots = evs.slice(0, 3).map(function (ev, idx) {
+        return '<span class="mini-cal-dot" style="background:' + miniCalDotColor(ev, idx) + '"></span>';
+      }).join("");
       var pawHtml = attendance
         ? '<span class="paw-stamp" style="color:' + esc(attendance) + '" title="아티스트 출석">🐾</span>'
         : "";
       html +=
         '<button type="button" class="' + cls + '" data-open-date="' + dateStr + '">' +
-          i + pawHtml +
+          '<span class="mini-cal-day__num">' + i + "</span>" +
+          (dots ? '<span class="mini-cal-dots">' + dots + "</span>" : "") +
+          pawHtml +
         "</button>";
     }
     grid.innerHTML = html;
 
-    var list = document.querySelector(".cal-event-list");
-    if (list) {
-      var shown = getFiltered(state.selected, community);
-      var daysArr = weekDays();
-      list.innerHTML = shown.length
-        ? shown.map(function (ev) {
-            return "<li><strong>" + esc(state.selected) + " (" + esc(daysArr[parseYmd(state.selected).getDay()]) +
-              ")</strong><br />" + esc(tr(ev.title)) + "</li>";
-          }).join("")
-        : "<li>" + esc(t().noEventsForDate) + "</li>";
+    var previewDate = state.miniCalHover || state.selected;
+    renderMiniCalEventList(previewDate, community);
+
+    if (grid && !grid.dataset.wpHoverBound) {
+      grid.dataset.wpHoverBound = "1";
+      grid.addEventListener("mouseover", function (e) {
+        var day = e.target.closest("[data-open-date]");
+        if (!day) return;
+        var dateStr = day.getAttribute("data-open-date");
+        if (state.miniCalHover === dateStr) return;
+        state.miniCalHover = dateStr;
+        renderMiniCalEventList(dateStr, detectCommunityId());
+      });
+      grid.addEventListener("mouseleave", function () {
+        if (!state.miniCalHover) return;
+        state.miniCalHover = null;
+        renderMiniCalEventList(state.selected, detectCommunityId());
+      });
     }
 
     var widget = grid.closest(".widget");
@@ -1120,22 +1177,38 @@
           openCalendar();
           return;
         }
+        var evBtn = e.target.closest(".cal-event-list [data-open-event]");
+        if (evBtn) {
+          openCalendar({ eventId: evBtn.getAttribute("data-open-event") });
+          return;
+        }
         if (e.target.closest(".mini-cal__nav") && e.target.tagName === "BUTTON") {
           var buttons = widget.querySelectorAll(".mini-cal__nav button");
           if (e.target === buttons[0]) {
             state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() - 1, 1);
+            state.miniCalHover = null;
             hydrateMiniCal();
             return;
           }
           if (e.target === buttons[1]) {
             state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + 1, 1);
+            state.miniCalHover = null;
             hydrateMiniCal();
             return;
           }
         }
-        var day = e.target.closest("[data-open-date]");
+        var day = e.target.closest(".mini-cal__grid [data-open-date]");
         if (day) {
-          openCalendar({ date: day.getAttribute("data-open-date") });
+          var dateStr = day.getAttribute("data-open-date");
+          state.selected = dateStr;
+          state.miniCalHover = null;
+          renderMiniCalEventList(dateStr, detectCommunityId());
+          var dayEvents = getFiltered(dateStr, detectCommunityId());
+          if (dayEvents.length === 1) {
+            openCalendar({ eventId: dayEvents[0].id });
+          } else {
+            openCalendar({ date: dateStr });
+          }
         }
       });
     }
