@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.UserService;
@@ -77,6 +78,13 @@ public class SettingsController {
 		User user = userResolver.requireAuthenticated(principal);
 		String trimmed = newEmail == null ? "" : newEmail.trim();
 
+		if (user.getProvider() != AuthProvider.LOCAL) {
+			// 소셜 계정과 연동된 회원은 이메일 변경 자체를 시도할 수 없게 막는다 (화면에서 버튼을 숨겨도,
+			// JS를 우회해서 이 API를 직접 호출하는 경우를 막기 위한 서버 쪽 방어).
+			result.put("success", false);
+			result.put("message", "소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.");
+			return result;
+		}
 		if (trimmed.isBlank()) {
 			result.put("success", false);
 			result.put("message", "이메일을 입력해주세요.");

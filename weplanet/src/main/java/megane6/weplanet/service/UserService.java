@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
@@ -87,6 +88,12 @@ public class UserService {
 			}
 		}
 		if (!trimmedEmail.equals(user.getEmail())) {
+			// 구글 등 소셜 계정과 연동된 회원은 이메일을 임의로 바꿀 수 없다.
+			// (연동된 이메일이 그 소셜 계정의 신원과 묶여 있는 값이라, 여기서 마음대로 바꾸면
+			// "이메일로 기존 계정 찾기/연동" 로직이 깨지고, 소셜 로그인 자체도 더 이상 이 계정을 못 찾게 됨)
+			if (user.getProvider() != AuthProvider.LOCAL) {
+				throw new IllegalArgumentException("소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.");
+			}
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
 			if (!emailVerificationService.isVerified(trimmedEmail)) {

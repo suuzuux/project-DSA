@@ -157,6 +157,14 @@ public class User {
 		this.emailVerifiedAt = verifiedAt;
 	}
 
+	// 이메일이 같은 기존 계정(주로 아이디/비밀번호로 가입한 LOCAL 계정)에 소셜 로그인을 추가로 연동할 때 씀.
+	// 기존 username/password는 그대로 유지되고 provider/provider_id만 채워져서,
+	// 이후 이 소셜 계정으로도 같은 계정에 로그인할 수 있게 된다.
+	public void linkSocialProvider(AuthProvider provider, String providerId) {
+		this.provider = provider;
+		this.providerId = providerId;
+	}
+
 	public void changePortalProfile(String nickname, String email) {
 		this.nickname = nickname;
 		this.email = email;

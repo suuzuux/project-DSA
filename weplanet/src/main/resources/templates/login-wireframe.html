@@ -23,6 +23,11 @@
       가입된 계정이 없습니다. 먼저 회원가입을 진행해주세요.
     </p>
 
+    <!-- 세션엔 로그인된 걸로 남아있는데 그 계정이 DB에서 삭제된 경우 (GlobalExceptionHandler.handleStaleSession -> /login?sessionExpired=true) -->
+    <p th:if="${param.sessionExpired}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      세션이 만료되었습니다. 다시 로그인해주세요.
+    </p>
+
     <div class="stack">
       <a class="btn btn--sns" href="/social-login/google/login">
         <span class="sns-icon sns-icon--google">G</span> Google로 로그인하기
@@ -37,6 +42,10 @@
 
     <div class="auth-divider">또는</div>
     <a class="btn btn--primary btn--block btn--lg" href="/login/id">아이디로 로그인하기</a>
+    <p class="text-sm text-muted" style="margin-top:20px;text-align:center;">
+      아직 계정이 없으신가요?
+      <a th:href="@{/signup}" style="color:var(--wp-brand);font-weight:600;">회원가입</a>
+    </p>
   </div>
 </body>
 </html>

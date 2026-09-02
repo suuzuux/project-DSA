@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- [와이어프레임] 소셜 회원가입 - 같은 이메일의 기존 계정이 있을 때 연동 여부 확인 -->
+  <title>WePlaNet – 계정 연동 확인</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <a class="auth-card__back" th:href="@{/signup}">← 뒤로</a>
+    <div class="flex-between mb-16">
+      <span></span>
+      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
+    </div>
+
+    <h1 class="auth-card__title">이미 가입된<br />이메일이에요</h1>
+    <p class="auth-card__brand">We<span>Pla</span>Net</p>
+
+    <p class="text-sm" style="margin-top:16px;">
+      <strong th:text="${conflictEmail}">example@email.com</strong> 이메일로 이미 가입된 계정이 있습니다.<br />
+      이 계정에 구글 로그인을 연동하시겠습니까?
+    </p>
+
+    <form th:action="@{/social-login/email-conflict/confirm}" method="post" style="margin-top:20px;">
+      <button type="submit" class="btn btn--primary btn--block btn--lg">예, 연동합니다</button>
+    </form>
+    <form th:action="@{/social-login/email-conflict/cancel}" method="post" style="margin-top:12px;">
+      <button type="submit" class="btn btn--ghost btn--block btn--lg">아니오</button>
+    </form>
+  </div>
+</body>
+</html>
