@@ -22,6 +22,10 @@ public class EmailVerificationService {
 	
 	private static final long EXPIRATION_MINUTES = 5;
 	private static final long RESEND_COOLDOWN_SECONDS = 60;
+
+	// 관리자 로그인은 보안 등급이 높아 유효시간을 짧게 두고, 재전송 제한은 두지 않는다.
+	// (회원가입/프로젝트 인증은 위 5분 그대로 사용)
+	public static final long ADMIN_EXPIRATION_MINUTES = 2;
 	
 	private final EmailVerificationRepository evr;
 	private final UserRepository ur;
@@ -61,7 +65,8 @@ public class EmailVerificationService {
 		return new IssuedVerification(
 				saved.getVerificationKey(),
 				saved.getEmail(),
-				rawCode
+				rawCode,
+				saved.getExpiresAt()
 		);
 	}
 	
@@ -108,7 +113,8 @@ public class EmailVerificationService {
 		return new IssuedVerification(
 				saved.getVerificationKey(),
 				saved.getEmail(),
-				rawCode
+				rawCode,
+				saved.getExpiresAt()
 		);
 	}
 	
@@ -124,27 +130,26 @@ public class EmailVerificationService {
 		}
 		
 		LocalDateTime now = LocalDateTime.now();
-		
-		evr.findTopByUser_IdAndPurposeOrderByCreatedAtDesc(
-				adminId,
-				EmailVerificationPurpose.ADMIN_LOGIN
-		).ifPresent(latest -> assertResendAllowed(latest, now));
-		
+
+		// 관리자 로그인은 재전송 쿨다운을 두지 않는다.
+		// (메일이 늦게 도착하거나 스팸함으로 갈 때 바로 다시 받을 수 있어야 함)
+
 		String rawCode = generateCode();
 		String codeHash = pe.encode(rawCode);
-		
+
 		EmailVerification saved = evr.save(
 				EmailVerification.createForAdminLogin(
 						admin,
 						codeHash,
-						now.plusMinutes(EXPIRATION_MINUTES)
+						now.plusMinutes(ADMIN_EXPIRATION_MINUTES)
 				)
 		);
-		
+
 		return new IssuedVerification(
 				saved.getVerificationKey(),
 				saved.getEmail(),
-				rawCode
+				rawCode,
+				saved.getExpiresAt()
 		);
 	}
 	
@@ -397,7 +402,10 @@ public class EmailVerificationService {
 	public record IssuedVerification(
 			String verificationKey,
 			String recipientEmail,
-			String rawCode
+			String rawCode,
+			// 화면 타이머가 서버 시각을 기준으로 돌도록 만료 시각을 함께 내려준다.
+			// 화면에서 그냥 120초를 세면 서버 만료와 어긋날 수 있다.
+			LocalDateTime expiresAt
 	) {
 	}
 	

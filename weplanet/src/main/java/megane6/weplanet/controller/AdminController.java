@@ -55,7 +55,8 @@ public class AdminController {
 			return Map.of(
 					"success", true,
 					"verificationKey", issued.verificationKey(),
-					"message", issued.maskedEmail() + " 로 인증번호를 보냈습니다."
+					"expiresAt", issued.expiresAt().toString(),
+					"message", "인증번호가 전송되었습니다."
 			);
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			return Map.of("success", false, "message", e.getMessage());
@@ -66,6 +67,23 @@ public class AdminController {
 		}
 	}
 	
+	// [인증하기] 버튼 - 인증번호만 미리 확인한다 (로그인은 아직 안 함)
+	@PostMapping("/login/verify")
+	@ResponseBody
+	public Map<String, Object> verifyCode(
+			@RequestParam String username,
+			@RequestParam String password,
+			@RequestParam(required = false) String verificationKey,
+			@RequestParam(required = false) String code
+	) {
+		try {
+			als.verifyOnly(username, password, verificationKey, code);
+			return Map.of("success", true, "message", "인증되었습니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			return Map.of("success", false, "message", e.getMessage());
+		}
+	}
+
 	// 2단계 - 인증번호까지 확인하고 로그인 처리
 	@PostMapping("/login")
 	public String login(
