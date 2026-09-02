@@ -1,12 +1,10 @@
 package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.domain.entity.Comment;
-import megane6.weplanet.domain.entity.CommentReport;
-import megane6.weplanet.domain.entity.Post;
-import megane6.weplanet.domain.entity.Report;
-import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -17,6 +15,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 관리자 "통합 신고·제재" 화면 전용 서비스.
@@ -43,53 +43,82 @@ public class AdminReportService {
 
 	// 화면에 뿌리기 위해 게시글 신고/댓글 신고를 한 형태로 합친 값
 	public record ReportItem(
-			Long reportId,
 			TargetType targetType,
-			ReportReason reason,
-			String reporterNickname,
+			Long targetId,				// postId 또는 commendId - 기각/삭제 액션에 사용
+			ReportStatus status,
+			long reportCount,			// 이 대상에 대해 처리 대기 중인 신고 건수
+			ReportReason latestReason,	// 가장 최근 신고의 사유
+			String latestReporterNickname,
 			Long authorId,
 			String authorNickname,
 			String targetTitle,
 			String targetExcerpt,
-			LocalDateTime createdAt
+			LocalDateTime latestReportedAt
 	) {
 	}
-
+	
 	@Transactional(readOnly = true)
-	public List<ReportItem> listAll() {
+	public List<ReportItem> listAll(
+			TargetType typeFilter,
+			ReportStatus statusFilter,
+			ReportReason reasonFilter,
+			String keyword
+	) {
+		String trimmedKeyword = (keyword == null || keyword.isBlank())
+				? null : keyword.strip();
 		List<ReportItem> items = new ArrayList<>();
-
-		for (Report report : reportRepository.findAllByOrderByCreatedAtDesc()) {
-			Post post = report.getPost();
-			items.add(new ReportItem(
-					report.getId(),
-					TargetType.POST,
-					report.getReason(),
-					report.getReporter().getNickname(),
-					post.getAuthor().getId(),
-					post.getAuthor().getNickname(),
-					post.getTitle(),
-					excerpt(post.getContent()),
-					report.getCreatedAt()
-			));
+		
+		if (typeFilter != TargetType.COMMENT) {
+			Map<Long, List<Report>> byPost = reportRepository
+					.search(ReportStatus.PENDING, reasonFilter, trimmedKeyword)
+					.stream()
+					.collect(Collectors.groupingBy(r -> r.getPost().getId()));
+			
+			for (List<Report> group : byPost.values()) {
+				Report latest = group.get(0);
+				Post post = latest.getPost();
+				items.add(new ReportItem(
+						TargetType.POST,
+						post.getId(),
+						latest.getStatus(),
+						group.size(),
+						latest.getReason(),
+						latest.getReporter().getNickname(),
+						post.getAuthor().getId(),
+						post.getAuthor().getNickname(),
+						post.getTitle(),
+						excerpt(post.getContent()),
+						latest.getCreatedAt()
+				));
+			}
 		}
-
-		for (CommentReport report : commentReportRepository.findAllByOrderByCreatedAtDesc()) {
-			Comment comment = report.getComment();
-			items.add(new ReportItem(
-					report.getId(),
-					TargetType.COMMENT,
-					report.getReason(),
-					report.getReporter().getNickname(),
-					comment.getAuthor().getId(),
-					comment.getAuthor().getNickname(),
-					"댓글 (원글: " + comment.getPost().getTitle() + ")",
-					excerpt(comment.getContent()),
-					report.getCreatedAt()
-			));
+		
+		if (typeFilter != TargetType.POST) {
+			Map<Long, List<CommentReport>> byComment = commentReportRepository
+					.search(ReportStatus.PENDING, reasonFilter, trimmedKeyword)
+					.stream()
+					.collect(Collectors.groupingBy(r -> r.getComment().getId()));
+			
+			for (List<CommentReport> group : byComment.values()) {
+				CommentReport latest = group.get(0);
+				Comment comment = latest.getComment();
+				items.add(new ReportItem(
+						TargetType.COMMENT,
+						comment.getId(),
+						latest.getStatus(),
+						group.size(),
+						latest.getReason(),
+						latest.getReporter().getNickname(),
+						comment.getAuthor().getId(),
+						comment.getAuthor().getNickname(),
+						"댓글 (원글 : " + comment.getPost().getTitle() + ")",
+						excerpt(comment.getContent()),
+						latest.getCreatedAt()
+				));
+			}
 		}
-
-		items.sort(Comparator.comparing(ReportItem::createdAt).reversed());
+		
+		items.sort(Comparator.comparing(ReportItem::latestReportedAt).reversed());
 		return items;
 	}
 
@@ -101,34 +130,40 @@ public class AdminReportService {
 		String trimmed = content.strip();
 		return trimmed.length() > 80 ? trimmed.substring(0, 80) + "…" : trimmed;
 	}
-
-	// 신고 기각 - 신고 기록만 지우고 게시글/댓글은 그대로 둔다
-	public void dismissPostReport(Long reportId) {
-		if (!reportRepository.existsById(reportId)) {
-			throw new IllegalArgumentException("신고 내역을 찾을 수 없습니다. id=" + reportId);
+	
+	// 신고 기각 - 이 게시글에 걸린 처리 대기 신고를 전부 DISMISSED로 바꾼다
+	public void dismissPostReports(Long postId) {
+		List<Report> pending = reportRepository.findByPost_IdAndStatus(postId, ReportStatus.PENDING);
+		if (pending.isEmpty()) {
+			throw new IllegalArgumentException("처리 대기 중인 신고를 찾을 수 없습니다. postId=" + postId);
 		}
-		reportRepository.deleteById(reportId);
-	}
-
-	public void dismissCommentReport(Long reportId) {
-		if (!commentReportRepository.existsById(reportId)) {
-			throw new IllegalArgumentException("신고 내역을 찾을 수 없습니다. id=" + reportId);
+		LocalDateTime now = LocalDateTime.now();
+		for (Report report : pending) {
+			report.setStatus(ReportStatus.DISMISSED);
+			report.setResolvedAt(now);
 		}
-		commentReportRepository.deleteById(reportId);
 	}
-
-	// 신고된 게시글 자체를 삭제 - PostService.deletePost가 이 신고 기록까지 함께 지워줌
-	public void deleteReportedPost(Long reportId, User admin) {
-		Report report = reportRepository.findById(reportId)
-				.orElseThrow(() -> new IllegalArgumentException("신고 내역을 찾을 수 없습니다. id=" + reportId));
-		postService.deletePost(report.getPost(), admin);
+	
+	public void dismissCommentReports(Long commentId) {
+		List<CommentReport> pending = commentReportRepository.findByComment_IdAndStatus(commentId, ReportStatus.PENDING);
+		if (pending.isEmpty()) {
+			throw new IllegalArgumentException("처리 대기 중인 신고를 찾을 수 없습니다. commentId=" + commentId);
+		}
+		LocalDateTime now = LocalDateTime.now();
+		for (CommentReport report : pending) {
+			report.setStatus(ReportStatus.DISMISSED);
+			report.setResolvedAt(now);
+		}
 	}
-
-	// 신고된 댓글 자체를 삭제 - CommentService.deleteComment가 이 신고 기록까지 함께 지워줌
-	public void deleteReportedComment(Long reportId, User admin) {
-		CommentReport report = commentReportRepository.findById(reportId)
-				.orElseThrow(() -> new IllegalArgumentException("신고 내역을 찾을 수 없습니다. id=" + reportId));
-		commentService.deleteComment(report.getComment().getId(), admin);
+	
+	// 신고된 게시글 자체를 삭제 - PostService.deletePost가 그 글에 걸린 신고 기록까지 함께 지워줌
+	public void deleteReportedPost(Long postId, User admin) {
+		postService.deletePost(postService.getPost(postId), admin);
+	}
+	
+	// 신고된 댓글 자체를 삭제 - CommentService.deleteComment가 그 댓글에 걸린 신고 기록까지 함께 지워줌
+	public void deleteReportedComment(Long commentId, User admin) {
+		commentService.deleteComment(commentId, admin);
 	}
 
 	// 작성자 계정 정지 (제재) - 신고 처리와는 별개로, 필요하면 신고를 남긴 채로도 제재만 먼저 할 수 있음
@@ -136,5 +171,18 @@ public class AdminReportService {
 		User target = userRepository.findById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다. id=" + userId));
 		target.suspend();
+	}
+	
+	// 제재 대상 목록 - 현재 정지 상태인 회원 전체
+	@Transactional(readOnly = true)
+	public List<User> listSuspendedUsers() {
+		return userRepository.findByStatus(UserStatus.SUSPENDED);
+	}
+	
+	// 정지 해제 - 다시 로그인 가능한 상태로 도디ㅗㄹ림
+	public void reinstateUser(Long userId) {
+		User target = userRepository.findById(userId).orElseThrow(() ->
+				new IllegalArgumentException("회원을 찾을 수 없습니다. id=" + userId));
+		target.reinstate();
 	}
 }

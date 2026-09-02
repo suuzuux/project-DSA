@@ -58,11 +58,11 @@
         </span>
       </article>
       <article class="admin-stat">
-        <span class="admin-stat__icon admin-stat__icon--green">➕</span>
+        <span class="admin-stat__icon admin-stat__icon--green">✅</span>
         <span class="admin-stat__body">
-          <span class="admin-stat__label">최근 7일 가입</span>
-          <!-- TODO: 최근 7일 가입자 수 집계 API가 아직 없어 레이아웃 확인용 샘플 값입니다. 연동 시 th:text로 교체하세요. -->
-          <strong class="admin-stat__value">18,420</strong>
+        <span class="admin-stat__label">오늘 처리한 신고</span>
+        <strong class="admin-stat__value"
+                th:text="${#numbers.formatInteger(stats.resolvedTodayCount(), 0, 'COMMA')}">0</strong>
         </span>
       </article>
       <article class="admin-stat">
@@ -78,15 +78,15 @@
         <span class="admin-stat__body">
           <span class="admin-stat__label">미처리 신고</span>
           <strong class="admin-stat__value"
-                  th:text="${#numbers.formatInteger(stats.reportCount(), 0, 'COMMA')}">0</strong>
+                  th:text="${#numbers.formatInteger(stats.pendingReportCount(), 0, 'COMMA')}">0</strong>
         </span>
       </article>
       <article class="admin-stat">
-        <span class="admin-stat__icon admin-stat__icon--khaki">🛡</span>
+        <span class="admin-stat__icon admin-stat__icon--khaki">🚫</span>
         <span class="admin-stat__body">
-          <span class="admin-stat__label">권한 승인 대기</span>
-          <!-- TODO: 권한 승인 대기 건수 집계 API가 아직 없어 레이아웃 확인용 샘플 값입니다. 연동 시 th:text로 교체하세요. -->
-          <strong class="admin-stat__value">9</strong>
+        <span class="admin-stat__label">정지된 회원</span>
+        <strong class="admin-stat__value"
+                th:text="${#numbers.formatInteger(stats.suspendedUserCount(), 0, 'COMMA')}">0</strong>
         </span>
       </article>
     </div>

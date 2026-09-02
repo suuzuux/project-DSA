@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
 
 import java.time.LocalDateTime;
 
@@ -36,6 +37,13 @@ public class CommentReport {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ReportReason reason;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ReportStatus status;
+    
+    @Column(name = "resolved_at")
+    private LocalDateTime resolvedAt;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -43,5 +51,8 @@ public class CommentReport {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = ReportStatus.PENDING;
+        }
     }
 }

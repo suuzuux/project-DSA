@@ -111,7 +111,7 @@ public class AdminController {
 			Model model
 	) {
 		model.addAttribute("adminNickname", principal.getNickname());
-		model.addAttribute("stats", ads.getStats());
+		model.addAttribute("stats", ads.getStatus());
 		return "admin/dashboard";
 	}
 	

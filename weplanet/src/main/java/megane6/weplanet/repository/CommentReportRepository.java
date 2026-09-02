@@ -4,8 +4,13 @@ import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +30,20 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
 
     long countByComment_Post_Artist(User artist);
 
-    // 관리자 "통합 신고·제재" 목록 - 전체 댓글 신고를 최신순으로
-    List<CommentReport> findAllByOrderByCreatedAtDesc();
+    // 관리자 "통합 신고 및 제재" 목록 - 특정 상태(예 : 대기중)인 신고만 최신순으로
+    @Query("""
+        SELECT cr FROM CommentReport cr
+        WHERE cr.status = :status
+          AND (:reason IS NULL OR cr.reason = :reason)
+          AND (:keyword IS NULL OR cr.comment.author.nickname LIKE CONCAT('%', :keyword, '%'))
+        ORDER BY cr.createdAt DESC
+        """)
+    List<CommentReport> search(@Param("status") ReportStatus status,
+                               @Param("reason") ReportReason reason,
+                               @Param("keyword") String keyword);
+    
+    long countByStatus(ReportStatus status);
+    long countByResolvedAtAfter(LocalDateTime dateTime);
+    
+    List<CommentReport> findByComment_IdAndStatus(Long commentId, ReportStatus status);
 }
