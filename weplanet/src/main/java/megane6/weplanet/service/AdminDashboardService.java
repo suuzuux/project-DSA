@@ -25,7 +25,8 @@ public class AdminDashboardService {
 		long fanCount = ur.findByRole(Role.FAN).size();
 		
 		// 게시글 신고 + 댓글 신고 합쳐 "미처리 신고"
-		// (신고 처리 상태 컬럼이 아직 없어 전체 건수 그대로 사용)
+		// 처리(기각/대상 삭제)되면 AdminReportService가 해당 신고 로우를 바로 지우기 때문에,
+		// 테이블에 남아있는 전체 건수 = 아직 처리되지 않은 신고 건수 (자세한 처리 화면은 /admin/reports)
 		long reportCount = rr.count() + crr.count();
 		
 		return new DashboardStats(totalUsers, artistCount, fanCount, reportCount);

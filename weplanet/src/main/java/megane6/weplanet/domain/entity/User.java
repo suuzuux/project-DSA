@@ -158,4 +158,15 @@ public class User {
 		this.status = UserStatus.WITHDRAWN;
 		this.deletedAt = LocalDateTime.now();
 	}
+
+	// [관리자 제재] 신고 누적 등으로 관리자가 계정을 정지시킬 때 씀.
+	// isLoginable()이 ACTIVE/DORMANT만 허용하므로, 정지 즉시 로그인이 막힘.
+	public void suspend() {
+		this.status = UserStatus.SUSPENDED;
+	}
+
+	// [관리자 제재 해제] 정지된 계정을 다시 활성 상태로 되돌림
+	public void reinstate() {
+		this.status = UserStatus.ACTIVE;
+	}
 }

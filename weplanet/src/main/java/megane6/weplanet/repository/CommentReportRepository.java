@@ -24,4 +24,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     List<CommentReport> findByComment_Post_ArtistOrderByCreatedAtDesc(User artist);
 
     long countByComment_Post_Artist(User artist);
+
+    // 관리자 "통합 신고·제재" 목록 - 전체 댓글 신고를 최신순으로
+    List<CommentReport> findAllByOrderByCreatedAtDesc();
 }

@@ -193,7 +193,7 @@ public class PostService {
     }
 
     /**
-     * 게시글 삭제 - 작성자 본인만 삭제 가능.
+     * 게시글 삭제 - 작성자 본인 또는 관리자만 삭제 가능 (관리자는 신고 처리를 위해 남의 글도 삭제할 수 있어야 함).
      * <p>
      *
      * @Transactional : 이 메서드 안에서 실행되는 여러 개의 DB 작업(삭제 5번)을 하나의 묶음으로 처리함.
@@ -202,8 +202,11 @@ public class PostService {
      */
     @Transactional
     public void deletePost(Post post, User requester) {
-        if (!post.getAuthor().getId().equals(requester.getId())) {
-            throw new IllegalStateException("본인이 작성한 게시글만 삭제할 수 있습니다.");
+        boolean isAuthor = post.getAuthor().getId().equals(requester.getId());
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+
+        if (!isAuthor && !isAdmin) {
+            throw new IllegalStateException("본인이 작성한 게시글 또는 관리자만 삭제할 수 있습니다.");
         }
 
         // 첨부파일은 DB 기록을 지우기 전에, 디스크에 실제로 저장된 파일부터 먼저 지움
