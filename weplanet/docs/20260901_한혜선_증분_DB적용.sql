@@ -6,6 +6,7 @@
 --
 -- [이 파일이 하는 일]
 --   1) portal_notice — 공지 상단 노출(pinned, pin_order) 컬럼·인덱스 추가
+--   2) shop_cart_item — 굿즈샵 장바구니 테이블 생성 (2026-09-02 추가)
 --
 -- [이 파일이 하지 않는 일]
 --   · artist_schedule 생일(BIRTHDAY) — 테이블 변경 없음. 기존 category 컬럼에
@@ -115,6 +116,23 @@ PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+-- ------------------------------------------------------------
+-- [4] shop_cart_item (굿즈샵 장바구니)
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `shop_cart_item` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '장바구니 항목 PK',
+  `user_id` bigint NOT NULL COMMENT '회원(users.id)',
+  `product_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '목업 카탈로그 상품 ID',
+  `quantity` int NOT NULL DEFAULT '1' COMMENT '수량',
+  `unit_price` int NOT NULL COMMENT '담을 당시 단가(원)',
+  `created_at` datetime(6) NOT NULL COMMENT '담은 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_shop_cart_user_product` (`user_id`, `product_id`),
+  KEY `idx_shop_cart_user` (`user_id`, `updated_at`),
+  CONSTRAINT `fk_shop_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 장바구니';
+
 -- ============================================================
 -- [확인] 아래 3개 결과를 보고 적용 여부를 판단하세요.
 -- ============================================================
@@ -132,5 +150,7 @@ WHERE TABLE_SCHEMA = DATABASE()
   AND TABLE_NAME = 'portal_notice'
   AND INDEX_NAME = 'idx_portal_notice_artist_pinned'
 GROUP BY INDEX_NAME;
+
+SHOW CREATE TABLE shop_cart_item\G
 
 SELECT '증분 적용 완료. 이 파일은 1회 실행 후 삭제해도 됩니다.' AS done;

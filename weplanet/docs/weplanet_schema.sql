@@ -1,4 +1,4 @@
--- 반영: 2026-09-01, 15:52, 한혜선
+-- 반영: 2026-09-02, 14:28, 한혜선
 -- ============================================================
 -- WePlaNet 통합 스키마 + 테스트 데이터
 -- ------------------------------------------------------------
@@ -8,9 +8,13 @@
 --
 -- ------------------------------------------------------------
 -- 구성
---   [1] 스키마 : 테이블 42개 (DROP -> CREATE) + 배지 카탈로그 25종
+--   [1] 스키마 : 테이블 43개 (DROP -> CREATE) + 배지 카탈로그 25종
 --   [2] 테스트 계정 시드 : 6개 (비밀번호 전부 weplanet1234!)
 --   [3] 배지 소유 / 팔로우 시드
+--
+-- ------------------------------------------------------------
+-- 최근 반영 (2026-09-02)
+--   · shop_cart_item — 굿즈샵 장바구니 (회원별 product_id·수량·단가)
 --
 -- ------------------------------------------------------------
 -- !! 주의 : [1]에 DROP TABLE 이 포함되어 있습니다.
@@ -47,6 +51,7 @@ SET UNIQUE_CHECKS = 0;
 -- ------------------------------------------------------------
 -- DROP (자식 → 부모 역순)
 -- ------------------------------------------------------------
+DROP TABLE IF EXISTS `shop_cart_item`;
 DROP TABLE IF EXISTS `community_profiles`;
 DROP TABLE IF EXISTS `community_members`;
 DROP TABLE IF EXISTS `board_media_files`;
@@ -593,6 +598,21 @@ CREATE TABLE IF NOT EXISTS `board_media_like` (
   CONSTRAINT `fk_bml_board` FOREIGN KEY (`board_id`) REFERENCES `board_media` (`id`),
   CONSTRAINT `fk_bml_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- shop_cart_item: 굿즈샵 장바구니 (회원별 상품·수량)
+CREATE TABLE `shop_cart_item` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '장바구니 항목 PK',
+  `user_id` bigint NOT NULL COMMENT '회원(users.id)',
+  `product_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '목업 카탈로그 상품 ID',
+  `quantity` int NOT NULL DEFAULT '1' COMMENT '수량',
+  `unit_price` int NOT NULL COMMENT '담을 당시 단가(원)',
+  `created_at` datetime(6) NOT NULL COMMENT '담은 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_shop_cart_user_product` (`user_id`, `product_id`),
+  KEY `idx_shop_cart_user` (`user_id`, `updated_at`),
+  CONSTRAINT `fk_shop_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 장바구니';
 
 -- chat_message: 팬–아티스트 DM (CHAT-01/02)
 CREATE TABLE `chat_message` (

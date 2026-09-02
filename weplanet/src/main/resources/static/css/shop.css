@@ -244,6 +244,7 @@
 .cart-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .cart-table th,
@@ -252,6 +253,33 @@
   text-align: left;
   border-bottom: 1px solid var(--wp-hairline);
   font-size: var(--wp-fs-sm);
+  vertical-align: middle;
+}
+
+.cart-table th.cart-table__qty,
+.cart-table td.cart-table__qty {
+  width: 96px;
+  text-align: center;
+}
+
+.cart-qty-form {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+
+.cart-qty-select {
+  width: 72px;
+  min-width: 72px;
+  max-width: 72px;
+  min-height: 36px;
+  height: 36px;
+  padding: 0 28px 0 10px;
+  text-align: center;
+  text-align-last: center;
+  font-variant-numeric: tabular-nums;
+  box-sizing: border-box;
 }
 
 .cart-table th {
@@ -298,4 +326,70 @@
   border-top: 1px solid var(--wp-hairline);
   margin-top: 8px;
   padding-top: 12px;
+}
+
+.shop-cart-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--wp-brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+.site-header .icon-btn,
+.header-actions .icon-btn {
+  position: relative;
+}
+
+.shop-cart-empty {
+  padding: 48px 16px;
+  text-align: center;
+  border: 1px dashed var(--wp-hairline);
+  border-radius: var(--wp-radius);
+}
+
+.alert--success {
+  padding: 12px 14px;
+  border-radius: var(--wp-radius);
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand-dark);
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+}
+
+.shop-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 10000;
+  transform: translate(-50%, -50%) scale(0.96);
+  padding: 16px 28px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.94);
+  color: #fff;
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.shop-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.shop-toast[hidden] {
+  display: block;
 }
