@@ -124,7 +124,7 @@
   // 제목 + 본문 둘 다 있어야 등록 가능
   function refreshSubmitState() {
     if (!submitBtn) return;
-    const titleOk = titleEl && titleEl.value.trim().length > 0;
+    const titleOk = !titleEl || titleEl.value.trim().length > 0; // 제목칸을 없앴으므로 요소가 없으면 통과
     const text = contentEl.value;
     const contentOk = text.trim().length > 0 && text.length <= 1000;
     submitBtn.disabled = !(titleOk && contentOk);

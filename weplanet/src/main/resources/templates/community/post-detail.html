@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -42,9 +42,6 @@
                th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
         </div>
       </div>
-
-      <h1 th:if="${post.title != null and !post.title.isBlank()}"
-          style="font-size:20px;font-weight:700;margin:12px 0 8px;" th:text="${post.title}"></h1>
 
       <a href="javascript:void(0)" id="postTranslateLink" class="translate-link">번역보기</a>
       <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
@@ -136,8 +133,6 @@
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
       <form id="editPostForm" th:action="@{/posts/detail/{id}/edit(id=${post.id})}" method="post">
-        <input type="text" id="editPostTitle" name="title" class="form-input mb-8" maxlength="80"
-               th:value="${post.title}" placeholder="제목을 입력하세요" required />
         <textarea id="editPostContent" name="content" hidden maxlength="1000" th:text="${post.content}"></textarea>
         <div id="editPostEditor"></div>
         <div class="flex-between mt-8">
