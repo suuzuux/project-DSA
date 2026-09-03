@@ -1596,6 +1596,9 @@ p {
 .comment-scroll {
   max-height: 420px;
   overflow-y: auto;
+  /* 아티스트 댓글은 margin:0 -8px 로 좌우가 컨테이너보다 넓어서
+     가로 스크롤바가 생겼음. 세로만 스크롤되게 명시적으로 잠금 */
+  overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 4px;
 }
