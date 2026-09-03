@@ -1590,3 +1590,19 @@ p {
   opacity: 0;
   transform: translateY(6px);
 }
+
+/* 팬 댓글 목록 - 댓글이 수십 개 달려도 페이지 전체가 늘어나지 않도록
+   이 영역 안에서만 스크롤되게 함. 아티스트 댓글은 이 박스 밖(위쪽)에 고정 */
+.comment-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.comment-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.comment-scroll::-webkit-scrollbar-thumb {
+  background: var(--wp-line, #ddd);
+  border-radius: 3px;
+}
