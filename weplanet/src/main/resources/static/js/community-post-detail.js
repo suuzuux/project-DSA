@@ -118,7 +118,7 @@
       const counter = document.getElementById("editPostCharCount");
       if (counter) counter.textContent = text.length + " / 1000";
       if (editSubmitBtn) {
-        const titleOk = editTitleEl && editTitleEl.value.trim().length > 0;
+        const titleOk = !editTitleEl || editTitleEl.value.trim().length > 0; // 제목칸을 없앴으므로 요소가 없으면 통과
         editSubmitBtn.disabled = !titleOk || text.trim().length === 0 || text.length > 1000;
       }
     }

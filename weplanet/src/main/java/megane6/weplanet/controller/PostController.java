@@ -150,7 +150,7 @@ public class PostController {
     @PostMapping("/posts/{boardType}/new")
     public String create(
             @PathVariable String boardType,
-            @RequestParam String title,
+            @RequestParam(required = false) String title,
             @RequestParam String content,
             // List<MultipartFile> : 폼에서 <input type="file" multiple>로 여러 개 고른 파일들이
             // 하나의 리스트로 담겨서 들어옴. required=false라서 파일을 하나도 안 골라도 에러 안 남
@@ -466,7 +466,7 @@ public class PostController {
     @PostMapping("/posts/detail/{id}/edit")
     public String updatePost(
             @PathVariable Long id,
-            @RequestParam String title,
+            @RequestParam(required = false) String title,
             @RequestParam String content,
             @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal

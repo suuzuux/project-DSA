@@ -1590,3 +1590,28 @@ p {
   opacity: 0;
   transform: translateY(6px);
 }
+
+/* 팬 댓글 목록 - 댓글이 수십 개 달려도 페이지 전체가 늘어나지 않도록
+   이 영역 안에서만 스크롤되게 함. 아티스트 댓글은 이 박스 밖(위쪽)에 고정 */
+.comment-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+  /* 아티스트 댓글은 margin:0 -8px 로 좌우가 컨테이너보다 넓어서
+     가로 스크롤바가 생겼음. 세로만 스크롤되게 명시적으로 잠금 */
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.comment-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.comment-scroll::-webkit-scrollbar-thumb {
+  background: var(--wp-line, #ddd);
+  border-radius: 3px;
+}
+
+/* 아티스트 댓글도 수십 개가 달릴 수 있어서 별도 스크롤 영역으로 둠.
+   최상단 고정은 유지하되, 팬 댓글이 화면 밖으로 밀려나지 않도록 높이를 팬 댓글보다 낮게 잡음 */
+.comment-scroll--artist {
+  max-height: 240px;
+}

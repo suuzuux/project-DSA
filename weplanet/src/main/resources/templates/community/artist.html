@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -62,9 +62,6 @@
             method="post"
             enctype="multipart/form-data">
         <input type="hidden" name="artistId" th:value="${artist.id()}" />
-
-        <input type="text" id="writePostTitle" name="title" class="form-input mb-8" maxlength="80"
-               placeholder="제목을 입력하세요" required />
 
         <textarea id="writePostContent" name="content" hidden maxlength="1000"></textarea>
         <div id="writePostEditor"></div>
