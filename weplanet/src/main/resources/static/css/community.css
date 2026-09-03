@@ -260,31 +260,115 @@
 }
 
 .mini-cal__grid .day {
-  padding: 6px 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0 2px;
   border-radius: 4px;
   color: var(--wp-ink-soft);
+  border: none;
+  background: transparent;
+  cursor: pointer;
 }
 
 .mini-cal__grid .day.has-event {
-  background: var(--wp-brand-soft);
-  color: var(--wp-brand-dark);
   font-weight: 700;
+  color: var(--wp-ink);
 }
 
-.mini-cal__grid .day.is-today {
+.mini-cal__grid .day.is-selected {
   outline: 1px solid var(--wp-brand);
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand-dark);
+}
+
+.mini-cal-day__num {
+  line-height: 1.2;
+}
+
+.mini-cal-dots {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  min-height: 5px;
+}
+
+.mini-cal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .cal-event-list {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--wp-hairline);
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
 }
 
 .cal-event-list li {
   font-size: var(--wp-fs-xs);
-  padding: 4px 0;
+  padding: 0;
   color: var(--wp-ink-soft);
+}
+
+.cal-event-list__empty {
+  padding: 4px 0;
+  color: var(--wp-faint);
+}
+
+.cal-event-list__btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.cal-event-list__btn:hover {
+  background: var(--wp-brand-soft);
+}
+
+.cal-event-list__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.cal-event-list__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cal-event-list__cat {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--wp-brand-dark);
+  letter-spacing: 0.02em;
+}
+
+.cal-event-list__title {
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-ink);
+  line-height: 1.35;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .follow-list {

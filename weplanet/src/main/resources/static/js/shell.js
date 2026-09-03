@@ -20,6 +20,7 @@
   if (body.getAttribute("data-shell") !== "fan") return;
 
   const base = body.getAttribute("data-base") || "";
+  const root = base.endsWith("/") ? base : (base ? base + "/" : "/");
   const dmExpired = body.getAttribute("data-dm-expired") === "true";
   const isAuthenticated = body.getAttribute("data-authenticated") === "true";
   // 관리자에게만 드로어 메뉴에 "금칙어 관리" 항목을 보여주기 위함.
@@ -66,7 +67,7 @@
     <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
       아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
     </p>
-       <a href="${base}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
+       <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
   </div>`
         : "";
     }
@@ -75,7 +76,7 @@
       .map((a) => {
         const logo = escapeHtml(a.logo || "?");
         const name = escapeHtml(a.nickname || "아티스트");
-        return `<a href="${base}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
+        return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
       })
       .join("");
 
@@ -96,7 +97,7 @@
     // 금칙어 관리(CHAT-04)는 관리자 전용 화면이라, ADMIN 계정으로 로그인했을 때만 메뉴에 노출함.
     // (예전엔 메뉴가 없어서 /chat/admin/keywords 주소를 직접 쳐야만 들어갈 수 있었음)
     const adminBlock = isAdmin
-      ? `<a href="${base}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> 금칙어 관리</a>`
+      ? `<a href="${root}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> 금칙어 관리</a>`
       : "";
 
     // 관리자는 DM을 주고받을 일이 없는 계정이라(메시지 발신/수신 대상이 아님) 채팅 버튼 자체를 노출하지 않음
@@ -118,11 +119,11 @@
   ${communitiesBlock}
 
   <nav class="drawer-menu__nav">
-    <a href="${base}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
-    <a href="${isAdmin ? base + "admin/notices" : base + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
-    <a href="${base}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
-    <a href="${base}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
-    <a href="${base}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
+    <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
+    <a href="${isAdmin ? root + "admin/notices" : root + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
+    <a href="${root}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
+    <a href="${root}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
+    <a href="${root}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
     ${adminBlock}
   </nav>
 </aside>
@@ -147,7 +148,7 @@
     <div class="dm-body">
       <div class="dm-promo">
         <strong>구독 혜택 안내</strong>
-        <a href="${base}membership">DM 100% 활용방법 ›</a>
+        <a href="${root}membership">DM 100% 활용방법 ›</a>
       </div>
       <p class="dm-section-label">메시지</p>
       <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
@@ -175,7 +176,7 @@
         <strong>DM 구독 만료</strong>
         <span>다시 구독하고 새로운 메시지를 받아보세요.</span>
       </div>
-      <a class="dm-expired__cta" href="${base}membership">구독하기 ›</a>
+      <a class="dm-expired__cta" href="${root}membership">구독하기 ›</a>
     </div>
 
     <div class="dm-messages" id="dmMessages">
