@@ -90,7 +90,7 @@ public class PostService {
                             String linkUrl, boolean hiddenFromArtist) {
         Post post = Post.builder()
                 .boardType(boardType)
-                .title(title)
+                .title(deriveTitle(title, content))
                 .content(content)
                 .author(author)
                 .artist(artist)
@@ -238,8 +238,34 @@ public class PostService {
 
         // post 객체의 값만 바꿔주면, 트랜잭션이 끝날 때 JPA(Hibernate)가 알아서 변경된 부분만 UPDATE 쿼리로 반영해줌
         // (이런 방식을 "더티 체킹"이라고 부름 - 굳이 save()를 다시 안 불러도 됨. 여기선 명확하게 save도 호출함)
-        post.setTitle(title);
+        post.setTitle(deriveTitle(title, content));
         post.setContent(content);
         postRepository.save(post);
+    }
+
+    /**
+     * 제목 입력칸을 화면에서 없앴기 때문에(팀 요청) title 이 비어서 들어옴.
+     * 다만 신고 목록, 관리자 화면, 프로필의 내가 쓴 글 목록 등 여러 곳이
+     * post.title 을 미리보기 텍스트로 쓰고 있어서 컬럼 자체를 비우면 그 화면들이 전부 빈칸이 됨.
+     * 그래서 본문 첫 줄에서 마크다운 기호만 걷어내고 요약을 만들어 채워둠.
+     * 사용자에게는 제목이라는 개념이 노출되지 않음.
+     */
+    private String deriveTitle(String title, String content) {
+        if (title != null && !title.isBlank()) {
+            return title.trim();
+        }
+        if (content == null || content.isBlank()) {
+            return "(내용 없음)";
+        }
+        String firstLine = content.lines()
+                .map(line -> line.replaceAll("^[#>*\\\\-\\\\s]+", "").trim())
+                .filter(line -> !line.isEmpty())
+                .findFirst()
+                .orElse(content.trim());
+        String plain = firstLine.replaceAll("[*`_~]", "").trim();
+        if (plain.isEmpty()) {
+            return "(내용 없음)";
+        }
+        return plain.length() > 80 ? plain.substring(0, 80) : plain;
     }
 }
