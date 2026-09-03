@@ -47,8 +47,7 @@
       <a th:href="@{/admin/reports/suspended}" class="btn btn--sm btn--ghost">제재 대상</a>
     </div>
     <section class="panel">
-      <form method="get" th:action="@{/admin/reports}"
-            style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+      <form method="get" th:action="@{/admin/reports}" class="report-filter-bar">
         <select name="type">
           <option value="" th:selected="${selectedType == null}">전체 유형</option>
           <option value="POST" th:selected="${selectedType == 'POST'}">게시글</option>
@@ -72,7 +71,7 @@
       <div class="panel__head">
         <h2 class="panel__title"
             th:text="${selectedStatus == 'PENDING'} ? '처리 대기 신고' : '처리완료 신고'">처리 대기 신고</h2>
-        <span class="text-xs text-muted" th:text="${#lists.size(reports)} + '건'">0건</span>
+        <span class="text-xs text-muted" th:text="${pageResult.totalElements()} + '건'">0건</span>
       </div>
 
       <div class="table-wrap">
@@ -91,10 +90,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr th:if="${#lists.isEmpty(reports)}">
+            <tr th:if="${#lists.isEmpty(pageResult.content())}">
               <td colspan="9" class="text-sm text-muted">처리 대기 중인 신고가 없습니다.</td>
             </tr>
-            <tr th:each="r : ${reports}" th:with="isPost=${r.targetType.name() == 'POST'}, segment=${isPost ? 'posts' : 'comments'}">
+            <tr th:each="r : ${pageResult.content()}" th:with="isPost=${r.targetType.name() == 'POST'}, segment=${isPost ? 'posts' : 'comments'}">
               <td>
                 <span class="tag" th:classappend="${isPost} ? ' tag--public' : ' tag--private'"
                       th:text="${isPost} ? '게시글' : '댓글'">게시글</span>
@@ -119,7 +118,7 @@
                   <form th:action="@{/admin/reports/{segment}/{id}/dismiss(segment=${segment},id=${r.targetId})}"
                         method="post">
                     <button type="submit" class="btn btn--ghost btn--sm"
-                            onclick="return confirm('이 대상에 걸린 신고를 전부 기각할까요? (게시물/댓글은 그대로 유지됩니다)');">기각</button>
+                            onclick="return confirm('이 게시물/댓글 하나에 걸린 신고만 전부 기각합니다 (작성자의 다른 글이나 계정에는 영향 없음). 게시물/댓글 자체는 삭제되지 않습니다.');">기각</button>
                   </form>
                   <form th:action="@{/admin/reports/{segment}/{id}/delete-content(segment=${segment},id=${r.targetId})}"
                         method="post">
@@ -135,6 +134,16 @@
             </tr>
           </tbody>
         </table>
+      </div>
+      <div class="flex-center" style="margin-top:16px; gap:8px;">
+        <a th:if="${pageResult.hasPrevious()}"
+           th:href="@{/admin/reports(type=${selectedType}, status=${selectedStatus}, reason=${selectedReason}, keyword=${keyword}, page=${pageResult.page() - 1}, size=${pageResult.size()})}"
+           class="btn btn--ghost btn--sm">‹ 이전</a>
+        <span class="text-xs text-muted"
+              th:text="(${pageResult.page()} + 1) + ' / ' + ${pageResult.totalPages()}">1 / 1</span>
+        <a th:if="${pageResult.hasNext()}"
+           th:href="@{/admin/reports(type=${selectedType}, status=${selectedStatus}, reason=${selectedReason}, keyword=${keyword}, page=${pageResult.page() + 1}, size=${pageResult.size()})}"
+           class="btn btn--ghost btn--sm">다음 ›</a>
       </div>
     </section>
   </main>

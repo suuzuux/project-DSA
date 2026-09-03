@@ -31,6 +31,8 @@ public class AdminReportController {
 			@RequestParam(required = false) String status,
 			@RequestParam(required = false) String reason,
 			@RequestParam(required = false) String keyword,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
@@ -43,8 +45,8 @@ public class AdminReportController {
 		ReportReason reasonFilter = (reason == null || reason.isBlank())
 				? null : ReportReason.valueOf(reason);
 		
-		model.addAttribute("reports", adminReportService
-				.listAll(typeFilter, statusFilter, reasonFilter, keyword));
+		model.addAttribute("pageResult", adminReportService.listAll
+				(typeFilter, statusFilter, reasonFilter, keyword, page, size));
 		model.addAttribute("selectedType", type);
 		model.addAttribute("selectedStatus", statusFilter.name());
 		model.addAttribute("selectedReason", reason);
