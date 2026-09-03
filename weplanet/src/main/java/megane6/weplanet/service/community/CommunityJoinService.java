@@ -1,6 +1,7 @@
 package megane6.weplanet.service.community;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -156,6 +158,15 @@ public class CommunityJoinService {
 		if (fan == null) return null;
 		return communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.flatMap(member -> communityProfileRepository.findByCommunityMember_Id(member.getId()))
+				.orElse(null);
+	}
+
+	// PROFILE-03: 계정 가입일이 아니라, 선택한 아티스트 커뮤니티의 가입일과 D+N을 반환한다.
+	// 미가입 사용자(아티스트 본인/관리자 포함)는 표시할 D-DAY가 없으므로 null을 반환한다.
+	public CommunityJoinInfo joinInfoOf(User fan, Long artistId) {
+		if (fan == null) return null;
+		return communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
+				.map(member -> CommunityJoinInfo.from(member.getJoinedAt(), LocalDate.now()))
 				.orElse(null);
 	}
 	

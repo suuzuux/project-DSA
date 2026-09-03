@@ -59,6 +59,7 @@
             <button type="button" class="btn btn--ghost" id="openAddSchedule">+ 일정 추가</button>
           </div>
         </div>
+        <p class="text-sm text-muted" style="padding:0 16px 10px;">일정 칩을 드래그해 다른 날짜로 옮길 수 있습니다.</p>
 
         <div class="month-cal__legend">
           <span th:each="cat : ${scheduleCategories}" class="month-chip" th:attr="data-cat=${cat}" th:text="${cat.label}">TV/방송</span>
@@ -77,10 +78,11 @@
             <button type="button" class="month-cal__date" th:text="${day.day}" th:attr="data-date=${day.date}">1</button>
             <div class="month-cal__events">
               <button type="button"
-                      class="month-chip"
+                      class="month-chip js-schedule-event"
+                      draggable="true"
                       th:each="event, stat : ${day.events}"
                       th:if="${stat.index < 3}"
-                      th:attr="data-cat=${event.category}, data-event-id=${event.id}, data-title=${event.title}, data-time=${event.time}, data-place=${event.location}, data-desc=${event.description}"
+                      th:attr="data-cat=${event.category}, data-event-id=${event.id}, data-event-date=${event.date}, data-title=${event.title}, data-time=${event.time}, data-place=${event.location}, data-desc=${event.description}"
                       th:text="${event.title}">일정</button>
               <span class="month-cal__more" th:if="${#lists.size(day.events) > 3}"
                     th:text="'+' + (${#lists.size(day.events)} - 3)">+1</span>
@@ -167,6 +169,11 @@
       var titleInput = document.getElementById("title");
       var deleteBase = /*[[@{/portal/schedules/}]]*/ "/portal/schedules/";
       var artistName = /*[[${artist.nickname}]]*/ "아티스트";
+      var artistId = /*[[${artist.id}]]*/ 0;
+      var dragging = null;
+      var dragSourceDate = null;
+      var didDrag = false;
+      var grid = document.querySelector(".month-cal__grid");
 
       function syncBirthdayForm() {
         var isBirthday = categorySelect && categorySelect.value === "BIRTHDAY";
@@ -231,6 +238,10 @@
 
       document.querySelectorAll(".month-cal__events .month-chip").forEach(function (chip) {
         chip.addEventListener("click", function (e) {
+          if (didDrag) {
+            didDrag = false;
+            return;
+          }
           e.stopPropagation();
           var id = chip.getAttribute("data-event-id");
           document.getElementById("eventDetailTitle").textContent = chip.getAttribute("data-title") || "일정";
@@ -245,6 +256,76 @@
           openModal(detailModal);
         });
       });
+
+      function clearDropTargets() {
+        document.querySelectorAll(".month-cal__cell.is-drop-target").forEach(function (cell) {
+          cell.classList.remove("is-drop-target");
+        });
+      }
+
+      function persistReschedule(eventId, targetDate, chip, targetCell) {
+        fetch(deleteBase + eventId + "/reschedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "date=" + encodeURIComponent(targetDate) + "&artistId=" + encodeURIComponent(String(artistId))
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data.ok) {
+              alert(data.message || "일정을 옮기지 못했습니다.");
+              window.location.reload();
+              return;
+            }
+            var eventsContainer = targetCell.querySelector(".month-cal__events");
+            chip.setAttribute("data-event-date", targetDate);
+            eventsContainer.appendChild(chip);
+          })
+          .catch(function () {
+            alert("일정을 옮기지 못했습니다.");
+            window.location.reload();
+          });
+      }
+
+      if (grid) {
+        grid.addEventListener("dragstart", function (e) {
+          var chip = e.target.closest(".js-schedule-event");
+          if (!chip) return;
+          dragging = chip;
+          dragSourceDate = chip.getAttribute("data-event-date");
+          didDrag = false;
+          chip.classList.add("is-dragging");
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", chip.getAttribute("data-event-id") || "");
+        });
+
+        grid.addEventListener("dragend", function () {
+          if (dragging) dragging.classList.remove("is-dragging");
+          clearDropTargets();
+          dragging = null;
+          dragSourceDate = null;
+        });
+
+        grid.addEventListener("dragover", function (e) {
+          if (!dragging) return;
+          var cell = e.target.closest(".month-cal__cell");
+          if (!cell) return;
+          e.preventDefault();
+          didDrag = true;
+          clearDropTargets();
+          cell.classList.add("is-drop-target");
+        });
+
+        grid.addEventListener("drop", function (e) {
+          e.preventDefault();
+          var cell = e.target.closest(".month-cal__cell");
+          if (!dragging || !cell) return;
+          clearDropTargets();
+          var targetDate = cell.getAttribute("data-date");
+          var eventId = dragging.getAttribute("data-event-id");
+          if (!targetDate || !eventId || targetDate === dragSourceDate) return;
+          persistReschedule(eventId, targetDate, dragging, cell);
+        });
+      }
     })();
   </script>
 </body>
