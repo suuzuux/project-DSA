@@ -3,12 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    가입 직후 한 번만 뜨는 화면 (AUTH-02).
-    카카오/LINE처럼 realName/email을 실제로 못 받는 provider로 "신규가입"한 직후에만 진입한다
-    (SocialLoginEntryController.completeProfileForm 참고 - 세션 플래그가 없으면 홈으로 돌려보냄).
-    한 번 완료하면(=플래그 삭제) 다음 로그인부터는 다시 뜨지 않는다. DB 스키마 변경 없음(세션 기반).
-  -->
   <title>WePlaNet – 회원정보 입력</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
@@ -17,9 +11,13 @@
 <main class="container section" style="max-width:480px;margin:0 auto;">
   <div class="mb-24" style="text-align:center;padding-top:40px;">
     <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;letter-spacing:-0.03em;">회원정보를 확인해주세요</h1>
-    <p class="text-sm text-muted mt-8">
+    <p class="text-sm text-muted mt-8" th:if="${!user.provider.emailManagedExternally()}">
       <span th:text="${user.provider.name()}">KAKAO</span> 로그인은 이름/이메일 정보를 제공하지 않아,
       서비스 이용을 위해 딱 한 번만 직접 입력받고 있어요.
+    </p>
+    <p class="text-sm text-muted mt-8" th:if="${user.provider.emailManagedExternally()}">
+      <span th:text="${user.provider.name()}">GOOGLE</span> 계정의 이름은 본인이 자유롭게 바꿀 수 있는 값이라,
+      실제 이름이 맞는지 가입 시 한 번만 확인받고 있어요.
     </p>
   </div>
 
@@ -28,46 +26,58 @@
   <section class="settings-block">
     <form th:action="@{/social-login/complete-profile}" method="post" id="completeProfileForm">
 
-      <!-- 이름 -->
       <div class="form-group">
         <label class="form-label">이름</label>
         <input class="form-input" type="text" id="realNameInput" name="realName"
                th:value="${user.realName}" required maxlength="50"
-               th:readonly="${user.realName != '카카오사용자'}" />
+               th:readonly="${nicknamePrefilled}" />
 
-        <!-- 카카오 닉네임이 있어서 그걸 이름 자리에 임시로 채워둔 경우에만 보여주는 빠른 확인 UI.
-             "카카오사용자" 고정 문구가 들어간 경우(닉네임 자체가 없었던 경우)는 바로 직접 입력하게 둔다. -->
-        <div th:if="${user.realName != '카카오사용자'}" class="mt-8" id="nicknameConfirmRow">
+
+        <div th:if="${nicknamePrefilled}" class="mt-8" id="nicknameConfirmRow">
           <p class="text-xs text-muted">
-            카카오 닉네임(<strong th:text="${user.realName}">닉네임</strong>)을 이름으로 채워뒀어요.
+            <span th:text="${user.provider.name()}">KAKAO</span> 닉네임(<strong th:text="${user.realName}">닉네임</strong>)을 이름으로 채워뒀어요.
             본인 이름이 맞으면 그대로 두고 완료를 눌러주세요.
           </p>
           <button type="button" class="btn btn--ghost btn--sm mt-8" id="editRealNameBtn">아니에요, 직접 입력할게요</button>
         </div>
-        <p class="form-hint" th:if="${user.realName == '카카오사용자'}">실제 이름을 입력해주세요.</p>
+        <p class="form-hint" th:if="${!nicknamePrefilled}">실제 이름을 입력해주세요.</p>
       </div>
 
-      <!-- 이메일 : 카카오는 이메일을 안 주기 때문에 지금 값은 임시로 만들어둔 이메일이다.
-           settings.html의 이메일 수정 흐름(6자리 인증코드)과 완전히 동일한 절차를 그대로 재사용한다. -->
       <div class="form-group">
         <label class="form-label">이메일</label>
-        <div class="form-row">
-          <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
-          <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
-        </div>
-        <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
-        <p class="form-hint">지금 이메일은 임시로 생성된 값이에요. 실제로 사용하는 이메일로 바꿔주세요.</p>
 
-        <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
-          <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
-          <span class="text-xs" id="emailCodeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
-          <button type="button" class="btn btn--ghost btn--sm" id="verifyEmailCodeBtn">인증하기</button>
+        <div th:if="${!user.provider.emailManagedExternally()}">
+          <div class="form-row">
+            <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
+            <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
+          </div>
+          <p class="form-hint">지금 이메일은 임시로 생성된 값이에요. 실제로 사용하는 이메일로 바꿔주세요.</p>
+
+          <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
+            <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
+            <span class="text-xs" id="emailCodeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
+            <button type="button" class="btn btn--ghost btn--sm" id="verifyEmailCodeBtn">인증하기</button>
+          </div>
+          <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
         </div>
-        <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
+
+        <div th:if="${user.provider.emailManagedExternally()}">
+          <input class="form-input" type="email" th:value="${user.email}" disabled />
+          <p class="form-hint" th:text="${user.provider.name() + ' 계정과 연동된 이메일이라 바꿀 수 없어요.'}">GOOGLE 계정과 연동된 이메일이라 바꿀 수 없어요.</p>
+        </div>
+
+        <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
       </div>
 
       <button type="submit" class="btn btn--primary btn--block mt-16" id="completeSubmitBtn" disabled>완료</button>
       <p class="text-xs text-muted mt-8" id="submitHint" style="text-align:center;">이메일 인증을 완료하면 저장할 수 있어요.</p>
+    </form>
+
+    <form th:action="@{/social-login/complete-profile/cancel}" method="post" class="mt-8">
+      <button type="submit" class="btn btn--ghost btn--block" formnovalidate
+              onclick="return confirm('회원가입을 취소할까요? 지금 만들어진 계정 정보는 삭제되고, 나중에 같은 계정으로 처음부터 다시 가입할 수 있어요.');">
+        가입 취소하고 나가기
+      </button>
     </form>
   </section>
 </main>
@@ -75,9 +85,9 @@
 <script>
   (function () {
     "use strict";
-    var realNameInput = document.getElementById("realNameInput");
-    var editRealNameBtn = document.getElementById("editRealNameBtn");
-    var nicknameConfirmRow = document.getElementById("nicknameConfirmRow");
+    let realNameInput = document.getElementById("realNameInput");
+    let editRealNameBtn = document.getElementById("editRealNameBtn");
+    let nicknameConfirmRow = document.getElementById("nicknameConfirmRow");
 
     if (editRealNameBtn) {
       editRealNameBtn.addEventListener("click", function () {
@@ -89,21 +99,23 @@
     }
 
     // ===== 이메일 잠금 → 수정 → 인증 (settings.html과 동일한 방식) =====
-    var emailInput = document.getElementById("emailInput");
-    var emailHidden = document.getElementById("emailHidden");
-    var emailEditBtn = document.getElementById("emailEditBtn");
-    var emailCodeRow = document.getElementById("emailCodeRow");
-    var emailCodeInput = document.getElementById("emailCode");
-    var emailVerifyBtn = document.getElementById("verifyEmailCodeBtn");
-    var emailTimerEl = document.getElementById("emailCodeTimer");
-    var emailMsg = document.getElementById("emailVerifyMsg");
-    var submitBtn = document.getElementById("completeSubmitBtn");
-    var submitHint = document.getElementById("submitHint");
-    var originalEmail = emailInput.value;
-    var pendingEmail = "";
-    var emailVerified = false;
-    var emailTimerInterval = null;
-    var EMAIL_CODE_VALID_SECONDS = 5 * 60;
+    let emailInput = document.getElementById("emailInput");
+    let emailHidden = document.getElementById("emailHidden");
+    let emailEditBtn = document.getElementById("emailEditBtn");
+    let emailCodeRow = document.getElementById("emailCodeRow");
+    let emailCodeInput = document.getElementById("emailCode");
+    let emailVerifyBtn = document.getElementById("verifyEmailCodeBtn");
+    let emailTimerEl = document.getElementById("emailCodeTimer");
+    let emailMsg = document.getElementById("emailVerifyMsg");
+    let submitBtn = document.getElementById("completeSubmitBtn");
+    let submitHint = document.getElementById("submitHint");
+    let originalEmail = emailHidden.value;
+    let pendingEmail = "";
+    // 이메일 수정 UI 자체가 없는 provider(구글 - emailManagedExternally)는 인증 절차가 필요 없으니
+    // 처음부터 완료 버튼이 눌리도록 시작값을 true로 둔다.
+    let emailVerified = !emailEditBtn;
+    let emailTimerInterval = null;
+    const EMAIL_CODE_VALID_SECONDS = 5 * 60;
 
     function setEmailMsg(text, ok) {
       emailMsg.textContent = text;
@@ -111,14 +123,14 @@
     }
 
     function formatEmailTime(seconds) {
-      var m = Math.floor(seconds / 60);
-      var s = seconds % 60;
+      let m = Math.floor(seconds / 60);
+      let s = seconds % 60;
       return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
     }
 
     function startEmailTimer() {
       clearInterval(emailTimerInterval);
-      var remaining = EMAIL_CODE_VALID_SECONDS;
+      let remaining = EMAIL_CODE_VALID_SECONDS;
       emailCodeInput.disabled = false;
       emailVerifyBtn.disabled = false;
       emailTimerEl.textContent = formatEmailTime(remaining);
@@ -146,88 +158,91 @@
       submitHint.style.display = emailVerified ? "none" : "block";
     }
 
-    emailEditBtn.addEventListener("click", function () {
-      var mode = emailEditBtn.dataset.mode || "edit";
+    // emailEditBtn이 없는 provider(구글 - 이메일 수정 UI 자체를 안 그림)는 아래 리스너를 아예 안 붙인다.
+    if (emailEditBtn) {
+      emailEditBtn.addEventListener("click", function () {
+        let mode = emailEditBtn.dataset.mode || "edit";
 
-      if (mode === "edit") {
-        emailInput.disabled = false;
-        emailInput.value = "";
-        emailInput.focus();
-        emailEditBtn.textContent = "인증코드 받기";
-        emailEditBtn.dataset.mode = "send";
-        setEmailMsg("", true);
-        return;
-      }
-
-      var newEmail = emailInput.value.trim();
-      if (!newEmail) {
-        setEmailMsg("이메일을 입력해주세요.", false);
-        return;
-      }
-      if (newEmail === originalEmail) {
-        setEmailMsg("임시로 생성된 이메일이 아닌, 실제로 쓰는 이메일을 입력해주세요.", false);
-        return;
-      }
-      emailEditBtn.disabled = true;
-      emailEditBtn.textContent = "발송 중...";
-
-      fetch("/settings/email/code", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "newEmail=" + encodeURIComponent(newEmail)
-      })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          setEmailMsg(data.message, data.success);
-          if (data.success) {
-            pendingEmail = newEmail;
-            emailInput.disabled = true;
-            emailCodeRow.style.display = "flex";
-            emailCodeInput.value = "";
-            emailCodeInput.focus();
-            startEmailTimer();
-          }
-        })
-        .catch(function () {
-          setEmailMsg("이메일 발송 중 오류가 발생했습니다.", false);
-        })
-        .finally(function () {
-          emailEditBtn.disabled = false;
+        if (mode === "edit") {
+          emailInput.disabled = false;
+          emailInput.value = "";
+          emailInput.focus();
           emailEditBtn.textContent = "인증코드 받기";
-        });
-    });
+          emailEditBtn.dataset.mode = "send";
+          setEmailMsg("", true);
+          return;
+        }
 
-    emailVerifyBtn.addEventListener("click", function () {
-      var code = emailCodeInput.value.trim();
-      if (!code) {
-        setEmailMsg("인증코드를 입력해주세요.", false);
-        return;
-      }
-      fetch("/settings/email/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "newEmail=" + encodeURIComponent(pendingEmail) + "&code=" + encodeURIComponent(code)
-      })
-        .then(function (res) { return res.json(); })
-        .then(function (data) {
-          setEmailMsg(data.message, data.success);
-          if (data.success) {
-            emailHidden.value = pendingEmail;
-            originalEmail = pendingEmail;
-            emailVerified = true;
-            stopEmailTimer();
-            emailInput.disabled = true;
-            emailInput.value = pendingEmail;
-            emailCodeRow.style.display = "none";
-            emailEditBtn.textContent = "수정하기";
-            emailEditBtn.dataset.mode = "edit";
-            refreshSubmitState();
-          }
+        let newEmail = emailInput.value.trim();
+        if (!newEmail) {
+          setEmailMsg("이메일을 입력해주세요.", false);
+          return;
+        }
+        if (newEmail === originalEmail) {
+          setEmailMsg("임시로 생성된 이메일이 아닌, 실제로 쓰는 이메일을 입력해주세요.", false);
+          return;
+        }
+        emailEditBtn.disabled = true;
+        emailEditBtn.textContent = "발송 중...";
+
+        fetch("/settings/email/code", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "newEmail=" + encodeURIComponent(newEmail)
         })
-        .catch(function () {
-          setEmailMsg("인증 확인 중 오류가 발생했습니다.", false);
-        });
-    });
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setEmailMsg(data.message, data.success);
+            if (data.success) {
+              pendingEmail = newEmail;
+              emailInput.disabled = true;
+              emailCodeRow.style.display = "flex";
+              emailCodeInput.value = "";
+              emailCodeInput.focus();
+              startEmailTimer();
+            }
+          })
+          .catch(function () {
+            setEmailMsg("이메일 발송 중 오류가 발생했습니다.", false);
+          })
+          .finally(function () {
+            emailEditBtn.disabled = false;
+            emailEditBtn.textContent = "인증코드 받기";
+          });
+      });
+
+      emailVerifyBtn.addEventListener("click", function () {
+        let code = emailCodeInput.value.trim();
+        if (!code) {
+          setEmailMsg("인증코드를 입력해주세요.", false);
+          return;
+        }
+        fetch("/settings/email/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "newEmail=" + encodeURIComponent(pendingEmail) + "&code=" + encodeURIComponent(code)
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            setEmailMsg(data.message, data.success);
+            if (data.success) {
+              emailHidden.value = pendingEmail;
+              originalEmail = pendingEmail;
+              emailVerified = true;
+              stopEmailTimer();
+              emailInput.disabled = true;
+              emailInput.value = pendingEmail;
+              emailCodeRow.style.display = "none";
+              emailEditBtn.textContent = "수정하기";
+              emailEditBtn.dataset.mode = "edit";
+              refreshSubmitState();
+            }
+          })
+          .catch(function () {
+            setEmailMsg("인증 확인 중 오류가 발생했습니다.", false);
+          });
+      });
+    }
 
     refreshSubmitState();
   })();

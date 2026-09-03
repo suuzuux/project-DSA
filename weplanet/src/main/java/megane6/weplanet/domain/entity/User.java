@@ -109,14 +109,10 @@ public class User {
 		this(username, password, realName, nickname, email, role, AuthProvider.LOCAL, null);
 	}
 	
-	// 소셜 로그인(구글 등) 최초 로그인 시 자동 생성되는 팬 계정.
-	// password는 실제 로그인에 쓰이지 않지만 컬럼이 NOT NULL이라, 호출부(OAuth2LoginSuccessHandler)에서
-	// 무작위 값을 BCrypt로 인코딩해서 넘겨준다. realName은 소셜 플랫폼이 제공하는 이름값을 그대로 저장한다.
 	public static User createSocialFan(String username, String encodedPassword, String realName, String nickname, String email, AuthProvider provider, String providerId) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.FAN, provider, providerId);
 	}
 	
-	// 공개 회원가입에서 쓰는 팩토리 - 선택 항목(gender/phone/birthDate/주소)은 나중에 마이페이지에서 채움
 	public static User createFan(String username, String encodedPassword, String realName, String nickname, String email) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.FAN);
 	}
@@ -156,10 +152,7 @@ public class User {
 	public void markEmailVerified(LocalDateTime verifiedAt) {
 		this.emailVerifiedAt = verifiedAt;
 	}
-
-	// 이메일이 같은 기존 계정(주로 아이디/비밀번호로 가입한 LOCAL 계정)에 소셜 로그인을 추가로 연동할 때 씀.
-	// 기존 username/password는 그대로 유지되고 provider/provider_id만 채워져서,
-	// 이후 이 소셜 계정으로도 같은 계정에 로그인할 수 있게 된다.
+	
 	public void linkSocialProvider(AuthProvider provider, String providerId) {
 		this.provider = provider;
 		this.providerId = providerId;
@@ -169,28 +162,15 @@ public class User {
 		this.nickname = nickname;
 		this.email = email;
 	}
-
-	// 회원정보(마이페이지) 수정에서 이름을 바꿀 때 씀. realName은 암호화 컬럼이라
-	// PlaintextBytesConverter가 저장/조회 시 알아서 변환해줌 - 여기선 평문 그대로 다루면 됨
+	
 	public void changeRealName(String realName) {
 		this.realName = realName;
 	}
-
-	// 회원정보 수정 화면에서 새 비밀번호를 입력했을 때만 호출됨 (호출부에서 이미 인코딩된 값을 넘김)
+	
 	public void changePassword(String encodedPassword) {
 		this.password = encodedPassword;
 	}
-
-	// 카카오/LINE처럼 provider가 만들어주는 placeholder 이메일 형식을 아직 그대로 쓰고 있는지 확인.
-	// DB에 별도 컬럼 없이 이메일 패턴만으로 판별해서, 가입 직후 한 번만 뜨는 입력 화면(social-complete-profile)을
-	// 건너뛴 회원도 홈 화면 등에서 계속 감지해 안내할 수 있게 한다. (AuthProvider.placeholderEmailDomain 참고)
-	public boolean hasPlaceholderSocialProfile() {
-		String domain = provider.placeholderEmailDomain();
-		return domain != null && email != null && email.endsWith("@" + domain);
-	}
-
-	// [회원탈퇴] 실제로 로우를 지우지 않고 상태만 WITHDRAWN으로 바꾸는 소프트 삭제.
-	// 게시글/댓글/채팅/후원 내역 등 users.id를 참조하는 다른 테이블의 FK가 깨지지 않도록 하기 위함.
+	
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
 		this.deletedAt = LocalDateTime.now();

@@ -59,9 +59,6 @@ public class HomeController {
 			User fan = userResolver.resolve(principal, 1L);
 			joinedProfiles = communityJoinService.joinedProfilesByArtistId(fan);
 			joinedArtistIds = communityJoinService.joinedArtistIds(fan);
-			// 카카오/LINE 가입 직후 실명/이메일 입력 화면(social-complete-profile)을 건너뛴 회원에게
-			// 계속 안내 배너를 보여주기 위함 - DB 컬럼 없이 이메일 패턴만으로 매 요청마다 판별한다.
-			model.addAttribute("showProfileCompletionWarning", fan.hasPlaceholderSocialProfile());
 		} else {
 			joinedProfiles = Collections.emptyMap();
 			joinedArtistIds = Collections.emptySet();

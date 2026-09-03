@@ -8,6 +8,8 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+// SocialLoginEntryController는 다른 컨트롤러 클래스지만, 세션 플래그 상수(SESSION_KEY_PROFILE_COMPLETION_REQUIRED)를
+// 그대로 재사용하기 위해 참조한다 - sendEmailChangeCode() 주석 참고.
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -67,16 +69,17 @@ public class SettingsController {
 		}
 		return "redirect:/settings";
 	}
-
-	// [회원정보 수정 - 이메일 변경] 회원가입 때와 같은 방식(6자리 코드, 5분 만료)으로 인증코드를 보낸다.
-	// 아직 DB에는 반영하지 않고, 인증에 성공한 이메일만 UserService.updatePortalAccount에서 최종 반영됨.
+	
 	@PostMapping("/settings/email/code")
 	@ResponseBody
 	public Map<String, Object> sendEmailChangeCode(@AuthenticationPrincipal AuthenticatedUser principal,
-													@RequestParam String newEmail) {
+													@RequestParam String newEmail,
+													HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
 		String trimmed = newEmail == null ? "" : newEmail.trim();
+		boolean profileCompletionInProgress = session != null
+				&& Boolean.TRUE.equals(session.getAttribute(SocialLoginEntryController.SESSION_KEY_PROFILE_COMPLETION_REQUIRED));
 
 		if (user.getProvider().emailManagedExternally()) {
 			// 구글처럼 검증된 이메일을 그대로 내려주는 provider와 연동된 회원은 이메일 변경 자체를 시도할 수 없게 막는다
@@ -95,7 +98,7 @@ public class SettingsController {
 			result.put("message", "현재 이메일과 같습니다.");
 			return result;
 		}
-		if (userRepository.existsByEmail(trimmed)) {
+		if (!profileCompletionInProgress && userRepository.existsByEmail(trimmed)) {
 			result.put("success", false);
 			result.put("message", "이미 사용 중인 이메일입니다.");
 			return result;

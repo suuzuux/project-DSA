@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 로그인 방법 선택 -->
   <title>WePlaNet – 로그인</title>
   <link rel="stylesheet" href="../css/style.css" />
 </head>
@@ -18,12 +17,10 @@
     <h1 class="auth-card__title">가장 편한 방법으로<br />위플래닛에<br />로그인하세요!</h1>
     <p class="auth-card__brand">We<span>Pla</span>Net</p>
 
-    <!-- 소셜 로그인 시도했는데 가입된 계정이 없는 경우 (OAuth2LoginSuccessHandler -> /login?socialNotFound=true) -->
     <p th:if="${param.socialNotFound}" class="text-sm" style="color:#c45c26;margin-top:8px;">
       가입된 계정이 없습니다. 먼저 회원가입을 진행해주세요.
     </p>
 
-    <!-- 세션엔 로그인된 걸로 남아있는데 그 계정이 DB에서 삭제된 경우 (GlobalExceptionHandler.handleStaleSession -> /login?sessionExpired=true) -->
     <p th:if="${param.sessionExpired}" class="text-sm" style="color:#c45c26;margin-top:8px;">
       세션이 만료되었습니다. 다시 로그인해주세요.
     </p>
@@ -35,9 +32,9 @@
       <a class="btn btn--sns" href="/social-login/kakao/login">
         <span class="sns-icon sns-icon--kakao">K</span> Kakao로 로그인하기
       </a>
-      <button type="button" class="btn btn--sns" disabled title="준비 중입니다" onclick="alert('LINE 로그인은 준비 중입니다.')">
+      <a class="btn btn--sns" href="/social-login/line/login">
         <span class="sns-icon sns-icon--line">L</span> LINE으로 로그인하기
-      </button>
+      </a>
     </div>
 
     <div class="auth-divider">또는</div>
