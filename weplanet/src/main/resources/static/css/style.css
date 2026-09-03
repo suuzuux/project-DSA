@@ -1606,3 +1606,9 @@ p {
   background: var(--wp-line, #ddd);
   border-radius: 3px;
 }
+
+/* 아티스트 댓글도 수십 개가 달릴 수 있어서 별도 스크롤 영역으로 둠.
+   최상단 고정은 유지하되, 팬 댓글이 화면 밖으로 밀려나지 않도록 높이를 팬 댓글보다 낮게 잡음 */
+.comment-scroll--artist {
+  max-height: 240px;
+}
