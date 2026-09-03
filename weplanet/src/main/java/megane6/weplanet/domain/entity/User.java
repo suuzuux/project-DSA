@@ -181,6 +181,14 @@ public class User {
 		this.password = encodedPassword;
 	}
 
+	// 카카오/LINE처럼 provider가 만들어주는 placeholder 이메일 형식을 아직 그대로 쓰고 있는지 확인.
+	// DB에 별도 컬럼 없이 이메일 패턴만으로 판별해서, 가입 직후 한 번만 뜨는 입력 화면(social-complete-profile)을
+	// 건너뛴 회원도 홈 화면 등에서 계속 감지해 안내할 수 있게 한다. (AuthProvider.placeholderEmailDomain 참고)
+	public boolean hasPlaceholderSocialProfile() {
+		String domain = provider.placeholderEmailDomain();
+		return domain != null && email != null && email.endsWith("@" + domain);
+	}
+
 	// [회원탈퇴] 실제로 로우를 지우지 않고 상태만 WITHDRAWN으로 바꾸는 소프트 삭제.
 	// 게시글/댓글/채팅/후원 내역 등 users.id를 참조하는 다른 테이블의 FK가 깨지지 않도록 하기 위함.
 	public void withdraw() {

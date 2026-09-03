@@ -88,10 +88,12 @@ public class UserService {
 			}
 		}
 		if (!trimmedEmail.equals(user.getEmail())) {
-			// 구글 등 소셜 계정과 연동된 회원은 이메일을 임의로 바꿀 수 없다.
+			// 구글처럼 검증된 이메일을 그대로 내려주는 provider와 연동된 회원은 이메일을 임의로 바꿀 수 없다.
 			// (연동된 이메일이 그 소셜 계정의 신원과 묶여 있는 값이라, 여기서 마음대로 바꾸면
 			// "이메일로 기존 계정 찾기/연동" 로직이 깨지고, 소셜 로그인 자체도 더 이상 이 계정을 못 찾게 됨)
-			if (user.getProvider() != AuthProvider.LOCAL) {
+			// 카카오/LINE은 애초에 실제 이메일을 안 주므로(placeholder만 생성) 여기 해당하지 않고,
+			// LOCAL 계정처럼 이 아래 인증 절차를 거쳐 실제 이메일로 바꿀 수 있다.
+			if (user.getProvider().emailManagedExternally()) {
 				throw new IllegalArgumentException("소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.");
 			}
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.

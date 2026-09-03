@@ -164,13 +164,15 @@
         <label class="form-label">이메일</label>
         <div class="form-row">
           <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
-          <button th:if="${user.provider.name() == 'LOCAL'}" type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
+          <button th:unless="${user.provider.emailManagedExternally()}" type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
         </div>
         <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
-        <!-- 구글 등 소셜 계정과 연동된 회원은 이메일을 여기서 바꿀 수 없음 (연동된 이메일이 그 소셜 계정 신원과 묶여 있는 값이라
-             임의로 바꾸면 소셜 로그인/계정 연동 로직이 깨짐) - SettingsController.sendEmailChangeCode / UserService.updatePortalAccount 참고 -->
-        <p th:if="${user.provider.name() == 'LOCAL'}" class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
-        <p th:unless="${user.provider.name() == 'LOCAL'}" class="form-hint"
+        <!-- 구글처럼 검증된 이메일을 그대로 내려주는 provider(AuthProvider.emailManagedExternally())만 여기서 이메일을 못 바꾼다
+             (임의로 바꾸면 "이메일로 기존 계정 찾기/연동" 로직이 깨짐). 카카오/LINE은 애초에 실제 이메일을 안 주고
+             placeholder(예: kakao_숫자@kakao.weplanet.local)만 생성되므로, LOCAL 계정처럼 직접 입력해서 바꿀 수 있어야 한다.
+             SettingsController.sendEmailChangeCode / UserService.updatePortalAccount 참고 -->
+        <p th:unless="${user.provider.emailManagedExternally()}" class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+        <p th:if="${user.provider.emailManagedExternally()}" class="form-hint"
            th:text="${user.provider.name() + ' 계정과 연동된 회원은 이메일을 변경할 수 없습니다.'}">소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.</p>
 
         <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">

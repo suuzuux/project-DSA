@@ -64,6 +64,7 @@ public class SecurityConfig {
     
     private final LoginSuccessHandler loginSuccessHandler;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final KakaoLoginPromptAuthorizationRequestResolver kakaoLoginPromptAuthorizationRequestResolver;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -87,6 +88,8 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/login")
                         .successHandler(oAuth2LoginSuccessHandler)
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestResolver(kakaoLoginPromptAuthorizationRequestResolver))
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")

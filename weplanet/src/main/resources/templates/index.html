@@ -88,6 +88,23 @@
 
   <!-- ===== 로그인 후 ===== -->
   <th:block sec:authorize="isAuthenticated()">
+
+    <!-- 카카오/LINE 가입 직후 실명/이메일 입력 화면을 건너뛴 회원에게 계속 보여주는 안내 배너.
+         DB 컬럼이 아니라 이메일이 아직 placeholder 형식인지로 매번 판별함 (HomeController 참고). -->
+    <div th:if="${showProfileCompletionWarning}" class="settings-block mb-24"
+         style="background:#fff7ed;border:1px solid #f0c896;">
+      <div class="flex-between" style="flex-wrap:wrap;gap:12px;">
+        <div>
+          <strong style="color:#9a4a12;">회원정보를 아직 다 입력하지 않았어요</strong>
+          <p class="text-sm text-muted mt-8">
+            소셜 로그인으로 가입하면서 이름/이메일이 임시값으로 채워져 있어요.
+            입력을 완료하지 않으면 펀딩·정산 등 일부 기능 이용이 제한될 수 있어요.
+          </p>
+        </div>
+        <a class="btn btn--primary btn--sm" th:href="@{/settings}">지금 입력하기</a>
+      </div>
+    </div>
+
     <div class="cta-banner mb-24">
       <div>
         <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
