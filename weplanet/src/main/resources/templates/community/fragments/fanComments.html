@@ -25,6 +25,7 @@
       <div th:if="${not #lists.isEmpty(artistComments)}" class="comment-list__head">
         <span>아티스트 댓글 <span th:text="${#lists.size(artistComments)}">0</span></span>
       </div>
+      <div class="comment-scroll comment-scroll--artist">
       <div th:each="comment : ${artistComments}" class="comment-item"
            style="background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;">
         <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get(comment.author.id),0,1)}"></div>
@@ -77,6 +78,7 @@
             <span th:id="'commentReportMsg-' + ${comment.id}" class="text-xs"></span>
           </div>
         </div>
+      </div>
       </div>
       <div class="comment-list__head" th:classappend="${not #lists.isEmpty(artistComments)} ? ' mt-16'">
         <span>팬 댓글 <span th:text="${#lists.size(otherComments)}">0</span></span>
