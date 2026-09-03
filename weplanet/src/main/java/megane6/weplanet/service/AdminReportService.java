@@ -57,12 +57,27 @@ public class AdminReportService {
 	) {
 	}
 	
+	// 목록 하나를 페이지 단위로 잘라서 돌려주기 위한 공용 껍데기
+	public record PageResult<T>(List<T> content, int page, int size, long totalElements) {
+		public int totalPages() {
+			return size == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
+		}
+		public boolean hasPrevious() {
+			return page > 0;
+		}
+		public boolean hasNext() {
+			return (page + 1) < totalPages();
+		}
+	}
+	
 	@Transactional(readOnly = true)
-	public List<ReportItem> listAll(
+	public PageResult<ReportItem> listAll(
 			TargetType typeFilter,
 			ReportStatus statusFilter,
 			ReportReason reasonFilter,
-			String keyword
+			String keyword,
+			int page,
+			int size
 	) {
 		String trimmedKeyword = (keyword == null || keyword.isBlank())
 				? null : keyword.strip();
@@ -70,7 +85,7 @@ public class AdminReportService {
 		
 		if (typeFilter != TargetType.COMMENT) {
 			Map<Long, List<Report>> byPost = reportRepository
-					.search(ReportStatus.PENDING, reasonFilter, trimmedKeyword)
+					.search(statusFilter, reasonFilter, trimmedKeyword)
 					.stream()
 					.collect(Collectors.groupingBy(r -> r.getPost().getId()));
 			
@@ -95,7 +110,7 @@ public class AdminReportService {
 		
 		if (typeFilter != TargetType.POST) {
 			Map<Long, List<CommentReport>> byComment = commentReportRepository
-					.search(ReportStatus.PENDING, reasonFilter, trimmedKeyword)
+					.search(statusFilter, reasonFilter, trimmedKeyword)
 					.stream()
 					.collect(Collectors.groupingBy(r -> r.getComment().getId()));
 			
@@ -119,7 +134,12 @@ public class AdminReportService {
 		}
 		
 		items.sort(Comparator.comparing(ReportItem::latestReportedAt).reversed());
-		return items;
+		
+		int fromIndex = Math.min(page * size, items.size());
+		int toIndex = Math.min(fromIndex + size, items.size());
+		List<ReportItem> pageContent = items.subList(fromIndex, toIndex);
+		
+		return new PageResult<>(pageContent, page, size, items.size());
 	}
 
 	// 목록/카드에 너무 긴 본문이 그대로 노출되지 않도록 앞부분만 자름
