@@ -31,6 +31,12 @@ public class ArtistGroup {
     @Column(nullable = false, length = 100)
     private String name;
 
+    @Column(name = "name_en", length = 100)
+    private String nameEn;
+
+    @Column(name = "fandom_name", length = 50)
+    private String fandomName;
+
     @Column(name = "debut_date")
     private LocalDate debutDate;
 
