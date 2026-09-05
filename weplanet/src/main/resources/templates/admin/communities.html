@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>커뮤니티 운영 | WePlaNet ADMIN</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+<div class="portal-shell">
+
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+      <a href="#" onclick="alert('소속사 권한 - 준비 중');return false;">🏢 소속사 권한</a>
+      <a href="#" onclick="alert('아티스트 권한 - 준비 중');return false;">🎤 아티스트 권한</a>
+      <a href="#" onclick="alert('전체 회원 - 준비 중');return false;">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}">📢 전체 공지</a>
+      <a class="is-active" th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+      <a href="#" onclick="alert('관리자 로그 - 준비 중');return false;">🧾 관리자 로그</a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <!-- 로그아웃은 GET 링크가 아니라 POST 폼이어야 한다 (강제 로그아웃 방지) -->
+      <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+        <button type="submit" class="btn">🚪 로그아웃</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="portal-main">
+    <div class="portal-main__head">
+      <div>
+        <h1>커뮤니티 운영</h1>
+        <p class="text-sm text-muted">
+          팬 프로젝트 심사와 커뮤니티 운영 현황을 관리합니다.
+        </p>
+      </div>
+
+      <div class="admin-topbar">
+        <span class="admin-badge">🛡 SUPER ADMIN</span>
+      </div>
+    </div>
+
+    <!-- 주요 통계 -->
+    <div class="admin-stat-grid">
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--violet">💬</span>
+        <span class="admin-stat__body">
+        <span class="admin-stat__label">전체 커뮤니티</span>
+        <strong class="admin-stat__value"
+                th:text="${stats.totalCommunityCount()}">0</strong>
+      </span>
+      </article>
+
+      <article class="admin-stat admin-stat--alert">
+        <span class="admin-stat__icon admin-stat__icon--orange">🕐</span>
+        <span class="admin-stat__body">
+        <span class="admin-stat__label">프로젝트 심사 대기</span>
+        <strong class="admin-stat__value"
+                th:text="${stats.pendingProjectCount()}">0</strong>
+      </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--green">💰</span>
+        <span class="admin-stat__body">
+        <span class="admin-stat__label">현재 모금 중</span>
+        <strong class="admin-stat__value"
+                th:text="${stats.fundingProjectCount()}">0</strong>
+      </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--khaki">🚫</span>
+        <span class="admin-stat__body">
+        <span class="admin-stat__label">커뮤니티 이용 제한</span>
+        <strong class="admin-stat__value"
+                th:text="${stats.restrictedMemberCount()}">0</strong>
+      </span>
+      </article>
+    </div>
+
+    <!-- 프로젝트 목록 + 상세 검토 -->
+    <div class="panel-grid">
+      <section class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">팬 프로젝트 심사 대기</h2>
+            <p class="text-xs text-muted">
+              승인을 기다리는 프로젝트를 검토합니다.
+            </p>
+          </div>
+
+          <span class="tag tag--danger"
+                th:text="${stats.pendingProjectCount()} + '건'">0건</span>
+        </div>
+
+        <form class="report-filter-bar">
+          <select>
+            <option>전체 커뮤니티</option>
+          </select>
+
+          <select>
+            <option>전체 이벤트 유형</option>
+          </select>
+
+          <input
+                  type="text"
+                  placeholder="프로젝트명 또는 신청자 검색"
+          />
+
+          <button type="button" class="btn btn--primary btn--sm">
+            검색
+          </button>
+        </form>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>신청일</th>
+              <th>프로젝트</th>
+              <th>커뮤니티</th>
+              <th>신청자</th>
+              <th>목표 금액</th>
+              <th>모금 기간</th>
+              <th>상태</th>
+              <th>관리</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${#lists.isEmpty(pendingProjects)}">
+              <td colspan="8" class="text-sm text-muted">심사 대기 중인 프로젝트가 없습니다.</td>
+            </tr>
+            <tr th:each="project : ${pendingProjects}">
+              <td th:text="${#temporals.format(project.createdAt(), 'yyyy.MM.dd HH:mm')}">
+                2026.09.06 12:00
+              </td>
+              <td>
+                <strong th:text="${project.title()}">프로젝트명</strong>
+                <br />
+                <span class="text-xs text-muted" th:text="${project.eventTypeLabel()}">
+                  이벤트 유형
+                </span>
+              </td>
+              <td th:text="${project.artistNickname()}">아티스트</td>
+              <td th:text="${project.creatorNickname()}">신청자</td>
+              <td th:text="${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')} + '원'">100,000원</td>
+              <td class="text-xs"
+                  th:text="${#temporals.format(
+                    project.fundingStartAt(), 'yyyy.MM.dd')
+                      + ' ~ '
+                      + #temporals.format(
+                      project.fundingEndAt(), 'yyyy.MM.dd')}">
+                2026.09.10 ~ 2026.09.20
+              </td>
+              <td>
+                <span class="tag tag--danger">승인 대기</span>
+              </td>
+              <td>
+                <a class="btn btn--ghost btn--sm"
+                   th:href="@{/admin/communities(projectId=${project.id()})}">검토</a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">프로젝트 상세 검토</h2>
+
+            <p class="text-xs text-muted"
+               th:if="${selectedProject == null}">
+              목록에서 프로젝트를 선택해주세요.
+            </p>
+
+            <p class="text-xs text-muted"
+               th:if="${selectedProject != null}"
+               th:text="${'신청일 ' + #temporals.format(
+                  selectedProject.createdAt(),
+                  'yyyy.MM.dd HH:mm')}">신청일</p>
+          </div>
+        </div>
+
+        <!-- 선택 전 -->
+        <div th:if="${selectedProject == null}"
+             style="padding:32px 12px;text-align:center;">
+          <div style="font-size:34px;margin-bottom:12px;">📋</div>
+
+          <strong>선택된 프로젝트가 없습니다.</strong>
+
+          <p class="text-sm text-muted" style="margin-top:8px;">
+            프로젝트를 선택하면 신청 조건, 일정과 목표 금액을
+            확인할 수 있습니다.
+          </p>
+        </div>
+
+        <!-- 선택 후 -->
+        <div th:if="${selectedProject != null}">
+          <div style="margin-bottom:20px;">
+          <span class="tag tag--danger"
+                th:text="${selectedProject.statusLabel()}">승인대기</span>
+
+            <h3 style="margin:10px 0 4px;"
+                th:text="${selectedProject.title()}">프로젝트명</h3>
+
+            <p class="text-xs text-muted">
+            <span th:text="${selectedProject.artistNickname()}">아티스트</span>
+              ·
+              <span th:text="${selectedProject.eventTypeLabel()}">이벤트 유형</span>
+            </p>
+          </div>
+
+          <div style="display:grid;
+                      grid-template-columns:1fr 1fr;
+                      gap:12px; margin-bottom:20px;">
+            <div>
+              <span class="text-xs text-muted">신청자</span><br />
+              <strong th:text="${selectedProject.creatorNickname()}">신청자</strong>
+            </div>
+
+            <div>
+              <span class="text-xs text-muted">목표 금액</span><br />
+              <strong th:text="${#numbers.formatInteger(
+                        selectedProject.goalAmount(), 0, 'COMMA')} + '원'">
+                100,000원</strong>
+            </div>
+
+            <div>
+              <span class="text-xs text-muted">기본 뱃지</span><br />
+              <strong th:text="${selectedProject.basicBadgeCount()} + '개'">5개</strong>
+            </div>
+
+            <div>
+              <span class="text-xs text-muted">스페셜 뱃지</span><br />
+              <strong th:text="${selectedProject.specialBadgeCount()} + '개'">1개</strong>
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <span class="text-xs text-muted">모금 기간</span>
+
+            <p class="text-sm"
+               th:text="${#temporals.format(
+             selectedProject.fundingStartAt(), 'yyyy.MM.dd HH:mm')
+             + ' ~ '
+             + #temporals.format(
+             selectedProject.fundingEndAt(), 'yyyy.MM.dd HH:mm')}">모금 기간</p>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <span class="text-xs text-muted">본인인증 완료</span>
+
+            <p class="text-sm"
+               th:text="${#temporals.format(
+             selectedProject.identityVerifiedAt(),
+             'yyyy.MM.dd HH:mm')}">인증 시각</p>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <span class="text-xs text-muted">프로젝트 설명</span>
+
+            <p class="text-sm"
+               style="margin-top:6px;white-space:pre-wrap;"
+               th:text="${selectedProject.description()}">프로젝트 설명</p>
+          </div>
+
+          <div class="flex-center" style="gap:8px;">
+            <button type="button"
+                    class="btn btn--ghost"
+                    disabled>반려</button>
+
+            <button type="button"
+                    class="btn btn--primary"
+                    disabled>승인</button>
+          </div>
+
+          <p class="text-xs text-muted"
+             style="text-align:center;margin-top:8px;">
+            승인·반려 동작은 다음 단계에서 연결합니다.
+          </p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 하위 운영 기능 -->
+    <div class="panel-grid panel-grid--3 mt-16">
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">커뮤니티 현황</h2>
+          <span>›</span>
+        </div>
+
+        <p class="text-sm text-muted">
+          커뮤니티별 가입 팬, 게시글, 프로젝트와 활동 현황을 확인합니다.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">이용 제한 관리</h2>
+          <span>›</span>
+        </div>
+
+        <p class="text-sm text-muted">
+          특정 커뮤니티에서 차단된 회원과 차단 사유를 관리합니다.
+        </p>
+      </section>
+
+      <section class="panel">
+        <div class="panel__head">
+          <h2 class="panel__title">채팅·금칙어 관리</h2>
+          <span>›</span>
+        </div>
+
+        <p class="text-sm text-muted">
+          채팅 금칙어와 커뮤니티별 채팅 운영 설정을 관리합니다.
+        </p>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

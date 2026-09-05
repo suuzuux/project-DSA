@@ -20,4 +20,10 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByStatusInAndDeletedAtIsNull(
             List<FanProjectStatus> statuses
     );
+    
+    long countByStatusAndDeletedAtIsNull(FanProjectStatus status);
+    
+    @EntityGraph(attributePaths = {"artist", "creator"})
+    List<Project> findByStatusAndDeletedAtIsNullOrderByCreatedAtAsc(
+            FanProjectStatus status);
 }
