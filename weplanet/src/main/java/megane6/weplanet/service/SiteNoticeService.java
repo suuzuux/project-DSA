@@ -119,6 +119,16 @@ public class SiteNoticeService {
 		return siteNoticeRepository.countByPinnedTrue();
 	}
 	
+	@Transactional(readOnly = true)
+	public NoticeStats getStats() {
+		return new NoticeStats(
+				siteNoticeRepository.countVisible(),
+				siteNoticeRepository.countScheduled(),
+				siteNoticeRepository.countByPublishedFalse(),
+				siteNoticeRepository.countByPinnedTrue()
+		);
+	}
+	
 	private void applyPinState(SiteNotice notice, boolean pinned) {
 		boolean wasPinned = notice.isPinned();
 		if (pinned) {
@@ -170,5 +180,9 @@ public class SiteNoticeService {
 		public boolean hasNext() {
 			return (page + 1) < totalPages();
 		}
+	}
+	
+	public record NoticeStats(long visible, long scheduled, long hidden, long pinned) {
+	
 	}
 }
