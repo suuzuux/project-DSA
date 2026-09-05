@@ -694,7 +694,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `gender` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '성별: MALE/FEMALE/OTHER',
   `zipcode` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '우편번호(배송·지역알림 확장용)',
   `address1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '기본 주소',
-  `address2` varbinary(512) DEFAULT NULL COMMENT '상세주소(암호화 저장)',
+  `address2` varbinary(512) DEFAULT NULL COMhwMENT '상세주소(암호화 저장)',
   `email_verified_at` datetime(6) DEFAULT NULL COMMENT '이메일 인증 완료 시각(NULL=미인증)',
   `last_login_at` datetime(6) DEFAULT NULL COMMENT '최종 로그인 시각',
   `created_at` datetime(6) NOT NULL COMMENT '가입 시각',

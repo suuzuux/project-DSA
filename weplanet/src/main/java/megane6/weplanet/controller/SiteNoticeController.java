@@ -2,17 +2,18 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.NoticeCategory;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.SiteNoticeService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -22,8 +23,15 @@ public class SiteNoticeController {
 	private final AuthenticatedUserResolver userResolver;
 
 	@GetMapping("/notices")
-	public String publicList(Model model) {
-		model.addAttribute("notices", siteNoticeService.listPublished());
+	public String publicList(
+			@RequestParam(required = false) String category,
+			Model model
+	) {
+		NoticeCategory categoryFilter = (category == null || category.isBlank())
+				? null : NoticeCategory.valueOf(category);
+		model.addAttribute("notices", siteNoticeService.listPublished(categoryFilter));
+		model.addAttribute("selectedCategory", category);
+		
 		return "notices";
 	}
 
@@ -34,24 +42,48 @@ public class SiteNoticeController {
 	}
 
 	@GetMapping("/admin/notices")
-	public String adminList(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+	public String adminList(
+			@RequestParam(required = false) String category,
+			@RequestParam(required = false) String keyword,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
 		requireAdmin(principal);
-		model.addAttribute("notices", siteNoticeService.listAll());
+		
+		NoticeCategory categoryFilter = (category == null || category.isBlank())
+				? null : NoticeCategory.valueOf(category);
+		
+		model.addAttribute(
+				"pageResult", siteNoticeService.listAll(categoryFilter, keyword, page, size));
+		model.addAttribute("selectedCategory", category);
+		model.addAttribute("keyword", keyword);
+		
 		return "admin/notices";
 	}
 
 	@GetMapping("/admin/notices/new")
-	public String newForm(@AuthenticationPrincipal AuthenticatedUser principal) {
+	public String newForm(
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
 		requireAdmin(principal);
+		model.addAttribute("pinnedCount", siteNoticeService.countPinned());
+		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
 		return "admin/notice-form";
 	}
 
 	@GetMapping("/admin/notices/{noticeId}/edit")
-	public String editForm(@PathVariable Long noticeId,
-						   @AuthenticationPrincipal AuthenticatedUser principal,
-						   Model model) {
+	public String editForm(
+			@PathVariable Long noticeId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
 		requireAdmin(principal);
 		model.addAttribute("notice", siteNoticeService.get(noticeId));
+		model.addAttribute("pinnedCount", siteNoticeService.countPinned());
+		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
 		return "admin/notice-form";
 	}
 
@@ -59,11 +91,13 @@ public class SiteNoticeController {
 	public String create(@RequestParam String title,
 						 @RequestParam String content,
 						 @RequestParam(defaultValue = "false") boolean published,
+						 @RequestParam(defaultValue = "false") boolean pinned,
+						 @RequestParam NoticeCategory category,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
 						 RedirectAttributes redirectAttributes) {
 		User admin = requireAdmin(principal);
 		try {
-			siteNoticeService.save(admin, null, title, content, published);
+			siteNoticeService.save(admin, null, category, title, content, published, pinned);
 			redirectAttributes.addFlashAttribute("msg", "공지가 등록되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -77,11 +111,13 @@ public class SiteNoticeController {
 						 @RequestParam String title,
 						 @RequestParam String content,
 						 @RequestParam(defaultValue = "false") boolean published,
+						 @RequestParam(defaultValue = "false") boolean pinned,
+						 @RequestParam NoticeCategory category,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
 						 RedirectAttributes redirectAttributes) {
 		User admin = requireAdmin(principal);
 		try {
-			siteNoticeService.save(admin, noticeId, title, content, published);
+			siteNoticeService.save(admin, noticeId, category, title, content, published, pinned);
 			redirectAttributes.addFlashAttribute("msg", "공지가 수정되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -98,6 +134,21 @@ public class SiteNoticeController {
 		siteNoticeService.delete(noticeId);
 		redirectAttributes.addFlashAttribute("msg", "공지가 삭제되었습니다.");
 		return "redirect:/admin/notices";
+	}
+	
+	@PostMapping("/admin/notices/reorder")
+	@ResponseBody
+	public Map<String, Object> reorder(
+			@RequestParam List<Long> ids,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		requireAdmin(principal);
+		try {
+			siteNoticeService.reorderPinned(ids);
+			return Map.of("ok", true);
+		} catch (IllegalArgumentException e) {
+			return Map.of("ok", false, "message", e.getMessage());
+		}
 	}
 
 	private User requireAdmin(AuthenticatedUser principal) {
