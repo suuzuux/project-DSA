@@ -128,6 +128,9 @@
     align-items: center;
     gap: 8px !important;
     padding: 12px !important;
+    /* 모바일은 상단 가로 바 형태라 전체 높이 고정을 풀어준다 */
+    height: auto !important;
+    overflow-y: visible !important;
   }
 
   .portal-sidebar__nav {
@@ -149,6 +152,12 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* 우측 본문이 길어져도 좌측 메뉴는 화면에 고정 (로그아웃 버튼이 항상 보이도록).
+     메뉴가 화면보다 길어지면 사이드바 안에서만 스크롤되게 overflow-y:auto */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .portal-sidebar__org {

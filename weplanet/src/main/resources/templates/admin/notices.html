@@ -97,10 +97,10 @@
             </tr>
           </thead>
           <tbody id="noticeTableBody">
-          <tr th:if="${#lists.isEmpty(notices)}">
+          <tr th:if="${#lists.isEmpty(pageResult.content())}">
             <td colspan="6" class="text-sm text-muted">등록된 공지가 없습니다.</td>
           </tr>
-          <tr th:each="notice : ${notices}"
+          <tr th:each="notice : ${pageResult.content()}"
               th:attr="data-id=${notice.id}, draggable=${notice.pinned}"
               th:classappend="${notice.pinned} ? ' js-pinned'">
             <td class="notice-drag-cell">
