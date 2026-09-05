@@ -8,6 +8,7 @@ import megane6.weplanet.repository.SiteNoticeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -40,15 +41,12 @@ public class SiteNoticeService {
 	
 	@Transactional(readOnly = true)
 	public List<SiteNotice> listPublished() {
-		return siteNoticeRepository.findByPublishedTrueOrderByCreatedAtDesc();
+		return listPublished(null);
 	}
 	
 	@Transactional(readOnly = true)
 	public List<SiteNotice> listPublished(NoticeCategory category) {
-		if (category == null) {
-			return listPublished();
-		}
-		return siteNoticeRepository.findByPublishedTrueAndCategoryOrderByCreatedAtDesc(category);
+		return siteNoticeRepository.findVisible(category);
 	}
 
 	@Transactional(readOnly = true)
@@ -60,12 +58,12 @@ public class SiteNoticeService {
 	@Transactional(readOnly = true)
 	public SiteNotice getPublished(Long noticeId) {
 		SiteNotice notice = get(noticeId);
-		if (!notice.isPublished()) {
+		if (!notice.isVisible()) {
 			throw new IllegalArgumentException("공지를 찾을 수 없습니다.");
 		}
 		return notice;
 	}
-
+	
 	public SiteNotice save(
 			User author,
 			Long noticeId,
@@ -73,6 +71,7 @@ public class SiteNoticeService {
 			String title,
 			String content,
 			boolean published,
+			LocalDateTime publishAt,
 			boolean pinned) {
 		if (title == null || title.isBlank()) {
 			throw new IllegalArgumentException("제목을 입력해주세요.");
@@ -81,10 +80,10 @@ public class SiteNoticeService {
 			throw new IllegalArgumentException("본문을 입력해주세요.");
 		}
 		SiteNotice notice = noticeId == null
-				? SiteNotice.create(author, category, title, content, published)
+				? SiteNotice.create(author, category, title, content, published, publishAt)
 				: get(noticeId);
 		if (noticeId != null) {
-			notice.update(category, title, content, published);
+			notice.update(category, title, content, published, publishAt);
 		}
 		
 		applyPinState(notice, pinned);

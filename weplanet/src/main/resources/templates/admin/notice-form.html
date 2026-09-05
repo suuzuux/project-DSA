@@ -68,6 +68,12 @@
           </select>
         </div>
         <div class="form-group">
+          <label class="form-label" for="publishAt">예약 발행 (선택)</label>
+          <input class="form-input" type="date" id="publishAt" name="publishAt"
+                 th:value="${notice != null && notice.publishAt != null} ? ${#temporals.format(notice.publishAt, 'yyyy-MM-dd')} : ''" />
+          <p class="text-sm text-muted" style="margin-top:6px;">비워두면 지금 바로(공개여부 설정대로) 노출됩니다. 시각을 지정하면 그 전까지는 "공개"로 저장해도 실제로는 안 보입니다.</p>
+        </div>
+        <div class="form-group">
           <label class="form-label">상단 노출</label>
           <input type="hidden" id="pinned" name="pinned" th:value="${notice != null && notice.pinned}">
           <button type="button" id="pinToggle" class="btn btn--ghost"

@@ -12,6 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -91,13 +93,16 @@ public class SiteNoticeController {
 	public String create(@RequestParam String title,
 						 @RequestParam String content,
 						 @RequestParam(defaultValue = "false") boolean published,
+						 @RequestParam(required = false) String publishAt,
 						 @RequestParam(defaultValue = "false") boolean pinned,
 						 @RequestParam NoticeCategory category,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
 						 RedirectAttributes redirectAttributes) {
 		User admin = requireAdmin(principal);
 		try {
-			siteNoticeService.save(admin, null, category, title, content, published, pinned);
+			LocalDateTime publishAtValue = (publishAt == null || publishAt.isBlank())
+					? null : LocalDate.parse(publishAt).atStartOfDay();
+			siteNoticeService.save(admin, null, category, title, content, published, publishAtValue, pinned);
 			redirectAttributes.addFlashAttribute("msg", "공지가 등록되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -111,13 +116,16 @@ public class SiteNoticeController {
 						 @RequestParam String title,
 						 @RequestParam String content,
 						 @RequestParam(defaultValue = "false") boolean published,
+						 @RequestParam(required = false) String publishAt,
 						 @RequestParam(defaultValue = "false") boolean pinned,
 						 @RequestParam NoticeCategory category,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
 						 RedirectAttributes redirectAttributes) {
 		User admin = requireAdmin(principal);
 		try {
-			siteNoticeService.save(admin, noticeId, category, title, content, published, pinned);
+			LocalDateTime publishAtValue = (publishAt == null || publishAt.isBlank())
+					? null : LocalDate.parse(publishAt).atStartOfDay();
+			siteNoticeService.save(admin, noticeId, category, title, content, published, publishAtValue, pinned);
 			redirectAttributes.addFlashAttribute("msg", "공지가 수정되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
