@@ -16,16 +16,25 @@
   <div class="portal-shell">
     <aside class="portal-sidebar portal-sidebar--admin">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
+        <div class="agency">WEPLANET</div>
         <div class="artist">ADMIN</div>
       </div>
+
       <nav class="portal-sidebar__nav">
-        <a class="is-active" th:href="@{/admin/notices}">📢 공지사항</a>
-        <a th:href="@{/chat/admin/keywords}">금칙어 관리</a>
+        <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+        <a href="#" onclick="alert('소속사 권한 - 준비 중');return false;">🏢 소속사 권한</a>
+        <a href="#" onclick="alert('아티스트 권한 - 준비 중');return false;">🎤 아티스트 권한</a>
+        <a href="#" onclick="alert('전체 회원 - 준비 중');return false;">👥 전체 회원</a>
+        <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+        <a class="is-active" th:href="@{/admin/notices}">📢 전체 공지</a>
+        <a href="#" onclick="alert('커뮤니티 운영 - 준비 중');return false;">💬 커뮤니티 운영</a>
+        <a href="#" onclick="alert('관리자 로그 - 준비 중');return false;">🧾 관리자 로그</a>
       </nav>
+
       <div class="portal-sidebar__footer">
-        <a th:href="@{/}">← 홈</a><br /><br />
-        <a th:href="@{/logout}">로그아웃</a>
+        <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+          <button type="submit" class="btn">🚪 로그아웃</button>
+        </form>
       </div>
     </aside>
 

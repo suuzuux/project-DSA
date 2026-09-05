@@ -16,16 +16,25 @@
   <div class="portal-shell">
     <aside class="portal-sidebar portal-sidebar--admin">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
+        <div class="agency">WEPLANET</div>
         <div class="artist">ADMIN</div>
       </div>
+
       <nav class="portal-sidebar__nav">
-        <a class="is-active" th:href="@{/admin/notices}">📢 공지사항</a>
-        <a th:href="@{/chat/admin/keywords}">금칙어 관리</a>
+        <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+        <a href="#" onclick="alert('소속사 권한 - 준비 중');return false;">🏢 소속사 권한</a>
+        <a href="#" onclick="alert('아티스트 권한 - 준비 중');return false;">🎤 아티스트 권한</a>
+        <a href="#" onclick="alert('전체 회원 - 준비 중');return false;">👥 전체 회원</a>
+        <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+        <a class="is-active" th:href="@{/admin/notices}">📢 전체 공지</a>
+        <a href="#" onclick="alert('커뮤니티 운영 - 준비 중');return false;">💬 커뮤니티 운영</a>
+        <a href="#" onclick="alert('관리자 로그 - 준비 중');return false;">🧾 관리자 로그</a>
       </nav>
+
       <div class="portal-sidebar__footer">
-        <a th:href="@{/}">← 홈</a><br /><br />
-        <a th:href="@{/logout}">로그아웃</a>
+        <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+          <button type="submit" class="btn">🚪 로그아웃</button>
+        </form>
       </div>
     </aside>
 
@@ -37,6 +46,36 @@
 
       <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+      <div class="admin-stat-grid" style="margin-bottom:20px;">
+        <article class="admin-stat">
+          <span class="admin-stat__icon admin-stat__icon--violet">📢</span>
+          <span class="admin-stat__body">
+            <span class="admin-stat__label">게시 중</span>
+            <strong class="admin-stat__value" th:text="${stats.visible()}">0</strong>
+          </span>
+        </article>
+        <article class="admin-stat">
+          <span class="admin-stat__icon admin-stat__icon--orange">⏰</span>
+          <span class="admin-stat__body">
+            <span class="admin-stat__label">예약 대기</span>
+            <strong class="admin-stat__value" th:text="${stats.scheduled()}">0</strong>
+          </span>
+        </article>
+        <article class="admin-stat">
+          <span class="admin-stat__icon admin-stat__icon--blue">📝</span>
+          <span class="admin-stat__body">
+            <span class="admin-stat__label">비공개</span>
+            <strong class="admin-stat__value" th:text="${stats.hidden()}">0</strong>
+          </span>
+        </article>
+        <article class="admin-stat">
+          <span class="admin-stat__icon admin-stat__icon--khaki">📌</span>
+          <span class="admin-stat__body">
+            <span class="admin-stat__label">상단 고정</span>
+            <strong class="admin-stat__value" th:text="${stats.pinned()} + ' / ' + ${T(megane6.weplanet.service.SiteNoticeService).MAX_PINNED}">0 / 3</strong>
+          </span>
+        </article>
+      </div>
       <p class="text-sm text-muted" style="margin-bottom:12px;">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 3개)</p>
       <form method="get" th:action="@{/admin/notices}" class="report-filter-bar">
         <input type="hidden" name="category" th:value="${selectedCategory}" />
