@@ -38,6 +38,13 @@
 <main class="container section">
   <div class="flex-between mb-24">
     <h1 class="section__title" style="font-size:var(--wp-fs-xl);">공지사항</h1>
+    <div class="chip-row mb-24">
+      <a th:href="@{/notices}" class="chip" th:classappend="${selectedCategory == null} ? ' is-active'">전체</a>
+      <a th:href="@{/notices(category='GENERAL')}" class="chip" th:classappend="${selectedCategory == 'GENERAL'} ? ' is-active'">일반</a>
+      <a th:href="@{/notices(category='EVENT')}" class="chip" th:classappend="${selectedCategory == 'EVENT'} ? ' is-active'">이벤트</a>
+      <a th:href="@{/notices(category='MAINTENANCE')}" class="chip" th:classappend="${selectedCategory == 'MAINTENANCE'} ? ' is-active'">점검</a>
+      <a th:href="@{/notices(category='UPDATE')}" class="chip" th:classappend="${selectedCategory == 'UPDATE'} ? ' is-active'">업데이트</a>
+    </div>
     <a class="btn btn--ghost btn--sm" th:href="@{/}">← 홈</a>
   </div>
 
@@ -46,9 +53,15 @@
     <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
       <div class="post-card__head">
         <div class="post-card__meta">
+          <span class="tag tag--member" th:switch="${notice.category.name()}">
+            <th:block th:case="'GENERAL'">일반</th:block>
+            <th:block th:case="'EVENT'">이벤트</th:block>
+            <th:block th:case="'MAINTENANCE'">점검</th:block>
+            <th:block th:case="'UPDATE'">업데이트</th:block>
+          </span>
           <strong class="post-card__title" th:text="${notice.title}">공지 제목</strong>
           <span class="text-xs text-muted"
-                th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31</span>
+                th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2026.08.31</span>
         </div>
       </div>
       <p class="post-card__excerpt" th:text="${notice.content}">공지 내용</p>
