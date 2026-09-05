@@ -10,10 +10,7 @@ import java.util.List;
 
 public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
 	List<SiteNotice> findAllByOrderByCreatedAtDesc();
-	List<SiteNotice> findByPublishedTrueOrderByCreatedAtDesc();
 	List<SiteNotice> findByPinnedTrueOrderByPinOrderAsc();
-	List<SiteNotice> findByPublishedTrueAndCategoryOrderByCreatedAtDesc(
-			NoticeCategory category);
 	
 	long countByPinnedTrue();
 	
@@ -25,4 +22,13 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
         """)
 	List<SiteNotice> search(@Param("category") NoticeCategory category,
 							@Param("keyword") String keyword);
+	
+	@Query("""
+        SELECT n FROM SiteNotice n
+        WHERE n.published = true
+          AND (n.publishAt IS NULL OR n.publishAt <= CURRENT_TIMESTAMP)
+          AND (:category IS NULL OR n.category = :category)
+        ORDER BY n.createdAt DESC
+        """)
+	List<SiteNotice> findVisible(@Param("category") NoticeCategory category);
 }

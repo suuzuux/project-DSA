@@ -68,7 +68,12 @@
               <span th:if="${notice.pinned}" class="notice-drag-handle" title="드래그하여 순서 변경">☰</span>
             </td>
             <td>
-              <span class="tag tag--member" th:text="${notice.category}">GENERAL</span>
+              <span class="tag tag--member" th:switch="${notice.category.name()}">
+                <th:block th:case="'GENERAL'">일반</th:block>
+                <th:block th:case="'EVENT'">이벤트</th:block>
+                <th:block th:case="'MAINTENANCE'">점검</th:block>
+                <th:block th:case="'UPDATE'">업데이트</th:block>
+              </span>
             </td>
             <td>
               <a th:href="@{/admin/notices/{id}/edit(id=${notice.id})}"
