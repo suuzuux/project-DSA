@@ -1,17 +1,14 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.AdminCommunityService;
 import megane6.weplanet.service.ProjectService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -24,9 +21,17 @@ public class AdminCommunityController {
 	
 	@GetMapping
 	public String dashboard(@RequestParam(required = false) Long projectId,
+							@RequestParam(required = false) String status,
+							@RequestParam(required = false) String keyword,
 							Model model) {
+		FanProjectStatus statusFilter = parseStatus(status);
 		model.addAttribute("stats", acs.getStats());
 		model.addAttribute("pendingProjects", acs.getPendingProjects());
+		model.addAttribute("adminProjects", acs.getAdminProjects(statusFilter, keyword));
+		model.addAttribute("settlementProjects", acs.getSettlementProjects());
+		model.addAttribute("projectStatuses", FanProjectStatus.values());
+		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
+		model.addAttribute("keyword", keyword == null ? "" : keyword);
 		
 		if (projectId != null) {
 			model.addAttribute("selectedProject", acs.getProjectReviewDetail(projectId));
@@ -73,6 +78,39 @@ public class AdminCommunityController {
 		return "redirect:/admin/communities";
 	}
 	
+	@PostMapping("/settlements/{projectId}/verify")
+	public String verifySettlementAccount(@PathVariable Long projectId,
+										  @AuthenticationPrincipal AuthenticatedUser principal,
+										  RedirectAttributes redirectAttributes) {
+		requireAdminLogin(principal);
+		handle(() -> acs.verifySettlementAccount(projectId, principal.getId()),
+				"정산 계좌를 확인 완료 처리했습니다.",
+				redirectAttributes);
+		return "redirect:/admin/communities";
+	}
+	
+	@PostMapping("/settlements/{projectId}/fail")
+	public String failSettlementAccountVerification(@PathVariable Long projectId,
+													@AuthenticationPrincipal AuthenticatedUser principal,
+													RedirectAttributes redirectAttributes) {
+		requireAdminLogin(principal);
+		handle(() -> acs.failSettlementAccountVerification(projectId, principal.getId()),
+				"정산 계좌 확인 실패 처리했습니다.",
+				redirectAttributes);
+		return "redirect:/admin/communities";
+	}
+	
+	@PostMapping("/settlements/{projectId}/complete")
+	public String completeSettlement(@PathVariable Long projectId,
+									 @AuthenticationPrincipal AuthenticatedUser principal,
+									 RedirectAttributes redirectAttributes) {
+		requireAdminLogin(principal);
+		handle(() -> acs.completeSettlement(projectId, principal.getId()),
+				"프로젝트 정산을 완료했습니다.",
+				redirectAttributes);
+		return "redirect:/admin/communities";
+	}
+	
 	private void handle(Runnable action, String successMessage,
 						RedirectAttributes redirectAttributes) {
 		try {
@@ -86,6 +124,17 @@ public class AdminCommunityController {
 	private void requireAdminLogin(AuthenticatedUser principal) {
 		if (principal == null) {
 			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
+		}
+	}
+	
+	private FanProjectStatus parseStatus(String status) {
+		if (status == null || status.isBlank()) {
+			return null;
+		}
+		try {
+			return FanProjectStatus.valueOf(status);
+		} catch (IllegalArgumentException e) {
+			return null;
 		}
 	}
 }

@@ -1,23 +1,11 @@
 package megane6.weplanet.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.convert.SettlementBankConverter;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
 import megane6.weplanet.domain.entity.enumfolder.SettlementVerificationStatus;
 
@@ -93,6 +81,33 @@ public class ProjectSettlementAccount {
                 accountNumberHmac,
                 accountNumberLast4
         );
+    }
+    
+    public void verify(User admin) {
+        validateAdmin(admin);
+        if (verificationStatus == SettlementVerificationStatus.VERIFIED) {
+            throw new IllegalStateException("이미 확인 완료된 정산 계좌입니다.");
+        }
+        this.verificationStatus = SettlementVerificationStatus.VERIFIED;
+        this.verifiedAt = LocalDateTime.now();
+    }
+    
+    public void failVerification(User admin) {
+        validateAdmin(admin);
+        if (verificationStatus == SettlementVerificationStatus.VERIFIED) {
+            throw new IllegalStateException("이미 확인 완료된 계좌는 실패 처리할 수 없습니다.");
+        }
+        if (verificationStatus == SettlementVerificationStatus.FAILED) {
+            throw new IllegalStateException("이미 확인 실패 처리된 정산 계좌입니다.");
+        }
+        this.verificationStatus = SettlementVerificationStatus.FAILED;
+        this.verifiedAt = null;
+    }
+    
+    private void validateAdmin(User admin) {
+        if (admin == null || admin.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("ADMIN만 정산 계좌를 확인할 수 있습니다.");
+        }
     }
 
     @PrePersist

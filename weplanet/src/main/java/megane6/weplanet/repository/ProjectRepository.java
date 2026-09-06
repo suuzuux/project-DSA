@@ -5,6 +5,8 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,4 +28,29 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @EntityGraph(attributePaths = {"artist", "creator"})
     List<Project> findByStatusAndDeletedAtIsNullOrderByCreatedAtAsc(
             FanProjectStatus status);
+    
+    // 관리자 화면에서 검색 가능 (상태별, 키워드, 삭제된 프로젝트, 최신 프로젝트)
+    @EntityGraph(attributePaths = {
+            "artist",
+            "creator",
+            "reviewedBy"
+    })
+    @Query("""
+        select project
+        from Project project
+        where project.deletedAt is null
+          and (:status is null or project.status = :status)
+          and (
+              :keyword is null
+              or lower(project.title)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(project.artist.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(project.creator.nickname)
+                    like lower(concat('%', :keyword, '%'))
+          )
+        order by project.createdAt desc
+        """)
+    List<Project> searchForAdmin(@Param("status") FanProjectStatus status,
+                                 @Param("keyword") String keyword);
 }
