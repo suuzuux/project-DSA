@@ -1,5 +1,6 @@
 package megane6.weplanet.repository;
 
+import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Post;
@@ -11,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,4 +48,19 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     long countByResolvedAtAfter(LocalDateTime dateTime);
     
     List<CommentReport> findByComment_IdAndStatus(Long commentId, ReportStatus status);
+    
+    @Query("""
+        select new megane6.weplanet.domain.dto.ArtistCount(
+            commentReport.comment.post.artist.id,
+            count(commentReport)
+        )
+        from CommentReport commentReport
+        where commentReport.comment.post.artist.id in :artistIds
+          and commentReport.status = :status
+        group by commentReport.comment.post.artist.id
+        """)
+    List<ArtistCount> countReportsByArtistIdsAndStatus(
+            @Param("artistIds") Collection<Long> artistIds,
+            @Param("status") ReportStatus status
+    );
 }

@@ -1,18 +1,15 @@
 package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
+import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.dto.ProjectFundingSummary;
 import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
-import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
-import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.domain.entity.enumfolder.SettlementVerificationStatus;
-import megane6.weplanet.repository.ProjectContributionRepository;
-import megane6.weplanet.repository.ProjectRepository;
-import megane6.weplanet.repository.ProjectSettlementAccountRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.domain.entity.enumfolder.*;
+import megane6.weplanet.repository.*;
+import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.portal.ArtistBlockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +29,11 @@ public class AdminCommunityService {
 	private final ProjectContributionRepository pcr;
 	private final ProjectSettlementAccountRepository psr;
 	
+	private final CommunityMemberRepository cmr;
+	private final PostRepository postRepository;
+	private final ReportRepository rr;
+	private final CommentReportRepository crr;
+	
 	public CommunityStats getStats() {
 		long totalCommunityCount = ur.countByRole(Role.ARTIST);
 		long pendingProjectCount = pr.countByStatusAndDeletedAtIsNull(
@@ -45,6 +47,70 @@ public class AdminCommunityService {
 				pendingProjectCount,
 				fundingProjectCount,
 				restrictedMemberCount
+		);
+	}
+	
+	public List<AdminCommunityOverviewResponse> getCommunityOverview(String keyword) {
+		String normalizedKeyword = keyword == null || keyword.isBlank()
+				? null : keyword.trim();
+		List<User> artists = ur.searchByRole(Role.ARTIST, normalizedKeyword);
+		if (artists.isEmpty()) {
+			return List.of();
+		}
+		
+		List<Long> artistIds = artists.stream().map(User::getId).toList();
+		Map<Long, Long> memberCounts = toCountMap(cmr.countMembersByArtistIds(artistIds));
+		Map<Long, Long> postCounts = toCountMap(postRepository.countPostsByArtistIds(artistIds));
+		Map<Long, Long> activeProjectCounts = toCountMap(pr.countProjectsByArtistIdsAndStatuses(
+				artistIds, List.of(FanProjectStatus.APPROVED, FanProjectStatus.FUNDING)));
+		Map<Long, Long> blockedMemberCounts = toCountMap(abr.countBlocksByArtistIds(artistIds));
+		Map<Long, Long> pendingPostReportCounts = toCountMap(rr.countReportsByArtistIdsAndStatus(
+				artistIds, ReportStatus.PENDING));
+		Map<Long, Long> pendingCommentReportCounts = toCountMap(crr.countReportsByArtistIdsAndStatus(
+				artistIds, ReportStatus.PENDING));
+		
+		return artists.stream().map(artist -> {
+			Long artistId = artist.getId();
+			long pendingReportCount = pendingPostReportCounts.getOrDefault(artistId, 0L)
+					+ pendingCommentReportCounts.getOrDefault(artistId, 0L);
+					return new AdminCommunityOverviewResponse(
+							artistId,
+							artist.getNickname(),
+							artist.getUsername(),
+							artist.getStatus().name(),
+							userStatusLabel(artist.getStatus()),
+							memberCounts.getOrDefault(artistId, 0L),
+							postCounts.getOrDefault(artistId, 0L),
+							activeProjectCounts.getOrDefault(artistId, 0L),
+							blockedMemberCounts.getOrDefault(artistId, 0L),
+							pendingReportCount
+					);
+				})
+				.toList();
+	}
+	
+	public CommunityOverviewStats getCommunityOverviewStats(
+			List<AdminCommunityOverviewResponse> communities
+	) {
+		long totalMemberCount = communities.stream()
+				.mapToLong(AdminCommunityOverviewResponse::memberCount)
+				.sum();
+		long activeProjectCount = communities.stream()
+				.mapToLong(AdminCommunityOverviewResponse::activeProjectCount)
+				.sum();
+		long blockedMemberCount = communities.stream()
+				.mapToLong(AdminCommunityOverviewResponse::blockedMemberCount)
+				.sum();
+		long pendingReportCount = communities.stream()
+				.mapToLong(AdminCommunityOverviewResponse::pendingReportCount)
+				.sum();
+		
+		return new CommunityOverviewStats(
+				communities.size(),
+				totalMemberCount,
+				activeProjectCount,
+				blockedMemberCount,
+				pendingReportCount
 		);
 	}
 	
@@ -193,6 +259,23 @@ public class AdminCommunityService {
 		);
 	}
 	
+	private Map<Long, Long> toCountMap(List<ArtistCount> counts) {
+		return counts.stream()
+				.collect(Collectors.toMap(
+						ArtistCount::artistId,
+						ArtistCount::count
+				));
+	}
+	
+	private String userStatusLabel(UserStatus status) {
+		return switch (status) {
+			case ACTIVE -> "운영 중";
+			case DORMANT -> "휴면";
+			case SUSPENDED -> "운영 정지";
+			case WITHDRAWN -> "탈퇴";
+		};
+	}
+	
 	@Transactional
 	public void verifySettlementAccount(Long projectId, Long adminId) {
 		User admin = getAdmin(adminId);
@@ -338,4 +421,11 @@ public class AdminCommunityService {
 			String accountLast4,
 			String verificationStatusName,
 			String verificationStatusLabel) { }
+	
+	public record CommunityOverviewStats(
+			long communityCount,
+			long totalMemberCount,
+			long activeProjectCount,
+			long blockedMemberCount,
+			long pendingReportCount) { }
 }

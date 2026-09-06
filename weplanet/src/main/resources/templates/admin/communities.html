@@ -753,7 +753,10 @@
 
     <!-- 하위 운영 기능 -->
     <div class="panel-grid panel-grid--3 mt-16">
-      <section class="panel">
+      <a class="panel"
+         th:href="@{/admin/communities/overview}"
+         style="text-decoration:none; color:inherit;">
+
         <div class="panel__head">
           <h2 class="panel__title">커뮤니티 현황</h2>
           <span>›</span>
@@ -762,7 +765,7 @@
         <p class="text-sm text-muted">
           커뮤니티별 가입 팬, 게시글, 프로젝트와 활동 현황을 확인합니다.
         </p>
-      </section>
+      </a>
 
       <section class="panel">
         <div class="panel__head">
