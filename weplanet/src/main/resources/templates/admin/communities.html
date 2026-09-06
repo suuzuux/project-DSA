@@ -48,6 +48,17 @@
         <span class="admin-badge">🛡 SUPER ADMIN</span>
       </div>
     </div>
+    <p th:if="${msg}"
+       class="text-sm"
+       style="color:#1f7a52;margin-bottom:12px;"
+       th:text="${msg}">
+    </p>
+
+    <p th:if="${error}"
+       class="text-sm"
+       style="color:#c45c26;margin-bottom:12px;"
+       th:text="${error}">
+    </p>
 
     <!-- 주요 통계 -->
     <div class="admin-stat-grid">
@@ -277,23 +288,468 @@
                th:text="${selectedProject.description()}">프로젝트 설명</p>
           </div>
 
-          <div class="flex-center" style="gap:8px;">
-            <button type="button"
-                    class="btn btn--ghost"
-                    disabled>반려</button>
+          <!-- 승인 -->
+          <form th:action="@{/admin/communities/projects/{projectId}/approve(
+          projectId=${selectedProject.id()})}"
+                method="post"
+                onsubmit="return confirm('이 프로젝트를 승인하시겠습니까?');"
+                style="margin-bottom:20px;">
 
-            <button type="button"
-                    class="btn btn--primary"
-                    disabled>승인</button>
-          </div>
+            <input type="hidden"
+                   name="artistId"
+                   th:value="${selectedProject.artistId()}" />
 
-          <p class="text-xs text-muted"
-             style="text-align:center;margin-top:8px;">
-            승인·반려 동작은 다음 단계에서 연결합니다.
-          </p>
+            <button type="submit"
+                    class="btn btn--primary btn--block">
+              프로젝트 승인
+            </button>
+          </form>
+
+          <!-- 반려 -->
+          <form th:action="@{/admin/communities/projects/{projectId}/reject(
+          projectId=${selectedProject.id()})}"
+                method="post"
+                onsubmit="return confirm('입력한 사유로 프로젝트를 반려하시겠습니까?');">
+
+            <input type="hidden"
+                   name="artistId"
+                   th:value="${selectedProject.artistId()}" />
+
+            <div class="form-group">
+              <label for="rejectionReason"
+                     class="form-label">
+                반려 사유
+              </label>
+
+              <textarea id="rejectionReason"
+                        name="rejectionReason"
+                        class="form-textarea"
+                        maxlength="500"
+                        required
+                        placeholder="반려 사유를 입력해주세요."></textarea>
+
+              <p class="text-xs text-muted"
+                 style="margin-top:6px;">
+                최대 500자까지 입력할 수 있습니다.
+              </p>
+            </div>
+
+            <button type="submit"
+                    class="btn btn--ghost btn--block">
+              프로젝트 반려
+            </button>
+          </form>
         </div>
       </aside>
     </div>
+
+    <!-- 전체 프로젝트 현황 -->
+    <section class="panel mt-16">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">전체 프로젝트 현황</h2>
+          <p class="text-xs text-muted">
+            상태별 프로젝트와 모금 진행 현황을 확인합니다.
+          </p>
+        </div>
+
+        <span class="tag tag--member"
+              th:text="${#lists.size(adminProjects)} + '건'">
+      0건
+    </span>
+      </div>
+
+      <!-- 검색 필터 -->
+      <form class="report-filter-bar"
+            th:action="@{/admin/communities}"
+            method="get">
+
+        <select name="status">
+          <option value="">전체 상태</option>
+
+          <option th:each="projectStatus : ${projectStatuses}"
+                  th:value="${projectStatus.name()}"
+                  th:text="${projectStatus.displayName}"
+                  th:selected="${selectedStatus == projectStatus.name()}">
+            상태
+          </option>
+        </select>
+
+        <input type="text"
+               name="keyword"
+               th:value="${keyword}"
+               placeholder="프로젝트명, 아티스트, 신청자 검색" />
+
+        <button type="submit"
+                class="btn btn--primary btn--sm">
+          검색
+        </button>
+
+        <a th:href="@{/admin/communities}"
+           class="btn btn--ghost btn--sm">
+          초기화
+        </a>
+      </form>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>등록일</th>
+            <th>프로젝트</th>
+            <th>커뮤니티 · 신청자</th>
+            <th>상태</th>
+            <th>모금 현황</th>
+            <th>모금 기간</th>
+            <th>심사 정보</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr th:if="${#lists.isEmpty(adminProjects)}">
+            <td colspan="7"
+                class="text-sm text-muted">
+              검색 조건에 맞는 프로젝트가 없습니다.
+            </td>
+          </tr>
+
+          <tr th:each="project : ${adminProjects}">
+            <td th:text="${#temporals.format(
+              project.createdAt(), 'yyyy.MM.dd HH:mm')}">
+              등록일
+            </td>
+
+            <td>
+              <strong th:text="${project.title()}">
+                프로젝트명
+              </strong>
+              <br />
+              <span class="text-xs text-muted"
+                    th:text="${project.eventTypeLabel()}">
+            이벤트 유형
+          </span>
+            </td>
+
+            <td>
+              <strong th:text="${project.artistNickname()}">
+                아티스트
+              </strong>
+              <br />
+              <span class="text-xs text-muted"
+                    th:text="${'신청자: ' + project.creatorNickname()}">
+            신청자
+          </span>
+            </td>
+
+            <td>
+              <!-- 대기·반려·취소 -->
+              <span class="tag tag--danger"
+                    th:if="${project.statusName() == 'PENDING_APPROVAL'
+                  or project.statusName() == 'REJECTED'
+                  or project.statusName() == 'CANCELLED'}"
+                    th:text="${project.statusLabel()}">
+            상태
+          </span>
+
+              <!-- 모금중·완료 -->
+              <span class="tag tag--public"
+                    th:if="${project.statusName() == 'FUNDING'
+                  or project.statusName() == 'COMPLETED'}"
+                    th:text="${project.statusLabel()}">
+            상태
+          </span>
+
+              <!-- 승인완료·모금마감 -->
+              <span class="tag tag--member"
+                    th:if="${project.statusName() == 'APPROVED'
+                  or project.statusName() == 'FUNDING_CLOSED'}"
+                    th:text="${project.statusLabel()}">
+            상태
+          </span>
+            </td>
+
+            <td style="min-width:180px;">
+              <strong th:text="${#numbers.formatInteger(
+                    project.fundedAmount(), 0, 'COMMA')} + '원'">
+                0원
+              </strong>
+
+              <span class="text-xs text-muted"
+                    th:text="${' / '
+                  + #numbers.formatInteger(
+                      project.goalAmount(), 0, 'COMMA')
+                  + '원'}">
+            / 목표 금액
+          </span>
+
+              <div class="progress"
+                   style="margin:8px 0 5px;">
+            <span th:style="${'width:'
+                    + (project.progressPercent() > 100
+                        ? 100
+                        : project.progressPercent())
+                    + '%'}">
+            </span>
+              </div>
+
+              <span class="text-xs text-muted"
+                    th:text="${project.progressPercent()
+                  + '% · '
+                  + project.participantCount()
+                  + '명 참여'}">
+            0% · 0명 참여
+          </span>
+            </td>
+
+            <td class="text-xs">
+          <span th:text="${#temporals.format(
+                project.fundingStartAt(), 'yyyy.MM.dd')}">
+            시작일
+          </span>
+              <br />
+              ~
+              <span th:text="${#temporals.format(
+                project.fundingEndAt(), 'yyyy.MM.dd')}">
+            종료일
+          </span>
+            </td>
+
+            <td>
+              <div th:if="${project.reviewerNickname() != null}">
+            <span class="text-xs"
+                  th:text="${project.reviewerNickname()}">
+              심사자
+            </span>
+                <br />
+                <span class="text-xs text-muted"
+                      th:text="${#temporals.format(
+                    project.reviewedAt(), 'yyyy.MM.dd HH:mm')}">
+              심사일
+            </span>
+              </div>
+
+              <span th:if="${project.reviewerNickname() == null}"
+                    class="text-muted">
+            -
+          </span>
+
+              <p th:if="${project.rejectionReason() != null}"
+                 class="text-xs text-danger"
+                 style="margin-top:6px;"
+                 th:text="${'반려 사유: '
+               + project.rejectionReason()}">
+                반려 사유
+              </p>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 정산 대기 관리 -->
+    <section class="panel mt-16">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">정산 대기 관리</h2>
+          <p class="text-xs text-muted">
+            모금이 마감된 프로젝트의 모금 결과와 정산 계좌를 확인합니다.
+          </p>
+        </div>
+
+        <span class="tag tag--member"
+              th:text="${#lists.size(settlementProjects)} + '건'">
+      0건
+    </span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>마감일</th>
+            <th>프로젝트</th>
+            <th>모금 결과</th>
+            <th>참여자</th>
+            <th>정산 계좌</th>
+            <th>계좌 상태</th>
+            <th>처리</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr th:if="${#lists.isEmpty(settlementProjects)}">
+            <td colspan="7"
+                class="text-sm text-muted">
+              정산을 기다리는 프로젝트가 없습니다.
+            </td>
+          </tr>
+
+          <tr th:each="settlement : ${settlementProjects}">
+            <td th:text="${#temporals.format(
+              settlement.fundingEndAt(),
+              'yyyy.MM.dd HH:mm')}">
+              마감일
+            </td>
+
+            <td>
+              <strong th:text="${settlement.title()}">
+                프로젝트명
+              </strong>
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${settlement.artistNickname()
+                  + ' · 신청자 '
+                  + settlement.creatorNickname()}">
+            커뮤니티 · 신청자
+          </span>
+            </td>
+
+            <td style="min-width:180px;">
+              <strong th:text="${#numbers.formatInteger(
+                    settlement.fundedAmount(),
+                    0,
+                    'COMMA')} + '원'">
+                0원
+              </strong>
+
+              <span class="text-xs text-muted"
+                    th:text="${' / '
+                  + #numbers.formatInteger(
+                      settlement.goalAmount(),
+                      0,
+                      'COMMA')
+                  + '원'}">
+            / 목표 금액
+          </span>
+
+              <div class="progress"
+                   style="margin:8px 0 5px;">
+            <span th:style="${'width:'
+                    + (settlement.progressPercent() > 100
+                        ? 100
+                        : settlement.progressPercent())
+                    + '%'}">
+            </span>
+              </div>
+
+              <span class="text-xs text-muted"
+                    th:text="${settlement.progressPercent() + '%'}">
+            0%
+          </span>
+            </td>
+
+            <td th:text="${settlement.participantCount() + '명'}">
+              0명
+            </td>
+
+            <td>
+          <span th:if="${settlement.verificationStatusName()
+                    != 'MISSING'}"
+                th:text="${settlement.bankName()
+                  + ' · ****'
+                  + settlement.accountLast4()}">
+            은행 · ****1234
+          </span>
+
+              <span th:if="${settlement.verificationStatusName()
+                    == 'MISSING'}"
+                    class="text-danger">
+            계좌 없음
+          </span>
+            </td>
+
+            <td>
+          <span class="tag tag--member"
+                th:if="${settlement.verificationStatusName()
+                    == 'UNVERIFIED'}"
+                th:text="${settlement.verificationStatusLabel()}">
+            확인 대기
+          </span>
+
+              <span class="tag tag--public"
+                    th:if="${settlement.verificationStatusName()
+                    == 'VERIFIED'}"
+                    th:text="${settlement.verificationStatusLabel()}">
+            확인 완료
+          </span>
+
+              <span class="tag tag--danger"
+                    th:if="${settlement.verificationStatusName()
+                    == 'FAILED'
+                    or settlement.verificationStatusName()
+                    == 'MISSING'}"
+                    th:text="${settlement.verificationStatusLabel()}">
+            확인 실패
+          </span>
+            </td>
+
+            <td>
+              <!-- 최초 계좌 확인 -->
+              <div class="flex-center"
+                   th:if="${settlement.verificationStatusName()
+          == 'UNVERIFIED'}">
+
+                <form method="post"
+                      style="margin:0;"
+                      th:action="@{/admin/communities/settlements/{projectId}/verify(
+            projectId=${settlement.projectId()})}"
+                      onsubmit="return confirm('이 정산 계좌를 확인 완료 처리하시겠습니까?');">
+
+                  <button type="submit"
+                          class="btn btn--primary btn--sm">
+                    확인 완료
+                  </button>
+                </form>
+
+                <form method="post"
+                      style="margin:0;"
+                      th:action="@{/admin/communities/settlements/{projectId}/fail(
+            projectId=${settlement.projectId()})}"
+                      onsubmit="return confirm('이 정산 계좌를 확인 실패 처리하시겠습니까?');">
+
+                  <button type="submit"
+                          class="btn btn--ghost btn--sm">
+                    확인 실패
+                  </button>
+                </form>
+              </div>
+
+              <!-- 확인 실패 후 재확인 -->
+              <form method="post"
+                    th:if="${settlement.verificationStatusName()  == 'FAILED'}"
+                    style="margin:0;"
+                    th:action="@{/admin/communities/settlements/{projectId}/verify(
+                    projectId=${settlement.projectId()})}"
+                    onsubmit="return confirm('이 계좌를 다시 확인 완료 처리하시겠습니까?');">
+
+                <button type="submit"
+                        class="btn btn--ghost btn--sm">재확인 완료</button>
+              </form>
+
+              <!-- 계좌 확인 후 정산 완료 -->
+              <form method="post"
+                    th:if="${settlement.verificationStatusName()== 'VERIFIED'}"
+                    style="margin:0;"
+                    th:action="@{/admin/communities/settlements/{projectId}/complete(
+                    projectId=${settlement.projectId()})}"
+                    onsubmit="return confirm('정산을 완료 처리하시겠습니까?');">
+
+                <button type="submit"
+                        class="btn btn--primary btn--sm">정산 완료</button>
+              </form>
+
+              <!-- 계좌 자체가 없는 경우 -->
+              <span class="text-xs text-danger"
+                    th:if="${settlement.verificationStatusName()== 'MISSING'}">
+                처리 불가</span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- 하위 운영 기능 -->
     <div class="panel-grid panel-grid--3 mt-16">
