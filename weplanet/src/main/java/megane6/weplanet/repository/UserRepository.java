@@ -4,6 +4,8 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -29,4 +31,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRoleAndAgency_Id(Role role, Long agencyId);
     
     long countByRole(Role role);
+    
+    @Query("""
+        select user
+        from User user
+        where user.role = :role
+          and (
+              :keyword is null
+              or lower(user.nickname) like lower(concat('%', :keyword, '%'))
+              or lower(user.username) like lower(concat('%', :keyword, '%'))
+          )
+        order by user.nickname asc
+        """)
+    List<User> searchByRole(
+            @Param("role") Role role,
+            @Param("keyword") String keyword
+    );
 }

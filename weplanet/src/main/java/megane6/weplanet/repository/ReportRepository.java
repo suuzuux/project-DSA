@@ -1,5 +1,6 @@
 package megane6.weplanet.repository;
 
+import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
@@ -10,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,4 +43,19 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     long countByResolvedAtAfter(LocalDateTime dateTime);
     
     List<Report> findByPost_IdAndStatus(Long postId, ReportStatus status);
+    
+    @Query("""
+        select new megane6.weplanet.domain.dto.ArtistCount(
+            report.post.artist.id,
+            count(report)
+        )
+        from Report report
+        where report.post.artist.id in :artistIds
+          and report.status = :status
+        group by report.post.artist.id
+        """)
+    List<ArtistCount> countReportsByArtistIdsAndStatus(
+            @Param("artistIds") Collection<Long> artistIds,
+            @Param("status") ReportStatus status
+    );
 }

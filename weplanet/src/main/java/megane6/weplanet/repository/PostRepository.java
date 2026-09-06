@@ -1,9 +1,12 @@
 package megane6.weplanet.repository;
 
+import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -34,4 +37,17 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 내 프로필 "포스트 히스토리" 탭 - 내가 쓴 게시글 전체를 최신순/오래된순으로
     List<Post> findByAuthorOrderByCreatedAtDesc(User author);
     List<Post> findByAuthorOrderByCreatedAtAsc(User author);
+    
+    @Query("""
+        select new megane6.weplanet.domain.dto.ArtistCount(
+            post.artist.id,
+            count(post)
+        )
+        from Post post
+        where post.artist.id in :artistIds
+        group by post.artist.id
+        """)
+    List<ArtistCount> countPostsByArtistIds(
+            @Param("artistIds") Collection<Long> artistIds
+    );
 }

@@ -1,6 +1,7 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.AdminCommunityService;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/admin/communities")
@@ -38,6 +41,16 @@ public class AdminCommunityController {
 		}
 		
 		return "admin/communities";
+	}
+	
+	@GetMapping("/overview")
+	public String communityOverview(@RequestParam(required = false) String keyword, Model model) {
+		List<AdminCommunityOverviewResponse> communities = acs.getCommunityOverview(keyword);
+		model.addAttribute("communities", communities);
+		model.addAttribute("overviewStats", acs.getCommunityOverviewStats(communities));
+		model.addAttribute("keyword", keyword == null ? "" : keyword);
+		
+		return "admin/community-overview";
 	}
 	
 	@PostMapping("/projects/{projectId}/approve")
