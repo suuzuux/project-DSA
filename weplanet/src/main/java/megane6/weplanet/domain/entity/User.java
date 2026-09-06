@@ -36,6 +36,10 @@ public class User {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private UserStatus status; // 계정 상태 (ACTIVE/DORMANT/SUSPENDED/WITHDRAWN)
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "agency_id")
+	private Agency agency;	// 소속사 (ARTIST/AGENCY 계정, 없으면 NULL)
 	
 	@Convert(converter = PlaintextBytesConverter.class)
 	@Column(name = "real_name", nullable = false, columnDefinition = "VARBINARY(255)")	// 실명 (결제 명의 대조용)
@@ -174,5 +178,13 @@ public class User {
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
 		this.deletedAt = LocalDateTime.now();
+	}
+
+	public void assignAgency(Agency agency) {
+		this.agency = agency;
+	}
+
+	public Long agencyId() {
+		return agency == null ? null : agency.getId();
 	}
 }
