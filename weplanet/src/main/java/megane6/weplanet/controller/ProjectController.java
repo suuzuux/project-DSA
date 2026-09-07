@@ -16,6 +16,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.ProjectService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityDrawerHelper;
 import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -38,6 +39,7 @@ public class ProjectController {
 	private final CommunityJoinService cjs;
 	private final MembershipService ms;
 	private final ArtistAttendanceService artistAttendanceService;
+	private final CommunityDrawerHelper communityDrawerHelper;
 
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -260,12 +262,8 @@ public class ProjectController {
 		Map<Long, CommunityProfile> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
 		Set<Long> joinedArtistIds = cjs.joinedArtistIds(currentUser);
 
-		List<ArtistCardView> joinedArtists = artists.stream()
-				.filter(item -> joinedArtistIds.contains(item.id()))
-				.toList();
-		List<ArtistCardView> otherCommunities = currentUser.getRole() == Role.ARTIST
-				? artists.stream().filter(item -> !item.id().equals(currentUser.getId())).toList()
-				: List.of();
+		List<ArtistCardView> joinedArtists = communityDrawerHelper.joined(currentUser, artists, joinedArtistIds);
+		List<ArtistCardView> otherCommunities = communityDrawerHelper.otherCommunities(currentUser, artists);
 
 		model.addAttribute("joinedArtists", joinedArtists);
 		model.addAttribute("otherCommunities", otherCommunities);

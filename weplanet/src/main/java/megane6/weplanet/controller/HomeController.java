@@ -67,7 +67,7 @@ public class HomeController {
 		}
 		model.addAttribute("joinedProfiles", joinedProfiles);
 		
-		// 팬 = 가입 목록만 / 아티스트 = 가입 목록 + 타 커뮤니티(드로어용)
+		// 햄버거: 상단(가입/내 커뮤니티) + 하단(모든 커뮤니티)
 		model.addAttribute("joinedArtists",
 				communityDrawerHelper.joined(viewer, artists, joinedArtistIds));
 		model.addAttribute("otherCommunities",

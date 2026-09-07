@@ -60,12 +60,12 @@
   }
 
   function communitiesBlockHtml() {
-    const joinedList = Array.isArray(window.__WEPLANET_JOINED_ARTISTS__)
-      ? window.__WEPLANET_JOINED_ARTISTS__
-      : (isArtist ? [] : artists);
-    const otherList = Array.isArray(window.__WEPLANET_OTHER_ARTISTS__)
+    const allList = Array.isArray(window.__WEPLANET_OTHER_ARTISTS__) && window.__WEPLANET_OTHER_ARTISTS__.length
       ? window.__WEPLANET_OTHER_ARTISTS__
-      : (isArtist ? artists : []);
+      : (Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : artists);
+    const primaryList = Array.isArray(window.__WEPLANET_JOINED_ARTISTS__)
+      ? window.__WEPLANET_JOINED_ARTISTS__
+      : [];
 
     function linksHtml(list) {
       return list
@@ -77,38 +77,38 @@
         .join("");
     }
 
-    if (isArtist) {
-      let html = "";
-      if (joinedList.length) {
-        html += `<p class="drawer-menu__section-title">가입한 커뮤니티</p>
-  <div class="drawer-menu__communities">${linksHtml(joinedList)}</div>`;
-      }
-      if (otherList.length) {
-        html += `<p class="drawer-menu__section-title">다른 커뮤니티</p>
-  <div class="drawer-menu__communities">${linksHtml(otherList)}</div>`;
-      } else if (!joinedList.length) {
-        html += `<p class="drawer-menu__section-title">다른 커뮤니티</p>
+    // 비로그인: 모든 커뮤니티만
+    if (!isAuthenticated) {
+      if (!allList.length) {
+        return `<p class="drawer-menu__section-title">커뮤니티</p>
   <div class="drawer-menu__communities">
-    <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">표시할 다른 커뮤니티가 없어요.</p>
+    <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">표시할 커뮤니티가 없어요.</p>
   </div>`;
       }
-      return html;
+      return `<p class="drawer-menu__section-title">커뮤니티</p>
+  <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
     }
 
-    if (!joinedList.length) {
-      return isAuthenticated
-        ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+    let html = "";
+    const primaryTitle = isArtist ? "내 커뮤니티" : "가입한 커뮤니티";
+    if (primaryList.length) {
+      html += `<p class="drawer-menu__section-title">${primaryTitle}</p>
+  <div class="drawer-menu__communities">${linksHtml(primaryList)}</div>`;
+    } else if (!isArtist) {
+      html += `<p class="drawer-menu__section-title">가입한 커뮤니티</p>
   <div class="drawer-menu__communities">
     <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
       아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
     </p>
-       <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
-  </div>`
-        : "";
+    <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
+  </div>`;
     }
 
-    return `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
-  <div class="drawer-menu__communities">${linksHtml(joinedList)}</div>`;
+    if (allList.length) {
+      html += `<p class="drawer-menu__section-title">모든 커뮤니티</p>
+  <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
+    }
+    return html;
   }
 
   /* ---------------------------------------------------------
