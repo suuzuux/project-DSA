@@ -1,0 +1,44 @@
+<th:block th:fragment="sidebars">
+  <aside class="portal-artists">
+    <div class="portal-artists__head">
+      <div class="portal-artists__label">에이전시 포털</div>
+      <div class="portal-artists__title">소속 아티스트</div>
+    </div>
+    <nav class="portal-artists__list" th:if="${!#lists.isEmpty(managedArtists)}">
+      <a class="portal-artists__item"
+         th:each="item : ${managedArtists}"
+         th:href="@{/portal/select-artist(artistId=${item.id}, next=${activeMenu})}"
+         th:classappend="${artistSelected and artist != null and item.id == artist.id} ? ' is-active'"
+         th:text="${item.nickname}">아티스트</a>
+    </nav>
+    <p class="portal-artists__empty" th:if="${#lists.isEmpty(managedArtists)}">소속 아티스트가 없습니다.</p>
+    <div class="portal-artists__footer">
+      <a th:href="@{/logout}">로그아웃</a>
+    </div>
+  </aside>
+
+  <aside class="portal-sidebar" th:if="${artistSelected}">
+    <div class="portal-sidebar__org">
+      <div class="agency">관리 메뉴</div>
+      <div class="artist" th:text="${artist.nickname}">아티스트</div>
+    </div>
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+      <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+      <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+      <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+      <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+      <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
+    </nav>
+    <div class="portal-sidebar__footer">
+      <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a>
+    </div>
+  </aside>
+</th:block>
+
+<th:block th:fragment="pickHint(title)">
+  <div class="portal-pick-hint" th:if="${!artistSelected}">
+    <h1 th:text="${title}">관리</h1>
+    <p>왼쪽에서 관리할 소속 아티스트를 선택하면 메뉴가 열립니다.</p>
+  </div>
+</th:block>

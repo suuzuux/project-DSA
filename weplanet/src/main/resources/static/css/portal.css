@@ -114,12 +114,23 @@
   min-height: 100vh;
 }
 
+.portal-shell--agency-pick {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+
+.portal-shell--agency {
+  grid-template-columns: 220px 220px minmax(0, 1fr);
+}
+
 @media (max-width: 860px) {
-  .portal-shell {
+  .portal-shell,
+  .portal-shell--agency,
+  .portal-shell--agency-pick {
     grid-template-columns: 1fr;
   }
 
-  .portal-sidebar {
+  .portal-sidebar,
+  .portal-artists {
     position: sticky;
     top: 0;
     z-index: 50;
@@ -133,16 +144,102 @@
     overflow-y: visible !important;
   }
 
-  .portal-sidebar__nav {
+  .portal-sidebar__nav,
+  .portal-artists__list {
     display: flex !important;
     flex-wrap: wrap;
     gap: 4px;
     width: 100%;
   }
 
-  .portal-sidebar__nav a {
+  .portal-sidebar__nav a,
+  .portal-artists__item {
     padding: 8px 10px !important;
   }
+}
+
+.portal-artists {
+  background: #0f1716;
+  color: #d7e0df;
+  padding: 24px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.portal-artists__label {
+  font-size: var(--wp-fs-xs);
+  opacity: 0.65;
+  margin-bottom: 4px;
+}
+
+.portal-artists__title {
+  font-weight: 800;
+  font-size: var(--wp-fs-lg);
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.portal-artists__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.portal-artists__item {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--wp-radius-sm);
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+  color: #b7c4c2;
+  border: 1px solid transparent;
+}
+
+.portal-artists__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.portal-artists__item.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.portal-artists__empty {
+  font-size: var(--wp-fs-sm);
+  color: #8aa;
+  padding: 0 4px;
+}
+
+.portal-artists__footer {
+  padding: 4px 8px;
+  font-size: var(--wp-fs-xs);
+}
+
+.portal-artists__footer a {
+  color: #8aa;
+}
+
+.portal-pick-hint {
+  max-width: 420px;
+  padding: 48px 8px;
+}
+
+.portal-pick-hint h1 {
+  font-size: var(--wp-fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.portal-pick-hint p {
+  color: var(--wp-muted);
+  font-size: var(--wp-fs-sm);
+  line-height: 1.6;
 }
 
 .portal-sidebar {

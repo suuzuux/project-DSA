@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!--
+      입점 신청 – 메인 페이지 푸터의 "입점 신청" 링크로 들어오는 화면.
+      제출하면 운영자 메일(admin4.wp@gmail.com)로 신청 내용이 발송된다.
+      로그인 없이 접근 가능(SecurityConfig의 PUBLIC_URLS에 /partnership 등록).
+    -->
+    <title>입점 신청 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body class="auth-page">
+
+<div class="auth-card" style="max-width:560px;">
+    <a th:href="@{/}" class="auth-card__back">← 메인으로</a>
+
+    <!-- 제출 완료: /partnership?submitted 로 리다이렉트되어 들어온 경우 -->
+    <div th:if="${param.submitted != null}">
+        <h1 class="auth-card__title">신청이 접수되었습니다</h1>
+        <p class="auth-card__desc" style="line-height:1.7;">
+            담당자가 내용을 확인한 뒤 입력해주신 이메일로 회신드립니다.<br/>
+            영업일 기준 3일 이내에 답변이 없으면 다시 문의해주세요.
+        </p>
+        <a th:href="@{/}" class="btn btn--primary btn--block btn--lg" style="margin-top:24px;">메인으로 돌아가기</a>
+    </div>
+
+    <!-- 신청 폼 -->
+    <div th:unless="${param.submitted != null}">
+        <h1 class="auth-card__title">입점 신청</h1>
+        <p class="auth-card__desc">
+            WePlaNet Shop 입점을 원하시면 아래 내용을 남겨주세요.<br/>
+            담당자가 확인 후 회신드립니다.
+        </p>
+
+        <p th:if="${errorMessage}" th:text="${errorMessage}" class="form-error" style="margin-bottom:16px;"></p>
+
+        <form th:action="@{/partnership}" method="post">
+            <div class="form-group">
+                <label class="form-label" for="companyName">업체명 <span
+                        style="color:var(--wp-danger, #d33);">*</span></label>
+                <input class="form-input" type="text" id="companyName" name="companyName" maxlength="100"
+                       th:value="${form != null} ? ${form.companyName} : ''" required/>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="managerName">담당자명 <span
+                        style="color:var(--wp-danger, #d33);">*</span></label>
+                <input class="form-input" type="text" id="managerName" name="managerName" maxlength="50"
+                       th:value="${form != null} ? ${form.managerName} : ''" required/>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">회신받을 이메일 <span
+                        style="color:var(--wp-danger, #d33);">*</span></label>
+                <input class="form-input" type="email" id="email" name="email" maxlength="150"
+                       th:value="${form != null} ? ${form.email} : ''" required/>
+                <p class="form-hint">이 주소로 답변을 보내드립니다.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="phone">연락처</label>
+                <input class="form-input" type="text" id="phone" name="phone" maxlength="30"
+                       placeholder="010-0000-0000"
+                       th:value="${form != null} ? ${form.phone} : ''"/>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="category">입점 분야</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">선택 안 함</option>
+                    <option value="굿즈/MD" th:selected="${form != null and form.category == '굿즈/MD'}">굿즈 / MD</option>
+                    <option value="음반/앨범" th:selected="${form != null and form.category == '음반/앨범'}">음반 / 앨범</option>
+                    <option value="의류/패션" th:selected="${form != null and form.category == '의류/패션'}">의류 / 패션</option>
+                    <option value="공연/이벤트" th:selected="${form != null and form.category == '공연/이벤트'}">공연 / 이벤트</option>
+                    <option value="기타" th:selected="${form != null and form.category == '기타'}">기타</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="message">문의 내용 <span
+                        style="color:var(--wp-danger, #d33);">*</span></label>
+                <textarea class="form-textarea" id="message" name="message" rows="7" maxlength="2000"
+                          placeholder="취급 상품, 입점 희망 시기, 문의사항 등을 자유롭게 적어주세요."
+                          th:text="${form != null} ? ${form.message} : ''" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--block btn--lg">신청서 보내기</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

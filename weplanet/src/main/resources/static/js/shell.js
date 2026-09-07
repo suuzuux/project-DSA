@@ -60,28 +60,55 @@
   }
 
   function communitiesBlockHtml() {
-    if (!artists.length) {
-      return isAuthenticated
-        ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+    const allList = Array.isArray(window.__WEPLANET_OTHER_ARTISTS__) && window.__WEPLANET_OTHER_ARTISTS__.length
+      ? window.__WEPLANET_OTHER_ARTISTS__
+      : (Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : artists);
+    const primaryList = Array.isArray(window.__WEPLANET_JOINED_ARTISTS__)
+      ? window.__WEPLANET_JOINED_ARTISTS__
+      : [];
+
+    function linksHtml(list) {
+      return list
+        .map((a) => {
+          const logo = escapeHtml(a.logo || "?");
+          const name = escapeHtml(a.nickname || "아티스트");
+          return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
+        })
+        .join("");
+    }
+
+    // 비로그인: 모든 커뮤니티만
+    if (!isAuthenticated) {
+      if (!allList.length) {
+        return `<p class="drawer-menu__section-title">커뮤니티</p>
+  <div class="drawer-menu__communities">
+    <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">표시할 커뮤니티가 없어요.</p>
+  </div>`;
+      }
+      return `<p class="drawer-menu__section-title">커뮤니티</p>
+  <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
+    }
+
+    let html = "";
+    const primaryTitle = isArtist ? "내 커뮤니티" : "가입한 커뮤니티";
+    if (primaryList.length) {
+      html += `<p class="drawer-menu__section-title">${primaryTitle}</p>
+  <div class="drawer-menu__communities">${linksHtml(primaryList)}</div>`;
+    } else if (!isArtist) {
+      html += `<p class="drawer-menu__section-title">가입한 커뮤니티</p>
   <div class="drawer-menu__communities">
     <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
       아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
     </p>
-       <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
-  </div>`
-        : "";
+    <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
+  </div>`;
     }
 
-    const links = artists
-      .map((a) => {
-        const logo = escapeHtml(a.logo || "?");
-        const name = escapeHtml(a.nickname || "아티스트");
-        return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
-      })
-      .join("");
-
-    return `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
-  <div class="drawer-menu__communities">${links}</div>`;
+    if (allList.length) {
+      html += `<p class="drawer-menu__section-title">모든 커뮤니티</p>
+  <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
+    }
+    return html;
   }
 
   /* ---------------------------------------------------------

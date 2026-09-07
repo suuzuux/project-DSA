@@ -16,13 +16,15 @@ import java.util.List;
 /**
  * 테스트용 아티스트 계정을 DB에 넣어둠.
  * 이전 시드(RIIZE/aespa/CORTIS)는 제거하고, 휘원공주·정식왕자만 유지.
- * 로그인 비밀번호: Test1234
+ * 로그인 비밀번호: weplanet1234! (시드/포털 안내와 동일)
  */
 @Slf4j
 @Component
 @Order(1)
 @RequiredArgsConstructor
 public class TestArtistDataInitializer implements ApplicationRunner {
+
+	private static final String TEST_PASSWORD = "weplanet1234!";
 
 	private static final List<String> LEGACY_ARTIST_USERNAMES = List.of(
 			"artist_riize",
@@ -56,7 +58,7 @@ public class TestArtistDataInitializer implements ApplicationRunner {
 		}
 		User artist = User.createArtist(
 				username,
-				passwordEncoder.encode("Test1234"),
+				passwordEncoder.encode(TEST_PASSWORD),
 				realName,
 				nickname,
 				email

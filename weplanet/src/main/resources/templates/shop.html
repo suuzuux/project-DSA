@@ -123,15 +123,17 @@
         </th:block>
       </div>
 
-      <p class="text-sm text-muted mt-16" th:if="${#lists.isEmpty(products)}">
+      <p class="list-empty" th:if="${#lists.isEmpty(products)}">
         표시할 상품이 없습니다.
       </p>
-      <p class="text-sm text-muted mt-16" id="shopEmptyFilter" hidden>조건에 맞는 상품이 없습니다.</p>
+      <p class="list-empty" id="shopEmptyFilter" hidden>조건에 맞는 상품이 없습니다.</p>
     </section>
   </main>
 
   <script th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+    window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+    window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
+    window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>

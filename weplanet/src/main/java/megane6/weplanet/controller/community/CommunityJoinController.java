@@ -26,14 +26,14 @@ public class CommunityJoinController {
 					   @RequestParam(required = false) MultipartFile background,
 					   @AuthenticationPrincipal AuthenticatedUser principal,
 					   @RequestHeader(value = "Referer", required = false) String referer) {
-		User fan = userResolver.requireAuthenticated(principal);
-		// 가입은 팬만 할 수 있는 행동임(아티스트가 자기 커뮤니티에 가입되거나 관리자/소속사 계정에
-		// 커뮤니티 프로필이 생기는 걸 막음). 화면에서 버튼을 숨기는 것만으로는 폼 직접 호출을
-		// 막을 수 없어서 서버에서도 검증함
-		if (fan.getRole() != Role.FAN) {
-			throw new IllegalStateException("팬 계정만 커뮤니티에 가입할 수 있습니다.");
+		User me = userResolver.requireAuthenticated(principal);
+		if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
+			throw new IllegalStateException("팬 또는 아티스트 계정만 커뮤니티에 가입할 수 있습니다.");
 		}
-		communityJoinService.join(fan, artistId, nickname, bio, avatar, background);
+		if (me.getId().equals(artistId)) {
+			throw new IllegalStateException("본인 커뮤니티에는 가입할 수 없습니다.");
+		}
+		communityJoinService.join(me, artistId, nickname, bio, avatar, background);
 		return "redirect:" + (referer != null ? referer : "/");
 	}
 	

@@ -125,17 +125,21 @@ CREATE TABLE `users` (
   `created_at` datetime(6) NOT NULL COMMENT '가입 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '정보 수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '탈퇴(soft delete) 시각',
+  `provider` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LOCAL' COMMENT '가입 경로: LOCAL/GOOGLE/KAKAO/LINE',
+  `provider_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 플랫폼 고유 ID (LOCAL 가입자는 NULL)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
   UNIQUE KEY `uk_users_email` (`email`),
   UNIQUE KEY `uk_users_nickname` (`nickname`),
+  UNIQUE KEY `uk_users_provider_provider_id` (`provider`, `provider_id`),
   KEY `idx_users_role_status` (`role`, `status`),
   KEY `idx_users_phone_hash` (`phone_hash`),
   KEY `idx_users_agency` (`agency_id`),
   CONSTRAINT `fk_users_agency` FOREIGN KEY (`agency_id`) REFERENCES `agencies` (`id`),
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
-  CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN'))
+  CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN')),
+  CONSTRAINT `ck_users_provider` CHECK (`provider` IN (_utf8mb4'LOCAL', _utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
 
 -- filter_keyword: 채팅 금칙어

@@ -33,7 +33,7 @@
     <button type="button" onclick="document.getElementById('writeDialog').showModal()">글쓰기</button>
     <button type="button" onclick="WePlaNet.alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">편집</button>
 
-    <p th:if="${list.isEmpty()}">아직 등록된 미디어가 없습니다.</p>
+    <p th:if="${list.isEmpty()}" class="list-empty">아직 등록된 미디어가 없습니다.</p>
 
     <div th:each="post : ${list}">
         <hr/>
