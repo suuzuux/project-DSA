@@ -71,4 +71,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
             @Param("artistIds") Collection<Long> artistIds,
             @Param("statuses") Collection<FanProjectStatus> statuses
     );
+    
+    // 삭제되지 않은 최근 프로젝트 10개 조회
+    @EntityGraph(attributePaths = "creator")
+    List<Project> findTop10ByArtistAndDeletedAtIsNullOrderByCreatedAtDesc(User artist);
 }

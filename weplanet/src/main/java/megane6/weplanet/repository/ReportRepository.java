@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -57,5 +58,12 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<ArtistCount> countReportsByArtistIdsAndStatus(
             @Param("artistIds") Collection<Long> artistIds,
             @Param("status") ReportStatus status
+    );
+    
+    // 해당 커뮤니티 처리 대기 게시글 신고를 최신순으로 10개 가져옴
+    @EntityGraph(attributePaths = {"post", "reporter"})
+    List<Report> findTop10ByPost_ArtistAndStatusOrderByCreatedAtDesc(
+            User artist,
+            ReportStatus status
     );
 }

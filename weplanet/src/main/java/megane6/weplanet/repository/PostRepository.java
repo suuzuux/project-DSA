@@ -4,6 +4,7 @@ import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -50,4 +51,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<ArtistCount> countPostsByArtistIds(
             @Param("artistIds") Collection<Long> artistIds
     );
+    
+    // 팬 + 아티스트 게시글 합쳐 최신 10개 호출
+    @EntityGraph(attributePaths = "author")
+    List<Post> findTop10ByArtistOrderByCreatedAtDesc(User artist);
 }
