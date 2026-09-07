@@ -153,6 +153,13 @@
   order: 2;
 }
 
+/* Highlight/Notice/Fan/Artist/Media/Live 탭바 — 스크롤바 없음 */
+.community-main > .tabs,
+.community-main nav.tabs {
+  overflow: hidden;
+  flex-wrap: wrap;
+}
+
 .community-aside {
   display: flex;
   flex-direction: column;

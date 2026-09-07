@@ -60,31 +60,55 @@
   }
 
   function communitiesBlockHtml() {
-    const sectionTitle = isArtist ? "다른 커뮤니티" : "커뮤니티 바로가기";
-    if (!artists.length) {
+    const joinedList = Array.isArray(window.__WEPLANET_JOINED_ARTISTS__)
+      ? window.__WEPLANET_JOINED_ARTISTS__
+      : (isArtist ? [] : artists);
+    const otherList = Array.isArray(window.__WEPLANET_OTHER_ARTISTS__)
+      ? window.__WEPLANET_OTHER_ARTISTS__
+      : (isArtist ? artists : []);
+
+    function linksHtml(list) {
+      return list
+        .map((a) => {
+          const logo = escapeHtml(a.logo || "?");
+          const name = escapeHtml(a.nickname || "아티스트");
+          return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
+        })
+        .join("");
+    }
+
+    if (isArtist) {
+      let html = "";
+      if (joinedList.length) {
+        html += `<p class="drawer-menu__section-title">가입한 커뮤니티</p>
+  <div class="drawer-menu__communities">${linksHtml(joinedList)}</div>`;
+      }
+      if (otherList.length) {
+        html += `<p class="drawer-menu__section-title">다른 커뮤니티</p>
+  <div class="drawer-menu__communities">${linksHtml(otherList)}</div>`;
+      } else if (!joinedList.length) {
+        html += `<p class="drawer-menu__section-title">다른 커뮤니티</p>
+  <div class="drawer-menu__communities">
+    <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">표시할 다른 커뮤니티가 없어요.</p>
+  </div>`;
+      }
+      return html;
+    }
+
+    if (!joinedList.length) {
       return isAuthenticated
-        ? `<p class="drawer-menu__section-title">${sectionTitle}</p>
+        ? `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
   <div class="drawer-menu__communities">
     <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
-      ${isArtist
-        ? "표시할 다른 커뮤니티가 없어요."
-        : "아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!"}
+      아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
     </p>
-       ${isArtist ? "" : `<a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>`}
+       <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
   </div>`
         : "";
     }
 
-    const links = artists
-      .map((a) => {
-        const logo = escapeHtml(a.logo || "?");
-        const name = escapeHtml(a.nickname || "아티스트");
-        return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
-      })
-      .join("");
-
-    return `<p class="drawer-menu__section-title">${sectionTitle}</p>
-  <div class="drawer-menu__communities">${links}</div>`;
+    return `<p class="drawer-menu__section-title">커뮤니티 바로가기</p>
+  <div class="drawer-menu__communities">${linksHtml(joinedList)}</div>`;
   }
 
   /* ---------------------------------------------------------

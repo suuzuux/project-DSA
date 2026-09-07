@@ -69,7 +69,7 @@
     </article>
   </div>
 
-  <p class="text-muted" style="padding:32px 0;" th:if="${cards.isEmpty()}">
+  <p class="list-empty" th:if="${cards.isEmpty()}">
     가입한 커뮤니티가 없습니다. 커뮤니티에 가입하면 배지를 모을 수 있어요.
   </p>
 
@@ -134,7 +134,7 @@
       </article>
     </div>
 
-    <p class="project-history__empty text-muted"
+    <p class="list-empty"
        th:if="${projectParticipations.isEmpty()}">
       아직 참여한 팬 프로젝트가 없습니다.
     </p>

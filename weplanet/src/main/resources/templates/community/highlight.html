@@ -65,7 +65,7 @@
             </div>
           </article>
         </div>
-        <p class="text-muted" th:if="${artistPosts.isEmpty()}">표시할 아티스트 게시글이 없습니다.</p>
+        <p class="list-empty" th:if="${artistPosts.isEmpty()}">표시할 아티스트 게시글이 없습니다.</p>
         <a class="btn btn--ghost btn--block mt-8" th:href="@{/community/{id}/artist(id=${artist.id()})}">더보기</a>
       </section>
 
@@ -96,7 +96,7 @@
             </a>
           </article>
         </div>
-        <p class="text-muted" th:if="${artistCommentsWidget.isEmpty()}">표시할 댓글이 없습니다.</p>
+        <p class="list-empty" th:if="${artistCommentsWidget.isEmpty()}">표시할 댓글이 없습니다.</p>
       </section>
 
       <!-- Fan posts preview -->
@@ -139,7 +139,7 @@
             </div>
           </article>
         </div>
-        <p class="text-muted" th:if="${fanPosts.isEmpty()}">표시할 팬 게시글이 없습니다.</p>
+        <p class="list-empty" th:if="${fanPosts.isEmpty()}">표시할 팬 게시글이 없습니다.</p>
       </section>
 
       <!-- Lives preview -->
@@ -148,7 +148,7 @@
           <h2 class="section__title">Lives</h2>
           <a class="section__link" th:href="@{/community/{id}/live(id=${artist.id()})}">더보기</a>
         </div>
-        <p class="text-muted">표시할 라이브가 없습니다.</p>
+        <p class="list-empty">표시할 라이브가 없습니다.</p>
       </section>
     </div>
 

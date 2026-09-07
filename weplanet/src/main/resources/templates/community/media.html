@@ -85,7 +85,7 @@
         </article>
       </div>
 
-      <p th:if="${#lists.isEmpty(mediaList)}" class="text-muted" style="padding:24px 0;">표시할 미디어가 없습니다.</p>
+      <p th:if="${#lists.isEmpty(mediaList)}" class="list-empty">표시할 미디어가 없습니다.</p>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
