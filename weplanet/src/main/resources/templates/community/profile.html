@@ -281,7 +281,7 @@
                         </form>
                     </div>
                 </article>
-                <p th:if="${#lists.isEmpty(myComments)}" class="text-muted" style="padding:48px 0;text-align:center;">작성한 댓글이 없습니다.</p>
+                <p th:if="${#lists.isEmpty(myComments)}" class="list-empty">작성한 댓글이 없습니다.</p>
             </div>
 
             <!-- 포스트 히스토리 -->
@@ -305,7 +305,7 @@
                         </span>
                     </div>
                 </article>
-                <p th:if="${#lists.isEmpty(myPosts)}" class="text-muted" style="padding:48px 0;text-align:center;">작성한 포스트가 없습니다.</p>
+                <p th:if="${#lists.isEmpty(myPosts)}" class="list-empty">작성한 포스트가 없습니다.</p>
             </div>
 
             <!-- 좋아요 -->
@@ -326,7 +326,7 @@
                         <p class="post-card__body" th:text="${post.title}"></p>
                     </a>
                 </article>
-                <p th:if="${#lists.isEmpty(likedPosts)}" class="text-muted" style="padding:48px 0;text-align:center;">좋아요한 게시글이 없습니다.</p>
+                <p th:if="${#lists.isEmpty(likedPosts)}" class="list-empty">좋아요한 게시글이 없습니다.</p>
             </div>
 
             <!-- 북마크 -->
@@ -347,7 +347,7 @@
                         <p class="post-card__body" th:text="${post.title}"></p>
                     </a>
                 </article>
-                <div th:if="${#lists.isEmpty(bookmarkedPosts)}" class="empty-state" style="padding:48px 0;">
+                <div th:if="${#lists.isEmpty(bookmarkedPosts)}" class="empty-state list-empty">
                     <strong>저장한 북마크가 없습니다</strong>
                     마음에 드는 포스트를 저장해 보세요
                 </div>

@@ -535,7 +535,9 @@ public class CommunityController {
 				: Collections.emptyMap();
 		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(currentUser);
 		model.addAttribute("joinedArtists",
-				communityDrawerHelper.forViewer(currentUser, artists, joinedArtistIds));
+				communityDrawerHelper.joined(currentUser, artists, joinedArtistIds));
+		model.addAttribute("otherCommunities",
+				communityDrawerHelper.otherCommunities(currentUser, artists));
 		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artistId));
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
 		

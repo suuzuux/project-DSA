@@ -1105,10 +1105,11 @@ p {
  * ========================================================= */
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   border-bottom: 1px solid var(--wp-hairline);
   margin-bottom: 20px;
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .tabs a,
@@ -1160,15 +1161,41 @@ p {
  * 14. Empty / CTA boxes
  * ========================================================= */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  min-height: 200px;
   padding: 48px 20px;
   color: var(--wp-muted);
+  box-sizing: border-box;
 }
 
 .empty-state strong {
   display: block;
   color: var(--wp-ink);
   margin-bottom: 6px;
+}
+
+/* 게시글/미디어/공지 등 목록 비었을 때 — 해당 란 중앙 */
+.list-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 200px;
+  margin: 0;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--wp-muted);
+  box-sizing: border-box;
+}
+
+.community-main > section .list-empty,
+.comment-list .list-empty {
+  min-height: 140px;
+  padding: 32px 16px;
 }
 
 .cta-banner {

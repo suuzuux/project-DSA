@@ -30,15 +30,16 @@
       <nav th:replace="~{community/fragments/layout :: tabs('artist')}"></nav>
 
       <div class="board-toolbar">
-        <div class="flex-center">
-          <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;"
-             th:href="@{/community/{id}/artist(id=${artist.id()}, sort='latest')}"
-             th:classappend="${sort == 'latest'} ? ' is-active'">전체순</a>
-          <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;margin-left:8px;"
-             th:href="@{/community/{id}/artist(id=${artist.id()}, sort='popular')}"
-             th:classappend="${sort == 'popular'} ? ' is-active'">인기순</a>
+        <div class="flex-center" style="margin-left:auto;gap:8px;">
+          <select id="artistSort"
+                  class="form-select"
+                  style="width:auto;min-height:36px;"
+                  aria-label="아티스트 게시판 정렬"
+                  th:attr="data-base-url=@{/community/{id}/artist(id=${artist.id()})}">
+            <option value="latest" th:selected="${sort != 'popular'}">전체순</option>
+            <option value="popular" th:selected="${sort == 'popular'}">인기순</option>
+          </select>
           <button type="button" class="btn btn--primary btn--sm" data-modal-open="writePostModal"
-                  style="margin-left:8px;"
                   th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">포스트 작성하기</button>
         </div>
       </div>
@@ -87,5 +88,17 @@
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/dm-realtime.js}"></script>
   <script th:src="@{/js/community-posts.js}"></script>
+  <script>
+    (function () {
+      var sortSelect = document.getElementById("artistSort");
+      if (!sortSelect) return;
+      sortSelect.addEventListener("change", function () {
+        var base = sortSelect.getAttribute("data-base-url") || window.location.pathname;
+        var url = new URL(base, window.location.origin);
+        url.searchParams.set("sort", sortSelect.value);
+        window.location.href = url.pathname + url.search;
+      });
+    })();
+  </script>
 </body>
 </html>

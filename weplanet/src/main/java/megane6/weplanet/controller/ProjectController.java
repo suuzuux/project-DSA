@@ -260,13 +260,15 @@ public class ProjectController {
 		Map<Long, CommunityProfile> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
 		Set<Long> joinedArtistIds = cjs.joinedArtistIds(currentUser);
 
-		List<ArtistCardView> drawerArtists = artists.stream()
-				.filter(item -> currentUser.getRole() == Role.ARTIST
-						? !item.id().equals(currentUser.getId())
-						: joinedArtistIds.contains(item.id()))
+		List<ArtistCardView> joinedArtists = artists.stream()
+				.filter(item -> joinedArtistIds.contains(item.id()))
 				.toList();
+		List<ArtistCardView> otherCommunities = currentUser.getRole() == Role.ARTIST
+				? artists.stream().filter(item -> !item.id().equals(currentUser.getId())).toList()
+				: List.of();
 
-		model.addAttribute("joinedArtists", drawerArtists);
+		model.addAttribute("joinedArtists", joinedArtists);
+		model.addAttribute("otherCommunities", otherCommunities);
 		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artist.getId()));
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artist.getId()));
 		model.addAttribute("membershipActive", false);

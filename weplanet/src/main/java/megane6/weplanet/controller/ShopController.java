@@ -187,12 +187,15 @@ public class ShopController {
 				.toList();
 		if (principal == null) {
 			model.addAttribute("joinedArtists", Collections.emptyList());
+			model.addAttribute("otherCommunities", Collections.emptyList());
 			return;
 		}
 		User me = userResolver.resolve(principal, 1L);
 		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(me);
 		model.addAttribute("joinedArtists",
-				communityDrawerHelper.forViewer(me, allArtists, joinedArtistIds));
+				communityDrawerHelper.joined(me, allArtists, joinedArtistIds));
+		model.addAttribute("otherCommunities",
+				communityDrawerHelper.otherCommunities(me, allArtists));
 	}
 
 	private void populateCartBadge(AuthenticatedUser principal, Model model) {

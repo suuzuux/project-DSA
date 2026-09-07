@@ -67,9 +67,11 @@ public class HomeController {
 		}
 		model.addAttribute("joinedProfiles", joinedProfiles);
 		
-		// 팬 = 가입 커뮤니티, 아티스트 = 타 커뮤니티(본인 제외)
+		// 팬 = 가입 목록만 / 아티스트 = 가입 목록 + 타 커뮤니티(드로어용)
 		model.addAttribute("joinedArtists",
-				communityDrawerHelper.forViewer(viewer, artists, joinedArtistIds));
+				communityDrawerHelper.joined(viewer, artists, joinedArtistIds));
+		model.addAttribute("otherCommunities",
+				communityDrawerHelper.otherCommunities(viewer, artists));
 		
 		// 급상승 커뮤니티 카드의 가입자 수는 Follow가 아니라 실제 CommunityMember 기준
 		List<RisingCommunityCardView> risingCommunities = artistUsers.stream()

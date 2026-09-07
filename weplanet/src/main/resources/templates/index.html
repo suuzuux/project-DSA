@@ -148,7 +148,7 @@
           </th:block>
         </div>
       </div>
-      <p class="text-muted" style="padding:16px 0;" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
+      <p class="list-empty" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
     </section>
   </th:block>
 
@@ -185,7 +185,7 @@
         </a>
       </article>
     </div>
-    <p class="text-muted" style="padding:24px 0;" th:if="${popularPosts.isEmpty()}">표시할 포스트가 없습니다.</p>
+    <p class="list-empty" th:if="${popularPosts.isEmpty()}">표시할 포스트가 없습니다.</p>
   </section>
 
   <section class="section mb-24">
@@ -203,7 +203,7 @@
         </div>
       </a>
     </div>
-    <p class="text-muted" style="padding:24px 0;" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
+    <p class="list-empty" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
   </section>
 </main>
 
@@ -281,7 +281,9 @@
 </footer>
 
 <script th:inline="javascript">
-  window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+  window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+  window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
+  window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
 </script>
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
