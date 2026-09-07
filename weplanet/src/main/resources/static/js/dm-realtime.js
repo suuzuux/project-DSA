@@ -8,7 +8,7 @@
  * html에서는 반드시 shell.js보다 나중에 불러와야 함.
  *
  * 팬 쪽은 "아티스트별 1:1 DM 인박스" (CHAT-02 이하 그대로),
- * 아티스트 쪽은 "자신의 방송 채팅방 1개" (CHAT-02 비대칭 수신, 팬 메시지는 30%만 노출) - 이 둘은
+ * 아티스트 쪽은 "팬 DM 방 1개" (CHAT-02 비대칭 수신, 팬 메시지는 30%만 노출) - 이 둘은
  * 서로 다른 모델이라서 아티스트는 인박스 목록 없이 DM 버튼을 누르면 바로 자신의 방으로 들어감.
  * ============================================================
  */
@@ -43,12 +43,17 @@
         subscriptions = [];
     }
 
+    function wsChatUrl() {
+        const proto = location.protocol === "https:" ? "wss:" : "ws:";
+        return proto + "//" + location.host + "/ws-chat";
+    }
+
     function ensureSocket(callback) {
         if (stompClient && stompClient.connected) {
             callback();
             return;
         }
-        const socket = new SockJS("/ws-chat");
+        const socket = new WebSocket(wsChatUrl());
         stompClient = Stomp.over(socket);
         stompClient.debug = null; // 콘솔에 웹소켓 로그가 너무 많이 찍히는 걸 막음
         stompClient.connect({}, function () {
@@ -320,11 +325,11 @@
             });
     }
 
-    // [아티스트 전용] DM 버튼을 누르면 목록 없이 바로 자신의 방송 채팅방으로 들어감.
+    // [아티스트 전용] DM 버튼을 누르면 목록 없이 바로 자신의 팬 DM 방으로 들어감.
     // 팬 개개인과의 1:1 방이 아니라 방 1개(artistId=자기 자신)뿐이라, openRealRoom과는 별도로 다룸.
     function openArtistBroadcastRoom() {
         const dmRoomName = document.getElementById("dmRoomName");
-        if (dmRoomName) dmRoomName.textContent = "내 채팅방";
+        if (dmRoomName) dmRoomName.textContent = "팬 DM";
 
         // "ARTIST · DM" 서브텍스트와 인증뱃지는 "팬이 특정 아티스트와 대화 중"일 때 의미가 있는 표시라
         // 아티스트 자신의 방송 채팅방에는 어울리지 않으므로 숨김
@@ -415,7 +420,7 @@
             if (!text) return;
 
             if (isArtist) {
-                // fanId를 null로 보내면 서버(ChatController.send)가 "이건 방송 메시지구나"라고 판단함
+                // fanId를 null로 보내면 아티스트 DM. 서버가 저장한 뒤 가상 팬 5명이 답장함
                 if (!fanId) return;
                 ensureSocket(function () {
                     stompClient.send("/app/chat.send", {}, JSON.stringify({
