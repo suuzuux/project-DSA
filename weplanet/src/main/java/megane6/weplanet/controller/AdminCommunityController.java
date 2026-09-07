@@ -1,6 +1,7 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse;
 import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -60,6 +61,13 @@ public class AdminCommunityController {
 		model.addAttribute("keyword", keyword == null ? "" : keyword);
 		
 		return "admin/community-overview";
+	}
+	
+	@GetMapping("/overview/{artistId}")
+	public String communityDetail(@PathVariable Long artistId, Model model) {
+		AdminCommunityDetailResponse detail = acs.getCommunityDetail(artistId);
+		model.addAttribute("detail", detail);
+		return "admin/community-detail";
 	}
 	
 	@PostMapping("/projects/{projectId}/approve")

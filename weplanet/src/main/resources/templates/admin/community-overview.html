@@ -240,12 +240,13 @@
             <th>진행 프로젝트</th>
             <th>차단 회원</th>
             <th>처리 대기 신고</th>
+            <th>관리</th>
           </tr>
           </thead>
 
           <tbody>
           <tr th:if="${#lists.isEmpty(communities)}">
-            <td colspan="7"
+            <td colspan="8"
                 class="text-sm text-muted">
               검색 조건에 해당하는 커뮤니티가 없습니다.
             </td>
@@ -338,6 +339,14 @@
                     th:if="${community.pendingReportCount() == 0}">
                 0건
               </span>
+            </td>
+
+            <td>
+              <a class="btn btn--ghost btn--sm"
+                 th:href="@{/admin/communities/overview/{artistId}(
+                    artistId=${community.artistId()})}">
+                상세 보기
+              </a>
             </td>
           </tr>
           </tbody>

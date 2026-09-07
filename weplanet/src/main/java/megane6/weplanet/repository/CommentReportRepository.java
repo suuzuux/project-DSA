@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -62,5 +63,16 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     List<ArtistCount> countReportsByArtistIdsAndStatus(
             @Param("artistIds") Collection<Long> artistIds,
             @Param("status") ReportStatus status
+    );
+    
+    @EntityGraph(attributePaths = {
+            "comment",
+            "comment.post",
+            "reporter"
+    })
+    List<CommentReport>
+    findTop10ByComment_Post_ArtistAndStatusOrderByCreatedAtDesc(
+            User artist,
+            ReportStatus status
     );
 }

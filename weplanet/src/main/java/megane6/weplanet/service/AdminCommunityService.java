@@ -1,9 +1,11 @@
 package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse;
 import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
 import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.dto.ProjectFundingSummary;
+import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
@@ -13,12 +15,17 @@ import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.portal.ArtistBlockRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.BlockedMemberItem;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.PendingReportItem;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.ProjectItem;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.RecentPostItem;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -143,6 +150,150 @@ public class AdminCommunityService {
 				blockedMemberCount,
 				pendingReportCount
 		);
+	}
+	
+	public AdminCommunityDetailResponse getCommunityDetail(Long artistId) {
+		User artist = ur.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+		AdminCommunityOverviewResponse overview =
+				getCommunityOverview(artist.getUsername(), null, "NAME_ASC")
+						.stream()
+						.filter(item -> item.artistId().equals(artistId))
+						.findFirst()
+						.orElseThrow(() -> new IllegalArgumentException("커뮤니티 현황을 조회할 수 없습니다."));
+		
+		List<RecentPostItem> recentPosts =
+				postRepository
+						.findTop10ByArtistOrderByCreatedAtDesc(artist)
+						.stream()
+						.map(post -> new RecentPostItem(
+								post.getId(),
+								post.getTitle(),
+								boardTypeLabel(post.getBoardType()),
+								post.getAuthor() == null
+										? "-"
+										: post.getAuthor().getNickname(),
+								post.getLikeCount(),
+								post.getCreatedAt()
+						))
+						.toList();
+		
+		List<ProjectItem> recentProjects =
+				pr.findTop10ByArtistAndDeletedAtIsNullOrderByCreatedAtDesc(
+								artist
+						)
+						.stream()
+						.map(project -> new ProjectItem(
+								project.getId(),
+								project.getTitle(),
+								project.getEventType().getDisplayName(),
+								project.getStatus().name(),
+								project.getStatus().getDisplayName(),
+								project.getGoalAmount(),
+								project.getFundingEndAt()
+						))
+						.toList();
+		
+		List<BlockedMemberItem> blockedMembers =
+				abr.findByArtistOrderByCreatedAtDesc(artist)
+						.stream()
+						.limit(10)
+						.map(block -> new BlockedMemberItem(
+								block.getId(),
+								block.getBlockedUser().getId(),
+								block.getBlockedUser().getNickname(),
+								block.getBlockedUser().getUsername(),
+								block.getReason() == null
+										? "사유 미입력"
+										: block.getReason(),
+								block.getCreatedAt()
+						))
+						.toList();
+		
+		List<PendingReportItem> postReports =
+				rr.findTop10ByPost_ArtistAndStatusOrderByCreatedAtDesc(
+								artist,
+								ReportStatus.PENDING
+						)
+						.stream()
+						.map(report -> new PendingReportItem(
+								"게시글",
+								report.getPost().getId(),
+								report.getPost().getTitle(),
+								report.getReporter().getNickname(),
+								reportReasonLabel(report.getReason()),
+								report.getCreatedAt()
+						))
+						.toList();
+		
+		List<PendingReportItem> commentReports =
+				crr.findTop10ByComment_Post_ArtistAndStatusOrderByCreatedAtDesc(
+								artist,
+								ReportStatus.PENDING
+						)
+						.stream()
+						.map(report -> new PendingReportItem(
+								"댓글",
+								report.getComment().getId(),
+								summarizeText(
+										report.getComment().getContent()
+								),
+								report.getReporter().getNickname(),
+								reportReasonLabel(report.getReason()),
+								report.getCreatedAt()
+						))
+						.toList();
+		
+		Comparator<PendingReportItem> newestReportFirst =
+				Comparator.comparing(
+						PendingReportItem::reportedAt
+				).reversed();
+		
+		List<PendingReportItem> pendingReports =
+				Stream.concat(
+								postReports.stream(),
+								commentReports.stream()
+						)
+						.sorted(newestReportFirst)
+						.limit(10)
+						.toList();
+		
+		return new AdminCommunityDetailResponse(
+				overview,
+				recentPosts,
+				recentProjects,
+				blockedMembers,
+				pendingReports
+		);
+	}
+	
+	private String boardTypeLabel(BoardType boardType) {
+		return switch (boardType) {
+			case FAN -> "팬 게시판";
+			case ARTIST -> "아티스트 게시판";
+		};
+	}
+	
+	private String reportReasonLabel(ReportReason reason) {
+		return switch (reason) {
+			case SPAM -> "스팸";
+			case ABUSE -> "욕설·혐오";
+			case SEXUAL -> "음란물";
+			case ETC -> "기타";
+		};
+	}
+	
+	private String summarizeText(String text) {
+		if (text == null || text.isBlank()) {
+			return "-";
+		}
+		String trimmed = text.trim();
+		if (trimmed.length() <= 40) {
+			return trimmed;
+		}
+		
+		return trimmed.substring(0, 40) + "…";
 	}
 	
 	public List<PendingProjectItem> getPendingProjects() {
