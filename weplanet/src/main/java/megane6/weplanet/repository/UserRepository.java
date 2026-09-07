@@ -85,4 +85,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("provider") AuthProvider provider,
             @Param("keyword") String keyword
     );
+    
+    long countByRoleAndStatus(Role role, UserStatus status);
 }
