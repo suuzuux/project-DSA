@@ -57,10 +57,8 @@ public class ProjectService {
 
 	/**
 	 * 커뮤니티(아티스트)별 프로젝트 목록을 카드용 DTO로 만들어 돌려준다.
-	 * 비로그인 사용자는 공개 상태만, FAN은 공개 상태와 자신이 만든 프로젝트,
-	 * ADMIN은 모든 상태를 확인한다. ARTIST와 AGENCY는 프로젝트 영역에 접근할 수 없다.
-	 * DTO 변환을 서비스 안에서 끝내는 이유 : Project.creator가 LAZY라서
-	 * 트랜잭션 밖에서 getNickname()을 부르면 LazyInitializationException이 난다.
+	 * 비로그인 사용자는 공개 상태만, FAN·타 커뮤니티 방문 ARTIST는 공개 상태와 자신이 만든 프로젝트,
+	 * ADMIN은 모든 상태를 확인한다. 본인 커뮤니티 ARTIST와 AGENCY는 프로젝트 영역에 접근할 수 없다.
 	 */
 	public List<ProjectCardView> getProjectCards(User artist, String sort, AuthenticatedUser viewer) {
 		assertProjectAreaAccessible(artist, viewer);
@@ -140,8 +138,8 @@ public class ProjectService {
 	}
 
 	/**
-	 * ARTIST와 AGENCY는 팬 프로젝트 메뉴 및 직접 URL 접근을 허용하지 않는다.
-	 * 비로그인 사용자, FAN, ADMIN은 이후 상태별 공개 규칙에 따라 접근한다.
+	 * ARTIST는 본인 커뮤니티 팬 프로젝트만 막고, 가입한 타 커뮤니티에서는 팬과 동일하게 접근한다.
+	 * AGENCY는 접근 불가. ADMIN은 심사 목적 전체 접근.
 	 */
 	public void assertProjectAreaAccessible(
 			User artist,
@@ -150,31 +148,29 @@ public class ProjectService {
 		if (viewer == null) {
 			throw new AccessDeniedException("로그인이 필요합니다.");
 		}
-		
-		if (hasRole(viewer, Role.ARTIST) || hasRole(viewer, Role.AGENCY)) {
-			throw new AccessDeniedException(
-					"아티스트와 소속사 계정은 팬 프로젝트를 확인할 수 없습니다."
-			);
+
+		if (hasRole(viewer, Role.AGENCY)) {
+			throw new AccessDeniedException("소속사 계정은 팬 프로젝트를 확인할 수 없습니다.");
 		}
-		
-		// ADMIN은 커뮤니티 가입 여부와 관계없이 심사를 위해 접근 가능
+
 		if (hasRole(viewer, Role.ADMIN)) {
 			return;
 		}
-		
-		if (!hasRole(viewer, Role.FAN)) {
-			throw new AccessDeniedException("팬 회원만 접근할 수 있습니다.");
+
+		if (hasRole(viewer, Role.ARTIST) && viewer.getId().equals(artist.getId())) {
+			throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트는 이용할 수 없습니다.");
 		}
-		
-		User fan = ur.findById(viewer.getId())
+
+		if (!hasRole(viewer, Role.FAN) && !hasRole(viewer, Role.ARTIST)) {
+			throw new AccessDeniedException("팬 또는 아티스트 계정만 접근할 수 있습니다.");
+		}
+
+		User member = ur.findById(viewer.getId())
 				.orElseThrow(() ->
 						new AccessDeniedException("로그인 회원을 찾을 수 없습니다.")
 				);
-		
-		if (!fcr.existsByFanIdAndArtistId(
-				fan.getId(),
-				artist.getId()
-		)) {
+
+		if (!fcr.existsByFanIdAndArtistId(member.getId(), artist.getId())) {
 			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
 		}
 	}
@@ -200,7 +196,7 @@ public class ProjectService {
 		if (project.getStatus().isPubliclyVisible()) {
 			return true;
 		}
-		return hasRole(viewer, Role.FAN)
+		return (hasRole(viewer, Role.FAN) || hasRole(viewer, Role.ARTIST))
 				&& project.getCreator().getId().equals(viewer.getId());
 	}
 
@@ -238,13 +234,17 @@ public class ProjectService {
 	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
 		// 1. 로그인 회원 조회
 		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("로그인 정보를 찾을 수 없습니다."));
-		if (creator.getRole() != Role.FAN) {
-			throw new IllegalStateException("팬 회원만 프로젝트를 등록할 수 있습니다.");
+		if (creator.getRole() != Role.FAN && creator.getRole() != Role.ARTIST) {
+			throw new IllegalStateException("팬 또는 아티스트 계정만 프로젝트를 등록할 수 있습니다.");
 		}
 
 		User artist = ur.findById(dto.getArtistId())
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트 정보를 찾을 수 없습니다."));
+
+		if (creator.getRole() == Role.ARTIST && creator.getId().equals(artist.getId())) {
+			throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트는 등록할 수 없습니다.");
+		}
 		
 		if (!fcr.existsByFanIdAndArtistId(
 				creator.getId(),

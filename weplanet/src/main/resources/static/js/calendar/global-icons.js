@@ -481,7 +481,7 @@
     });
   }
 
-  function applySchedulePayload(data) {
+	function applySchedulePayload(data) {
     if (data && Array.isArray(data.communities)) {
       MY_COMMUNITIES = data.communities;
     } else {
@@ -489,6 +489,22 @@
       if (fromPage.length) MY_COMMUNITIES = fromPage;
     }
     EVENTS_BY_DATE = (data && data.eventsByDate) ? data.eventsByDate : {};
+    // 커뮤니티 페이지: 요청한 artistId의 출석만 반영. artistId 없는 응답으로는 덮어쓰지 않음
+    // (로그인 아티스트 본인 도장이 타 커뮤니티에 새는 것 방지)
+    if (isCommunityPage()) {
+      var pageCommunityId = detectCommunityId();
+      var responseArtistId = data && data.attendanceArtistId != null
+        ? String(data.attendanceArtistId)
+        : null;
+      if (responseArtistId && responseArtistId === pageCommunityId
+          && data.attendance && typeof data.attendance === "object") {
+        window.__ARTIST_ATTENDANCE__ = data.attendance;
+      }
+      // artistId 불일치/누락이면 페이지에서 내려준 커뮤니티 주인 출석 유지
+    } else if (data && data.attendance && typeof data.attendance === "object"
+        && data.attendanceArtistId != null) {
+      window.__ARTIST_ATTENDANCE__ = data.attendance;
+    }
     var now = new Date();
     state.cursor = new Date(now.getFullYear(), now.getMonth(), 1);
     state.weekStart = now;

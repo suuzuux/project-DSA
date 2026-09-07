@@ -1,6 +1,7 @@
 package megane6.weplanet.repository;
 
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,10 +24,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // DM 인박스(CHAT: 여러 아티스트 목록) 에서, 아직 대화 안 나눈 아티스트도 "추천" 칸에 보여주기 위해
     // 시스템에 있는 아티스트 전체 목록이 필요함
     List<User> findByRole(Role role);
-
+    
     long countByStatus(UserStatus status);
-
+    
     List<User> findByStatus(UserStatus status);
+    
+    // 소셜 로그인 계정 조회
+    Optional<User> findByProviderAndProviderId(
+            AuthProvider provider,
+            String providerId
+    );
 
     List<User> findByRoleAndAgency_Id(Role role, Long agencyId);
     

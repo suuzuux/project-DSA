@@ -10,6 +10,7 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.PostRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,6 +35,7 @@ public class ScheduleApiController {
 	private final PostRepository postRepository;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
+	private final ArtistAttendanceService artistAttendanceService;
 
 	@GetMapping("/schedules")
 	public Map<String, Object> schedules(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -43,6 +45,7 @@ public class ScheduleApiController {
 		if (principal == null) {
 			body.put("communities", List.of());
 			body.put("eventsByDate", Map.of());
+			body.put("attendance", Map.of());
 			return body;
 		}
 
@@ -66,6 +69,18 @@ public class ScheduleApiController {
 		body.put("eventsByDate", joined.isEmpty()
 				? Map.of()
 				: portalManagementService.getPublicEventsByDateForArtists(joined));
+
+		// 출석은 "요청한 커뮤니티 주인"만. artistId 없으면 로그인 아티스트 출석으로 절대 fallback 하지 않음
+		// (타 커뮤니티 캘린더에 본인 도장이 새는 버그 방지)
+		Map<String, String> attendance = Map.of();
+		if (artistId != null) {
+			User attendanceArtist = userRepository.findById(artistId)
+					.filter(user -> user.getRole() == Role.ARTIST)
+					.orElse(null);
+			attendance = artistAttendanceService.getAllPawColors(attendanceArtist);
+		}
+		body.put("attendance", attendance);
+		body.put("attendanceArtistId", artistId);
 		return body;
 	}
 

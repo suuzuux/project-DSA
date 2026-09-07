@@ -43,8 +43,11 @@ public class ProjectContributionService {
     ) {
         User contributor = userRepository.findById(contributorId)
                 .orElseThrow(() -> new AccessDeniedException("로그인 회원을 찾을 수 없습니다."));
-        if (contributor.getRole() != Role.FAN) {
-            throw new AccessDeniedException("팬 회원만 프로젝트에 참여할 수 있습니다.");
+        if (contributor.getRole() != Role.FAN && contributor.getRole() != Role.ARTIST) {
+            throw new AccessDeniedException("팬 또는 아티스트 계정만 프로젝트에 참여할 수 있습니다.");
+        }
+        if (contributor.getRole() == Role.ARTIST && contributor.getId().equals(artistId)) {
+            throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트에는 참여할 수 없습니다.");
         }
         if (!communityAccessRepository.existsByFanIdAndArtistId(contributorId, artistId)) {
             throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
@@ -63,8 +66,8 @@ public class ProjectContributionService {
         User contributor = userRepository.findById(contributorId)
                 .orElseThrow(() -> new AccessDeniedException("로그인 회원을 찾을 수 없습니다."));
         
-        if (contributor.getRole() != Role.FAN) {
-            throw new AccessDeniedException("팬 회원만 참여 기록을 확인할 수 있습니다.");
+        if (contributor.getRole() != Role.FAN && contributor.getRole() != Role.ARTIST) {
+            throw new AccessDeniedException("팬 또는 아티스트 계정만 참여 기록을 확인할 수 있습니다.");
         }
         
         return contributionRepository.findParticipationHistory(contributorId)

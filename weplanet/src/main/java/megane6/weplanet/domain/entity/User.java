@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.convert.PlaintextBytesConverter;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Gender;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -89,7 +90,14 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;		// 탈퇴(소프트 삭제) 처리 시각
 	
-	private User(String username, String password, String realName, String nickname, String email, Role role) {
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private AuthProvider provider;		// 가입 경로 (LOCAL/GOOGLE/KAKAO/LINE)
+	
+	@Column(name = "provider_id", length = 255)
+	private String providerId;		// 소셜 플랫폼 고유 ID (LOCAL 가입자는 null)
+	
+	private User(String username, String password, String realName, String nickname, String email, Role role, AuthProvider provider, String providerId) {
 		this.username = username;
 		this.password = password;
 		this.realName = realName;
@@ -97,9 +105,18 @@ public class User {
 		this.email	  = email;
 		this.role = role;
 		this.status = UserStatus.ACTIVE;
+		this.provider = provider;
+		this.providerId = providerId;
 	}
 	
-	// 공개 회원가입에서 쓰는 팩토리 - 선택 항목(gender/phone/birthDate/주소)은 나중에 마이페이지에서 채움
+	private User(String username, String password, String realName, String nickname, String email, Role role) {
+		this(username, password, realName, nickname, email, role, AuthProvider.LOCAL, null);
+	}
+	
+	public static User createSocialFan(String username, String encodedPassword, String realName, String nickname, String email, AuthProvider provider, String providerId) {
+		return new User(username, encodedPassword, realName, nickname, email, Role.FAN, provider, providerId);
+	}
+	
 	public static User createFan(String username, String encodedPassword, String realName, String nickname, String email) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.FAN);
 	}
@@ -139,25 +156,25 @@ public class User {
 	public void markEmailVerified(LocalDateTime verifiedAt) {
 		this.emailVerifiedAt = verifiedAt;
 	}
+	
+	public void linkSocialProvider(AuthProvider provider, String providerId) {
+		this.provider = provider;
+		this.providerId = providerId;
+	}
 
 	public void changePortalProfile(String nickname, String email) {
 		this.nickname = nickname;
 		this.email = email;
 	}
-
-	// 회원정보(마이페이지) 수정에서 이름을 바꿀 때 씀. realName은 암호화 컬럼이라
-	// PlaintextBytesConverter가 저장/조회 시 알아서 변환해줌 - 여기선 평문 그대로 다루면 됨
+	
 	public void changeRealName(String realName) {
 		this.realName = realName;
 	}
-
-	// 회원정보 수정 화면에서 새 비밀번호를 입력했을 때만 호출됨 (호출부에서 이미 인코딩된 값을 넘김)
+	
 	public void changePassword(String encodedPassword) {
 		this.password = encodedPassword;
 	}
-
-	// [회원탈퇴] 실제로 로우를 지우지 않고 상태만 WITHDRAWN으로 바꾸는 소프트 삭제.
-	// 게시글/댓글/채팅/후원 내역 등 users.id를 참조하는 다른 테이블의 FK가 깨지지 않도록 하기 위함.
+	
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
 		this.deletedAt = LocalDateTime.now();

@@ -43,6 +43,7 @@ public class ShopController {
 	private final UserRepository userRepository;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
+	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 
 	/** 메인 메뉴 → 전체 굿즈샵 (아티스트 필터 선택 가능) */
 	@GetMapping("/shop")
@@ -184,16 +185,14 @@ public class ShopController {
 		List<ArtistCardView> allArtists = artistUsers.stream()
 				.map(ArtistCardView::from)
 				.toList();
-		if (principal == null) {
-			model.addAttribute("joinedArtists", Collections.emptyList());
-			return;
-		}
-		User me = userResolver.resolve(principal, 1L);
-		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(me);
-		List<ArtistCardView> joinedArtists = allArtists.stream()
-				.filter(a -> joinedArtistIds.contains(a.id()))
-				.toList();
-		model.addAttribute("joinedArtists", joinedArtists);
+		User me = principal != null ? userResolver.resolve(principal, 1L) : null;
+		Set<Long> joinedArtistIds = me != null
+				? communityJoinService.joinedArtistIds(me)
+				: Collections.emptySet();
+		model.addAttribute("joinedArtists",
+				communityDrawerHelper.joined(me, allArtists, joinedArtistIds));
+		model.addAttribute("otherCommunities",
+				communityDrawerHelper.otherCommunities(me, allArtists));
 	}
 
 	private void populateCartBadge(AuthenticatedUser principal, Model model) {
