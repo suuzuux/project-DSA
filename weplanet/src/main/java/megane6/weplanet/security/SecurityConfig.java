@@ -8,9 +8,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.List;
 
@@ -21,13 +21,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
     
-    // TODO: AUTH-07(로그인 세션 연동) 완료되면 아래 개발용 임시 허용 항목들 제거하고
-    // PostController/ChatController의 getUserOrThrow()를 실제 로그인 세션 기반으로 교체할 것.
-    // (테스트 계정 비밀번호가 아직 더미값이라 실제 로그인이 안 되는 동안, 게시판/채팅 개발·시연을 위해 임시로 열어둠 - 형준님 확인 완료)
     private static final List<String> PUBLIC_URLS = List.of(
             "/",
             "/home",
             "/signup",
+            "/signup/id",
             "/signup/email/**",
             "/signup/username/**",
             "/find-id",
@@ -35,6 +33,7 @@ public class SecurityConfig {
             "/find-password",
             "/find-password/**",
             "/login",
+            "/login/id",
             "/portal/login",
             "/admin/login",
             "/api/schedules",
@@ -54,10 +53,18 @@ public class SecurityConfig {
             "/membership",
             "/css/**",
             "/js/**",
-            "/img/**"
+            "/img/**",
+            "/signup-wireframe",
+            "/login-wireframe",
+            "/oauth2/authorization/**",
+            "/login/oauth2/code/**",
+            "/social-login/**"
     );
     
     private final LoginSuccessHandler loginSuccessHandler;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
+    private final ProfileCompletionRequiredFilter profileCompletionRequiredFilter;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -78,19 +85,21 @@ public class SecurityConfig {
                         .failureHandler(portalAwareFailureHandler())
                         .permitAll()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login")
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .authorizationEndpoint(endpoint -> endpoint
+                                .authorizationRequestResolver(socialSignupReauthAuthorizationRequestResolver))
+                )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessUrl("/")
-                );
+                )
+                .addFilterAfter(profileCompletionRequiredFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
-    }
-    
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {
