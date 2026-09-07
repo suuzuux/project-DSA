@@ -10,6 +10,7 @@ import megane6.weplanet.repository.ChatMessageRepository;
 import megane6.weplanet.repository.MembershipRepository;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,13 +25,15 @@ public class ChatMessageService {
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
 
-    // 채팅 메시지 저장 - fan이 null이면 아티스트가 전체 팬에게 보낸 방송 메시지
+    // 채팅 메시지 저장 - fan이 null이면 아티스트가 전체 팬에게 보낸 메시지
+    @Transactional
     public ChatMessage saveMessage(User artist, User fan, User sender, String content) {
         return saveMessage(artist, fan, sender, content, true);
     }
 
     // visibleToArtist: 팬이 보낸 메시지가 아티스트 화면(추천 피드)에 노출될지 여부.
     // 실시간 전송과 새로고침 후 히스토리가 서로 달라지지 않도록, 전송 시점에 정한 값을 그대로 저장함
+    @Transactional
     public ChatMessage saveMessage(User artist, User fan, User sender, String content, boolean visibleToArtist) {
         ChatMessage message = ChatMessage.builder()
                 .artist(artist)

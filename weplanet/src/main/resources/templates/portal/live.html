@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>방송 | Artist Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+  <div class="portal-shell">
+    <aside class="portal-sidebar">
+      <div class="portal-sidebar__org">
+        <div class="agency" th:text="${isAgency} ? '에이전시 포털' : 'WePlaNet'">WePlaNet</div>
+        <div class="artist" th:text="${artist.nickname}">아티스트</div>
+      </div>
+      <nav class="portal-sidebar__nav">
+        <a th:href="@{/portal/dashboard}" th:classappend="${activeMenu == 'dashboard'} ? ' is-active'">📊 대시보드</a>
+        <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
+        <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
+        <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/live}" th:classappend="${activeMenu == 'live'} ? ' is-active'">📡 방송</a>
+        <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
+      </nav>
+      <div class="portal-sidebar__footer">
+        <a th:href="@{/community/{artistId}(artistId=${artist.id})}">← 커뮤니티 이동</a><br /><br />
+        <a th:href="@{/logout}">로그아웃</a>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <div>
+          <h1>라이브 방송</h1>
+          <p class="text-sm text-muted mt-8">카메라를 미리 확인하고, 시작을 누르면 커뮤니티 Live 탭에 송출됩니다.</p>
+        </div>
+      </div>
+
+      <div id="portal-live"
+           th:attr="data-artist-id=${artist.id},
+                    data-host-id=${actor.id},
+                    data-live=${liveStatus != null and liveStatus.live()}">
+        <div class="live-studio">
+          <section class="live-studio__stage">
+            <div class="live-studio__frame">
+              <video id="live-preview" autoplay muted playsinline></video>
+              <span id="live-badge" class="live-studio__badge" hidden>LIVE</span>
+            </div>
+            <p id="live-camera-error" class="text-sm" style="color:#b42318;margin-top:8px;" hidden></p>
+            <p id="live-save-status" class="text-sm text-muted" style="margin-top:8px;" hidden></p>
+            <div class="live-studio__controls">
+              <button type="button" id="live-start-btn" class="btn btn--primary">방송 시작</button>
+              <button type="button" id="live-end-btn" class="btn btn--ghost" disabled>방송 종료</button>
+              <span id="live-viewer-count" class="text-sm text-muted">시청자 0명</span>
+            </div>
+          </section>
+
+          <aside class="live-studio__chat">
+            <h2 class="live-studio__chat-title">실시간 댓글</h2>
+            <div id="live-comments" class="live-studio__comments" aria-live="polite"></div>
+            <form id="live-comment-form" class="live-studio__composer">
+              <input id="live-comment-input" class="form-input" type="text" maxlength="500"
+                     placeholder="댓글을 입력하세요" autocomplete="off" />
+              <button type="submit" class="btn btn--primary">보내기</button>
+            </form>
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script th:src="@{/js/portal-live.js}"></script>
+</body>
+</html>

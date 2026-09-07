@@ -27,9 +27,7 @@
   // (각 화면 <body>에서 data-role="ROLE_ADMIN" 형태로 내려줌. 없으면 빈 문자열)
   const roleName = body.getAttribute("data-role") || "";
   const isAdmin = roleName === "ROLE_ADMIN";
-  // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
-  // 예전엔 아티스트로 로그인해도 ✈ 버튼이 팬 위젯을 열어서, 본인을 fanId로 넘기는 바람에
-  // "자기 자신에게 가입한 멤버십"을 찾다가 무조건 '구독 만료' 배너가 떴음
+    // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
   const isArtist = roleName === "ROLE_ARTIST";
   // 로그인한 본인 id (아티스트일 땐 곧 artistId)
   const myId = body.getAttribute("data-fan-id") || "";
@@ -368,10 +366,10 @@
   function openDm() {
     dmPanel.classList.add("is-open");
     dmPanel.setAttribute("aria-hidden", "false");
-    // 아티스트는 인박스 목록이 없고 자신의 방송 채팅방 하나뿐이라, 목록 화면 없이 바로 방을 보여줌
+    // 아티스트는 인박스 목록이 없고 자신의 팬 DM 방 하나뿐이라, 목록 화면 없이 바로 방을 보여줌
     // (실제 데이터 채우기는 dm-realtime.js의 openArtistBroadcastRoom이 #fabChat 클릭 시 처리함)
     if (isArtist) {
-      showRoom(nickname || "내 채팅방", false);
+      showRoom(nickname || "팬 DM", false);
     } else {
       showList();
     }
