@@ -58,4 +58,31 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("status") UserStatus status,
             @Param("keyword") String keyword
     );
+    
+    @Query("""
+        select user
+        from User user
+        left join fetch user.agency agency
+        where (:role is null or user.role = :role)
+          and (:status is null or user.status = :status)
+          and (:provider is null or user.provider = :provider)
+          and (
+              :keyword is null
+              or lower(user.username)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.email)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(coalesce(agency.name, ''))
+                    like lower(concat('%', :keyword, '%'))
+          )
+        order by user.createdAt desc, user.id desc
+        """)
+    List<User> searchForAdmin(
+            @Param("role") Role role,
+            @Param("status") UserStatus status,
+            @Param("provider") AuthProvider provider,
+            @Param("keyword") String keyword
+    );
 }
