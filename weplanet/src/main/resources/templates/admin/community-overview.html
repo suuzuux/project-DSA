@@ -160,6 +160,53 @@
             method="get"
             th:action="@{/admin/communities/overview}">
 
+        <select name="status">
+          <option value="">
+            전체 상태
+          </option>
+
+          <option value="ACTIVE"
+                  th:selected="${selectedStatus == 'ACTIVE'}">
+            운영 중
+          </option>
+
+          <option value="DORMANT"
+                  th:selected="${selectedStatus == 'DORMANT'}">
+            휴면
+          </option>
+
+          <option value="SUSPENDED"
+                  th:selected="${selectedStatus == 'SUSPENDED'}">
+            운영 정지
+          </option>
+
+          <option value="WITHDRAWN"
+                  th:selected="${selectedStatus == 'WITHDRAWN'}">
+            탈퇴
+          </option>
+        </select>
+        <select name="sort">
+          <option value="NAME_ASC"
+                  th:selected="${selectedSort == 'NAME_ASC'}">
+            이름순
+          </option>
+
+          <option value="MEMBERS_DESC"
+                  th:selected="${selectedSort == 'MEMBERS_DESC'}">
+            가입 팬 많은 순
+          </option>
+
+          <option value="POSTS_DESC"
+                  th:selected="${selectedSort == 'POSTS_DESC'}">
+            게시글 많은 순
+          </option>
+
+          <option value="REPORTS_DESC"
+                  th:selected="${selectedSort == 'REPORTS_DESC'}">
+            신고 많은 순
+          </option>
+        </select>
+
         <input type="text"
                name="keyword"
                th:value="${keyword}"

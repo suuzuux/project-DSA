@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,10 +51,12 @@ public class AdminCommunityService {
 		);
 	}
 	
-	public List<AdminCommunityOverviewResponse> getCommunityOverview(String keyword) {
+	public List<AdminCommunityOverviewResponse> getCommunityOverview(
+			String keyword, UserStatus status, String sort) {
 		String normalizedKeyword = keyword == null || keyword.isBlank()
 				? null : keyword.trim();
-		List<User> artists = ur.searchByRole(Role.ARTIST, normalizedKeyword);
+		List<User> artists = ur.searchByRole(
+				Role.ARTIST, status, normalizedKeyword);
 		if (artists.isEmpty()) {
 			return List.of();
 		}
@@ -69,6 +72,8 @@ public class AdminCommunityService {
 		Map<Long, Long> pendingCommentReportCounts = toCountMap(crr.countReportsByArtistIdsAndStatus(
 				artistIds, ReportStatus.PENDING));
 		
+		Comparator<AdminCommunityOverviewResponse> comparator =
+				communityOverviewComparator(sort);
 		return artists.stream().map(artist -> {
 			Long artistId = artist.getId();
 			long pendingReportCount = pendingPostReportCounts.getOrDefault(artistId, 0L)
@@ -86,7 +91,33 @@ public class AdminCommunityService {
 							pendingReportCount
 					);
 				})
+				.sorted(comparator)
 				.toList();
+	}
+	
+	private Comparator<AdminCommunityOverviewResponse> communityOverviewComparator(String sort) {
+		Comparator<AdminCommunityOverviewResponse> byName =
+				Comparator.comparing(AdminCommunityOverviewResponse::artistNickname,
+						String.CASE_INSENSITIVE_ORDER);
+		if (sort == null) {
+			return byName;
+		}
+		
+		return switch (sort) {
+			case "MEMBERS_DESC" -> Comparator.comparingLong(
+					AdminCommunityOverviewResponse::memberCount)
+					.reversed()
+					.thenComparing(byName);
+			case "POSTS_DESC" -> Comparator.comparingLong(
+					AdminCommunityOverviewResponse::postCount)
+					.reversed()
+					.thenComparing(byName);
+			case "REPORTS_DESC" -> Comparator.comparingLong(
+					AdminCommunityOverviewResponse::pendingReportCount)
+					.reversed()
+					.thenComparing(byName);
+			default -> byName;
+		};
 	}
 	
 	public CommunityOverviewStats getCommunityOverviewStats(

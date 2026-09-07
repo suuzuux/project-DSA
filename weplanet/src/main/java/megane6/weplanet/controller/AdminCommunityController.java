@@ -3,6 +3,7 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.AdminCommunityService;
 import megane6.weplanet.service.ProjectService;
@@ -44,10 +45,18 @@ public class AdminCommunityController {
 	}
 	
 	@GetMapping("/overview")
-	public String communityOverview(@RequestParam(required = false) String keyword, Model model) {
-		List<AdminCommunityOverviewResponse> communities = acs.getCommunityOverview(keyword);
+	public String communityOverview(@RequestParam(required = false) String status,
+									@RequestParam(required = false) String keyword,
+									@RequestParam(required = false) String sort,
+									Model model) {
+		UserStatus statusFilter = parseUserStatus(status);
+		String selectedSort = normalizeCommunitySort(sort);
+		List<AdminCommunityOverviewResponse> communities =
+				acs.getCommunityOverview(keyword, statusFilter, selectedSort);
 		model.addAttribute("communities", communities);
 		model.addAttribute("overviewStats", acs.getCommunityOverviewStats(communities));
+		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
+		model.addAttribute("selectedSort", selectedSort);
 		model.addAttribute("keyword", keyword == null ? "" : keyword);
 		
 		return "admin/community-overview";
@@ -149,5 +158,26 @@ public class AdminCommunityController {
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
+	}
+	
+	private UserStatus parseUserStatus(String status) {
+		if (status == null || status.isBlank()) {
+			return null;
+		}
+		try {
+			return UserStatus.valueOf(status);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+	}
+	
+	private String normalizeCommunitySort (String sort) {
+		String value = sort == null ? "" : sort;
+		return switch (value) {
+			case "MEMBERS_DESC",
+				 "POSTS_DESC",
+				 "REPORTS_DESC" -> value;
+			default -> "NAME_ASC";
+		};
 	}
 }
