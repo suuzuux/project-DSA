@@ -1,17 +1,10 @@
 package megane6.weplanet.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 
 import java.time.LocalDateTime;
 
@@ -49,4 +42,34 @@ public class AgencyProfile {
 
 	@Column(name = "approved_at")
 	private LocalDateTime approvedAt;
+	
+	public boolean isApproved() {
+		return approvedAt != null;
+	}
+	
+	public void approve(User admin) {
+		requireAdmin(admin);
+		
+		if (isApproved()) {
+			throw new IllegalStateException("이미 승인된 소속사입니다.");
+		}
+		this.approvedBy = admin;
+		this.approvedAt = LocalDateTime.now();
+	}
+	
+	public void revokeApproval(User admin) {
+		requireAdmin(admin);
+		
+		if (!isApproved()) {
+			throw new IllegalStateException("승인되지 않은 소속사 권한입니다.");
+		}
+		this.approvedBy = null;
+		this.approvedAt = null;
+	}
+	
+	private void requireAdmin(User admin) {
+		if (admin == null || admin.getRole() != Role.ADMIN) {
+			throw new IllegalArgumentException("관리자만 소속사 권한을 변경할 수 있습니다.");
+		}
+	}
 }

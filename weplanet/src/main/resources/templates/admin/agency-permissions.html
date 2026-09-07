@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>소속사 관리 | WePlaNet ADMIN</title>
+
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+
+<body>
+<div class="portal-shell">
+
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/admin/dashboard}">
+        📊 통합 대시보드
+      </a>
+
+      <a class="is-active"
+         th:href="@{/admin/agencies}">
+        🏢 소속사 관리
+      </a>
+
+      <a href="#"
+         onclick="alert('아티스트 관리 - 준비 중'); return false;">
+        🎤 아티스트 관리
+      </a>
+
+      <a th:href="@{/admin/users}">
+        👥 전체 회원
+      </a>
+
+      <a th:href="@{/admin/reports}">
+        🚩 통합 신고 · 제재
+      </a>
+
+      <a th:href="@{/admin/notices}">
+        📢 전체 공지
+      </a>
+
+      <a th:href="@{/admin/communities}">
+        💬 커뮤니티 운영
+      </a>
+
+      <a href="#"
+         onclick="alert('관리자 로그 - 준비 중'); return false;">
+        🧾 관리자 로그
+      </a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <form th:action="@{/admin/logout}"
+            method="post"
+            style="margin:0;">
+
+        <button type="submit" class="btn">
+          🚪 로그아웃
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="portal-main">
+
+    <div class="portal-main__head">
+      <div>
+        <h1>소속사 관리</h1>
+
+        <p class="text-sm text-muted">
+          소속사 담당자 계정의 신청 정보와 승인 상태를 관리합니다.
+        </p>
+      </div>
+
+      <div class="admin-topbar">
+        <span class="admin-badge">
+          🛡 SUPER ADMIN
+        </span>
+      </div>
+    </div>
+
+    <!-- 처리 결과 메시지 -->
+    <p th:if="${msg}"
+       th:text="${msg}"
+       class="admin-login__notice admin-login__notice--success">
+      처리가 완료되었습니다.
+    </p>
+
+    <p th:if="${error}"
+       th:text="${error}"
+       class="admin-login__notice admin-login__notice--error">
+      처리 중 오류가 발생했습니다.
+    </p>
+
+    <!-- 통계 카드 -->
+    <div class="admin-stat-grid">
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--violet">
+          🏢
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            전체 권한 계정
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.totalPermissionCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat admin-stat--alert">
+        <span class="admin-stat__icon admin-stat__icon--orange">
+          ⏳
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            승인 대기
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.pendingCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--green">
+          ✅
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            승인 완료
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.approvedCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--blue">
+          🟢
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            운영 중 소속사
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.activeAgencyCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--khaki">
+          ⛔
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            운영 정지 소속사
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.suspendedAgencyCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+    </div>
+
+    <!-- 권한 목록 -->
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">
+            소속사 담당자 권한
+          </h2>
+
+          <p class="text-xs text-muted">
+            신청 정보 확인 후 권한을 승인하거나 기존 승인을 취소할 수 있습니다.
+          </p>
+        </div>
+
+        <span class="tag tag--member"
+              th:text="${#lists.size(permissions) + '건 조회'}">
+          0건 조회
+        </span>
+      </div>
+
+      <!-- 검색 필터 -->
+      <form class="report-filter-bar"
+            method="get"
+            th:action="@{/admin/agencies}">
+
+        <select name="approval">
+          <option value="">전체 승인 상태</option>
+
+          <option value="PENDING"
+                  th:selected="${selectedApproval == 'PENDING'}">
+            승인 대기
+          </option>
+
+          <option value="APPROVED"
+                  th:selected="${selectedApproval == 'APPROVED'}">
+            승인 완료
+          </option>
+        </select>
+
+        <select name="userStatus">
+          <option value="">전체 계정 상태</option>
+
+          <option value="ACTIVE"
+                  th:selected="${selectedUserStatus == 'ACTIVE'}">
+            활성
+          </option>
+
+          <option value="DORMANT"
+                  th:selected="${selectedUserStatus == 'DORMANT'}">
+            휴면
+          </option>
+
+          <option value="SUSPENDED"
+                  th:selected="${selectedUserStatus == 'SUSPENDED'}">
+            정지
+          </option>
+
+          <option value="WITHDRAWN"
+                  th:selected="${selectedUserStatus == 'WITHDRAWN'}">
+            탈퇴
+          </option>
+        </select>
+
+        <select name="agencyStatus">
+          <option value="">전체 소속사 상태</option>
+
+          <option value="ACTIVE"
+                  th:selected="${selectedAgencyStatus == 'ACTIVE'}">
+            운영 중
+          </option>
+
+          <option value="SUSPENDED"
+                  th:selected="${selectedAgencyStatus == 'SUSPENDED'}">
+            운영 정지
+          </option>
+        </select>
+
+        <input type="text"
+               name="keyword"
+               th:value="${keyword}"
+               placeholder="계정, 이메일, 소속사명, 사업자번호 검색" />
+
+        <button type="submit"
+                class="btn btn--primary btn--sm">
+          검색
+        </button>
+
+        <a class="btn btn--ghost btn--sm"
+           th:href="@{/admin/agencies}">
+          초기화
+        </a>
+      </form>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>신청 계정</th>
+            <th>소속사</th>
+            <th>담당 정보</th>
+            <th>대표 계정</th>
+            <th>계정 상태</th>
+            <th>소속사 상태</th>
+            <th>승인 상태</th>
+            <th>승인 정보</th>
+            <th>신청일</th>
+            <th>관리</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr th:if="${#lists.isEmpty(permissions)}">
+            <td colspan="10"
+                class="text-sm text-muted">
+              검색 조건에 해당하는 소속사 권한 계정이 없습니다.
+            </td>
+          </tr>
+
+          <tr th:each="permission : ${permissions}">
+
+            <!-- 신청 계정 -->
+            <td>
+              <strong th:text="${permission.nickname()}">
+                담당자 닉네임
+              </strong>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${'@' + permission.username()}">
+                @username
+              </span>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${permission.email()}">
+                agency@example.com
+              </span>
+            </td>
+
+            <!-- 소속사 -->
+            <td>
+              <strong th:text="${permission.agencyName()}">
+                소속사명
+              </strong>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${permission.businessNo() == null
+                        ? '사업자번호 미등록'
+                        : permission.businessNo()}">
+                사업자번호
+              </span>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${permission.ceoName() == null
+                        ? '대표자 미등록'
+                        : '대표 ' + permission.ceoName()}">
+                대표자
+              </span>
+            </td>
+
+            <!-- 담당 정보 -->
+            <td>
+              <span th:text="${permission.department() == null
+                  ? '-'
+                  : permission.department()}">
+                부서
+              </span>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${permission.position() == null
+                        ? '-'
+                        : permission.position()}">
+                직책
+              </span>
+            </td>
+
+            <!-- 대표 계정 여부 -->
+            <td>
+              <span class="tag tag--member"
+                    th:if="${permission.owner()}">
+                대표 계정
+              </span>
+
+              <span class="text-xs text-muted"
+                    th:unless="${permission.owner()}">
+                일반 담당자
+              </span>
+            </td>
+
+            <!-- 계정 상태 -->
+            <td>
+              <span class="tag tag--public"
+                    th:if="${permission.userStatusName() == 'ACTIVE'}"
+                    th:text="${permission.userStatusLabel()}">
+                활성
+              </span>
+
+              <span class="tag tag--member"
+                    th:if="${permission.userStatusName() == 'DORMANT'}"
+                    th:text="${permission.userStatusLabel()}">
+                휴면
+              </span>
+
+              <span class="tag tag--danger"
+                    th:if="${permission.userStatusName() == 'SUSPENDED'}"
+                    th:text="${permission.userStatusLabel()}">
+                정지
+              </span>
+
+              <span class="tag tag--private"
+                    th:if="${permission.userStatusName() == 'WITHDRAWN'}"
+                    th:text="${permission.userStatusLabel()}">
+                탈퇴
+              </span>
+            </td>
+
+            <!-- 소속사 상태 -->
+            <td>
+              <span class="tag tag--public"
+                    th:if="${permission.agencyStatusName() == 'ACTIVE'}"
+                    th:text="${permission.agencyStatusLabel()}">
+                운영 중
+              </span>
+
+              <span class="tag tag--danger"
+                    th:if="${permission.agencyStatusName()
+                        == 'SUSPENDED'}"
+                    th:text="${permission.agencyStatusLabel()}">
+                운영 정지
+              </span>
+            </td>
+
+            <!-- 승인 상태 -->
+            <td>
+              <span class="tag tag--public"
+                    th:if="${permission.approved()}">
+                승인 완료
+              </span>
+
+              <span class="tag tag--danger"
+                    th:unless="${permission.approved()}">
+                승인 대기
+              </span>
+            </td>
+
+            <!-- 승인 정보 -->
+            <td>
+              <span th:if="${permission.approved()}"
+                    th:text="${permission.approvedByNickname()
+                        == null
+                        ? '관리자'
+                        : permission.approvedByNickname()}">
+                승인 관리자
+              </span>
+
+              <br th:if="${permission.approved()}" />
+
+              <span class="text-xs text-muted"
+                    th:if="${permission.approved()}"
+                    th:text="${permission.approvedAt() == null
+                        ? '-'
+                        : #temporals.format(
+                            permission.approvedAt(),
+                            'yyyy.MM.dd HH:mm'
+                        )}">
+                승인 시각
+              </span>
+
+              <span class="text-xs text-muted"
+                    th:unless="${permission.approved()}">
+                미승인
+              </span>
+            </td>
+
+            <!-- 신청일 -->
+            <td th:text="${permission.requestedAt() == null
+                ? '-'
+                : #temporals.format(
+                    permission.requestedAt(),
+                    'yyyy.MM.dd HH:mm'
+                )}">
+              2026.09.07 12:00
+            </td>
+
+            <!-- 관리 -->
+            <td>
+              <!-- 승인 가능 -->
+              <form th:if="${not permission.approved()
+                      and permission.userStatusName() != 'SUSPENDED'
+                      and permission.userStatusName() != 'WITHDRAWN'
+                      and permission.agencyStatusName() == 'ACTIVE'}"
+                    th:action="@{/admin/agencies/{userId}/approve(
+                        userId=${permission.userId()})}"
+                    method="post">
+
+                <input type="hidden"
+                       name="approval"
+                       th:value="${selectedApproval}" />
+
+                <input type="hidden"
+                       name="userStatus"
+                       th:value="${selectedUserStatus}" />
+
+                <input type="hidden"
+                       name="agencyStatus"
+                       th:value="${selectedAgencyStatus}" />
+
+                <input type="hidden"
+                       name="keyword"
+                       th:value="${keyword}" />
+
+                <button type="submit"
+                        class="btn btn--primary btn--sm"
+                        onclick="return confirm(
+                            '이 계정의 소속사 권한을 승인할까요?'
+                        );">
+                  승인
+                </button>
+              </form>
+
+              <!-- 승인 취소 -->
+              <form th:if="${permission.approved()}"
+                    th:action="@{/admin/agencies/{userId}/revoke(
+                        userId=${permission.userId()})}"
+                    method="post">
+
+                <input type="hidden"
+                       name="approval"
+                       th:value="${selectedApproval}" />
+
+                <input type="hidden"
+                       name="userStatus"
+                       th:value="${selectedUserStatus}" />
+
+                <input type="hidden"
+                       name="agencyStatus"
+                       th:value="${selectedAgencyStatus}" />
+
+                <input type="hidden"
+                       name="keyword"
+                       th:value="${keyword}" />
+
+                <button type="submit"
+                        class="btn btn--ghost btn--sm"
+                        onclick="return confirm(
+                            '이 계정의 소속사 권한 승인을 취소할까요?'
+                        );">
+                  승인 취소
+                </button>
+              </form>
+
+              <!-- 승인 불가능 -->
+              <span class="text-xs text-muted"
+                    th:if="${not permission.approved()
+                        and (
+                            permission.userStatusName() == 'SUSPENDED'
+                            or permission.userStatusName() == 'WITHDRAWN'
+                            or permission.agencyStatusName()
+                                == 'SUSPENDED'
+                        )}">
+                승인 불가
+              </span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>
