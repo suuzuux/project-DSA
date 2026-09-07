@@ -175,15 +175,9 @@ public class PostController {
         // (예전엔 testUserId로 비로그인 상태에서도 남의 계정 명의로 글을 쓸 수 있었음 - 이제 실제 로그인을 요구함)
         User tempAuthor = userResolver.requireAuthenticated(principal);
 
-        // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 아티스트만 작성 가능
+        // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 해당 커뮤니티 본인만 작성 가능
         if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
-        }
-        // 팬 게시판도 마찬가지로 팬만 작성 가능 (그동안 이 체크가 없어서 ARTIST/ADMIN/AGENCY 계정도
-        // 로그인만 되어 있으면 팬 게시판에 글을 쓸 수 있었음). 관리자 전용 게시판이 따로 없다고 해서
-        // ADMIN에게 팬 게시판 쓰기 권한을 열어주지 않음 - 필요하면 별도 공지 기능으로 처리
-        if (type == BoardType.FAN && tempAuthor.getRole() != Role.FAN) {
-            throw new IllegalStateException("팬 게시판은 팬 회원만 작성할 수 있습니다.");
         }
 
         User communityArtist = null;
@@ -192,9 +186,18 @@ public class PostController {
                     .filter(user -> user.getRole() == Role.ARTIST)
                     .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 
-            // 커뮤니티 게시글은 해당 커뮤니티에만 귀속. ARTIST 보드는 그 커뮤니티 본인만 작성 가능
             if (type == BoardType.ARTIST && !tempAuthor.getId().equals(communityArtist.getId())) {
                 throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
+            }
+        }
+
+        // 팬 게시판: 팬 + (타 커뮤니티를 방문한 아티스트, 팬과 동일 권한)
+        if (type == BoardType.FAN) {
+            boolean visitingArtistAsFan = tempAuthor.getRole() == Role.ARTIST
+                    && communityArtist != null
+                    && !tempAuthor.getId().equals(communityArtist.getId());
+            if (tempAuthor.getRole() != Role.FAN && !visitingArtistAsFan) {
+                throw new IllegalStateException("팬 게시판은 팬 회원만 작성할 수 있습니다.");
             }
         }
 

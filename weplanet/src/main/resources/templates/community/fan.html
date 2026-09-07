@@ -34,6 +34,9 @@
           <a class="is-active" th:href="@{/community/{id}/fan(id=${artist.id()})}">포스트</a>
           <a sec:authorize="hasAnyRole('FAN','ADMIN')"
              th:href="@{/community/{id}/project(id=${artist.id()})}">프로젝트</a>
+          <a th:if="${!isOwnCommunity}"
+             sec:authorize="hasRole('ARTIST')"
+             th:href="@{/community/{id}/project(id=${artist.id()})}">프로젝트</a>
         </div>
         <div class="flex-center">
           <a class="sort-link form-select" style="width:auto;min-height:36px;text-decoration:none;display:inline-flex;align-items:center;padding:0 12px;"
@@ -51,8 +54,10 @@
     <aside th:replace="~{community/fragments/layout :: sidebarAside(true, false)}"></aside>
   </div>
 
-  <!-- 포스트 작성 모달 -->
-  <div class="modal-backdrop" id="writePostModal" sec:authorize="hasRole('FAN')">
+  <!-- 포스트 작성 모달 (팬 + 타 커뮤니티 방문 아티스트) -->
+  <div class="modal-backdrop" id="writePostModal"
+       th:if="${!isOwnCommunity}"
+       sec:authorize="hasAnyRole('FAN','ARTIST')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title">포스트 작성하기</h2>

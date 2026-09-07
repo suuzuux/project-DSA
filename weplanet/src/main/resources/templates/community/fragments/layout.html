@@ -56,9 +56,10 @@
 </nav>
 
 <!-- 커뮤니티 가입 = CommunityMember(닉네임 필수) 기준으로 통일.
-     Follow는 About 위젯의 "다른 아티스트 팔로우"에만 쓰는 별개 개념으로 남겨둠. -->
+     Follow는 About 위젯의 "다른 아티스트 팔로우"에만 쓰는 별개 개념으로 남겨둠.
+     아티스트 본인 커뮤니티에서는 가입/팔로우 UI를 숨기고, 타 커뮤니티에서는 팬과 동일하게 가입·팔로우 가능. -->
 <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
-  <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <th:block th:if="${!isOwnCommunity}" sec:authorize="hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <!-- 가입한 상태: 내 커뮤니티 닉네임 + 가입 취소 -->
     <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -83,23 +84,27 @@
               th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">커뮤니티 가입하기</button>
     </div>
   </th:block>
-  <th:block sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <th:block th:if="${!isOwnCommunity}"
+            sec:authorize="isAuthenticated() and !hasAnyRole('FAN','ARTIST')"
+            xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <div class="widget" style="padding:12px 16px;">
-      <p class="text-xs text-muted" style="line-height:1.5;">커뮤니티 가입은 팬 계정만 이용할 수 있습니다.</p>
+      <p class="text-xs text-muted" style="line-height:1.5;">커뮤니티 가입은 팬·아티스트 계정만 이용할 수 있습니다.</p>
     </div>
   </th:block>
 
-  <th:block th:if="${showWriteButton}" sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <th:block th:if="${showWriteButton and !isOwnCommunity}"
+            sec:authorize="hasAnyRole('FAN','ARTIST')"
+            xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
   </th:block>
 
-  <div class="membership-card">
+  <div class="membership-card" th:if="${!isOwnCommunity}">
     <h3 class="membership-card__title">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
       <span th:text="|${artist.nickname()} Membership|">Membership</span>
     </h3>
 
-    <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <th:block sec:authorize="hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <div th:if="${membershipActive}">
         <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
         <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
@@ -110,8 +115,8 @@
         <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
       </div>
     </th:block>
-    <th:block sec:authorize="isAuthenticated() and !hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <p class="membership-card__desc">멤버십은 팬 계정으로 가입할 수 있습니다.</p>
+    <th:block sec:authorize="isAuthenticated() and !hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <p class="membership-card__desc">멤버십은 팬·아티스트 계정으로 가입할 수 있습니다.</p>
     </th:block>
 
     <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -144,19 +149,23 @@
       </div>
     </div>
 
-    <!-- 와이어프레임 26번: 다른 아티스트 팔로잉/팔로우 리스트 -->
-    <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
-      <div class="flex-center" style="gap:8px;">
-        <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
-        <span th:text="${other.nickname()}">아티스트</span>
+    <!-- 본인 커뮤니티에서는 팔로우 리스트 숨김. 타 커뮤니티에서는 팬·아티스트 모두 팔로우 가능 -->
+    <th:block th:if="${!isOwnCommunity}"
+              sec:authorize="hasAnyRole('FAN','ARTIST')"
+              xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
+        <div class="flex-center" style="gap:8px;">
+          <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
+          <span th:text="${other.nickname()}">아티스트</span>
+        </div>
+        <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
+          <input type="hidden" name="returnTo" th:value="${artist.id()}" />
+          <button type="submit" class="btn btn--sm"
+                  th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
+                  th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
+        </form>
       </div>
-      <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
-        <input type="hidden" name="returnTo" th:value="${artist.id()}" />
-        <button type="submit" class="btn btn--sm"
-                th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
-                th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
-      </form>
-    </div>
+    </th:block>
   </div>
 </aside>
 
@@ -197,8 +206,8 @@
           th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">커뮤니티 가입하기</button>
 </div>
 
-<!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통) -->
-<div th:fragment="membershipTeaser" th:if="${!communityJoined}"
+<!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통, 본인 커뮤니티 제외) -->
+<div th:fragment="membershipTeaser" th:if="${!communityJoined and !isOwnCommunity}"
      style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #1a8a5c);
               color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:16px;
               flex-wrap:wrap;">
@@ -206,7 +215,7 @@
   <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);" th:href="@{/login}">로그인 후 계속 ›</a>
   </th:block>
-  <th:block sec:authorize="hasRole('FAN')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <th:block sec:authorize="hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
     <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);"
             data-join-btn th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">가입 후 계속 ›</button>
   </th:block>

@@ -62,6 +62,7 @@ public class CommunityController {
 	// 삭제됨 -> portalManagementService 필드도 함께 제거 (남기면 타입을 못 찾아 컴파일 실패)
 	private final FollowService followService;
 	private final CommunityJoinService communityJoinService;
+	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final ArtistAttendanceService artistAttendanceService;
 	private final PortalManagementService portalManagementService;
 	
@@ -363,8 +364,9 @@ public class CommunityController {
 		return "community/profile";
 	}
 	
-	// Membership 가입하기 버튼 - 로그인한 사람 기준으로 이 아티스트 멤버십에 가입(또는 갱신)
-	@PostMapping("/community/{artistId}/membership/join")public String joinMembership(
+	// Membership 가입하기 버튼 - 팬 + 타 커뮤니티 방문 아티스트 (본인 커뮤니티 제외)
+	@PostMapping("/community/{artistId}/membership/join")
+	public String joinMembership(
 			@PathVariable Long artistId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -376,9 +378,9 @@ public class CommunityController {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-		User fan = requireFan(principal);
+		User member = requireMembershipEligible(principal, artistId);
 		
-		membershipService.join(fan, artist);
+		membershipService.join(member, artist);
 		
 		return "redirect:/community/" + artistId + "/highlight";
 	}
@@ -397,9 +399,9 @@ public class CommunityController {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-		User fan = requireFan(principal);
+		User member = requireMembershipEligible(principal, artistId);
 		
-		membershipService.cancel(fan, artist);
+		membershipService.cancel(member, artist);
 		
 		return "redirect:/community/" + artistId + "/highlight";
 	}
@@ -451,10 +453,15 @@ public class CommunityController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		User fan = userResolver.resolve(principal, 1L);
-		followService.toggle(fan, artistId);
+		User me = userResolver.resolve(principal, 1L);
+		if (me.getId().equals(artistId)) {
+			throw new IllegalStateException("본인 커뮤니티는 팔로우할 수 없습니다.");
+		}
+		if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
+			throw new IllegalStateException("팬 또는 아티스트 계정만 팔로우할 수 있습니다.");
+		}
+		followService.toggle(me, artistId);
 		
-		// 원래 보고 있던 커뮤니티 페이지로 돌아감 (팔로우 대상 아티스트 페이지로 안 튕기게)
 		Long backTo = returnTo != null ? returnTo : artistId;
 		return "redirect:/community/" + backTo + "/highlight";
 	}
@@ -478,12 +485,14 @@ public class CommunityController {
 		return communityJoinService.isJoined(currentUser, artistId);
 	}
 	
-	// 멤버십 가입/해지는 팬만 할 수 있는 행동임. 화면에서도 hasRole(FAN)으로 버튼을 숨기지만,
-	// 버튼을 숨기는 것만으로는 폼을 직접 호출하는 걸 막을 수 없어서 서버에서도 한 번 더 검증함
-	private User requireFan(AuthenticatedUser principal) {
+	// 멤버십 가입/해지: 팬 + 타 커뮤니티 방문 아티스트. 본인 커뮤니티는 불가.
+	private User requireMembershipEligible(AuthenticatedUser principal, Long artistId) {
 		User user = userResolver.resolve(principal, 1L);
-		if (user.getRole() != Role.FAN) {
-			throw new IllegalStateException("팬 계정만 이용할 수 있는 기능입니다.");
+		if (user.getId().equals(artistId)) {
+			throw new IllegalStateException("본인 커뮤니티 멤버십에는 가입할 수 없습니다.");
+		}
+		if (user.getRole() != Role.FAN && user.getRole() != Role.ARTIST) {
+			throw new IllegalStateException("팬 또는 아티스트 계정만 이용할 수 있는 기능입니다.");
 		}
 		return user;
 	}
@@ -500,37 +509,37 @@ public class CommunityController {
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
 		
-		// [머지 충돌 해결] main엔 없었음(이전 버전) -> HEAD 유지
-		// 와이어프레임 26번: About 위젯에 "이 아티스트 말고 다른 아티스트도 팔로우해보세요" 추천 리스트
-		User currentUserForFollow = principal != null ? userResolver.resolve(principal, 1L) : null;
-		if (currentUserForFollow != null
-				&& currentUserForFollow.getRole() == Role.ARTIST
-				&& currentUserForFollow.getId().equals(artist.getId())) {
-			artistAttendanceService.recordVisitIfArtist(currentUserForFollow);
+		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
+		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());
+		model.addAttribute("isOwnCommunity", isOwnCommunity);
+
+		if (currentUser != null
+				&& currentUser.getRole() == Role.ARTIST
+				&& isOwnCommunity) {
+			artistAttendanceService.recordVisitIfArtist(currentUser);
 		}
 		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
-		Set<Long> followedIds = followService.getFollowedArtistIds(currentUserForFollow);
+		Set<Long> followedIds = followService.getFollowedArtistIds(currentUser);
 		List<ArtistFollowCardView> otherArtists = userRepository.findByRole(Role.ARTIST).stream()
 				.filter(user -> !user.getId().equals(artistId))
+				// 방문 중인 아티스트 본인 커뮤니티는 팔로우 리스트에서 제외
+				.filter(user -> currentUser == null
+						|| currentUser.getRole() != Role.ARTIST
+						|| !user.getId().equals(currentUser.getId()))
 				.map(user -> ArtistFollowCardView.of(user, followedIds.contains(user.getId())))
 				.toList();
 		model.addAttribute("otherArtists", otherArtists);
 		
-		// 가입 여부(버튼/배너/드로어)는 CommunityMember 기준. 프로필은 닉네임 표시용.
-		Map<Long, CommunityProfile> joinedProfiles = currentUserForFollow != null
-				? communityJoinService.joinedProfilesByArtistId(currentUserForFollow)
+		Map<Long, CommunityProfile> joinedProfiles = currentUser != null
+				? communityJoinService.joinedProfilesByArtistId(currentUser)
 				: Collections.emptyMap();
-		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(currentUserForFollow);
-		List<ArtistCardView> joinedArtists = artists.stream()
-				.filter(a -> joinedArtistIds.contains(a.id()))
-				.toList();
-		model.addAttribute("joinedArtists", joinedArtists);
-		model.addAttribute("communityJoined", joinedArtistIds.contains(artistId));
+		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(currentUser);
+		model.addAttribute("joinedArtists",
+				communityDrawerHelper.forViewer(currentUser, artists, joinedArtistIds));
+		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artistId));
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
 		
-		// 사이드바 Membership 카드 - 로그인한 사람이 이 아티스트 멤버십에 가입돼있는지 여부
 		if (principal != null) {
-			User currentUser = userResolver.resolve(principal, 1L);
 			membershipService.getMembership(currentUser, artist).ifPresent(membership -> {
 				model.addAttribute("membershipActive", !membership.isExpired());
 				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());
