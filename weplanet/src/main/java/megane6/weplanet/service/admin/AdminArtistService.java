@@ -67,15 +67,15 @@ public class AdminArtistService {
 	}
 	
 	@Transactional
-	public void suspendArtist(Long userId, Long adminId) {
+	public void suspendArtist(Long userId, Long adminId, String ipAddress) {
 		requireArtistUser(userId);
-		aus.suspendUser(userId, adminId);
+		aus.suspendUser(userId, adminId, ipAddress);
 	}
 	
 	@Transactional
-	public void reinstateArtist(Long userId, Long adminId) {
+	public void reinstateArtist(Long userId, Long adminId, String ipAddress) {
 		requireArtistUser(userId);
-		aus.reinstateUser(userId, adminId);
+		aus.reinstateUser(userId, adminId, ipAddress);
 	}
 	
 	private Map<Long, ArtistAccountProfile> loadProfiles(List<User> artists) {

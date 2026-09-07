@@ -3,10 +3,9 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.AdminUserListItemResponse;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.UserStatus;
-import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
-import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.admin.AdminActionLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +17,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AdminUserService {
 	private final UserRepository ur;
+	private final AdminActionLogService actionLogService;
 	
 	public List<AdminUserListItemResponse> getUsers(
 			Role role,
@@ -44,40 +44,111 @@ public class AdminUserService {
 	}
 	
 	@Transactional
-	public void suspendUser(Long userId, Long adminId) {
-		User admin = requireAdmin(adminId);
-		User target = requireUser(userId);
-		
-		if (target.getId().equals(admin.getId())) {
-			throw new IllegalStateException("현재 로그인한 관리자 자신의 계정은 정지할 수 없습니다.");
-		}
-		if (target.getRole() == Role.ADMIN) {
-			throw new IllegalStateException("관리자 계정은 정지할 수 없습니다.");
-		}
-		if (target.getStatus() == UserStatus.WITHDRAWN) {
-			throw new IllegalStateException("탈퇴한 회원은 정지할 수 없습니다.");
-		}
-		if (target.getStatus() == UserStatus.SUSPENDED) {
-			throw new IllegalStateException("이미 정지된 회원입니다.");
-		}
-		target.suspend();
+	public void suspendUser(
+			Long userId,
+			Long adminId
+	) {
+		suspendUser(
+				userId,
+				adminId,
+				null
+		);
 	}
 	
 	@Transactional
-	public void reinstateUser(Long userId, Long adminId) {
+	public void suspendUser(
+			Long userId,
+			Long adminId,
+			String ipAddress
+	) {
 		User admin = requireAdmin(adminId);
 		User target = requireUser(userId);
 		
 		if (target.getId().equals(admin.getId())) {
-			throw new IllegalStateException("현재 로그인한 관리자 자신의 상태는 변경할 수 없습니다.");
+			throw new IllegalStateException(
+					"현재 로그인한 관리자 자신의 계정은 정지할 수 없습니다."
+			);
 		}
+		
 		if (target.getRole() == Role.ADMIN) {
-			throw new IllegalStateException("관리자 계정의 상태는 변경할 수 없습니다.");
+			throw new IllegalStateException(
+					"관리자 계정은 정지할 수 없습니다."
+			);
 		}
+		
+		if (target.getStatus() == UserStatus.WITHDRAWN) {
+			throw new IllegalStateException(
+					"탈퇴한 회원은 정지할 수 없습니다."
+			);
+		}
+		
+		if (target.getStatus() == UserStatus.SUSPENDED) {
+			throw new IllegalStateException(
+					"이미 정지된 회원입니다."
+			);
+		}
+		
+		target.suspend();
+		
+		actionLogService.recordAction(
+				adminId,
+				suspendAction(target),
+				accountTargetType(target),
+				target.getId(),
+				target.getNickname() + " 계정 정지",
+				ipAddress
+		);
+	}
+	
+	@Transactional
+	public void reinstateUser(
+			Long userId,
+			Long adminId
+	) {
+		reinstateUser(
+				userId,
+				adminId,
+				null
+		);
+	}
+	
+	@Transactional
+	public void reinstateUser(
+			Long userId,
+			Long adminId,
+			String ipAddress
+	) {
+		User admin = requireAdmin(adminId);
+		User target = requireUser(userId);
+		
+		if (target.getId().equals(admin.getId())) {
+			throw new IllegalStateException(
+					"현재 로그인한 관리자 자신의 상태는 변경할 수 없습니다."
+			);
+		}
+		
+		if (target.getRole() == Role.ADMIN) {
+			throw new IllegalStateException(
+					"관리자 계정의 상태는 변경할 수 없습니다."
+			);
+		}
+		
 		if (target.getStatus() != UserStatus.SUSPENDED) {
-			throw new IllegalStateException("정지 상태인 회원만 정지를 해제할 수 있습니다.");
+			throw new IllegalStateException(
+					"정지 상태인 회원만 정지를 해제할 수 있습니다."
+			);
 		}
+		
 		target.reinstate();
+		
+		actionLogService.recordAction(
+				adminId,
+				reinstateAction(target),
+				accountTargetType(target),
+				target.getId(),
+				target.getNickname() + " 계정 정지 해제",
+				ipAddress
+		);
 	}
 	
 	private AdminUserListItemResponse toListItem(User user) {
@@ -99,6 +170,36 @@ public class AdminUserService {
 				user.getCreatedAt(),
 				user.getLastLoginAt()
 		);
+	}
+	
+	private AdminActionType suspendAction(
+			User target
+	) {
+		if (target.getRole() == Role.ARTIST) {
+			return AdminActionType.ARTIST_SUSPEND;
+		}
+		
+		return AdminActionType.USER_SUSPEND;
+	}
+	
+	private AdminActionType reinstateAction(
+			User target
+	) {
+		if (target.getRole() == Role.ARTIST) {
+			return AdminActionType.ARTIST_REINSTATE;
+		}
+		
+		return AdminActionType.USER_REINSTATE;
+	}
+	
+	private AdminTargetType accountTargetType(
+			User target
+	) {
+		if (target.getRole() == Role.ARTIST) {
+			return AdminTargetType.ARTIST;
+		}
+		
+		return AdminTargetType.USER;
 	}
 	
 	private User requireAdmin(Long adminId) {

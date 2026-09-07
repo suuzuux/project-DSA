@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
@@ -9,11 +10,7 @@ import megane6.weplanet.service.AdminUserService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -55,10 +52,11 @@ public class AdminUserController {
 							  @RequestParam(required = false) String status,
 							  @RequestParam(required = false) String provider,
 							  @RequestParam(required = false) String keyword,
+							  HttpServletRequest request,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
 							  RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
-		handle(() -> aus.suspendUser(userId, principal.getId()),
+		handle(() -> aus.suspendUser(userId, principal.getId(), request.getRemoteAddr()),
 				"회원 계정을 정지했습니다.", redirectAttributes);
 		addFilters(role, status, provider, keyword, redirectAttributes);
 		
@@ -71,10 +69,11 @@ public class AdminUserController {
 								@RequestParam(required = false) String status,
 								@RequestParam(required = false) String provider,
 								@RequestParam(required = false) String keyword,
+								HttpServletRequest request,
 								@AuthenticationPrincipal AuthenticatedUser principal,
 								RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
-		handle(() -> aus.reinstateUser(userId, principal.getId()),
+		handle(() -> aus.reinstateUser(userId, principal.getId(), request.getRemoteAddr()),
 				"회원 계정의 정지를 해제했습니다.", redirectAttributes);
 		addFilters(role, status, provider, keyword, redirectAttributes);
 		

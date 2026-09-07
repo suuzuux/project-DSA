@@ -1,5 +1,6 @@
 package megane6.weplanet.controller.admin;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -8,11 +9,7 @@ import megane6.weplanet.service.admin.AdminArtistService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -77,6 +74,7 @@ public class AdminArtistController {
 			@RequestParam(required = false) String userStatus,
 			@RequestParam(required = false) String agencyStatus,
 			@RequestParam(required = false) String keyword,
+			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes
 	) {
@@ -85,7 +83,8 @@ public class AdminArtistController {
 		handle(
 				() -> service.suspendArtist(
 						userId,
-						principal.getId()
+						principal.getId(),
+						request.getRemoteAddr()
 				),
 				"아티스트 계정을 정지했습니다.",
 				redirectAttributes
@@ -107,6 +106,7 @@ public class AdminArtistController {
 			@RequestParam(required = false) String userStatus,
 			@RequestParam(required = false) String agencyStatus,
 			@RequestParam(required = false) String keyword,
+			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes
 	) {
@@ -115,7 +115,8 @@ public class AdminArtistController {
 		handle(
 				() -> service.reinstateArtist(
 						userId,
-						principal.getId()
+						principal.getId(),
+						request.getRemoteAddr()
 				),
 				"아티스트 계정의 정지를 해제했습니다.",
 				redirectAttributes
