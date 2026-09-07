@@ -41,7 +41,7 @@
     <a class="btn btn--ghost btn--sm" th:href="@{/}">← 홈</a>
   </div>
 
-  <p th:if="${#lists.isEmpty(notices)}" class="text-muted" style="padding:24px 0;">등록된 공지가 없습니다.</p>
+  <p th:if="${#lists.isEmpty(notices)}" class="list-empty">등록된 공지가 없습니다.</p>
   <article th:each="notice : ${notices}" class="post-card mb-16">
     <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
       <div class="post-card__head">
