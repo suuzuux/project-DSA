@@ -1,11 +1,13 @@
 package megane6.weplanet.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -65,6 +67,26 @@ public class GlobalExceptionHandler {
         return "redirect:/login";
     }
 
+    // 로그인 세션엔 "이 유저로 로그인됨"이라고 남아있는데, 그 유저가 DB에는 더 이상 없는 경우
+    // (관리자가 계정을 직접 삭제한 경우 등). 그냥 IllegalArgumentException처럼 에러 화면만 보여주면,
+    // 세션이 여전히 그 죽은 principal을 물고 있어서 "홈으로" 버튼을 눌러도 "/"에서 똑같은 예외가 또 터진다 -
+    // 그래서 여기서 세션 자체를 정리(로그아웃)한 뒤 로그인 화면으로 보내서 무한 반복을 끊는다.
+    @ExceptionHandler(StaleSessionException.class)
+    public Object handleStaleSession(StaleSessionException e, HttpServletRequest request) {
+        log.warn("세션의 로그인 유저가 더 이상 존재하지 않아 세션을 정리함: {}", e.getMessage());
+        SecurityContextHolder.clearContext();
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+
+        if (isAsync(request)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "세션이 만료되었습니다. 다시 로그인해주세요."));
+        }
+        return "redirect:/login?sessionExpired=true";
+    }
+
     // 잘못된 요청(존재하지 않는 게시글/유저 id 등)
     @ExceptionHandler(IllegalArgumentException.class)
     public Object handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
@@ -119,7 +141,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Object handleUploadTooLarge(MaxUploadSizeExceededException e, HttpServletRequest request) {
         log.warn("업로드 용량 초과: {}", request.getRequestURI());
-        return respond(request, HttpStatus.PAYLOAD_TOO_LARGE, "첨부파일 용량이 너무 큽니다.");
+        return respond(request, HttpStatus.CONTENT_TOO_LARGE, "첨부파일 용량이 너무 큽니다.");
     }
 
     /**
