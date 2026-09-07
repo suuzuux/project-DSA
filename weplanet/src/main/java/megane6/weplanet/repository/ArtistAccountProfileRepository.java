@@ -19,6 +19,17 @@ public interface ArtistAccountProfileRepository
 	List<ArtistAccountProfile> findByAgency(Agency agency);
 	
 	List<ArtistAccountProfile> findByAgency_Id(Long agencyId);
+
+	@Query("""
+        select profile
+        from ArtistAccountProfile profile
+        join fetch profile.user user
+        join fetch profile.agency agency
+        where user.id in :userIds
+        """)
+	List<ArtistAccountProfile> findAllByUserIds(
+			@Param("userIds") List<Long> userIds
+	);
 	
 	@Query("""
         select profile
