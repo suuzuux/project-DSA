@@ -11,6 +11,7 @@
 <body class="admin-login">
 <div class="admin-login__split">
 
+
   <aside class="admin-login__visual">
     <div>
       <p class="admin-login__eyebrow">AUTHORIZED PERSONNEL ONLY</p>
@@ -76,6 +77,18 @@
               th:if="${param.error}"
               class="admin-login__notice admin-login__notice--error">
         아이디 또는 비밀번호가 올바르지 않습니다.
+      </p>
+
+      <p
+              th:if="${param.expired}"
+              class="admin-login__notice admin-login__notice--error">
+        세션이 만료되어 다시 로그인해주세요.
+      </p>
+
+      <p
+              th:if="${param.duplicateLogin}"
+              class="admin-login__notice admin-login__notice--error">
+        다른 기기에서 로그인되어 로그아웃되었습니다.
       </p>
 
       <p
