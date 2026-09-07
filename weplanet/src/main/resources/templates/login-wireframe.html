@@ -25,6 +25,14 @@
       세션이 만료되었습니다. 다시 로그인해주세요.
     </p>
 
+    <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      세션이 만료되어 다시 로그인해주세요.
+    </p>
+
+    <p th:if="${param.duplicateLogin}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      다른 기기에서 로그인되어 로그아웃되었습니다.
+    </p>
+
     <div class="stack">
       <a class="btn btn--sns" href="/social-login/google/login">
         <span class="sns-icon sns-icon--google">G</span> Google로 로그인하기

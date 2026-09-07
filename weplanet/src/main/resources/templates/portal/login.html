@@ -25,6 +25,12 @@
         <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
           아이디 또는 비밀번호가 올바르지 않습니다.
         </p>
+        <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
+          세션이 만료되어 다시 로그인해주세요.
+        </p>
+        <p th:if="${param.duplicateLogin}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
+          다른 기기에서 로그인되어 로그아웃되었습니다.
+        </p>
 
         <form th:action="@{/login}" method="post">
           <input type="hidden" name="portalLogin" value="true" />
