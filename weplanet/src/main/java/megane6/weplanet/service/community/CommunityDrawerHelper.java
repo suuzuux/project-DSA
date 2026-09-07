@@ -10,17 +10,31 @@ import java.util.Set;
 
 /**
  * 햄버거(드로어) 커뮤니티 목록.
- * - 가입 커뮤니티: community_members 기준
- * - 다른 커뮤니티(아티스트): 본인 제외 전체 (가입과 중복 가능)
+ * <ul>
+ *   <li>비로그인: 모든 커뮤니티</li>
+ *   <li>로그인(팬 등): 가입한 커뮤니티(상단) + 모든 커뮤니티(하단, 중복 허용)</li>
+ *   <li>아티스트: 본인 커뮤니티(상단) + 모든 커뮤니티(하단, 중복 허용)</li>
+ * </ul>
  */
 @Component
 public class CommunityDrawerHelper {
 
-	/** 실제로 가입한 커뮤니티 */
+	/**
+	 * 드로어 상단.
+	 * 아티스트 = 본인 커뮤니티, 그 외 로그인 = community_members 가입 목록.
+	 */
 	public List<ArtistCardView> joined(User viewer,
 									   List<ArtistCardView> allArtists,
 									   Set<Long> joinedArtistIds) {
-		if (viewer == null || joinedArtistIds == null || joinedArtistIds.isEmpty()) {
+		if (viewer == null || allArtists == null || allArtists.isEmpty()) {
+			return List.of();
+		}
+		if (viewer.getRole() == Role.ARTIST) {
+			return allArtists.stream()
+					.filter(a -> a.id().equals(viewer.getId()))
+					.toList();
+		}
+		if (joinedArtistIds == null || joinedArtistIds.isEmpty()) {
 			return List.of();
 		}
 		return allArtists.stream()
@@ -28,27 +42,19 @@ public class CommunityDrawerHelper {
 				.toList();
 	}
 
-	/** 아티스트용 타 커뮤니티(본인 제외). 팬/기타는 빈 목록 */
+	/** 드로어 하단(및 비로그인 전체): 모든 커뮤니티 */
 	public List<ArtistCardView> otherCommunities(User viewer, List<ArtistCardView> allArtists) {
-		if (viewer == null || viewer.getRole() != Role.ARTIST) {
+		if (allArtists == null || allArtists.isEmpty()) {
 			return List.of();
 		}
-		return allArtists.stream()
-				.filter(a -> !a.id().equals(viewer.getId()))
-				.toList();
+		return List.copyOf(allArtists);
 	}
 
-	/** 하위 호환: 아티스트는 타 커뮤니티, 팬은 가입 목록 */
+	/** @deprecated {@link #joined} / {@link #otherCommunities} 조합을 사용 */
 	@Deprecated
 	public List<ArtistCardView> forViewer(User viewer,
 										  List<ArtistCardView> allArtists,
 										  Set<Long> joinedArtistIds) {
-		if (viewer == null) {
-			return List.of();
-		}
-		if (viewer.getRole() == Role.ARTIST) {
-			return otherCommunities(viewer, allArtists);
-		}
 		return joined(viewer, allArtists, joinedArtistIds);
 	}
 }

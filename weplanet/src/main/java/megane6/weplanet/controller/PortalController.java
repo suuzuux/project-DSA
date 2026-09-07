@@ -6,7 +6,6 @@ import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
-import megane6.weplanet.domain.entity.portal.ArtistProfile;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -47,7 +46,6 @@ public class PortalController {
 	private final ReportRepository reportRepository;
 	private final CommentReportRepository commentReportRepository;
 	private final ArtistBlockService artistBlockService;
-	private final megane6.weplanet.service.calendar.ArtistAttendanceService artistAttendanceService;
 	private final CommunityJoinService communityJoinService;
 
 	@GetMapping("/login")
@@ -59,16 +57,38 @@ public class PortalController {
 		return RoleHomeRedirects.redirectFor(principal);
 	}
 
+	@GetMapping("/select-artist")
+	public String selectArtist(@RequestParam Long artistId,
+							   @RequestParam(defaultValue = "dashboard") String next,
+							   @AuthenticationPrincipal AuthenticatedUser principal,
+							   HttpSession session) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
+			return artistRedirect(principal);
+		}
+		User artist = resolveManagedArtist(actor, artistId, session);
+		if (artist == null) {
+			return "redirect:/portal/dashboard";
+		}
+		return switch (next) {
+			case "notices" -> "redirect:/portal/notices";
+			case "schedule" -> "redirect:/portal/schedule";
+			case "media" -> "redirect:/portal/media";
+			case "profile" -> "redirect:/portal/profile";
+			case "reports" -> "redirect:/portal/reports";
+			default -> "redirect:/portal/dashboard";
+		};
+	}
+
 	@GetMapping("/dashboard")
 	public String dashboard(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		String redirect = prepareArtistPage(principal, model, "dashboard");
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
-		User actor = currentPortalUser(principal);
-		if (actor != null && actor.getRole() == Role.ARTIST) {
-			artistAttendanceService.recordVisitIfArtist(actor);
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			return "portal/dashboard";
 		}
 		model.addAttribute("membershipCount", portalManagementService.countMemberships(artist));
 		model.addAttribute("noticeCount", portalManagementService.countNotices(artist));
@@ -86,8 +106,10 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
-		model.addAttribute("notices", portalManagementService.getNotices(artist));
+		User artist = artistFromModel(model);
+		model.addAttribute("notices", artist != null
+				? portalManagementService.getNotices(artist)
+				: List.of());
 		return "portal/notices";
 	}
 
@@ -97,7 +119,11 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		model.addAttribute("pinnedCount", portalManagementService.countPinned(currentArtist(principal)));
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			return "redirect:/portal/dashboard";
+		}
+		model.addAttribute("pinnedCount", portalManagementService.countPinned(artist));
 		model.addAttribute("maxPinned", PortalManagementService.MAX_PINNED);
 		return "portal/notice-form";
 	}
@@ -110,7 +136,10 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			return "redirect:/portal/dashboard";
+		}
 		model.addAttribute("notice", portalManagementService.getNotice(artist, noticeId));
 		model.addAttribute("pinnedCount", portalManagementService.countPinned(artist));
 		model.addAttribute("maxPinned", PortalManagementService.MAX_PINNED);
@@ -199,14 +228,16 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = (User) model.getAttribute("artist");
+		User artist = artistFromModel(model);
 		YearMonth selectedMonth = parseMonth(month);
 		model.addAttribute("selectedMonth", selectedMonth);
 		model.addAttribute("prevMonth", selectedMonth.minusMonths(1));
 		model.addAttribute("nextMonth", selectedMonth.plusMonths(1));
-		model.addAttribute("calendarDays", portalManagementService.getMonthGrid(artist, selectedMonth));
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
 		model.addAttribute("currentMonth", YearMonth.now());
+		if (artist != null) {
+			model.addAttribute("calendarDays", portalManagementService.getMonthGrid(artist, selectedMonth));
+		}
 		return "portal/calendar/schedule";
 	}
 
@@ -301,15 +332,23 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
-		model.addAttribute("mediaList", boardMediaService.list(artist.getId()));
+		User artist = artistFromModel(model);
+		model.addAttribute("mediaList", artist != null
+				? boardMediaService.list(artist.getId())
+				: List.of());
 		return "portal/media";
 	}
 
 	@GetMapping("/media/new")
 	public String newMedia(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		String redirect = prepareArtistPage(principal, model, "media");
-		return redirect != null ? redirect : "portal/media-form";
+		if (redirect != null) {
+			return redirect;
+		}
+		if (artistFromModel(model) == null) {
+			return "redirect:/portal/dashboard";
+		}
+		return "portal/media-form";
 	}
 
 	@PostMapping("/media")
@@ -348,7 +387,10 @@ public class PortalController {
 	@GetMapping("/profile")
 	public String profile(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		String redirect = prepareArtistPage(principal, model, "profile");
-		return redirect != null ? redirect : "portal/profile";
+		if (redirect != null) {
+			return redirect;
+		}
+		return "portal/profile";
 	}
 
 	@PostMapping("/profile")
@@ -378,7 +420,14 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			model.addAttribute("postReports", List.of());
+			model.addAttribute("commentReports", List.of());
+			model.addAttribute("authorNicknames", Map.of());
+			model.addAttribute("blocks", List.of());
+			return "portal/reports";
+		}
 		List<Report> postReports = reportRepository.findByPost_ArtistOrderByCreatedAtDesc(artist);
 		List<CommentReport> commentReports = commentReportRepository.findByComment_Post_ArtistOrderByCreatedAtDesc(artist);
 
@@ -458,9 +507,6 @@ public class PortalController {
 		}
 		HttpSession activeSession = session != null ? session : currentSession(true);
 		User artist = resolveManagedArtist(actor, artistId, activeSession);
-		if (artist == null) {
-			artist = actor;
-		}
 		populateCommon(model, actor, artist, activeMenu);
 		return null;
 	}
@@ -471,6 +517,11 @@ public class PortalController {
 			return null;
 		}
 		return resolveManagedArtist(actor, null, currentSession(false));
+	}
+
+	private User artistFromModel(Model model) {
+		Object artist = model.getAttribute("artist");
+		return artist instanceof User user ? user : null;
 	}
 
 	private HttpSession currentSession(boolean create) {
@@ -490,15 +541,27 @@ public class PortalController {
 				.orElse(null);
 	}
 
+	/** 에이전시 계정에 연결된 소속사 소속 아티스트만 반환. */
+	private List<User> managedArtistsOf(User actor) {
+		if (actor == null || actor.getRole() != Role.AGENCY) {
+			return List.of();
+		}
+		Long agencyId = actor.agencyId();
+		if (agencyId == null) {
+			return List.of();
+		}
+		return userRepository.findByRoleAndAgency_Id(Role.ARTIST, agencyId);
+	}
+
 	private User resolveManagedArtist(User actor, Long artistId, HttpSession session) {
 		if (actor == null) {
 			return null;
 		}
-		if (actor.getRole() == Role.ARTIST) {
-			return actor;
-		}
-		List<User> artists = userRepository.findByRole(Role.ARTIST);
+		List<User> artists = managedArtistsOf(actor);
 		if (artists.isEmpty()) {
+			if (session != null) {
+				session.removeAttribute(SESSION_ARTIST);
+			}
 			return null;
 		}
 		Long selected = artistId;
@@ -510,13 +573,20 @@ public class PortalController {
 				selected = number.longValue();
 			}
 		}
+		if (selected == null) {
+			return null;
+		}
 		final Long selectedId = selected;
 		User found = artists.stream()
-				.filter(item -> selectedId != null && item.getId().equals(selectedId))
+				.filter(item -> item.getId().equals(selectedId))
 				.findFirst()
-				.orElse(artists.get(0));
+				.orElse(null);
 		if (session != null) {
-			session.setAttribute(SESSION_ARTIST, found.getId());
+			if (found != null) {
+				session.setAttribute(SESSION_ARTIST, found.getId());
+			} else {
+				session.removeAttribute(SESSION_ARTIST);
+			}
 		}
 		return found;
 	}
@@ -526,15 +596,14 @@ public class PortalController {
 	}
 
 	private void populateCommon(Model model, User actor, User artist, String activeMenu) {
-		ArtistProfile profile = portalManagementService.getOrCreateProfile(artist);
+		List<User> managedArtists = managedArtistsOf(actor);
 		model.addAttribute("actor", actor);
 		model.addAttribute("artist", artist);
-		model.addAttribute("artistProfile", profile);
+		model.addAttribute("artistSelected", artist != null);
+		model.addAttribute("artistProfile", artist != null ? portalManagementService.getOrCreateProfile(artist) : null);
 		model.addAttribute("activeMenu", activeMenu);
-		model.addAttribute("isAgency", actor.getRole() == Role.AGENCY);
-		model.addAttribute("managedArtists", actor.getRole() == Role.AGENCY
-				? userRepository.findByRole(Role.ARTIST)
-				: List.of(artist));
+		model.addAttribute("isAgency", true);
+		model.addAttribute("managedArtists", managedArtists);
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
 	}
 
@@ -571,9 +640,5 @@ public class PortalController {
 	/** 포털(관리) 화면은 에이전시 전용. 아티스트는 메인 홈만 사용. */
 	private boolean isPortalUser(AuthenticatedUser principal) {
 		return "ROLE_AGENCY".equals(principal.getRoleName());
-	}
-
-	private boolean isArtist(AuthenticatedUser principal) {
-		return "ROLE_ARTIST".equals(principal.getRoleName());
 	}
 }
