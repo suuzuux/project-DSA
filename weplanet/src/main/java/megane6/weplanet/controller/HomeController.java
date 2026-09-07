@@ -39,6 +39,7 @@ public class HomeController {
 	private final FollowService followService;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
+	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final ArtistAttendanceService artistAttendanceService;
 	
 	@GetMapping({"", "/"})
@@ -55,21 +56,20 @@ public class HomeController {
 		
 		Map<Long, CommunityProfile> joinedProfiles;
 		Set<Long> joinedArtistIds;
+		User viewer = null;
 		if (principal != null) {
-			User fan = userResolver.resolve(principal, 1L);
-			joinedProfiles = communityJoinService.joinedProfilesByArtistId(fan);
-			joinedArtistIds = communityJoinService.joinedArtistIds(fan);
+			viewer = userResolver.resolve(principal, 1L);
+			joinedProfiles = communityJoinService.joinedProfilesByArtistId(viewer);
+			joinedArtistIds = communityJoinService.joinedArtistIds(viewer);
 		} else {
 			joinedProfiles = Collections.emptyMap();
 			joinedArtistIds = Collections.emptySet();
 		}
 		model.addAttribute("joinedProfiles", joinedProfiles);
 		
-		// 드로어 메뉴 "커뮤니티 바로가기" - 전체 아티스트가 아니라 실제로 가입한 커뮤니티만 보여주기 위한 목록
-		List<ArtistCardView> joinedArtists = artists.stream()
-				.filter(a -> joinedArtistIds.contains(a.id()))
-				.toList();
-		model.addAttribute("joinedArtists", joinedArtists);
+		// 팬 = 가입 커뮤니티, 아티스트 = 타 커뮤니티(본인 제외)
+		model.addAttribute("joinedArtists",
+				communityDrawerHelper.forViewer(viewer, artists, joinedArtistIds));
 		
 		// 급상승 커뮤니티 카드의 가입자 수는 Follow가 아니라 실제 CommunityMember 기준
 		List<RisingCommunityCardView> risingCommunities = artistUsers.stream()

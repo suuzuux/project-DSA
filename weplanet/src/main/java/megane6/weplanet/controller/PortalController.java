@@ -11,6 +11,7 @@ import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.security.RoleHomeRedirects;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.ArtistBlockService;
@@ -54,10 +55,8 @@ public class PortalController {
 		if (principal == null) {
 			return "portal/login";
 		}
-		if (isPortalUser(principal)) {
-			return "redirect:/portal/dashboard";
-		}
-		return "redirect:/";
+		// 에이전시만 포털 홈, 아티스트/팬/관리자는 각자 기본 홈으로
+		return RoleHomeRedirects.redirectFor(principal);
 	}
 
 	@GetMapping("/dashboard")
@@ -487,7 +486,7 @@ public class PortalController {
 			return null;
 		}
 		return userRepository.findById(principal.getId())
-				.filter(user -> user.getRole() == Role.ARTIST || user.getRole() == Role.AGENCY)
+				.filter(user -> user.getRole() == Role.AGENCY)
 				.orElse(null);
 	}
 
@@ -569,8 +568,9 @@ public class PortalController {
 		}
 	}
 
+	/** 포털(관리) 화면은 에이전시 전용. 아티스트는 메인 홈만 사용. */
 	private boolean isPortalUser(AuthenticatedUser principal) {
-		return "ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_AGENCY".equals(principal.getRoleName());
+		return "ROLE_AGENCY".equals(principal.getRoleName());
 	}
 
 	private boolean isArtist(AuthenticatedUser principal) {
