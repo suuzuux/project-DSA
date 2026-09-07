@@ -28,10 +28,7 @@
          onclick="alert('아티스트 권한 - 준비 중'); return false;">
         🎤 아티스트 권한
       </a>
-      <a href="#"
-         onclick="alert('전체 회원 - 준비 중'); return false;">
-        👥 전체 회원
-      </a>
+      <a th:href="@{/admin/users}">👥 전체 회원</a>
       <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
       <a th:href="@{/admin/notices}">📢 전체 공지</a>
       <a class="is-active"
