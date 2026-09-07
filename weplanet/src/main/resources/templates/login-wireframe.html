@@ -1,15 +1,14 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- [와이어프레임] 로그인 방법 선택 -->
   <title>WePlaNet – 로그인</title>
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body class="auth-page">
   <div class="auth-card">
-    <a class="auth-card__back" href="index.html">← 뒤로</a>
+    <a class="auth-card__back" href="/">← 뒤로</a>
     <div class="flex-between mb-16">
       <span></span>
       <button type="button" class="icon-btn" aria-label="언어">🌐</button>
@@ -18,20 +17,32 @@
     <h1 class="auth-card__title">가장 편한 방법으로<br />위플래닛에<br />로그인하세요!</h1>
     <p class="auth-card__brand">We<span>Pla</span>Net</p>
 
+    <p th:if="${param.socialNotFound}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      가입된 계정이 없습니다. 먼저 회원가입을 진행해주세요.
+    </p>
+
+    <p th:if="${param.sessionExpired}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      세션이 만료되었습니다. 다시 로그인해주세요.
+    </p>
+
     <div class="stack">
-      <button type="button" class="btn btn--sns" onclick="location.href='home.html'">
+      <a class="btn btn--sns" href="/social-login/google/login">
         <span class="sns-icon sns-icon--google">G</span> Google로 로그인하기
-      </button>
-      <button type="button" class="btn btn--sns" onclick="location.href='home.html'">
+      </a>
+      <a class="btn btn--sns" href="/social-login/kakao/login">
         <span class="sns-icon sns-icon--kakao">K</span> Kakao로 로그인하기
-      </button>
-      <button type="button" class="btn btn--sns" onclick="location.href='home.html'">
+      </a>
+      <a class="btn btn--sns" href="/social-login/line/login">
         <span class="sns-icon sns-icon--line">L</span> LINE으로 로그인하기
-      </button>
+      </a>
     </div>
 
     <div class="auth-divider">또는</div>
-    <a class="btn btn--primary btn--block btn--lg" href="login-id.html">아이디로 로그인하기</a>
+    <a class="btn btn--primary btn--block btn--lg" href="/login/id">아이디로 로그인하기</a>
+    <p class="text-sm text-muted" style="margin-top:20px;text-align:center;">
+      아직 계정이 없으신가요?
+      <a th:href="@{/signup}" style="color:var(--wp-brand);font-weight:600;">회원가입</a>
+    </p>
   </div>
 </body>
 </html>

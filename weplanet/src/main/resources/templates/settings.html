@@ -50,6 +50,13 @@
           <p class="text-xs text-muted mt-8">
             <span th:text="${#temporals.format(user.createdAt, 'yyyy.MM.dd')}">2022.01.18</span> 가입 · 아이디 <span th:text="${user.username}">abcd1234</span>
           </p>
+          <!-- 아이디/비밀번호로 가입한 일반 계정인지, 구글 등 소셜 계정과 연동된 계정인지 한눈에 구분할 수 있게 표시.
+               이메일 수정 가능 여부가 이 값에 따라 갈리므로(위 수정 모달 참고), 여기서도 같이 보여준다. -->
+          <span th:if="${user.provider.name() == 'LOCAL'}" class="tag mt-8"
+                style="background:var(--wp-brand-soft);color:var(--wp-brand-dark);">일반 계정 (아이디/비밀번호)</span>
+          <span th:unless="${user.provider.name() == 'LOCAL'}" class="tag mt-8"
+                style="background:#eaf3ff;color:#2563eb;"
+                th:text="${user.provider.name() + ' 계정과 연동됨'}">GOOGLE 계정과 연동됨</span>
         </div>
       </div>
       <button type="button" class="btn btn--primary btn--sm" data-modal-open="editProfileModal">수정</button>
@@ -157,10 +164,16 @@
         <label class="form-label">이메일</label>
         <div class="form-row">
           <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
-          <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
+          <button th:unless="${user.provider.emailManagedExternally()}" type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
         </div>
         <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
-        <p class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+        <!-- 구글처럼 검증된 이메일을 그대로 내려주는 provider(AuthProvider.emailManagedExternally())만 여기서 이메일을 못 바꾼다
+             (임의로 바꾸면 "이메일로 기존 계정 찾기/연동" 로직이 깨짐). 카카오/LINE은 애초에 실제 이메일을 안 주고
+             placeholder(예: kakao_숫자@kakao.weplanet.local)만 생성되므로, LOCAL 계정처럼 직접 입력해서 바꿀 수 있어야 한다.
+             SettingsController.sendEmailChangeCode / UserService.updatePortalAccount 참고 -->
+        <p th:unless="${user.provider.emailManagedExternally()}" class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+        <p th:if="${user.provider.emailManagedExternally()}" class="form-hint"
+           th:text="${user.provider.name() + ' 계정과 연동된 회원은 이메일을 변경할 수 없습니다.'}">소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.</p>
 
         <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
           <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
@@ -288,6 +301,11 @@
           emailEditBtn.dataset.mode = "edit";
           emailCodeRow.style.display = "none";
           stopEmailTimer();
+        }
+
+        if (!emailEditBtn) {
+          // 소셜 계정과 연동된 회원 - 이메일 수정 버튼 자체가 화면에 없으니(settings.html의 th:if) 관련 이벤트도 안 붙인다.
+          return;
         }
 
         emailEditBtn.addEventListener("click", function () {
