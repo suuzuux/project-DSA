@@ -14,6 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@EqualsAndHashCode(of = "id")
 @Slf4j
 public class AuthenticatedUser implements UserDetails {
 	
