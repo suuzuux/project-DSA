@@ -1,6 +1,7 @@
 package megane6.weplanet.repository;
 
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -84,6 +85,21 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("status") UserStatus status,
             @Param("provider") AuthProvider provider,
             @Param("keyword") String keyword
+    );
+
+    @Query("""
+        select user
+        from User user
+        left join fetch user.agency agency
+        where user.role = :role
+          and (:userStatus is null or user.status = :userStatus)
+          and (:agencyStatus is null or agency.status = :agencyStatus)
+        order by user.createdAt desc, user.id desc
+        """)
+    List<User> searchArtistsForAdmin(
+            @Param("role") Role role,
+            @Param("userStatus") UserStatus userStatus,
+            @Param("agencyStatus") AgencyStatus agencyStatus
     );
     
     long countByRoleAndStatus(Role role, UserStatus status);
