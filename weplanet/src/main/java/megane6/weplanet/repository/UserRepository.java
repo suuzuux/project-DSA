@@ -36,15 +36,19 @@ public interface UserRepository extends JpaRepository<User, Long> {
         select user
         from User user
         where user.role = :role
+          and (:status is null or user.status = :status)
           and (
               :keyword is null
-              or lower(user.nickname) like lower(concat('%', :keyword, '%'))
-              or lower(user.username) like lower(concat('%', :keyword, '%'))
+              or lower(user.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.username)
+                    like lower(concat('%', :keyword, '%'))
           )
         order by user.nickname asc
         """)
     List<User> searchByRole(
             @Param("role") Role role,
+            @Param("status") UserStatus status,
             @Param("keyword") String keyword
     );
 }
