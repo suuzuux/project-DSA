@@ -5,9 +5,7 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.admin.AdminAgencyPermissionResponse;
 import megane6.weplanet.domain.entity.AgencyProfile;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
-import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.AgencyProfileRepository;
 import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -24,6 +22,7 @@ public class AdminAgencyPermissionService {
 	private final AgencyProfileRepository apr;
 	private final AgencyRepository ar;
 	private final UserRepository ur;
+	private final AdminActionLogService actionLogService;
 	
 	public List<AdminAgencyPermissionResponse> getPermissions(
 			Boolean approved,
@@ -50,20 +49,48 @@ public class AdminAgencyPermissionService {
 	}
 	
 	@Transactional
-	public void approvePermission(Long userId, Long adminId) {
+	public void approvePermission(
+			Long userId,
+			Long adminId,
+			String ipAddress
+	) {
 		User admin = requireAdmin(adminId);
 		AgencyProfile profile = requireProfile(userId);
-		validateApprovalTarget(profile);
 		
+		validateApprovalTarget(profile);
 		profile.approve(admin);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.AGENCY_PERMISSION_APPROVE,
+				AdminTargetType.AGENCY_PERMISSION,
+				userId,
+				profile.getUser().getNickname()
+						+ " 소속사 권한 승인",
+				ipAddress
+		);
 	}
 	
 	@Transactional
-	public void revokePermission(Long userId, Long adminId) {
+	public void revokePermission(
+			Long userId,
+			Long adminId,
+			String ipAddress
+	) {
 		User admin = requireAdmin(adminId);
 		AgencyProfile profile = requireProfile(userId);
 		
 		profile.revokeApproval(admin);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.AGENCY_PERMISSION_REVOKE,
+				AdminTargetType.AGENCY_PERMISSION,
+				userId,
+				profile.getUser().getNickname()
+						+ " 소속사 권한 승인 취소",
+				ipAddress
+		);
 	}
 	
 	private void validateApprovalTarget(AgencyProfile profile) {

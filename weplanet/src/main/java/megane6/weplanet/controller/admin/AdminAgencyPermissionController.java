@@ -1,5 +1,6 @@
 package megane6.weplanet.controller.admin;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -50,10 +51,11 @@ public class AdminAgencyPermissionController {
 						  @RequestParam(required = false) String userStatus,
 						  @RequestParam(required = false) String agencyStatus,
 						  @RequestParam(required = false) String keyword,
+						  HttpServletRequest request,
 						  @AuthenticationPrincipal AuthenticatedUser principal,
 						  RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
-		handle(() -> service.approvePermission(userId, principal.getId()),
+		handle(() -> service.approvePermission(userId, principal.getId(), request.getRemoteAddr()),
 				"소속사 권한을 승인했습니다.", redirectAttributes);
 		addFilters(approval, userStatus, agencyStatus, keyword, redirectAttributes);
 		
@@ -66,10 +68,11 @@ public class AdminAgencyPermissionController {
 						 @RequestParam(required = false) String userStatus,
 						 @RequestParam(required = false) String agencyStatus,
 						 @RequestParam(required = false) String keyword,
+						 HttpServletRequest request,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
 						 RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
-		handle(() -> service.revokePermission(userId, principal.getId()),
+		handle(() -> service.revokePermission(userId, principal.getId(), request.getRemoteAddr()),
 				"소속사 권한 승인을 취소했습니다.", redirectAttributes);
 		addFilters(approval, userStatus, agencyStatus, keyword, redirectAttributes);
 		
