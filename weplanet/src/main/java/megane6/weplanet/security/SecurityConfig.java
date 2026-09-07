@@ -35,6 +35,7 @@ public class SecurityConfig {
             "/login",
             "/login/id",
             "/portal/login",
+            "/admin/login",
             "/api/schedules",
             "/api/notifications",
             "/api/artists",
@@ -103,6 +104,10 @@ public class SecurityConfig {
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {
         return (request, response, exception) -> {
+            if ("true".equals(request.getParameter("adminLogin"))) {
+                response.sendRedirect("/admin/login?error");
+                return;
+            }
             if ("true".equals(request.getParameter("portalLogin"))) {
                 response.sendRedirect("/portal/login?error");
                 return;

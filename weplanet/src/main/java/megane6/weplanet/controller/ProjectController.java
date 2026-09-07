@@ -15,6 +15,8 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.ProjectService;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityDrawerHelper;
 import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -25,6 +27,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Controller
@@ -35,6 +38,8 @@ public class ProjectController {
 	private final UserRepository ur;
 	private final CommunityJoinService cjs;
 	private final MembershipService ms;
+	private final ArtistAttendanceService artistAttendanceService;
+	private final CommunityDrawerHelper communityDrawerHelper;
 
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -49,8 +54,13 @@ public class ProjectController {
 
 		User currentUser = ur.findById(principal.getId())
 				.orElseThrow(() -> new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+
+		boolean isOwnCommunity = currentUser.getId().equals(artistId);
+		if (isOwnCommunity && currentUser.getRole() == Role.ARTIST) {
+			return "redirect:/community/" + artistId + "/fan";
+		}
 		
-		if (currentUser.getRole() == Role.FAN
+		if ((currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST)
 				&& !cjs.isJoined(currentUser, artistId)) {
 			
 			addMembershipGateModel(artistId, currentUser, model);
@@ -80,8 +90,13 @@ public class ProjectController {
 		User currentUser = ur.findById(principal.getId())
 				.orElseThrow(() ->
 						new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+
+		boolean isOwnCommunity = currentUser.getId().equals(artistId);
+		if (isOwnCommunity && currentUser.getRole() == Role.ARTIST) {
+			return "redirect:/community/" + artistId + "/fan";
+		}
 		
-		if (currentUser.getRole() == Role.FAN
+		if ((currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST)
 				&& !cjs.isJoined(currentUser, artistId)) {
 			
 			addMembershipGateModel(artistId, currentUser, model);
@@ -196,7 +211,7 @@ public class ProjectController {
 		User currentUser = ur.findById(viewer.getId()).orElseThrow(() ->
 				new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
 
-		if (currentUser.getRole() == Role.FAN) {
+		if (currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST) {
 			model.addAttribute("registeredEmail", currentUser.getEmail());
 			model.addAttribute("accountHolderName", currentUser.getRealName());
 		}
@@ -241,20 +256,23 @@ public class ProjectController {
 			List<ArtistCardView> artists,
 			Model model
 	) {
-		Map<Long, CommunityProfile> joinedProfiles =
-				currentUser.getRole() == Role.FAN
-				? cjs.joinedProfilesByArtistId(currentUser) : Map.of();
-		
-		List<ArtistCardView> joinedArtists = artists.stream()
-				.filter(item -> joinedProfiles.containsKey(item.id()))
-				.toList();
-		
+		boolean isOwnCommunity = currentUser.getId().equals(artist.getId());
+		model.addAttribute("isOwnCommunity", isOwnCommunity);
+
+		Map<Long, CommunityProfile> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
+		Set<Long> joinedArtistIds = cjs.joinedArtistIds(currentUser);
+
+		List<ArtistCardView> joinedArtists = communityDrawerHelper.joined(currentUser, artists, joinedArtistIds);
+		List<ArtistCardView> otherCommunities = communityDrawerHelper.otherCommunities(currentUser, artists);
+
 		model.addAttribute("joinedArtists", joinedArtists);
-		model.addAttribute("communityJoined", joinedProfiles.containsKey(artist.getId()));
+		model.addAttribute("otherCommunities", otherCommunities);
+		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artist.getId()));
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artist.getId()));
 		model.addAttribute("membershipActive", false);
+		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
 
-		if (currentUser.getRole() == Role.FAN) {
+		if (currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST) {
 			ms.getMembership(currentUser, artist).ifPresent(membership -> {
 				model.addAttribute("membershipActive", !membership.isExpired());
 				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());

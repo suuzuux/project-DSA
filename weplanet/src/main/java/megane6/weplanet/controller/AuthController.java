@@ -3,9 +3,12 @@ package megane6.weplanet.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.SignupRequestDto;
+import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.security.RoleHomeRedirects;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.util.NicknameGenerator;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -95,12 +98,18 @@ public class AuthController {
 	
 	// 로그인 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택하는 목업 화면)
 	@GetMapping("/login")
-	public String loginEntry() {
+	public String loginEntry(@AuthenticationPrincipal AuthenticatedUser principal) {
+		if (principal != null) {
+			return RoleHomeRedirects.redirectFor(principal);
+		}
 		return "login-wireframe";
 	}
 	
 	@GetMapping("/login/id")
-	public String loginForm() {
+	public String loginForm(@AuthenticationPrincipal AuthenticatedUser principal) {
+		if (principal != null) {
+			return RoleHomeRedirects.redirectFor(principal);
+		}
 		return "login-id";
 	}
 }

@@ -144,7 +144,9 @@
   </main>
 
   <script th:inline="javascript">
-    window.__WEPLANET_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+    window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+    window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
+    window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
