@@ -141,7 +141,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Object handleUploadTooLarge(MaxUploadSizeExceededException e, HttpServletRequest request) {
         log.warn("업로드 용량 초과: {}", request.getRequestURI());
-        return respond(request, HttpStatus.PAYLOAD_TOO_LARGE, "첨부파일 용량이 너무 큽니다.");
+        return respond(request, HttpStatus.CONTENT_TOO_LARGE, "첨부파일 용량이 너무 큽니다.");
     }
 
     /**
