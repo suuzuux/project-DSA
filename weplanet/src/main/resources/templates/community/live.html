@@ -8,7 +8,6 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
@@ -25,20 +24,32 @@
     <div class="community-main">
       <nav th:replace="~{community/fragments/layout :: tabs('live')}"></nav>
 
-      <div class="board-toolbar">
-        <h2 class="section__title" style="margin:0;">Live Replay</h2>
-        <div class="flex-center">
-          <select class="form-select" style="width:auto;min-height:36px;">
-            <option>최신순</option>
-            <option>오래된 순</option>
-          </select>
-          <select class="form-select" style="width:auto;min-height:36px;">
-            <option>전체 연도</option>
-          </select>
+      <div id="community-live"
+           th:attr="data-artist-id=${artist.id()},
+                    data-user-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+        <div id="live-empty" class="live-empty">
+          <p class="text-muted" style="padding:24px 0;">현재 진행 중인 라이브가 없습니다.</p>
+        </div>
+
+        <div id="live-onair" hidden>
+          <div class="live-now">LIVE 방송 중입니다</div>
+          <div class="live-watch">
+            <section class="live-watch__stage">
+              <video id="live-player" autoplay playsinline></video>
+              <button type="button" id="live-unmute-btn" class="btn btn--primary btn--sm live-watch__unmute" hidden>소리 켜기</button>
+            </section>
+            <aside class="live-watch__chat">
+              <h2 class="live-watch__chat-title">실시간 댓글</h2>
+              <div id="live-comments" class="live-watch__comments" aria-live="polite"></div>
+              <form id="live-comment-form" class="live-watch__composer">
+                <input id="live-comment-input" class="form-input" type="text" maxlength="500"
+                       placeholder="댓글을 입력하세요" autocomplete="off" />
+                <button type="submit" class="btn btn--primary">보내기</button>
+              </form>
+            </aside>
+          </div>
         </div>
       </div>
-
-      <p class="text-muted" style="padding:24px 0;">표시할 라이브가 없습니다.</p>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
@@ -47,5 +58,6 @@
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/dm-realtime.js}"></script>
+  <script th:src="@{/js/community-live.js}"></script>
 </body>
 </html>

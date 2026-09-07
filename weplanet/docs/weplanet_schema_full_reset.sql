@@ -25,6 +25,11 @@
 --   asd123          FAN     빛나는여우135
 --   qatest99        FAN     QA테스터
 --   aifan_bot       FAN     AI팬봇
+--   aifan_mina      FAN     별빛민아   (아티스트 DM 가상 팬)
+--   aifan_hayul     FAN     하율짱
+--   aifan_haerin    FAN     달콤해린
+--   aifan_jun       FAN     우주준
+--   aifan_yuna      FAN     햇살유나
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS `weplanet` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -49,6 +54,8 @@ DROP TABLE IF EXISTS `email_verification`;
 DROP TABLE IF EXISTS `fan_badge_ownership`;
 DROP TABLE IF EXISTS `chat_quota`;
 DROP TABLE IF EXISTS `chat_message`;
+DROP TABLE IF EXISTS `live_comment`;
+DROP TABLE IF EXISTS `live_session`;
 DROP TABLE IF EXISTS `shop_cart_item`;
 DROP TABLE IF EXISTS `board_media_like`;
 DROP TABLE IF EXISTS `board_media_files`;
@@ -372,6 +379,35 @@ CREATE TABLE `portal_notice` (
   KEY `idx_portal_notice_artist_pinned` (`artist_id`, `pinned`, `pin_order`),
   CONSTRAINT `fk_portal_notice_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 커뮤니티 공지';
+
+-- live_session: 아티스트 라이브 방송 세션 (아티스트당 LIVE 1개)
+CREATE TABLE `live_session` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 세션 PK',
+  `artist_id` bigint NOT NULL COMMENT '방송 아티스트(users.id)',
+  `host_id` bigint NOT NULL COMMENT '송출 호스트(아티스트 또는 에이전시 users.id)',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'LIVE / ENDED',
+  `started_at` datetime(6) NOT NULL COMMENT '방송 시작 시각',
+  `ended_at` datetime(6) DEFAULT NULL COMMENT '방송 종료 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_live_session_artist_status` (`artist_id`, `status`),
+  KEY `fk_live_session_host` (`host_id`),
+  CONSTRAINT `fk_live_session_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_live_session_host` FOREIGN KEY (`host_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 라이브 방송 세션';
+
+-- live_comment: 라이브 방송 중 실시간 댓글
+CREATE TABLE `live_comment` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 댓글 PK',
+  `session_id` bigint NOT NULL COMMENT 'live_session.id',
+  `author_id` bigint NOT NULL COMMENT '작성자(users.id)',
+  `content` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '댓글 본문',
+  `created_at` datetime(6) NOT NULL COMMENT '작성 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_live_comment_session_created` (`session_id`, `created_at`),
+  KEY `fk_live_comment_author` (`author_id`),
+  CONSTRAINT `fk_live_comment_session` FOREIGN KEY (`session_id`) REFERENCES `live_session` (`id`),
+  CONSTRAINT `fk_live_comment_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 실시간 댓글';
 
 -- site_notice: 홈페이지 관리 공지사항
 CREATE TABLE `site_notice` (
@@ -926,7 +962,12 @@ VALUES
   ('asd123',         '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '김화평',    '빛나는여우135', 'asdojuasdoa@gmail.com',    NOW(6), NOW(6), NOW(6)),
   ('qatest99',       '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            'QA테스터',  'QA테스터',      'qatest99@example.com',     NOW(6), NOW(6), NOW(6)),
   ('admin_test',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ADMIN',  'ACTIVE', NULL,                                                            '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            'AI팬봇',    'AI팬봇',        'aifan_bot@weplanet.test',  NOW(6), NOW(6), NOW(6));
+  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            'AI팬봇',    'AI팬봇',        'aifan_bot@weplanet.test',  NOW(6), NOW(6), NOW(6)),
+  ('aifan_mina',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '별빛민아',  '별빛민아',      'aifan_mina@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_hayul',    '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '하율짱',    '하율짱',        'aifan_hayul@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_haerin',   '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '달콤해린',  '달콤해린',      'aifan_haerin@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_jun',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '우주준',    '우주준',        'aifan_jun@weplanet.test',  NOW(6), NOW(6), NOW(6)),
+  ('aifan_yuna',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '햇살유나',  '햇살유나',      'aifan_yuna@weplanet.test', NOW(6), NOW(6), NOW(6));
 
 -- artist_profiles / artist_groups 등 다른 소속사 참조 컬럼도 같은 소속사로 맞춰줌
 INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
@@ -990,6 +1031,6 @@ WHERE f.username IN ('qatest99', 'asd123')
   AND b.badge_code IN ('BASIC_FIRST_JOIN', 'BASIC_FIRST_POST', 'BASIC_MEDIA_VIEW');
 
 -- ------------------------------------------------------------
--- [확인] 44가 나오면 테이블은 모두 준비된 것입니다.
+-- [확인] 46가 나오면 테이블은 모두 준비된 것입니다.
 -- ------------------------------------------------------------
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();

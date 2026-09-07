@@ -22,6 +22,7 @@ import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.portal.PortalManagementService;
@@ -64,6 +65,7 @@ public class CommunityController {
 	private final CommunityJoinService communityJoinService;
 	private final ArtistAttendanceService artistAttendanceService;
 	private final PortalManagementService portalManagementService;
+	private final LiveBroadcastService liveBroadcastService;
 	
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -293,6 +295,7 @@ public class CommunityController {
 			model.addAttribute("gatedTab", "live");
 			return "community/membership-required";
 		}
+		model.addAttribute("liveStatus", liveBroadcastService.status(artistId));
 		return "community/live";
 	}
 	
