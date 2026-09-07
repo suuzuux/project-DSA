@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.util.List;
 
@@ -100,6 +101,12 @@ public class SecurityConfig {
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessUrl("/")
                 )
+                .sessionManagement(session -> session
+                        .invalidSessionUrl("/login?expired=true")
+                        .maximumSessions(1)
+                        .maxSessionsPreventsLogin(false)
+                        .expiredUrl("/login?duplicateLogin=true")
+                )
                 .addFilterAfter(profileCompletionRequiredFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
@@ -117,5 +124,10 @@ public class SecurityConfig {
             }
             response.sendRedirect("/login?error");
         };
+        
+    }
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
     }
 }
