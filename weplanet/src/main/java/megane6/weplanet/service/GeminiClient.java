@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,15 +50,26 @@ public class GeminiClient {
      * 실패하면 대신 "지금은 이용할 수 없다"는 안내 문구를 돌려줘서 서비스가 멈추지 않게 함.
      */
     public String generate(String prompt) {
+        return generate(prompt, false);
+    }
+
+    // AI 팬 5명의 답장을 한 번에 JSON으로 받을 때 사용
+    public String generateJson(String prompt) {
+        return generate(prompt, true);
+    }
+
+    private String generate(String prompt, boolean jsonResponse) {
         try {
             // Gemini가 요구하는 JSON 형식에 맞춰서 요청 내용을 만듦
-            Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text", prompt)
-                            ))
-                    )
-            );
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("contents", List.of(
+                    Map.of("parts", List.of(
+                            Map.of("text", prompt)
+                    ))
+            ));
+            if (jsonResponse) {
+                requestBody.put("generationConfig", Map.of("responseMimeType", "application/json"));
+            }
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

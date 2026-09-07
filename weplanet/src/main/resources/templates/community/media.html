@@ -47,6 +47,8 @@
               <div class="post-card__meta">
                 <div class="post-card__name">
                   <span th:text="${post.title}">제목</span>
+                  <span class="tag tag--live"
+                        th:if="${post.title != null and #strings.startsWith(post.title, '라이브 다시보기')}">다시보기</span>
                 </div>
                 <div class="post-card__time"
                      th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
@@ -56,16 +58,23 @@
 
             <p class="post-card__body" th:if="${post.content != null and !#strings.isEmpty(post.content)}"
                th:text="${post.content}"></p>
+          </a>
 
-            <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
-              <th:block th:each="file : ${post.files}">
-                <img th:if="${file.mediaType == 'IMAGE'}"
-                     th:src="@{/board/media/file/{id}(id=${file.id})}"
+          <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
+            <th:block th:each="file : ${post.files}">
+              <a th:href="@{/community/{artistId}/media/{mediaId}(artistId=${artist.id()}, mediaId=${post.id})}"
+                 th:if="${file.mediaType == 'IMAGE'}">
+                <img th:src="@{/board/media/file/{id}(id=${file.id})}"
                      th:alt="${file.originalName}"
                      style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;object-fit:cover;margin-bottom:8px;" />
-              </th:block>
-            </div>
-          </a>
+              </a>
+              <video th:if="${file.mediaType == 'VIDEO'}"
+                     th:src="@{/board/media/file/{id}(id=${file.id})}"
+                     preload="metadata"
+                     controls
+                     class="post-card__video"></video>
+            </th:block>
+          </div>
 
           <div class="post-card__actions" style="justify-content:space-between;">
             <span style="display:inline-flex;align-items:center;gap:4px;">

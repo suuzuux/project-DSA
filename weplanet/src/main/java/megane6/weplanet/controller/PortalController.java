@@ -12,6 +12,7 @@ import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
@@ -48,6 +49,7 @@ public class PortalController {
 	private final ArtistBlockService artistBlockService;
 	private final megane6.weplanet.service.calendar.ArtistAttendanceService artistAttendanceService;
 	private final CommunityJoinService communityJoinService;
+	private final LiveBroadcastService liveBroadcastService;
 
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
@@ -79,6 +81,17 @@ public class PortalController {
 		model.addAttribute("latestNotices", portalManagementService.getNotices(artist).stream().limit(5).toList());
 		model.addAttribute("upcomingSchedules", portalManagementService.getSchedules(artist).stream().limit(5).toList());
 		return "portal/dashboard";
+	}
+
+	@GetMapping("/live")
+	public String live(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		String redirect = prepareArtistPage(principal, model, "live");
+		if (redirect != null) {
+			return redirect;
+		}
+		User artist = currentArtist(principal);
+		model.addAttribute("liveStatus", liveBroadcastService.status(artist.getId()));
+		return "portal/live";
 	}
 
 	@GetMapping("/notices")

@@ -39,6 +39,8 @@ public class BoardMediaService {
             "video/mp4", "video/webm", "video/quicktime"
     );
 
+    public static final String LIVE_REPLAY_TITLE_PREFIX = "라이브 다시보기";
+
     // ── 저장(업로드) : 게시글 + 파일 여러 개를 한 번에 저장 ──
     public Long create(Long groupId, Long uploaderId, String title, String content,
                        List<MultipartFile> files) {
@@ -62,7 +64,7 @@ public class BoardMediaService {
                 if (file == null || file.isEmpty()) {
                     continue; // 빈 칸은 건너뜀
                 }
-                String contentType = file.getContentType();
+                String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
                     throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
                 }
@@ -106,7 +108,7 @@ public class BoardMediaService {
                 if (file == null || file.isEmpty()) {
                     continue;
                 }
-                String contentType = file.getContentType();
+                String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
                     throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
                 }
@@ -194,6 +196,45 @@ public class BoardMediaService {
     }
 
     // ── 내부 헬퍼 ──
+    private String resolveContentType(MultipartFile file) {
+        String raw = file.getContentType();
+        if (raw != null) {
+            int separator = raw.indexOf(';');
+            if (separator >= 0) {
+                raw = raw.substring(0, separator).trim();
+            }
+            if (ALLOWED_TYPES.contains(raw)) {
+                return raw;
+            }
+        }
+        String name = file.getOriginalFilename();
+        if (name != null) {
+            String lower = name.toLowerCase();
+            if (lower.endsWith(".webm")) {
+                return "video/webm";
+            }
+            if (lower.endsWith(".mp4")) {
+                return "video/mp4";
+            }
+            if (lower.endsWith(".mov") || lower.endsWith(".qt")) {
+                return "video/quicktime";
+            }
+            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+                return "image/jpeg";
+            }
+            if (lower.endsWith(".png")) {
+                return "image/png";
+            }
+            if (lower.endsWith(".gif")) {
+                return "image/gif";
+            }
+            if (lower.endsWith(".webp")) {
+                return "image/webp";
+            }
+        }
+        return raw;
+    }
+
     private BoardMediaEntity getActivePost(Long id) {
         return boardMediaRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));

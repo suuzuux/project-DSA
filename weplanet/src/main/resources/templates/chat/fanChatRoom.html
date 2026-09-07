@@ -55,7 +55,8 @@
     const fanId = /*[[${fanId}]]*/ 0;
 
     // 웹소켓 연결 시작 (SockJS는 흉내내기용 안전장치, Stomp는 그 위에서 채널 규칙을 관리해주는 도구)
-    const socket = new SockJS('/ws-chat');
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(proto + '//' + location.host + '/ws-chat');
     const stompClient = Stomp.over(socket);
 
     // 채팅 메시지 하나를 화면(messages) 밑에 이어붙이는 함수
