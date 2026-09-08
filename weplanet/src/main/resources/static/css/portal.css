@@ -546,6 +546,7 @@ tr.js-pinned.is-dragging {
   object-fit: cover;
   background: #000;
   display: block;
+  transform: scaleX(-1);
 }
 
 .live-studio__badge {

@@ -845,6 +845,7 @@
   object-fit: contain;
   background: #000;
   display: block;
+  transform: scaleX(-1);
 }
 
 .live-watch__unmute {
