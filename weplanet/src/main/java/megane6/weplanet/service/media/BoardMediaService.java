@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -148,17 +147,34 @@ public class BoardMediaService {
         return toViewDTO(post);
     }
 
+    public static boolean isLiveReplayTitle(String title) {
+        return title != null && title.startsWith(LIVE_REPLAY_TITLE_PREFIX);
+    }
+
     // ── 목록 조회 : 엔티티 → 화면용 DTO 로 변환 ──
     @Transactional(readOnly = true)
     public List<BoardMediaViewDTO> list(Long groupId) {
-        List<BoardMediaEntity> posts =
-                boardMediaRepository.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId);
+        return listEntities(groupId).stream().map(this::toViewDTO).toList();
+    }
 
-        List<BoardMediaViewDTO> result = new ArrayList<>();
-        for (BoardMediaEntity post : posts) {
-            result.add(toViewDTO(post));
-        }
-        return result;
+    @Transactional(readOnly = true)
+    public List<BoardMediaViewDTO> listWithoutLiveReplays(Long groupId) {
+        return listEntities(groupId).stream()
+                .filter(post -> !isLiveReplayTitle(post.getTitle()))
+                .map(this::toViewDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardMediaViewDTO> listLiveReplays(Long groupId) {
+        return listEntities(groupId).stream()
+                .filter(post -> isLiveReplayTitle(post.getTitle()))
+                .map(this::toViewDTO)
+                .toList();
+    }
+
+    private List<BoardMediaEntity> listEntities(Long groupId) {
+        return boardMediaRepository.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId);
     }
 
     // ── 파일 서빙 : 화면에서 이미지/영상을 불러올 때 ──

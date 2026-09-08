@@ -45,6 +45,7 @@ public class LiveRealtimePublisher {
 		payload.put("authorNickname", comment.authorNickname());
 		payload.put("content", comment.content());
 		payload.put("createdAt", comment.createdAt());
+		payload.put("fromArtist", comment.fromArtist());
 		broadcast("/topic/live." + artistId + ".comments", payload);
 	}
 

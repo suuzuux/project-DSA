@@ -9,17 +9,26 @@ public record LiveCommentView(
 		Long authorId,
 		String authorNickname,
 		String content,
-		String createdAt
+		String createdAt,
+		boolean fromArtist,
+		boolean reportedByMe
 ) {
 	private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
-	public static LiveCommentView of(LiveComment comment, String nickname) {
+	public static LiveCommentView of(LiveComment comment, String nickname, Long artistId) {
+		return of(comment, nickname, artistId, false);
+	}
+
+	public static LiveCommentView of(LiveComment comment, String nickname, Long artistId, boolean reportedByMe) {
+		Long authorId = comment.getAuthor().getId();
 		return new LiveCommentView(
 				comment.getId(),
-				comment.getAuthor().getId(),
+				authorId,
 				nickname,
 				comment.getContent(),
-				comment.getCreatedAt() != null ? comment.getCreatedAt().format(ISO) : null
+				comment.getCreatedAt() != null ? comment.getCreatedAt().format(ISO) : null,
+				artistId != null && artistId.equals(authorId),
+				reportedByMe
 		);
 	}
 }

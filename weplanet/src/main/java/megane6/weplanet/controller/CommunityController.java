@@ -263,7 +263,7 @@ public class CommunityController {
 			model.addAttribute("gatedTab", "media");
 			return "community/membership-required";
 		}
-		model.addAttribute("mediaList", boardMediaService.list(artistId));
+		model.addAttribute("mediaList", boardMediaService.listWithoutLiveReplays(artistId));
 		model.addAttribute("groupId", artistId);
 		return "community/media";
 	}
@@ -297,6 +297,7 @@ public class CommunityController {
 			return "community/membership-required";
 		}
 		model.addAttribute("liveStatus", liveBroadcastService.status(artistId));
+		model.addAttribute("liveReplays", boardMediaService.listLiveReplays(artistId));
 		return "community/live";
 	}
 	
@@ -485,6 +486,13 @@ public class CommunityController {
 		if (currentUser.getRole() == Role.ADMIN) {
 			return true;
 		}
+		// 소속 에이전시는 자동 가입과 별도로 즉시 접근 가능
+		if (currentUser.getRole() == Role.AGENCY && currentUser.agencyId() != null) {
+			User artist = userRepository.findOneById(artistId).orElse(null);
+			if (artist != null && currentUser.agencyId().equals(artist.agencyId())) {
+				return true;
+			}
+		}
 		return communityJoinService.isJoined(currentUser, artistId);
 	}
 	
@@ -501,7 +509,7 @@ public class CommunityController {
 	}
 	
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
-		User artist = userRepository.findById(artistId)
+		User artist = userRepository.findOneById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		
@@ -515,6 +523,11 @@ public class CommunityController {
 		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
 		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());
 		model.addAttribute("isOwnCommunity", isOwnCommunity);
+		boolean isManagedAgency = currentUser != null
+				&& currentUser.getRole() == Role.AGENCY
+				&& currentUser.agencyId() != null
+				&& currentUser.agencyId().equals(artist.agencyId());
+		model.addAttribute("isManagedAgency", isManagedAgency);
 
 		if (currentUser != null
 				&& currentUser.getRole() == Role.ARTIST

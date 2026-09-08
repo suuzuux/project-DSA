@@ -29,6 +29,7 @@
   const isAdmin = roleName === "ROLE_ADMIN";
     // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
   const isArtist = roleName === "ROLE_ARTIST";
+  const isAgency = roleName === "ROLE_AGENCY";
   // 로그인한 본인 id (아티스트일 땐 곧 artistId)
   const myId = body.getAttribute("data-fan-id") || "";
   const nickname = body.getAttribute("data-nickname") || "";
@@ -283,6 +284,7 @@
 
   // 헤더에 햄버거가 없으면 brand 앞에 삽입
   ensureMenuToggle();
+  ensureAdminPageLink();
 
   // 멤버십 가입 모달(P27)의 실제 가입 폼 action을 현재 커뮤니티 아티스트로 채움
   // (모달 자체는 페이지 공통 삽입이라 서버 쪽 artist.id()를 직접 못 씀 - URL에서 뽑아옴)
@@ -394,6 +396,22 @@
     else dmExpiredBanner.classList.add("hidden");
     dmListView.classList.remove("is-active");
     dmRoomView.classList.add("is-active");
+  }
+
+  function ensureAdminPageLink() {
+    // 에이전시 계정만 상단바에서 운영 대시보드(포털)로 바로 이동
+    if (!isAgency) return;
+    if (document.querySelector("[data-admin-page-link]")) return;
+
+    const actions = document.querySelector(".header-actions, .community-top__right");
+    if (!actions) return;
+
+    const link = document.createElement("a");
+    link.href = "/portal/dashboard";
+    link.className = "btn btn--ghost btn--sm";
+    link.setAttribute("data-admin-page-link", "1");
+    link.textContent = "관리자 페이지로";
+    actions.insertBefore(link, actions.firstChild);
   }
 
   function ensureMenuToggle() {

@@ -7,9 +7,12 @@ import megane6.weplanet.domain.dto.live.LiveCommentView;
 import megane6.weplanet.domain.dto.live.LiveStatusView;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.live.LiveComment;
 import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.live.LiveRealtimePublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,6 +36,7 @@ public class LiveApiController {
 	private final LiveRealtimePublisher liveRealtimePublisher;
 	private final UserRepository userRepository;
 	private final AuthenticatedUserResolver userResolver;
+	private final ReportService reportService;
 
 	@PostMapping("/api/portal/live/start")
 	public LiveStatusView start(@AuthenticationPrincipal AuthenticatedUser principal, HttpSession session) {
@@ -86,6 +90,28 @@ public class LiveApiController {
 			@AuthenticationPrincipal AuthenticatedUser principal) {
 		User me = userResolver.requireAuthenticated(principal);
 		return Map.of("comments", liveBroadcastService.comments(me, artistId));
+	}
+
+	@PostMapping("/api/community/{artistId}/live/comments/{commentId}/report")
+	public Map<String, Object> reportLiveComment(
+			@PathVariable Long artistId,
+			@PathVariable Long commentId,
+			@RequestParam String reason,
+			@AuthenticationPrincipal AuthenticatedUser principal) {
+		User me = userResolver.requireAuthenticated(principal);
+		liveBroadcastService.requireCanWatch(me, artistId);
+		LiveComment comment = liveBroadcastService.requireCommentForArtist(commentId, artistId);
+		if (comment.getAuthor().getId().equals(me.getId())) {
+			throw new IllegalStateException("본인 채팅은 신고할 수 없습니다.");
+		}
+		ReportReason reportReason;
+		try {
+			reportReason = ReportReason.valueOf(reason);
+		} catch (IllegalArgumentException | NullPointerException e) {
+			throw new IllegalArgumentException("신고 사유가 올바르지 않습니다.");
+		}
+		reportService.reportLiveComment(comment, me, reportReason);
+		return Map.of("success", true);
 	}
 
 	private User requirePortalUser(AuthenticatedUser principal) {

@@ -7,6 +7,30 @@
   const postId = document.body.dataset.postId;
   if (!postId) return;
 
+  function markCommentReported(commentId) {
+    const text = document.getElementById("commentText-" + commentId);
+    const item = text ? text.closest(".comment-item") : null;
+    if (item) {
+      item.classList.add("comment-item--reported");
+    }
+    if (text) {
+      text.textContent = "신고접수된 댓글입니다";
+    }
+    const reportRow = document.getElementById("commentReportRow-" + commentId);
+    if (reportRow) {
+      reportRow.style.display = "none";
+      reportRow.remove();
+    }
+    if (item) {
+      const actions = item.querySelector(".flex-center");
+      if (actions) actions.remove();
+      const editRow = document.getElementById("commentEditRow-" + commentId);
+      if (editRow) editRow.remove();
+      const translated = document.getElementById("commentTranslated-" + commentId);
+      if (translated) translated.remove();
+    }
+  }
+
   const likeButton = document.getElementById("likeButton");
   if (likeButton) {
     likeButton.addEventListener("click", function () {
@@ -207,10 +231,16 @@
         body: new URLSearchParams(new FormData(form)),
       })
         .then(function (response) {
-          return response.json();
+          return response.json().then(function (data) {
+            return { ok: response.ok, data: data };
+          });
         })
-        .then(function (data) {
-          if (msg) msg.textContent = data.message || "신고가 접수되었습니다.";
+        .then(function (result) {
+          if (!result.ok || result.data.success === false) {
+            if (msg) msg.textContent = (result.data && result.data.message) || "신고 접수에 실패했습니다.";
+            return;
+          }
+          markCommentReported(commentId);
         })
         .catch(function () {
           if (msg) msg.textContent = "신고 접수에 실패했습니다.";

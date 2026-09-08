@@ -24,15 +24,25 @@
     <div class="community-main">
       <nav th:replace="~{community/fragments/layout :: tabs('live')}"></nav>
 
+      <div class="board-toolbar" th:if="${isOwnCommunity or isManagedAgency}" style="margin-bottom:16px;">
+        <div></div>
+        <a class="btn btn--primary btn--sm"
+           th:if="${isOwnCommunity}"
+           th:href="@{/portal/live}">방송하기</a>
+        <a class="btn btn--primary btn--sm"
+           th:if="${isManagedAgency and !isOwnCommunity}"
+           th:href="@{/portal/select-artist(artistId=${artist.id()}, next='live')}">방송하기</a>
+      </div>
+
       <div id="community-live"
            th:attr="data-artist-id=${artist.id()},
                     data-user-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
-        <div id="live-empty" class="live-empty">
-          <p class="text-muted" style="padding:24px 0;">현재 진행 중인 라이브가 없습니다.</p>
-        </div>
 
         <div id="live-onair" hidden>
-          <div class="live-now">LIVE 방송 중입니다</div>
+          <div class="live-now">
+            <span>LIVE 방송 중입니다</span>
+            <button type="button" id="live-back-btn" class="btn btn--ghost btn--sm">목록으로</button>
+          </div>
           <div class="live-watch">
             <section class="live-watch__stage">
               <video id="live-player" autoplay playsinline></video>
@@ -49,9 +59,61 @@
             </aside>
           </div>
         </div>
+
+        <section class="live-replays" id="live-lobby">
+          <div class="media-section__head">
+            <h2 class="live-replays__title">라이브</h2>
+          </div>
+          <button type="button" id="live-featured" class="live-replay-card live-replay-card--live live-featured-card"
+                  th:hidden="${liveStatus == null or !liveStatus.live}">
+            <div class="live-replay-card__thumb">
+              <span class="tag tag--live live-replay-card__badge">LIVE</span>
+              <span class="live-replay-card__logo" th:text="${artist.logo()}">WP</span>
+              <span class="live-replay-card__play">▶</span>
+            </div>
+            <div class="live-replay-card__body">
+              <div class="live-replay-card__title" th:text="|${artist.nickname()} 라이브|">라이브</div>
+              <div class="live-replay-card__meta">방송 중 · 클릭해서 시청</div>
+            </div>
+          </button>
+
+          <div class="media-section__head live-replays__replay-head">
+            <h2 class="live-replays__title">다시보기</h2>
+          </div>
+          <div class="live-replay-grid" th:if="${not #lists.isEmpty(liveReplays)}">
+            <button type="button" class="live-replay-card"
+                    th:each="replay : ${liveReplays}"
+                    th:if="${replay.firstVideoFileId != null}"
+                    th:attr="data-src=@{/board/media/file/{id}(id=${replay.firstVideoFileId})},
+                             data-title=${replay.title}">
+              <div class="live-replay-card__thumb">
+                <video muted playsinline preload="metadata"
+                       th:src="@{|/board/media/file/${replay.firstVideoFileId}#t=0.1|}"></video>
+                <span class="live-replay-card__play">▶</span>
+              </div>
+              <div class="live-replay-card__body">
+                <div class="live-replay-card__title" th:text="${replay.title}">라이브 다시보기</div>
+                <div class="live-replay-card__meta"
+                     th:with="y=${#temporals.year(replay.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                     th:text="${y == curY} ? ${#temporals.format(replay.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(replay.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</div>
+              </div>
+            </button>
+          </div>
+          <p th:if="${#lists.isEmpty(liveReplays)}" class="list-empty">저장된 다시보기가 없습니다.</p>
+        </section>
       </div>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
+  </div>
+
+  <div id="live-replay-modal" class="live-replay-modal" hidden>
+    <div class="live-replay-modal__panel" role="dialog" aria-modal="true">
+      <div class="live-replay-modal__head">
+        <h2 id="live-replay-title">다시보기</h2>
+        <button type="button" id="live-replay-close" class="modal__close" aria-label="닫기">✕</button>
+      </div>
+      <video id="live-replay-player" class="live-replay-modal__video" controls playsinline></video>
+    </div>
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>

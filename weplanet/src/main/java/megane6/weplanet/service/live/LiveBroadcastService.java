@@ -8,6 +8,8 @@ import megane6.weplanet.domain.entity.enumfolder.LiveSessionStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.live.LiveComment;
 import megane6.weplanet.domain.entity.live.LiveSession;
+import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.repository.live.LiveCommentRepository;
 import megane6.weplanet.repository.live.LiveSessionRepository;
 import megane6.weplanet.service.ChatFilterService;
@@ -19,15 +21,21 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class LiveBroadcastService {
 
+	private static final int RECENT_COMMENT_LIMIT = 100;
+
 	private final LiveSessionRepository liveSessionRepository;
 	private final LiveCommentRepository liveCommentRepository;
+	private final LiveCommentReportRepository liveCommentReportRepository;
+	private final UserRepository userRepository;
 	private final CommunityJoinService communityJoinService;
 	private final ChatFilterService chatFilterService;
 	private final BoardMediaService boardMediaService;
@@ -104,11 +112,22 @@ public class LiveBroadcastService {
 	public List<LiveCommentView> comments(User viewer, Long artistId) {
 		requireCanWatch(viewer, artistId);
 		return findLive(artistId)
-				.map(session -> liveCommentRepository.findBySessionOrderByCreatedAtAsc(session).stream()
-						.map(comment -> LiveCommentView.of(
-								comment,
-								communityJoinService.displayNickname(comment.getAuthor(), artistId)))
-						.toList())
+				.map(session -> {
+					List<LiveComment> comments = liveCommentRepository.findBySessionOrderByCreatedAtAsc(session);
+					int from = Math.max(0, comments.size() - RECENT_COMMENT_LIMIT);
+					List<LiveComment> recent = comments.subList(from, comments.size());
+					List<Long> ids = recent.stream().map(LiveComment::getId).toList();
+					Set<Long> reportedIds = viewer == null || ids.isEmpty()
+							? Set.of()
+							: new HashSet<>(liveCommentReportRepository.findReportedCommentIds(viewer, ids));
+					return recent.stream()
+							.map(comment -> LiveCommentView.of(
+									comment,
+									communityJoinService.displayNickname(comment.getAuthor(), artistId),
+									artistId,
+									reportedIds.contains(comment.getId())))
+							.toList();
+				})
 				.orElseGet(List::of);
 	}
 
@@ -128,7 +147,31 @@ public class LiveBroadcastService {
 		LiveSession session = findLive(artistId)
 				.orElseThrow(() -> new IllegalStateException("진행 중인 라이브가 없습니다."));
 		LiveComment saved = liveCommentRepository.save(LiveComment.create(session, author, trimmed));
-		return LiveCommentView.of(saved, communityJoinService.displayNickname(author, artistId));
+		return LiveCommentView.of(saved, communityJoinService.displayNickname(author, artistId), artistId);
+	}
+
+	@Transactional
+	public void deleteCommentForArtistCommunity(Long commentId, User artist) {
+		LiveComment comment = liveCommentRepository.findById(commentId)
+				.orElseThrow(() -> new IllegalArgumentException("채팅을 찾을 수 없습니다."));
+		if (artist == null
+				|| comment.getSession().getArtist() == null
+				|| !comment.getSession().getArtist().getId().equals(artist.getId())) {
+			throw new IllegalStateException("이 커뮤니티의 채팅만 삭제할 수 있습니다.");
+		}
+		liveCommentReportRepository.deleteByComment(comment);
+		liveCommentRepository.delete(comment);
+	}
+
+	@Transactional(readOnly = true)
+	public LiveComment requireCommentForArtist(Long commentId, Long artistId) {
+		LiveComment comment = liveCommentRepository.findById(commentId)
+				.orElseThrow(() -> new IllegalArgumentException("채팅을 찾을 수 없습니다."));
+		if (comment.getSession().getArtist() == null
+				|| !comment.getSession().getArtist().getId().equals(artistId)) {
+			throw new IllegalArgumentException("해당 아티스트 라이브 채팅이 아닙니다.");
+		}
+		return comment;
 	}
 
 	@Transactional(readOnly = true)
@@ -151,6 +194,14 @@ public class LiveBroadcastService {
 		}
 		if (user.getRole() == Role.ADMIN) {
 			return;
+		}
+		if (user.getRole() == Role.AGENCY) {
+			User artist = userRepository.findOneById(artistId).orElse(null);
+			if (artist != null
+					&& user.agencyId() != null
+					&& user.agencyId().equals(artist.agencyId())) {
+				return;
+			}
 		}
 		if (!communityJoinService.isJoined(user, artistId)) {
 			throw new IllegalStateException("커뮤니티 가입자만 라이브를 이용할 수 있습니다.");
