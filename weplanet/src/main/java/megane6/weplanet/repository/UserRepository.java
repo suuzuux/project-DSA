@@ -3,6 +3,7 @@ package megane6.weplanet.repository;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -27,4 +28,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByProviderAndProviderId(AuthProvider provider, String providerId);
 
     List<User> findByRoleAndAgency_Id(Role role, Long agencyId);
+
+    @EntityGraph(attributePaths = "agency")
+    Optional<User> findOneById(Long id);
 }

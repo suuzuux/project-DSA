@@ -76,6 +76,7 @@ public class PortalController {
 			case "notices" -> "redirect:/portal/notices";
 			case "schedule" -> "redirect:/portal/schedule";
 			case "media" -> "redirect:/portal/media";
+			case "live" -> "redirect:/portal/live";
 			case "profile" -> "redirect:/portal/profile";
 			case "reports" -> "redirect:/portal/reports";
 			default -> "redirect:/portal/dashboard";
@@ -108,7 +109,10 @@ public class PortalController {
 		if (redirect != null) {
 			return redirect;
 		}
-		User artist = currentArtist(principal);
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			return "portal/live";
+		}
 		model.addAttribute("liveStatus", liveBroadcastService.status(artist.getId()));
 		return "portal/live";
 	}
@@ -248,9 +252,9 @@ public class PortalController {
 		model.addAttribute("nextMonth", selectedMonth.plusMonths(1));
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
 		model.addAttribute("currentMonth", YearMonth.now());
-		if (artist != null) {
-			model.addAttribute("calendarDays", portalManagementService.getMonthGrid(artist, selectedMonth));
-		}
+		model.addAttribute("calendarDays", artist != null
+				? portalManagementService.getMonthGrid(artist, selectedMonth)
+				: List.of());
 		return "portal/calendar/schedule";
 	}
 
@@ -549,7 +553,7 @@ public class PortalController {
 		if (principal == null || !isPortalUser(principal)) {
 			return null;
 		}
-		return userRepository.findById(principal.getId())
+		return userRepository.findOneById(principal.getId())
 				.filter(user -> user.getRole() == Role.AGENCY)
 				.orElse(null);
 	}
@@ -586,20 +590,16 @@ public class PortalController {
 				selected = number.longValue();
 			}
 		}
-		if (selected == null) {
-			return null;
-		}
 		final Long selectedId = selected;
-		User found = artists.stream()
+		User found = selectedId == null ? null : artists.stream()
 				.filter(item -> item.getId().equals(selectedId))
 				.findFirst()
 				.orElse(null);
+		if (found == null) {
+			found = artists.get(0);
+		}
 		if (session != null) {
-			if (found != null) {
-				session.setAttribute(SESSION_ARTIST, found.getId());
-			} else {
-				session.removeAttribute(SESSION_ARTIST);
-			}
+			session.setAttribute(SESSION_ARTIST, found.getId());
 		}
 		return found;
 	}

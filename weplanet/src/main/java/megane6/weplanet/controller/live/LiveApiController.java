@@ -101,7 +101,10 @@ public class LiveApiController {
 		if (actor.getRole() == Role.ARTIST) {
 			return actor;
 		}
-		List<User> artists = userRepository.findByRole(Role.ARTIST);
+		Long agencyId = actor.agencyId();
+		List<User> artists = agencyId == null
+				? List.of()
+				: userRepository.findByRoleAndAgency_Id(Role.ARTIST, agencyId);
 		if (artists.isEmpty()) {
 			throw new IllegalStateException("관리할 아티스트가 없습니다.");
 		}
