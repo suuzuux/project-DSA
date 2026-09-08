@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WePlaNet – 휴면계정 해제</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="auth-card">
+    <a class="auth-card__back" href="/login">← 로그인으로</a>
+    <h1 class="auth-card__title">휴면계정 해제</h1>
+    <p class="text-sm text-muted" th:if="${!socialFlow}">아이디를 입력하면 가입 시 등록된 이메일로 인증코드를 보내드려요.</p>
+    <p class="text-sm text-muted" th:if="${socialFlow}">휴면 상태인 계정이에요. 가입 시 등록된 이메일로 인증코드를 보내드렸어요.</p>
+
+    <p th:if="${errorMessage}" class="text-sm" style="color:#c45c26;" th:text="${errorMessage}"></p>
+
+    <form id="reactivateForm" method="post" th:action="@{/login/reactivate/verify}">
+      <input type="text" name="username" id="username" placeholder="아이디" th:unless="${socialFlow}" required />
+      <button type="button" id="sendCodeBtn" th:unless="${socialFlow}">인증코드 받기</button>
+      <input type="text" name="code" placeholder="인증코드 6자리" required />
+      <button type="submit">해제하고 로그인</button>
+    </form>
+  </div>
+  <script th:inline="javascript">
+    const socialFlow = /*[[${socialFlow}]]*/ false;
+    if (!socialFlow) {
+      document.getElementById('sendCodeBtn').addEventListener('click', function () {
+        const username = document.getElementById('username').value;
+        fetch('/login/reactivate/code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=' + encodeURIComponent(username)
+        }).then(r => r.json()).then(data => alert(data.message));
+      });
+    } else {
+      fetch('/login/reactivate/code', { method: 'POST' })
+        .then(r => r.json()).then(data => alert(data.message));
+    }
+  </script>
+</body>
+</html>
