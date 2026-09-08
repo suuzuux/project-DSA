@@ -20,7 +20,7 @@
 <div class="container container--narrow section">
     <div class="section__head">
         <h1 class="section__title">내 채팅방 (아티스트 화면)</h1>
-        <button id="aiFanButton" type="button" class="btn btn--soft btn--sm">AI 팬 메시지 생성 (시연용)</button>
+        <button id="aiFanButton" type="button" class="btn btn--soft btn--sm">AI 팬 인사 받기 (시연용)</button>
     </div>
 
     <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
@@ -30,8 +30,8 @@
     <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
 
     <div style="display:flex;gap:8px;">
-        <input type="text" id="messageInput" class="form-input" placeholder="팬들에게 방송할 메시지를 입력하세요">
-        <button id="sendButton" class="btn btn--primary">방송 보내기</button>
+        <input type="text" id="messageInput" class="form-input" placeholder="팬들에게 메시지를 입력하세요">
+        <button id="sendButton" class="btn btn--primary">보내기</button>
     </div>
 </div>
 
@@ -52,7 +52,8 @@
     // 서버가 내려준 지난 대화 이력 (새로고침해도 메시지가 남아있도록)
     const history = /*[[${history}]]*/ [];
 
-    const socket = new SockJS('/ws-chat');
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(proto + '//' + location.host + '/ws-chat');
     const stompClient = Stomp.over(socket);
 
     // 내(아티스트)가 보낸 메시지는 오른쪽, 팬이 보낸 메시지는 왼쪽 말풍선으로 그림
@@ -115,7 +116,7 @@
         const content = document.getElementById('messageInput').value;
         if (!content) return;
 
-        // fanId를 null로 보내면, 서버(ChatController.send)가 "이건 방송 메시지구나"라고 판단함
+        // fanId를 null로 보내면 아티스트 채팅방 메시지. 서버가 저장한 뒤 AI 팬 5명이 답장함
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             artistId: artistId,
             fanId: null,
@@ -134,8 +135,7 @@
         }
     });
 
-    // AI 팬 메시지 생성 버튼 - 이건 웹소켓이 아니라 일반 fetch로 서버에 요청을 보냄.
-    // 서버가 메시지를 만들어서 위쪽 "artistFeed" 채널로 직접 방송해주므로,
+    // AI 팬 인사 버튼 - 웹소켓이 아니라 fetch로 요청. 서버가 팬 5명의 답장을 artistFeed로 보내므로
     // 여기서는 따로 응답을 받아서 화면에 그릴 필요 없이 요청만 보내면 됨
     document.getElementById('aiFanButton').addEventListener('click', function () {
         fetch('/chat/room/artist/ai-fan?artistId=' + artistId, {

@@ -8,14 +8,14 @@
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
-  <div class="portal-shell" th:classappend="${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick'">
+  <div class="portal-shell"
+       th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
       <th:block th:replace="~{portal/fragments/sidebars :: pickHint('미디어 관리')}"></th:block>
-
       <th:block th:if="${artistSelected}">
-<div class="portal-main__head">
+      <div class="portal-main__head">
         <h1>미디어 관리</h1>
         <a class="btn btn--primary btn--sm" th:href="@{/portal/media/new}">등록하기</a>
       </div>
@@ -58,8 +58,7 @@
           </tbody>
         </table>
       </div>
-    </th:block>
-
+      </th:block>
     </main>
   </div>
 </body>

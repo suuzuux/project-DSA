@@ -9,16 +9,26 @@
   <link rel="stylesheet" th:href="@{/css/calendar/schedule-calendar.css}" />
 </head>
 <body>
-  <div class="portal-shell" th:classappend="${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick'">
+  <div class="portal-shell"
+       th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main portal-main--schedule">
       <th:block th:replace="~{portal/fragments/sidebars :: pickHint('스케줄 관리')}"></th:block>
-
       <th:block th:if="${artistSelected}">
-<div class="portal-main__head">
+      <div class="portal-main__head">
         <h1>스케줄 관리</h1>
-</div>
+        <form class="artist-select" th:if="${isAgency}" th:action="@{/portal/schedule}" method="get">
+          <input type="hidden" name="month" th:value="${selectedMonth}" />
+          <label for="managedArtist">관리 아티스트</label>
+          <select id="managedArtist" name="artistId" onchange="this.form.submit()">
+            <option th:each="item : ${managedArtists}"
+                    th:value="${item.id}"
+                    th:text="${item.nickname}"
+                    th:selected="${item.id == artist.id}">아티스트</option>
+          </select>
+        </form>
+      </div>
 
       <p th:if="${msg}" class="sched-flash sched-flash--ok" th:text="${msg}"></p>
       <p th:if="${error}" class="sched-flash sched-flash--err" th:text="${error}"></p>
@@ -66,8 +76,7 @@
           </div>
         </div>
       </section>
-    </th:block>
-
+      </th:block>
     </main>
   </div>
 

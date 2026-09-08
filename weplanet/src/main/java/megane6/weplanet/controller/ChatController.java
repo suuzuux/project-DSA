@@ -277,8 +277,13 @@ public class ChatController {
 
         // CHAT-02 비대칭 수신 : 방송이냐 개인 메시지냐에 따라 어느 채널로 보낼지가 달라짐
         if (fan == null) {
-            // 아티스트가 보낸 방송(공지) 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
+            // 아티스트가 보낸 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
             broadcast("/topic/chat." + artist.getId(), payload);
+
+            // 아티스트 본인이 DM을 보낸 경우에만 가상 팬 5명이 백그라운드에서 답장한다
+            if (sender.getRole() == Role.ARTIST && sender.getId().equals(artist.getId())) {
+                aiFanChatService.replyToArtistDm(artist.getId(), saved.getContent());
+            }
         } else {
             // 팬이 보낸 개인 메시지 - 그 팬 개인 채널(본인+아티스트만 구독)에는 무조건 전달됨
             broadcast("/topic/chat." + artist.getId() + ".fan." + fan.getId(), payload);
@@ -373,8 +378,8 @@ public class ChatController {
         return "redirect:/chat/admin/keywords";
     }
 
-    // AI 팬 메시지 생성 (CHAT-06, 선택 기능/시연용) - 실제 팬이 아니라
-    // 채팅방이 한산할 때 화면을 채워 보여주기 위한 가짜 메시지. 이건 웹소켓이 아니라 일반 fetch로 호출됨
+    // AI 팬 메시지 생성 (CHAT-06, 시연용) - 아티스트 채팅방이 비어 있을 때
+    // 가상 팬 5명이 먼저 인사하도록 수동으로 돌릴 수 있는 버튼용. 웹소켓이 아니라 fetch로 호출됨
     @PostMapping("/chat/room/artist/ai-fan")
     @ResponseBody
     public Map<String, Object> generateAiFan(
@@ -389,24 +394,8 @@ public class ChatController {
             throw new IllegalStateException("본인 채팅방에서만 사용할 수 있습니다.");
         }
 
-        User artist = getUserOrThrow(artistId, "아티스트");
-        User aiFan = userRepository.findByUsername("aifan_bot")
-                .orElseThrow(() -> new IllegalStateException("AI 팬 계정(username=aifan_bot)이 없습니다."));
-
-        String content = aiFanChatService.generateFanMessage();
-
-        ChatMessage saved = chatMessageService.saveMessage(artist, aiFan, aiFan, content);
-
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("senderId", aiFan.getId());
-        payload.put("senderNickname", aiFan.getNickname());
-        payload.put("fanId", aiFan.getId());
-        payload.put("content", saved.getContent());
-        payload.put("createdAt", saved.getCreatedAt().toString());
-
-        // fetch로 온 요청이지만, 결과는 요청 보낸 사람에게 직접 응답하는 대신
-        // 웹소켓 채널로 방송해서 화면에 실시간으로 나타나게 함 (채팅 메시지들과 같은 방식으로 보이도록)
-        broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
+        getUserOrThrow(artistId, "아티스트");
+        aiFanChatService.replyToArtistDm(artistId, null);
 
         return Map.of("success", true);
     }

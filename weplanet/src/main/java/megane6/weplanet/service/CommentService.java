@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.CommentRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class CommentService {
     }
 
     // 댓글 삭제 - 작성자 본인만 삭제 가능
+    @Transactional
     public void deleteComment(Long commentId, User requester) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
@@ -54,6 +56,23 @@ public class CommentService {
             throw new IllegalStateException("본인이 작성한 댓글만 삭제할 수 있습니다.");
         }
 
+        deleteCommentCascade(comment);
+    }
+
+    /** 해당 아티스트 커뮤니티 댓글에 한해 에이전시/신고함에서 삭제할 때 사용 */
+    @Transactional
+    public void deleteCommentForArtistCommunity(Long commentId, User artist) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+        if (artist == null
+                || comment.getPost().getArtist() == null
+                || !comment.getPost().getArtist().getId().equals(artist.getId())) {
+            throw new IllegalStateException("이 커뮤니티의 댓글만 삭제할 수 있습니다.");
+        }
+        deleteCommentCascade(comment);
+    }
+
+    private void deleteCommentCascade(Comment comment) {
         // 댓글을 참조하는 신고 기록을 먼저 지운 뒤에 댓글을 삭제 (외래키 제약 위반 방지)
         commentReportRepository.deleteByComment(comment);
         commentRepository.delete(comment);

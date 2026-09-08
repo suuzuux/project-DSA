@@ -23,4 +23,19 @@ public class BoardMediaViewDTO {
     private int fileCount;
     private int likeCount;
     private List<BoardMediaFileViewDTO> files;
+
+    public boolean isLiveReplay() {
+        return title != null && title.startsWith("라이브 다시보기");
+    }
+
+    public Long getFirstVideoFileId() {
+        if (files == null || files.isEmpty()) {
+            return null;
+        }
+        return files.stream()
+                .filter(file -> file.getMediaType() != null && "VIDEO".equalsIgnoreCase(file.getMediaType()))
+                .map(BoardMediaFileViewDTO::getId)
+                .findFirst()
+                .orElse(files.get(0).getId());
+    }
 }
