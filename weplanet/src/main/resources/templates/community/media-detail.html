@@ -23,7 +23,8 @@
   <div class="community-body community-body--detail">
     <div class="community-main">
       <a class="section__link mb-16" style="display:inline-block;"
-         th:href="@{/community/{id}/media(id=${artist.id()})}">← Media 게시판</a>
+         th:href="${mediaPost.liveReplay} ? @{/community/{id}/live(id=${artist.id()})} : @{/community/{id}/media(id=${artist.id()})}"
+         th:text="${mediaPost.liveReplay} ? '← Live' : '← Media 게시판'">← Media 게시판</a>
 
       <article class="post-card">
         <div class="post-card__head">

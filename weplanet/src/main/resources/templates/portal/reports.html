@@ -44,8 +44,12 @@
                 <td th:text="${report.post.title}">게시글 제목</td>
                 <td th:text="${report.reason}">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
-                <td>
-                  <form th:action="@{/portal/reports/post/{id}/block(id=${report.id})}" method="post">
+                <td style="white-space:nowrap;">
+                  <form th:action="@{/portal/reports/post/{id}/delete(id=${report.id})}" method="post" style="display:inline;"
+                        onsubmit="return confirm('신고된 게시글을 삭제할까요?');">
+                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  </form>
+                  <form th:action="@{/portal/reports/post/{id}/block(id=${report.id})}" method="post" style="display:inline;">
                     <button type="submit" class="btn btn--ghost btn--sm">차단</button>
                   </form>
                 </td>
@@ -77,8 +81,49 @@
                 <td th:text="${report.comment.content}">댓글 내용</td>
                 <td th:text="${report.reason}">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
-                <td>
-                  <form th:action="@{/portal/reports/comment/{id}/block(id=${report.id})}" method="post">
+                <td style="white-space:nowrap;">
+                  <form th:action="@{/portal/reports/comment/{id}/delete(id=${report.id})}" method="post" style="display:inline;"
+                        onsubmit="return confirm('신고된 댓글을 삭제할까요?');">
+                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  </form>
+                  <form th:action="@{/portal/reports/comment/{id}/block(id=${report.id})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn--ghost btn--sm">차단</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel mb-16">
+        <h2 class="panel__title">라이브 채팅 신고</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>작성자</th>
+                <th>채팅</th>
+                <th>사유</th>
+                <th>접수일</th>
+                <th>조치</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${#lists.isEmpty(liveCommentReports)}">
+                <td colspan="5" class="text-sm text-muted">접수된 라이브 채팅 신고가 없습니다.</td>
+              </tr>
+              <tr th:each="report : ${liveCommentReports}">
+                <td th:text="${authorNicknames.get(report.comment.author.id)}">팬닉네임</td>
+                <td th:text="${report.comment.content}">채팅 내용</td>
+                <td th:text="${report.reason}">SPAM</td>
+                <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
+                <td style="white-space:nowrap;">
+                  <form th:action="@{/portal/reports/live-comment/{id}/delete(id=${report.id})}" method="post" style="display:inline;"
+                        onsubmit="return confirm('신고된 채팅을 삭제할까요?');">
+                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  </form>
+                  <form th:action="@{/portal/reports/live-comment/{id}/block(id=${report.id})}" method="post" style="display:inline;">
                     <button type="submit" class="btn btn--ghost btn--sm">차단</button>
                   </form>
                 </td>

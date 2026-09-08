@@ -525,6 +525,10 @@ tr.js-pinned.is-dragging {
   min-height: calc(100vh - 140px);
 }
 
+.live-studio__stage {
+  min-width: 0;
+}
+
 @media (max-width: 960px) {
   .live-studio {
     grid-template-columns: 1fr;
@@ -575,6 +579,7 @@ tr.js-pinned.is-dragging {
   display: flex;
   flex-direction: column;
   min-height: 360px;
+  max-height: min(70vh, 640px);
   background: var(--wp-surface, #fff);
   border: 1px solid var(--wp-hairline, #e5e7eb);
   border-radius: var(--wp-radius);
@@ -587,21 +592,28 @@ tr.js-pinned.is-dragging {
   padding: 12px 14px;
   font-size: 14px;
   border-bottom: 1px solid var(--wp-hairline, #e5e7eb);
+  flex: 0 0 auto;
 }
 
 .live-studio__comments,
 .live-watch__comments {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .live-comment {
   font-size: 13px;
   line-height: 1.45;
+  position: relative;
+  padding-right: 40px;
 }
 
 .live-comment strong {
@@ -610,12 +622,77 @@ tr.js-pinned.is-dragging {
   margin-bottom: 2px;
 }
 
+.live-comment__report {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: 0;
+  background: transparent;
+  color: #8a8a8a;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.live-comment__report:hover {
+  color: #c2410c;
+}
+
+.live-comment__report:disabled {
+  color: #b0b0b0;
+  cursor: default;
+}
+
+.live-comment--reported,
+.live-comment--reported strong,
+.live-comment--reported span {
+  color: #9ca3af !important;
+  animation: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.live-comment--reported .live-comment__name--artist {
+  font-weight: 600 !important;
+}
+
+.live-comment__name--artist {
+  font-weight: 900 !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em;
+  animation: live-name-sparkle 1.4s ease-in-out infinite;
+}
+
+@keyframes live-name-sparkle {
+  0%, 100% {
+    filter: brightness(1);
+    text-shadow:
+      0 0 2px currentColor,
+      0 0 8px transparent;
+  }
+  40% {
+    filter: brightness(1.25);
+    text-shadow:
+      0 0 4px currentColor,
+      0 0 12px currentColor,
+      1px -1px 0 rgba(255, 255, 255, 0.55);
+  }
+  70% {
+    filter: brightness(1.45);
+    text-shadow:
+      0 0 6px currentColor,
+      0 0 16px currentColor,
+      -1px 1px 0 rgba(255, 255, 255, 0.7);
+  }
+}
+
 .live-studio__composer,
 .live-watch__composer {
   display: flex;
   gap: 8px;
   padding: 10px;
   border-top: 1px solid var(--wp-hairline, #e5e7eb);
+  flex: 0 0 auto;
 }
 
 .live-studio__composer .form-input,

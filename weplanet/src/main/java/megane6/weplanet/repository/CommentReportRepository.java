@@ -5,7 +5,10 @@ import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,4 +27,11 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     List<CommentReport> findByComment_Post_ArtistOrderByCreatedAtDesc(User artist);
 
     long countByComment_Post_Artist(User artist);
+    // 특정 유저가 이미 신고한 댓글 id 목록 (상세 화면에서 신고 상태 표시용)
+    @Query("""
+            SELECT r.comment.id FROM CommentReport r
+            WHERE r.reporter = :reporter AND r.comment.id IN :commentIds
+            """)
+    List<Long> findReportedCommentIds(@Param("reporter") User reporter,
+                                      @Param("commentIds") Collection<Long> commentIds);
 }

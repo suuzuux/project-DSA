@@ -11,6 +11,9 @@
     <h1 class="community-top__name" th:attr="data-artist-id=${artist.id()}" th:text="${artist.nickname()}">아티스트</h1>
   </div>
   <div class="community-top__right">
+    <th:block sec:authorize="hasRole('AGENCY')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" data-admin-page-link="1">관리자 페이지로</a>
+    </th:block>
     <a class="icon-btn" th:href="@{/?openSearch=1}" aria-label="커뮤니티 검색" title="커뮤니티 검색">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
     </a>

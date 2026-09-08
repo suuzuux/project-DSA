@@ -29,3 +29,16 @@ CREATE TABLE IF NOT EXISTS `live_comment` (
   CONSTRAINT `fk_live_comment_session` FOREIGN KEY (`session_id`) REFERENCES `live_session` (`id`),
   CONSTRAINT `fk_live_comment_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 실시간 댓글';
+
+CREATE TABLE IF NOT EXISTS `live_comment_report` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 댓글 신고 PK',
+  `comment_id` bigint NOT NULL COMMENT 'live_comment.id',
+  `reporter_id` bigint NOT NULL COMMENT '신고자(users.id)',
+  `reason` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SPAM / ABUSE / SEXUAL / ETC',
+  `created_at` datetime(6) NOT NULL COMMENT '신고 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_live_comment_report_comment_reporter` (`comment_id`, `reporter_id`),
+  KEY `fk_live_comment_report_reporter` (`reporter_id`),
+  CONSTRAINT `fk_live_comment_report_comment` FOREIGN KEY (`comment_id`) REFERENCES `live_comment` (`id`),
+  CONSTRAINT `fk_live_comment_report_reporter` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 댓글 신고';

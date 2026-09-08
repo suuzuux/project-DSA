@@ -144,28 +144,111 @@
         const ext = type.indexOf("mp4") >= 0 ? "mp4" : "webm";
         const form = new FormData();
         form.append("file", blob, "live-replay." + ext);
-        showSaveStatus("다시보기를 미디어 탭에 저장하는 중...");
+        showSaveStatus("다시보기를 Live 탭에 저장하는 중...");
         return fetch("/api/portal/live/replay", {
             method: "POST",
             headers: { "X-Requested-With": "fetch" },
             body: form
         }).then(parseResponse).then(function () {
-            showSaveStatus("다시보기가 미디어 탭에 저장되었습니다.");
+            showSaveStatus("다시보기가 Live 탭에 저장되었습니다.");
         });
+    }
+
+    function randomArtistColor() {
+        const colors = [
+            "#e11d48", "#db2777", "#c026d3", "#7c3aed",
+            "#2563eb", "#0891b2", "#059669", "#ca8a04",
+            "#ea580c", "#dc2626", "#4f46e5", "#0d9488"
+        ];
+        return colors[Math.floor(Math.random() * colors.length)];
     }
 
     function appendComment(comment) {
         if (!comment) return;
+        const stick = commentsEl.scrollHeight - commentsEl.scrollTop - commentsEl.clientHeight < 48;
         const row = document.createElement("div");
         row.className = "live-comment";
+        if (comment.id) {
+            row.dataset.commentId = String(comment.id);
+        }
+        const reported = comment.reportedByMe === true || comment.reportedByMe === "true";
         const name = document.createElement("strong");
         name.textContent = comment.authorNickname || "익명";
+        if (!reported && (comment.fromArtist || Number(comment.authorId) === artistId)) {
+            name.className = "live-comment__name--artist";
+            name.style.color = randomArtistColor();
+        }
         const body = document.createElement("span");
-        body.textContent = comment.content || "";
+        body.textContent = reported ? "신고접수된 댓글입니다" : (comment.content || "");
         row.appendChild(name);
         row.appendChild(body);
+        if (!reported && comment.id && hostId && Number(comment.authorId) !== hostId) {
+            const reportBtn = document.createElement("button");
+            reportBtn.type = "button";
+            reportBtn.className = "live-comment__report";
+            reportBtn.textContent = "신고";
+            reportBtn.addEventListener("click", function () {
+                reportLiveComment(comment.id, row);
+            });
+            row.appendChild(reportBtn);
+        }
+        if (reported) {
+            markLiveCommentReported(row);
+        }
         commentsEl.appendChild(row);
-        commentsEl.scrollTop = commentsEl.scrollHeight;
+        while (commentsEl.children.length > 100) {
+            commentsEl.removeChild(commentsEl.firstChild);
+        }
+        if (stick) {
+            commentsEl.scrollTop = commentsEl.scrollHeight;
+        }
+    }
+
+    function markLiveCommentReported(row) {
+        if (!row) return;
+        row.classList.add("live-comment--reported");
+        const body = row.querySelector("span");
+        if (body) {
+            body.textContent = "신고접수된 댓글입니다";
+        }
+        const name = row.querySelector("strong");
+        if (name) {
+            name.classList.remove("live-comment__name--artist");
+            name.style.color = "";
+        }
+        const reportBtn = row.querySelector(".live-comment__report");
+        if (reportBtn) {
+            reportBtn.remove();
+        }
+    }
+
+    async function reportLiveComment(commentId, row) {
+        if (!commentId) return;
+        const reason = window.prompt("신고 사유를 선택하세요.\nSPAM / ABUSE / SEXUAL / ETC", "ABUSE");
+        if (!reason) return;
+        const normalized = String(reason).trim().toUpperCase();
+        if (!["SPAM", "ABUSE", "SEXUAL", "ETC"].includes(normalized)) {
+            window.alert("신고 사유는 SPAM, ABUSE, SEXUAL, ETC 중 하나여야 합니다.");
+            return;
+        }
+        try {
+            const res = await fetch(
+                "/api/community/" + artistId + "/live/comments/" + commentId + "/report?reason=" + encodeURIComponent(normalized),
+                {
+                    method: "POST",
+                    headers: { "X-Requested-With": "fetch" }
+                }
+            );
+            const data = await res.json().catch(function () { return {}; });
+            if (!res.ok || data.success === false) {
+                window.alert((data && data.message) || "신고에 실패했습니다.");
+                return;
+            }
+            markLiveCommentReported(row);
+        } catch (err) {
+            console.warn("[LIVE] 채팅 신고 실패", err);
+            window.alert("신고에 실패했습니다.");
+        }
     }
 
     function sendJson(destination, body) {
