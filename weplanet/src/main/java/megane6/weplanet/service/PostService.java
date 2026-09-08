@@ -205,7 +205,19 @@ public class PostService {
         if (!post.getAuthor().getId().equals(requester.getId())) {
             throw new IllegalStateException("본인이 작성한 게시글만 삭제할 수 있습니다.");
         }
+        deletePostCascade(post);
+    }
 
+    /** 해당 아티스트 커뮤니티 게시글에 한해 에이전시/신고함에서 삭제할 때 사용 */
+    @Transactional
+    public void deletePostForArtistCommunity(Post post, User artist) {
+        if (artist == null || post.getArtist() == null || !post.getArtist().getId().equals(artist.getId())) {
+            throw new IllegalStateException("이 커뮤니티의 게시글만 삭제할 수 있습니다.");
+        }
+        deletePostCascade(post);
+    }
+
+    private void deletePostCascade(Post post) {
         // 첨부파일은 DB 기록을 지우기 전에, 디스크에 실제로 저장된 파일부터 먼저 지움
         List<PostAttachment> attachments = postAttachmentRepository.findByPostOrderByIdAsc(post);
         for (PostAttachment attachment : attachments) {

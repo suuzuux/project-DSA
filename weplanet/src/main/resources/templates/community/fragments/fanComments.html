@@ -27,6 +27,7 @@
       </div>
       <div class="comment-scroll comment-scroll--artist">
       <div th:each="comment : ${artistComments}" class="comment-item"
+           th:classappend="${reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)} ? ' comment-item--reported'"
            style="background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;">
         <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get(comment.author.id),0,1)}"></div>
         <div class="comment-item__body">
@@ -35,8 +36,10 @@
             · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                     th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
           </div>
-          <p class="comment-item__text" th:id="'commentText-' + ${comment.id}" th:text="${comment.content}"></p>
-          <div class="flex-center" style="gap:10px;margin-top:4px;">
+          <p class="comment-item__text" th:id="'commentText-' + ${comment.id}"
+             th:text="${(reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)) ? '신고접수된 댓글입니다' : comment.content}"></p>
+          <div class="flex-center" style="gap:10px;margin-top:4px;"
+               th:unless="${reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)}">
             <a href="javascript:void(0)" class="comment-translate-link translate-link"
                th:attr="data-comment-id=${comment.id}">번역보기</a>
             <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
@@ -86,7 +89,8 @@
       <!-- 팬 댓글은 수십 개가 달릴 수 있어서 페이지 전체가 아니라 이 영역 안에서만 스크롤되게 함 -->
       <div class="comment-scroll">
       <div th:if="${not #lists.isEmpty(otherComments)}">
-        <div class="comment-item" th:each="comment : ${otherComments}">
+        <div class="comment-item" th:each="comment : ${otherComments}"
+             th:classappend="${reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)} ? ' comment-item--reported'">
           <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get(comment.author.id),0,1)}"></div>
           <div class="comment-item__body">
             <div class="comment-item__meta">
@@ -95,8 +99,10 @@
               · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                       th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
             </div>
-            <p class="comment-item__text" th:id="'commentText-' + ${comment.id}" th:text="${comment.content}"></p>
-            <div class="flex-center" style="gap:10px;margin-top:4px;">
+            <p class="comment-item__text" th:id="'commentText-' + ${comment.id}"
+               th:text="${(reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)) ? '신고접수된 댓글입니다' : comment.content}"></p>
+            <div class="flex-center" style="gap:10px;margin-top:4px;"
+                 th:unless="${reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)}">
               <a href="javascript:void(0)" class="comment-translate-link translate-link"
                  th:attr="data-comment-id=${comment.id}">번역보기</a>
               <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"

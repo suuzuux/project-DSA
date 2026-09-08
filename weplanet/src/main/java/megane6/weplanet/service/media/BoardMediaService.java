@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +37,8 @@ public class BoardMediaService {
             "image/jpeg", "image/png", "image/gif", "image/webp",
             "video/mp4", "video/webm", "video/quicktime"
     );
+
+    public static final String LIVE_REPLAY_TITLE_PREFIX = "라이브 다시보기";
 
     // ── 저장(업로드) : 게시글 + 파일 여러 개를 한 번에 저장 ──
     public Long create(Long groupId, Long uploaderId, String title, String content,
@@ -62,7 +63,7 @@ public class BoardMediaService {
                 if (file == null || file.isEmpty()) {
                     continue; // 빈 칸은 건너뜀
                 }
-                String contentType = file.getContentType();
+                String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
                     throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
                 }
@@ -106,7 +107,7 @@ public class BoardMediaService {
                 if (file == null || file.isEmpty()) {
                     continue;
                 }
-                String contentType = file.getContentType();
+                String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
                     throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
                 }
@@ -146,17 +147,34 @@ public class BoardMediaService {
         return toViewDTO(post);
     }
 
+    public static boolean isLiveReplayTitle(String title) {
+        return title != null && title.startsWith(LIVE_REPLAY_TITLE_PREFIX);
+    }
+
     // ── 목록 조회 : 엔티티 → 화면용 DTO 로 변환 ──
     @Transactional(readOnly = true)
     public List<BoardMediaViewDTO> list(Long groupId) {
-        List<BoardMediaEntity> posts =
-                boardMediaRepository.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId);
+        return listEntities(groupId).stream().map(this::toViewDTO).toList();
+    }
 
-        List<BoardMediaViewDTO> result = new ArrayList<>();
-        for (BoardMediaEntity post : posts) {
-            result.add(toViewDTO(post));
-        }
-        return result;
+    @Transactional(readOnly = true)
+    public List<BoardMediaViewDTO> listWithoutLiveReplays(Long groupId) {
+        return listEntities(groupId).stream()
+                .filter(post -> !isLiveReplayTitle(post.getTitle()))
+                .map(this::toViewDTO)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<BoardMediaViewDTO> listLiveReplays(Long groupId) {
+        return listEntities(groupId).stream()
+                .filter(post -> isLiveReplayTitle(post.getTitle()))
+                .map(this::toViewDTO)
+                .toList();
+    }
+
+    private List<BoardMediaEntity> listEntities(Long groupId) {
+        return boardMediaRepository.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId);
     }
 
     // ── 파일 서빙 : 화면에서 이미지/영상을 불러올 때 ──
@@ -194,6 +212,45 @@ public class BoardMediaService {
     }
 
     // ── 내부 헬퍼 ──
+    private String resolveContentType(MultipartFile file) {
+        String raw = file.getContentType();
+        if (raw != null) {
+            int separator = raw.indexOf(';');
+            if (separator >= 0) {
+                raw = raw.substring(0, separator).trim();
+            }
+            if (ALLOWED_TYPES.contains(raw)) {
+                return raw;
+            }
+        }
+        String name = file.getOriginalFilename();
+        if (name != null) {
+            String lower = name.toLowerCase();
+            if (lower.endsWith(".webm")) {
+                return "video/webm";
+            }
+            if (lower.endsWith(".mp4")) {
+                return "video/mp4";
+            }
+            if (lower.endsWith(".mov") || lower.endsWith(".qt")) {
+                return "video/quicktime";
+            }
+            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
+                return "image/jpeg";
+            }
+            if (lower.endsWith(".png")) {
+                return "image/png";
+            }
+            if (lower.endsWith(".gif")) {
+                return "image/gif";
+            }
+            if (lower.endsWith(".webp")) {
+                return "image/webp";
+            }
+        }
+        return raw;
+    }
+
     private BoardMediaEntity getActivePost(Long id) {
         return boardMediaRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));

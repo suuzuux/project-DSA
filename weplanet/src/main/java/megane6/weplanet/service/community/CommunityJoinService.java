@@ -70,6 +70,25 @@ public class CommunityJoinService {
 				.backgroundStoredName(backgroundStoredName)
 				.build());
 	}
+
+	/**
+	 * 이미 가입돼 있으면 아무 것도 하지 않고, 없으면 최소 프로필로 가입 처리.
+	 * 에이전시 자동 가입 등 멱등성이 필요한 경로에서 사용.
+	 */
+	@Transactional
+	public void ensureJoined(User user, Long artistId, String nickname) {
+		if (user == null || artistId == null) {
+			return;
+		}
+		if (communityMemberRepository.existsByFanIdAndArtistId(user.getId(), artistId)) {
+			return;
+		}
+		String safeNickname = (nickname == null || nickname.isBlank()) ? "Member" : nickname.trim();
+		if (safeNickname.length() > 10) {
+			safeNickname = safeNickname.substring(0, 10);
+		}
+		join(user, artistId, safeNickname, null, null, null);
+	}
 	
 	// PROFILE-01: 커뮤니티별 프로필 편집 (닉네임 / 소개글 / 프로필 이미지 / 배경 이미지)
 	// 이미지 규칙 - 삭제 요청이 최우선이고, 그 다음이 새 파일 교체, 둘 다 없으면 기존 이미지를 그대로 둔다.

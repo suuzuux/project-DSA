@@ -715,6 +715,19 @@ p {
 .post-card__name {
   font-weight: 700;
   font-size: var(--wp-fs-sm);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.post-card__video {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  border-radius: var(--wp-radius-sm);
+  background: #000;
+  margin-bottom: 8px;
 }
 
 .post-card__time {

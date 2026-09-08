@@ -11,6 +11,7 @@ import megane6.weplanet.domain.entity.portal.PortalNotice;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.MembershipRepository;
 import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
@@ -45,6 +46,7 @@ public class PortalManagementService {
     private final MembershipRepository membershipRepository;
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
+    private final LiveCommentReportRepository liveCommentReportRepository;
 
     public static final int MAX_PINNED = 5;
 
@@ -417,7 +419,9 @@ public class PortalManagementService {
 
     @Transactional(readOnly = true)
     public long countPendingReports(User artist) {
-        return reportRepository.countByPost_Artist(artist) + commentReportRepository.countByComment_Post_Artist(artist);
+        return reportRepository.countByPost_Artist(artist)
+                + commentReportRepository.countByComment_Post_Artist(artist)
+                + liveCommentReportRepository.countByArtist(artist);
     }
 
     private void validateText(String value, String message) {

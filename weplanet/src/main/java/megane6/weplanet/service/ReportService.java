@@ -7,8 +7,11 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.live.LiveComment;
+import megane6.weplanet.domain.entity.live.LiveCommentReport;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,6 +22,7 @@ public class ReportService {
 
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
+    private final LiveCommentReportRepository liveCommentReportRepository;
 
     // 게시글 신고 - 같은 사람이 같은 글을 두 번 신고하면 예외
     public void reportPost(Post post, User reporter, ReportReason reason) {
@@ -52,5 +56,22 @@ public class ReportService {
                 .build();
 
         commentReportRepository.save(commentReport);
+    }
+
+    // 라이브 채팅 신고 - 같은 사람이 같은 채팅을 중복 신고하면 예외
+    public void reportLiveComment(LiveComment comment, User reporter, ReportReason reason) {
+        Optional<LiveCommentReport> existing = liveCommentReportRepository.findByCommentAndReporter(comment, reporter);
+
+        if (existing.isPresent()) {
+            throw new IllegalStateException("이미 신고한 채팅입니다.");
+        }
+
+        LiveCommentReport report = LiveCommentReport.builder()
+                .comment(comment)
+                .reporter(reporter)
+                .reason(reason)
+                .build();
+
+        liveCommentReportRepository.save(report);
     }
 }
