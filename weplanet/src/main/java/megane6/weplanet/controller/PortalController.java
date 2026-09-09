@@ -486,7 +486,7 @@ public class PortalController {
 		model.addAttribute("postReports", postReports);
 		model.addAttribute("commentReports", commentReports);
 		model.addAttribute("liveCommentReports", liveCommentReports);
-		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorId(reportedAuthors, artist.getId()));
+		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(reportedAuthors, artist.getId()));
 		model.addAttribute("blocks", artistBlockService.getBlocks(artist));
 		return "portal/reports";
 	}

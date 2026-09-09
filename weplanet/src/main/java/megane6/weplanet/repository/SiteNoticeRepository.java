@@ -8,4 +8,5 @@ import java.util.List;
 public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
 	List<SiteNotice> findAllByOrderByCreatedAtDesc();
 	List<SiteNotice> findByPublishedTrueOrderByCreatedAtDesc();
+	List<SiteNotice> findTop20ByPublishedTrueOrderByCreatedAtDesc();
 }
