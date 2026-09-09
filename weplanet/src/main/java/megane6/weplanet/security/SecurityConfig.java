@@ -65,6 +65,7 @@ public class SecurityConfig {
     
     private final LoginSuccessHandler loginSuccessHandler;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final RoleAwareLogoutSuccessHandler roleAwareLogoutSuccessHandler;
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final ProfileCompletionRequiredFilter profileCompletionRequiredFilter;
     
@@ -97,7 +98,7 @@ public class SecurityConfig {
                         .logoutUrl("/logout")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
-                        .logoutSuccessUrl("/")
+                        .logoutSuccessHandler(roleAwareLogoutSuccessHandler)
                 )
                 .sessionManagement(session -> session
                         .invalidSessionUrl("/login?expired=true")

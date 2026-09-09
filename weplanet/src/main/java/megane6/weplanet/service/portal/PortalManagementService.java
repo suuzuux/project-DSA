@@ -387,6 +387,14 @@ public class PortalManagementService {
                 .orElseGet(() -> artistProfileRepository.save(ArtistProfile.create(artist)));
     }
 
+    /** 커뮤니티 About 위젯용. 없으면 null (빈 프로필을 만들지 않음). */
+    @Transactional(readOnly = true)
+    public String findIntro(User artist) {
+        return artistProfileRepository.findByArtist(artist)
+                .map(ArtistProfile::getIntro)
+                .orElse(null);
+    }
+
     public void updateProfile(User artist, String nickname, String email, String intro, String headerImageUrl, String logoImageUrl) {
         validateText(nickname, "표시 이름을 입력해주세요.");
         validateText(email, "이메일을 입력해주세요.");

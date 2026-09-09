@@ -35,7 +35,9 @@
         <div class="form-group">
           <label class="form-label" for="intro">소개글</label>
           <textarea class="form-textarea" id="intro" name="intro"
+                    placeholder="커뮤니티 About에 표시됩니다"
                     th:text="${artistProfile.intro != null ? artistProfile.intro : ''}"></textarea>
+          <p class="text-xs text-muted mt-8">저장하면 해당 아티스트 커뮤니티 Highlight의 About 소개란에 반영됩니다.</p>
         </div>
         <div class="form-group">
           <label class="form-label" for="headerImageUrl">헤더 이미지 URL</label>
