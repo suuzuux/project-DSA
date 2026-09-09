@@ -6,6 +6,9 @@
 --   - users.agency_id : 아티스트 계정의 소속사(agencies.id) 표시용 컬럼
 --     (FAN/ADMIN 등 소속사가 없는 계정은 NULL)
 -- ------------------------------------------------------------
+-- 수정: 2026-09-08 (AUTH-08, 휴면계정 자동전환/해제)
+--   - users.dormant_notice_sent_at : 휴면 전환 30일 전 사전 안내 메일 발송 시각
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -54,6 +57,7 @@ DROP TABLE IF EXISTS `email_verification`;
 DROP TABLE IF EXISTS `fan_badge_ownership`;
 DROP TABLE IF EXISTS `chat_quota`;
 DROP TABLE IF EXISTS `chat_message`;
+DROP TABLE IF EXISTS `live_comment_report`;
 DROP TABLE IF EXISTS `live_comment`;
 DROP TABLE IF EXISTS `live_session`;
 DROP TABLE IF EXISTS `shop_cart_item`;
@@ -129,6 +133,7 @@ CREATE TABLE `users` (
   `address2` varbinary(512) DEFAULT NULL COMMENT '상세주소(암호화 저장)',
   `email_verified_at` datetime(6) DEFAULT NULL COMMENT '이메일 인증 완료 시각(NULL=미인증)',
   `last_login_at` datetime(6) DEFAULT NULL COMMENT '최종 로그인 시각',
+  `dormant_notice_sent_at` datetime(6) DEFAULT NULL COMMENT '휴면 전환 30일 전 사전 안내 메일 발송 시각',
   `created_at` datetime(6) NOT NULL COMMENT '가입 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '정보 수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '탈퇴(soft delete) 시각',
@@ -412,6 +417,20 @@ CREATE TABLE `live_comment` (
   CONSTRAINT `fk_live_comment_session` FOREIGN KEY (`session_id`) REFERENCES `live_session` (`id`),
   CONSTRAINT `fk_live_comment_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 실시간 댓글';
+
+-- live_comment_report: 라이브 댓글 신고
+CREATE TABLE `live_comment_report` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 댓글 신고 PK',
+  `comment_id` bigint NOT NULL COMMENT 'live_comment.id',
+  `reporter_id` bigint NOT NULL COMMENT '신고자(users.id)',
+  `reason` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'SPAM / ABUSE / SEXUAL / ETC',
+  `created_at` datetime(6) NOT NULL COMMENT '신고 시각',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_live_comment_report_comment_reporter` (`comment_id`, `reporter_id`),
+  KEY `fk_live_comment_report_reporter` (`reporter_id`),
+  CONSTRAINT `fk_live_comment_report_comment` FOREIGN KEY (`comment_id`) REFERENCES `live_comment` (`id`),
+  CONSTRAINT `fk_live_comment_report_reporter` FOREIGN KEY (`reporter_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 댓글 신고';
 
 -- site_notice: 홈페이지 관리 공지사항
 CREATE TABLE `site_notice` (
