@@ -89,9 +89,22 @@
         }, 1000);
       }
 
+      // sendBtn/sendMsg는 소셜 플로우일 땐 DOM에 아예 없음(th:unless="${socialFlow}") - 항상 null 체크 후 사용.
+      function setSendMsg(text, ok) {
+        if (sendMsg) {
+          sendMsg.textContent = text;
+          sendMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
+        } else {
+          codeMsg.textContent = text;
+          codeMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
+        }
+      }
+
       function requestCode(username) {
-        sendBtn.disabled = true;
-        sendBtn.textContent = "발송 중...";
+        if (sendBtn) {
+          sendBtn.disabled = true;
+          sendBtn.textContent = "발송 중...";
+        }
         return fetch("/login/reactivate/code", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -99,8 +112,7 @@
         })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            sendMsg.textContent = data.message;
-            sendMsg.style.color = data.success ? "#2f8f5b" : "#c45c26";
+            setSendMsg(data.message, data.success);
             if (data.success) {
               codeGroup.style.display = "block";
               codeInput.value = "";
@@ -111,13 +123,14 @@
             return data.success;
           })
           .catch(function () {
-            sendMsg.textContent = "이메일 발송 중 오류가 발생했습니다.";
-            sendMsg.style.color = "#c45c26";
+            setSendMsg("이메일 발송 중 오류가 발생했습니다.", false);
             return false;
           })
           .finally(function () {
-            sendBtn.disabled = false;
-            sendBtn.textContent = "인증코드 받기";
+            if (sendBtn) {
+              sendBtn.disabled = false;
+              sendBtn.textContent = "인증코드 받기";
+            }
           });
       }
 
