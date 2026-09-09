@@ -110,7 +110,11 @@ public class SecurityConfig {
                 return;
             }
             if ("true".equals(request.getParameter("portalLogin"))) {
-                response.sendRedirect("/portal/login?error");
+                String portalRole = request.getParameter("portalRole");
+                String roleQs = (portalRole != null && !portalRole.isBlank())
+                        ? "&role=" + portalRole.trim().toUpperCase()
+                        : "";
+                response.sendRedirect("/portal/login?error" + roleQs);
                 return;
             }
             response.sendRedirect("/login?error");

@@ -30,9 +30,37 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 										Authentication authentication) throws IOException, ServletException {
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
+
+		// 포털 로그인: 화면에서 고른 유형(아티스트/에이전시)과 실제 계정 역할이 같아야 함
+		if ("true".equals(request.getParameter("portalLogin"))) {
+			String portalRole = request.getParameter("portalRole");
+			String expected = expectedPortalRole(portalRole);
+			if (expected != null && !expected.equals(principal.getRoleName())) {
+				org.springframework.security.core.context.SecurityContextHolder.clearContext();
+				var session = request.getSession(false);
+				if (session != null) {
+					session.invalidate();
+				}
+				getRedirectStrategy().sendRedirect(request, response, "/portal/login?error=role&role="
+						+ ("ROLE_ARTIST".equals(expected) ? "ARTIST" : "AGENCY"));
+				return;
+			}
+		}
+
 		userRepository.findById(principal.getId())
 				.ifPresent(user -> user.recordLogin());
 
 		getRedirectStrategy().sendRedirect(request, response, RoleHomeRedirects.pathFor(principal));
+	}
+
+	private static String expectedPortalRole(String portalRole) {
+		if (portalRole == null || portalRole.isBlank()) {
+			return null;
+		}
+		return switch (portalRole.trim().toUpperCase()) {
+			case "ARTIST" -> "ROLE_ARTIST";
+			case "AGENCY" -> "ROLE_AGENCY";
+			default -> null;
+		};
 	}
 }
