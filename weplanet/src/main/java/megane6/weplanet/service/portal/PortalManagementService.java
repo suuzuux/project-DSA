@@ -18,8 +18,10 @@ import megane6.weplanet.repository.media.BoardMediaRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
+import megane6.weplanet.service.FileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +51,7 @@ public class PortalManagementService {
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
     private final LiveCommentReportRepository liveCommentReportRepository;
+    private final FileStorageService fileStorageService;
 
     public static final int MAX_PINNED = 5;
 
@@ -398,6 +401,17 @@ public class PortalManagementService {
     }
 
     @Transactional(readOnly = true)
+    public String findLogoImageUrl(User artist) {
+        if (artist == null) {
+            return null;
+        }
+        return artistProfileRepository.findByArtist(artist)
+                .map(ArtistProfile::getLogoImageUrl)
+                .map(this::toPublicImageUrl)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public Map<Long, String> logoImageUrlsByArtistIds(java.util.Collection<Long> artistIds) {
         if (artistIds == null || artistIds.isEmpty()) {
             return Map.of();
@@ -407,23 +421,38 @@ public class PortalManagementService {
             if (row[0] == null || row[1] == null) {
                 continue;
             }
-            String url = String.valueOf(row[1]).trim();
-            if (!url.isEmpty()) {
-                result.put((Long) row[0], url);
+            String publicUrl = toPublicImageUrl(String.valueOf(row[1]));
+            if (publicUrl != null) {
+                result.put((Long) row[0], publicUrl);
             }
         }
         return result;
     }
 
-    @Transactional(readOnly = true)
-    public String findLogoImageUrl(User artist) {
-        if (artist == null) {
+    /** DB에 저장된 파일명/URL을 화면용 경로로 변환 */
+    public String toPublicImageUrl(String storedOrUrl) {
+        if (storedOrUrl == null || storedOrUrl.isBlank()) {
             return null;
         }
-        return artistProfileRepository.findByArtist(artist)
-                .map(ArtistProfile::getLogoImageUrl)
-                .filter(url -> url != null && !url.isBlank())
-                .orElse(null);
+        String value = storedOrUrl.trim();
+        if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+            return value;
+        }
+        return "/uploads/" + value;
+    }
+
+    private boolean isUploadedStoredName(String storedOrUrl) {
+        if (storedOrUrl == null || storedOrUrl.isBlank()) {
+            return false;
+        }
+        String value = storedOrUrl.trim();
+        return !(value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/"));
+    }
+
+    private void deleteUploadedIfPresent(String storedOrUrl) {
+        if (isUploadedStoredName(storedOrUrl)) {
+            fileStorageService.delete(storedOrUrl.trim());
+        }
     }
 
     @Transactional(readOnly = true)
@@ -449,10 +478,18 @@ public class PortalManagementService {
                               String gender,
                               LocalDate birthDate,
                               String intro,
-                              String headerImageUrl,
-                              String logoImageUrl) {
+                              MultipartFile avatar,
+                              MultipartFile background,
+                              boolean removeAvatar,
+                              boolean removeBackground) {
         validateText(nickname, "표시 이름을 입력해주세요.");
+        if (nickname.trim().length() > 50) {
+            throw new IllegalArgumentException("표시 이름은 50자 이내로 입력해주세요.");
+        }
         validateText(email, "이메일을 입력해주세요.");
+        if (intro != null && intro.length() > 30) {
+            throw new IllegalArgumentException("소개글은 30자 이내로 입력해주세요.");
+        }
 
         artist.changePortalProfile(nickname.trim(), email.trim());
         if (realName != null && !realName.isBlank()) {
@@ -466,7 +503,24 @@ public class PortalManagementService {
         syncBirthdaySchedule(artist, birthDate);
 
         ArtistProfile profile = getOrCreateProfile(artist);
-        profile.update(intro, headerImageUrl, logoImageUrl);
+        profile.updateIntro(intro);
+
+        if (removeAvatar) {
+            deleteUploadedIfPresent(profile.getLogoImageUrl());
+            profile.clearLogoImage();
+        } else if (avatar != null && !avatar.isEmpty()) {
+            deleteUploadedIfPresent(profile.getLogoImageUrl());
+            profile.replaceLogoImage(fileStorageService.store(avatar));
+        }
+
+        if (removeBackground) {
+            deleteUploadedIfPresent(profile.getHeaderImageUrl());
+            profile.clearHeaderImage();
+        } else if (background != null && !background.isEmpty()) {
+            deleteUploadedIfPresent(profile.getHeaderImageUrl());
+            profile.replaceHeaderImage(fileStorageService.store(background));
+        }
+
         artistProfileRepository.save(profile);
     }
 
