@@ -15,6 +15,7 @@ import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Controller
@@ -39,6 +41,7 @@ public class SocialLoginEntryController {
 	private final AuthenticatedUserResolver userResolver;
 	private final UserService userService;
 	private final SignupEmailVerificationService emailVerificationService;
+	private final BCryptPasswordEncoder passwordEncoder;
 
 	// 회원가입 페이지의 "구글로 가입하기" 버튼이 여기로 들어온다.
 	// intent=SIGNUP을 세션에 남긴 뒤, 스프링 시큐리티가 처리하는 진짜 OAuth2 로그인 시작 URL로 넘긴다.
@@ -91,6 +94,11 @@ public class SocialLoginEntryController {
 
 		User user = existing.get();
 		user.linkSocialProvider(pending.provider(), pending.providerId());
+		// 연동 전까지 유효했던 로컬 비밀번호를 그대로 두면 나중에 아이디/비밀번호로도 로그인이 가능해져서
+		// "연동한 뒤로는 그 소셜 로그인으로만 들어올 수 있어야 한다"는 전제가 깨진다 (AUTH-09).
+		// 처음부터 소셜로 가입하는 계정(OAuth2LoginSuccessHandler.createNewSocialUser)과 동일하게
+		// 아무도 모르는 랜덤 비밀번호로 덮어써서 로컬 로그인 경로를 완전히 무효화한다.
+		user.changePassword(passwordEncoder.encode(UUID.randomUUID().toString()));
 		user.recordLogin();
 		socialLoginSessionSupport.loginAs(user, request, response);
 		return "redirect:/";
@@ -172,6 +180,8 @@ public class SocialLoginEntryController {
 			userRepository.delete(user);
 			userRepository.flush();
 			existing.linkSocialProvider(provider, providerId);
+			// confirmEmailConflict()와 동일한 이유로, 자동 연동되는 이 경로에서도 기존 로컬 비밀번호를 무효화한다.
+			existing.changePassword(passwordEncoder.encode(UUID.randomUUID().toString()));
 			emailVerificationService.clear(trimmedEmail);
 
 			session.removeAttribute(SESSION_KEY_PROFILE_COMPLETION_REQUIRED);

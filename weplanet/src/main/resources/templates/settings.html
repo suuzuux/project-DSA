@@ -182,22 +182,26 @@
         </div>
         <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>
-      <div class="form-group">
+      <div class="form-group" th:if="${user.provider.name() == 'LOCAL'}">
         <label class="form-label">현재 비밀번호</label>
         <input class="form-input" type="password" id="currentPasswordInput" name="currentPassword"
                placeholder="비밀번호를 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
       </div>
-      <div class="form-group">
+      <div class="form-group" th:if="${user.provider.name() == 'LOCAL'}">
         <label class="form-label">새 비밀번호</label>
         <input class="form-input" type="password" id="newPasswordInput" name="newPassword"
                placeholder="현재 비밀번호를 먼저 입력해주세요" autocomplete="new-password" disabled />
       </div>
-      <div class="form-group">
+      <div class="form-group" th:if="${user.provider.name() == 'LOCAL'}">
         <label class="form-label">새 비밀번호 확인</label>
         <input class="form-input" type="password" id="confirmPasswordInput" name="confirmPassword"
                placeholder="현재 비밀번호를 먼저 입력해주세요" autocomplete="new-password" disabled />
         <p class="text-xs" id="passwordMismatchMsg" style="display:none;color:#c45c26;margin-top:4px;">새 비밀번호가 일치하지 않습니다.</p>
       </div>
+      <!-- 소셜 계정과 연동된 회원은 비밀번호로 로그인할 수 없으므로(AUTH-09) 변경 UI 자체를 노출하지 않는다. -->
+      <p class="text-xs text-muted" th:unless="${user.provider.name() == 'LOCAL'}">
+        소셜 계정과 연동된 회원은 비밀번호를 별도로 설정하지 않습니다.
+      </p>
       <div class="form-group">
         <label class="form-label">전화번호 (선택)</label>
         <input class="form-input" name="phone" placeholder="선택 입력" />

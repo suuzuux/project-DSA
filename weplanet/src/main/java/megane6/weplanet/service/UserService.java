@@ -116,6 +116,11 @@ public class UserService {
 		// (JS를 우회해서 직접 요청을 보내는 경우를 막기 위함).
 		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
 		if (wantsPasswordChange) {
+			// 소셜 계정과 연동된 회원은 비밀번호로 로그인할 수 없으므로, 화면을 우회해서 직접 요청을 보내는
+			// 경우를 막기 위해 서버에서도 한 번 더 막는다 (이메일 변경의 emailManagedExternally() 체크와 동일한 패턴).
+			if (user.getProvider() != AuthProvider.LOCAL) {
+				throw new IllegalArgumentException("소셜 계정과 연동된 회원은 비밀번호를 변경할 수 없습니다.");
+			}
 			if (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword())) {
 				throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
 			}
