@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.CommentReportRepository;
+import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
@@ -29,6 +30,7 @@ public class PostDetailModelHelper {
 	private final CommentService commentService;
 	private final CommunityJoinService communityJoinService;
 	private final CommentReportRepository commentReportRepository;
+	private final LikeRepository likeRepository;
 
 	public void populate(Model model, Post post, User currentUser) {
 		populate(model, post, currentUser, null);
@@ -49,11 +51,18 @@ public class PostDetailModelHelper {
 		authors.add(post.getAuthor());
 		comments.forEach(c -> authors.add(c.getAuthor()));
 
-		Map<Long, String> authorNicknames = artistId != null
-				? communityJoinService.displayNicknamesByAuthorId(authors, artistId)
+		Map<String, String> authorNicknames = artistId != null
+				? communityJoinService.displayNicknamesByAuthorIdKey(authors, artistId)
 				: authors.stream()
 						.filter(author -> author != null)
-						.collect(Collectors.toMap(User::getId, User::getNickname, (a, b) -> a, HashMap::new));
+						.collect(Collectors.toMap(
+								author -> String.valueOf(author.getId()),
+								User::getNickname,
+								(a, b) -> a,
+								HashMap::new));
+
+		boolean liked = currentUser != null
+				&& likeRepository.findByPostAndUser(post, currentUser).isPresent();
 
 		Set<Long> reportedCommentIds = Collections.emptySet();
 		if (currentUser != null && !comments.isEmpty()) {
@@ -67,6 +76,7 @@ public class PostDetailModelHelper {
 		model.addAttribute("otherComments", otherComments);
 		model.addAttribute("attachments", postService.getAttachments(post));
 		model.addAttribute("bookmarked", postService.isBookmarked(post, currentUser));
+		model.addAttribute("liked", liked);
 		model.addAttribute("authorNicknames", authorNicknames);
 		model.addAttribute("reportedCommentIds", reportedCommentIds);
 	}

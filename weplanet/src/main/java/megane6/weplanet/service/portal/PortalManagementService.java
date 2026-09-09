@@ -1,9 +1,11 @@
 package megane6.weplanet.service.portal;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.calendar.CalendarDayView;
 import megane6.weplanet.domain.dto.calendar.ScheduleEventView;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Gender;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
 import megane6.weplanet.domain.entity.portal.ArtistProfile;
 import megane6.weplanet.domain.entity.calendar.ArtistSchedule;
@@ -16,8 +18,10 @@ import megane6.weplanet.repository.media.BoardMediaRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
+import megane6.weplanet.service.FileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -47,6 +51,7 @@ public class PortalManagementService {
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
     private final LiveCommentReportRepository liveCommentReportRepository;
+    private final FileStorageService fileStorageService;
 
     public static final int MAX_PINNED = 5;
 
@@ -387,14 +392,180 @@ public class PortalManagementService {
                 .orElseGet(() -> artistProfileRepository.save(ArtistProfile.create(artist)));
     }
 
-    public void updateProfile(User artist, String nickname, String email, String intro, String headerImageUrl, String logoImageUrl) {
+    /** 커뮤니티 About 위젯용. 없으면 null (빈 프로필을 만들지 않음). */
+    @Transactional(readOnly = true)
+    public String findIntro(User artist) {
+        return artistProfileRepository.findByArtist(artist)
+                .map(ArtistProfile::getIntro)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String findLogoImageUrl(User artist) {
+        if (artist == null) {
+            return null;
+        }
+        return artistProfileRepository.findByArtist(artist)
+                .map(ArtistProfile::getLogoImageUrl)
+                .map(this::toPublicImageUrl)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, String> logoImageUrlsByArtistIds(java.util.Collection<Long> artistIds) {
+        if (artistIds == null || artistIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> result = new LinkedHashMap<>();
+        for (Object[] row : artistProfileRepository.findLogoImageUrlsByArtistIds(artistIds)) {
+            if (row[0] == null || row[1] == null) {
+                continue;
+            }
+            String publicUrl = toPublicImageUrl(String.valueOf(row[1]));
+            if (publicUrl != null) {
+                result.put((Long) row[0], publicUrl);
+            }
+        }
+        return result;
+    }
+
+    /** DB에 저장된 파일명/URL을 화면용 경로로 변환 */
+    public String toPublicImageUrl(String storedOrUrl) {
+        if (storedOrUrl == null || storedOrUrl.isBlank()) {
+            return null;
+        }
+        String value = storedOrUrl.trim();
+        if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+            return value;
+        }
+        return "/uploads/" + value;
+    }
+
+    private boolean isUploadedStoredName(String storedOrUrl) {
+        if (storedOrUrl == null || storedOrUrl.isBlank()) {
+            return false;
+        }
+        String value = storedOrUrl.trim();
+        return !(value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/"));
+    }
+
+    private void deleteUploadedIfPresent(String storedOrUrl) {
+        if (isUploadedStoredName(storedOrUrl)) {
+            fileStorageService.delete(storedOrUrl.trim());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public ArtistCardView toArtistCard(User artist) {
+        return ArtistCardView.from(artist, findLogoImageUrl(artist));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ArtistCardView> toArtistCards(List<User> artists) {
+        if (artists == null || artists.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> logos = logoImageUrlsByArtistIds(artists.stream().map(User::getId).toList());
+        return artists.stream()
+                .map(user -> ArtistCardView.from(user, logos.get(user.getId())))
+                .toList();
+    }
+
+    public void updateProfile(User artist,
+                              String nickname,
+                              String email,
+                              String realName,
+                              String gender,
+                              LocalDate birthDate,
+                              String intro,
+                              MultipartFile avatar,
+                              MultipartFile background,
+                              boolean removeAvatar,
+                              boolean removeBackground) {
         validateText(nickname, "표시 이름을 입력해주세요.");
+        if (nickname.trim().length() > 50) {
+            throw new IllegalArgumentException("표시 이름은 50자 이내로 입력해주세요.");
+        }
         validateText(email, "이메일을 입력해주세요.");
+        if (intro != null && intro.length() > 30) {
+            throw new IllegalArgumentException("소개글은 30자 이내로 입력해주세요.");
+        }
 
         artist.changePortalProfile(nickname.trim(), email.trim());
+        if (realName != null && !realName.isBlank()) {
+            artist.changeRealName(realName.trim());
+        }
+        artist.changeGender(parseGender(gender));
+        if (birthDate != null && birthDate.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("생일은 오늘 이전 날짜만 등록할 수 있습니다.");
+        }
+        artist.changeBirthDate(birthDate);
+        syncBirthdaySchedule(artist, birthDate);
+
         ArtistProfile profile = getOrCreateProfile(artist);
-        profile.update(intro, headerImageUrl, logoImageUrl);
+        profile.updateIntro(intro);
+
+        if (removeAvatar) {
+            deleteUploadedIfPresent(profile.getLogoImageUrl());
+            profile.clearLogoImage();
+        } else if (avatar != null && !avatar.isEmpty()) {
+            deleteUploadedIfPresent(profile.getLogoImageUrl());
+            profile.replaceLogoImage(fileStorageService.store(avatar));
+        }
+
+        if (removeBackground) {
+            deleteUploadedIfPresent(profile.getHeaderImageUrl());
+            profile.clearHeaderImage();
+        } else if (background != null && !background.isEmpty()) {
+            deleteUploadedIfPresent(profile.getHeaderImageUrl());
+            profile.replaceHeaderImage(fileStorageService.store(background));
+        }
+
         artistProfileRepository.save(profile);
+    }
+
+    /** 프로필 생일을 캘린더 BIRTHDAY 일정과 동기화 (없으면 생성, 있으면 첫 생일 일정 갱신). */
+    private void syncBirthdaySchedule(User artist, LocalDate birthDate) {
+        List<ArtistSchedule> birthdays = artistScheduleRepository
+                .findByArtistAndCategoryOrderByScheduleAtAsc(artist, ScheduleCategory.BIRTHDAY);
+        if (birthDate == null) {
+            return;
+        }
+        String title = artist.getNickname() + " 생일";
+        LocalDateTime at = birthDate.atTime(LocalTime.MIDNIGHT);
+        if (birthdays.isEmpty()) {
+            artistScheduleRepository.save(ArtistSchedule.create(
+                    artist,
+                    ScheduleCategory.BIRTHDAY,
+                    title,
+                    "프로필에서 등록된 생일",
+                    null,
+                    null,
+                    at
+            ));
+            return;
+        }
+        ArtistSchedule first = birthdays.get(0);
+        first.update(
+                ScheduleCategory.BIRTHDAY,
+                title,
+                first.getDescription() != null ? first.getDescription() : "프로필에서 등록된 생일",
+                first.getLocation(),
+                first.getTicketUrl(),
+                at
+        );
+    }
+
+    private static Gender parseGender(String gender) {
+        if (gender == null || gender.isBlank()) {
+            return null;
+        }
+        return switch (gender.trim().toUpperCase()) {
+            case "MALE", "남" -> Gender.MALE;
+            case "FEMALE", "여" -> Gender.FEMALE;
+            case "OTHER", "UNKNOWN", "미상" -> Gender.OTHER;
+            default -> throw new IllegalArgumentException("성별을 올바르게 선택해주세요.");
+        };
     }
 
     @Transactional(readOnly = true)

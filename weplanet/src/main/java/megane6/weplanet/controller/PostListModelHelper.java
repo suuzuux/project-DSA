@@ -2,8 +2,10 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.BoardType;
+import megane6.weplanet.domain.entity.Like;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
@@ -11,8 +13,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -21,19 +26,24 @@ public class PostListModelHelper {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final CommunityJoinService communityJoinService;
+	private final LikeRepository likeRepository;
 
 	public void populate(Model model, BoardType boardType, String sort) {
-		populate(model, boardType, sort, null, false);
+		populate(model, boardType, sort, null, false, null);
 	}
 
 	// 커뮤니티별 게시판 목록 (artist가 null이면 레거시 전역 게시판)
 	public void populate(Model model, BoardType boardType, String sort, User artist) {
-		populate(model, boardType, sort, artist, false);
+		populate(model, boardType, sort, artist, false, null);
 	}
 
 	// hideFromArtists=true면, hiddenFromArtist(Hide from Artists 토글)가 켜진 글을 목록에서 뺌
 	// (36번: 아티스트 계정으로 팬 게시판을 볼 때는 숨긴 글이 안 보여야 함)
 	public void populate(Model model, BoardType boardType, String sort, User artist, boolean hideFromArtists) {
+		populate(model, boardType, sort, artist, hideFromArtists, null);
+	}
+
+	public void populate(Model model, BoardType boardType, String sort, User artist, boolean hideFromArtists, User currentUser) {
 		List<Post> posts = artist != null
 				? postService.getPostsByBoardTypeAndArtist(boardType, artist, sort)
 				: postService.getPostsByBoardType(boardType, sort);
@@ -56,11 +66,24 @@ public class PostListModelHelper {
 		// [닉네임 관리] 목록에 작성자 닉네임을 뿌릴 때, 커뮤니티(artist)별 게시판이면 가입할 때 설정한
 		// 커뮤니티 닉네임을 쓰고, artist가 없는 레거시 전역 게시판이면 계정 닉네임을 그대로 쓴다.
 		List<User> authors = posts.stream().map(Post::getAuthor).toList();
-		Map<Long, String> authorNicknames = artist != null
-				? communityJoinService.displayNicknamesByAuthorId(authors, artist.getId())
+		Map<String, String> authorNicknames = artist != null
+				? communityJoinService.displayNicknamesByAuthorIdKey(authors, artist.getId())
 				: authors.stream()
 						.filter(author -> author != null)
-						.collect(java.util.stream.Collectors.toMap(User::getId, User::getNickname, (a, b) -> a));
+						.collect(Collectors.toMap(
+								author -> String.valueOf(author.getId()),
+								User::getNickname,
+								(a, b) -> a));
+
+		Set<Long> likedPostIds = new HashSet<>();
+		if (currentUser != null && !posts.isEmpty()) {
+			Set<Long> postIds = posts.stream().map(Post::getId).collect(Collectors.toSet());
+			for (Like like : likeRepository.findByUserOrderByCreatedAtDesc(currentUser)) {
+				if (like.getPost() != null && postIds.contains(like.getPost().getId())) {
+					likedPostIds.add(like.getPost().getId());
+				}
+			}
+		}
 
 		model.addAttribute("posts", posts);
 		model.addAttribute("boardType", boardType);
@@ -68,5 +91,6 @@ public class PostListModelHelper {
 		model.addAttribute("commentCounts", commentCounts);
 		model.addAttribute("thumbnailUrls", thumbnailUrls);
 		model.addAttribute("authorNicknames", authorNicknames);
+		model.addAttribute("likedPostIds", likedPostIds);
 	}
 }

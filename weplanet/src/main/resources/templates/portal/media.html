@@ -22,6 +22,9 @@
 
       <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+      <p class="text-sm text-muted" style="margin-bottom:12px;">
+        행을 선택하면 미디어 내용을 미리보고 삭제를 확인할 수 있습니다.
+      </p>
 
       <div class="table-wrap">
         <table class="data-table">
@@ -38,7 +41,12 @@
             <tr th:if="${#lists.isEmpty(mediaList)}">
               <td colspan="5" class="text-sm text-muted">등록된 미디어가 없습니다.</td>
             </tr>
-            <tr th:each="media : ${mediaList}">
+            <tr th:each="media : ${mediaList}"
+                class="portal-media-row"
+                th:attr="data-media-id=${media.id}"
+                tabindex="0"
+                role="button"
+                aria-label="미디어 미리보기">
               <td>
                 <span class="tag tag--public"
                       th:text="${media.files != null && !media.files.isEmpty() ? media.files[0].mediaType : 'MEDIA'}">VIDEO</span>
@@ -47,9 +55,15 @@
               <td th:text="${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
               <td th:text="${media.fileCount}">1</td>
               <td>
-                <div class="flex-center">
-                  <a class="btn btn--ghost btn--sm" th:href="@{/community/{artistId}/media(artistId=${artist.id})}">보기</a>
-                  <form th:action="@{/portal/media/{id}/delete(id=${media.id})}" method="post">
+                <div class="flex-center portal-media-row__actions">
+                  <button type="button"
+                          class="btn btn--ghost btn--sm"
+                          data-media-preview
+                          th:attr="data-media-id=${media.id}">미리보기</button>
+                  <form th:action="@{/portal/media/{id}/delete(id=${media.id})}"
+                        method="post"
+                        class="portal-media-delete-form"
+                        onsubmit="return confirm('이 미디어를 삭제할까요?');">
                     <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
                   </form>
                 </div>
@@ -58,8 +72,124 @@
           </tbody>
         </table>
       </div>
+
+      <!-- 미리보기용 템플릿 (행 선택 시 모달에 복제) -->
+      <template th:each="media : ${mediaList}"
+                th:attr="id=|portal-media-tpl-${media.id}|">
+        <div class="portal-media-preview">
+          <p class="text-xs text-muted"
+             th:text="${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')
+                       + ' · 첨부 '
+                       + media.fileCount
+                       + '개'}">2026.08.25 16:00 · 첨부 1개</p>
+          <p class="portal-media-preview__content"
+             th:if="${media.content != null and !#strings.isEmpty(media.content)}"
+             th:text="${media.content}"></p>
+          <p class="text-sm text-muted"
+             th:if="${media.content == null or #strings.isEmpty(media.content)}">본문 설명이 없습니다.</p>
+          <div class="portal-media-preview__files" th:if="${not #lists.isEmpty(media.files)}">
+            <th:block th:each="file : ${media.files}">
+              <img th:if="${file.mediaType == 'IMAGE'}"
+                   th:src="@{/board/media/file/{id}(id=${file.id})}"
+                   th:alt="${file.originalName}" />
+              <video th:if="${file.mediaType == 'VIDEO'}"
+                     th:src="@{/board/media/file/{id}(id=${file.id})}"
+                     controls
+                     preload="metadata"></video>
+            </th:block>
+          </div>
+          <p class="text-sm text-muted" th:if="${#lists.isEmpty(media.files)}">첨부 파일이 없습니다.</p>
+        </div>
+      </template>
+
+      <div class="modal-backdrop" id="portalMediaPreviewModal">
+        <div class="modal modal--wide" onclick="event.stopPropagation()">
+          <div class="modal__head">
+            <h2 class="modal__title" id="portalMediaPreviewTitle">미디어 미리보기</h2>
+            <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+          </div>
+          <div id="portalMediaPreviewBody"></div>
+          <div class="portal-media-preview__actions">
+            <button type="button" class="btn btn--ghost" data-modal-close>닫기</button>
+            <form id="portalMediaPreviewDeleteForm" method="post"
+                  onsubmit="return confirm('이 미디어를 삭제할까요?');">
+              <button type="submit" class="btn btn--primary">삭제</button>
+            </form>
+          </div>
+        </div>
+      </div>
       </th:block>
     </main>
   </div>
+
+  <script th:src="@{/js/main.js}"></script>
+  <script>
+    (function () {
+      var modal = document.getElementById("portalMediaPreviewModal");
+      if (!modal) return;
+
+      var titleEl = document.getElementById("portalMediaPreviewTitle");
+      var bodyEl = document.getElementById("portalMediaPreviewBody");
+      var deleteForm = document.getElementById("portalMediaPreviewDeleteForm");
+
+      function stopVideos(root) {
+        if (!root) return;
+        root.querySelectorAll("video").forEach(function (v) {
+          try { v.pause(); v.removeAttribute("src"); v.load(); } catch (e) {}
+        });
+      }
+
+      function closePreview() {
+        stopVideos(bodyEl);
+        bodyEl.innerHTML = "";
+        modal.classList.remove("is-open");
+      }
+
+      function openPreview(mediaId) {
+        var row = document.querySelector('.portal-media-row[data-media-id="' + mediaId + '"]');
+        var tpl = document.getElementById("portal-media-tpl-" + mediaId);
+        if (!tpl || !row) return;
+
+        stopVideos(bodyEl);
+        bodyEl.innerHTML = "";
+        bodyEl.appendChild(tpl.content.cloneNode(true));
+
+        var titleCell = row.querySelector("td:nth-child(2)");
+        titleEl.textContent = titleCell ? titleCell.textContent.trim() : "미디어 미리보기";
+        deleteForm.action = "/portal/media/" + mediaId + "/delete";
+        modal.classList.add("is-open");
+      }
+
+      document.querySelectorAll(".portal-media-row").forEach(function (row) {
+        row.addEventListener("click", function (e) {
+          if (e.target.closest(".portal-media-row__actions")) return;
+          openPreview(row.getAttribute("data-media-id"));
+        });
+        row.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openPreview(row.getAttribute("data-media-id"));
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-media-preview]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          openPreview(btn.getAttribute("data-media-id"));
+        });
+      });
+
+      modal.querySelectorAll("[data-modal-close]").forEach(function (btn) {
+        btn.addEventListener("click", closePreview);
+      });
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) closePreview();
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal.classList.contains("is-open")) closePreview();
+      });
+    })();
+  </script>
 </body>
 </html>

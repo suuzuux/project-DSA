@@ -21,6 +21,7 @@ import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -439,9 +440,14 @@ public class PortalController {
 	@PostMapping("/profile")
 	public String updateProfile(@RequestParam String nickname,
 								@RequestParam String email,
+								@RequestParam(required = false) String realName,
+								@RequestParam(required = false) String gender,
+								@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthDate,
 								@RequestParam(required = false) String intro,
-								@RequestParam(required = false) String headerImageUrl,
-								@RequestParam(required = false) String logoImageUrl,
+								@RequestParam(value = "avatar", required = false) MultipartFile avatar,
+								@RequestParam(value = "background", required = false) MultipartFile background,
+								@RequestParam(defaultValue = "false") boolean removeAvatar,
+								@RequestParam(defaultValue = "false") boolean removeBackground,
 								@AuthenticationPrincipal AuthenticatedUser principal,
 								RedirectAttributes redirectAttributes) {
 		User artist = currentArtist(principal);
@@ -449,7 +455,9 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		try {
-			portalManagementService.updateProfile(artist, nickname, email, intro, headerImageUrl, logoImageUrl);
+			portalManagementService.updateProfile(
+					artist, nickname, email, realName, gender, birthDate, intro,
+					avatar, background, removeAvatar, removeBackground);
 			redirectAttributes.addFlashAttribute("msg", "프로필이 저장되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -486,7 +494,7 @@ public class PortalController {
 		model.addAttribute("postReports", postReports);
 		model.addAttribute("commentReports", commentReports);
 		model.addAttribute("liveCommentReports", liveCommentReports);
-		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorId(reportedAuthors, artist.getId()));
+		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(reportedAuthors, artist.getId()));
 		model.addAttribute("blocks", artistBlockService.getBlocks(artist));
 		return "portal/reports";
 	}
@@ -713,11 +721,24 @@ public class PortalController {
 		model.addAttribute("actor", actor);
 		model.addAttribute("artist", artist);
 		model.addAttribute("artistSelected", artist != null);
-		model.addAttribute("artistProfile", artist != null ? portalManagementService.getOrCreateProfile(artist) : null);
 		model.addAttribute("activeMenu", activeMenu);
 		model.addAttribute("isAgency", true);
 		model.addAttribute("managedArtists", managedArtists);
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
+		if (artist != null) {
+			var profile = portalManagementService.getOrCreateProfile(artist);
+			model.addAttribute("artistProfile", profile);
+			model.addAttribute("avatarPublicUrl", portalManagementService.toPublicImageUrl(profile.getLogoImageUrl()));
+			model.addAttribute("backgroundPublicUrl", portalManagementService.toPublicImageUrl(profile.getHeaderImageUrl()));
+			model.addAttribute("hasAvatarImage", profile.getLogoImageUrl() != null && !profile.getLogoImageUrl().isBlank());
+			model.addAttribute("hasBackgroundImage", profile.getHeaderImageUrl() != null && !profile.getHeaderImageUrl().isBlank());
+		} else {
+			model.addAttribute("artistProfile", null);
+			model.addAttribute("avatarPublicUrl", null);
+			model.addAttribute("backgroundPublicUrl", null);
+			model.addAttribute("hasAvatarImage", false);
+			model.addAttribute("hasBackgroundImage", false);
+		}
 	}
 
 	private YearMonth parseMonth(String month) {
