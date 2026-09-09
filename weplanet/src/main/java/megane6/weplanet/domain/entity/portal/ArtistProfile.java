@@ -25,9 +25,11 @@ public class ArtistProfile {
     @Column(columnDefinition = "TEXT")
     private String intro;
 
+    /** 배경 이미지: 업로드 저장 파일명 또는 외부 URL */
     @Column(name = "header_image_url", length = 500)
     private String headerImageUrl;
 
+    /** 커뮤니티 프로필(로고) 사진: 업로드 저장 파일명 또는 외부 URL */
     @Column(name = "logo_image_url", length = 500)
     private String logoImageUrl;
 
@@ -45,10 +47,24 @@ public class ArtistProfile {
         return new ArtistProfile(artist);
     }
 
-    public void update(String intro, String headerImageUrl, String logoImageUrl) {
+    public void updateIntro(String intro) {
         this.intro = blankToNull(intro);
-        this.headerImageUrl = blankToNull(headerImageUrl);
-        this.logoImageUrl = blankToNull(logoImageUrl);
+    }
+
+    public void replaceLogoImage(String storedNameOrUrl) {
+        this.logoImageUrl = blankToNull(storedNameOrUrl);
+    }
+
+    public void clearLogoImage() {
+        this.logoImageUrl = null;
+    }
+
+    public void replaceHeaderImage(String storedNameOrUrl) {
+        this.headerImageUrl = blankToNull(storedNameOrUrl);
+    }
+
+    public void clearHeaderImage() {
+        this.headerImageUrl = null;
     }
 
     @PrePersist

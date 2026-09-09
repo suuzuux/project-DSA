@@ -14,8 +14,9 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.PostService;
-import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.stereotype.Controller;
@@ -41,6 +42,7 @@ public class HomeController {
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final ArtistAttendanceService artistAttendanceService;
+	private final PortalManagementService portalManagementService;
 	
 	@GetMapping({"", "/"})
 	public String home(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -49,9 +51,7 @@ public class HomeController {
 		}
 
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
-		List<ArtistCardView> artists = artistUsers.stream()
-				.map(ArtistCardView::from)
-				.toList();
+		List<ArtistCardView> artists = portalManagementService.toArtistCards(artistUsers);
 		model.addAttribute("artists", artists);
 		
 		Map<Long, CommunityProfile> joinedProfiles;

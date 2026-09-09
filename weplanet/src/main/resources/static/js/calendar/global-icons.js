@@ -409,14 +409,46 @@
     return items.sort(function (a, b) { return a._sort < b._sort ? 1 : -1; });
   }
 
+  function notificationSortKey(n) {
+    if (n._sort) return String(n._sort);
+    if (n.time) return String(n.time);
+    if (n.date) return String(n.date);
+    return "";
+  }
+
   function allNotifications() {
     var readIds = loadReadIds();
     var merged = POST_NOTIFICATIONS.concat(notificationsFromSchedule()).concat(EXTRA_NOTIFICATIONS);
-    return merged.map(function (n) {
-      var copy = Object.assign({}, n);
-      if (readIds.indexOf(n.id) !== -1) copy.read = true;
-      return copy;
+    return merged
+      .map(function (n) {
+        var copy = Object.assign({}, n);
+        if (readIds.indexOf(n.id) !== -1) copy.read = true;
+        return copy;
+      })
+      .sort(function (a, b) {
+        var ka = notificationSortKey(a);
+        var kb = notificationSortKey(b);
+        if (ka === kb) return 0;
+        return ka < kb ? 1 : -1; // 최신(큰 시각)이 위
+      });
+  }
+
+  /** 이미 읽음(기간 경과·개별 클릭)인 항목은 저장해 두고, 미읽음이 없으면 뱃지를 끈다. */
+  function persistReadState() {
+    var ids = loadReadIds();
+    var changed = false;
+    allNotifications().forEach(function (n) {
+      if (n.read && ids.indexOf(n.id) === -1) {
+        ids.push(n.id);
+        changed = true;
+      }
     });
+    if (changed) saveReadIds(ids);
+  }
+
+  function unreadCount() {
+    // 헤더 뱃지는 전체 알림 기준 (커뮤니티 필터와 무관)
+    return allNotifications().filter(function (n) { return !n.read; }).length;
   }
 
   function artistLogo(name) {
@@ -442,6 +474,13 @@
   function notificationsForPanel() {
     var target = notificationCommunityId();
     return allNotifications().filter(function (notification) {
+      // 시스템 공지·내 글 댓글은 커뮤니티 필터와 무관하게 항상 표시
+      if (notification.global
+          || notification.type === "site_notice"
+          || notification.type === "comment"
+          || notification.type === "artist_comment") {
+        return true;
+      }
       return target === "all" || String(notification.artistId || notification.artist) === String(target);
     });
   }
@@ -450,6 +489,11 @@
     if (notification.category) return tr(notification.category);
     var fallback = {
       post: { ko: "게시글", en: "Post", ja: "投稿", zh: "帖子", fr: "Post", es: "Publicación" },
+      community_notice: { ko: "커뮤니티 공지", en: "Community notice", ja: "コミュニティお知らせ", zh: "社区公告", fr: "Avis communauté", es: "Aviso de comunidad" },
+      site_notice: { ko: "시스템 공지", en: "System notice", ja: "システムお知らせ", zh: "系统公告", fr: "Avis système", es: "Aviso del sistema" },
+      artist_comment: { ko: "아티스트 댓글", en: "Artist comment", ja: "アーティストコメント", zh: "艺人评论", fr: "Commentaire artiste", es: "Comentario del artista" },
+      comment: { ko: "내 글 댓글", en: "Comment on your post", ja: "あなたの投稿へのコメント", zh: "我的帖子评论", fr: "Commentaire sur votre post", es: "Comentario en tu publicación" },
+      live_start: { ko: "라이브 시작", en: "Live started", ja: "ライブ開始", zh: "直播开始", fr: "Live commencé", es: "Live iniciado" },
       media: { ko: "미디어", en: "Media", ja: "メディア", zh: "媒体", fr: "Média", es: "Medios" },
     };
     return tr(fallback[notification.type] || notification.type);
@@ -516,6 +560,12 @@
     if (state.calendarOpen) renderCalendar();
   }
 
+  function scheduleApiUrl() {
+    // 캘린더 패널에서 커뮤니티를 전환하려면 가입한 전체 일정/커뮤니티가 필요함.
+    // (커뮤니티 페이지의 ?artistId= 필터를 붙이면 칩이 현재 커뮤니티 하나만 남음)
+    return "/api/schedules";
+  }
+
   function loadSchedulesFromApi() {
     if (!isAuthenticatedPage()) {
       MY_COMMUNITIES = [];
@@ -524,13 +574,16 @@
       hydrateWeekGrid();
       return Promise.resolve();
     }
-    return fetch(apiUrlForPage("/api/schedules"), { headers: { Accept: "application/json" } })
+    return fetch(scheduleApiUrl(), { headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
         applySchedulePayload(data || {});
+        persistReadState();
+        updateNotiBadges();
       })
       .catch(function () {
         applySchedulePayload({ communities: communitiesFromPage(), eventsByDate: {} });
+        updateNotiBadges();
       });
   }
 
@@ -539,7 +592,8 @@
       POST_NOTIFICATIONS = [];
       return Promise.resolve();
     }
-    return fetch(apiUrlForPage("/api/notifications"), { headers: { Accept: "application/json" } })
+    // 커뮤니티 페이지에서도 전체(가입 커뮤니티 + 시스템 공지)를 받아 뱃지/패널 필터에 사용
+    return fetch("/api/notifications", { headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
         var today = new Date();
@@ -552,11 +606,13 @@
               return Object.assign({}, post, { read: age > 7 });
             })
           : [];
+        persistReadState();
         renderNotiPanel();
         updateNotiBadges();
       })
       .catch(function () {
         POST_NOTIFICATIONS = [];
+        updateNotiBadges();
       });
   }
 
@@ -894,13 +950,17 @@
   }
 
   function updateNotiBadges() {
-    var unread = allNotifications().filter(function (n) { return !n.read; }).length;
+    persistReadState();
+    var unread = unreadCount();
     document.querySelectorAll(".wp-noti-count").forEach(function (badge) {
       badge.textContent = unread > 9 ? "9+" : String(unread);
       badge.hidden = unread === 0;
     });
-    document.querySelectorAll(".wp-noti-bound").forEach(function (btn) {
+    document.querySelectorAll(".wp-noti-bound, .icon-btn--badge[aria-label='알림']").forEach(function (btn) {
       btn.classList.toggle("has-unread", unread > 0);
+      if (unread === 0) {
+        btn.classList.remove("has-unread");
+      }
     });
   }
 
@@ -940,9 +1000,10 @@
       state.selected = opts.date;
       state.cursor = parseYmd(opts.date);
       state.detail = null;
-      state.community = detectCommunityId();
+      state.community = isCommunityPage() ? detectCommunityId() : (state.community || "all");
     } else {
-      state.community = detectCommunityId();
+      // 기본은 현재 커뮤니티(또는 전체). 패널 안 칩으로 다른 커뮤니티 일정 확인 가능
+      state.community = isCommunityPage() ? detectCommunityId() : "all";
       state.detail = null;
     }
     state.calendarOpen = true;
@@ -1374,6 +1435,7 @@
       if (toggle) {
         var nid = toggle.getAttribute("data-noti-toggle");
         markRead(nid);
+        updateNotiBadges();
         var postUrl = toggle.getAttribute("data-noti-url");
         if (postUrl) {
           window.location.href = postUrl;

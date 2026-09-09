@@ -13,7 +13,9 @@
     </nav>
     <p class="portal-artists__empty" th:if="${#lists.isEmpty(managedArtists)}">소속 아티스트가 없습니다.</p>
     <div class="portal-artists__footer">
-      <a th:href="@{/logout}">로그아웃</a>
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="portal-logout-link">로그아웃</button>
+      </form>
     </div>
   </aside>
 
@@ -37,7 +39,9 @@
     </nav>
     <div class="portal-sidebar__footer">
       <a th:href="@{/community/{artistId}/live(artistId=${artist.id})}">← 커뮤니티 Live</a><br th:if="${!isAgency}" /><br th:if="${!isAgency}" />
-      <a th:if="${!isAgency}" th:href="@{/logout}">로그아웃</a>
+      <form th:if="${!isAgency}" th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="portal-logout-link">로그아웃</button>
+      </form>
     </div>
   </aside>
 </th:block>

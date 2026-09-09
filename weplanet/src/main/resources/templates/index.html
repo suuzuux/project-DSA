@@ -139,14 +139,20 @@
         <div class="marquee__track">
           <th:block th:each="artist : ${artists}">
             <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}">
-              <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
+              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</div>
+              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() != null}">
+                <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
+              </div>
               <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
             </a>
           </th:block>
           <!-- 무한 스크롤용 복제 -->
           <th:block th:each="artist : ${artists}">
             <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}" aria-hidden="true">
-              <div class="artist-chip__logo" th:text="${artist.logo()}">AR</div>
+              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</div>
+              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() != null}">
+                <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
+              </div>
               <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
             </a>
           </th:block>
