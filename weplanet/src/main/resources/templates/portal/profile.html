@@ -29,8 +29,40 @@
           <input class="form-input" id="nickname" name="nickname" th:value="${artist.nickname}" required />
         </div>
         <div class="form-group">
+          <label class="form-label" for="realName">본명 <span class="text-xs text-muted">(선택)</span></label>
+          <input class="form-input" id="realName" name="realName" maxlength="50"
+                 placeholder="미입력 시 기존 값 유지"
+                 th:value="${artist.realName}" />
+        </div>
+        <div class="form-group">
           <label class="form-label" for="email">이메일</label>
           <input class="form-input" id="email" name="email" type="email" th:value="${artist.email}" required />
+        </div>
+        <div class="form-group">
+          <span class="form-label">성별</span>
+          <div class="portal-gender-options">
+            <label class="portal-gender-option">
+              <input type="radio" name="gender" value="MALE"
+                     th:checked="${artist.gender != null and artist.gender.name() == 'MALE'}" />
+              남
+            </label>
+            <label class="portal-gender-option">
+              <input type="radio" name="gender" value="FEMALE"
+                     th:checked="${artist.gender != null and artist.gender.name() == 'FEMALE'}" />
+              여
+            </label>
+            <label class="portal-gender-option">
+              <input type="radio" name="gender" value="OTHER"
+                     th:checked="${artist.gender == null or artist.gender.name() == 'OTHER'}" />
+              미상
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="birthDate">생일</label>
+          <input class="form-input" id="birthDate" name="birthDate" type="date"
+                 th:value="${artist.birthDate}" />
+          <p class="text-xs text-muted mt-8">저장 시 해당 아티스트 캘린더에 생일 일정이 자동 등록·갱신됩니다.</p>
         </div>
         <div class="form-group">
           <label class="form-label" for="intro">소개글</label>
@@ -45,8 +77,9 @@
                  th:value="${artistProfile.headerImageUrl != null ? artistProfile.headerImageUrl : ''}" />
         </div>
         <div class="form-group">
-          <label class="form-label" for="logoImageUrl">로고 이미지 URL</label>
+          <label class="form-label" for="logoImageUrl">커뮤니티 프로필 사진 URL</label>
           <input class="form-input" id="logoImageUrl" name="logoImageUrl"
+                 placeholder="커뮤니티명 왼쪽 아바타에 표시됩니다"
                  th:value="${artistProfile.logoImageUrl != null ? artistProfile.logoImageUrl : ''}" />
         </div>
         <div class="flex-center" style="justify-content:flex-end;">
