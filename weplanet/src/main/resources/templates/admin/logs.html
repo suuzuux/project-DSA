@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0" />
+
+  <title>관리자 로그 | WePlaNet ADMIN</title>
+
+  <link rel="stylesheet"
+        th:href="@{/css/style.css}" />
+
+  <link rel="stylesheet"
+        th:href="@{/css/portal.css}" />
+</head>
+
+<body>
+<div class="portal-shell">
+
+  <!-- 관리자 사이드바 -->
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+      <a class="is-active" th:href="@{/admin/logs}">🧾 관리자 로그</a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <form th:action="@{/admin/logout}"
+            method="post"
+            style="margin:0;">
+
+        <button type="submit"
+                class="btn">
+          🚪 로그아웃
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- 본문 -->
+  <main class="portal-main">
+
+    <div class="portal-main__head">
+      <div>
+        <h1>관리자 로그</h1>
+
+        <p class="text-sm text-muted">
+          관리자가 수행한 승인, 제재 및 운영 조치 이력을 확인합니다.
+        </p>
+      </div>
+
+      <div class="admin-topbar">
+        <span class="admin-badge">
+          🛡 SUPER ADMIN
+        </span>
+      </div>
+    </div>
+
+    <!-- 오류 메시지 -->
+    <p th:if="${error}"
+       th:text="${error}"
+       class="admin-login__notice
+              admin-login__notice--error">
+      조회 중 오류가 발생했습니다.
+    </p>
+
+    <!-- 통계 -->
+    <div class="admin-stat-grid">
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--violet">
+          🧾
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            전체 로그
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.totalCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--green">
+          📅
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            오늘 발생
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.todayCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--orange">
+          👥
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            계정 관리
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.accountActionCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--blue">
+          🏢
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            소속사 권한
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.agencyActionCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--khaki">
+          🚀
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            프로젝트 관리
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.projectActionCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat admin-stat--alert">
+        <span class="admin-stat__icon
+                     admin-stat__icon--orange">
+          🚩
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            신고 처리
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.reportActionCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+    </div>
+
+    <!-- 로그 목록 -->
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">
+            운영 조치 이력
+          </h2>
+
+          <p class="text-xs text-muted">
+            관리자와 조치 대상 및 기간을 기준으로 검색할 수 있습니다.
+          </p>
+        </div>
+
+        <span class="tag tag--member"
+              th:text="${#numbers.formatInteger(
+                  logs.totalElements,
+                  0,
+                  'COMMA'
+              ) + '건 조회'}">
+          0건 조회
+        </span>
+      </div>
+
+      <!-- 검색 필터 -->
+      <form class="report-filter-bar"
+            method="get"
+            th:action="@{/admin/logs}">
+
+        <!-- 관리자 -->
+        <select name="actorId">
+          <option value="">
+            전체 관리자
+          </option>
+
+          <option th:each="actor : ${adminActors}"
+                  th:value="${actor.id()}"
+                  th:text="${actor.nickname()
+                      + ' (@'
+                      + actor.username()
+                      + ')'}"
+                  th:selected="${selectedActorId != null
+                      and selectedActorId == actor.id()}">
+            관리자
+          </option>
+        </select>
+
+        <!-- 조치 종류 -->
+        <select name="action">
+          <option value="">
+            전체 조치
+          </option>
+
+          <option th:each="actionOption : ${actionOptions}"
+                  th:value="${actionOption.name()}"
+                  th:text="${actionOption.getLabel()}"
+                  th:selected="${selectedAction
+                      == actionOption.name()}">
+            조치 종류
+          </option>
+        </select>
+
+        <!-- 대상 종류 -->
+        <select name="targetType">
+          <option value="">
+            전체 대상
+          </option>
+
+          <option th:each="typeOption : ${targetTypeOptions}"
+                  th:value="${typeOption.name()}"
+                  th:text="${typeOption.getLabel()}"
+                  th:selected="${selectedTargetType
+                      == typeOption.name()}">
+            대상 종류
+          </option>
+        </select>
+
+        <!-- 대상 ID -->
+        <input type="number"
+               name="targetId"
+               min="1"
+               th:value="${selectedTargetId}"
+               placeholder="대상 ID" />
+
+        <!-- 시작일 -->
+        <input type="date"
+               name="fromDate"
+               th:value="${fromDate}"
+               aria-label="조회 시작일" />
+
+        <!-- 종료일 -->
+        <input type="date"
+               name="toDate"
+               th:value="${toDate}"
+               aria-label="조회 종료일" />
+
+        <!-- 검색어 -->
+        <input type="text"
+               name="keyword"
+               th:value="${keyword}"
+               placeholder="관리자 아이디, 닉네임, 사유 검색" />
+
+        <button type="submit"
+                class="btn btn--primary btn--sm">
+          검색
+        </button>
+
+        <a class="btn btn--ghost btn--sm"
+           th:href="@{/admin/logs}">
+          초기화
+        </a>
+      </form>
+
+      <!-- 로그 테이블 -->
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>처리 일시</th>
+            <th>관리자</th>
+            <th>조치</th>
+            <th>대상 종류</th>
+            <th>대상 ID</th>
+            <th>조치 사유</th>
+            <th>접속 IP</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <!-- 결과 없음 -->
+          <tr th:if="${logs.empty}">
+            <td colspan="7"
+                class="text-sm text-muted">
+              검색 조건에 해당하는 관리자 로그가 없습니다.
+            </td>
+          </tr>
+
+          <!-- 로그 반복 -->
+          <tr th:each="adminLog : ${logs.content}">
+
+            <!-- 처리 일시 -->
+            <td th:text="${adminLog.createdAt() == null
+                ? '-'
+                : #temporals.format(
+                    adminLog.createdAt(),
+                    'yyyy.MM.dd HH:mm:ss'
+                )}">
+              2026.09.08 12:00:00
+            </td>
+
+            <!-- 관리자 -->
+            <td>
+              <strong th:text="${adminLog.actorNickname()}">
+                관리자 닉네임
+              </strong>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${'@'
+                        + adminLog.actorUsername()}">
+                @admin
+              </span>
+            </td>
+
+            <!-- 조치 -->
+            <td>
+              <span class="tag"
+                    th:classappend="${(
+                        #strings.contains(
+                            adminLog.actionName(),
+                            'SUSPEND'
+                        )
+                        or #strings.contains(
+                            adminLog.actionName(),
+                            'REJECT'
+                        )
+                        or #strings.contains(
+                            adminLog.actionName(),
+                            'DISMISS'
+                        )
+                        or #strings.contains(
+                            adminLog.actionName(),
+                            'REVOKE'
+                        )
+                        or #strings.contains(
+                            adminLog.actionName(),
+                            'DELETE'
+                        )
+                    )
+                        ? 'tag--danger'
+                        : 'tag--public'}"
+                    th:text="${adminLog.actionLabel()}">
+                조치 종류
+              </span>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${adminLog.actionName()}">
+                ACTION_NAME
+              </span>
+            </td>
+
+            <!-- 대상 종류 -->
+            <td>
+              <span class="tag tag--member"
+                    th:text="${adminLog.targetTypeLabel()}">
+                대상 종류
+              </span>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${adminLog.targetTypeName()}">
+                TARGET_TYPE
+              </span>
+            </td>
+
+            <!-- 대상 ID -->
+            <td>
+              <strong th:text="${'#'
+                  + adminLog.targetId()}">
+                #1
+              </strong>
+            </td>
+
+            <!-- 사유 -->
+            <td>
+              <span th:text="${adminLog.reason() == null
+                      or #strings.isEmpty(
+                          adminLog.reason()
+                      )
+                      ? '사유 미기록'
+                      : adminLog.reason()}"
+                    th:classappend="${adminLog.reason() == null
+                        or #strings.isEmpty(
+                            adminLog.reason()
+                        )
+                        ? 'text-muted'
+                        : ''}">
+                조치 사유
+              </span>
+            </td>
+
+            <!-- IP -->
+            <td>
+              <span class="text-xs"
+                    th:text="${adminLog.ipAddress() == null
+                        ? '-'
+                        : adminLog.ipAddress()}">
+                127.0.0.1
+              </span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 페이지 이동 -->
+      <nav class="pagination"
+           th:if="${logs.totalPages > 1}"
+           aria-label="관리자 로그 페이지 이동">
+
+        <!-- 이전 -->
+        <span th:if="${logs.first}">
+          이전
+        </span>
+
+        <a th:unless="${logs.first}"
+           th:href="@{/admin/logs(
+               page=${logs.number - 1},
+               actorId=${selectedActorId},
+               action=${selectedAction},
+               targetType=${selectedTargetType},
+               targetId=${selectedTargetId},
+               fromDate=${fromDate},
+               toDate=${toDate},
+               keyword=${keyword}
+           )}">
+          이전
+        </a>
+
+        <!-- 페이지 번호 -->
+        <th:block th:each="pageNumber :
+            ${#numbers.sequence(
+                0,
+                logs.totalPages - 1
+            )}">
+
+          <span class="is-active"
+                th:if="${pageNumber == logs.number}"
+                th:text="${pageNumber + 1}">
+            1
+          </span>
+
+          <a th:unless="${pageNumber == logs.number}"
+             th:text="${pageNumber + 1}"
+             th:href="@{/admin/logs(
+                 page=${pageNumber},
+                 actorId=${selectedActorId},
+                 action=${selectedAction},
+                 targetType=${selectedTargetType},
+                 targetId=${selectedTargetId},
+                 fromDate=${fromDate},
+                 toDate=${toDate},
+                 keyword=${keyword}
+             )}">
+            1
+          </a>
+        </th:block>
+
+        <!-- 다음 -->
+        <span th:if="${logs.last}">
+          다음
+        </span>
+
+        <a th:unless="${logs.last}"
+           th:href="@{/admin/logs(
+               page=${logs.number + 1},
+               actorId=${selectedActorId},
+               action=${selectedAction},
+               targetType=${selectedTargetType},
+               targetId=${selectedTargetId},
+               fromDate=${fromDate},
+               toDate=${toDate},
+               keyword=${keyword}
+           )}">
+          다음
+        </a>
+      </nav>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

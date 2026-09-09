@@ -1,10 +1,18 @@
 package megane6.weplanet.repository;
 
+import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,4 +27,43 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByPost_ArtistOrderByCreatedAtDesc(User artist);
 
     long countByPost_Artist(User artist);
+
+    // 관리자 "통합 신고 및 제재" 목록 - 특정 상태(예 : 대기중)인 신고만 최신순으로
+    @Query("""
+        SELECT r FROM Report r
+        WHERE r.status = :status
+          AND (:reason IS NULL OR r.reason = :reason)
+          AND (:keyword IS NULL OR r.post.author.nickname LIKE CONCAT('%', :keyword, '%'))
+        ORDER BY r.createdAt DESC
+        """)
+    List<Report> search(@Param("status") ReportStatus status,
+                        @Param("reason") ReportReason reason,
+                        @Param("keyword") String keyword);
+    
+    long countByStatus(ReportStatus status);
+    long countByResolvedAtAfter(LocalDateTime dateTime);
+    
+    List<Report> findByPost_IdAndStatus(Long postId, ReportStatus status);
+    
+    @Query("""
+        select new megane6.weplanet.domain.dto.ArtistCount(
+            report.post.artist.id,
+            count(report)
+        )
+        from Report report
+        where report.post.artist.id in :artistIds
+          and report.status = :status
+        group by report.post.artist.id
+        """)
+    List<ArtistCount> countReportsByArtistIdsAndStatus(
+            @Param("artistIds") Collection<Long> artistIds,
+            @Param("status") ReportStatus status
+    );
+    
+    // 해당 커뮤니티 처리 대기 게시글 신고를 최신순으로 10개 가져옴
+    @EntityGraph(attributePaths = {"post", "reporter"})
+    List<Report> findTop10ByPost_ArtistAndStatusOrderByCreatedAtDesc(
+            User artist,
+            ReportStatus status
+    );
 }

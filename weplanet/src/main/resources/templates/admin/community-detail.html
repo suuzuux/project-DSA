@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title th:text="${detail.overview().artistNickname()
+      + ' 커뮤니티 상세 | WePlaNet ADMIN'}">
+    커뮤니티 상세 | WePlaNet ADMIN
+  </title>
+
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+
+<body>
+<div class="portal-shell">
+
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}">📢 전체 공지</a>
+      <a class="is-active" th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <form th:action="@{/admin/logout}"
+            method="post"
+            style="margin:0;">
+
+        <button type="submit" class="btn">
+          🚪 로그아웃
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="portal-main">
+
+    <div class="portal-main__head">
+      <div>
+        <p class="text-xs text-muted"
+           th:text="${'@' + detail.overview().artistUsername()}">
+          @artist
+        </p>
+
+        <h1 th:text="${detail.overview().artistNickname()
+            + ' 커뮤니티'}">
+          아티스트 커뮤니티
+        </h1>
+
+        <p class="text-sm text-muted">
+          커뮤니티의 최근 활동과 운영상 주의 항목을 확인합니다.
+        </p>
+      </div>
+
+      <div class="admin-topbar">
+        <a class="btn btn--ghost btn--sm"
+           th:href="@{/admin/communities/overview}">
+          ← 현황 목록
+        </a>
+
+        <span class="tag tag--public"
+              th:if="${detail.overview().statusName() == 'ACTIVE'}"
+              th:text="${detail.overview().statusLabel()}">
+          운영 중
+        </span>
+
+        <span class="tag tag--member"
+              th:if="${detail.overview().statusName() == 'DORMANT'}"
+              th:text="${detail.overview().statusLabel()}">
+          휴면
+        </span>
+
+        <span class="tag tag--danger"
+              th:if="${detail.overview().statusName() == 'SUSPENDED'}"
+              th:text="${detail.overview().statusLabel()}">
+          운영 정지
+        </span>
+
+        <span class="tag tag--private"
+              th:if="${detail.overview().statusName() == 'WITHDRAWN'}"
+              th:text="${detail.overview().statusLabel()}">
+          탈퇴
+        </span>
+      </div>
+    </div>
+
+    <!-- 커뮤니티 주요 통계 -->
+    <div class="admin-stat-grid">
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--blue">
+          👥
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            가입 팬
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      detail.overview().memberCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--violet">
+          📝
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            전체 게시글
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      detail.overview().postCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--green">
+          🚀
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            진행 프로젝트
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${detail.overview().activeProjectCount()}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--khaki">
+          ⛔
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            차단 회원
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${detail.overview().blockedMemberCount()}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat admin-stat--alert">
+        <span class="admin-stat__icon admin-stat__icon--orange">
+          🚩
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            처리 대기 신고
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${detail.overview().pendingReportCount()}">
+            0
+          </strong>
+        </span>
+      </article>
+
+    </div>
+
+    <!-- 최근 게시글 · 프로젝트 -->
+    <div class="panel-grid">
+
+      <!-- 최근 게시글 -->
+      <section class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">최근 게시글</h2>
+            <p class="text-xs text-muted">
+              가장 최근에 등록된 게시글 10개입니다.
+            </p>
+          </div>
+
+          <span class="tag tag--member"
+                th:text="${#lists.size(detail.recentPosts()) + '개'}">
+            0개
+          </span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>게시판</th>
+              <th>제목</th>
+              <th>작성자</th>
+              <th>좋아요</th>
+              <th>작성일</th>
+              <th>보기</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${#lists.isEmpty(detail.recentPosts())}">
+              <td colspan="6"
+                  class="text-sm text-muted">
+                등록된 게시글이 없습니다.
+              </td>
+            </tr>
+
+            <tr th:each="post : ${detail.recentPosts()}">
+              <td>
+                <span class="tag tag--private"
+                      th:text="${post.boardTypeLabel()}">
+                  팬 게시판
+                </span>
+              </td>
+
+              <td>
+                <strong th:text="${post.title()}">
+                  게시글 제목
+                </strong>
+              </td>
+
+              <td th:text="${post.authorNickname()}">
+                작성자
+              </td>
+
+              <td th:text="${post.likeCount()}">
+                0
+              </td>
+
+              <td th:text="${post.createdAt() == null
+                  ? '-'
+                  : #temporals.format(
+                      post.createdAt(),
+                      'yyyy.MM.dd HH:mm'
+                  )}">
+                2026.09.07
+              </td>
+
+              <td>
+                <a class="btn btn--ghost btn--sm"
+                   th:href="@{/posts/detail/{postId}(
+                      postId=${post.postId()})}">
+                  보기
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 최근 프로젝트 -->
+      <section class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">최근 프로젝트</h2>
+            <p class="text-xs text-muted">
+              가장 최근에 등록된 프로젝트 10개입니다.
+            </p>
+          </div>
+
+          <span class="tag tag--public"
+                th:text="${#lists.size(detail.recentProjects()) + '개'}">
+            0개
+          </span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>프로젝트</th>
+              <th>유형</th>
+              <th>상태</th>
+              <th>목표 금액</th>
+              <th>모금 종료일</th>
+              <th>관리</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${#lists.isEmpty(detail.recentProjects())}">
+              <td colspan="6"
+                  class="text-sm text-muted">
+                등록된 프로젝트가 없습니다.
+              </td>
+            </tr>
+
+            <tr th:each="project : ${detail.recentProjects()}">
+              <td>
+                <strong th:text="${project.title()}">
+                  프로젝트 제목
+                </strong>
+              </td>
+
+              <td th:text="${project.eventTypeLabel()}">
+                이벤트 유형
+              </td>
+
+              <td>
+                <span class="tag"
+                      th:classappend="${project.statusName()
+                          == 'REJECTED'
+                          or project.statusName()
+                          == 'CANCELLED'}
+                          ? ' tag--danger'
+                          : ' tag--public'"
+                      th:text="${project.statusLabel()}">
+                  상태
+                </span>
+              </td>
+
+              <td th:text="${project.goalAmount() == null
+                  ? '-'
+                  : #numbers.formatInteger(
+                      project.goalAmount(),
+                      0,
+                      'COMMA'
+                  ) + '원'}">
+                0원
+              </td>
+
+              <td th:text="${project.fundingEndAt() == null
+                  ? '-'
+                  : #temporals.format(
+                      project.fundingEndAt(),
+                      'yyyy.MM.dd'
+                  )}">
+                2026.09.07
+              </td>
+
+              <td>
+                <a class="btn btn--ghost btn--sm"
+                   th:href="@{/admin/communities(
+                      projectId=${project.projectId()})}">
+                  관리
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 차단 회원 · 처리 대기 신고 -->
+    <div class="panel-grid" style="margin-top:16px;">
+
+      <!-- 차단 회원 -->
+      <section class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">차단 회원</h2>
+            <p class="text-xs text-muted">
+              해당 커뮤니티에서 최근 차단된 회원 10명입니다.
+            </p>
+          </div>
+
+          <span class="tag tag--member"
+                th:text="${#lists.size(detail.blockedMembers()) + '명'}">
+            0명
+          </span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>회원</th>
+              <th>아이디</th>
+              <th>차단 사유</th>
+              <th>차단일</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${#lists.isEmpty(detail.blockedMembers())}">
+              <td colspan="4"
+                  class="text-sm text-muted">
+                차단된 회원이 없습니다.
+              </td>
+            </tr>
+
+            <tr th:each="member : ${detail.blockedMembers()}">
+              <td>
+                <strong th:text="${member.nickname()}">
+                  회원 닉네임
+                </strong>
+
+                <br />
+
+                <span class="text-xs text-muted"
+                      th:text="${'회원 번호 #' + member.userId()}">
+                  회원 번호 #1
+                </span>
+              </td>
+
+              <td th:text="${member.username()}">
+                username
+              </td>
+
+              <td>
+                <span class="tag tag--danger"
+                      th:text="${member.reason()}">
+                  차단 사유
+                </span>
+              </td>
+
+              <td th:text="${member.blockedAt() == null
+                  ? '-'
+                  : #temporals.format(
+                      member.blockedAt(),
+                      'yyyy.MM.dd HH:mm'
+                  )}">
+                2026.09.07
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 처리 대기 신고 -->
+      <section class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">처리 대기 신고</h2>
+            <p class="text-xs text-muted">
+              해당 커뮤니티의 최근 미처리 신고 10건입니다.
+            </p>
+          </div>
+
+          <a class="btn btn--ghost btn--sm"
+             th:href="@{/admin/reports(status='PENDING')}">
+            신고 관리 →
+          </a>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>대상</th>
+              <th>신고 내용</th>
+              <th>신고자</th>
+              <th>신고 사유</th>
+              <th>신고일</th>
+              <th>관리</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${#lists.isEmpty(detail.pendingReports())}">
+              <td colspan="6"
+                  class="text-sm text-muted">
+                처리 대기 중인 신고가 없습니다.
+              </td>
+            </tr>
+
+            <tr th:each="report : ${detail.pendingReports()}">
+              <td>
+                <span class="tag tag--danger"
+                      th:text="${report.targetType()}">
+                  게시글
+                </span>
+
+                <br />
+
+                <span class="text-xs text-muted"
+                      th:text="${'#' + report.targetId()}">
+                  #1
+                </span>
+              </td>
+
+              <td>
+                <strong th:text="${report.targetSummary()}">
+                  신고 대상 내용
+                </strong>
+              </td>
+
+              <td th:text="${report.reporterNickname()}">
+                신고자
+              </td>
+
+              <td>
+                <span class="tag tag--member"
+                      th:text="${report.reasonLabel()}">
+                  신고 사유
+                </span>
+              </td>
+
+              <td th:text="${report.reportedAt() == null
+                  ? '-'
+                  : #temporals.format(
+                      report.reportedAt(),
+                      'yyyy.MM.dd HH:mm'
+                  )}">
+                2026.09.07
+              </td>
+
+              <td>
+                <a class="btn btn--ghost btn--sm"
+                   th:href="@{/admin/reports(
+                      status='PENDING',
+                      keyword=${report.targetSummary()}
+                   )}">
+                  처리
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 하단 바로가기 -->
+    <section class="panel" style="margin-top:16px;">
+      <div class="panel__head" style="margin-bottom:0;">
+        <div>
+          <h2 class="panel__title">커뮤니티 운영 바로가기</h2>
+          <p class="text-xs text-muted">
+            프로젝트 승인·정산 또는 신고 처리 화면으로 이동합니다.
+          </p>
+        </div>
+
+        <div class="flex-center" style="gap:8px;">
+          <a class="btn btn--ghost btn--sm"
+             th:href="@{/admin/communities/overview}">
+            커뮤니티 현황
+          </a>
+
+          <a class="btn btn--ghost btn--sm"
+             th:href="@{/admin/reports(status='PENDING')}">
+            신고 관리
+          </a>
+
+          <a class="btn btn--primary btn--sm"
+             th:href="@{/admin/communities}">
+            프로젝트·정산 관리
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

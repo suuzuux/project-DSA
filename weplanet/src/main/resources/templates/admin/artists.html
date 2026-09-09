@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0" />
+
+  <title>아티스트 관리 | WePlaNet ADMIN</title>
+
+  <link rel="stylesheet"
+        th:href="@{/css/style.css}" />
+
+  <link rel="stylesheet"
+        th:href="@{/css/portal.css}" />
+</head>
+
+<body>
+<div class="portal-shell">
+
+  <!-- 관리자 사이드바 -->
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+      <a class="is-active" th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <form th:action="@{/admin/logout}"
+            method="post"
+            style="margin:0;">
+
+        <button type="submit"
+                class="btn">
+          🚪 로그아웃
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- 본문 -->
+  <main class="portal-main">
+
+    <div class="portal-main__head">
+      <div>
+        <h1>아티스트 관리</h1>
+
+        <p class="text-sm text-muted">
+          등록된 아티스트 프로필과 소속사 및
+          계정 상태를 관리합니다.
+        </p>
+      </div>
+
+      <div class="admin-topbar">
+        <span class="admin-badge">
+          🛡 SUPER ADMIN
+        </span>
+      </div>
+    </div>
+
+    <!-- 처리 결과 메시지 -->
+    <p th:if="${msg}"
+       th:text="${msg}"
+       class="admin-login__notice
+              admin-login__notice--success">
+      처리가 완료되었습니다.
+    </p>
+
+    <p th:if="${error}"
+       th:text="${error}"
+       class="admin-login__notice
+              admin-login__notice--error">
+      처리 중 오류가 발생했습니다.
+    </p>
+
+    <!-- 아티스트 통계 -->
+    <div class="admin-stat-grid">
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--violet">
+          🎤
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            전체 아티스트 계정
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.totalArtistCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--blue">
+          🪪
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            프로필 등록 완료
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.registeredProfileCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--green">
+          ✅
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            활성 계정
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.activeCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--khaki">
+          🌙
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            휴면 계정
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.dormantCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat admin-stat--alert">
+        <span class="admin-stat__icon
+                     admin-stat__icon--orange">
+          ⛔
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            정지 계정
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.suspendedCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+      <article class="admin-stat">
+        <span class="admin-stat__icon
+                     admin-stat__icon--blue">
+          🚪
+        </span>
+
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">
+            탈퇴 계정
+          </span>
+
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(
+                      stats.withdrawnCount(),
+                      0,
+                      'COMMA'
+                  )}">
+            0
+          </strong>
+        </span>
+      </article>
+
+    </div>
+
+    <!-- 아티스트 목록 -->
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">
+            아티스트 목록
+          </h2>
+
+          <p class="text-xs text-muted">
+            활동명, 계정, 소속사와 포지션으로
+            검색할 수 있습니다.
+          </p>
+        </div>
+
+        <span class="tag tag--member"
+              th:text="${#lists.size(artists)
+                  + '명 조회'}">
+          0명 조회
+        </span>
+      </div>
+
+      <!-- 검색 필터 -->
+      <form class="report-filter-bar"
+            method="get"
+            th:action="@{/admin/artists}">
+
+        <select name="userStatus">
+          <option value="">
+            전체 계정 상태
+          </option>
+
+          <option value="ACTIVE"
+                  th:selected="${selectedUserStatus
+                      == 'ACTIVE'}">
+            활성
+          </option>
+
+          <option value="DORMANT"
+                  th:selected="${selectedUserStatus
+                      == 'DORMANT'}">
+            휴면
+          </option>
+
+          <option value="SUSPENDED"
+                  th:selected="${selectedUserStatus
+                      == 'SUSPENDED'}">
+            정지
+          </option>
+
+          <option value="WITHDRAWN"
+                  th:selected="${selectedUserStatus
+                      == 'WITHDRAWN'}">
+            탈퇴
+          </option>
+        </select>
+
+        <select name="agencyStatus">
+          <option value="">
+            전체 소속사 상태
+          </option>
+
+          <option value="ACTIVE"
+                  th:selected="${selectedAgencyStatus
+                      == 'ACTIVE'}">
+            운영 중
+          </option>
+
+          <option value="SUSPENDED"
+                  th:selected="${selectedAgencyStatus
+                      == 'SUSPENDED'}">
+            운영 정지
+          </option>
+        </select>
+
+        <input type="text"
+               name="keyword"
+               th:value="${keyword}"
+               placeholder="활동명, 계정, 이메일, 소속사, 포지션 검색" />
+
+        <button type="submit"
+                class="btn btn--primary btn--sm">
+          검색
+        </button>
+
+        <a class="btn btn--ghost btn--sm"
+           th:href="@{/admin/artists}">
+          초기화
+        </a>
+      </form>
+
+      <!-- 목록 테이블 -->
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>아티스트</th>
+            <th>계정 정보</th>
+            <th>소속사</th>
+            <th>계정 상태</th>
+            <th>소속사 상태</th>
+            <th>이메일 인증</th>
+            <th>데뷔일</th>
+            <th>가입일</th>
+            <th>최근 로그인</th>
+            <th>관리</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <!-- 검색 결과 없음 -->
+          <tr th:if="${#lists.isEmpty(artists)}">
+            <td colspan="10"
+                class="text-sm text-muted">
+              검색 조건에 해당하는 아티스트가 없습니다.
+            </td>
+          </tr>
+
+          <!-- 아티스트 반복 -->
+          <tr th:each="artist : ${artists}">
+
+            <!-- 아티스트 프로필 -->
+            <td>
+              <div style="
+                  display:flex;
+                  align-items:center;
+                  gap:10px;
+                  min-width:150px;
+              ">
+                <div class="avatar">
+                  <img th:if="${artist.profileImg()
+                              != null
+                              and not #strings.isEmpty(
+                                  artist.profileImg()
+                              )}"
+                       th:src="${artist.profileImg()}"
+                       th:alt="${artist.stageName()
+                           + ' 프로필 이미지'}"
+                       style="
+                           width:100%;
+                           height:100%;
+                           object-fit:cover;
+                       " />
+
+                  <span th:unless="${artist.profileImg()
+                                  != null
+                                  and not #strings.isEmpty(
+                                      artist.profileImg()
+                                  )}"
+                        th:text="${#strings.substring(
+                            artist.stageName(),
+                            0,
+                            1
+                        )}">
+                    A
+                  </span>
+                </div>
+
+                <div>
+                  <strong th:text="${artist.stageName()}">
+                    활동명
+                  </strong>
+
+                  <br />
+
+                  <span class="text-xs text-muted"
+                        th:text="${artist.position()
+                            == null
+                            or #strings.isEmpty(
+                                artist.position()
+                            )
+                            ? '포지션 미등록'
+                            : artist.position()}">
+                    포지션
+                  </span>
+                </div>
+              </div>
+            </td>
+
+            <!-- 계정 정보 -->
+            <td>
+              <strong th:text="${artist.nickname()}">
+                닉네임
+              </strong>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${'@'
+                        + artist.username()}">
+                @username
+              </span>
+
+              <br />
+
+              <span class="text-xs text-muted"
+                    th:text="${artist.email()}">
+                artist@example.com
+              </span>
+            </td>
+
+            <!-- 소속사 -->
+            <td>
+              <strong th:text="${artist.agencyName() == null
+                  ? '소속사 미등록'
+                  : artist.agencyName()}">
+                소속사명
+              </strong>
+
+              <br th:if="${artist.agencyId() != null}" />
+
+              <span class="text-xs text-muted"
+                    th:if="${artist.agencyId() != null}"
+                    th:text="${'소속사 ID: '
+                        + artist.agencyId()}">
+                소속사 ID
+              </span>
+            </td>
+
+            <!-- 계정 상태 -->
+            <td>
+              <span class="tag tag--public"
+                    th:if="${artist.userStatusName()
+                        == 'ACTIVE'}"
+                    th:text="${artist.userStatusLabel()}">
+                활성
+              </span>
+
+              <span class="tag tag--member"
+                    th:if="${artist.userStatusName()
+                        == 'DORMANT'}"
+                    th:text="${artist.userStatusLabel()}">
+                휴면
+              </span>
+
+              <span class="tag tag--danger"
+                    th:if="${artist.userStatusName()
+                        == 'SUSPENDED'}"
+                    th:text="${artist.userStatusLabel()}">
+                정지
+              </span>
+
+              <span class="tag tag--private"
+                    th:if="${artist.userStatusName()
+                        == 'WITHDRAWN'}"
+                    th:text="${artist.userStatusLabel()}">
+                탈퇴
+              </span>
+            </td>
+
+            <!-- 소속사 상태 -->
+            <td>
+              <span class="tag tag--public"
+                    th:if="${artist.agencyStatusName()
+                        == 'ACTIVE'}"
+                    th:text="${artist.agencyStatusLabel()}">
+                운영 중
+              </span>
+
+              <span class="tag tag--danger"
+                    th:if="${artist.agencyStatusName()
+                        == 'SUSPENDED'}"
+                    th:text="${artist.agencyStatusLabel()}">
+                운영 정지
+              </span>
+
+              <span class="tag tag--private"
+                    th:if="${artist.agencyStatusName()
+                        == null}">
+                미등록
+              </span>
+            </td>
+
+            <!-- 이메일 인증 -->
+            <td>
+              <span class="tag tag--public"
+                    th:if="${artist.emailVerified()}">
+                인증 완료
+              </span>
+
+              <span class="tag tag--private"
+                    th:unless="${artist.emailVerified()}">
+                미인증
+              </span>
+            </td>
+
+            <!-- 데뷔일 -->
+            <td th:text="${artist.debutDate()
+                == null
+                ? '-'
+                : #temporals.format(
+                    artist.debutDate(),
+                    'yyyy.MM.dd'
+                )}">
+              2026.09.08
+            </td>
+
+            <!-- 가입일 -->
+            <td th:text="${artist.createdAt()
+                == null
+                ? '-'
+                : #temporals.format(
+                    artist.createdAt(),
+                    'yyyy.MM.dd'
+                )}">
+              2026.09.08
+            </td>
+
+            <!-- 최근 로그인 -->
+            <td th:text="${artist.lastLoginAt()
+                == null
+                ? '-'
+                : #temporals.format(
+                    artist.lastLoginAt(),
+                    'yyyy.MM.dd HH:mm'
+                )}">
+              2026.09.08 12:00
+            </td>
+
+            <!-- 관리 -->
+            <td>
+              <!-- 활성·휴면 계정 정지 -->
+              <form th:if="${artist.userStatusName()
+                               != 'SUSPENDED'
+                           and artist.userStatusName()
+                               != 'WITHDRAWN'}"
+                    th:action="@{/admin/artists/{userId}/suspend(
+                        userId=${artist.userId()}
+                    )}"
+                    method="post">
+
+                <input type="hidden"
+                       name="userStatus"
+                       th:value="${selectedUserStatus}" />
+
+                <input type="hidden"
+                       name="agencyStatus"
+                       th:value="${selectedAgencyStatus}" />
+
+                <input type="hidden"
+                       name="keyword"
+                       th:value="${keyword}" />
+
+                <button type="submit"
+                        class="btn btn--ghost btn--sm"
+                        onclick="return confirm(
+                            '이 아티스트 계정을 정지할까요?'
+                        );">
+                  계정 정지
+                </button>
+              </form>
+
+              <!-- 정지 계정 복구 -->
+              <form th:if="${artist.userStatusName()
+                          == 'SUSPENDED'}"
+                    th:action="@{/admin/artists/{userId}/reinstate(
+                        userId=${artist.userId()}
+                    )}"
+                    method="post">
+
+                <input type="hidden"
+                       name="userStatus"
+                       th:value="${selectedUserStatus}" />
+
+                <input type="hidden"
+                       name="agencyStatus"
+                       th:value="${selectedAgencyStatus}" />
+
+                <input type="hidden"
+                       name="keyword"
+                       th:value="${keyword}" />
+
+                <button type="submit"
+                        class="btn btn--primary btn--sm"
+                        onclick="return confirm(
+                            '이 아티스트 계정의 정지를 해제할까요?'
+                        );">
+                  정지 해제
+                </button>
+              </form>
+
+              <!-- 탈퇴 계정 -->
+              <span class="text-xs text-muted"
+                    th:if="${artist.userStatusName()
+                        == 'WITHDRAWN'}">
+                변경 불가
+              </span>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+</body>
+</html>

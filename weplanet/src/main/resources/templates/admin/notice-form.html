@@ -16,16 +16,25 @@
   <div class="portal-shell">
     <aside class="portal-sidebar portal-sidebar--admin">
       <div class="portal-sidebar__org">
-        <div class="agency">WePlaNet</div>
+        <div class="agency">WEPLANET</div>
         <div class="artist">ADMIN</div>
       </div>
+
       <nav class="portal-sidebar__nav">
-        <a class="is-active" th:href="@{/admin/notices}">📢 공지사항</a>
-        <a th:href="@{/chat/admin/keywords}">금칙어 관리</a>
+        <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+        <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+        <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+        <a th:href="@{/admin/users}">👥 전체 회원</a>
+        <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+        <a class="is-active" th:href="@{/admin/notices}">📢 전체 공지</a>
+        <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+        <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
       </nav>
+
       <div class="portal-sidebar__footer">
-        <a th:href="@{/}">← 홈</a><br /><br />
-        <a th:href="@{/logout}">로그아웃</a>
+        <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+          <button type="submit" class="btn">🚪 로그아웃</button>
+        </form>
       </div>
     </aside>
 
@@ -52,11 +61,41 @@
                     th:text="${notice != null ? notice.content : ''}"></textarea>
         </div>
         <div class="form-group">
+          <label class="form-label" for="category">분류</label>
+          <select class="form-select" id="category" name="category" style="max-width:200px;">
+            <option value="GENERAL" th:selected="${notice == null || notice.category.name() == 'GENERAL'}">일반</option>
+            <option value="EVENT" th:selected="${notice != null && notice.category.name() == 'EVENT'}">이벤트</option>
+            <option value="MAINTENANCE" th:selected="${notice != null && notice.category.name() == 'MAINTENANCE'}">점검</option>
+            <option value="UPDATE" th:selected="${notice != null && notice.category.name() == 'UPDATE'}">업데이트</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label" for="published">공개여부</label>
           <select class="form-select" id="published" name="published" style="max-width:200px;">
             <option value="true" th:selected="${notice == null || notice.published}">공개</option>
             <option value="false" th:selected="${notice != null && !notice.published}">비공개</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="publishAt">예약 발행 (선택)</label>
+          <input class="form-input" type="date" id="publishAt" name="publishAt"
+                 th:value="${notice != null && notice.publishAt != null} ? ${#temporals.format(notice.publishAt, 'yyyy-MM-dd')} : ''" />
+          <p class="text-sm text-muted" style="margin-top:6px;">비워두면 지금 바로(공개여부 설정대로) 노출됩니다. 시각을 지정하면 그 전까지는 "공개"로 저장해도 실제로는 안 보입니다.</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">상단 노출</label>
+          <input type="hidden" id="pinned" name="pinned" th:value="${notice != null && notice.pinned}">
+          <button type="button" id="pinToggle" class="btn btn--ghost"
+                  th:classappend="${notice != null && notice.pinned} ? ' is-pin-on'"
+                  th:attr="data-pinned=${notice != null && notice.pinned},
+                           data-at-limit=${(notice == null || !notice.pinned) && pinnedCount >= maxPinned},
+                           data-max-pinned=${maxPinned}">
+            <span th:text="${notice != null && notice.pinned} ? '상단 노출 중' : '이 글을 목록 최상단에 띄우기'">이 글을 목록 최상단에 띄우기</span>
+          </button>
+          <p class="text-sm text-muted" style="margin-top:8px;">
+            켜면 공지 목록 맨 위에 볼드 제목으로 표시됩니다. 상단 노출은 최대 <span th:text="${maxPinned}">3</span>개까지 가능합니다.
+            (<span th:text="${pinnedCount}">0</span>/<span th:text="${maxPinned}">3</span>)
+          </p>
         </div>
         <div class="flex-center" style="justify-content:flex-end;">
           <button type="submit" class="btn btn--primary"
@@ -67,5 +106,29 @@
   </div>
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
+<script>
+  (function () {
+    var btn = document.getElementById("pinToggle");
+    var input = document.getElementById("pinned");
+    if (!btn || !input) return;
+    var atLimit = btn.getAttribute("data-at-limit") === "true";
+    var maxPinned = btn.getAttribute("data-max-pinned") || "3";
+    var label = btn.querySelector("span");
+    function render(on) {
+      input.value = on ? "true" : "false";
+      btn.classList.toggle("is-pin-on", on);
+      if (label) label.textContent = on ? "상단 노출 중" : "이 글을 목록 최상단에 띄우기";
+    }
+    render(btn.getAttribute("data-pinned") === "true");
+    btn.addEventListener("click", function () {
+      var on = input.value === "true";
+      if (!on && atLimit) {
+        alert("상단 노출은 최대 " + maxPinned + "개까지 가능합니다.");
+        return;
+      }
+      render(!on);
+    });
+  })();
+</script>
 </body>
 </html>

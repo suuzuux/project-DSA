@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>통합 신고 · 제재 | WePlaNet ADMIN</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+<div class="portal-shell">
+
+    <aside class="portal-sidebar portal-sidebar--admin">
+        <div class="portal-sidebar__org">
+            <div class="agency">WEPLANET</div>
+            <div class="artist">ADMIN</div>
+        </div>
+
+        <nav class="portal-sidebar__nav">
+            <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+            <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+            <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+            <a th:href="@{/admin/users}">👥 전체 회원</a>
+            <a class="is-active" th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+            <a th:href="@{/admin/notices}">📢 전체 공지</a>
+            <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+            <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+        </nav>
+
+        <div class="portal-sidebar__footer">
+            <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+                <button type="submit" class="btn">🚪 로그아웃</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="portal-main">
+        <div class="portal-main__head">
+            <h1>통합 신고 · 제재</h1>
+        </div>
+
+        <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
+        <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+            <a th:href="@{/admin/reports}" class="btn btn--sm btn--ghost">통합 신고함</a>
+            <a th:href="@{/admin/reports/suspended}" class="btn btn--sm btn--primary">제재 대상</a>
+        </div>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title">제재 대상</h2>
+                <span class="text-xs text-muted" th:text="${#lists.size(suspendedUsers)} + '명'">0명</span>
+            </div>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                    <tr><th>닉네임</th><th>아이디</th><th>이메일</th><th>최근 변경일</th><th>관리</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(suspendedUsers)}">
+                        <td colspan="5" class="text-sm text-muted">정지된 회원이 없습니다.</td>
+                    </tr>
+                    <tr th:each="u : ${suspendedUsers}">
+                        <td th:text="${u.nickname}">닉네임</td>
+                        <td th:text="${u.username}">아이디</td>
+                        <td th:text="${u.email}">이메일</td>
+                        <td th:text="${#temporals.format(u.updatedAt, 'yyyy.MM.dd HH:mm')}">2026.09.02 12:00</td>
+                        <td>
+                            <form th:action="@{/admin/reports/users/{userId}/reinstate(userId=${u.id})}" method="post">
+                                <button type="submit" class="btn btn--ghost btn--sm"
+                                        onclick="return confirm('정지를 해제할까요?');">정지 해제</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

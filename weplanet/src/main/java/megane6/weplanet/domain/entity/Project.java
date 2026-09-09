@@ -269,6 +269,17 @@ public class Project {
             status = FanProjectStatus.FUNDING;
         }
     }
+    
+    // 진짜 정산
+    public void completeSettlement(User admin) {
+        if (admin == null || admin.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("ADMIN만 정산을 완료할 수 있습니다.");
+        }
+        if (status != FanProjectStatus.FUNDING_CLOSED) {
+            throw new IllegalStateException("모금이 마감된 프로젝트만 정산할 수 있습니다.");
+        }
+        this.status = FanProjectStatus.COMPLETED;
+    }
 
     private void validatePendingReview(User admin) {
         if (admin == null || admin.getRole() != Role.ADMIN) {

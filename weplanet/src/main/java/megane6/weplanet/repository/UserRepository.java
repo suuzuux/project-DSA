@@ -1,8 +1,10 @@
 package megane6.weplanet.repository;
 
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -26,11 +28,84 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // DM 인박스(CHAT: 여러 아티스트 목록) 에서, 아직 대화 안 나눈 아티스트도 "추천" 칸에 보여주기 위해
     // 시스템에 있는 아티스트 전체 목록이 필요함
     List<User> findByRole(Role role);
-
-    // 소셜 로그인 시 "이 provider의 이 providerId로 가입된 계정이 이미 있는지" 조회
-    Optional<User> findByProviderAndProviderId(AuthProvider provider, String providerId);
+    
+    long countByStatus(UserStatus status);
+    
+    List<User> findByStatus(UserStatus status);
+    
+    // 소셜 로그인 계정 조회
+    Optional<User> findByProviderAndProviderId(
+            AuthProvider provider,
+            String providerId
+    );
 
     List<User> findByRoleAndAgency_Id(Role role, Long agencyId);
+
+    long countByRole(Role role);
+    
+    @Query("""
+        select user
+        from User user
+        where user.role = :role
+          and (:status is null or user.status = :status)
+          and (
+              :keyword is null
+              or lower(user.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.username)
+                    like lower(concat('%', :keyword, '%'))
+          )
+        order by user.nickname asc
+        """)
+    List<User> searchByRole(
+            @Param("role") Role role,
+            @Param("status") UserStatus status,
+            @Param("keyword") String keyword
+    );
+    
+    @Query("""
+        select user
+        from User user
+        left join fetch user.agency agency
+        where (:role is null or user.role = :role)
+          and (:status is null or user.status = :status)
+          and (:provider is null or user.provider = :provider)
+          and (
+              :keyword is null
+              or lower(user.username)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.email)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(coalesce(agency.name, ''))
+                    like lower(concat('%', :keyword, '%'))
+          )
+        order by user.createdAt desc, user.id desc
+        """)
+    List<User> searchForAdmin(
+            @Param("role") Role role,
+            @Param("status") UserStatus status,
+            @Param("provider") AuthProvider provider,
+            @Param("keyword") String keyword
+    );
+
+    @Query("""
+        select user
+        from User user
+        left join fetch user.agency agency
+        where user.role = :role
+          and (:userStatus is null or user.status = :userStatus)
+          and (:agencyStatus is null or agency.status = :agencyStatus)
+        order by user.createdAt desc, user.id desc
+        """)
+    List<User> searchArtistsForAdmin(
+            @Param("role") Role role,
+            @Param("userStatus") UserStatus userStatus,
+            @Param("agencyStatus") AgencyStatus agencyStatus
+    );
+
+    long countByRoleAndStatus(Role role, UserStatus status);
 
     @EntityGraph(attributePaths = "agency")
     Optional<User> findOneById(Long id);

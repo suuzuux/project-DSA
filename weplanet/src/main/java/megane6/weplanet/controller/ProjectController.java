@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -174,13 +175,18 @@ public class ProjectController {
 	public String approveProject(
 			@PathVariable Long artistId,
 			@PathVariable Long projectId,
+			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes) {
 		if (principal == null) {
 			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
 		}
 
-		ps.approveProject(projectId, artistId, principal.getId());
+		ps.approveProject(
+				projectId,
+				artistId,
+				principal.getId(),
+				request.getRemoteAddr());
 		redirectAttributes.addFlashAttribute("successMessage", "프로젝트를 승인했습니다.");
 		return "redirect:/community/" + artistId + "/project/" + projectId;
 	}
@@ -191,13 +197,19 @@ public class ProjectController {
 			@PathVariable Long artistId,
 			@PathVariable Long projectId,
 			@RequestParam String rejectionReason,
+			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes) {
 		if (principal == null) {
 			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
 		}
 
-		ps.rejectProject(projectId, artistId, principal.getId(), rejectionReason);
+		ps.rejectProject(
+				projectId,
+				artistId,
+				principal.getId(),
+				rejectionReason,
+				request.getRemoteAddr());
 		redirectAttributes.addFlashAttribute("successMessage", "프로젝트를 반려했습니다.");
 		return "redirect:/community/" + artistId + "/project/" + projectId;
 	}

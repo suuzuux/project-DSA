@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Report;
@@ -7,6 +8,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
 import megane6.weplanet.domain.entity.live.LiveCommentReport;
+import megane6.weplanet.repository.AgencyProfileRepository;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -26,12 +28,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import jakarta.servlet.http.HttpSession;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -55,6 +56,7 @@ public class PortalController {
 	private final LiveCommentReportRepository liveCommentReportRepository;
 	private final ArtistBlockService artistBlockService;
 	private final CommunityJoinService communityJoinService;
+	private final AgencyProfileRepository agencyProfileRepository;
 	private final AgencyEnrollmentService agencyEnrollmentService;
 	private final PostService postService;
 	private final CommentService commentService;
@@ -65,7 +67,12 @@ public class PortalController {
 		if (principal == null) {
 			return "portal/login";
 		}
-		// 에이전시만 포털 홈, 아티스트/팬/관리자는 각자 기본 홈으로
+		if (isPortalUser(principal) && !hasApprovedAgencyPermission(
+				principal.getId())
+		) {
+			return "portal/approval-pending";
+		}
+		
 		return RoleHomeRedirects.redirectFor(principal);
 	}
 
@@ -653,14 +660,33 @@ public class PortalController {
 		}
 		return attrs.getRequest().getSession(create);
 	}
-
+	
 	private User currentPortalUser(AuthenticatedUser principal) {
 		if (principal == null || !isPortalUser(principal)) {
 			return null;
 		}
-		return userRepository.findOneById(principal.getId())
+
+		User actor = userRepository
+				.findOneById(principal.getId())
 				.filter(user -> user.getRole() == Role.AGENCY)
 				.orElse(null);
+		
+		if (actor == null) {
+			return null;
+		}
+		
+		if (!hasApprovedAgencyPermission(actor.getId())) {
+			return null;
+		}
+		
+		return actor;
+	}
+	
+	private boolean hasApprovedAgencyPermission(Long userId) {
+		return agencyProfileRepository
+				.findByUser_Id(userId)
+				.map(profile -> profile.isApproved())
+				.orElse(false);
 	}
 
 	/** 에이전시 계정에 연결된 소속사 소속 아티스트만 반환. */
