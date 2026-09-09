@@ -144,7 +144,9 @@ public class SecurityConfig {
                 }
                 // WITHDRAWN/SUSPENDED는 구분 안 하고 일반 에러로 - 탈퇴 여부를 로그인 화면에서 노출 안 하려는 의도
             }
-            response.sendRedirect("/login?error");
+            // "/login"은 SNS/아이디 선택 화면(login-wireframe)이라 에러 문구가 없다.
+            // 실제 아이디/비밀번호 폼과 에러 문구는 "/login/id"(login-id.html)에 있으므로 거기로 보내야 한다.
+            response.sendRedirect("/login/id?error");
         };
         
     }

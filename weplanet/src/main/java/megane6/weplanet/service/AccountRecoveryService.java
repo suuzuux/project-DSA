@@ -2,6 +2,7 @@ package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,11 @@ public class AccountRecoveryService {
 	private final PasswordEncoder passwordEncoder;
 	
 	// 아이디 찾기 1단계: 이름+이메일이 실제로 같이 등록된 계정인지 확인 (아무 이메일에나 코드를 보내지 않기 위함)
+	// 소셜 계정(연동된 계정 포함)은 애초에 아이디/비밀번호 찾기의 대상이 아니므로 LOCAL 계정만 매칭한다.
+	// provider가 다르면 그냥 "일치하는 계정 없음"과 동일하게 처리해서 계정 존재 여부 자체를 흘리지 않는다.
 	public boolean matchesRealNameAndEmail(String realName, String email) {
 		return userRepository.findByEmail(email)
+				.filter(user -> user.getProvider() == AuthProvider.LOCAL)
 				.map(user -> user.getRealName().equals(realName))
 				.orElse(false);
 	}
@@ -31,22 +35,25 @@ public class AccountRecoveryService {
 	// 아이디 찾기 2단계: 이메일 인증까지 끝난 뒤에만 호출됨
 	public String findUsernameByEmail(String email) {
 		return userRepository.findByEmail(email)
+				.filter(user -> user.getProvider() == AuthProvider.LOCAL)
 				.map(User::getUsername)
 				.orElseThrow(() -> new IllegalArgumentException("일치하는 계정을 찾을 수 없습니다."));
 	}
 	
-	// 비밀번호 재설정 1단계: 아이디+이메일이 같이 등록된 계정인지 확인
+	// 비밀번호 재설정 1단계: 아이디+이메일이 같이 등록된 계정인지 확인 (LOCAL 계정만 대상)
 	public boolean matchesUsernameAndEmail(String username, String email) {
 		return userRepository.findByUsername(username)
+				.filter(user -> user.getProvider() == AuthProvider.LOCAL)
 				.map(user -> user.getEmail().equals(email))
 				.orElse(false);
 	}
 	
-	// 비밀번호 재설정 2단계: 이메일 인증까지 끝난 뒤에만 호출됨
+	// 비밀번호 재설정 2단계: 이메일 인증까지 끝난 뒤에만 호출됨 (LOCAL 계정만 대상)
 	@Transactional
 	public void resetPassword(String username, String email, String newPassword, String confirmPassword) {
 		User user = userRepository.findByUsername(username)
 				.filter(u -> u.getEmail().equals(email))
+				.filter(u -> u.getProvider() == AuthProvider.LOCAL)
 				.orElseThrow(() -> new IllegalArgumentException("일치하는 계정을 찾을 수 없습니다."));
 		
 		if (newPassword == null || newPassword.isBlank()) {
