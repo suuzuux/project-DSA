@@ -61,6 +61,11 @@
   margin-left: auto;
 }
 
+.community-top__right [data-admin-page-link] {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .community-top__right .icon-btn {
   width: 40px;
   height: 40px;
@@ -567,6 +572,21 @@
   color: var(--wp-ink-soft);
 }
 
+.comment-item--reported {
+  opacity: 0.85;
+}
+
+.comment-item--reported .comment-item__text,
+.comment-item--reported .comment-item__meta,
+.comment-item--reported .comment-item__meta strong {
+  color: #9ca3af !important;
+}
+
+.comment-item--reported .avatar {
+  filter: grayscale(1);
+  opacity: 0.7;
+}
+
 /* ---------- Project cards ---------- */
 .project-grid {
   display: grid;
@@ -689,6 +709,7 @@
 .live-now {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 12px 14px;
   background: #fff1f2;
@@ -700,13 +721,203 @@
   color: var(--wp-live);
 }
 
-.live-now::before {
+.live-now span:first-of-type::before {
   content: "";
+  display: inline-block;
   width: 8px;
   height: 8px;
+  margin-right: 8px;
   border-radius: 50%;
   background: var(--wp-live);
   animation: pulse 1.4s ease infinite;
+  vertical-align: middle;
+}
+
+.live-now .btn {
+  color: var(--wp-ink);
+  font-weight: 600;
+}
+
+.live-replay-card--live .live-replay-card__thumb {
+  background: linear-gradient(145deg, #3a151c, #15201f);
+}
+
+.live-replay-card__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+}
+
+.live-replay-card__logo {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: -0.04em;
+}
+
+.live-replays {
+  margin-top: 8px;
+}
+
+.live-replays__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.live-replays__replay-head {
+  margin-top: 28px;
+}
+
+.live-featured-card {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+}
+
+.live-featured-card[hidden] {
+  display: none !important;
+}
+
+.live-featured-card .live-replay-card__thumb {
+  aspect-ratio: 16 / 9;
+}
+
+.live-featured-card .live-replay-card__logo {
+  font-size: 48px;
+}
+
+.live-replay-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.live-replay-card[hidden] {
+  display: none !important;
+}
+
+.live-replay-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius-sm);
+  overflow: hidden;
+  background: var(--wp-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.live-replay-card__thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #111;
+  overflow: hidden;
+}
+
+.live-replay-card__thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.live-replay-card__play {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+
+.live-replay-card__body {
+  padding: 10px;
+}
+
+.live-replay-card__title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.live-replay-card__meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--wp-muted);
+}
+
+.live-replay-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(8, 12, 12, 0.62);
+}
+
+.live-replay-modal[hidden] {
+  display: none !important;
+}
+
+.live-replay-modal__panel {
+  width: min(920px, 100%);
+  background: var(--wp-surface);
+  border-radius: var(--wp-radius);
+  overflow: hidden;
+}
+
+.live-replay-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--wp-hairline);
+}
+
+.live-replay-modal__head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.live-replay-modal__video {
+  width: 100%;
+  max-height: min(70vh, 560px);
+  background: #000;
+  display: block;
+}
+
+@media (max-width: 860px) {
+  .live-replay-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .live-replay-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @keyframes pulse {
@@ -808,4 +1019,202 @@
   font-weight: 500;
   color: var(--wp-muted);
   margin-top: 4px;
+}
+
+.live-empty {
+  min-height: 120px;
+}
+
+#live-onair,
+#community-live {
+  min-width: 0;
+}
+
+.live-watch {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: livewatch;
+}
+
+.live-watch__stage {
+  position: relative;
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  align-self: flex-start;
+  background: #0b1110;
+  border-radius: var(--wp-radius);
+  overflow: hidden;
+}
+
+.live-watch__stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+  transform: scaleX(-1);
+}
+
+.live-watch__unmute {
+  position: absolute;
+  z-index: 1;
+  right: 12px;
+  bottom: 12px;
+}
+
+.live-watch__chat {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 300px;
+  width: 300px;
+  min-width: 240px;
+  max-width: 320px;
+  /* 영상 열 너비(= 전체 - 채팅 - gap) 기준 16:9 높이에 맞춤 */
+  height: calc((100cqi - 300px - 16px) * 9 / 16);
+  max-height: calc((100cqi - 300px - 16px) * 9 / 16);
+  min-height: 0;
+  overflow: hidden;
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+}
+
+@media (max-width: 900px) {
+  .live-watch {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .live-watch__stage {
+    flex: none;
+    width: 100%;
+  }
+
+  .live-watch__chat {
+    flex: none;
+    width: 100%;
+    max-width: none;
+    height: 280px;
+    max-height: 280px;
+  }
+}
+
+.live-watch__chat-title {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--wp-hairline);
+}
+
+.live-watch__comments {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.live-watch__composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--wp-hairline);
+  flex: 0 0 auto;
+}
+
+.live-watch__composer .form-input {
+  flex: 1;
+  min-height: 40px;
+}
+
+.live-comment {
+  font-size: 13px;
+  line-height: 1.45;
+  position: relative;
+  padding-right: 40px;
+}
+
+.live-comment strong {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.live-comment__report {
+  position: absolute;
+  top: 0;
+  right: 0;
+  border: 0;
+  background: transparent;
+  color: #8a8a8a;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.live-comment__report:hover {
+  color: #c2410c;
+}
+
+.live-comment__report:disabled {
+  color: #b0b0b0;
+  cursor: default;
+}
+
+.live-comment--reported,
+.live-comment--reported strong,
+.live-comment--reported span {
+  color: #9ca3af !important;
+  animation: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.live-comment--reported .live-comment__name--artist {
+  font-weight: 600 !important;
+}
+
+.live-comment__name--artist {
+  font-weight: 900 !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em;
+  animation: live-name-sparkle 1.4s ease-in-out infinite;
+}
+
+@keyframes live-name-sparkle {
+  0%, 100% {
+    filter: brightness(1);
+    text-shadow:
+      0 0 2px currentColor,
+      0 0 8px transparent;
+    transform: translateZ(0);
+  }
+  40% {
+    filter: brightness(1.25);
+    text-shadow:
+      0 0 4px currentColor,
+      0 0 12px currentColor,
+      1px -1px 0 rgba(255, 255, 255, 0.55);
+  }
+  70% {
+    filter: brightness(1.45);
+    text-shadow:
+      0 0 6px currentColor,
+      0 0 16px currentColor,
+      -1px 1px 0 rgba(255, 255, 255, 0.7);
+  }
 }

@@ -30,11 +30,13 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     // 브라우저가 "여기로 웹소켓 연결을 맺어줘"라고 처음 접속하는 주소를 정함.
-    // 브라우저 쪽 자바스크립트에서 new SockJS('/ws-chat') 이라고 쓰는 부분과 짝이 맞아야 함.
-    // withSockJS() : 혹시 웹소켓을 지원 안 하는 낡은 환경이어도, 비슷하게 흉내 내서 동작하게 해주는 안전장치
+    // 프론트는 현재 페이지의 https/http 에 맞춰 wss://{host}/ws-chat 으로 붙는다.
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws-chat").withSockJS();
+        // 터널(HTTPS) Origin 이 localhost 와 달라도 핸드셰이크가 거절되지 않게 연다.
+        // 네이티브 WebSocket(/ws-chat) + SockJS 폴백을 둘 다 둔다.
+        registry.addEndpoint("/ws-chat").setAllowedOriginPatterns("*");
+        registry.addEndpoint("/ws-chat").setAllowedOriginPatterns("*").withSockJS();
     }
 
     // 채널 주소의 접두사(맨 앞부분) 규칙을 정함

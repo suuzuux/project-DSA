@@ -7,14 +7,20 @@ import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
+import megane6.weplanet.domain.entity.live.LiveCommentReport;
 import megane6.weplanet.repository.AgencyProfileRepository;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.ReportRepository;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.RoleHomeRedirects;
+import megane6.weplanet.service.CommentService;
+import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
+import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,11 +52,15 @@ public class PortalController {
 	private final BoardMediaService boardMediaService;
 	private final ReportRepository reportRepository;
 	private final CommentReportRepository commentReportRepository;
+	private final LiveCommentReportRepository liveCommentReportRepository;
 	private final ArtistBlockService artistBlockService;
 	private final CommunityJoinService communityJoinService;
 	private final AgencyProfileRepository agencyProfileRepository;
-	
-	// 미승인 소속사 포털 접근 제한 추가
+	private final AgencyEnrollmentService agencyEnrollmentService;
+	private final PostService postService;
+	private final CommentService commentService;
+	private final LiveBroadcastService liveBroadcastService;
+
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) {
@@ -82,6 +92,7 @@ public class PortalController {
 			case "notices" -> "redirect:/portal/notices";
 			case "schedule" -> "redirect:/portal/schedule";
 			case "media" -> "redirect:/portal/media";
+			case "live" -> "redirect:/portal/live";
 			case "profile" -> "redirect:/portal/profile";
 			case "reports" -> "redirect:/portal/reports";
 			default -> "redirect:/portal/dashboard";
@@ -106,6 +117,37 @@ public class PortalController {
 		model.addAttribute("latestNotices", portalManagementService.getNotices(artist).stream().limit(5).toList());
 		model.addAttribute("upcomingSchedules", portalManagementService.getSchedules(artist).stream().limit(5).toList());
 		return "portal/dashboard";
+	}
+
+	@GetMapping("/live")
+	public String live(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/portal/login";
+		}
+		// 아티스트는 본인 방송 페이지만 진입 가능 (커뮤니티 Live 탭의 '방송하기'에서 이동)
+		if ("ROLE_ARTIST".equals(principal.getRoleName())) {
+			User artist = userRepository.findById(principal.getId())
+					.filter(user -> user.getRole() == Role.ARTIST)
+					.orElse(null);
+			if (artist == null) {
+				return "redirect:/portal/login";
+			}
+			populateCommon(model, artist, artist, "live");
+			model.addAttribute("isAgency", false);
+			model.addAttribute("managedArtists", List.of());
+			model.addAttribute("liveStatus", liveBroadcastService.status(artist.getId()));
+			return "portal/live";
+		}
+		String redirect = prepareArtistPage(principal, model, "live");
+		if (redirect != null) {
+			return redirect;
+		}
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			return "portal/live";
+		}
+		model.addAttribute("liveStatus", liveBroadcastService.status(artist.getId()));
+		return "portal/live";
 	}
 
 	@GetMapping("/notices")
@@ -243,9 +285,9 @@ public class PortalController {
 		model.addAttribute("nextMonth", selectedMonth.plusMonths(1));
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
 		model.addAttribute("currentMonth", YearMonth.now());
-		if (artist != null) {
-			model.addAttribute("calendarDays", portalManagementService.getMonthGrid(artist, selectedMonth));
-		}
+		model.addAttribute("calendarDays", artist != null
+				? portalManagementService.getMonthGrid(artist, selectedMonth)
+				: List.of());
 		return "portal/calendar/schedule";
 	}
 
@@ -432,21 +474,25 @@ public class PortalController {
 		if (artist == null) {
 			model.addAttribute("postReports", List.of());
 			model.addAttribute("commentReports", List.of());
+			model.addAttribute("liveCommentReports", List.of());
 			model.addAttribute("authorNicknames", Map.of());
 			model.addAttribute("blocks", List.of());
 			return "portal/reports";
 		}
 		List<Report> postReports = reportRepository.findByPost_ArtistOrderByCreatedAtDesc(artist);
 		List<CommentReport> commentReports = commentReportRepository.findByComment_Post_ArtistOrderByCreatedAtDesc(artist);
+		List<LiveCommentReport> liveCommentReports = liveCommentReportRepository.findByArtistOrderByCreatedAtDesc(artist);
 
 		// [닉네임 관리] 신고 목록의 "팬 닉네임"은 커뮤니티 가입할 때의 닉네임과 연결한다.
 		// (차단 목록의 닉네임은 ArtistBlock.blockedUser.nickname, 즉 회원가입할 때의 계정 닉네임을 그대로 쓰므로 변경하지 않음)
 		List<User> reportedAuthors = new ArrayList<>();
 		postReports.forEach(r -> reportedAuthors.add(r.getPost().getAuthor()));
 		commentReports.forEach(r -> reportedAuthors.add(r.getComment().getAuthor()));
+		liveCommentReports.forEach(r -> reportedAuthors.add(r.getComment().getAuthor()));
 
 		model.addAttribute("postReports", postReports);
 		model.addAttribute("commentReports", commentReports);
+		model.addAttribute("liveCommentReports", liveCommentReports);
 		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorId(reportedAuthors, artist.getId()));
 		model.addAttribute("blocks", artistBlockService.getBlocks(artist));
 		return "portal/reports";
@@ -482,6 +528,73 @@ public class PortalController {
 				.orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
 		artistBlockService.block(artist, report.getComment().getAuthor(), report.getReason().name());
 		redirectAttributes.addFlashAttribute("msg", "해당 팬 계정을 차단했습니다.");
+		return "redirect:/portal/reports";
+	}
+
+	@PostMapping("/reports/live-comment/{reportId}/block")
+	public String blockLiveCommentAuthor(@PathVariable Long reportId,
+										 @AuthenticationPrincipal AuthenticatedUser principal,
+										 RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		LiveCommentReport report = liveCommentReportRepository.findById(reportId)
+				.filter(item -> item.getComment().getSession().getArtist() != null
+						&& item.getComment().getSession().getArtist().getId().equals(artist.getId()))
+				.orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+		artistBlockService.block(artist, report.getComment().getAuthor(), report.getReason().name());
+		redirectAttributes.addFlashAttribute("msg", "해당 팬 계정을 차단했습니다.");
+		return "redirect:/portal/reports";
+	}
+
+	@PostMapping("/reports/post/{reportId}/delete")
+	public String deleteReportedPost(@PathVariable Long reportId,
+									 @AuthenticationPrincipal AuthenticatedUser principal,
+									 RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		Report report = reportRepository.findById(reportId)
+				.filter(item -> item.getPost().getArtist() != null && item.getPost().getArtist().getId().equals(artist.getId()))
+				.orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+		postService.deletePostForArtistCommunity(report.getPost(), artist);
+		redirectAttributes.addFlashAttribute("msg", "신고된 게시글을 삭제했습니다.");
+		return "redirect:/portal/reports";
+	}
+
+	@PostMapping("/reports/comment/{reportId}/delete")
+	public String deleteReportedComment(@PathVariable Long reportId,
+										@AuthenticationPrincipal AuthenticatedUser principal,
+										RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		CommentReport report = commentReportRepository.findById(reportId)
+				.filter(item -> item.getComment().getPost().getArtist() != null
+						&& item.getComment().getPost().getArtist().getId().equals(artist.getId()))
+				.orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+		commentService.deleteCommentForArtistCommunity(report.getComment().getId(), artist);
+		redirectAttributes.addFlashAttribute("msg", "신고된 댓글을 삭제했습니다.");
+		return "redirect:/portal/reports";
+	}
+
+	@PostMapping("/reports/live-comment/{reportId}/delete")
+	public String deleteReportedLiveComment(@PathVariable Long reportId,
+											@AuthenticationPrincipal AuthenticatedUser principal,
+											RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		LiveCommentReport report = liveCommentReportRepository.findById(reportId)
+				.filter(item -> item.getComment().getSession().getArtist() != null
+						&& item.getComment().getSession().getArtist().getId().equals(artist.getId()))
+				.orElseThrow(() -> new IllegalArgumentException("신고를 찾을 수 없습니다."));
+		liveBroadcastService.deleteCommentForArtistCommunity(report.getComment().getId(), artist);
+		redirectAttributes.addFlashAttribute("msg", "신고된 라이브 채팅을 삭제했습니다.");
 		return "redirect:/portal/reports";
 	}
 
@@ -544,9 +657,9 @@ public class PortalController {
 		if (principal == null || !isPortalUser(principal)) {
 			return null;
 		}
-		
+
 		User actor = userRepository
-				.findById(principal.getId())
+				.findOneById(principal.getId())
 				.filter(user -> user.getRole() == Role.AGENCY)
 				.orElse(null);
 		
@@ -600,20 +713,16 @@ public class PortalController {
 				selected = number.longValue();
 			}
 		}
-		if (selected == null) {
-			return null;
-		}
 		final Long selectedId = selected;
-		User found = artists.stream()
+		User found = selectedId == null ? null : artists.stream()
 				.filter(item -> item.getId().equals(selectedId))
 				.findFirst()
 				.orElse(null);
+		if (found == null) {
+			found = artists.get(0);
+		}
 		if (session != null) {
-			if (found != null) {
-				session.setAttribute(SESSION_ARTIST, found.getId());
-			} else {
-				session.removeAttribute(SESSION_ARTIST);
-			}
+			session.setAttribute(SESSION_ARTIST, found.getId());
 		}
 		return found;
 	}
@@ -623,6 +732,9 @@ public class PortalController {
 	}
 
 	private void populateCommon(Model model, User actor, User artist, String activeMenu) {
+		if (actor != null && actor.getRole() == Role.AGENCY) {
+			agencyEnrollmentService.enrollManagedArtists(actor);
+		}
 		List<User> managedArtists = managedArtistsOf(actor);
 		model.addAttribute("actor", actor);
 		model.addAttribute("artist", artist);

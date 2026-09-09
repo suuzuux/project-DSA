@@ -5,7 +5,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
@@ -18,6 +20,7 @@ import java.io.IOException;
 public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessHandler {
 
 	private final UserRepository userRepository;
+	private final AgencyEnrollmentService agencyEnrollmentService;
 
 	@PostConstruct
 	public void init() {
@@ -30,8 +33,12 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 										Authentication authentication) throws IOException, ServletException {
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
-		userRepository.findById(principal.getId())
-				.ifPresent(user -> user.recordLogin());
+		userRepository.findOneById(principal.getId()).ifPresent(user -> {
+			user.recordLogin();
+			if (user.getRole() == Role.AGENCY) {
+				agencyEnrollmentService.enrollManagedArtists(user);
+			}
+		});
 
 		getRedirectStrategy().sendRedirect(request, response, RoleHomeRedirects.pathFor(principal));
 	}

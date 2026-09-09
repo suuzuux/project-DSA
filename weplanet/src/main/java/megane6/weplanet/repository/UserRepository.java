@@ -5,6 +5,7 @@ import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // CHAT-06 AI팬 계정처럼, DB가 초기화돼도 항상 같은 이름으로 찾을 수 있어야 하는 경우 사용
     Optional<User> findByUsername(String username);
+    List<User> findByUsernameIn(List<String> usernames);
     Optional<User> findByEmail(String email);
 
     boolean existsByUsername(String username);
@@ -37,7 +39,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     );
 
     List<User> findByRoleAndAgency_Id(Role role, Long agencyId);
-    
+
     long countByRole(Role role);
     
     @Query("""
@@ -101,6 +103,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("userStatus") UserStatus userStatus,
             @Param("agencyStatus") AgencyStatus agencyStatus
     );
-    
+
     long countByRoleAndStatus(Role role, UserStatus status);
+
+    @EntityGraph(attributePaths = "agency")
+    Optional<User> findOneById(Long id);
 }

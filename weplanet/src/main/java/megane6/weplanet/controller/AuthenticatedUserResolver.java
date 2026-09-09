@@ -44,12 +44,12 @@ public class AuthenticatedUserResolver {
 	// 남아있는 경우(관리자가 직접 계정을 삭제한 경우 등)를 구분해서 던진다. GlobalExceptionHandler가
 	// 이 예외를 받으면 세션 자체를 정리해주기 때문에, "홈으로" 버튼을 눌러도 같은 에러가 무한 반복되는 걸 막는다.
 	private User getAuthenticatedUserOrThrow(Long userId) {
-		return userRepository.findById(userId)
+		return userRepository.findOneById(userId)
 				.orElseThrow(() -> new StaleSessionException("유저(id=" + userId + ")를 찾을 수 없습니다."));
 	}
 
 	private User getUserOrThrow(Long userId) {
-		return userRepository.findById(userId)
+		return userRepository.findOneById(userId)
 				.orElseThrow(() -> new IllegalArgumentException("유저(id=" + userId + ")를 찾을 수 없습니다."));
 	}
 }
