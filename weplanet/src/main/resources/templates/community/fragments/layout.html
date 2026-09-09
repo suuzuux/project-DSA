@@ -166,7 +166,11 @@
       <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
       <div>
         <strong th:text="${artist.nickname()}">아티스트</strong>
-        <p class="text-xs text-muted">아티스트 소개란 (공란 가능)</p>
+        <p class="text-xs text-muted"
+           th:if="${artistIntro != null and !#strings.isEmpty(artistIntro)}"
+           th:text="${artistIntro}">아티스트 소개</p>
+        <p class="text-xs text-muted"
+           th:if="${artistIntro == null or #strings.isEmpty(artistIntro)}">아티스트 소개란 (공란 가능)</p>
       </div>
     </div>
 

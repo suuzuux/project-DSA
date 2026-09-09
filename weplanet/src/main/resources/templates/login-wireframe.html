@@ -17,6 +17,10 @@
     <h1 class="auth-card__title">가장 편한 방법으로<br />위플래닛에<br />로그인하세요!</h1>
     <p class="auth-card__brand">We<span>Pla</span>Net</p>
 
+    <p th:if="${param.error != null and param.error[0] == 'portal'}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      아티스트/에이전시 포털은 팬 계정으로 이용할 수 없습니다. 아래에서 팬 로그인을 진행해 주세요.
+    </p>
+
     <p th:if="${param.socialNotFound}" class="text-sm" style="color:#c45c26;margin-top:8px;">
       가입된 계정이 없습니다. 먼저 회원가입을 진행해주세요.
     </p>

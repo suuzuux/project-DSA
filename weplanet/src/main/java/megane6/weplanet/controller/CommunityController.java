@@ -538,6 +538,8 @@ public class CommunityController {
 		
 		model.addAttribute("artist", ArtistCardView.from(artist));
 		model.addAttribute("artists", artists);
+		// 포털 프로필 관리의 소개글(artist_profile.intro) → 커뮤니티 About 소개란
+		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));
 		
 		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
 		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());

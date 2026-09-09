@@ -222,7 +222,8 @@
   font-size: var(--wp-fs-xs);
 }
 
-.portal-artists__footer a {
+.portal-artists__footer a,
+.portal-artists__footer .portal-logout-link {
   color: #8aa;
 }
 
@@ -299,8 +300,19 @@
   font-size: var(--wp-fs-xs);
 }
 
-.portal-sidebar__footer a {
+.portal-sidebar__footer a,
+.portal-sidebar__footer .portal-logout-link {
   color: #8aa;
+}
+
+.portal-logout-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  color: inherit;
 }
 
 .portal-main {
