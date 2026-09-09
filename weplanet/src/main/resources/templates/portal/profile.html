@@ -22,37 +22,223 @@
 
       <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+      <p class="text-sm text-muted" style="margin-bottom:16px;">
+        팬 프로필 편집과 같은 방식으로 사진을 등록하면, 커뮤니티명 왼쪽 아바타에 표시됩니다.
+      </p>
 
-      <form class="settings-block" style="max-width:640px;" th:action="@{/portal/profile}" method="post">
-        <div class="form-group">
-          <label class="form-label" for="nickname">표시 이름</label>
-          <input class="form-input" id="nickname" name="nickname" th:value="${artist.nickname}" required />
+      <form class="portal-profile-edit" style="max-width:520px;"
+            th:action="@{/portal/profile}" method="post" enctype="multipart/form-data">
+
+        <div style="text-align:center;margin-bottom:24px;">
+          <div class="avatar" id="profileEditAvatarPreview"
+               th:attr="data-initial=${#strings.substring(artist.nickname,0,1)}"
+               style="width:96px;height:96px;margin:0 auto;font-size:34px;">
+            <img th:if="${avatarPublicUrl != null}"
+                 th:src="${avatarPublicUrl}" alt=""
+                 style="width:100%;height:100%;object-fit:cover;display:block;"/>
+            <span th:if="${avatarPublicUrl == null}"
+                  th:text="${#strings.substring(artist.nickname,0,1)}">아</span>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="email">이메일</label>
-          <input class="form-input" id="email" name="email" type="email" th:value="${artist.email}" required />
+
+        <div class="pe-field">
+          <input type="text" id="profileEditNickname" name="nickname"
+                 maxlength="50" autocomplete="off" required
+                 aria-label="표시 이름"
+                 th:value="${artist.nickname}"/>
+          <button type="button" class="pe-clear" aria-label="표시 이름 지우기"
+                  data-clear-for="profileEditNickname">✕</button>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="intro">소개글</label>
-          <textarea class="form-textarea" id="intro" name="intro"
-                    th:text="${artistProfile.intro != null ? artistProfile.intro : ''}"></textarea>
+        <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 50</p>
+
+        <div class="pe-field">
+          <input type="text" id="profileEditBio" name="intro"
+                 maxlength="30" autocomplete="off"
+                 aria-label="소개글"
+                 placeholder="(선택) 커뮤니티 About에 노출될 소개글을 작성하세요"
+                 th:value="${artistProfile.intro}"/>
+          <button type="button" class="pe-clear" aria-label="소개글 지우기"
+                  data-clear-for="profileEditBio">✕</button>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="headerImageUrl">헤더 이미지 URL</label>
-          <input class="form-input" id="headerImageUrl" name="headerImageUrl"
-                 th:value="${artistProfile.headerImageUrl != null ? artistProfile.headerImageUrl : ''}" />
+        <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
+
+        <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>
+        <input type="file" id="profileEditBackground" name="background" accept="image/*" class="hidden"/>
+        <input type="hidden" name="removeAvatar" id="removeAvatarFlag" value="false"/>
+        <input type="hidden" name="removeBackground" id="removeBackgroundFlag" value="false"/>
+
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;">
+          <div class="pe-imgbtn">
+            <button type="button" class="btn btn--ghost btn--sm"
+                    data-menu-toggle="peAvatarMenu">프로필 이미지 편집</button>
+            <div class="pe-menu hidden" id="peAvatarMenu">
+              <button type="button" data-file-trigger="profileEditAvatar">사진첩에서 불러오기</button>
+              <button type="button" class="is-danger" data-image-remove="Avatar"
+                      th:attr="data-has-image=${hasAvatarImage}">이미지 삭제하기</button>
+            </div>
+          </div>
+          <div class="pe-imgbtn">
+            <button type="button" class="btn btn--ghost btn--sm"
+                    data-menu-toggle="peBackgroundMenu">배경 이미지 편집</button>
+            <div class="pe-menu hidden" id="peBackgroundMenu">
+              <button type="button" data-file-trigger="profileEditBackground">사진첩에서 불러오기</button>
+              <button type="button" class="is-danger" data-image-remove="Background"
+                      th:attr="data-has-image=${hasBackgroundImage}">이미지 삭제하기</button>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label class="form-label" for="logoImageUrl">로고 이미지 URL</label>
-          <input class="form-input" id="logoImageUrl" name="logoImageUrl"
-                 th:value="${artistProfile.logoImageUrl != null ? artistProfile.logoImageUrl : ''}" />
+        <p class="text-xs text-muted" style="text-align:center;" data-file-name-for="profileEditAvatar"></p>
+        <p class="text-xs text-muted" style="text-align:center;margin-bottom:20px;" data-file-name-for="profileEditBackground"></p>
+
+        <div th:if="${backgroundPublicUrl != null}" class="portal-profile-bg-preview">
+          <img th:src="${backgroundPublicUrl}" alt="배경 미리보기"/>
         </div>
-        <div class="flex-center" style="justify-content:flex-end;">
-          <button type="submit" class="btn btn--primary">저장</button>
+
+        <div class="portal-profile-extra">
+          <div class="form-group">
+            <label class="form-label" for="realName">본명 <span class="text-xs text-muted">(선택)</span></label>
+            <input class="form-input" id="realName" name="realName" maxlength="50"
+                   placeholder="미입력 시 기존 값 유지"
+                   th:value="${artist.realName}" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">이메일</label>
+            <input class="form-input" id="email" name="email" type="email" th:value="${artist.email}" required />
+          </div>
+          <div class="form-group">
+            <span class="form-label">성별</span>
+            <div class="portal-gender-options">
+              <label class="portal-gender-option">
+                <input type="radio" name="gender" value="MALE"
+                       th:checked="${artist.gender != null and artist.gender.name() == 'MALE'}" /> 남
+              </label>
+              <label class="portal-gender-option">
+                <input type="radio" name="gender" value="FEMALE"
+                       th:checked="${artist.gender != null and artist.gender.name() == 'FEMALE'}" /> 여
+              </label>
+              <label class="portal-gender-option">
+                <input type="radio" name="gender" value="OTHER"
+                       th:checked="${artist.gender == null or artist.gender.name() == 'OTHER'}" /> 미상
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="birthDate">생일</label>
+            <input class="form-input" id="birthDate" name="birthDate" type="date"
+                   th:value="${artist.birthDate}" />
+            <p class="text-xs text-muted mt-8">저장 시 캘린더에 생일 일정이 자동 등록·갱신됩니다.</p>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin:16px 0 0;padding:16px 0;">
+          <button type="submit" class="btn btn--primary btn--block">저장</button>
         </div>
       </form>
       </th:block>
     </main>
   </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      document.querySelectorAll("[data-count-for]").forEach(function (label) {
+        var input = document.getElementById(label.getAttribute("data-count-for"));
+        if (!input) return;
+        var max = input.getAttribute("maxlength");
+        var render = function () {
+          label.textContent = (input.value || "").length + " / " + max;
+        };
+        input.addEventListener("input", render);
+        render();
+      });
+
+      document.querySelectorAll("[data-clear-for]").forEach(function (btn) {
+        var input = document.getElementById(btn.getAttribute("data-clear-for"));
+        if (!input) return;
+        btn.addEventListener("click", function () {
+          input.value = "";
+          input.dispatchEvent(new Event("input"));
+          input.focus();
+        });
+      });
+
+      function closeAllMenus() {
+        document.querySelectorAll(".pe-menu").forEach(function (m) {
+          m.classList.add("hidden");
+        });
+      }
+      document.querySelectorAll("[data-menu-toggle]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var menu = document.getElementById(btn.getAttribute("data-menu-toggle"));
+          var willOpen = menu.classList.contains("hidden");
+          closeAllMenus();
+          if (willOpen) menu.classList.remove("hidden");
+        });
+      });
+      document.addEventListener("click", closeAllMenus);
+      document.querySelectorAll(".pe-menu").forEach(function (menu) {
+        menu.addEventListener("click", function (e) { e.stopPropagation(); });
+      });
+
+      document.querySelectorAll("[data-file-trigger]").forEach(function (btn) {
+        var input = document.getElementById(btn.getAttribute("data-file-trigger"));
+        if (!input) return;
+        btn.addEventListener("click", function () {
+          closeAllMenus();
+          input.click();
+        });
+      });
+
+      document.querySelectorAll("[data-image-remove]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var kind = btn.getAttribute("data-image-remove");
+          var label = kind === "Avatar" ? "프로필 이미지" : "배경 이미지";
+          var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
+          if (btn.getAttribute("data-has-image") !== "true") {
+            closeAllMenus();
+            alert("삭제할 " + label + "가 없습니다.");
+            return;
+          }
+          if (!confirm(label + "를 삭제하시겠습니까?\n저장을 눌러야 실제로 적용됩니다.")) return;
+          closeAllMenus();
+          var fileInput = document.getElementById("profileEdit" + kind);
+          if (fileInput) fileInput.value = "";
+          document.getElementById("remove" + kind + "Flag").value = "true";
+          if (notice) notice.textContent = label + " 삭제 예정 · 저장을 눌러야 적용됩니다";
+          if (kind === "Avatar") {
+            var preview = document.getElementById("profileEditAvatarPreview");
+            if (preview) {
+              preview.innerHTML = "<span>" + (preview.getAttribute("data-initial") || "") + "</span>";
+            }
+          }
+        });
+      });
+
+      document.querySelectorAll("[data-file-name-for]").forEach(function (label) {
+        var id = label.getAttribute("data-file-name-for");
+        var input = document.getElementById(id);
+        if (!input) return;
+        var kind = id.replace("profileEdit", "");
+        input.addEventListener("change", function () {
+          var file = input.files && input.files[0];
+          label.textContent = file ? file.name : "";
+          if (file) {
+            var flag = document.getElementById("remove" + kind + "Flag");
+            if (flag) flag.value = "false";
+          }
+          if (file && id === "profileEditAvatar") {
+            var preview = document.getElementById("profileEditAvatarPreview");
+            if (preview) {
+              preview.innerHTML =
+                '<img src="' + URL.createObjectURL(file) +
+                '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">';
+            }
+          }
+        });
+      });
+    })();
+  </script>
 </body>
 </html>

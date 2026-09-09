@@ -69,9 +69,12 @@
     function linksHtml(list) {
       return list
         .map((a) => {
-          const logo = escapeHtml(a.logo || "?");
           const name = escapeHtml(a.nickname || "아티스트");
-          return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${logo}</span> ${name}</a>`;
+          const logo = escapeHtml(a.logo || "?");
+          const img = a.profileImageUrl
+            ? `<img src="${escapeHtml(a.profileImageUrl)}" alt="">`
+            : logo;
+          return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${img}</span> ${name}</a>`;
         })
         .join("");
     }

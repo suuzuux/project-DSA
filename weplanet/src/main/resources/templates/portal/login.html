@@ -20,9 +20,18 @@
 
     <div class="portal-login__form-wrap">
       <div class="portal-login__form">
-        <h2 class="auth-card__title" style="margin-bottom:24px;">아티스트 / 에이전시 로그인</h2>
+        <h2 id="portalLoginTitle" class="auth-card__title" style="margin-bottom:8px;">아티스트 로그인</h2>
+        <p id="portalLoginLead" class="text-sm text-muted" style="margin-bottom:20px;">
+          아티스트 계정으로만 로그인할 수 있습니다.
+        </p>
 
-        <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
+        <div class="role-tabs" role="radiogroup" aria-label="로그인 유형">
+          <button type="button" class="is-active" data-portal-role="ARTIST" aria-pressed="true">아티스트</button>
+          <button type="button" data-portal-role="AGENCY" aria-pressed="false">에이전시</button>
+        </div>
+
+        <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;"
+           th:text="${param.error[0] == 'role'} ? '선택한 유형과 계정 역할이 일치하지 않습니다. 아티스트/에이전시를 다시 선택해 주세요.' : '아이디 또는 비밀번호가 올바르지 않습니다.'">
           아이디 또는 비밀번호가 올바르지 않습니다.
         </p>
         <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
@@ -32,28 +41,87 @@
           다른 기기에서 로그인되어 로그아웃되었습니다.
         </p>
 
-        <form th:action="@{/login}" method="post">
+        <form th:action="@{/login}" method="post" id="portalLoginForm">
           <input type="hidden" name="portalLogin" value="true" />
+          <input type="hidden" name="portalRole" id="portalRole" value="ARTIST" />
           <div class="form-group">
-            <label class="form-label" for="artistId">아이디</label>
+            <label class="form-label" for="artistId" id="portalIdLabel">아티스트 아이디</label>
             <input class="form-input" id="artistId" name="username" type="text"
-                   placeholder="아이디 입력" required autocomplete="username" />
+                   placeholder="아티스트 아이디 입력" required autocomplete="username" />
           </div>
           <div class="form-group">
             <label class="form-label" for="artistPw">비밀번호</label>
             <input class="form-input" id="artistPw" name="password" type="password"
                    placeholder="비밀번호 입력" required autocomplete="current-password" />
           </div>
-          <button type="submit" class="btn btn--primary btn--block btn--lg">포털 로그인</button>
+          <button type="submit" class="btn btn--primary btn--block btn--lg" id="portalSubmitBtn">아티스트 로그인</button>
         </form>
 
-        <p class="text-sm text-muted mt-16" style="text-align:center;">
-          에이전시는 포털 대시보드로, 아티스트는 본인 커뮤니티로 이동합니다.<br />
-          테스트 계정 공통 비밀번호: <strong>weplanet1234!</strong><br />
-          예) agency_wp / artist_hyeseon
+        <p class="text-sm text-muted mt-16" style="text-align:center;" id="portalLoginHint">
+          로그인 후 본인 커뮤니티로 이동합니다.<br />
+          테스트 계정 예) <strong>artist_hyeseon</strong> / weplanet1234!
         </p>
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      var roleInput = document.getElementById("portalRole");
+      var titleEl = document.getElementById("portalLoginTitle");
+      var leadEl = document.getElementById("portalLoginLead");
+      var idLabel = document.getElementById("portalIdLabel");
+      var idInput = document.getElementById("artistId");
+      var submitBtn = document.getElementById("portalSubmitBtn");
+      var hintEl = document.getElementById("portalLoginHint");
+      var tabs = document.querySelectorAll(".role-tabs [data-portal-role]");
+
+      var copy = {
+        ARTIST: {
+          title: "아티스트 로그인",
+          lead: "아티스트 계정으로만 로그인할 수 있습니다.",
+          idLabel: "아티스트 아이디",
+          placeholder: "아티스트 아이디 입력",
+          submit: "아티스트 로그인",
+          hint: "로그인 후 본인 커뮤니티로 이동합니다.<br />테스트 계정 예) <strong>artist_hyeseon</strong> / weplanet1234!"
+        },
+        AGENCY: {
+          title: "에이전시 로그인",
+          lead: "에이전시 계정으로만 로그인할 수 있습니다.",
+          idLabel: "에이전시 아이디",
+          placeholder: "에이전시 아이디 입력",
+          submit: "에이전시 로그인",
+          hint: "로그인 후 포털 대시보드로 이동합니다.<br />테스트 계정 예) <strong>agency_wp</strong> / weplanet1234!"
+        }
+      };
+
+      function applyRole(role) {
+        var c = copy[role] || copy.ARTIST;
+        roleInput.value = role;
+        titleEl.textContent = c.title;
+        leadEl.textContent = c.lead;
+        idLabel.textContent = c.idLabel;
+        idInput.placeholder = c.placeholder;
+        submitBtn.textContent = c.submit;
+        hintEl.innerHTML = c.hint;
+        document.title = c.title + " | Artist Portal";
+        tabs.forEach(function (btn) {
+          var on = btn.getAttribute("data-portal-role") === role;
+          btn.classList.toggle("is-active", on);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+
+      tabs.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          applyRole(btn.getAttribute("data-portal-role"));
+        });
+      });
+
+      var params = new URLSearchParams(window.location.search);
+      var initial = (params.get("role") || "").toUpperCase();
+      applyRole(initial === "AGENCY" ? "AGENCY" : "ARTIST");
+    })();
+  </script>
 </body>
 </html>

@@ -51,4 +51,7 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
 	
 	// 비공개 (임시저장 성격)
 	long countByPublishedFalse();
+
+	List<SiteNotice> findByPublishedTrueOrderByCreatedAtDesc();
+	List<SiteNotice> findTop20ByPublishedTrueOrderByCreatedAtDesc();
 }

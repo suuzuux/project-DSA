@@ -19,6 +19,7 @@ import megane6.weplanet.service.ProjectService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityDrawerHelper;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -41,6 +42,7 @@ public class ProjectController {
 	private final MembershipService ms;
 	private final ArtistAttendanceService artistAttendanceService;
 	private final CommunityDrawerHelper communityDrawerHelper;
+	private final PortalManagementService portalManagementService;
 
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -107,11 +109,9 @@ public class ProjectController {
 		User artist = ur.findById(artistId).filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 
-		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
-				.map(ArtistCardView::from)
-				.toList();
+		List<ArtistCardView> artists = portalManagementService.toArtistCards(ur.findByRole(Role.ARTIST));
 
-		model.addAttribute("artist", ArtistCardView.from(artist));
+		model.addAttribute("artist", portalManagementService.toArtistCard(artist));
 		model.addAttribute("artists", artists);
 		addSidebarModel(currentUser, artist, artists, model);
 		model.addAttribute("project", ps.getProjectDetail(projectId, artist, principal));
@@ -228,12 +228,10 @@ public class ProjectController {
 			model.addAttribute("accountHolderName", currentUser.getRealName());
 		}
 
-		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
-				.map(ArtistCardView::from)
-				.toList();
+		List<ArtistCardView> artists = portalManagementService.toArtistCards(ur.findByRole(Role.ARTIST));
 		addSidebarModel(currentUser, artist, artists, model);
 
-		model.addAttribute("artist", ArtistCardView.from(artist));
+		model.addAttribute("artist", portalManagementService.toArtistCard(artist));
 		model.addAttribute("artists", artists);
 		model.addAttribute("eventTypes", FanProjectEventType.values());
 		model.addAttribute("settlementBanks", SettlementBank.values());
@@ -252,11 +250,9 @@ public class ProjectController {
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		
-		List<ArtistCardView> artists = ur.findByRole(Role.ARTIST).stream()
-				.map(ArtistCardView::from)
-				.toList();
+		List<ArtistCardView> artists = portalManagementService.toArtistCards(ur.findByRole(Role.ARTIST));
 		
-		model.addAttribute("artist", ArtistCardView.from(artist));
+		model.addAttribute("artist", portalManagementService.toArtistCard(artist));
 		model.addAttribute("artists", artists);
 		addSidebarModel(currentUser, artist, artists, model);
 		model.addAttribute("gatedTab", "fan");

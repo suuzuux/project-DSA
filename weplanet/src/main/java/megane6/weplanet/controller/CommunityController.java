@@ -87,7 +87,7 @@ public class CommunityController {
 		model.addAttribute("fanPostCommentCounts", fanPostCommentCounts);
 		model.addAttribute("fanPostThumbnails", fanPostThumbnails);
 		// [닉네임 관리] Fan Posts 위젯도 작성자가 팬이라 가입할 때 정한 커뮤니티 닉네임으로 통일해서 보여준다
-		model.addAttribute("fanPostAuthorNicknames", communityJoinService.displayNicknamesByAuthorId(
+		model.addAttribute("fanPostAuthorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(
 				fanPosts.stream().map(Post::getAuthor).toList(), artistId));
 		
 		// "Comments by 아티스트" 위젯 - 이 아티스트가 작성한 댓글 최신 4개
@@ -105,6 +105,23 @@ public class CommunityController {
 		}
 		model.addAttribute("artistPosts", artistPosts);
 		model.addAttribute("artistPostThumbnails", artistPostThumbnails);
+
+		Set<Long> likedPostIds = Collections.emptySet();
+		if (principal != null) {
+			User me = userResolver.resolve(principal, 1L);
+			Set<Long> visibleIds = new java.util.HashSet<>();
+			fanPosts.forEach(post -> visibleIds.add(post.getId()));
+			artistPosts.forEach(post -> visibleIds.add(post.getId()));
+			if (!visibleIds.isEmpty()) {
+				likedPostIds = new java.util.HashSet<>();
+				for (Like like : likeRepository.findByUserOrderByCreatedAtDesc(me)) {
+					if (like.getPost() != null && visibleIds.contains(like.getPost().getId())) {
+						likedPostIds.add(like.getPost().getId());
+					}
+				}
+			}
+		}
+		model.addAttribute("likedPostIds", likedPostIds);
 		
 		return "community/highlight";
 	}
@@ -120,13 +137,14 @@ public class CommunityController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
+		User me = userResolver.resolve(principal, 1L);
 		User artist = populateArtistModel(artistId, principal, model);
-		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+		if (!hasCommunityAccess(me, artistId)) {
 			model.addAttribute("gatedTab", "fan");
 			return "community/membership-required";
 		}
 		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
-		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal));
+		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal), me);
 		
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -155,12 +173,13 @@ public class CommunityController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
+		User me = userResolver.resolve(principal, 1L);
 		User artist = populateArtistModel(artistId, principal, model);
-		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+		if (!hasCommunityAccess(me, artistId)) {
 			model.addAttribute("gatedTab", "artist");
 			return "community/membership-required";
 		}
-		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist);
+		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist, false, me);
 		
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -361,7 +380,7 @@ public class CommunityController {
 		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
 		model.addAttribute("likedPosts", likedPosts);
 		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
-		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorId(profileAuthors, artistId));
+		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(profileAuthors, artistId));
 		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
 		model.addAttribute("sort", sort);
 		
@@ -513,12 +532,18 @@ public class CommunityController {
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		
-		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
-				.map(ArtistCardView::from)
+		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
+		Map<Long, String> logoUrls = portalManagementService.logoImageUrlsByArtistIds(
+				artistUsers.stream().map(User::getId).toList());
+
+		List<ArtistCardView> artists = artistUsers.stream()
+				.map(user -> ArtistCardView.from(user, logoUrls.get(user.getId())))
 				.toList();
-		
-		model.addAttribute("artist", ArtistCardView.from(artist));
+
+		model.addAttribute("artist", ArtistCardView.from(artist, logoUrls.get(artist.getId())));
 		model.addAttribute("artists", artists);
+		// 포털 프로필 관리의 소개글(artist_profile.intro) → 커뮤니티 About 소개란
+		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));
 		
 		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
 		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());

@@ -17,6 +17,7 @@ import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
 import megane6.weplanet.service.TranslateService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -57,6 +58,7 @@ public class PostController {
     private final TranslateService translateService;
     // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부)
     private final FollowService followService;
+    private final PortalManagementService portalManagementService;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
         return userResolver.resolve(principal, testUserId);
@@ -77,7 +79,7 @@ public class PostController {
             User artistUser = userRepository.findById(artistId)
                     .filter(user -> user.getRole() == Role.ARTIST)
                     .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-            model.addAttribute("artist", ArtistCardView.from(artistUser));
+            model.addAttribute("artist", portalManagementService.toArtistCard(artistUser));
 
             if ("fetch".equals(requestedWith)) {
                 return "community/fragments/fanComments :: commentsFragment";
@@ -217,7 +219,7 @@ public class PostController {
             if (communityArtist != null) {
                 // postList 프래그먼트가 FAN/ARTIST 링크를 만들 때 ${artist.id()}를 참조하므로,
                 // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
-                model.addAttribute("artist", ArtistCardView.from(communityArtist));
+                model.addAttribute("artist", portalManagementService.toArtistCard(communityArtist));
                 boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
                 postListModelHelper.populate(model, type, "latest", communityArtist, hideFromArtists);
                 return "community/fragments/postList :: postListFragment";
