@@ -2,8 +2,11 @@ package megane6.weplanet.security;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -35,6 +38,8 @@ public class SecurityConfig {
             "/find-password/**",
             "/login",
             "/login/id",
+            "/login/reactivate",
+            "/login/reactivate/**",
             "/portal/login",
             "/admin/login",
             "/api/schedules",
@@ -68,6 +73,7 @@ public class SecurityConfig {
     private final RoleAwareLogoutSuccessHandler roleAwareLogoutSuccessHandler;
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final ProfileCompletionRequiredFilter profileCompletionRequiredFilter;
+    private final UserRepository userRepository;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -124,6 +130,17 @@ public class SecurityConfig {
                         : "";
                 response.sendRedirect("/portal/login?error" + roleQs);
                 return;
+            }
+            if (exception instanceof DisabledException) {
+                String username = request.getParameter("username");
+                boolean dormant = username != null && userRepository.findByUsername(username)
+                        .map(u -> u.getStatus() == UserStatus.DORMANT)
+                        .orElse(false);
+                if (dormant) {
+                    response.sendRedirect("/login?dormant=true");
+                    return;
+                }
+                // WITHDRAWN/SUSPENDED는 구분 안 하고 일반 에러로 - 탈퇴 여부를 로그인 화면에서 노출 안 하려는 의도
             }
             response.sendRedirect("/login?error");
         };

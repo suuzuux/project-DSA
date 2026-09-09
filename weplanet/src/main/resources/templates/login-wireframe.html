@@ -37,6 +37,11 @@
       다른 기기에서 로그인되어 로그아웃되었습니다.
     </p>
 
+    <p th:if="${param.dormant}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+      장기간 미접속으로 휴면 처리된 계정입니다.
+      <a th:href="@{/login/reactivate}" style="color:var(--wp-brand);font-weight:600;">이메일 인증으로 다시 활성화하기</a>
+    </p>
+
     <div class="stack">
       <a class="btn btn--sns" href="/social-login/google/login">
         <span class="sns-icon sns-icon--google">G</span> Google로 로그인하기
