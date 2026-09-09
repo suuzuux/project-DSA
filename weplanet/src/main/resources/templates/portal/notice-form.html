@@ -8,10 +8,13 @@
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
 <body>
-  <div class="portal-shell" th:classappend="${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick'">
+  <div class="portal-shell"
+       th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('공지 등록')}"></th:block>
+      <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
         <h1 th:text="${notice} != null ? '공지 수정' : '공지 등록'">공지 등록</h1>
         <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices}">← 뒤로 가기</a>
@@ -56,6 +59,7 @@
           <button type="submit" class="btn btn--primary" th:text="${notice} != null ? '수정 저장' : '바로등록'">바로등록</button>
         </div>
       </form>
+      </th:block>
     </main>
   </div>
   <script>

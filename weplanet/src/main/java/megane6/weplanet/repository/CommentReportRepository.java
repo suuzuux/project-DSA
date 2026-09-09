@@ -75,4 +75,12 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
             User artist,
             ReportStatus status
     );
+
+    // 특정 유저가 이미 신고한 댓글 id 목록 (상세 화면에서 신고 상태 표시용)
+    @Query("""
+            SELECT r.comment.id FROM CommentReport r
+            WHERE r.reporter = :reporter AND r.comment.id IN :commentIds
+            """)
+    List<Long> findReportedCommentIds(@Param("reporter") User reporter,
+                                      @Param("commentIds") Collection<Long> commentIds);
 }

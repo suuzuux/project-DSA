@@ -23,7 +23,8 @@
   <div class="community-body community-body--detail">
     <div class="community-main">
       <a class="section__link mb-16" style="display:inline-block;"
-         th:href="@{/community/{id}/media(id=${artist.id()})}">← Media 게시판</a>
+         th:href="${mediaPost.liveReplay} ? @{/community/{id}/live(id=${artist.id()})} : @{/community/{id}/media(id=${artist.id()})}"
+         th:text="${mediaPost.liveReplay} ? '← Live' : '← Media 게시판'">← Media 게시판</a>
 
       <article class="post-card">
         <div class="post-card__head">
@@ -32,6 +33,8 @@
             <div class="post-card__name">
               <span th:text="${artist.nickname()}">아티스트</span>
               <span class="badge-verified">✓</span>
+              <span class="tag tag--live"
+                    th:if="${mediaPost.title != null and #strings.startsWith(mediaPost.title, '라이브 다시보기')}">다시보기</span>
             </div>
             <div class="post-card__time"
                  th:with="y=${#temporals.year(mediaPost.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
