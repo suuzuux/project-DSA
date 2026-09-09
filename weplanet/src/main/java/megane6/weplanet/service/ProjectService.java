@@ -9,16 +9,14 @@ import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.ProjectImage;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
-import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
-import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.admin.AdminActionLogService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -50,6 +48,8 @@ public class ProjectService {
 	
 	// 이메일
 	private final EmailVerificationService evs;
+	
+	private final AdminActionLogService actionLogService;
 
 	// 목록 정렬 기준 - 화면 select의 value와 짝을 이룸
 	public static final String SORT_DEADLINE = "deadline";
@@ -174,19 +174,63 @@ public class ProjectService {
 			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
 		}
 	}
-
+	
 	@Transactional
-	public void approveProject(Long projectId, Long artistId, Long adminId) {
+	public void approveProject(
+			Long projectId,
+			Long artistId,
+			Long adminId,
+			String ipAddress
+	) {
 		User admin = getAdmin(adminId);
-		Project project = getProjectInArtistCommunity(projectId, artistId);
+		
+		Project project =
+				getProjectInArtistCommunity(
+						projectId,
+						artistId
+				);
+		
 		project.approve(admin);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PROJECT_APPROVE,
+				AdminTargetType.PROJECT,
+				project.getId(),
+				project.getTitle() + " 프로젝트 승인",
+				ipAddress
+		);
 	}
-
+	
 	@Transactional
-	public void rejectProject(Long projectId, Long artistId, Long adminId, String rejectionReason) {
+	public void rejectProject(
+			Long projectId,
+			Long artistId,
+			Long adminId,
+			String rejectionReason,
+			String ipAddress
+	) {
 		User admin = getAdmin(adminId);
-		Project project = getProjectInArtistCommunity(projectId, artistId);
-		project.reject(admin, rejectionReason);
+		
+		Project project =
+				getProjectInArtistCommunity(
+						projectId,
+						artistId
+				);
+		
+		project.reject(
+				admin,
+				rejectionReason
+		);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PROJECT_REJECT,
+				AdminTargetType.PROJECT,
+				project.getId(),
+				project.getRejectionReason(),
+				ipAddress
+		);
 	}
 
 	private boolean canView(Project project, AuthenticatedUser viewer) {

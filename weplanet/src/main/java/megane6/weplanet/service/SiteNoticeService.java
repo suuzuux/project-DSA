@@ -3,8 +3,11 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.SiteNotice;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AdminActionType;
+import megane6.weplanet.domain.entity.enumfolder.AdminTargetType;
 import megane6.weplanet.domain.entity.enumfolder.NoticeCategory;
 import megane6.weplanet.repository.SiteNoticeRepository;
+import megane6.weplanet.service.admin.AdminActionLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class SiteNoticeService {
+	
+	private final AdminActionLogService als;
 	
 	public static final int MAX_PINNED = 3;
 	private final SiteNoticeRepository siteNoticeRepository;
@@ -72,22 +77,46 @@ public class SiteNoticeService {
 			String content,
 			boolean published,
 			LocalDateTime publishAt,
-			boolean pinned) {
+			boolean pinned,
+			String ipAddress) {
 		if (title == null || title.isBlank()) {
 			throw new IllegalArgumentException("제목을 입력해주세요.");
 		}
 		if (content == null || content.isBlank()) {
 			throw new IllegalArgumentException("본문을 입력해주세요.");
 		}
-		SiteNotice notice = noticeId == null
-				? SiteNotice.create(author, category, title, content, published, publishAt)
+		
+		boolean creating = noticeId == null;
+		SiteNotice notice = creating ? SiteNotice.create(
+				author,
+				category,
+				title,
+				content,
+				published,
+				publishAt)
 				: get(noticeId);
-		if (noticeId != null) {
-			notice.update(category, title, content, published, publishAt);
+		
+		if (!creating) {
+			notice.update(
+					category,
+					title,
+					content,
+					published,
+					publishAt);
 		}
 		
 		applyPinState(notice, pinned);
-		return siteNoticeRepository.save(notice);
+		SiteNotice savedNotice = siteNoticeRepository.save(notice);
+		als.recordAction(
+				author.getId(), creating
+						? AdminActionType.NOTICE_CREATE
+						: AdminActionType.NOTICE_UPDATE,
+				AdminTargetType.NOTICE,
+				savedNotice.getId(),
+				savedNotice.getTitle() + (creating ? " 공지 등록" : " 공지 수정"),
+				ipAddress);
+		
+		return savedNotice;
 	}
 	
 	public void reorderPinned(List<Long> ids) {
@@ -166,8 +195,22 @@ public class SiteNoticeService {
 		}
 	}
 
-	public void delete(Long noticeId) {
-		siteNoticeRepository.delete(get(noticeId));
+	public void delete(
+			Long noticeId,
+			User admin,
+			String ipAddress) {
+		SiteNotice notice = get(noticeId);
+		String title = notice.getTitle();
+		
+		siteNoticeRepository.delete(notice);
+		
+		als.recordAction(
+				admin.getId(),
+				AdminActionType.NOTICE_DELETE,
+				AdminTargetType.NOTICE,
+				noticeId,
+				title + " 공지 삭제",
+				ipAddress);
 	}
 	
 	public record PageResult<T>(List<T> content, int page, int size, long totalElements) {

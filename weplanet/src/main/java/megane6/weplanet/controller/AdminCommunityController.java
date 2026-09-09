@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.AdminCommunityDetailResponse;
 import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
@@ -74,6 +75,7 @@ public class AdminCommunityController {
 	public String approveProject(
 			@PathVariable Long projectId,
 			@RequestParam Long artistId,
+			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes) {
 		
@@ -82,7 +84,8 @@ public class AdminCommunityController {
 				() -> ps.approveProject(
 						projectId,
 						artistId,
-						principal.getId()
+						principal.getId(),
+						request.getRemoteAddr()
 				),
 				"프로젝트를 승인했습니다.",
 				redirectAttributes
@@ -94,6 +97,7 @@ public class AdminCommunityController {
 	public String rejectProject(@PathVariable Long projectId,
 								@RequestParam Long artistId,
 								@RequestParam String rejectionReason,
+								HttpServletRequest request,
 								@AuthenticationPrincipal AuthenticatedUser principal,
 								RedirectAttributes redirectAttributes) {
 		requireAdminLogin(principal);
@@ -102,42 +106,76 @@ public class AdminCommunityController {
 						projectId,
 						artistId,
 						principal.getId(),
-						rejectionReason
+						rejectionReason,
+						request.getRemoteAddr()
 				), "프로젝트를 반려했습니다.", redirectAttributes
 		);
 		return "redirect:/admin/communities";
 	}
 	
 	@PostMapping("/settlements/{projectId}/verify")
-	public String verifySettlementAccount(@PathVariable Long projectId,
-										  @AuthenticationPrincipal AuthenticatedUser principal,
-										  RedirectAttributes redirectAttributes) {
+	public String verifySettlementAccount(
+			@PathVariable Long projectId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
 		requireAdminLogin(principal);
-		handle(() -> acs.verifySettlementAccount(projectId, principal.getId()),
+		
+		handle(
+				() -> acs.verifySettlementAccount(
+						projectId,
+						principal.getId(),
+						request.getRemoteAddr()
+				),
 				"정산 계좌를 확인 완료 처리했습니다.",
-				redirectAttributes);
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/communities";
 	}
 	
 	@PostMapping("/settlements/{projectId}/fail")
-	public String failSettlementAccountVerification(@PathVariable Long projectId,
-													@AuthenticationPrincipal AuthenticatedUser principal,
-													RedirectAttributes redirectAttributes) {
+	public String failSettlementAccountVerification(
+			@PathVariable Long projectId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
 		requireAdminLogin(principal);
-		handle(() -> acs.failSettlementAccountVerification(projectId, principal.getId()),
+		
+		handle(
+				() -> acs.failSettlementAccountVerification(
+						projectId,
+						principal.getId(),
+						request.getRemoteAddr()
+				),
 				"정산 계좌 확인 실패 처리했습니다.",
-				redirectAttributes);
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/communities";
 	}
 	
 	@PostMapping("/settlements/{projectId}/complete")
-	public String completeSettlement(@PathVariable Long projectId,
-									 @AuthenticationPrincipal AuthenticatedUser principal,
-									 RedirectAttributes redirectAttributes) {
+	public String completeSettlement(
+			@PathVariable Long projectId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
 		requireAdminLogin(principal);
-		handle(() -> acs.completeSettlement(projectId, principal.getId()),
+		
+		handle(
+				() -> acs.completeSettlement(
+						projectId,
+						principal.getId(),
+						request.getRemoteAddr()
+				),
 				"프로젝트 정산을 완료했습니다.",
-				redirectAttributes);
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/communities";
 	}
 	

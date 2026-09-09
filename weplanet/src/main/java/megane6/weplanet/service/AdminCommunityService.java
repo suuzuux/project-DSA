@@ -2,6 +2,10 @@ package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.AdminCommunityDetailResponse;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.BlockedMemberItem;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.PendingReportItem;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.ProjectItem;
+import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.RecentPostItem;
 import megane6.weplanet.domain.dto.AdminCommunityOverviewResponse;
 import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.dto.ProjectFundingSummary;
@@ -13,12 +17,9 @@ import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.portal.ArtistBlockRepository;
+import megane6.weplanet.service.admin.AdminActionLogService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.BlockedMemberItem;
-import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.PendingReportItem;
-import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.ProjectItem;
-import megane6.weplanet.domain.dto.AdminCommunityDetailResponse.RecentPostItem;
 
 import java.time.LocalDateTime;
 import java.util.Comparator;
@@ -41,6 +42,8 @@ public class AdminCommunityService {
 	private final PostRepository postRepository;
 	private final ReportRepository rr;
 	private final CommentReportRepository crr;
+	
+	private final AdminActionLogService als;
 	
 	public CommunityStats getStats() {
 		long totalCommunityCount = ur.countByRole(Role.ARTIST);
@@ -459,31 +462,66 @@ public class AdminCommunityService {
 	}
 	
 	@Transactional
-	public void verifySettlementAccount(Long projectId, Long adminId) {
-		User admin = getAdmin(adminId);
-		getSettlementProject(projectId);
-		ProjectSettlementAccount account = getSettlementAccount(projectId);
-		account.verify(admin);
-	}
-	
-	@Transactional
-	public void failSettlementAccountVerification(Long projectId, Long adminId) {
-		User admin = getAdmin(adminId);
-		getSettlementProject(projectId);
-		ProjectSettlementAccount account = getSettlementAccount(projectId);
-		account.failVerification(admin);
-	}
-	
-	@Transactional
-	public void completeSettlement(Long projectId, Long adminId) {
+	public void verifySettlementAccount(
+			Long projectId,
+			Long adminId,
+			String ipAddress) {
 		User admin = getAdmin(adminId);
 		Project project = getSettlementProject(projectId);
 		ProjectSettlementAccount account = getSettlementAccount(projectId);
+		
+		account.verify(admin);
+		
+		als.recordAction(
+				admin.getId(),
+				AdminActionType.SETTLEMENT_ACCOUNT_VERIFY,
+				AdminTargetType.SETTLEMENT,
+				project.getId(),
+				project.getTitle() + "정산 계좌 확인 완료",
+				ipAddress);
+	}
+	
+	@Transactional
+	public void failSettlementAccountVerification(
+			Long projectId,
+			Long adminId,
+			String ipAddress) {
+		User admin = getAdmin(adminId);
+		Project project = getSettlementProject(projectId);
+		ProjectSettlementAccount account = getSettlementAccount(projectId);
+		
+		account.failVerification(admin);
+		
+		als.recordAction(
+				admin.getId(),
+				AdminActionType.SETTLEMENT_ACCOUNT_FAIL,
+				AdminTargetType.SETTLEMENT,
+				project.getId(),
+				project.getTitle() + "정산 계좌 확인 실패",
+				ipAddress);
+	}
+	
+	@Transactional
+	public void completeSettlement(
+			Long projectId,
+			Long adminId,
+			String ipAddress) {
+		User admin = getAdmin(adminId);
+		Project project = getSettlementProject(projectId);
+		ProjectSettlementAccount account = getSettlementAccount(projectId);
+		
 		if (account.getVerificationStatus() != SettlementVerificationStatus.VERIFIED) {
 			throw new IllegalStateException("계좌 확인이 완료된 프로젝트만 정산할 수 있습니다.");
 		}
 		
 		project.completeSettlement(admin);
+		als.recordAction(
+				admin.getId(),
+				AdminActionType.SETTLEMENT_COMPLETE,
+				AdminTargetType.SETTLEMENT,
+				project.getId(),
+				project.getTitle() + "정산 완료",
+				ipAddress);
 	}
 	
 	private User getAdmin(Long adminId) {

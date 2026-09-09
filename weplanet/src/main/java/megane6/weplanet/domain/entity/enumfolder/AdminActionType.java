@@ -21,6 +21,8 @@ public enum AdminActionType {
 	REPORT_RESOLVE("신고 처리"),
 	REPORT_DISMISS("신고 기각"),
 	
+	SETTLEMENT_ACCOUNT_VERIFY("정산 계좌 확인"),
+	SETTLEMENT_ACCOUNT_FAIL("정산 계좌 확인 실패"),
 	SETTLEMENT_COMPLETE("정산 완료"),
 	
 	NOTICE_CREATE("공지 등록"),

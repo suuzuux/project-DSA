@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
@@ -56,47 +57,112 @@ public class AdminReportController {
 	}
 	
 	@PostMapping("/posts/{postId}/dismiss")
-	public String dismissPostReport(@PathVariable Long postId,
-									@AuthenticationPrincipal AuthenticatedUser principal,
-									RedirectAttributes redirectAttributes) {
-		requireAdmin(principal);
-		handle(() -> adminReportService.dismissPostReports(postId), "신고를 기각했습니다.", redirectAttributes);
+	public String dismissPostReport(
+			@PathVariable Long postId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
+		User admin = requireAdmin(principal);
+		
+		handle(
+				() -> adminReportService.dismissPostReports(
+						postId,
+						admin.getId(),
+						request.getRemoteAddr()
+				),
+				"신고를 기각했습니다.",
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/reports";
 	}
 	
 	@PostMapping("/posts/{postId}/delete-content")
-	public String deleteReportedPost(@PathVariable Long postId,
-									 @AuthenticationPrincipal AuthenticatedUser principal,
-									 RedirectAttributes redirectAttributes) {
+	public String deleteReportedPost(
+			@PathVariable Long postId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
 		User admin = requireAdmin(principal);
-		handle(() -> adminReportService.deleteReportedPost(postId, admin), "신고된 게시글을 삭제했습니다.", redirectAttributes);
+		
+		handle(
+				() -> adminReportService.deleteReportedPost(
+						postId,
+						admin,
+						request.getRemoteAddr()
+				),
+				"신고된 게시글을 삭제했습니다.",
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/reports";
 	}
 	
 	@PostMapping("/comments/{commentId}/dismiss")
-	public String dismissCommentReport(@PathVariable Long commentId,
-									   @AuthenticationPrincipal AuthenticatedUser principal,
-									   RedirectAttributes redirectAttributes) {
-		requireAdmin(principal);
-		handle(() -> adminReportService.dismissCommentReports(commentId), "신고를 기각했습니다.", redirectAttributes);
+	public String dismissCommentReport(
+			@PathVariable Long commentId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
+		User admin = requireAdmin(principal);
+		
+		handle(
+				() -> adminReportService.dismissCommentReports(
+						commentId,
+						admin.getId(),
+						request.getRemoteAddr()
+				),
+				"신고를 기각했습니다.",
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/reports";
 	}
 	
 	@PostMapping("/comments/{commentId}/delete-content")
-	public String deleteReportedComment(@PathVariable Long commentId,
-										@AuthenticationPrincipal AuthenticatedUser principal,
-										RedirectAttributes redirectAttributes) {
+	public String deleteReportedComment(
+			@PathVariable Long commentId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
 		User admin = requireAdmin(principal);
-		handle(() -> adminReportService.deleteReportedComment(commentId, admin), "신고된 댓글을 삭제했습니다.", redirectAttributes);
+		
+		handle(
+				() -> adminReportService.deleteReportedComment(
+						commentId,
+						admin,
+						request.getRemoteAddr()
+				),
+				"신고된 댓글을 삭제했습니다.",
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/reports";
 	}
-
+	
 	@PostMapping("/users/{userId}/suspend")
-	public String suspendUser(@PathVariable Long userId,
-							   @AuthenticationPrincipal AuthenticatedUser principal,
-							   RedirectAttributes redirectAttributes) {
-		requireAdmin(principal);
-		handle(() -> adminReportService.suspendUser(userId), "해당 회원을 정지 처리했습니다.", redirectAttributes);
+	public String suspendUser(
+			@PathVariable Long userId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
+		User admin = requireAdmin(principal);
+		
+		handle(
+				() -> adminReportService.suspendUser(
+						userId,
+						admin.getId(),
+						request.getRemoteAddr()
+				),
+				"해당 회원을 정지 처리했습니다.",
+				redirectAttributes
+		);
+		
 		return "redirect:/admin/reports";
 	}
 
@@ -131,12 +197,21 @@ public class AdminReportController {
 	@PostMapping("/users/{userId}/reinstate")
 	public String reinstateUser(
 			@PathVariable Long userId,
+			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes
 	) {
-		requireAdmin(principal);
-		handle(() -> adminReportService.reinstateUser(userId), "정지를 해제했습니다.",
-				redirectAttributes);
+		User admin = requireAdmin(principal);
+		
+		handle(
+				() -> adminReportService.reinstateUser(
+						userId,
+						admin.getId(),
+						request.getRemoteAddr()
+				),
+				"정지를 해제했습니다.",
+				redirectAttributes
+		);
 		
 		return "redirect:/admin/reports/suspended";
 	}

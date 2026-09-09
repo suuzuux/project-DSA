@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.NoticeCategory;
@@ -97,13 +98,26 @@ public class SiteNoticeController {
 						 @RequestParam(required = false) String publishAt,
 						 @RequestParam(defaultValue = "false") boolean pinned,
 						 @RequestParam NoticeCategory category,
+						 HttpServletRequest request,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
-						 RedirectAttributes redirectAttributes) {
+						 RedirectAttributes redirectAttributes
+	) {
 		User admin = requireAdmin(principal);
+		
 		try {
-			LocalDateTime publishAtValue = (publishAt == null || publishAt.isBlank())
-					? null : LocalDate.parse(publishAt).atStartOfDay();
-			siteNoticeService.save(admin, null, category, title, content, published, publishAtValue, pinned);
+			LocalDateTime publishAtValue =
+					(publishAt == null || publishAt.isBlank())
+						? null : LocalDate.parse(publishAt).atStartOfDay();
+			siteNoticeService.save(
+					admin,
+					null,
+					category,
+					title,
+					content,
+					published,
+					publishAtValue,
+					pinned,
+					request.getRemoteAddr());
 			redirectAttributes.addFlashAttribute("msg", "공지가 등록되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -111,7 +125,7 @@ public class SiteNoticeController {
 		}
 		return "redirect:/admin/notices";
 	}
-
+	
 	@PostMapping("/admin/notices/{noticeId}")
 	public String update(@PathVariable Long noticeId,
 						 @RequestParam String title,
@@ -120,28 +134,65 @@ public class SiteNoticeController {
 						 @RequestParam(required = false) String publishAt,
 						 @RequestParam(defaultValue = "false") boolean pinned,
 						 @RequestParam NoticeCategory category,
+						 HttpServletRequest request,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
-						 RedirectAttributes redirectAttributes) {
+						 RedirectAttributes redirectAttributes
+	) {
 		User admin = requireAdmin(principal);
+		
 		try {
-			LocalDateTime publishAtValue = (publishAt == null || publishAt.isBlank())
-					? null : LocalDate.parse(publishAt).atStartOfDay();
-			siteNoticeService.save(admin, noticeId, category, title, content, published, publishAtValue, pinned);
-			redirectAttributes.addFlashAttribute("msg", "공지가 수정되었습니다.");
+			LocalDateTime publishAtValue =
+					(publishAt == null || publishAt.isBlank())
+							? null
+							: LocalDate.parse(publishAt).atStartOfDay();
+			
+			siteNoticeService.save(
+					admin,
+					noticeId,
+					category,
+					title,
+					content,
+					published,
+					publishAtValue,
+					pinned,
+					request.getRemoteAddr()
+			);
+			
+			redirectAttributes.addFlashAttribute(
+					"msg",
+					"공지가 수정되었습니다."
+			);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute(
+					"error",
+					e.getMessage()
+			);
 			return "redirect:/admin/notices/" + noticeId + "/edit";
 		}
+		
 		return "redirect:/admin/notices";
 	}
-
+	
 	@PostMapping("/admin/notices/{noticeId}/delete")
-	public String delete(@PathVariable Long noticeId,
-						 @AuthenticationPrincipal AuthenticatedUser principal,
-						 RedirectAttributes redirectAttributes) {
-		requireAdmin(principal);
-		siteNoticeService.delete(noticeId);
-		redirectAttributes.addFlashAttribute("msg", "공지가 삭제되었습니다.");
+	public String delete(
+			@PathVariable Long noticeId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
+		User admin = requireAdmin(principal);
+		
+		siteNoticeService.delete(
+				noticeId,
+				admin,
+				request.getRemoteAddr()
+		);
+		
+		redirectAttributes.addFlashAttribute(
+				"msg",
+				"공지가 삭제되었습니다."
+		);
+		
 		return "redirect:/admin/notices";
 	}
 	
