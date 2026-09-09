@@ -9,6 +9,13 @@
 -- 수정: 2026-09-08 (AUTH-08, 휴면계정 자동전환/해제)
 --   - users.dormant_notice_sent_at : 휴면 전환 30일 전 사전 안내 메일 발송 시각
 -- ------------------------------------------------------------
+-- 수정: 2026-09-09 (ADMIN-2, 관리자 기능 통합)
+--   - email_verification.purpose에 ADMIN_LOGIN 허용
+--   - report/comment_report에 status, resolved_at 추가
+--   - site_notice에 category, publish_at, pinned, pin_order 추가
+--   - admin_action_logs 감사 로그 테이블 반영
+--   - 테스트 계정 비밀번호를 Test1234로 통일
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -18,7 +25,7 @@
 -- 실행 방법
 --   mysql -uroot -p --default-character-set=utf8mb4 < weplanet_schema_full_reset.sql
 --
--- 테스트 계정 (비밀번호 공통: weplanet1234!)
+-- 테스트 계정 (비밀번호 공통: Test1234)
 --   admin_test      ADMIN   관리자테스트   <- 금칙어 관리 화면(/chat/admin/keywords)
 --   agency_wp       AGENCY  휘원공주정식왕자매니저   (소속사: 휘원공주정식왕자)
 --   agency_hs       AGENCY  혜선우주최강매니저      (소속사: 혜선우주최강)
@@ -146,7 +153,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `uk_users_provider_provider_id` (`provider`, `provider_id`),
   KEY `idx_users_role_status` (`role`, `status`),
   KEY `idx_users_phone_hash` (`phone_hash`),
-  KEY `idx_users_agency` (`agency_id`),
+  KEY `idx_users_agency_role` (`agency_id`, `role`),
   CONSTRAINT `fk_users_agency` FOREIGN KEY (`agency_id`) REFERENCES `agencies` (`id`),
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
@@ -437,12 +444,17 @@ CREATE TABLE `site_notice` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '홈페이지 공지 PK',
   `author_id` bigint NOT NULL COMMENT '작성 관리자(users.id)',
   `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '공지 제목',
+  `category` enum('GENERAL', 'EVENT', 'MAINTENANCE', 'UPDATE') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'GENERAL' COMMENT '공지 분류 (일반/이벤트/점검/업데이트)',
   `content` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '공지 본문',
   `published` bit(1) NOT NULL DEFAULT b'1' COMMENT '게시 여부(1=공개)',
-  `created_at` datetime NOT NULL COMMENT '등록 시각',
-  `updated_at` datetime NOT NULL COMMENT '수정 시각',
+  `publish_at` datetime(6) DEFAULT NULL COMMENT '예약 발행 시각 (NULL이면 예약 없음)',
+  `pinned` bit(1) NOT NULL DEFAULT b'0' COMMENT '목록 상단 노출 여부',
+  `pin_order` int DEFAULT NULL COMMENT '상단 노출 순서(1부터, 작을수록 위, 최대 5개)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   PRIMARY KEY (`id`),
   KEY `idx_site_notice_created_at` (`created_at`),
+  KEY `idx_site_notice_pinned` (`pinned`, `pin_order`),
   KEY `fk_site_notice_author` (`author_id`),
   CONSTRAINT `fk_site_notice_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='홈페이지 관리 공지사항';
@@ -555,6 +567,8 @@ CREATE TABLE `comment_report` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '신고 PK',
   `created_at` datetime(6) NOT NULL COMMENT '신고 시각',
   `reason` enum('ABUSE', 'ETC', 'SEXUAL', 'SPAM') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신고 사유',
+  `status` enum('PENDING', 'DISMISSED', 'RESOLVED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '처리 상태 (대기/기각/처리완료)',
+  `resolved_at` datetime(6) DEFAULT NULL COMMENT '신고 처리 시각 (대기중이면 NULL)',
   `comment_id` bigint NOT NULL COMMENT '신고 대상 댓글(comment.id)',
   `reporter_id` bigint NOT NULL COMMENT '신고자(users.id)',
   PRIMARY KEY (`id`),
@@ -569,6 +583,8 @@ CREATE TABLE `report` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '신고 PK',
   `created_at` datetime(6) NOT NULL COMMENT '신고 시각',
   `reason` enum('ABUSE', 'ETC', 'SEXUAL', 'SPAM') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신고 사유',
+  `status` enum('PENDING', 'DISMISSED', 'RESOLVED') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '처리 상태 (대기/기각/처리완료)',
+  `resolved_at` datetime(6) DEFAULT NULL COMMENT '신고 처리 시각 (대기중이면 NULL)',
   `post_id` bigint NOT NULL COMMENT '신고 대상 게시글(post.id)',
   `reporter_id` bigint NOT NULL COMMENT '신고자(users.id)',
   PRIMARY KEY (`id`),
@@ -698,12 +714,12 @@ CREATE TABLE `fan_badge_ownership` (
   CONSTRAINT `ck_fan_badge_type` CHECK (`badge_type` IN (_utf8mb4'BASIC', _utf8mb4'SPECIAL'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 배지 보유/회수';
 
--- email_verification: 회원가입 및 팬 프로젝트 이메일 인증
+-- email_verification: 회원가입, 팬 프로젝트 및 관리자 로그인 이메일 인증
 CREATE TABLE `email_verification` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '이메일 인증 PK',
   `user_id` bigint DEFAULT NULL COMMENT '프로젝트 인증 회원(users.id), 회원가입 인증은 NULL',
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '인증 대상 이메일',
-  `purpose` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '인증 목적: SIGNUP/FAN_PROJECT_CREATE',
+  `purpose` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '인증 목적: SIGNUP/FAN_PROJECT_CREATE/ADMIN_LOGIN',
   `verification_key` varchar(36) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '인증 요청 식별 UUID',
   `code_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '인증번호 BCrypt 해시',
   `attempt_count` int NOT NULL DEFAULT 0 COMMENT '인증번호 실패 횟수',
@@ -720,8 +736,8 @@ CREATE TABLE `email_verification` (
   CONSTRAINT `ck_email_verification_attempt_count` CHECK (`attempt_count` BETWEEN 0 AND 5),
   CONSTRAINT `ck_email_verification_consumed` CHECK ((`consumed_at` IS NULL) OR (`verified_at` IS NOT NULL)),
   CONSTRAINT `ck_email_verification_expiration` CHECK (`expires_at` > `created_at`),
-  CONSTRAINT `ck_email_verification_purpose` CHECK (`purpose` IN (_utf8mb4'SIGNUP', _utf8mb4'FAN_PROJECT_CREATE'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원가입 및 팬 프로젝트 이메일 인증';
+  CONSTRAINT `ck_email_verification_purpose` CHECK (`purpose` IN (_utf8mb4'SIGNUP', _utf8mb4'FAN_PROJECT_CREATE', _utf8mb4'ADMIN_LOGIN'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원가입, 팬 프로젝트 및 관리자 로그인 이메일 인증';
 
 -- fan_project: 팬 프로젝트(개설·승인·모금) - creator_id 타입 오타 수정 완료
 CREATE TABLE `fan_project` (
@@ -974,23 +990,23 @@ VALUES
   ('혜선우주최강',       '000-00-00002', '테스트대표', 'ACTIVE', NOW(6), NOW(6));
 
 -- ============================================================
--- [4] 테스트 계정 시드 (비밀번호 공통: weplanet1234!)
+-- [4] 테스트 계정 시드 (비밀번호 공통: Test1234)
 --     artist_hwiwon / artist_jungsik 은 위 소속사(agency_id)에 배정
 -- ============================================================
 INSERT INTO `users`
   (`username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
-  ('artist_hwiwon',  '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '휘원',      '휘원공주',      'hwiwon@weplanet.test',     NOW(6), NOW(6), NOW(6)),
-  ('artist_jungsik', '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '정식',      '정식왕자',      'jungsik@weplanet.test',    NOW(6), NOW(6), NOW(6)),
-  ('asd123',         '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '김화평',    '빛나는여우135', 'asdojuasdoa@gmail.com',    NOW(6), NOW(6), NOW(6)),
-  ('qatest99',       '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            'QA테스터',  'QA테스터',      'qatest99@example.com',     NOW(6), NOW(6), NOW(6)),
-  ('admin_test',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ADMIN',  'ACTIVE', NULL,                                                            '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('aifan_bot',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            'AI팬봇',    'AI팬봇',        'aifan_bot@weplanet.test',  NOW(6), NOW(6), NOW(6)),
-  ('aifan_mina',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '별빛민아',  '별빛민아',      'aifan_mina@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('aifan_hayul',    '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '하율짱',    '하율짱',        'aifan_hayul@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('aifan_haerin',   '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '달콤해린',  '달콤해린',      'aifan_haerin@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('aifan_jun',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '우주준',    '우주준',        'aifan_jun@weplanet.test',  NOW(6), NOW(6), NOW(6)),
-  ('aifan_yuna',     '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'FAN',    'ACTIVE', NULL,                                                            '햇살유나',  '햇살유나',      'aifan_yuna@weplanet.test', NOW(6), NOW(6), NOW(6));
+  ('artist_hwiwon',  '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '휘원',      '휘원공주',      'hwiwon@weplanet.test',     NOW(6), NOW(6), NOW(6)),
+  ('artist_jungsik', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '정식',      '정식왕자',      'jungsik@weplanet.test',    NOW(6), NOW(6), NOW(6)),
+  ('asd123',         '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '김화평',    '빛나는여우135', 'asdojuasdoa@gmail.com',    NOW(6), NOW(6), NOW(6)),
+  ('qatest99',       '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            'QA테스터',  'QA테스터',      'qatest99@example.com',     NOW(6), NOW(6), NOW(6)),
+  ('admin_test',     '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN',  'ACTIVE', NULL,                                                            '관리자테스트', '관리자테스트', 'admin_test@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_bot',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            'AI팬봇',    'AI팬봇',        'aifan_bot@weplanet.test',  NOW(6), NOW(6), NOW(6)),
+  ('aifan_mina',     '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '별빛민아',  '별빛민아',      'aifan_mina@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_hayul',    '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '하율짱',    '하율짱',        'aifan_hayul@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_haerin',   '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '달콤해린',  '달콤해린',      'aifan_haerin@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('aifan_jun',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '우주준',    '우주준',        'aifan_jun@weplanet.test',  NOW(6), NOW(6), NOW(6)),
+  ('aifan_yuna',     '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '햇살유나',  '햇살유나',      'aifan_yuna@weplanet.test', NOW(6), NOW(6), NOW(6));
 
 -- artist_profiles / artist_groups 등 다른 소속사 참조 컬럼도 같은 소속사로 맞춰줌
 INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
@@ -1010,9 +1026,9 @@ FROM `users` a WHERE a.username = 'artist_hwiwon';
 INSERT INTO `users`
   (`username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
-  ('agency_wp',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'AGENCY', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '휘원공주정식왕자담당자', '휘원공주정식왕자매니저', 'agency_wp@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('agency_hs',      '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'AGENCY', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선우주최강담당자',     '혜선우주최강매니저',     'agency_hs@weplanet.test', NOW(6), NOW(6), NOW(6)),
-  ('artist_hyeseon', '$2b$10$LoJ/IaLBEwYSO6MoOm/aC.5eh4LZw6ONIL2Mk05PB0ScDFV4.bnVq', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선',                   '혜선여왕',               'hyeseon@weplanet.test',   NOW(6), NOW(6), NOW(6));
+  ('agency_wp',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '휘원공주정식왕자담당자', '휘원공주정식왕자매니저', 'agency_wp@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('agency_hs',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선우주최강담당자',     '혜선우주최강매니저',     'agency_hs@weplanet.test', NOW(6), NOW(6), NOW(6)),
+  ('artist_hyeseon', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선',                   '혜선여왕',               'hyeseon@weplanet.test',   NOW(6), NOW(6), NOW(6));
 
 -- agency_profiles: AGENCY 역할 계정은 1:1 프로필이 필요
 INSERT INTO `agency_profiles` (`user_id`, `agency_id`, `department`, `position`, `is_owner`, `approved_by`, `approved_at`)
