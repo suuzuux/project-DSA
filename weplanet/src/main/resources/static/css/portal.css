@@ -393,8 +393,56 @@
   gap: 16px;
 }
 
+/* 프로젝트 심사 표가 상세 검토 패널의 너비를 밀어내지 않도록 열 너비를 고정한다. */
+.project-review-grid {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  align-items: stretch;
+}
+
+.project-review-grid > .panel {
+  min-width: 0;
+}
+
+.project-review-grid .table-wrap {
+  overflow-x: hidden;
+}
+
+.project-review-grid .data-table {
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.project-review-grid .data-table th,
+.project-review-grid .data-table td {
+  padding-left: 8px;
+  padding-right: 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.project-review-grid .data-table th {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.project-review-grid .data-table th:nth-child(1) { width: 16%; }
+.project-review-grid .data-table th:nth-child(2) { width: 10%; }
+.project-review-grid .data-table th:nth-child(3) { width: 10%; }
+.project-review-grid .data-table th:nth-child(4) { width: 13%; }
+.project-review-grid .data-table th:nth-child(5) { width: 13%; }
+.project-review-grid .data-table th:nth-child(6) { width: 20%; }
+.project-review-grid .data-table th:nth-child(7) { width: 10%; }
+.project-review-grid .data-table th:nth-child(8) { width: 8%; }
+
 @media (max-width: 900px) {
   .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1200px) {
+  .project-review-grid {
     grid-template-columns: 1fr;
   }
 }
