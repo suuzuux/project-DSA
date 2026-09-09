@@ -22,10 +22,9 @@ import java.util.stream.Collectors;
 @Transactional
 public class SiteNoticeService {
 	
-	private final AdminActionLogService als;
-	
 	public static final int MAX_PINNED = 3;
 	private final SiteNoticeRepository siteNoticeRepository;
+	private final AdminActionLogService als;
 
 	@Transactional(readOnly = true)
 	public PageResult<SiteNotice> listAll(
