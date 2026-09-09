@@ -81,6 +81,11 @@
   color: #fff;
 }
 
+.role-tabs button:focus-visible {
+  outline: 2px solid var(--wp-brand);
+  outline-offset: 2px;
+}
+
 /* 프로필 선택 그리드 (아티스트 로그인 후) */
 .profile-pick-grid {
   display: grid;
