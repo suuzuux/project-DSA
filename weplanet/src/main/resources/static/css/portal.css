@@ -330,6 +330,118 @@
   cursor: pointer;
 }
 
+.portal-profile-edit {
+  background: var(--wp-surface, #fff);
+  border: 1px solid var(--wp-hairline, #e5e5e5);
+  border-radius: var(--wp-radius, 12px);
+  padding: 24px 24px 8px;
+}
+
+.portal-profile-edit .pe-field {
+  position: relative;
+  border-bottom: 1px solid var(--wp-hairline, #e5e5e5);
+}
+
+.portal-profile-edit .pe-field input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  outline: none;
+  text-align: center;
+  padding: 8px 32px;
+  font-family: inherit;
+  color: inherit;
+}
+
+.portal-profile-edit .pe-field input#profileEditNickname {
+  font-size: var(--wp-fs-lg);
+  font-weight: 800;
+}
+
+.portal-profile-edit .pe-field input#profileEditBio {
+  font-size: var(--wp-fs-sm);
+}
+
+.portal-profile-edit .pe-clear {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--wp-hairline, #e5e5e5);
+  color: var(--wp-muted, #8a8a8a);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.portal-profile-edit .pe-count {
+  text-align: right;
+  margin: 4px 0 18px;
+}
+
+.portal-profile-edit .pe-imgbtn {
+  position: relative;
+}
+
+.portal-profile-edit .pe-menu {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 6px);
+  z-index: 20;
+  min-width: 168px;
+  background: var(--wp-surface, #fff);
+  border: 1px solid var(--wp-hairline, #e5e5e5);
+  border-radius: var(--wp-radius-sm, 8px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.portal-profile-edit .pe-menu button {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-size: var(--wp-fs-sm);
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.portal-profile-edit .pe-menu button:hover {
+  background: var(--wp-brand-soft, #eef5f3);
+}
+
+.portal-profile-edit .pe-menu button.is-danger {
+  color: var(--wp-danger, #d64545);
+}
+
+.portal-profile-bg-preview {
+  margin: 0 0 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--wp-hairline, #e5e5e5);
+}
+
+.portal-profile-bg-preview img {
+  display: block;
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+}
+
+.portal-profile-extra {
+  border-top: 1px solid var(--wp-hairline, #e5e5e5);
+  padding-top: 18px;
+  margin-top: 8px;
+}
+
 .portal-main {
   padding: 28px 32px 48px;
   background: var(--wp-paper);

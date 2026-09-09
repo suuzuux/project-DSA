@@ -444,8 +444,10 @@ public class PortalController {
 								@RequestParam(required = false) String gender,
 								@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthDate,
 								@RequestParam(required = false) String intro,
-								@RequestParam(required = false) String headerImageUrl,
-								@RequestParam(required = false) String logoImageUrl,
+								@RequestParam(value = "avatar", required = false) MultipartFile avatar,
+								@RequestParam(value = "background", required = false) MultipartFile background,
+								@RequestParam(defaultValue = "false") boolean removeAvatar,
+								@RequestParam(defaultValue = "false") boolean removeBackground,
 								@AuthenticationPrincipal AuthenticatedUser principal,
 								RedirectAttributes redirectAttributes) {
 		User artist = currentArtist(principal);
@@ -454,7 +456,8 @@ public class PortalController {
 		}
 		try {
 			portalManagementService.updateProfile(
-					artist, nickname, email, realName, gender, birthDate, intro, headerImageUrl, logoImageUrl);
+					artist, nickname, email, realName, gender, birthDate, intro,
+					avatar, background, removeAvatar, removeBackground);
 			redirectAttributes.addFlashAttribute("msg", "프로필이 저장되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -718,11 +721,24 @@ public class PortalController {
 		model.addAttribute("actor", actor);
 		model.addAttribute("artist", artist);
 		model.addAttribute("artistSelected", artist != null);
-		model.addAttribute("artistProfile", artist != null ? portalManagementService.getOrCreateProfile(artist) : null);
 		model.addAttribute("activeMenu", activeMenu);
 		model.addAttribute("isAgency", true);
 		model.addAttribute("managedArtists", managedArtists);
 		model.addAttribute("scheduleCategories", ScheduleCategory.values());
+		if (artist != null) {
+			var profile = portalManagementService.getOrCreateProfile(artist);
+			model.addAttribute("artistProfile", profile);
+			model.addAttribute("avatarPublicUrl", portalManagementService.toPublicImageUrl(profile.getLogoImageUrl()));
+			model.addAttribute("backgroundPublicUrl", portalManagementService.toPublicImageUrl(profile.getHeaderImageUrl()));
+			model.addAttribute("hasAvatarImage", profile.getLogoImageUrl() != null && !profile.getLogoImageUrl().isBlank());
+			model.addAttribute("hasBackgroundImage", profile.getHeaderImageUrl() != null && !profile.getHeaderImageUrl().isBlank());
+		} else {
+			model.addAttribute("artistProfile", null);
+			model.addAttribute("avatarPublicUrl", null);
+			model.addAttribute("backgroundPublicUrl", null);
+			model.addAttribute("hasAvatarImage", false);
+			model.addAttribute("hasBackgroundImage", false);
+		}
 	}
 
 	private YearMonth parseMonth(String month) {
