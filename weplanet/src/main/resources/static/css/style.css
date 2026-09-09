@@ -178,6 +178,14 @@ p {
   background: var(--wp-live);
 }
 
+.wp-noti-bound:not(.has-unread)::after {
+  display: none;
+}
+
+.wp-noti-count {
+  display: none;
+}
+
 /* =========================================================
  * 2. Buttons
  * ========================================================= */
@@ -790,6 +798,27 @@ p {
   color: var(--wp-brand);
 }
 
+.post-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.post-like.is-liked {
+  color: var(--wp-live);
+}
+
+.post-like.is-liked .icon {
+  color: var(--wp-live);
+  fill: currentColor;
+}
+
 .translate-link {
   font-size: var(--wp-fs-xs);
   color: var(--wp-brand);
@@ -1154,6 +1183,9 @@ p {
 }
 
 .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid var(--wp-line);
@@ -1161,6 +1193,11 @@ p {
   font-weight: 600;
   color: var(--wp-ink-soft);
   background: var(--wp-surface);
+}
+
+.chip .tab-ico {
+  width: 14px;
+  height: 14px;
 }
 
 .chip.is-active,
