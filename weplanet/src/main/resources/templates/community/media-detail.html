@@ -20,7 +20,7 @@
 
   <header th:replace="~{community/fragments/layout :: header}"></header>
 
-  <div class="community-body community-body--detail">
+  <div class="community-body">
     <div class="community-main">
       <a class="section__link mb-16" style="display:inline-block;"
          th:href="${mediaPost.liveReplay} ? @{/community/{id}/live(id=${artist.id()})} : @{/community/{id}/media(id=${artist.id()})}"
