@@ -200,12 +200,24 @@ public class CommunityJoinService {
 		return profile != null ? profile.getNickname() : author.getNickname();
 	}
 
-	// 게시글/댓글 목록을 한 번에 그릴 때 작성자마다 profileOf를 반복 조회하지 않도록 미리 맵으로 계산
+	// 게시글/댓글 목록을 한 번에 그릴 때 작성자마다 profileOf를 반복 조회하지 않도록 미리 맵으로 계산.
+	// Thymeleaf 맵 키 접근 이슈를 피하려고 Long/String 키를 둘 다 넣는다.
 	public Map<Long, String> displayNicknamesByAuthorId(Collection<User> authors, Long artistId) {
 		Map<Long, String> result = new HashMap<>();
 		for (User author : authors) {
 			if (author != null) {
 				result.putIfAbsent(author.getId(), displayNickname(author, artistId));
+			}
+		}
+		return result;
+	}
+
+	/** 템플릿에서 안전하게 쓰기 위한 String 키 맵 */
+	public Map<String, String> displayNicknamesByAuthorIdKey(Collection<User> authors, Long artistId) {
+		Map<String, String> result = new HashMap<>();
+		for (User author : authors) {
+			if (author != null) {
+				result.putIfAbsent(String.valueOf(author.getId()), displayNickname(author, artistId));
 			}
 		}
 		return result;

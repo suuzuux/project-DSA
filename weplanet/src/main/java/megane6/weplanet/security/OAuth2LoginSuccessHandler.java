@@ -5,10 +5,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.controller.DormantAccountReactivationController;
 import megane6.weplanet.controller.SocialLoginEntryController;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.SocialLoginIntent;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.UsernameGenerator;
@@ -64,6 +66,22 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				return;
 			}
 			user = existingUser.get();
+
+			if (user.getStatus() == UserStatus.WITHDRAWN || user.getStatus() == UserStatus.SUSPENDED) {
+				socialLoginSessionSupport.clearSecurityContext(request, response);
+				response.sendRedirect("/login?error");
+				return;
+			}
+			if (user.getStatus() == UserStatus.DORMANT) {
+				// 소셜 인증은 됐지만, 로컬 로그인과 동일하게 이메일 코드 인증을 한 번 더 거치게 한다.
+				// 아직 reactivate()도, loginAs()도 하지 않고 세션에 "이 유저가 재활성화 대상"이라는 것만 남긴다.
+				socialLoginSessionSupport.clearSecurityContext(request, response);
+				if (session != null) {
+					session.setAttribute(DormantAccountReactivationController.SESSION_KEY_PENDING_REACTIVATION_USER_ID, user.getId());
+				}
+				response.sendRedirect("/login/reactivate");
+				return;
+			}
 		} else {
 			if (intent != SocialLoginIntent.SIGNUP) {
 				socialLoginSessionSupport.clearSecurityContext(request, response);

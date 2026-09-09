@@ -81,6 +81,9 @@ public class User {
 	@Column(name = "last_login_at")
 	private LocalDateTime lastLoginAt;		// 마지막 로그인 시각
 	
+	@Column(name = "dormant_notice_sent_at")
+	private LocalDateTime dormantNoticeSentAt;	// 휴면 전환 30일 전 사전 안내 메일 발송 시각
+	
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;		// 가입(레코드 생성) 시각
 	
@@ -146,11 +149,12 @@ public class User {
 	}
 	
 	public boolean isLoginable() {
-		return this.status == UserStatus.ACTIVE || this.status == UserStatus.DORMANT;
+		return this.status == UserStatus.ACTIVE;
 	}
 	
 	public void recordLogin() {
 		this.lastLoginAt = LocalDateTime.now();
+		this.dormantNoticeSentAt = null;	// 다시 로그인했으니 다음 휴면 주기에 사전 안내를 다시 보낼 수 있도록 초기화
 	}
 
 	public void markEmailVerified(LocalDateTime verifiedAt) {
@@ -166,6 +170,14 @@ public class User {
 		this.nickname = nickname;
 		this.email = email;
 	}
+
+	public void changeGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	public void changeBirthDate(LocalDate birthDate) {
+		this.birthDate = birthDate;
+	}
 	
 	public void changeRealName(String realName) {
 		this.realName = realName;
@@ -175,9 +187,40 @@ public class User {
 		this.password = encodedPassword;
 	}
 	
+	public void markDormantNoticeSent() {
+		this.dormantNoticeSentAt = LocalDateTime.now();
+	}
+	
+	public void markDormant() {
+		this.status = UserStatus.DORMANT;
+	}
+	
+	public void reactivate() {
+		this.status = UserStatus.ACTIVE;
+		this.dormantNoticeSentAt = null;
+		this.lastLoginAt = LocalDateTime.now();
+	}
+	
 	public void withdraw() {
 		this.status = UserStatus.WITHDRAWN;
 		this.deletedAt = LocalDateTime.now();
+		anonymizePersonalInfo();
+	}
+	
+	// id(PK)는 이미 전역 유일하므로 별도 타임스탬프 없이 이 값만으로 충돌 없는 고유 식별자를 만들 수 있다.
+	// email/username/providerId는 재사용 가능하도록 다른 값으로 치환하고,
+	// realName은 컬럼이 NOT NULL이라 null 대신 고정 문구로 치환, phone/address2는 nullable이라 null로 지운다.
+	// 탈퇴는 영구 처리라 이 값들은 되돌리지 않는다 (복구 기능 없음).
+	private void anonymizePersonalInfo() {
+		String suffix = "withdrawn_" + this.id;
+		this.username = suffix;
+		this.email = suffix + "@withdrawn.weplanet.local";
+		if (this.providerId != null) {
+			this.providerId = suffix;
+		}
+		this.realName = "탈퇴한 회원";
+		this.phone = null;
+		this.address2 = null;
 	}
 
 	// [관리자 제재] 신고 누적 등으로 관리자가 계정을 정지시킬 때 씀.

@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface LiveSessionRepository extends JpaRepository<LiveSession, Long> {
@@ -30,4 +32,15 @@ public interface LiveSessionRepository extends JpaRepository<LiveSession, Long> 
 	Optional<LiveSession> findFirstByArtistAndStatus(
 			@Param("artist") User artist,
 			@Param("status") LiveSessionStatus status);
+
+	@Query("""
+			SELECT s FROM LiveSession s
+			JOIN FETCH s.artist
+			WHERE s.status = :status
+			  AND s.artist.id IN :artistIds
+			ORDER BY s.startedAt DESC
+			""")
+	List<LiveSession> findLiveByArtistIds(
+			@Param("status") LiveSessionStatus status,
+			@Param("artistIds") Collection<Long> artistIds);
 }
