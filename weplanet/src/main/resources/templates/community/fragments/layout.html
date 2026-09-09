@@ -7,7 +7,10 @@
     <a class="home-link" th:href="@{/}" title="위플래닛 홈">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
     </a>
-    <span class="avatar avatar--sm" th:text="${artist.logo()}">AR</span>
+    <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</span>
+    <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() != null}">
+      <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
+    </span>
     <h1 class="community-top__name" th:attr="data-artist-id=${artist.id()}" th:text="${artist.nickname()}">아티스트</h1>
   </div>
   <div class="community-top__right">
@@ -163,7 +166,10 @@
   <div class="widget" th:if="${showAbout}">
     <h3 class="widget__title">About</h3>
     <div class="flex-center mb-16">
-      <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+      <div class="avatar avatar--lg" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</div>
+      <div class="avatar avatar--lg" th:if="${artist.profileImageUrl() != null}">
+        <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
+      </div>
       <div>
         <strong th:text="${artist.nickname()}">아티스트</strong>
         <p class="text-xs text-muted"

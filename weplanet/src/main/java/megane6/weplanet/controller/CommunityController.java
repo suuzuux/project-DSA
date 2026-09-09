@@ -532,11 +532,15 @@ public class CommunityController {
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
 		
-		List<ArtistCardView> artists = userRepository.findByRole(Role.ARTIST).stream()
-				.map(ArtistCardView::from)
+		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
+		Map<Long, String> logoUrls = portalManagementService.logoImageUrlsByArtistIds(
+				artistUsers.stream().map(User::getId).toList());
+
+		List<ArtistCardView> artists = artistUsers.stream()
+				.map(user -> ArtistCardView.from(user, logoUrls.get(user.getId())))
 				.toList();
-		
-		model.addAttribute("artist", ArtistCardView.from(artist));
+
+		model.addAttribute("artist", ArtistCardView.from(artist, logoUrls.get(artist.getId())));
 		model.addAttribute("artists", artists);
 		// 포털 프로필 관리의 소개글(artist_profile.intro) → 커뮤니티 About 소개란
 		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));

@@ -166,6 +166,14 @@ public class User {
 		this.nickname = nickname;
 		this.email = email;
 	}
+
+	public void changeGender(Gender gender) {
+		this.gender = gender;
+	}
+
+	public void changeBirthDate(LocalDate birthDate) {
+		this.birthDate = birthDate;
+	}
 	
 	public void changeRealName(String realName) {
 		this.realName = realName;

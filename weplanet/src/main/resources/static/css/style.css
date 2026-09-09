@@ -617,6 +617,14 @@ p {
   font-weight: 800;
   color: var(--wp-brand-dark);
   font-size: var(--wp-fs-sm);
+  overflow: hidden;
+}
+
+.artist-chip__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .artist-chip__name {
@@ -678,6 +686,13 @@ p {
   font-size: var(--wp-fs-sm);
   flex-shrink: 0;
   overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .avatar--sm {

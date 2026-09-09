@@ -21,6 +21,7 @@ import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -439,6 +440,9 @@ public class PortalController {
 	@PostMapping("/profile")
 	public String updateProfile(@RequestParam String nickname,
 								@RequestParam String email,
+								@RequestParam(required = false) String realName,
+								@RequestParam(required = false) String gender,
+								@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate birthDate,
 								@RequestParam(required = false) String intro,
 								@RequestParam(required = false) String headerImageUrl,
 								@RequestParam(required = false) String logoImageUrl,
@@ -449,7 +453,8 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		try {
-			portalManagementService.updateProfile(artist, nickname, email, intro, headerImageUrl, logoImageUrl);
+			portalManagementService.updateProfile(
+					artist, nickname, email, realName, gender, birthDate, intro, headerImageUrl, logoImageUrl);
 			redirectAttributes.addFlashAttribute("msg", "프로필이 저장되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
