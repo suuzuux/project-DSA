@@ -16,6 +16,7 @@
         })
         .then(function (data) {
           document.getElementById("likeCount").textContent = data.likeCount > 0 ? data.likeCount : "";
+          likeButton.classList.toggle("is-liked", !!data.liked);
         });
     });
   }

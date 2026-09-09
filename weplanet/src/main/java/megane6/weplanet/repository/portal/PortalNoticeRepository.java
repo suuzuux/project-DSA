@@ -29,4 +29,6 @@ public interface PortalNoticeRepository extends JpaRepository<PortalNotice, Long
     Optional<PortalNotice> findByIdAndArtist(Long id, User artist);
     long countByArtist(User artist);
     long countByArtistAndPinnedTrue(User artist);
+
+    List<PortalNotice> findTop20ByPublishedTrueAndArtist_IdInOrderByCreatedAtDesc(Iterable<Long> artistIds);
 }

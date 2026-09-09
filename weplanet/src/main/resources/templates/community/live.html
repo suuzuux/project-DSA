@@ -26,15 +26,24 @@
       <nav th:replace="~{community/fragments/layout :: tabs('live')}"></nav>
 
       <div class="board-toolbar">
-        <h2 class="section__title" style="margin:0;">Live Replay</h2>
-        <div class="flex-center">
-          <select class="form-select" style="width:auto;min-height:36px;">
-            <option>최신순</option>
-            <option>오래된 순</option>
-          </select>
-          <select class="form-select" style="width:auto;min-height:36px;">
-            <option>전체 연도</option>
-          </select>
+        <h2 class="section__title" style="margin:0;display:inline-flex;align-items:center;gap:8px;">
+          <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Live Replay
+        </h2>
+        <div class="board-toolbar__actions">
+          <label class="board-select">
+            <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5h10"></path><path d="M11 12h10"></path><path d="M11 19h10"></path><path d="M3 5l2 2 4-4"></path><path d="M3 12h4"></path><path d="M3 19h4"></path></svg>
+            <select class="form-select" aria-label="라이브 정렬">
+              <option>최신순</option>
+              <option>오래된 순</option>
+            </select>
+          </label>
+          <label class="board-select">
+            <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <select class="form-select" aria-label="연도 필터">
+              <option>전체 연도</option>
+            </select>
+          </label>
         </div>
       </div>
 

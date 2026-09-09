@@ -4,6 +4,8 @@ import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -27,4 +29,16 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 내 프로필 "댓글 히스토리" 탭 - 내가 쓴 댓글 전체를 최신순/오래된순으로
     List<Comment> findByAuthorOrderByCreatedAtDesc(User author);
     List<Comment> findByAuthorOrderByCreatedAtAsc(User author);
+
+    // 알림: 내가 쓴 글에 달린 댓글(본인 댓글 제외) 최신순
+    @Query("""
+            SELECT c FROM Comment c
+            JOIN FETCH c.post p
+            JOIN FETCH c.author a
+            LEFT JOIN FETCH p.artist
+            WHERE p.author = :postAuthor
+              AND a <> :postAuthor
+            ORDER BY c.createdAt DESC
+            """)
+    List<Comment> findRecentOnMyPosts(@Param("postAuthor") User postAuthor);
 }

@@ -27,20 +27,28 @@
 
       <div class="board-toolbar">
         <div class="board-tabs">
-          <a th:href="@{/community/{id}/fan(id=${artist.id()})}">포스트</a>
+          <a th:href="@{/community/{id}/fan(id=${artist.id()})}">
+            <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            포스트
+          </a>
           <a class="is-active"
-             th:href="@{/community/{id}/project(id=${artist.id()})}">프로젝트</a>
+             th:href="@{/community/{id}/project(id=${artist.id()})}">
+            <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            프로젝트
+          </a>
         </div>
 
-        <div class="flex-center">
+        <div class="board-toolbar__actions">
           <!-- 인기순은 후원(모금액) 기능이 붙은 뒤에 추가한다 -->
-          <select id="projectSort"
-                  class="form-select"
-                  style="width:auto;min-height:36px;"
-                  aria-label="프로젝트 정렬">
-            <option value="deadline" th:selected="${sort != 'latest'}">마감임박순</option>
-            <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
-          </select>
+          <label class="board-select">
+            <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5h10"></path><path d="M11 12h10"></path><path d="M11 19h10"></path><path d="M3 5l2 2 4-4"></path><path d="M3 12h4"></path><path d="M3 19h4"></path></svg>
+            <select id="projectSort"
+                    class="form-select"
+                    aria-label="프로젝트 정렬">
+              <option value="deadline" th:selected="${sort != 'latest'}">마감임박순</option>
+              <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
+            </select>
+          </label>
 
           <button type="button"
                   class="btn btn--primary btn--sm"
