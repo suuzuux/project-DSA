@@ -40,7 +40,10 @@
   </div>
 </header>
 
-<div th:fragment="hero" class="community-hero">
+<div th:fragment="hero" class="community-hero"
+     th:style="${artistHeaderImageUrl != null and !#strings.isEmpty(artistHeaderImageUrl)}
+                ? |background-image:linear-gradient(180deg, transparent 30%, rgba(20, 24, 31, 0.55)), url('${artistHeaderImageUrl}'); background-size:cover; background-position:center;|
+                : null">
   <span class="community-hero__viewers">페이지를 보고 있어요.</span>
   <strong style="font-size:22px;letter-spacing:-0.02em;"
           th:text="|${artist.nickname()} Official Community|">Official Community</strong>
@@ -122,6 +125,12 @@
     <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="writePostModal">포스트 작성하기</button>
   </th:block>
 
+  <th:block th:if="${showProjectWriteButton != null and showProjectWriteButton and !isOwnCommunity}"
+            sec:authorize="hasAnyRole('FAN','ARTIST')"
+            xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <button type="button" class="btn btn--primary btn--block mb-16" data-modal-open="projectCreateModal">프로젝트 등록하기</button>
+  </th:block>
+
   <div class="membership-card" th:if="${!isOwnCommunity}">
     <h3 class="membership-card__title">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
@@ -180,20 +189,23 @@
       </div>
     </div>
 
-    <!-- 본인 커뮤니티에서는 팔로우 리스트 숨김. 타 커뮤니티에서는 팬·아티스트 모두 팔로우 가능 -->
+    <!-- 현재 커뮤니티 아티스트 팔로우만 표시 (다른 커뮤니티 팔로잉 목록 제거) -->
     <th:block th:if="${!isOwnCommunity}"
               sec:authorize="hasAnyRole('FAN','ARTIST')"
               xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <div th:each="other : ${otherArtists}" class="flex-between mb-8" style="align-items:center;">
+      <div class="flex-between" style="align-items:center;">
         <div class="flex-center" style="gap:8px;">
-          <span class="avatar avatar--sm" th:text="${other.logo()}">AR</span>
-          <span th:text="${other.nickname()}">아티스트</span>
+          <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</span>
+          <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() != null}">
+            <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
+          </span>
+          <span th:text="${artist.nickname()}">아티스트</span>
         </div>
-        <form th:action="@{/community/{id}/follow(id=${other.id()})}" method="post">
+        <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post">
           <input type="hidden" name="returnTo" th:value="${artist.id()}" />
           <button type="submit" class="btn btn--sm"
-                  th:classappend="${other.following()} ? ' btn--soft' : ' btn--ghost'"
-                  th:text="${other.following()} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
+                  th:classappend="${followingCurrentArtist} ? ' btn--soft' : ' btn--ghost'"
+                  th:text="${followingCurrentArtist} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
         </form>
       </div>
     </th:block>

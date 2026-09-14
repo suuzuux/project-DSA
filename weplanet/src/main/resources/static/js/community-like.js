@@ -1,26 +1,18 @@
 /**
- * 커뮤니티 목록/하이라이트 – 게시글 하트 좋아요 (상세 진입 없이 토글)
+ * 커뮤니티 목록/하이라이트 – 게시글·미디어 하트 좋아요 (상세 진입 없이 토글)
  */
 (function () {
   "use strict";
 
-  document.addEventListener("click", function (e) {
-    var btn = e.target.closest("[data-post-like]");
-    if (!btn) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
+  function toggleLike(btn, url) {
     if (document.body.getAttribute("data-authenticated") !== "true") {
       window.location.href = "/login";
       return;
     }
-
-    var postId = btn.getAttribute("data-post-like");
-    if (!postId || btn.dataset.liking === "1") return;
+    if (!url || btn.dataset.liking === "1") return;
     btn.dataset.liking = "1";
 
-    fetch("/posts/detail/" + postId + "/like", { method: "POST" })
+    fetch(url, { method: "POST" })
       .then(function (response) {
         if (response.status === 401 || response.status === 403) {
           window.location.href = "/login";
@@ -39,5 +31,22 @@
       .finally(function () {
         btn.dataset.liking = "0";
       });
+  }
+
+  document.addEventListener("click", function (e) {
+    var postBtn = e.target.closest("[data-post-like]");
+    if (postBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleLike(postBtn, "/posts/detail/" + postBtn.getAttribute("data-post-like") + "/like");
+      return;
+    }
+
+    var mediaBtn = e.target.closest("[data-media-like]");
+    if (mediaBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleLike(mediaBtn, "/board/media/" + mediaBtn.getAttribute("data-media-like") + "/like");
+    }
   });
 })();

@@ -2,7 +2,6 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
-import megane6.weplanet.domain.dto.ArtistFollowCardView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
@@ -284,6 +283,12 @@ public class CommunityController {
 		}
 		model.addAttribute("mediaList", boardMediaService.listWithoutLiveReplays(artistId));
 		model.addAttribute("groupId", artistId);
+		Set<Long> likedMediaIds = Collections.emptySet();
+		if (principal != null) {
+			User me = userResolver.resolve(principal, 1L);
+			likedMediaIds = boardMediaService.likedIdsForUser(me, artistId);
+		}
+		model.addAttribute("likedMediaIds", likedMediaIds);
 		return "community/media";
 	}
 
@@ -300,8 +305,10 @@ public class CommunityController {
 			model.addAttribute("gatedTab", "media");
 			return "community/membership-required";
 		}
+		User me = userResolver.resolve(principal, 1L);
 		model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId));
 		model.addAttribute("groupId", artistId);
+		model.addAttribute("liked", boardMediaService.isLiked(mediaId, me));
 		return "community/media-detail";
 	}
 	
@@ -544,6 +551,7 @@ public class CommunityController {
 		model.addAttribute("artists", artists);
 		// 포털 프로필 관리의 소개글(artist_profile.intro) → 커뮤니티 About 소개란
 		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));
+		model.addAttribute("artistHeaderImageUrl", portalManagementService.findHeaderImageUrl(artist));
 		
 		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
 		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());
@@ -561,15 +569,7 @@ public class CommunityController {
 		}
 		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
 		Set<Long> followedIds = followService.getFollowedArtistIds(currentUser);
-		List<ArtistFollowCardView> otherArtists = userRepository.findByRole(Role.ARTIST).stream()
-				.filter(user -> !user.getId().equals(artistId))
-				// 방문 중인 아티스트 본인 커뮤니티는 팔로우 리스트에서 제외
-				.filter(user -> currentUser == null
-						|| currentUser.getRole() != Role.ARTIST
-						|| !user.getId().equals(currentUser.getId()))
-				.map(user -> ArtistFollowCardView.of(user, followedIds.contains(user.getId())))
-				.toList();
-		model.addAttribute("otherArtists", otherArtists);
+		model.addAttribute("followingCurrentArtist", followedIds.contains(artistId));
 		
 		Map<Long, CommunityProfile> joinedProfiles = currentUser != null
 				? communityJoinService.joinedProfilesByArtistId(currentUser)
@@ -581,6 +581,12 @@ public class CommunityController {
 				communityDrawerHelper.otherCommunities(currentUser, artists));
 		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artistId));
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
+		// 아티스트 본인 '나' 프로필: 에이전시/포털에서 등록한 배경·사진·소개 반영
+		if (isOwnCommunity) {
+			model.addAttribute("artistPortalAvatarUrl", portalManagementService.findLogoImageUrl(artist));
+			model.addAttribute("artistPortalBackgroundUrl", portalManagementService.findHeaderImageUrl(artist));
+			model.addAttribute("artistPortalIntro", portalManagementService.findIntro(artist));
+		}
 		
 		if (principal != null) {
 			membershipService.getMembership(currentUser, artist).ifPresent(membership -> {

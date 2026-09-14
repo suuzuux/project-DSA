@@ -336,6 +336,7 @@ public class PortalManagementService {
         item.put("link", event.ticketUrl());
         item.put("hasTicketImage", event.ticketUrl() != null && !event.ticketUrl().isBlank());
         item.put("title", event.localizedTitle());
+        item.put("createdAt", event.createdAt());
         return item;
     }
 
@@ -407,6 +408,17 @@ public class PortalManagementService {
         }
         return artistProfileRepository.findByArtist(artist)
                 .map(ArtistProfile::getLogoImageUrl)
+                .map(this::toPublicImageUrl)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String findHeaderImageUrl(User artist) {
+        if (artist == null) {
+            return null;
+        }
+        return artistProfileRepository.findByArtist(artist)
+                .map(ArtistProfile::getHeaderImageUrl)
                 .map(this::toPublicImageUrl)
                 .orElse(null);
     }
