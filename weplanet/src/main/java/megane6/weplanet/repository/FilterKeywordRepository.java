@@ -14,4 +14,11 @@ public interface FilterKeywordRepository extends JpaRepository<FilterKeyword, Lo
     // List<String>으로 바로 꺼내오기 위해 사용함
     @Query("select f.keyword from FilterKeyword f")
     List<String> findAllKeywords();
+    
+    List<FilterKeyword> findAllByOrderByKeywordAsc();
+    boolean existsByKeywordIgnoreCase(String keyword);
+    boolean existsByKeywordIgnoreCaseAndIdNot(
+            String keyword,
+            Long id
+    );
 }

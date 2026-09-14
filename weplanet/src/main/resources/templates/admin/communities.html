@@ -767,7 +767,10 @@
         </p>
       </a>
 
-      <section class="panel">
+      <a class="panel"
+         th:href="@{/admin/communities/overview(sort='BLOCKS_DESC')}"
+         style="text-decoration:none; color:inherit;">
+
         <div class="panel__head">
           <h2 class="panel__title">이용 제한 관리</h2>
           <span>›</span>
@@ -776,18 +779,21 @@
         <p class="text-sm text-muted">
           특정 커뮤니티에서 차단된 회원과 차단 사유를 관리합니다.
         </p>
-      </section>
+      </a>
 
-      <section class="panel">
+      <a class="panel"
+         th:href="@{/chat/admin/keywords}"
+         style="text-decoration:none; color:inherit;">
+
         <div class="panel__head">
           <h2 class="panel__title">채팅·금칙어 관리</h2>
           <span>›</span>
         </div>
 
         <p class="text-sm text-muted">
-          채팅 금칙어와 커뮤니티별 채팅 운영 설정을 관리합니다.
+          채팅 금칙어를 등록·수정·삭제하고 채팅 운영 설정을 관리합니다.
         </p>
-      </section>
+      </a>
     </div>
   </main>
 </div>

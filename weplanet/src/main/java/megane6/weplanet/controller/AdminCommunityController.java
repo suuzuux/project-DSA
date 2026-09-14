@@ -71,6 +71,30 @@ public class AdminCommunityController {
 		return "admin/community-detail";
 	}
 	
+	@PostMapping(
+			"/overview/{artistId}/blocks/{blockId}/unblock"
+	)
+	public String unblockMember(@PathVariable Long artistId,
+								@PathVariable Long blockId,
+								HttpServletRequest request,
+								@AuthenticationPrincipal AuthenticatedUser principal,
+								RedirectAttributes redirectAttributes) {
+		requireAdminLogin(principal);
+		handle(
+				() -> acs.unblockMember(
+						artistId,
+						blockId,
+						principal.getId(),
+						request.getRemoteAddr()
+				),
+				"커뮤니티 회원 차단을 해제했습니다.",
+				redirectAttributes
+		);
+		
+		return "redirect:/admin/communities/overview/"
+				+ artistId;
+	}
+	
 	@PostMapping("/projects/{projectId}/approve")
 	public String approveProject(
 			@PathVariable Long projectId,
@@ -217,12 +241,15 @@ public class AdminCommunityController {
 		}
 	}
 	
-	private String normalizeCommunitySort (String sort) {
+	private String normalizeCommunitySort(String sort) {
 		String value = sort == null ? "" : sort;
+		
 		return switch (value) {
 			case "MEMBERS_DESC",
 				 "POSTS_DESC",
+				 "BLOCKS_DESC",
 				 "REPORTS_DESC" -> value;
+			
 			default -> "NAME_ASC";
 		};
 	}

@@ -106,6 +106,27 @@ public interface UserRepository extends JpaRepository<User, Long> {
     );
 
     long countByRoleAndStatus(Role role, UserStatus status);
+    
+    @Query(
+            value = """
+                SELECT DATE_FORMAT(u.created_at, '%Y-%m-%d') AS signupDate,
+                       COUNT(*) AS signupCount
+                FROM users u
+                WHERE u.created_at >= :start
+                  AND u.created_at < :end
+                GROUP BY DATE_FORMAT(u.created_at, '%Y-%m-%d')
+                ORDER BY DATE_FORMAT(u.created_at, '%Y-%m-%d')
+                """,
+            nativeQuery = true
+    )
+    List<DailySignupCount> countDailySignupsBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+    interface DailySignupCount {
+        String getSignupDate();
+        Long getSignupCount();
+    }
 
     @EntityGraph(attributePaths = "agency")
     Optional<User> findOneById(Long id);

@@ -11,6 +11,7 @@ public enum AdminTargetType {
 	AGENCY_PERMISSION("소속사 권한"),
 	PROJECT("프로젝트"),
 	REPORT("신고"),
+	KEYWORD("금칙어"),
 	SETTLEMENT("정산"),
 	NOTICE("공지");
 	
