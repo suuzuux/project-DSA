@@ -1,86 +1,314 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko"
+      xmlns:th="https://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>금칙어 관리</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
-    <link rel="stylesheet" th:href="@{/css/community.css}">
+    <meta charset="UTF-8" />
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0" />
+
+    <title>채팅·금칙어 관리 | WePlaNet ADMIN</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/style.css}" />
+
+    <link rel="stylesheet"
+          th:href="@{/css/portal.css}" />
 </head>
+
 <body>
+<div class="portal-shell">
 
-<header class="site-header">
-    <a class="brand" th:href="@{/}">
-        <span class="brand__mark">W</span>
-        <span class="brand__text">We<span>Pla</span>Net</span>
-    </a>
-</header>
-
-<div class="container container--narrow section">
-    <h1 class="section__title" style="margin-bottom:16px;">금칙어 관리 (관리자 전용)</h1>
-
-    <form id="keywordAddForm" style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
-        <label class="form-label" style="margin:0;white-space:nowrap;">등록할 금칙어</label>
-        <input type="text" name="keyword" class="form-input" placeholder="예: 바보">
-        <button type="submit" class="btn btn--primary btn--sm">등록</button>
-    </form>
-
-    <!-- 등록/삭제 후 페이지 전체를 새로고침하지 않고, 이 목록 부분(fragment)만 fetch로 다시 받아와서 교체함 -->
-    <div id="keywordListArea" th:fragment="keywordListFragment">
-        <div class="table-wrap" th:if="${not #lists.isEmpty(keywords)}">
-            <table class="data-table">
-                <tr>
-                    <th>금칙어</th>
-                    <th>삭제</th>
-                </tr>
-                <tr th:each="kw : ${keywords}">
-                    <td th:text="${kw.keyword}"></td>
-                    <td>
-                        <form class="keyword-delete-form" th:action="@{/chat/admin/keywords/{id}/delete(id=${kw.id})}"
-                              method="post">
-                            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
-                        </form>
-                    </td>
-                </tr>
-            </table>
+    <aside class="portal-sidebar portal-sidebar--admin">
+        <div class="portal-sidebar__org">
+            <div class="agency">WEPLANET</div>
+            <div class="artist">ADMIN</div>
         </div>
 
-        <p th:if="${#lists.isEmpty(keywords)}" class="text-muted"><i>등록된 금칙어가 없습니다.</i></p>
-    </div>
+        <nav class="portal-sidebar__nav">
+            <a th:href="@{/admin/dashboard}">
+                📊 통합 대시보드
+            </a>
+
+            <a th:href="@{/admin/agencies}">
+                🏢 소속사 관리
+            </a>
+
+            <a th:href="@{/admin/artists}">
+                🎤 아티스트 관리
+            </a>
+
+            <a th:href="@{/admin/users}">
+                👥 전체 회원
+            </a>
+
+            <a th:href="@{/admin/reports}">
+                🚩 통합 신고 · 제재
+            </a>
+
+            <a th:href="@{/admin/notices}">
+                📢 전체 공지
+            </a>
+
+            <a class="is-active"
+               th:href="@{/admin/communities}">
+                💬 커뮤니티 운영
+            </a>
+
+            <a th:href="@{/admin/logs}">
+                🧾 관리자 로그
+            </a>
+        </nav>
+
+        <div class="portal-sidebar__footer">
+            <form th:action="@{/admin/logout}"
+                  method="post"
+                  style="margin:0;">
+
+                <button type="submit"
+                        class="btn">
+                    🚪 로그아웃
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="portal-main">
+        <div class="portal-main__head">
+            <div>
+                <h1>채팅·금칙어 관리</h1>
+
+                <p class="text-sm text-muted">
+                    채팅과 라이브 댓글에서 사용할 수 없는 단어를 관리합니다.
+                </p>
+            </div>
+
+            <a class="btn btn--ghost btn--sm"
+               th:href="@{/admin/communities}">
+                ← 커뮤니티 운영
+            </a>
+        </div>
+
+        <section class="panel">
+            <div class="panel__head">
+                <h2 class="panel__title">새 금칙어 등록</h2>
+
+                <span class="text-xs text-muted">
+          최대 50자
+        </span>
+            </div>
+
+            <form id="keywordAddForm"
+                  th:action="@{/chat/admin/keywords}"
+                  method="post"
+                  style="display:flex;
+                   gap:8px;
+                   align-items:center;">
+
+                <label class="form-label"
+                       for="newKeyword"
+                       style="margin:0;
+                      white-space:nowrap;">
+                    금칙어
+                </label>
+
+                <input id="newKeyword"
+                       type="text"
+                       name="keyword"
+                       class="form-input"
+                       placeholder="등록할 금칙어 입력"
+                       maxlength="50"
+                       required
+                       autocomplete="off" />
+
+                <button type="submit"
+                        class="btn btn--primary btn--sm">
+                    등록
+                </button>
+            </form>
+        </section>
+
+        <section class="panel mt-16">
+            <div class="panel__head">
+                <h2 class="panel__title">등록된 금칙어</h2>
+            </div>
+
+            <div id="keywordListArea"
+                 th:fragment="keywordListFragment">
+
+                <p th:if="${keywordMessage}"
+                   class="text-sm"
+                   style="color:#1f7a52;
+                  margin-bottom:12px;"
+                   th:text="${keywordMessage}">
+                    처리되었습니다.
+                </p>
+
+                <p th:if="${keywordError}"
+                   class="text-sm keyword-error"
+                   style="color:#c45c26;
+                  margin-bottom:12px;"
+                   th:text="${keywordError}">
+                    오류가 발생했습니다.
+                </p>
+
+                <div class="table-wrap"
+                     th:if="${not #lists.isEmpty(keywords)}">
+
+                    <table class="data-table">
+                        <thead>
+                        <tr>
+                            <th>번호</th>
+                            <th>금칙어</th>
+                            <th>관리</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr th:each="keyword, status : ${keywords}">
+                            <td th:text="${status.count}">
+                                1
+                            </td>
+
+                            <td>
+                                <form class="keyword-update-form"
+                                      th:action="@{/chat/admin/keywords/{id}/update(
+                          id=${keyword.id}
+                      )}"
+                                      method="post"
+                                      style="display:flex;
+                             align-items:center;
+                             gap:8px;">
+
+                                    <input type="text"
+                                           name="keyword"
+                                           class="form-input"
+                                           th:value="${keyword.keyword}"
+                                           maxlength="50"
+                                           required
+                                           autocomplete="off" />
+
+                                    <button type="submit"
+                                            class="btn btn--ghost btn--sm">
+                                        수정
+                                    </button>
+                                </form>
+                            </td>
+
+                            <td>
+                                <form class="keyword-delete-form"
+                                      th:action="@{/chat/admin/keywords/{id}/delete(
+                          id=${keyword.id}
+                      )}"
+                                      method="post">
+
+                                    <button type="submit"
+                                            class="btn btn--ghost btn--sm">
+                                        삭제
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p th:if="${#lists.isEmpty(keywords)}"
+                   class="text-sm text-muted">
+                    등록된 금칙어가 없습니다.
+                </p>
+            </div>
+        </section>
+    </main>
 </div>
 
-<script th:inline="javascript">
-    // 등록/삭제 둘 다 페이지 전체 새로고침 없이, 목록 부분(#keywordListArea)만 fetch로 다시 받아와서 교체함.
-    // 등록 폼은 하나뿐이지만, 삭제 폼은 금칙어 개수만큼 여러 개 생기고 목록이 갱신될 때마다 새로 만들어지므로
-    // document 전체에 이벤트를 걸어두고 "어떤 폼이 제출됐는지"를 안에서 확인하는 방식(이벤트 위임)을 씀
-    document.addEventListener('submit', function (e) {
-        const form = e.target;
+<script>
+    document.addEventListener('submit', function (event) {
+      const form = event.target;
 
-        if (form.id !== 'keywordAddForm' && !form.classList.contains('keyword-delete-form')) {
-            return; // 이 화면과 관련 없는 다른 폼이면 그냥 지나감
-        }
+      const isAddForm =
+          form.id === 'keywordAddForm';
 
-        e.preventDefault();
+      const isUpdateForm =
+          form.classList.contains(
+              'keyword-update-form'
+          );
 
-        fetch(form.action, {
-            method: 'POST',
-            headers: {'X-Requested-With': 'fetch'},
-            body: new URLSearchParams(new FormData(form))
-        })
-            .then(function (response) {
-                return response.text();
-            })
-            .then(function (html) {
-                document.getElementById('keywordListArea').outerHTML = html;
+      const isDeleteForm =
+          form.classList.contains(
+              'keyword-delete-form'
+          );
 
-                if (form.id === 'keywordAddForm') {
-                    form.reset(); // 등록 후 입력창을 비워줌
-                }
-            });
+      if (!isAddForm
+          && !isUpdateForm
+          && !isDeleteForm) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (isDeleteForm
+          && !window.confirm(
+              '이 금칙어를 삭제할까요?'
+          )) {
+        return;
+      }
+
+      const submitButton =
+          form.querySelector(
+              'button[type="submit"]'
+          );
+
+      if (submitButton) {
+        submitButton.disabled = true;
+      }
+
+      fetch(form.action, {
+        method: 'POST',
+
+        headers: {
+          'X-Requested-With': 'fetch'
+        },
+
+        body: new URLSearchParams(
+            new FormData(form)
+        )
+      })
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error(
+                  '요청 처리에 실패했습니다.'
+              );
+            }
+
+            return response.text();
+          })
+          .then(function (html) {
+            const listArea =
+                document.getElementById(
+                    'keywordListArea'
+                );
+
+            listArea.outerHTML = html;
+
+            const hasError =
+                document.querySelector(
+                    '#keywordListArea .keyword-error'
+                );
+
+            if (isAddForm && !hasError) {
+              form.reset();
+            }
+          })
+          .catch(function (error) {
+            window.alert(error.message);
+          })
+          .finally(function () {
+            if (submitButton) {
+              submitButton.disabled = false;
+            }
+          });
     });
-
-    // 등록 폼(<form id="keywordAddForm">)에는 action 속성을 안 적어뒀으므로, 여기서 직접 지정해줌
-    document.getElementById('keywordAddForm').action = '/chat/admin/keywords';
 </script>
-
 </body>
 </html>

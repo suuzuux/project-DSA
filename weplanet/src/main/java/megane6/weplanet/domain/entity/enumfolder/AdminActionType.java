@@ -21,6 +21,12 @@ public enum AdminActionType {
 	REPORT_RESOLVE("신고 처리"),
 	REPORT_DISMISS("신고 기각"),
 	
+	COMMUNITY_MEMBER_UNBLOCK("커뮤니티 회원 차단 해제"),
+	
+	KEYWORD_CREATE("금칙어 등록"),
+	KEYWORD_UPDATE("금칙어 수정"),
+	KEYWORD_DELETE("금칙어 삭제"),
+	
 	SETTLEMENT_ACCOUNT_VERIFY("정산 계좌 확인"),
 	SETTLEMENT_ACCOUNT_FAIL("정산 계좌 확인 실패"),
 	SETTLEMENT_COMPLETE("정산 완료"),

@@ -14,6 +14,7 @@ import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.*;
+import megane6.weplanet.domain.entity.portal.ArtistBlock;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.portal.ArtistBlockRepository;
@@ -120,6 +121,10 @@ public class AdminCommunityService {
 					.thenComparing(byName);
 			case "POSTS_DESC" -> Comparator.comparingLong(
 					AdminCommunityOverviewResponse::postCount)
+					.reversed()
+					.thenComparing(byName);
+			case "BLOCKS_DESC" -> Comparator.comparingLong(
+					AdminCommunityOverviewResponse::blockedMemberCount)
 					.reversed()
 					.thenComparing(byName);
 			case "REPORTS_DESC" -> Comparator.comparingLong(
@@ -269,6 +274,34 @@ public class AdminCommunityService {
 				blockedMembers,
 				pendingReports
 		);
+	}
+	
+	@Transactional
+	public void unblockMember(Long artistId,
+							  Long blockId,
+							  Long adminId,
+							  String ipAddress) {
+		User artist = ur.findById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() ->
+						new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+		
+		ArtistBlock block = abr.findByIdAndArtist(blockId, artist)
+				.orElseThrow(() -> new IllegalArgumentException("차단 정보를 찾을 수 없습니다."));
+		
+		User blockedUser = block.getBlockedUser();
+		
+		Long blockedUserId = blockedUser.getId();
+		String blockedUserNickname = blockedUser.getNickname();
+		
+		abr.delete(block);
+		als.recordAction(
+				adminId,
+				AdminActionType.COMMUNITY_MEMBER_UNBLOCK,
+				AdminTargetType.USER,
+				blockedUserId,
+				"커뮤니티 차단 해제 : " + artist.getNickname() + " / " + blockedUserNickname,
+				ipAddress);
 	}
 	
 	private String boardTypeLabel(BoardType boardType) {

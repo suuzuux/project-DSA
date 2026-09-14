@@ -400,12 +400,13 @@
               <th>아이디</th>
               <th>차단 사유</th>
               <th>차단일</th>
+              <th>관리</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:if="${#lists.isEmpty(detail.blockedMembers())}">
-              <td colspan="4"
+              <td colspan="5"
                   class="text-sm text-muted">
                 차단된 회원이 없습니다.
               </td>
@@ -443,6 +444,24 @@
                       'yyyy.MM.dd HH:mm'
                   )}">
                 2026.09.07
+              </td>
+              <td>
+                <form th:action="@{
+      /admin/communities/overview/{artistId}/blocks/{blockId}/unblock(
+          artistId=${detail.overview().artistId()},
+          blockId=${member.blockId()}
+      )
+  }"
+                      method="post">
+
+                  <button type="submit"
+                          class="btn btn--ghost btn--sm"
+                          onclick="return confirm(
+                '이 회원의 커뮤니티 차단을 해제할까요?'
+            );">
+                    차단 해제
+                  </button>
+                </form>
               </td>
             </tr>
             </tbody>

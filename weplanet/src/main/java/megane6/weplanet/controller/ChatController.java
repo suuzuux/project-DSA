@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ChatMessageRequest;
@@ -20,12 +21,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.List;
@@ -327,54 +324,135 @@ public class ChatController {
     // 예전엔 testUserId 파라미터로 관리자 여부를 판단해서, ?testUserId=3 만 붙이면
     // 로그인하지 않은 사람도 금칙어를 등록/삭제할 수 있었음 -> 실제 로그인 계정 기준으로 변경
     @GetMapping("/chat/admin/keywords")
-    public String keywordList(
-            @AuthenticationPrincipal AuthenticatedUser principal,
-            Model model
-    ) {
+    public String keywordList(@AuthenticationPrincipal AuthenticatedUser principal,
+                             Model model) {
         requireAdmin(requireLoginUser(principal));
-
+        
         model.addAttribute("keywords", chatFilterService.getAllKeywords());
-
+        
         return "chat/keywordManage";
     }
-
-    // 금칙어 등록 - fetch로 온 요청이면 목록 부분(fragment)만 새로 그려서 페이지 새로고침 없이 갱신
+    
+    // 금칙어 등록
     @PostMapping("/chat/admin/keywords")
     public String addKeyword(
             @RequestParam String keyword,
             @AuthenticationPrincipal AuthenticatedUser principal,
-            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
-            Model model
+            HttpServletRequest request,
+            @RequestHeader(
+                    value = "X-Requested-With",
+                    required = false
+            ) String requestedWith,
+            Model model,
+            RedirectAttributes redirectAttributes
     ) {
         requireAdmin(requireLoginUser(principal));
-
-        chatFilterService.addKeyword(keyword);
-
-        if ("fetch".equals(requestedWith)) {
-            model.addAttribute("keywords", chatFilterService.getAllKeywords());
-            return "chat/keywordManage :: keywordListFragment";
-        }
-
-        return "redirect:/chat/admin/keywords";
+        
+        return handleKeywordMutation(
+                () -> chatFilterService.addKeyword(
+                        keyword,
+                        principal.getId(),
+                        request.getRemoteAddr()
+                ),
+                "금칙어를 등록했습니다.",
+                requestedWith,
+                model,
+                redirectAttributes
+        );
     }
-
-    // 금칙어 삭제 - 등록과 같은 방식
-    @PostMapping("/chat/admin/keywords/{id}/delete")
-    public String deleteKeyword(
+    
+    // 금칙어 수정
+    @PostMapping("/chat/admin/keywords/{id}/update")
+    public String updateKeyword(
             @PathVariable Long id,
+            @RequestParam String keyword,
             @AuthenticationPrincipal AuthenticatedUser principal,
-            @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
-            Model model
+            HttpServletRequest request,
+            @RequestHeader(
+                    value = "X-Requested-With",
+                    required = false
+            ) String requestedWith,
+            Model model,
+            RedirectAttributes redirectAttributes
     ) {
         requireAdmin(requireLoginUser(principal));
-
-        chatFilterService.deleteKeyword(id);
-
+        
+        return handleKeywordMutation(
+                () -> chatFilterService.updateKeyword(
+                        id,
+                        keyword,
+                        principal.getId(),
+                        request.getRemoteAddr()
+                ),
+                "금칙어를 수정했습니다.",
+                requestedWith,
+                model,
+                redirectAttributes
+        );
+    }
+    
+    // 금칙어 삭제
+    @PostMapping("/chat/admin/keywords/{id}/delete")
+    public String deleteKeyword(@PathVariable Long id,
+                                @AuthenticationPrincipal AuthenticatedUser principal,
+                                HttpServletRequest request,
+                                @RequestHeader(
+                                        value = "X-Requested-With",
+                                        required = false
+                                ) String requestedWith,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        requireAdmin(requireLoginUser(principal));
+        
+        return handleKeywordMutation(
+                () -> chatFilterService.deleteKeyword(
+                        id, principal.getId(), request.getRemoteAddr()),
+                "금칙어를 삭제했습니다.",
+                requestedWith,
+                model,
+                redirectAttributes);
+    }
+    
+    // 등록·수정·삭제 결과를 AJAX 또는 일반 요청에 맞게 반환
+    private String handleKeywordMutation(Runnable action,
+                                         String successMessage,
+                                         String requestedWith,
+                                         Model model,
+                                         RedirectAttributes redirectAttributes) {
+        String errorMessage = null;
+        try {
+            action.run();
+        } catch (IllegalArgumentException e) {
+            errorMessage = e.getMessage();
+        }
+        
         if ("fetch".equals(requestedWith)) {
-            model.addAttribute("keywords", chatFilterService.getAllKeywords());
+            model.addAttribute(
+                    "keywords",
+                    chatFilterService.getAllKeywords()
+            );
+            
+            if (errorMessage == null) {
+                model.addAttribute(
+                        "keywordMessage",
+                        successMessage
+                );
+            } else {
+                model.addAttribute(
+                        "keywordError",
+                        errorMessage
+                );
+            }
+            
             return "chat/keywordManage :: keywordListFragment";
         }
-
+        
+        if (errorMessage == null) {
+            redirectAttributes.addFlashAttribute("keywordMessage", successMessage);
+        } else {
+            redirectAttributes.addFlashAttribute("keywordError", errorMessage);
+        }
+        
         return "redirect:/chat/admin/keywords";
     }
 

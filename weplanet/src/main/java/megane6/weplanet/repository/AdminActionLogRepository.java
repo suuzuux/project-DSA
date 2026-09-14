@@ -5,14 +5,20 @@ import megane6.weplanet.domain.entity.enumfolder.AdminActionType;
 import megane6.weplanet.domain.entity.enumfolder.AdminTargetType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface AdminActionLogRepository
 		extends JpaRepository<AdminActionLog, Long> {
+	
+	
+	@EntityGraph(attributePaths = "actor")
+	List<AdminActionLog> findTop5ByOrderByCreatedAtDescIdDesc();
 	
 	@Query(
 			value = """
