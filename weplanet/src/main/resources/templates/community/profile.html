@@ -175,12 +175,14 @@
   cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
 -->
 <main class="container section" style="max-width:1080px;"
-      th:with="displayName=${myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name},
-               contentHidden=${myCommunityProfile != null and myCommunityProfile.contentHidden},
+      th:with="isArtistSelf=${isOwnCommunity == true},
+               displayName=${isArtistSelf ? artist.nickname() : (myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name)},
+               contentHidden=${!isArtistSelf and myCommunityProfile != null and myCommunityProfile.contentHidden},
                avatarName=${myCommunityProfile != null ? myCommunityProfile.avatarStoredName : null},
                backgroundName=${myCommunityProfile != null ? myCommunityProfile.backgroundStoredName : null},
-               cardAvatar=${contentHidden ? null : avatarName},
-               cardBackground=${contentHidden ? null : backgroundName}">
+               cardAvatarUrl=${isArtistSelf ? artistPortalAvatarUrl : (contentHidden or avatarName == null ? null : '/uploads/' + avatarName)},
+               cardBackgroundUrl=${isArtistSelf ? artistPortalBackgroundUrl : (contentHidden or backgroundName == null ? null : '/uploads/' + backgroundName)},
+               cardIntro=${isArtistSelf ? artistPortalIntro : ((!contentHidden and myCommunityProfile != null and !#strings.isEmpty(myCommunityProfile.bio)) ? myCommunityProfile.bio : null)}">
 
     <div class="profile-layout" data-tabs>
 
@@ -197,8 +199,8 @@
 
             <!-- 프로필 배경 이미지 영역 - 숨김이거나 등록한 배경이 없으면 기본 그라데이션 -->
             <div class="profile-card__cover"
-                 th:style="${cardBackground != null}
-                           ? |background-image:url('/uploads/${cardBackground}');|
+                 th:style="${cardBackgroundUrl != null}
+                           ? |background-image:url('${cardBackgroundUrl}');|
                            : 'background:linear-gradient(160deg,#3d5a5a,#8b6040);'">
                 <span class="profile-card__dday"
                       th:if="${!contentHidden and communityJoinInfo != null}"
@@ -211,10 +213,10 @@
                 <div class="avatar"
                      style="width:104px;height:104px;margin:-52px auto 0;
                             border:4px solid var(--wp-surface, #fff);font-size:36px;position:relative;">
-                    <img th:if="${cardAvatar != null}"
-                         th:src="@{'/uploads/' + ${cardAvatar}}" alt="프로필 이미지"
+                    <img th:if="${cardAvatarUrl != null}"
+                         th:src="${cardAvatarUrl}" alt="프로필 이미지"
                          style="width:100%;height:100%;object-fit:cover;display:block;"/>
-                    <span th:if="${cardAvatar == null}"
+                    <span th:if="${cardAvatarUrl == null}"
                           th:text="${#strings.substring(displayName, 0, 1)}">나</span>
                 </div>
 
@@ -228,10 +230,10 @@
                    th:if="${!contentHidden and communityJoinInfo != null}"
                    th:text="|${#temporals.format(communityJoinInfo.joinedDate, 'yyyy.MM.dd')} 가입|">2026.09.01 가입</p>
 
-                <!-- 소개글 - 공개범위가 숨김이면 노출하지 않음 -->
+                <!-- 소개글 - 공개범위가 숨김이면 노출하지 않음 / 아티스트 본인은 포털 intro -->
                 <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;word-break:break-all;"
-                   th:if="${!contentHidden and myCommunityProfile != null and !#strings.isEmpty(myCommunityProfile.bio)}"
-                   th:text="${myCommunityProfile.bio}">소개글</p>
+                   th:if="${cardIntro != null and !#strings.isEmpty(cardIntro)}"
+                   th:text="${cardIntro}">소개글</p>
 
                 <!-- 팔로잉 - 공개범위가 숨김이면 노출하지 않음 -->
                 <p style="margin:16px 0;font-size:var(--wp-fs-sm);" th:if="${!contentHidden}">

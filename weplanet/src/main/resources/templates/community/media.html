@@ -89,10 +89,13 @@
           </div>
 
           <div class="post-card__actions" style="justify-content:space-between;">
-            <span style="display:inline-flex;align-items:center;gap:4px;">
+            <button type="button" class="post-like"
+                    th:classappend="${likedMediaIds != null and likedMediaIds.contains(post.id)} ? ' is-liked'"
+                    th:attr="data-media-like=${post.id}"
+                    aria-label="좋아요">
               <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-              <span th:if="${post.likeCount > 0}" th:text="${post.likeCount}"></span>
-            </span>
+              <span data-like-count th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
+            </button>
             <span class="text-xs text-muted" th:text="'첨부 ' + ${post.fileCount} + '개'"></span>
             <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
                   th:action="@{/board/media/{id}/delete(id=${post.id})}"
