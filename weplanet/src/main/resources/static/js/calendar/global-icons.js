@@ -379,16 +379,16 @@
       awards: "concert_day",
       photo_magazine: "broadcast",
       other: "broadcast",
+      birthday: "broadcast",
     };
     Object.keys(EVENTS_BY_DATE).forEach(function (date) {
       EVENTS_BY_DATE[date].forEach(function (ev) {
         var nType = typeMap[ev.type];
         if (!nType) return;
-        var eventDate = parseYmd(date);
-        var today = new Date();
-        today.setHours(0, 0, 0, 0);
-        eventDate.setHours(0, 0, 0, 0);
-        var age = Math.round((today - eventDate) / 86400000);
+        var createdRaw = ev.createdAt || date;
+        var createdDate = String(createdRaw).slice(0, 10);
+        var createdSort = String(createdRaw).length > 10 ? String(createdRaw) : createdDate + "T00:00:00";
+        var registeredAge = Math.round((startOfToday() - parseYmd(createdDate)) / 86400000);
         items.push({
           id: "ev-" + ev.id,
           type: nType,
@@ -396,17 +396,51 @@
           artistId: String(ev.artist),
           artistName: communityName(ev.artist),
           artistLogo: artistLogo(communityName(ev.artist)),
-          date: date,
-          time: date,
-          read: age > 7,
+          date: createdDate,
+          time: createdSort,
+          eventDate: date,
+          isSchedule: true,
+          read: registeredAge > 7,
           category: (EVENT_TYPE_META[ev.type] || EVENT_TYPE_META.broadcast).label,
           title: ev.title,
           message: eventMessage(nType, ev),
-          _sort: date + "T" + (ev.time || "00:00"),
+          _sort: createdSort,
         });
       });
     });
     return items.sort(function (a, b) { return a._sort < b._sort ? 1 : -1; });
+  }
+
+  function startOfToday() {
+    var today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+
+  /** 일정 알림용 D-DAY 라벨 (자정 기준). 과거 일정은 표시하지 않음. */
+  function scheduleDdayLabel(eventDateStr) {
+    if (!eventDateStr) return "";
+    var eventDate = parseYmd(eventDateStr);
+    if (!eventDate) return "";
+    eventDate.setHours(0, 0, 0, 0);
+    var diff = Math.round((eventDate - startOfToday()) / 86400000);
+    if (diff < 0) return "";
+    if (diff === 0) return "D-DAY";
+    return "D-" + diff;
+  }
+
+  function scheduleMidnightRefresh() {
+    var now = new Date();
+    var next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+    var delay = Math.max(1000, next - now);
+    setTimeout(function () {
+      loadSchedulesFromApi().then(function () {
+        persistReadState();
+        renderNotiPanel();
+        updateBadge();
+      });
+      scheduleMidnightRefresh();
+    }, delay);
   }
 
   function notificationSortKey(n) {
@@ -912,6 +946,7 @@
             var artistName = n.artistName || communityName(n.artistId || n.artist);
             var artistAvatar = n.artistLogo || artistLogo(artistName);
             var timeLabel = n.date ? relativeTime(n.date) : tr(n.time);
+            var ddayLabel = n.isSchedule ? scheduleDdayLabel(n.eventDate || n.date) : "";
             var target = n.postUrl
               ? ' data-noti-url="' + esc(n.postUrl) + '"'
               : n.eventId
@@ -930,6 +965,7 @@
                   '<span class="wp-noti-item__line">' +
                     '<span class="wp-noti-item__category">' + esc(notificationCategory(n)) + "</span>" +
                     '<strong class="wp-noti-item__title">' + esc(tr(n.title)) + "</strong>" +
+                    (ddayLabel ? '<span class="wp-noti-item__dday">' + esc(ddayLabel) + "</span>" : "") +
                     (n.read ? "" : '<span class="wp-noti-item__dot"></span>') +
                   "</span>" +
                   '<span class="wp-noti-item__time">' + esc(timeLabel) + "</span>" +
@@ -1515,6 +1551,7 @@
     enhanceSettingsLang();
     loadSchedulesFromApi();
     loadPostNotifications();
+    scheduleMidnightRefresh();
 
     document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", function (e) {

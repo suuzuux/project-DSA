@@ -622,6 +622,12 @@
   margin-bottom: 4px;
 }
 
+.comment-delete-form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
 .comment-item__text {
   font-size: var(--wp-fs-sm);
   color: var(--wp-ink-soft);

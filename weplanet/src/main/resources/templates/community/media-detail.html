@@ -61,9 +61,11 @@
         </div>
 
         <div class="post-card__actions" style="justify-content:space-between;">
-          <button type="button" id="likeButton" style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;display:inline-flex;align-items:center;gap:4px;">
+          <button type="button" id="likeButton" class="post-like"
+                  th:classappend="${liked} ? ' is-liked'"
+                  style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;display:inline-flex;align-items:center;gap:4px;">
             <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-            <span id="likeCount" th:text="${mediaPost.likeCount > 0 ? mediaPost.likeCount : ''}"></span>
+            <span id="likeCount" data-like-count th:text="${mediaPost.likeCount > 0 ? mediaPost.likeCount : ''}"></span>
           </button>
           <span class="text-xs text-muted" th:text="'첨부 ' + ${mediaPost.fileCount} + '개'"></span>
           <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
@@ -90,10 +92,25 @@
       var likeButton = document.getElementById("likeButton");
       if (!mediaId || !likeButton) return;
       likeButton.addEventListener("click", function () {
+        if (document.body.getAttribute("data-authenticated") !== "true") {
+          window.location.href = "/login";
+          return;
+        }
         fetch("/board/media/" + mediaId + "/like", { method: "POST" })
-          .then(function (response) { return response.json(); })
+          .then(function (response) {
+            if (response.status === 401 || response.status === 403) {
+              window.location.href = "/login";
+              return null;
+            }
+            return response.ok ? response.json() : null;
+          })
           .then(function (data) {
-            document.getElementById("likeCount").textContent = data.likeCount > 0 ? data.likeCount : "";
+            if (!data) return;
+            likeButton.classList.toggle("is-liked", !!data.liked);
+            var countEl = document.getElementById("likeCount");
+            if (countEl) {
+              countEl.textContent = data.likeCount > 0 ? data.likeCount : "";
+            }
           });
       });
     })();
