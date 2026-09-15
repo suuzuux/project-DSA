@@ -82,9 +82,19 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // 관리자 영역은 ADMIN 역할만. 이 줄이 없으면 팬 계정으로도 들어와짐
-                        .requestMatchers(PUBLIC_URLS.toArray(String[]::new)).permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        // 관리자 로그인 화면은 누구나 접근 가능
+                        .requestMatchers("/admin/login").permitAll()
+                        
+                        // 넓은 /chat/** 공개 규칙보다 먼저 검사해야 함
+                        .requestMatchers(
+                                "/admin/**",
+                                "/chat/admin/**"
+                        ).hasRole("ADMIN")
+                        
+                        .requestMatchers(
+                                PUBLIC_URLS.toArray(String[]::new)
+                        ).permitAll()
+                        
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin
