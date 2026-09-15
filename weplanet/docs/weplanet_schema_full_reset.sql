@@ -16,6 +16,12 @@
 --   - admin_action_logs 감사 로그 테이블 반영
 --   - 테스트 계정 비밀번호를 Test1234로 통일
 -- ------------------------------------------------------------
+-- 수정: 2026-09-14 (AUTH-10, 소셜 로그인 연동/해제)
+--   - users.password : 소셜 전용 가입자는 비밀번호가 없을 수 있어 NOT NULL 해제 (nullable)
+--   - users.provider : "가입 경로"가 아니라 "지금 연동된 소셜 provider"로 의미 변경.
+--     LOCAL 값 삭제 (연동 없음 = NULL), DEFAULT 'LOCAL' 제거, ck_users_provider에서 LOCAL 제외
+--     (기존 데이터는 UPDATE users SET provider = NULL WHERE provider = 'LOCAL'; 로 정리)
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -124,7 +130,7 @@ CREATE TABLE `agencies` (
 CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '회원 PK',
   `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '로그인 아이디',
-  `password` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '비밀번호(BCrypt 해시)',
+  `password` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '비밀번호(BCrypt 해시, 소셜 전용 가입자는 NULL)',
   `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '역할: FAN/ARTIST/AGENCY/ADMIN',
   `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE' COMMENT '계정 상태: ACTIVE/DORMANT/SUSPENDED/WITHDRAWN',
   `agency_id` bigint DEFAULT NULL COMMENT '소속사(agencies.id). 주로 ARTIST 계정에 사용, 없으면 NULL',
@@ -144,7 +150,7 @@ CREATE TABLE `users` (
   `created_at` datetime(6) NOT NULL COMMENT '가입 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '정보 수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '탈퇴(soft delete) 시각',
-  `provider` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'LOCAL' COMMENT '가입 경로: LOCAL/GOOGLE/KAKAO/LINE',
+  `provider` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '연동된 소셜 provider: GOOGLE/KAKAO/LINE (연동 없으면 NULL)',
   `provider_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 플랫폼 고유 ID (LOCAL 가입자는 NULL)',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
@@ -158,7 +164,7 @@ CREATE TABLE `users` (
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
   CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN')),
-  CONSTRAINT `ck_users_provider` CHECK (`provider` IN (_utf8mb4'LOCAL', _utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE'))
+  CONSTRAINT `ck_users_provider` CHECK ((`provider` IS NULL) OR (`provider` IN (_utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE')))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
 
 -- filter_keyword: 채팅 금칙어
