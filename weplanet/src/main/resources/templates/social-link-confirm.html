@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    AUTH-10 신설: 이미 다른 소셜 계정이 연동돼 있는 상태에서 설정 화면의 "연결하기"로 또 다른 소셜
+    계정을 연동하려고 할 때 거치는 확인 화면. 계정당 소셜 연동은 최대 1개까지만 가능하므로,
+    "예"를 누르면 기존 연동을 끊고 새 소셜 계정으로 교체하고, "아니오"를 누르면 아무 변화 없이
+    설정 화면으로 돌아간다.
+    (SocialLoginEntryController#linkConfirmForm / confirmLink / cancelLink 참고)
+  -->
+  <title>WePlaNet – 연동 계정 변경 확인</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <a class="auth-card__back" th:href="@{/settings}">← 설정으로</a>
+  <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
+
+  <h1 class="auth-card__title mt-16">연동 계정을 바꾸시겠습니까?</h1>
+
+  <p class="text-sm text-muted mt-16">
+    이 계정은 비밀번호와 별개로 소셜 계정 하나만 추가로 연결할 수 있어요.
+    <span th:if="${currentProvider}">
+      이미 <strong th:text="${currentProvider}">GOOGLE</strong> 계정이 연동되어 있어서,
+    </span>
+    계속 진행하면 기존 연동은 끊어지고 <strong th:text="${newProvider}">KAKAO</strong> 계정으로 바뀝니다.
+  </p>
+
+  <div class="stack mt-24">
+    <form th:action="@{/social-login/link-confirm/confirm}" method="post" style="margin:0;">
+      <button type="submit" class="btn btn--primary btn--block btn--lg">
+        예, <span th:text="${newProvider}">KAKAO</span> 계정으로 바꿀게요
+      </button>
+    </form>
+    <form th:action="@{/social-login/link-confirm/cancel}" method="post" style="margin:0;">
+      <button type="submit" class="btn btn--ghost btn--block btn--lg">아니오, 그대로 둘게요</button>
+    </form>
+  </div>
+</div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

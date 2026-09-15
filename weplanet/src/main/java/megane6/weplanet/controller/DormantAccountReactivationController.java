@@ -2,7 +2,6 @@ package megane6.weplanet.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
@@ -19,32 +18,30 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+// AUTH-10: 로컬 로그인 시도 중 휴면계정을 만난 경우와 소셜 로그인 시도 중 만난 경우를 화면(socialFlow)으로
+// 구분하던 걸 없앴다. 이제 어느 쪽으로 들어와도 항상 같은 화면 - 아이디를 입력하면 가입 시 등록된 이메일로
+// 인증코드를 보내주는 방식 - 하나로 통일한다. 소셜 로그인 콜백(OAuth2LoginSuccessHandler)도 더 이상
+// 세션에 대상 유저를 미리 심어두지 않고 그냥 이 화면으로 보내기만 한다.
 @Slf4j
 @Controller
 @RequestMapping("/login/reactivate")
 @RequiredArgsConstructor
 public class DormantAccountReactivationController {
 
-    // 소셜 로그인 콜백(OAuth2LoginSuccessHandler)에서 "이 사람이 재활성화 대상"이라는 걸
-    // 세션에 남겨두는 키. 클라이언트가 임의로 조작 못 하게, username을 URL/폼으로 안 받고
-    // 서버가 이미 알고 있는 이 값만으로 대상을 특정한다.
-    public static final String SESSION_KEY_PENDING_REACTIVATION_USER_ID = "PENDING_DORMANT_REACTIVATION_USER_ID";
-
     private final UserRepository userRepository;
     private final SignupEmailVerificationService emailVerificationService;
     private final SocialLoginSessionSupport socialLoginSessionSupport;
 
     @GetMapping
-    public String form(HttpSession session, Model model) {
-        model.addAttribute("socialFlow", pendingUserId(session) != null);
+    public String form() {
         return "login/reactivate";
     }
 
     @PostMapping("/code")
     @ResponseBody
-    public Map<String, Object> sendCode(@RequestParam(required = false) String username, HttpSession session) {
+    public Map<String, Object> sendCode(@RequestParam String username) {
         Map<String, Object> result = new HashMap<>();
-        Optional<User> target = resolveTarget(username, session);
+        Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
             result.put("success", false);
             result.put("message", "휴면 상태인 계정을 찾을 수 없습니다.");
@@ -64,13 +61,12 @@ public class DormantAccountReactivationController {
 
     @PostMapping("/verify")
     @Transactional
-    public String verifyAndReactivate(@RequestParam(required = false) String username,
+    public String verifyAndReactivate(@RequestParam String username,
                                        @RequestParam String code,
-                                       HttpSession session,
                                        HttpServletRequest request,
                                        HttpServletResponse response,
                                        Model model) {
-        Optional<User> target = resolveTarget(username, session);
+        Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
             model.addAttribute("errorMessage", "휴면 상태인 계정을 찾을 수 없습니다.");
             return "login/reactivate";
@@ -82,25 +78,14 @@ public class DormantAccountReactivationController {
         }
         emailVerificationService.clear(user.getEmail());
         user.reactivate();
-        if (session != null) {
-            session.removeAttribute(SESSION_KEY_PENDING_REACTIVATION_USER_ID);
-        }
         socialLoginSessionSupport.loginAs(user, request, response);
         return "redirect:/";
     }
 
-    private Optional<User> resolveTarget(String username, HttpSession session) {
-        Long pendingUserId = pendingUserId(session);
-        if (pendingUserId != null) {
-            return userRepository.findById(pendingUserId).filter(u -> u.getStatus() == UserStatus.DORMANT);
-        }
+    private Optional<User> resolveTarget(String username) {
         if (username == null || username.isBlank()) {
             return Optional.empty();
         }
         return userRepository.findByUsername(username).filter(u -> u.getStatus() == UserStatus.DORMANT);
-    }
-
-    private Long pendingUserId(HttpSession session) {
-        return session != null ? (Long) session.getAttribute(SESSION_KEY_PENDING_REACTIVATION_USER_ID) : null;
     }
 }

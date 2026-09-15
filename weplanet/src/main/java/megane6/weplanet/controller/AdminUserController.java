@@ -29,17 +29,22 @@ public class AdminUserController {
 		requireAdmin(principal);
 		Role roleFilter = parseEnum(Role.class, role);
 		UserStatus statusFilter = parseEnum(UserStatus.class, status);
-		AuthProvider providerFilter = parseEnum(AuthProvider.class, provider);
+		// AUTH-10: provider enum에서 LOCAL이 빠졌으므로, "LOCAL"은 더 이상 AuthProvider 값으로 파싱되지
+		// 않는다(parseEnum이 null을 반환해서 필터가 통째로 풀려버림). "일반 가입"(비밀번호만 있고 연동된
+		// 소셜이 없는 계정) 필터는 provider IS NULL 조건인 localOnly로 따로 처리한다.
+		boolean localOnly = "LOCAL".equalsIgnoreCase(provider);
+		AuthProvider providerFilter = localOnly ? null : parseEnum(AuthProvider.class, provider);
 		model.addAttribute("users", aus.getUsers(
 				roleFilter,
 				statusFilter,
 				providerFilter,
+				localOnly,
 				keyword
 		));
 		model.addAttribute("stats", aus.getStats());
 		model.addAttribute("selectedRole", roleFilter == null ? "" : roleFilter.name());
 		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
-		model.addAttribute("selectedProvider", providerFilter == null ? "" : providerFilter.name());
+		model.addAttribute("selectedProvider", localOnly ? "LOCAL" : (providerFilter == null ? "" : providerFilter.name()));
 		model.addAttribute("keyword", keyword == null ? "" : keyword);
 		model.addAttribute("currentAdminId", principal.getId());
 		
