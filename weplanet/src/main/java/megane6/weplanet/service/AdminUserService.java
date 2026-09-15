@@ -23,11 +23,12 @@ public class AdminUserService {
 			Role role,
 			UserStatus status,
 			AuthProvider provider,
+			boolean localOnly,
 			String keyword
 	) {
 		String normalizeKeyword = normalizeKeyword(keyword);
 		return ur.searchForAdmin(
-				role, status, provider, normalizeKeyword)
+				role, status, provider, localOnly, normalizeKeyword)
 				.stream()
 				.map(this::toListItem)
 				.toList();
@@ -162,7 +163,7 @@ public class AdminUserService {
 				roleLabel(user.getRole()),
 				user.getStatus().name(),
 				statusLabel(user.getStatus()),
-				provider == null ? AuthProvider.LOCAL.name() : provider.name(),
+				provider == null ? "LOCAL" : provider.name(),
 				providerLabel(provider),
 				user.getAgency() == null ? null : user.getAgency().getId(),
 				user.getAgency() == null ? null : user.getAgency().getName(),
@@ -245,7 +246,6 @@ public class AdminUserService {
 			return "일반 가입";
 		}
 		return switch (provider) {
-			case LOCAL -> "일반 가입";
 			case GOOGLE -> "Google";
 			case KAKAO -> "Kakao";
 			case LINE -> "LINE";

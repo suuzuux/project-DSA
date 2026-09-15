@@ -5,7 +5,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.DormantAccountReactivationController;
 import megane6.weplanet.controller.SocialLoginEntryController;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
@@ -15,7 +14,6 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.UsernameGenerator;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -25,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -34,7 +31,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	private final UserRepository userRepository;
 	private final UsernameGenerator usernameGenerator;
 	private final NicknameGenerator nicknameGenerator;
-	private final BCryptPasswordEncoder passwordEncoder;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
 	private record SocialProfile(String providerId, String email, String realName, String suggestedNickname) {}
 
@@ -54,11 +50,16 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				? (SocialLoginIntent) session.getAttribute(SocialLoginEntryController.SESSION_KEY_SOCIAL_LOGIN_INTENT)
 				: null;
 
+		// AUTH-10 신설: 로그인된 계정에 소셜을 "연결하기"로 추가하는 흐름은 로그인/가입과 완전히 다르게 처리한다.
+		if (intent == SocialLoginIntent.LINK) {
+			handleLink(provider, profile, session, request, response);
+			return;
+		}
+
 		Optional<User> existingUser = userRepository.findByProviderAndProviderId(provider, profile.providerId());
 
 		User user;
-		
-		boolean newlyCreated = false;
+
 		if (existingUser.isPresent()) {
 			if (intent == SocialLoginIntent.SIGNUP) {
 				socialLoginSessionSupport.clearSecurityContext(request, response);
@@ -74,11 +75,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 			}
 			if (user.getStatus() == UserStatus.DORMANT) {
 				// 소셜 인증은 됐지만, 로컬 로그인과 동일하게 이메일 코드 인증을 한 번 더 거치게 한다.
-				// 아직 reactivate()도, loginAs()도 하지 않고 세션에 "이 유저가 재활성화 대상"이라는 것만 남긴다.
+				// AUTH-10: 로컬/소셜 진입 구분 없이 항상 같은 화면(아이디 입력 → 인증코드)으로 통일했으므로,
+				// 여기서 더 이상 세션에 대상 유저를 미리 심어두지 않는다 - DormantAccountReactivationController 참고.
 				socialLoginSessionSupport.clearSecurityContext(request, response);
-				if (session != null) {
-					session.setAttribute(DormantAccountReactivationController.SESSION_KEY_PENDING_REACTIVATION_USER_ID, user.getId());
-				}
 				response.sendRedirect("/login/reactivate");
 				return;
 			}
@@ -89,39 +88,82 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				return;
 			}
 
-			
 			Optional<User> sameEmailUser = userRepository.findByEmail(profile.email());
 			if (sameEmailUser.isPresent()) {
+				// AUTH-10: 이메일이 겹치면 더 이상 자동으로 "연동하시겠습니까?" 확인 화면을 띄우지 않는다.
+				// 이미 가입된 이메일이라는 것만 안내하고, 연동 자체는 로그인 후 설정 화면에서 능동적으로 하게 한다.
 				socialLoginSessionSupport.clearSecurityContext(request, response);
-				if (session != null) {
-					session.setAttribute(
-							SocialLoginEntryController.SESSION_KEY_PENDING_SOCIAL_SIGNUP,
-							new PendingSocialSignup(provider, profile.providerId(), profile.email(), profile.realName()));
-				}
-				response.sendRedirect("/social-login/email-conflict");
+				response.sendRedirect("/signup?socialEmailTaken=true");
 				return;
 			}
 
 			user = createNewSocialUser(provider, profile);
-			newlyCreated = true;
 		}
 
 		if (session != null) {
 			session.removeAttribute(SocialLoginEntryController.SESSION_KEY_SOCIAL_LOGIN_INTENT);
-			if (newlyCreated && provider.requiresProfileCompletion()) {
-				session.setAttribute(SocialLoginEntryController.SESSION_KEY_PROFILE_COMPLETION_REQUIRED, Boolean.TRUE);
-			}
 		}
 
 		user.recordLogin();
 		socialLoginSessionSupport.loginAs(user, request, response);
+		response.sendRedirect("/");
+	}
 
-
-		if (session != null && Boolean.TRUE.equals(session.getAttribute(SocialLoginEntryController.SESSION_KEY_PROFILE_COMPLETION_REQUIRED))) {
-			response.sendRedirect("/social-login/complete-profile");
+	// 로그인 중인 계정에 소셜을 연동하는 흐름 (설정 화면 "연결하기"). 신규 계정을 만들거나 로그인 상태를
+	// 바꾸지 않고, 이미 로그인돼 있던 그 계정(targetUser)에 provider/providerId만 옮겨 붙인다.
+	private void handleLink(AuthProvider provider, SocialProfile profile, HttpSession session,
+							HttpServletRequest request, HttpServletResponse response) throws IOException {
+		Long targetUserId = session != null
+				? (Long) session.getAttribute(SocialLoginEntryController.SESSION_KEY_LINK_TARGET_USER_ID)
+				: null;
+		if (session != null) {
+			session.removeAttribute(SocialLoginEntryController.SESSION_KEY_SOCIAL_LOGIN_INTENT);
+			session.removeAttribute(SocialLoginEntryController.SESSION_KEY_LINK_TARGET_USER_ID);
+		}
+		if (targetUserId == null) {
+			socialLoginSessionSupport.clearSecurityContext(request, response);
+			response.sendRedirect("/login");
 			return;
 		}
-		response.sendRedirect("/");
+		Optional<User> targetOpt = userRepository.findById(targetUserId);
+		if (targetOpt.isEmpty()) {
+			socialLoginSessionSupport.clearSecurityContext(request, response);
+			response.sendRedirect("/login");
+			return;
+		}
+		User targetUser = targetOpt.get();
+
+		// 이 소셜 계정(provider+providerId)이 이미 "다른" 계정에 연동돼 있으면 차단한다
+		// (users 테이블의 (provider, provider_id) 조합이 계정당 유일해야 하는 것과도 맞물림).
+		Optional<User> owner = userRepository.findByProviderAndProviderId(provider, profile.providerId());
+		if (owner.isPresent() && !owner.get().getId().equals(targetUser.getId())) {
+			socialLoginSessionSupport.loginAs(targetUser, request, response);
+			response.sendRedirect("/settings?linkError=alreadyLinkedElsewhere");
+			return;
+		}
+
+		boolean alreadyThisIdentity = provider.equals(targetUser.getProvider())
+				&& profile.providerId().equals(targetUser.getProviderId());
+		if (alreadyThisIdentity) {
+			socialLoginSessionSupport.loginAs(targetUser, request, response);
+			response.sendRedirect("/settings?linkNotice=alreadyLinked");
+			return;
+		}
+
+		if (targetUser.getProvider() != null) {
+			// 계정당 소셜 연동은 최대 1개 - 이미 다른 걸 연동한 상태라면 "바꾸시겠습니까?" 확인부터 받는다.
+			if (session != null) {
+				session.setAttribute(SocialLoginEntryController.SESSION_KEY_PENDING_LINK,
+						new PendingSocialLink(provider, profile.providerId(), targetUser.getId()));
+			}
+			socialLoginSessionSupport.loginAs(targetUser, request, response);
+			response.sendRedirect("/social-login/link-confirm");
+			return;
+		}
+
+		targetUser.linkSocialProvider(provider, profile.providerId());
+		socialLoginSessionSupport.loginAs(targetUser, request, response);
+		response.sendRedirect("/settings?linked=true");
 	}
 
 	private SocialProfile extractProfile(AuthProvider provider, OAuth2User oAuth2User) {
@@ -167,12 +209,13 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 		return new SocialProfile(providerId, email, realName, displayName);
 	}
 
+	// AUTH-10: 신규 소셜 가입은 비밀번호를 만들지 않는다(null). 가입 직후 실명/이메일을 따로 입력받던 절차도
+	// 없앴으므로 프로필이 이 시점에 바로 확정된다 - 필요하면 나중에 설정 화면에서 이름/이메일/비밀번호를 고치면 된다.
 	private User createNewSocialUser(AuthProvider provider, SocialProfile profile) {
 		String username = usernameGenerator.generate(provider);
 		String nickname = resolveNickname(profile.suggestedNickname());
-		String encodedPassword = passwordEncoder.encode(UUID.randomUUID().toString());
 
-		User newUser = User.createSocialFan(username, encodedPassword, profile.realName(), nickname, profile.email(), provider, profile.providerId());
+		User newUser = User.createSocialFan(username, null, profile.realName(), nickname, profile.email(), provider, profile.providerId());
 		return userRepository.save(newUser);
 	}
 	

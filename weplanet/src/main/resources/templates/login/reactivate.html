@@ -10,14 +10,13 @@
   <div class="auth-card" style="width:min(100%,480px);">
     <a class="auth-card__back" href="/login">← 로그인으로</a>
     <h1 class="auth-card__title">휴면계정 해제</h1>
-    <p class="text-sm text-muted" th:if="${!socialFlow}">아이디를 입력하고 인증코드를 받으면, 가입 시 등록된 이메일로 인증코드를 보내드려요.</p>
-    <p class="text-sm text-muted" th:if="${socialFlow}">휴면 상태인 계정이에요. 가입 시 등록된 이메일로 인증코드를 보내드렸어요.</p>
+    <!-- AUTH-10: 로컬/소셜 로그인 중 어느 쪽으로 들어왔든 항상 같은 화면 하나로 통일했다. -->
+    <p class="text-sm text-muted">아이디를 입력하고 인증코드를 받으면, 가입 시 등록된 이메일로 인증코드를 보내드려요.</p>
 
     <p th:if="${errorMessage}" class="text-sm" style="color:#c45c26;" th:text="${errorMessage}"></p>
 
     <form id="reactivateForm" method="post" th:action="@{/login/reactivate/verify}">
-      <!-- 아이디 (로컬 플로우만 - 소셜 플로우는 세션에 대상이 이미 특정돼 있음) -->
-      <div class="form-group" th:unless="${socialFlow}">
+      <div class="form-group">
         <label class="form-label" for="username">아이디</label>
         <div class="form-row">
           <input class="form-input" type="text" name="username" id="username" placeholder="아이디 입력" autocomplete="username" required />
@@ -39,10 +38,9 @@
       <button type="submit" class="btn btn--primary btn--block btn--lg mt-16" id="submitBtn">해제하고 로그인</button>
     </form>
   </div>
-  <script th:inline="javascript">
+  <script>
     (function () {
       "use strict";
-      const socialFlow = /*[[${socialFlow}]]*/ false;
 
       const usernameInput = document.getElementById("username");
       const sendBtn = document.getElementById("sendCodeBtn");
@@ -89,30 +87,18 @@
         }, 1000);
       }
 
-      // sendBtn/sendMsg는 소셜 플로우일 땐 DOM에 아예 없음(th:unless="${socialFlow}") - 항상 null 체크 후 사용.
-      function setSendMsg(text, ok) {
-        if (sendMsg) {
-          sendMsg.textContent = text;
-          sendMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
-        } else {
-          codeMsg.textContent = text;
-          codeMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
-        }
-      }
-
       function requestCode(username) {
-        if (sendBtn) {
-          sendBtn.disabled = true;
-          sendBtn.textContent = "발송 중...";
-        }
+        sendBtn.disabled = true;
+        sendBtn.textContent = "발송 중...";
         return fetch("/login/reactivate/code", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: username ? "username=" + encodeURIComponent(username) : ""
+          body: "username=" + encodeURIComponent(username)
         })
           .then(function (r) { return r.json(); })
           .then(function (data) {
-            setSendMsg(data.message, data.success);
+            sendMsg.textContent = data.message;
+            sendMsg.style.color = data.success ? "#2f8f5b" : "#c45c26";
             if (data.success) {
               codeGroup.style.display = "block";
               codeInput.value = "";
@@ -123,30 +109,25 @@
             return data.success;
           })
           .catch(function () {
-            setSendMsg("이메일 발송 중 오류가 발생했습니다.", false);
+            sendMsg.textContent = "이메일 발송 중 오류가 발생했습니다.";
+            sendMsg.style.color = "#c45c26";
             return false;
           })
           .finally(function () {
-            if (sendBtn) {
-              sendBtn.disabled = false;
-              sendBtn.textContent = "인증코드 받기";
-            }
+            sendBtn.disabled = false;
+            sendBtn.textContent = "인증코드 받기";
           });
       }
 
-      if (!socialFlow) {
-        sendBtn.addEventListener("click", function () {
-          const username = usernameInput.value.trim();
-          if (!username) {
-            sendMsg.textContent = "아이디를 먼저 입력해주세요.";
-            sendMsg.style.color = "#c45c26";
-            return;
-          }
-          requestCode(username);
-        });
-      } else {
-        requestCode(null);
-      }
+      sendBtn.addEventListener("click", function () {
+        const username = usernameInput.value.trim();
+        if (!username) {
+          sendMsg.textContent = "아이디를 먼저 입력해주세요.";
+          sendMsg.style.color = "#c45c26";
+          return;
+        }
+        requestCode(username);
+      });
 
       form.addEventListener("submit", function (e) {
         if (codeGroup.style.display === "none") {

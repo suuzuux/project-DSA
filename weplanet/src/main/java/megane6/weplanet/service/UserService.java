@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
@@ -88,14 +87,8 @@ public class UserService {
 			}
 		}
 		if (!trimmedEmail.equals(user.getEmail())) {
-			// 구글처럼 검증된 이메일을 그대로 내려주는 provider와 연동된 회원은 이메일을 임의로 바꿀 수 없다.
-			// (연동된 이메일이 그 소셜 계정의 신원과 묶여 있는 값이라, 여기서 마음대로 바꾸면
-			// "이메일로 기존 계정 찾기/연동" 로직이 깨지고, 소셜 로그인 자체도 더 이상 이 계정을 못 찾게 됨)
-			// 카카오/LINE은 애초에 실제 이메일을 안 주므로(placeholder만 생성) 여기 해당하지 않고,
-			// LOCAL 계정처럼 이 아래 인증 절차를 거쳐 실제 이메일로 바꿀 수 있다.
-			if (user.getProvider().emailManagedExternally()) {
-				throw new IllegalArgumentException("소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.");
-			}
+			// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 이제 연동 여부와
+			// 등록 이메일은 서로 독립적인 값이라, 제공자와 무관하게 누구나 인증 절차만 거치면 바꿀 수 있다.
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
 			if (!emailVerificationService.isVerified(trimmedEmail)) {
@@ -111,17 +104,16 @@ public class UserService {
 		}
 		user.changeRealName(trimmedRealName);
 
-		// 비밀번호 변경은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
+		// 비밀번호 변경/등록은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
 		// 화면(JS)에서는 현재 비밀번호를 입력해야 새 비밀번호 칸이 열리지만, 서버에서도 한 번 더 검증한다
 		// (JS를 우회해서 직접 요청을 보내는 경우를 막기 위함).
 		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
 		if (wantsPasswordChange) {
-			// 소셜 계정과 연동된 회원은 비밀번호로 로그인할 수 없으므로, 화면을 우회해서 직접 요청을 보내는
-			// 경우를 막기 위해 서버에서도 한 번 더 막는다 (이메일 변경의 emailManagedExternally() 체크와 동일한 패턴).
-			if (user.getProvider() != AuthProvider.LOCAL) {
-				throw new IllegalArgumentException("소셜 계정과 연동된 회원은 비밀번호를 변경할 수 없습니다.");
-			}
-			if (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+			// AUTH-10: provider가 아니라 "지금 비밀번호가 있는지"로 판단한다. 비밀번호가 이미 있는 계정만
+			// 현재 비밀번호 확인을 거치고, 비밀번호가 아직 없던 계정(소셜 전용 가입)은 새로 등록하는
+			// 것이므로 확인할 현재 비밀번호 자체가 없다 - 이 분기를 건너뛴다.
+			if (user.hasPassword()
+					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
 				throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
 			}
 			if (!hasText(newPassword)) {
@@ -150,6 +142,18 @@ public class UserService {
 	@Transactional
 	public void withdraw(User user) {
 		user.withdraw();
+	}
+
+	// [AUTH-10] 소셜 연동 해제. 비밀번호는 건드리지 않는다 - User.unlinkSocialProvider() 참고.
+	// 비밀번호가 없는 계정(소셜 전용 가입)은 이 소셜이 유일한 로그인 수단이라, 해제를 허용하면 계정에
+	// 영영 다시 로그인할 수 없게 된다. 설정 화면에서는 이 경우 버튼 자체를 비활성화해두지만, 직접 요청을
+	// 보내는 경우까지 막기 위해 여기서도 한 번 더 검증한다.
+	@Transactional
+	public void unlinkSocialProvider(User user) {
+		if (!user.hasPassword()) {
+			throw new IllegalArgumentException("비밀번호가 설정되어 있지 않아 연동을 해제할 수 없습니다. 먼저 비밀번호를 설정해주세요.");
+		}
+		user.unlinkSocialProvider();
 	}
 
 	private static boolean hasText(String value) {

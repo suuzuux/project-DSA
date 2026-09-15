@@ -238,6 +238,16 @@ p {
   border-color: var(--wp-ink);
 }
 
+/* 잠긴 버튼 (예: 비밀번호 없는 계정의 소셜 연동 해제) - .form-input:disabled와 같은 톤으로
+   "클릭할 수 없다"는 걸 색으로 표시한다 */
+.btn--ghost:disabled,
+.btn--ghost:disabled:hover {
+  background: var(--wp-paper);
+  border-color: var(--wp-hairline);
+  color: var(--wp-muted);
+  cursor: not-allowed;
+}
+
 .btn--soft {
   background: var(--wp-brand-soft);
   color: var(--wp-brand-dark);
@@ -1305,6 +1315,15 @@ p {
   border-radius: var(--wp-radius);
   padding: 20px 22px;
   margin-bottom: 16px;
+}
+
+/* 비밀번호가 없는 계정(소셜 전용 가입)은 "연결된 계정" 박스 전체를 잠근다 - 지금 연동된 소셜이
+   유일한 로그인 수단이라, 비밀번호를 먼저 설정해야만(hasPassword() true) 연동 관리(연결/해제)를
+   할 수 있다. 박스 안 링크/버튼을 하나씩 disabled 처리하는 대신 박스 전체를 흐리게 + 클릭 불가로 만든다. */
+.settings-block.is-locked {
+  opacity: .5;
+  pointer-events: none;
+  user-select: none;
 }
 
 .settings-block__title {
