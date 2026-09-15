@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.util.List;
@@ -72,7 +71,6 @@ public class SecurityConfig {
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
     private final RoleAwareLogoutSuccessHandler roleAwareLogoutSuccessHandler;
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
-    private final ProfileCompletionRequiredFilter profileCompletionRequiredFilter;
     private final UserRepository userRepository;
     
     @Bean
@@ -113,8 +111,7 @@ public class SecurityConfig {
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?duplicateLogin=true")
-                )
-                .addFilterAfter(profileCompletionRequiredFilter, UsernamePasswordAuthenticationFilter.class);
+                );
         
         return http.build();
     }
