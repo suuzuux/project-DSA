@@ -18,10 +18,11 @@
   --wp-hairline: #e6e2dc;      /* 얇은 구분선 */
   --wp-line: #d4cfc7;          /* 기본 테두리 */
 
-  /* 브랜드 액센트: 딥 틸 (보라/인디고 그라데이션 금지) */
-  --wp-brand: #0f6b6b;
-  --wp-brand-dark: #0a4f4f;
-  --wp-brand-soft: #e6f3f3;
+  /* 브랜드 액센트: 코발트 블루 (보라/인디고 그라데이션 금지) */
+  --wp-brand: #2f5ba8;
+  --wp-brand-dark: #1e4079;
+  --wp-brand-soft: #e9f0fc;      /* 연한 배경·hover */
+  --wp-brand-tint: #a0bff2;      /* 밝은 포인트: 뱃지·탭·테두리 */
   --wp-accent: #c45c26;        /* CTA·강조 (따뜻한 코랄-브라운) */
   --wp-accent-soft: #f8ebe3;
 

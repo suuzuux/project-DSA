@@ -165,7 +165,7 @@
 
 .portal-artists {
   background: #0f1716;
-  color: #d7e0df;
+  color: #d8dfe9;
   padding: 24px 14px;
   display: flex;
   flex-direction: column;
@@ -250,7 +250,7 @@
 
 .portal-sidebar {
   background: #15201f;
-  color: #d7e0df;
+  color: #d8dfe9;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -435,7 +435,7 @@
 }
 
 .portal-profile-edit .pe-menu button:hover {
-  background: var(--wp-brand-soft, #eef5f3);
+  background: var(--wp-brand-soft, #e9f0fc);
 }
 
 .portal-profile-edit .pe-menu button.is-danger {
@@ -994,7 +994,7 @@ tr.js-pinned.is-dragging {
     min-height: 18px;
     font-size: var(--wp-fs-xs);
     line-height: 1.5;
-    color: #7a9593;
+    color: #7f8a99;
 }
 
 .admin-otp-status.is-success {
@@ -1014,7 +1014,7 @@ tr.js-pinned.is-dragging {
 /* 인증 완료된 입력칸 - 회색으로 잠금 표시 */
 .admin-login__card .form-input.is-locked {
     background: #1e2726;
-    color: #7a9593;
+    color: #7f8a99;
     cursor: not-allowed;
 }
 
@@ -1083,7 +1083,7 @@ tr.js-pinned.is-dragging {
 .report-filter-bar input[type="date"]:focus {
     outline: none;
     border-color: var(--wp-brand);
-    box-shadow: 0 0 0 3px var(--wp-brand-soft);
+    box-shadow: 0 0 0 3px var(--wp-brand-tint);
 }
 
 /* 검색/초기화 버튼 - 각진 .btn 대신 알약 모양 + 눌렀다 뗄 때 통통 튀는 느낌 */
