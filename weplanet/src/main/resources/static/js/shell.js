@@ -151,7 +151,6 @@
     <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
     <a href="${isAdmin ? root + "admin/notices" : root + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
     <a href="${root}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
-    <a href="${root}membership"><span class="nav-ico">${ICONS.award}</span> 멤버십</a>
     <a href="${root}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
     ${adminBlock}
   </nav>
@@ -177,7 +176,7 @@
     <div class="dm-body">
       <div class="dm-promo">
         <strong>구독 혜택 안내</strong>
-        <a href="${root}membership">DM 100% 활용방법 ›</a>
+        <span class="text-xs text-muted">아티스트 커뮤니티에서 멤버십 가입 시 이용할 수 있어요</span>
       </div>
       <p class="dm-section-label">메시지</p>
       <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
@@ -203,9 +202,8 @@
       <div class="dm-expired__icon">${ICONS.heart}</div>
       <div class="dm-expired__text">
         <strong>DM 구독 만료</strong>
-        <span>다시 구독하고 새로운 메시지를 받아보세요.</span>
+        <span>아티스트 커뮤니티에서 멤버십을 갱신해주세요.</span>
       </div>
-      <a class="dm-expired__cta" href="${root}membership">구독하기 ›</a>
     </div>
 
     <div class="dm-messages" id="dmMessages">

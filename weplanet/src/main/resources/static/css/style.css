@@ -326,7 +326,7 @@ p {
 .form-textarea:focus {
   outline: none;
   border-color: var(--wp-brand);
-  box-shadow: 0 0 0 3px var(--wp-brand-soft);
+  box-shadow: 0 0 0 3px var(--wp-brand-tint);
 }
 
 .form-input::placeholder,
@@ -511,7 +511,7 @@ p {
   justify-content: flex-end;
   background:
     linear-gradient(180deg, transparent 20%, rgba(0, 0, 0, 0.55) 100%),
-    linear-gradient(120deg, #0f6b6b 0%, #1a3a4a 55%, #c45c26 140%);
+    linear-gradient(120deg, #2f5ba8 0%, #1e3a5f 55%, #c45c26 140%);
 }
 
 .banner__kicker {
@@ -609,7 +609,7 @@ p {
   height: 72px;
   margin: 0 auto 8px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #dfeceb, #b8d4d4);
+  background: linear-gradient(145deg, #e3ecfa, #b8cdf0);
   border: 2px solid var(--wp-surface);
   box-shadow: var(--wp-shadow);
   display: grid;
@@ -778,7 +778,7 @@ p {
 .media-ph {
   aspect-ratio: 1;
   background:
-    linear-gradient(135deg, #e8eeed, #d5e0df);
+    linear-gradient(135deg, #e9edf3, #d7dee8);
   display: grid;
   place-items: center;
   color: var(--wp-muted);

@@ -243,15 +243,15 @@
 
 <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통, 본인 커뮤니티 제외) -->
 <div th:fragment="membershipTeaser" th:if="${!communityJoined and !isOwnCommunity}"
-     style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #1a8a5c);
+     style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #2f5ba8);
               color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:16px;
               flex-wrap:wrap;">
   <span style="font-weight:600;">가입하고 더 다양한 콘텐츠를 즐겨보세요!</span>
   <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-    <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);" th:href="@{/login}">로그인 후 계속 ›</a>
+    <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #2f5ba8);" th:href="@{/login}">로그인 후 계속 ›</a>
   </th:block>
   <th:block sec:authorize="hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-    <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);"
+    <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #2f5ba8);"
             data-join-btn th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">가입 후 계속 ›</button>
   </th:block>
 </div>
