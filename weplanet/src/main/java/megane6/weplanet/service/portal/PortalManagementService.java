@@ -160,8 +160,6 @@ public class PortalManagementService {
         }
     }
 
-    private static final int BIRTHDAY_EXPAND_YEARS_AHEAD = 5;
-
     @Transactional(readOnly = true)
     public List<ArtistSchedule> getSchedules(User artist) {
         return artistScheduleRepository.findByArtistOrderByScheduleAtAsc(artist);
@@ -274,11 +272,15 @@ public class PortalManagementService {
     }
 
     private List<ScheduleEventView> expandScheduleEvents(List<ArtistSchedule> schedules) {
-        int maxYear = Year.now().getValue() + BIRTHDAY_EXPAND_YEARS_AHEAD;
+        int thisYear = Year.now().getValue();
         List<ScheduleEventView> events = new ArrayList<>();
         for (ArtistSchedule schedule : schedules) {
             if (schedule.getCategory() == ScheduleCategory.BIRTHDAY) {
-                appendBirthdayEvents(events, schedule, schedule.getScheduleAt().toLocalDate().getYear(), maxYear);
+                // 알림·공개 캘린더는 올해 생일만 (과거·내년 이후 펼침 제외)
+                LocalDate birthDate = schedule.getScheduleAt().toLocalDate();
+                if (thisYear >= birthDate.getYear()) {
+                    appendBirthdayEvents(events, schedule, thisYear, thisYear);
+                }
                 continue;
             }
             events.add(ScheduleEventView.from(schedule));
@@ -336,6 +338,7 @@ public class PortalManagementService {
         item.put("link", event.ticketUrl());
         item.put("hasTicketImage", event.ticketUrl() != null && !event.ticketUrl().isBlank());
         item.put("title", event.localizedTitle());
+        item.put("createdAt", event.createdAt());
         return item;
     }
 
@@ -407,6 +410,17 @@ public class PortalManagementService {
         }
         return artistProfileRepository.findByArtist(artist)
                 .map(ArtistProfile::getLogoImageUrl)
+                .map(this::toPublicImageUrl)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String findHeaderImageUrl(User artist) {
+        if (artist == null) {
+            return null;
+        }
+        return artistProfileRepository.findByArtist(artist)
+                .map(ArtistProfile::getHeaderImageUrl)
                 .map(this::toPublicImageUrl)
                 .orElse(null);
     }

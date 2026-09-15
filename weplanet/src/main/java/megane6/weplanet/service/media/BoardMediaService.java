@@ -18,8 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -209,6 +212,26 @@ public class BoardMediaService {
     @Transactional(readOnly = true)
     public int getLikeCount(Long mediaId) {
         return getActivePost(mediaId).getLikeCount();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isLiked(Long mediaId, User user) {
+        if (user == null) {
+            return false;
+        }
+        return boardMediaLikeRepository.findByBoardAndUser(getActivePost(mediaId), user).isPresent();
+    }
+
+    /** 해당 커뮤니티(groupId)에서 사용자가 좋아요한 미디어 id 집합 */
+    @Transactional(readOnly = true)
+    public Set<Long> likedIdsForUser(User user, Long groupId) {
+        if (user == null || groupId == null) {
+            return Set.of();
+        }
+        return boardMediaLikeRepository.findByUserAndBoard_GroupIdAndBoard_DeletedAtIsNull(user, groupId)
+                .stream()
+                .map(like -> like.getBoard().getId())
+                .collect(Collectors.toCollection(HashSet::new));
     }
 
     // ── 내부 헬퍼 ──

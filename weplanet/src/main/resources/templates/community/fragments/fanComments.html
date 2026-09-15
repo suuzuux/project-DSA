@@ -47,7 +47,8 @@
               <a href="javascript:void(0)" class="comment-edit-toggle translate-link" th:attr="data-comment-id=${comment.id}">수정</a>
               <form class="comment-delete-form" method="post" style="display:inline;"
                     th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
-                <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                <button type="submit" class="translate-link"
+                        style="background:none;border:none;cursor:pointer;color:var(--wp-danger, #d33);">삭제</button>
               </form>
             </th:block>
             <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -110,7 +111,8 @@
                 <a href="javascript:void(0)" class="comment-edit-toggle translate-link" th:attr="data-comment-id=${comment.id}">수정</a>
                 <form class="comment-delete-form" method="post" style="display:inline;"
                       th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id}, artistId=${artist.id()})}">
-                  <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  <button type="submit" class="translate-link"
+                          style="background:none;border:none;cursor:pointer;color:var(--wp-danger, #d33);">삭제</button>
                 </form>
               </th:block>
               <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
