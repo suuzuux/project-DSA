@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!--
     회원정보 및 설정
-    - 언어 / 콘텐츠 등급 / 알림 / 약관 / 탈퇴
+    - 언어 / 알림 / 약관 / 탈퇴
     - 수정 버튼 → 모달로 회원정보 수정 (실제 서버 반영: SettingsController)
     - AUTH-10: 로컬 비밀번호와 소셜 연동(최대 1개)이 이제 서로 독립적으로 공존한다.
       user.provider(연동된 소셜, 없으면 null)와 user.hasPassword()를 각각 따로 본다.
@@ -120,19 +120,6 @@
     </div>
   </section>
 
-  <!-- 콘텐츠 -->
-  <section class="settings-block">
-    <h2 class="settings-block__title">콘텐츠 설정</h2>
-    <div class="settings-row">
-      <span>콘텐츠 등급 설정</span>
-      <select class="form-select" style="width:120px;min-height:38px;">
-        <option>전체</option>
-        <option>15세+</option>
-        <option selected>19세+</option>
-      </select>
-    </div>
-  </section>
-
   <!-- 알림 -->
   <section class="settings-block">
     <h2 class="settings-block__title">이벤트 · 혜택 알림 설정</h2>
@@ -145,24 +132,40 @@
         <strong>광고성 정보 알림 받기</strong>
         <p class="text-xs text-muted">(광고성 정보 수신) 개인정보 수집 및 이용 동의</p>
       </div>
-      <button type="button" class="toggle is-on" aria-label="광고성 알림"></button>
+      <button type="button" class="toggle-managed" id="marketingConsentToggle" role="switch"
+              th:classappend="${user.marketingConsent} ? ' is-on'"
+              th:attr="aria-checked=${user.marketingConsent}"
+              data-notify-type="marketing" aria-label="광고성 알림"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <strong>이메일로 알림 받기</strong>
+        <p class="text-xs text-muted">가입한 아티스트의 새 게시글 · 공지 · 라이브 시작을 이메일로 받아요</p>
+      </div>
+      <button type="button" class="toggle-managed" id="communityActivityEmailToggle" role="switch"
+              th:classappend="${user.communityActivityEmailEnabled} ? ' is-on'"
+              th:attr="aria-checked=${user.communityActivityEmailEnabled}"
+              data-notify-type="email" aria-label="이메일 알림"></button>
     </div>
     <div class="settings-row">
       <div>
         <strong>야간 알림 받기</strong>
         <p class="text-xs text-muted">오후 9시 ~ 오전 8시(KST)에도 중요 알림 수신</p>
       </div>
-      <button type="button" class="toggle" aria-label="야간 알림"></button>
+      <button type="button" class="toggle-managed" id="nightNotificationToggle" role="switch"
+              th:classappend="${user.nightNotificationAllowed} ? ' is-on'"
+              th:attr="aria-checked=${user.nightNotificationAllowed}"
+              data-notify-type="night" aria-label="야간 알림"></button>
     </div>
   </section>
 
   <!-- 약관 -->
   <section class="settings-block">
     <h2 class="settings-block__title">약관 및 정책</h2>
-    <a class="settings-row" href="#" onclick="WePlaNet.alert('개인정보처리방침 (목업)');return false;">
+    <a class="settings-row" th:href="@{/policy/privacy}">
       <span>개인정보처리방침</span><span>›</span>
     </a>
-    <a class="settings-row" href="#" onclick="WePlaNet.alert('이용약관 (목업)');return false;">
+    <a class="settings-row" th:href="@{/policy/terms}">
       <span>이용약관</span><span>›</span>
     </a>
   </section>
@@ -435,5 +438,45 @@
 
 <script src="../js/main.js"></script>
 <script src="../js/shell.js"></script>
+<script>
+  // [이벤트·혜택 알림 설정] 광고성 정보/이메일 알림/야간 알림 토글 - 클릭 즉시 서버에 저장.
+  // 전역 .toggle 자동 바인딩(main.js initToggles)은 저장을 안 하는 순수 목업이라, 여기 토글들은
+  // 그걸 타지 않는 .toggle-managed 클래스를 쓰고 별도로 클릭을 처리한다.
+  (function () {
+    "use strict";
+    document.querySelectorAll("[data-notify-type]").forEach(function (btn) {
+      btn.setAttribute("role", "switch");
+      btn.addEventListener("click", function () {
+        var type = btn.dataset.notifyType;
+        var nextOn = !btn.classList.contains("is-on");
+        btn.classList.toggle("is-on", nextOn);
+        btn.setAttribute("aria-checked", nextOn ? "true" : "false");
+        btn.disabled = true;
+
+        fetch("/settings/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "type=" + encodeURIComponent(type) + "&enabled=" + nextOn
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data.success) {
+              btn.classList.toggle("is-on", !nextOn);
+              btn.setAttribute("aria-checked", !nextOn ? "true" : "false");
+              window.WePlaNet.alert(data.message || "저장에 실패했습니다.");
+            }
+          })
+          .catch(function () {
+            btn.classList.toggle("is-on", !nextOn);
+            btn.setAttribute("aria-checked", !nextOn ? "true" : "false");
+            window.WePlaNet.alert("저장 중 오류가 발생했습니다.");
+          })
+          .finally(function () {
+            btn.disabled = false;
+          });
+      });
+    });
+  })();
+</script>
 </body>
 </html>
