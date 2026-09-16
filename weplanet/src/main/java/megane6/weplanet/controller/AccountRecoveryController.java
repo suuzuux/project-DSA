@@ -35,6 +35,11 @@ public class AccountRecoveryController {
 			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
 			return result;
 		}
+		if (!accountRecoveryService.isEligibleForRecovery(email)) {
+			result.put("success", false);
+			result.put("message", "비밀번호가 설정되어 있지 않아 아이디를 찾을 수 없습니다.");
+			return result;
+		}
 		try {
 			emailVerificationService.sendVerificationCode(email);
 			result.put("success", true);
@@ -56,7 +61,8 @@ public class AccountRecoveryController {
 			result.put("message", "인증코드가 일치하지 않거나 만료되었습니다.");
 			return result;
 		}
-		if (!accountRecoveryService.matchesRealNameAndEmail(realName, email)) {
+		if (!accountRecoveryService.matchesRealNameAndEmail(realName, email)
+				|| !accountRecoveryService.isEligibleForRecovery(email)) {
 			result.put("success", false);
 			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
 			return result;
@@ -79,6 +85,11 @@ public class AccountRecoveryController {
 		if (!accountRecoveryService.matchesUsernameAndEmail(username, email)) {
 			result.put("success", false);
 			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
+			return result;
+		}
+		if (!accountRecoveryService.isEligibleForRecovery(email)) {
+			result.put("success", false);
+			result.put("message", "비밀번호가 설정되어 있지 않아 비밀번호를 찾을 수 없습니다.");
 			return result;
 		}
 		try {

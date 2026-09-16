@@ -14,9 +14,9 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.PostService;
-import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import org.springframework.stereotype.Controller;
@@ -86,16 +86,24 @@ public class HomeController {
 		model.addAttribute("risingCommunities", risingCommunities);
 		
 		// 메인 페이지 "최신 인기 포스트" 위젯 - 게시판 구분 없이 인기순 상위 4개 + 각 게시글 대표 이미지(있으면)
+		// 작성자 표시는 해당 커뮤니티 가입 닉네임 기준
 		List<Post> popularPosts = postService.getPopularPosts();
 		Map<Long, String> popularPostThumbnails = new HashMap<>();
+		Map<String, String> popularAuthorNicknames = new HashMap<>();
 		for (Post post : popularPosts) {
 			postService.getAttachments(post).stream()
 					.filter(a -> a.isImage())
 					.findFirst()
 					.ifPresent(a -> popularPostThumbnails.put(post.getId(), a.getStoredName()));
+			if (post.getAuthor() != null && post.getArtist() != null) {
+				popularAuthorNicknames.put(
+						String.valueOf(post.getId()),
+						communityJoinService.displayNickname(post.getAuthor(), post.getArtist().getId()));
+			}
 		}
 		model.addAttribute("popularPosts", popularPosts);
 		model.addAttribute("popularPostThumbnails", popularPostThumbnails);
+		model.addAttribute("popularAuthorNicknames", popularAuthorNicknames);
 		
 		return "index";
 	}

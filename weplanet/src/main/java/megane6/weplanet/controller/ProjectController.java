@@ -233,6 +233,7 @@ public class ProjectController {
 
 		model.addAttribute("artist", portalManagementService.toArtistCard(artist));
 		model.addAttribute("artists", artists);
+		model.addAttribute("showProjectWriteButton", true);
 		model.addAttribute("eventTypes", FanProjectEventType.values());
 		model.addAttribute("settlementBanks", SettlementBank.values());
 
