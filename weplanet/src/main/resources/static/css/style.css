@@ -126,7 +126,7 @@ p {
   height: 32px;
   border-radius: 8px;
   background: linear-gradient(145deg, var(--wp-brand) 0%, var(--wp-brand-dark) 100%);
-  color: #fff;
+  color: var(--wp-on-brand, #fff);
   display: grid;
   place-items: center;
   font-size: 14px;
@@ -211,7 +211,7 @@ p {
 
 .btn--primary {
   background: var(--wp-brand);
-  color: #fff;
+  color: var(--wp-on-brand, #fff);
 }
 
 .btn--primary:hover {
@@ -220,7 +220,7 @@ p {
 
 .btn--accent {
   background: var(--wp-accent);
-  color: #fff;
+  color: var(--wp-on-accent, #fff);
 }
 
 .btn--accent:hover {
@@ -521,7 +521,7 @@ p {
   justify-content: flex-end;
   background:
     linear-gradient(180deg, transparent 20%, rgba(0, 0, 0, 0.55) 100%),
-    linear-gradient(120deg, #2f5ba8 0%, #1e3a5f 55%, #c45c26 140%);
+    linear-gradient(120deg, #2d3a47 0%, #8a5a66 55%, #f7c8d3 140%);
 }
 
 .banner__kicker {
@@ -619,7 +619,7 @@ p {
   height: 72px;
   margin: 0 auto 8px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #e3ecfa, #b8cdf0);
+  background: linear-gradient(145deg, #fdeef2, #f7c8d3);
   border: 2px solid var(--wp-surface);
   box-shadow: var(--wp-shadow);
   display: grid;
@@ -788,7 +788,7 @@ p {
 .media-ph {
   aspect-ratio: 1;
   background:
-    linear-gradient(135deg, #e9edf3, #d7dee8);
+    linear-gradient(135deg, #f1eee8, #ddd9d1);
   display: grid;
   place-items: center;
   color: var(--wp-muted);
@@ -1749,3 +1749,31 @@ p {
 [data-theme-icon="dark"] { display: none; }
 :root[data-theme="dark"] [data-theme-icon="dark"] { display: block; }
 :root[data-theme="dark"] [data-theme-icon="light"] { display: none; }
+
+/* ---------- 다크모드: 게시글 본문 ---------- */
+/* 본문은 toastui 뷰어로 그려지는데, 라이브러리 CSS가 요소마다 어두운 글자색을
+   직접 박아둬서 다크 배경에서 글씨가 묻힌다. 토큰 색으로 되돌린다. */
+:root[data-theme="dark"] .toastui-editor-contents,
+:root[data-theme="dark"] .toastui-editor-contents p,
+:root[data-theme="dark"] .toastui-editor-contents h1,
+:root[data-theme="dark"] .toastui-editor-contents h2,
+:root[data-theme="dark"] .toastui-editor-contents h3,
+:root[data-theme="dark"] .toastui-editor-contents h4,
+:root[data-theme="dark"] .toastui-editor-contents h5,
+:root[data-theme="dark"] .toastui-editor-contents h6,
+:root[data-theme="dark"] .toastui-editor-contents li,
+:root[data-theme="dark"] .toastui-editor-contents td,
+:root[data-theme="dark"] .toastui-editor-contents th,
+:root[data-theme="dark"] .toastui-editor-contents strong,
+:root[data-theme="dark"] .toastui-editor-contents em {
+  color: var(--wp-ink);
+}
+
+:root[data-theme="dark"] .toastui-editor-contents blockquote {
+  color: var(--wp-ink-soft);
+  border-left-color: var(--wp-line);
+}
+
+:root[data-theme="dark"] .toastui-editor-contents a {
+  color: var(--wp-brand);
+}

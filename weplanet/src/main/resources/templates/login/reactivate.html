@@ -98,7 +98,7 @@
           .then(function (r) { return r.json(); })
           .then(function (data) {
             sendMsg.textContent = data.message;
-            sendMsg.style.color = data.success ? "#2f8f5b" : "#c45c26";
+            sendMsg.style.color = data.success ? "#63704a" : "#c45c26";
             if (data.success) {
               codeGroup.style.display = "block";
               codeInput.value = "";

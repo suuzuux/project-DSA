@@ -28,8 +28,12 @@
    * --------------------------------------------------------- */
   const THEME_KEY = "weplanet-theme";
 
+  // 로그인·회원가입 등 로그인 전 화면(.auth-page)은 항상 밝은 화면으로 둔다.
+  // 고른 값 자체는 지우지 않아서, 로그인하고 나면 원래 쓰던 테마로 돌아온다.
+  const forceLightPage = document.body.classList.contains("auth-page");
+
   function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme", forceLightPage ? "light" : theme);
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch (e) {

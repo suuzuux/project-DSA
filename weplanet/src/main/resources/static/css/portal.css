@@ -165,7 +165,7 @@
 
 .portal-artists {
   background: #0f1716;
-  color: #d8dfe9;
+  color: #ded9cf;
   padding: 24px 14px;
   display: flex;
   flex-direction: column;
@@ -250,7 +250,7 @@
 
 .portal-sidebar {
   background: #15201f;
-  color: #d8dfe9;
+  color: #ded9cf;
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
@@ -435,7 +435,7 @@
 }
 
 .portal-profile-edit .pe-menu button:hover {
-  background: var(--wp-brand-soft, #e9f0fc);
+  background: var(--wp-brand-soft, #fbeef1);
 }
 
 .portal-profile-edit .pe-menu button.is-danger {
@@ -994,7 +994,7 @@ tr.js-pinned.is-dragging {
     min-height: 18px;
     font-size: var(--wp-fs-xs);
     line-height: 1.5;
-    color: #7f8a99;
+    color: #8d8a82;
 }
 
 .admin-otp-status.is-success {
@@ -1014,7 +1014,7 @@ tr.js-pinned.is-dragging {
 /* 인증 완료된 입력칸 - 회색으로 잠금 표시 */
 .admin-login__card .form-input.is-locked {
     background: #1e2726;
-    color: #7f8a99;
+    color: #8d8a82;
     cursor: not-allowed;
 }
 

@@ -115,7 +115,7 @@
 
 .product-card__thumb {
   aspect-ratio: 1;
-  background: linear-gradient(145deg, #e9edf3, #ddd5c8);
+  background: linear-gradient(145deg, #f1eee8, #ddd5c8);
   display: grid;
   place-items: center;
   color: var(--wp-muted);
@@ -221,7 +221,7 @@
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  background: linear-gradient(145deg, #e9edf3, #ddd5c8);
+  background: linear-gradient(145deg, #f1eee8, #ddd5c8);
   color: var(--wp-muted);
   font-size: var(--wp-fs-xs);
   text-decoration: none;
@@ -319,7 +319,7 @@
 
 .product-detail__gallery {
   aspect-ratio: 1;
-  background: linear-gradient(145deg, #e9edf3, #ddd5c8);
+  background: linear-gradient(145deg, #f1eee8, #ddd5c8);
   border-radius: var(--wp-radius);
   border: 1px solid var(--wp-hairline);
   display: grid;
