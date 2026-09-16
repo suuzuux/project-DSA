@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!--
+      개인정보처리방침 - 회원정보 및 설정(settings.html) "약관 및 정책" 목업 링크를 실제 페이지로 대체.
+      로그인 여부와 무관하게 볼 수 있어야 해서 SecurityConfig의 PUBLIC_URLS에 /policy/** 를 등록해뒀다.
+      내용은 실제 WePlaNet 데이터 모델(User/CommunityProfile/Membership/ProjectContribution 등)을 기준으로
+      직접 작성한 것이며, 특정 서비스의 약관을 그대로 옮긴 것이 아니다.
+    -->
+    <title>개인정보처리방침 | WePlaNet</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <style>
+        .policy-toc { list-style:none; padding:0; margin:0 0 32px; display:grid; gap:6px; }
+        .policy-toc a { color:var(--wp-ink-soft); text-decoration:none; font-size:var(--wp-fs-sm); }
+        .policy-toc a:hover { color:var(--wp-brand); text-decoration:underline; }
+        .policy-article { margin-bottom:28px; }
+        .policy-article h2 { font-size:var(--wp-fs-lg); font-weight:700; margin-bottom:10px; scroll-margin-top:16px; }
+        .policy-article p, .policy-article li { line-height:1.7; color:var(--wp-ink); }
+        .policy-article ul, .policy-article ol { padding-left:20px; margin:8px 0; }
+        .policy-article li { margin-bottom:6px; }
+        .policy-meta { color:var(--wp-ink-soft); font-size:var(--wp-fs-xs); margin-bottom:24px; }
+    </style>
+</head>
+<body>
+<main class="container section" style="max-width:760px;">
+    <a th:href="@{/settings}" class="btn btn--ghost btn--sm" style="margin-bottom:16px;display:inline-block;">← 설정으로</a>
+    <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;letter-spacing:-0.03em;margin-bottom:8px;">개인정보처리방침</h1>
+    <p class="policy-meta">시행일자: 2026년 9월 16일</p>
+
+    <ul class="policy-toc">
+        <li><a href="#art1">제1조 개인정보 처리방침의 목적</a></li>
+        <li><a href="#art2">제2조 개인정보의 처리 목적</a></li>
+        <li><a href="#art3">제3조 처리하는 개인정보의 항목</a></li>
+        <li><a href="#art4">제4조 개인정보의 처리 및 보유기간</a></li>
+        <li><a href="#art5">제5조 개인정보의 제3자 제공</a></li>
+        <li><a href="#art6">제6조 개인정보 처리의 위탁</a></li>
+        <li><a href="#art7">제7조 정보주체의 권리·의무 및 행사방법</a></li>
+        <li><a href="#art8">제8조 개인정보의 파기절차 및 방법</a></li>
+        <li><a href="#art9">제9조 개인정보의 안전성 확보조치</a></li>
+        <li><a href="#art10">제10조 쿠키(Cookie)의 운영 및 거부</a></li>
+        <li><a href="#art11">제11조 개인정보 자동 수집장치 및 세션 관리</a></li>
+        <li><a href="#art12">제12조 개인정보 보호책임자</a></li>
+        <li><a href="#art13">제13조 권익침해 구제방법</a></li>
+        <li><a href="#art14">제14조 개인정보 처리방침의 변경</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>제1조(개인정보 처리방침의 목적)</h2>
+        <p>본 개인정보 처리방침(이하 "본 방침")은 WePlaNet(이하 "회사" 또는 "위플래닛")이 제공하는 웹사이트 및 관련 서비스(이하 "서비스")를 이용하는 회원의 개인정보를 어떠한 목적과 방식으로 처리하며, 개인정보 보호를 위해 어떠한 조치를 취하고 있는지 안내하기 위해 작성되었습니다. 회사는 「개인정보 보호법」 등 관계 법령을 준수하며, 본 방침을 통해 회원이 자신의 개인정보와 관련한 권리를 어떻게 행사할 수 있는지 안내합니다.</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>제2조(개인정보의 처리 목적)</h2>
+        <p>회사는 다음 각 호의 목적을 위하여 회원의 개인정보를 처리합니다. 처리한 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 관계 법령에 따라 별도의 동의를 받는 등 필요한 조치를 이행합니다.</p>
+        <ol>
+            <li>회원가입 및 계정 관리: 아이디·비밀번호 기반 또는 구글·카카오·라인 소셜 계정을 통한 회원가입, 본인 확인, 로그인 유지, 휴면계정 전환·재활성화, 부정 이용 확인 및 방지, 회원 탈퇴 처리</li>
+            <li>커뮤니티 서비스 제공: 아티스트별 커뮤니티 가입 관리, 프로필(닉네임·소개글·프로필/배경 이미지) 등록·수정, 게시글·댓글·다이렉트 메시지(DM) 등 커뮤니티 활동 지원</li>
+            <li>멤버십 및 상품 서비스 제공: 아티스트 멤버십 가입 및 만료 관리, 샵 상품 구매, 팬 프로젝트(크라우드펀딩) 참여 및 환불 처리</li>
+            <li>고객 문의 응대: 입점 문의 등 각종 문의 접수 및 답변, 공지사항 전달</li>
+            <li>서비스 운영 및 개선: 서비스 이용 통계 분석, 오류 확인 및 개선, 신규 기능 개발</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>제3조(처리하는 개인정보의 항목)</h2>
+        <p>회사는 서비스 제공을 위해 다음과 같은 개인정보를 처리합니다.</p>
+        <p><strong>(1) 필수 항목</strong></p>
+        <ul>
+            <li>회원가입 시: 아이디, 비밀번호(아이디·비밀번호로 가입한 회원에 한하며 암호화하여 저장), 또는 연동한 소셜 계정 정보(제공자 및 제공자 고유 식별값), 닉네임, 실명, 이메일 주소</li>
+        </ul>
+        <p><strong>(2) 선택 항목</strong></p>
+        <ul>
+            <li>전화번호, 거주 국가/지역, 프로필 및 배경 이미지</li>
+        </ul>
+        <p><strong>(3) 서비스 이용 과정에서 자동으로 생성·수집되는 정보</strong></p>
+        <ul>
+            <li>접속 IP, 접속 일시, 쿠키(로그인 세션 식별자)</li>
+        </ul>
+        <p><strong>(4) 특정 서비스 이용 시 추가로 처리되는 정보</strong></p>
+        <ul>
+            <li>팬 프로젝트(크라우드펀딩) 참여 시: 입금자명(암호화하여 저장), 후원 금액, 주문번호, 결제 상태, 환불 시 환불 계좌 정보</li>
+            <li>소셜 계정 연동/연동 해제 시: 연동 이력</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>제4조(개인정보의 처리 및 보유기간)</h2>
+        <p>회사는 원칙적으로 회원 탈퇴 시까지 개인정보를 보유·이용합니다. 회원이 탈퇴하면 회사는 지체 없이 아이디·이메일·연동된 소셜 식별값을 복원할 수 없는 형태(예: "withdrawn_회원번호")로, 실명을 "탈퇴한 회원"으로 각각 대체하고, 전화번호 등 선택 항목은 삭제하는 방식으로 개인정보를 익명 처리합니다. 다만 다음의 정보에 대해서는 명시한 사유가 있는 기간 동안 별도 보관합니다.</p>
+        <ul>
+            <li>팬 프로젝트 후원 및 환불 관련 기록: 「전자상거래 등에서의 소비자보호에 관한 법률」 등 관계 법령에 따라 5년</li>
+            <li>서비스 부정이용 관련 접속 기록: 3개월</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>제5조(개인정보의 제3자 제공)</h2>
+        <p>회사는 회원의 개인정보를 제2조에서 명시한 목적 범위 내에서만 처리하며, 회원의 동의가 있거나 법령에 특별한 규정이 있는 경우를 제외하고는 회원의 개인정보를 제3자에게 제공하지 않습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>제6조(개인정보 처리의 위탁)</h2>
+        <p>회사는 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 외부에 위탁하고 있습니다. 회사는 위탁 계약 체결 시 개인정보가 안전하게 관리될 수 있도록 필요한 사항을 규정하고 있습니다.</p>
+        <ul>
+            <li>위탁받는 자: Google LLC (Gmail SMTP)</li>
+            <li>위탁 업무 내용: 회원가입 이메일 인증, 비밀번호 재설정, 휴면계정 안내 등 이메일 발송</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>제7조(정보주체의 권리·의무 및 행사방법)</h2>
+        <p>회원은 언제든지 자신의 개인정보에 대해 다음 각 호의 권리를 행사할 수 있습니다.</p>
+        <ol>
+            <li>개인정보 열람·정정 요구권: 설정 화면의 "회원정보 수정"을 통해 닉네임, 실명, 이메일, 비밀번호, 전화번호 등을 직접 열람하고 수정할 수 있습니다.</li>
+            <li>개인정보 삭제(처리정지) 요구권: 설정 화면의 "위플래닛 계정 탈퇴하기"를 통해 언제든지 탈퇴하고 제4조에 따른 익명 처리를 요청할 수 있습니다.</li>
+            <li>위 방법으로 해결되지 않는 사항은 제12조의 연락처로 문의할 수 있으며, 회사는 지체 없이 조치합니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>제8조(개인정보의 파기절차 및 방법)</h2>
+        <p>회사는 개인정보의 보유기간이 경과하거나 처리 목적이 달성된 경우 해당 개인정보를 지체 없이 파기합니다. 전자적 파일 형태로 저장된 개인정보는 기록을 복구할 수 없는 기술적 방법을 사용하여 삭제하며, 종이 문서에 출력된 개인정보는 분쇄하거나 소각합니다.</p>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>제9조(개인정보의 안전성 확보조치)</h2>
+        <p>회사는 개인정보 보호를 위해 다음과 같은 기술적·관리적 조치를 취하고 있습니다.</p>
+        <ul>
+            <li>비밀번호는 복호화할 수 없는 일방향 암호화(BCrypt) 방식으로 저장합니다.</li>
+            <li>실명, 입금자명 등 민감한 개인정보는 암호화하여 저장합니다.</li>
+            <li>1시간 이상 활동이 없으면 자동으로 로그아웃되며, 동일 계정은 하나의 기기에서만 로그인할 수 있도록 제한합니다.</li>
+            <li>개인정보를 처리할 수 있는 인원을 최소한으로 제한하고 있습니다.</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>제10조(쿠키(Cookie)의 운영 및 거부)</h2>
+        <p>회사는 회원의 로그인 상태를 유지하기 위해 세션 식별을 위한 쿠키를 사용합니다. 회원은 웹브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 로그인이 필요한 서비스 이용에 제한이 있을 수 있습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>제11조(개인정보 자동 수집장치 및 세션 관리)</h2>
+        <p>회사는 부정 이용 방지 및 서비스 안정성 확보를 위해 로그인 세션을 관리하며, 비정상적으로 만료되거나 중복된 세션이 감지되는 경우 회원을 재인증하도록 안내할 수 있습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>제12조(개인정보 보호책임자)</h2>
+        <p>회사는 개인정보 처리에 관한 업무를 총괄하고 회원의 불만 처리 및 피해 구제를 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
+        <ul>
+            <li>담당: WePlaNet 운영팀</li>
+            <li>이메일: admin4.wp@gmail.com</li>
+        </ul>
+        <p>회원은 서비스 이용 중 발생한 모든 개인정보 관련 문의를 위 연락처로 하실 수 있으며, 회사는 지체 없이 답변 드립니다.</p>
+    </section>
+
+    <section class="policy-article" id="art13">
+        <h2>제13조(권익침해 구제방법)</h2>
+        <p>개인정보 침해에 대한 신고나 상담이 필요한 경우 아래 기관에 문의할 수 있습니다.</p>
+        <ul>
+            <li>개인정보침해신고센터 (privacy.kisa.or.kr / 국번없이 118)</li>
+            <li>개인정보 분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
+            <li>대검찰청 사이버수사과 (spo.go.kr / 국번없이 1301)</li>
+            <li>경찰청 사이버수사국 (ecrm.police.go.kr / 국번없이 182)</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art14">
+        <h2>제14조(개인정보 처리방침의 변경)</h2>
+        <p>본 방침은 법령, 정책 또는 서비스 변경사항을 반영하기 위해 개정될 수 있으며, 변경되는 경우 시행일자 및 변경 사항을 서비스 내 공지사항을 통해 사전에 안내합니다.</p>
+        <p class="policy-meta" style="margin-top:16px;">부칙: 본 방침은 2026년 9월 16일부터 시행됩니다.</p>
+    </section>
+</main>
+</body>
+</html>

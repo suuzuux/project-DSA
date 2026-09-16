@@ -29,6 +29,10 @@ public class SignupRequestDto {
 	@NotBlank(message = "이메일을 입력해주세요.")
 	@Email(message = "올바른 이메일 형식이 아닙니다.")
 	private String email;
+
+	// (선택) 광고 및 마케팅 활용 동의 - User.marketingConsent와 같은 값. 체크 안 하면 false로 바인딩됨
+	// (Thymeleaf th:field가 checkbox에 hidden fallback을 자동으로 넣어줌).
+	private boolean marketingConsent;
 	
 	public boolean isPasswordConfirmed() {
 		return password != null && password.equals(passwordConfirm);
