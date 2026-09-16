@@ -16,7 +16,6 @@
     <a class="auth-card__back" th:href="@{/signup}">← 뒤로</a>
     <div class="flex-between">
       <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
-      <button type="button" class="icon-btn" aria-label="언어">🌐</button>
     </div>
 
     <h1 class="auth-card__title mt-16">회원가입</h1>
@@ -144,12 +143,12 @@
 
       function setUsernameMsg(text, ok) {
         usernameMsg.textContent = text;
-        usernameMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
+        usernameMsg.style.color = ok ? "#63704a" : "#c45c26";
       }
 
       function setMsg(text, ok) {
         msg.textContent = text;
-        msg.style.color = ok ? "#2f8f5b" : "#c45c26";
+        msg.style.color = ok ? "#63704a" : "#c45c26";
       }
 
       checkUsernameBtn.addEventListener("click", function () {

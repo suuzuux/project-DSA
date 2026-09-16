@@ -16,7 +16,6 @@
   <a class="auth-card__back" th:href="@{/login}">← 뒤로</a>
   <div class="flex-between">
     <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
-    <button type="button" class="icon-btn" aria-label="언어">🌐</button>
   </div>
 
   <h1 class="auth-card__title mt-16">로그인</h1>
@@ -24,10 +23,10 @@
   <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-top:8px;">
     아이디 또는 비밀번호가 올바르지 않습니다.
   </p>
-  <p th:if="${param.withdrawn}" class="text-sm" style="color:#2f8f5b;margin-top:8px;">
+  <p th:if="${param.withdrawn}" class="text-sm" style="color:#63704a;margin-top:8px;">
     탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.
   </p>
-  <p th:if="${param.unlinked}" class="text-sm" style="color:#2f8f5b;margin-top:8px;">
+  <p th:if="${param.unlinked}" class="text-sm" style="color:#63704a;margin-top:8px;">
     연동이 해제되어 로그아웃되었습니다. 다시 로그인해주세요.
   </p>
 

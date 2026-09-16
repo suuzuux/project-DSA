@@ -77,7 +77,7 @@
 }
 
 .project-badge--approved {
-    background: #18794e;
+    background: #63704a;
 }
 
 .project-badge--rejected {
@@ -304,7 +304,7 @@
 }
 
 .project-email-status.is-success {
-    color: #18794e;
+    color: #63704a;
 }
 
 .project-email-status.is-error {
@@ -550,8 +550,8 @@
 }
 
 .project-contribution-status.is-success {
-    background: #e9f8ef;
-    color: #18794e;
+    background: #eef1e4;
+    color: #63704a;
 }
 
 .project-contribution-status.is-error {
