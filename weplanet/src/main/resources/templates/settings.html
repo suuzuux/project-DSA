@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!--
     회원정보 및 설정
-    - 언어 / 콘텐츠 등급 / 알림 / 약관 / 탈퇴
+    - 언어 / 알림 / 약관 / 탈퇴
     - 수정 버튼 → 모달로 회원정보 수정 (실제 서버 반영: SettingsController)
     - AUTH-10: 로컬 비밀번호와 소셜 연동(최대 1개)이 이제 서로 독립적으로 공존한다.
       user.provider(연동된 소셜, 없으면 null)와 user.hasPassword()를 각각 따로 본다.
@@ -116,19 +116,6 @@
         <option>JPN</option>
         <option>KOR</option>
         <option>ENG</option>
-      </select>
-    </div>
-  </section>
-
-  <!-- 콘텐츠 -->
-  <section class="settings-block">
-    <h2 class="settings-block__title">콘텐츠 설정</h2>
-    <div class="settings-row">
-      <span>콘텐츠 등급 설정</span>
-      <select class="form-select" style="width:120px;min-height:38px;">
-        <option>전체</option>
-        <option>15세+</option>
-        <option selected>19세+</option>
       </select>
     </div>
   </section>
