@@ -1,5 +1,5 @@
 -- ============================================================
--- WePlaNet 통합 DB 스키마 [파일 2] ADMIN-2 증분 적용 (2026-09-09)
+-- WePlaNet 통합 DB 스키마 [파일 2] ADMIN-2 + AUTH-10 증분 적용
 -- ------------------------------------------------------------
 -- 대상: 이미 weplanet DB를 사용 중인 팀원
 -- 실행: 이 파일 하나만 MySQL Workbench에서 전체 선택 후 실행
@@ -10,7 +10,8 @@
 --   3) report/comment_report 처리 상태와 처리 시각
 --   4) site_notice 분류/예약발행/상단고정
 --   5) email_verification 관리자 로그인 인증 목적
---   6) 테스트 계정 비밀번호 Test1234 통일
+--   6) AUTH-10 users.provider 의미 변경 및 password nullable 전환
+--   7) 테스트 계정 비밀번호 Test1234 통일
 --
 -- 기존 데이터는 삭제하지 않으며 여러 번 실행해도 안전합니다.
 -- 빈 DB를 처음 구성하는 경우에는 weplanet_schema_full_reset.sql을 사용하세요.
@@ -243,6 +244,41 @@ BEGIN
                     'ADMIN_LOGIN'
                 ));
     END IF;
+
+    -- --------------------------------------------------------
+    -- 6. AUTH-10 소셜 연동 구조 변경
+    --    provider: 가입 경로가 아니라 현재 연동된 소셜 provider
+    --    password: 소셜 전용 가입자는 비밀번호가 없을 수 있음
+    -- --------------------------------------------------------
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.TABLE_CONSTRAINTS
+        WHERE CONSTRAINT_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'users'
+          AND CONSTRAINT_NAME = 'ck_users_provider'
+          AND CONSTRAINT_TYPE = 'CHECK'
+    ) THEN
+        ALTER TABLE `users`
+            DROP CHECK `ck_users_provider`;
+    END IF;
+
+    -- 기존 LOCAL 값은 이제 "소셜 연동 없음"을 뜻하는 NULL로 통일한다.
+    UPDATE `users`
+    SET `provider` = NULL
+    WHERE `provider` = 'LOCAL';
+
+    ALTER TABLE `users`
+        MODIFY `provider`
+            varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+            COMMENT '연동된 소셜 provider: GOOGLE/KAKAO/LINE (연동 없으면 NULL)',
+        MODIFY `password`
+            varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+            COMMENT '비밀번호(BCrypt 해시, 소셜 전용 가입자는 NULL)';
+
+    ALTER TABLE `users`
+        ADD CONSTRAINT `ck_users_provider`
+            CHECK (`provider` IS NULL
+                OR `provider` IN ('GOOGLE', 'KAKAO', 'LINE'));
 END$$
 
 DELIMITER ;
@@ -251,7 +287,7 @@ CALL `wp_apply_admin2_schema`();
 DROP PROCEDURE `wp_apply_admin2_schema`;
 
 -- ------------------------------------------------------------
--- 6. 기존 테스트 계정의 비밀번호를 Test1234로 통일
+-- 7. 기존 테스트 계정의 비밀번호를 Test1234로 통일
 --    실제 회원이나 팀원이 따로 만든 계정은 변경하지 않는다.
 -- ------------------------------------------------------------
 UPDATE `users`
@@ -292,7 +328,8 @@ SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
 FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
   AND (
-      (TABLE_NAME = 'users' AND COLUMN_NAME = 'agency_id')
+      (TABLE_NAME = 'users'
+          AND COLUMN_NAME IN ('agency_id', 'provider', 'password'))
       OR (TABLE_NAME IN ('report', 'comment_report')
           AND COLUMN_NAME IN ('status', 'resolved_at'))
       OR (TABLE_NAME = 'site_notice'
@@ -303,6 +340,10 @@ ORDER BY TABLE_NAME, ORDINAL_POSITION;
 SELECT CONSTRAINT_NAME, CHECK_CLAUSE
 FROM information_schema.CHECK_CONSTRAINTS
 WHERE CONSTRAINT_SCHEMA = DATABASE()
-  AND CONSTRAINT_NAME = 'ck_email_verification_purpose';
+  AND CONSTRAINT_NAME IN (
+      'ck_email_verification_purpose',
+      'ck_users_provider'
+  )
+ORDER BY CONSTRAINT_NAME;
 
-SELECT 'ADMIN-2 통합 증분 DB 적용 완료' AS result;
+SELECT 'ADMIN-2 + AUTH-10 통합 증분 DB 적용 완료' AS result;
