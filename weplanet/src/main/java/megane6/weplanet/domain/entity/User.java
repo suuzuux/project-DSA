@@ -26,11 +26,8 @@ public class User {
 	@Column(nullable = false, unique = true, length = 50)
 	private String username;	// 로그인 아이디
 	
-	// AUTH-10: 소셜 전용 가입자는 비밀번호를 안 만들 수 있다. 이 컬럼의 NOT NULL 제약(및 DB 마이그레이션)은
-	// 사용자가 직접 마지막에 정리하기로 해서, 이 어노테이션은 일부러 그대로 두었다 - 코드상으로는
-	// password가 null일 수 있다는 전제로 모든 로직을 작성했다. hasPassword() 참고.
-	@Column(nullable = true, length = 60)
-	private String password;	// 암호화(BCrypt)된 비밀번호. 소셜 전용 가입자는 null일 수 있음.
+	@Column(nullable = false, length = 60)
+	private String password;	// 암호화(BCrypt)된 비밀번호
 	
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
@@ -96,15 +93,12 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;		// 탈퇴(소프트 삭제) 처리 시각
 	
-	// AUTH-10: 더 이상 "가입 경로"가 아니라 "지금 이 계정에 연동된 소셜 provider"를 뜻한다.
-	// 연동이 없는 계정(로컬 비밀번호만 있거나, 연동을 해제한 계정)은 null. 이 컬럼의 NOT NULL 제약(및 DB
-	// 마이그레이션)도 password와 마찬가지로 사용자가 직접 마지막에 정리하기로 해서 어노테이션은 그대로 두었다.
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = true, length = 20)
-	private AuthProvider provider;		// 연동된 소셜 provider (GOOGLE/KAKAO/LINE), 연동 없으면 null
+	@Column(nullable = false, length = 20)
+	private AuthProvider provider;		// 가입 경로 (LOCAL/GOOGLE/KAKAO/LINE)
 	
 	@Column(name = "provider_id", length = 255)
-	private String providerId;		// 소셜 플랫폼 고유 ID (연동 없으면 null)
+	private String providerId;		// 소셜 플랫폼 고유 ID (LOCAL 가입자는 null)
 	
 	private User(String username, String password, String realName, String nickname, String email, Role role, AuthProvider provider, String providerId) {
 		this.username = username;
@@ -119,10 +113,9 @@ public class User {
 	}
 	
 	private User(String username, String password, String realName, String nickname, String email, Role role) {
-		this(username, password, realName, nickname, email, role, null, null);
+		this(username, password, realName, nickname, email, role, AuthProvider.LOCAL, null);
 	}
 	
-	// AUTH-10: 소셜 신규 가입은 비밀번호를 요구하지 않는다 - encodedPassword가 null로 들어올 수 있다.
 	public static User createSocialFan(String username, String encodedPassword, String realName, String nickname, String email, AuthProvider provider, String providerId) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.FAN, provider, providerId);
 	}
@@ -168,21 +161,9 @@ public class User {
 		this.emailVerifiedAt = verifiedAt;
 	}
 	
-	// AUTH-10: 비밀번호는 건드리지 않는다 - 로컬 비밀번호와 소셜 연동은 이제 서로 독립적으로 공존한다.
 	public void linkSocialProvider(AuthProvider provider, String providerId) {
 		this.provider = provider;
 		this.providerId = providerId;
-	}
-
-	// AUTH-10 신설: 설정 화면에서 "연결 해제"를 누르면 호출. 비밀번호는 손대지 않는다.
-	public void unlinkSocialProvider() {
-		this.provider = null;
-		this.providerId = null;
-	}
-
-	// AUTH-10: 비밀번호가 설정돼 있는지 여부. provider(LOCAL) 대신 이 값으로 "로컬 로그인이 가능한 계정인지"를 판단한다.
-	public boolean hasPassword() {
-		return this.password != null;
 	}
 
 	public void changePortalProfile(String nickname, String email) {

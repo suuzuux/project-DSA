@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${goods} != null ? '굿즈 수정 | Artist Portal' : '굿즈 등록 | Artist Portal'">굿즈 등록 | Artist Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+</head>
+<body>
+  <div class="portal-shell"
+       th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
+    <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
+
+    <main class="portal-main">
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('굿즈 등록')}"></th:block>
+      <th:block th:if="${artistSelected}">
+      <div class="portal-main__head">
+        <h1 th:text="${goods} != null ? '굿즈 수정' : '굿즈 등록'">굿즈 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/goods}">← 뒤로 가기</a>
+      </div>
+
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+      <form class="settings-block" style="max-width:800px;" id="goodsForm"
+            th:action="${goods} != null ? @{/portal/goods/{id}(id=${goods.id})} : @{/portal/goods}"
+            method="post"
+            enctype="multipart/form-data">
+        <div class="form-group">
+          <label class="form-label" for="name">상품명</label>
+          <input class="form-input" id="name" name="name" required maxlength="200"
+                 th:value="${goods != null ? goods.name : ''}"
+                 placeholder="상품명을 입력해주세요." />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="goodsDescription">상세 설명</label>
+          <textarea id="goodsDescription" name="description" hidden maxlength="5000"
+                    th:text="${goods != null ? goods.description : ''}"></textarea>
+          <div id="goodsDescriptionEditor"></div>
+          <p class="text-xs text-muted mt-8">팬 게시글 작성과 동일한 에디터입니다.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="price">가격 (원)</label>
+          <input class="form-input" id="price" name="price" type="number" min="0" required
+                 th:value="${goods != null ? goods.price : 0}" style="max-width:200px;" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="thumbnail">썸네일 이미지</label>
+          <div th:if="${goods != null and goods.thumbnailUrl != null}" class="mb-8">
+            <img th:src="@{'/uploads/' + ${goods.thumbnailUrl}}"
+                 alt="현재 썸네일"
+                 style="width:120px;height:120px;object-fit:cover;border-radius:8px;" />
+            <p class="text-xs text-muted mt-8">새 파일을 올리면 교체됩니다. 비워두면 기존 이미지를 유지합니다.</p>
+          </div>
+          <input class="form-input" id="thumbnail" name="thumbnail" type="file"
+                 accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                 th:required="${goods == null}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="officialUrl">공식 판매처 URL</label>
+          <input class="form-input" id="officialUrl" name="officialUrl" type="url" maxlength="500"
+                 th:value="${goods != null ? goods.officialUrl : ''}"
+                 placeholder="https://" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="status">상태</label>
+          <select class="form-select" id="status" name="status" style="max-width:200px;">
+            <option th:each="s : ${goodsStatuses}"
+                    th:value="${s.name()}"
+                    th:text="${s.label}"
+                    th:selected="${goods != null ? goods.status == s : s.name() == 'ON_SALE'}">판매중</option>
+          </select>
+        </div>
+
+        <div class="flex-center" style="justify-content:flex-end;">
+          <button type="submit" class="btn btn--primary"
+                  th:text="${goods} != null ? '수정 저장' : '바로등록'">바로등록</button>
+        </div>
+      </form>
+      </th:block>
+    </main>
+  </div>
+  <script>
+    (function () {
+      var contentEl = document.getElementById("goodsDescription");
+      var editorEl = document.getElementById("goodsDescriptionEditor");
+      var form = document.getElementById("goodsForm");
+      if (!contentEl || !editorEl || !window.toastui) return;
+
+      var editor = new toastui.Editor({
+        el: editorEl,
+        height: "260px",
+        initialEditType: "wysiwyg",
+        previewStyle: "vertical",
+        initialValue: contentEl.value || "",
+        placeholder: "상품 상세 설명을 입력하세요 …",
+        toolbarItems: [
+          ["heading", "bold", "italic", "strike"],
+          ["hr", "quote"],
+          ["ul", "ol", "task", "indent", "outdent"],
+          ["table", "link"],
+          ["code", "codeblock"]
+        ]
+      });
+
+      editor.on("change", function () {
+        contentEl.value = editor.getMarkdown();
+      });
+
+      form.addEventListener("submit", function () {
+        contentEl.value = editor.getMarkdown();
+      });
+
+      var tabs = editorEl.querySelectorAll(".toastui-editor-mode-switch .tab-item");
+      tabs.forEach(function (tab) {
+        var raw = (tab.textContent || "").trim();
+        if (raw === "Markdown") {
+          tab.textContent = "마크다운";
+          tab.title = "# 제목, **굵게** 같은 기호를 직접 입력하는 모드";
+        } else if (raw === "WYSIWYG") {
+          tab.textContent = "꾸미기";
+          tab.title = "툴바 버튼으로 꾸미는 모드";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

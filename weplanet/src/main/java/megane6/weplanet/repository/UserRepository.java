@@ -69,8 +69,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         left join fetch user.agency agency
         where (:role is null or user.role = :role)
           and (:status is null or user.status = :status)
-          and (:localOnly = false or user.provider is null)
-          and (:localOnly = true or :provider is null or user.provider = :provider)
+          and (:provider is null or user.provider = :provider)
           and (
               :keyword is null
               or lower(user.username)
@@ -88,10 +87,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("role") Role role,
             @Param("status") UserStatus status,
             @Param("provider") AuthProvider provider,
-            // AUTH-10: provider 컬럼에서 LOCAL이 없어지면서, "비밀번호만 있는 일반 가입 계정만" 필터링하려면
-            // provider IS NULL을 따로 표현해야 한다. provider 파라미터(특정 소셜 필터)와는 배타적으로 쓴다
-            // - AdminUserController#users 에서 둘 중 하나만 세팅해서 넘긴다.
-            @Param("localOnly") boolean localOnly,
             @Param("keyword") String keyword
     );
 

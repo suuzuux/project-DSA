@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
 import megane6.weplanet.domain.entity.live.LiveCommentReport;
@@ -23,6 +24,7 @@ import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import megane6.weplanet.service.shop.GoodsService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -61,6 +63,7 @@ public class PortalController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final LiveBroadcastService liveBroadcastService;
+	private final GoodsService goodsService;
 
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
@@ -93,6 +96,7 @@ public class PortalController {
 			case "notices" -> "redirect:/portal/notices";
 			case "schedule" -> "redirect:/portal/schedule";
 			case "media" -> "redirect:/portal/media";
+			case "goods" -> "redirect:/portal/goods";
 			case "live" -> "redirect:/portal/live";
 			case "profile" -> "redirect:/portal/profile";
 			case "reports" -> "redirect:/portal/reports";
@@ -420,6 +424,141 @@ public class PortalController {
 			return "redirect:/portal/media/new";
 		}
 		return "redirect:/portal/media";
+	}
+
+	@GetMapping("/goods")
+	public String goods(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		String redirect = prepareArtistPage(principal, model, "goods");
+		if (redirect != null) {
+			return redirect;
+		}
+		User artist = artistFromModel(model);
+		model.addAttribute("goodsList", artist != null ? goodsService.listForArtist(artist) : List.of());
+		return "portal/goods";
+	}
+
+	@GetMapping("/goods/new")
+	public String newGoods(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		String redirect = prepareArtistPage(principal, model, "goods");
+		if (redirect != null) {
+			return redirect;
+		}
+		if (artistFromModel(model) == null) {
+			return "redirect:/portal/dashboard";
+		}
+		model.addAttribute("goods", null);
+		model.addAttribute("goodsStatuses", GoodsStatus.values());
+		return "portal/goods-form";
+	}
+
+	@GetMapping("/goods/{goodsId}/edit")
+	public String editGoods(@PathVariable Long goodsId,
+							@AuthenticationPrincipal AuthenticatedUser principal,
+							Model model,
+							RedirectAttributes redirectAttributes) {
+		String redirect = prepareArtistPage(principal, model, "goods");
+		if (redirect != null) {
+			return redirect;
+		}
+		User artist = artistFromModel(model);
+		if (artist == null) {
+			return "redirect:/portal/dashboard";
+		}
+		try {
+			model.addAttribute("goods", goodsService.getOwned(artist, goodsId));
+			model.addAttribute("goodsStatuses", GoodsStatus.values());
+			return "portal/goods-form";
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/portal/goods";
+		}
+	}
+
+	@PostMapping("/goods")
+	public String createGoods(@RequestParam String name,
+							  @RequestParam(required = false) String description,
+							  @RequestParam int price,
+							  @RequestParam(required = false) String officialUrl,
+							  @RequestParam(defaultValue = "ON_SALE") GoodsStatus status,
+							  @RequestParam("thumbnail") MultipartFile thumbnail,
+							  @AuthenticationPrincipal AuthenticatedUser principal,
+							  RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			if (price < 0) {
+				throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+			}
+			goodsService.create(artist, name, description, price, officialUrl, status, thumbnail);
+			redirectAttributes.addFlashAttribute("msg", "굿즈가 등록되었습니다.");
+			return "redirect:/portal/goods";
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/portal/goods/new";
+		}
+	}
+
+	@PostMapping("/goods/{goodsId}")
+	public String updateGoods(@PathVariable Long goodsId,
+							  @RequestParam String name,
+							  @RequestParam(required = false) String description,
+							  @RequestParam int price,
+							  @RequestParam(required = false) String officialUrl,
+							  @RequestParam(defaultValue = "ON_SALE") GoodsStatus status,
+							  @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
+							  @AuthenticationPrincipal AuthenticatedUser principal,
+							  RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			if (price < 0) {
+				throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+			}
+			goodsService.update(artist, goodsId, name, description, price, officialUrl, status, thumbnail);
+			redirectAttributes.addFlashAttribute("msg", "굿즈가 수정되었습니다.");
+			return "redirect:/portal/goods";
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/portal/goods/" + goodsId + "/edit";
+		}
+	}
+
+	@PostMapping("/goods/{goodsId}/delete")
+	public String deleteGoods(@PathVariable Long goodsId,
+							  @AuthenticationPrincipal AuthenticatedUser principal,
+							  RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			goodsService.softDelete(artist, goodsId);
+			redirectAttributes.addFlashAttribute("msg", "굿즈가 삭제되었습니다.");
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/portal/goods";
+	}
+
+	@PostMapping("/goods/{goodsId}/move")
+	public String moveGoods(@PathVariable Long goodsId,
+							@RequestParam String direction,
+							@AuthenticationPrincipal AuthenticatedUser principal,
+							RedirectAttributes redirectAttributes) {
+		User artist = currentArtist(principal);
+		if (artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			goodsService.move(artist, goodsId, direction);
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/portal/goods";
 	}
 
 	@PostMapping("/media/{mediaId}/delete")

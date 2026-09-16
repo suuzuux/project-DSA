@@ -7,8 +7,6 @@
     회원정보 및 설정
     - 언어 / 콘텐츠 등급 / 알림 / 약관 / 탈퇴
     - 수정 버튼 → 모달로 회원정보 수정 (실제 서버 반영: SettingsController)
-    - AUTH-10: 로컬 비밀번호와 소셜 연동(최대 1개)이 이제 서로 독립적으로 공존한다.
-      user.provider(연동된 소셜, 없으면 null)와 user.hasPassword()를 각각 따로 본다.
   -->
   <title>WePlaNet – 회원정보 및 설정</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
@@ -44,9 +42,6 @@
   <section class="settings-block">
     <p th:if="${profileMessage}" th:text="${profileMessage}" style="color:#2f8f5b;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
     <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
-    <p th:if="${param.linked}" style="color:#2f8f5b;font-size:var(--wp-fs-xs);margin-bottom:12px;">소셜 계정이 연동되었습니다.</p>
-    <p th:if="${param.linkNotice}" style="color:var(--wp-ink-soft);font-size:var(--wp-fs-xs);margin-bottom:12px;">이미 연동되어 있는 계정입니다.</p>
-    <p th:if="${param.linkError}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;">이미 다른 계정에 연동된 소셜 계정이에요.</p>
     <div class="flex-between">
       <div class="flex-center">
         <div class="avatar avatar--lg" th:text="${#strings.substring(user.nickname,0,1)}">닉</div>
@@ -55,47 +50,16 @@
           <p class="text-xs text-muted mt-8">
             <span th:text="${#temporals.format(user.createdAt, 'yyyy.MM.dd')}">2022.01.18</span> 가입 · 아이디 <span th:text="${user.username}">abcd1234</span>
           </p>
-          <!-- AUTH-10: 비밀번호 유무와 소셜 연동 여부는 이제 서로 독립적인 값이라 따로 보여준다. -->
-          <span th:if="${user.hasPassword()}" class="tag mt-8"
-                style="background:var(--wp-brand-soft);color:var(--wp-brand-dark);">비밀번호 로그인 가능</span>
-          <!-- 비밀번호가 없으면(소셜 전용 가입) 이 계정의 로그인 수단은 이 소셜뿐이라 "연동됨"이 아니라
-               "로그인함"으로 표시한다. 비밀번호가 있으면(로컬 계정에 추가로 연결한 경우) "연동됨"을 유지. -->
-          <span th:if="${user.provider != null and user.hasPassword()}" class="tag mt-8"
+          <!-- 아이디/비밀번호로 가입한 일반 계정인지, 구글 등 소셜 계정과 연동된 계정인지 한눈에 구분할 수 있게 표시.
+               이메일 수정 가능 여부가 이 값에 따라 갈리므로(위 수정 모달 참고), 여기서도 같이 보여준다. -->
+          <span th:if="${user.provider.name() == 'LOCAL'}" class="tag mt-8"
+                style="background:var(--wp-brand-soft);color:var(--wp-brand-dark);">일반 계정 (아이디/비밀번호)</span>
+          <span th:unless="${user.provider.name() == 'LOCAL'}" class="tag mt-8"
                 style="background:#eaf3ff;color:#2563eb;"
                 th:text="${user.provider.name() + ' 계정과 연동됨'}">GOOGLE 계정과 연동됨</span>
-          <span th:if="${user.provider != null and !user.hasPassword()}" class="tag mt-8"
-                style="background:#eaf3ff;color:#2563eb;"
-                th:text="${user.provider.name() + ' 계정으로 로그인함'}">GOOGLE 계정으로 로그인함</span>
         </div>
       </div>
       <button type="button" class="btn btn--primary btn--sm" data-modal-open="editProfileModal">수정</button>
-    </div>
-  </section>
-
-  <!-- AUTH-10 신설: 소셜 계정 연동 관리 - 로그인된 상태에서 능동적으로 연결/해제한다.
-       계정당 소셜 연동은 최대 1개까지만 가능해서, 이미 다른 provider가 연동돼 있으면 "연결하기"를 눌러도
-       바로 연동되지 않고 "연동 계정을 바꾸시겠습니까?" 확인 화면(social-link-confirm.html)을 거친다. -->
-  <!-- 비밀번호가 없는 계정(소셜 전용 가입)은 이 박스 전체를 잠근다(.is-locked, style.css 참고) - 지금
-       연동된 소셜이 유일한 로그인 수단이라, 여기서 연동을 더 바꾸게 두면(다른 소셜로 교체/해제) 계정에
-       다시 로그인할 방법이 없어질 수 있다. 비밀번호를 설정해서 로그인 수단을 하나 더 확보해야만
-       (user.hasPassword() true) 이 박스를 다시 조작할 수 있다. 실제 위험한 동작인 "연결 해제"는
-       서버(UserService.unlinkSocialProvider)에서도 같은 조건으로 한 번 더 막는다. -->
-  <section class="settings-block" th:classappend="${user.hasPassword()} ? '' : 'is-locked'">
-    <h2 class="settings-block__title">연결된 계정</h2>
-    <p th:if="${user.hasPassword()}" class="text-sm text-muted mb-16">비밀번호와 별개로, 소셜 계정 하나를 추가로 연결해서 로그인 수단으로 쓸 수 있어요.</p>
-    <p th:unless="${user.hasPassword()}" class="text-sm mb-16" style="color:#c45c26;">
-      지금은 이 소셜 계정이 유일한 로그인 수단이라 연동을 바꿀 수 없어요. 회원정보 수정에서 비밀번호를 먼저 설정해주세요.
-    </p>
-
-    <div class="settings-row" th:each="p : ${T(megane6.weplanet.domain.entity.enumfolder.AuthProvider).values()}">
-      <span th:text="${p.name()}">GOOGLE</span>
-      <a th:if="${user.provider != p}" class="btn btn--ghost btn--sm"
-         th:href="@{'/social-login/' + ${#strings.toLowerCase(p.name())} + '/link'}"
-         th:attr="tabindex=${user.hasPassword()} ? null : -1">연결하기</a>
-      <form th:if="${user.provider == p}" th:action="@{/settings/social/unlink}" method="post" style="margin:0;"
-            onsubmit="return WePlaNet.confirmSubmit(this, '정말 연동을 해제하시겠습니까? 해제 후에는 다시 로그인해야 합니다.');">
-        <button type="submit" class="btn btn--ghost btn--sm" th:attr="tabindex=${user.hasPassword()} ? null : -1">연결 해제</button>
-      </form>
     </div>
   </section>
 
@@ -198,13 +162,18 @@
       </div>
       <div class="form-group">
         <label class="form-label">이메일</label>
-        <!-- AUTH-10: 연동된 provider와 무관하게 누구나 이메일을 바꿀 수 있다 - 잠금 예외(구글 등) 없앴음. -->
         <div class="form-row">
           <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
-          <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
+          <button th:unless="${user.provider.emailManagedExternally()}" type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
         </div>
         <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
-        <p class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+        <!-- 구글처럼 검증된 이메일을 그대로 내려주는 provider(AuthProvider.emailManagedExternally())만 여기서 이메일을 못 바꾼다
+             (임의로 바꾸면 "이메일로 기존 계정 찾기/연동" 로직이 깨짐). 카카오/LINE은 애초에 실제 이메일을 안 주고
+             placeholder(예: kakao_숫자@kakao.weplanet.local)만 생성되므로, LOCAL 계정처럼 직접 입력해서 바꿀 수 있어야 한다.
+             SettingsController.sendEmailChangeCode / UserService.updatePortalAccount 참고 -->
+        <p th:unless="${user.provider.emailManagedExternally()}" class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+        <p th:if="${user.provider.emailManagedExternally()}" class="form-hint"
+           th:text="${user.provider.name() + ' 계정과 연동된 회원은 이메일을 변경할 수 없습니다.'}">소셜 계정과 연동된 회원은 이메일을 변경할 수 없습니다.</p>
 
         <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
           <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
@@ -213,39 +182,26 @@
         </div>
         <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>
-
-      <!-- AUTH-10: "비밀번호가 있는지"로 갈린다 (예전엔 provider == LOCAL 기준). -->
-      <div th:if="${user.hasPassword()}">
-        <div class="form-group">
-          <label class="form-label">현재 비밀번호</label>
-          <input class="form-input" type="password" id="currentPasswordInput" name="currentPassword"
-                 placeholder="비밀번호를 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">새 비밀번호</label>
-          <input class="form-input" type="password" id="newPasswordInput" name="newPassword"
-                 placeholder="현재 비밀번호를 먼저 입력해주세요" autocomplete="new-password" disabled />
-        </div>
-        <div class="form-group">
-          <label class="form-label">새 비밀번호 확인</label>
-          <input class="form-input" type="password" id="confirmPasswordInput" name="confirmPassword"
-                 placeholder="현재 비밀번호를 먼저 입력해주세요" autocomplete="new-password" disabled />
-          <p class="text-xs" id="passwordMismatchMsg" style="display:none;color:#c45c26;margin-top:4px;">새 비밀번호가 일치하지 않습니다.</p>
-        </div>
+      <div class="form-group" th:if="${user.provider.name() == 'LOCAL'}">
+        <label class="form-label">현재 비밀번호</label>
+        <input class="form-input" type="password" id="currentPasswordInput" name="currentPassword"
+               placeholder="비밀번호를 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
       </div>
-      <!-- AUTH-10 신설: 비밀번호가 아직 없는 계정(소셜 전용 가입)이 새로 등록하는 흐름 - 현재 비밀번호 확인이
-           필요 없다(UserService.updatePortalAccount 참고). -->
-      <div th:unless="${user.hasPassword()}">
-        <p class="text-xs text-muted mb-8">아직 비밀번호가 설정되어 있지 않아요. 등록하면 아이디/비밀번호로도 로그인할 수 있어요.</p>
-        <div class="form-group">
-          <label class="form-label">새 비밀번호</label>
-          <input class="form-input" type="password" name="newPassword" placeholder="영문/숫자 포함 8~20자" autocomplete="new-password" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">새 비밀번호 확인</label>
-          <input class="form-input" type="password" name="confirmPassword" autocomplete="new-password" />
-        </div>
+      <div class="form-group" th:if="${user.provider.name() == 'LOCAL'}">
+        <label class="form-label">새 비밀번호</label>
+        <input class="form-input" type="password" id="newPasswordInput" name="newPassword"
+               placeholder="현재 비밀번호를 먼저 입력해주세요" autocomplete="new-password" disabled />
       </div>
+      <div class="form-group" th:if="${user.provider.name() == 'LOCAL'}">
+        <label class="form-label">새 비밀번호 확인</label>
+        <input class="form-input" type="password" id="confirmPasswordInput" name="confirmPassword"
+               placeholder="현재 비밀번호를 먼저 입력해주세요" autocomplete="new-password" disabled />
+        <p class="text-xs" id="passwordMismatchMsg" style="display:none;color:#c45c26;margin-top:4px;">새 비밀번호가 일치하지 않습니다.</p>
+      </div>
+      <!-- 소셜 계정과 연동된 회원은 비밀번호로 로그인할 수 없으므로(AUTH-09) 변경 UI 자체를 노출하지 않는다. -->
+      <p class="text-xs text-muted" th:unless="${user.provider.name() == 'LOCAL'}">
+        소셜 계정과 연동된 회원은 비밀번호를 별도로 설정하지 않습니다.
+      </p>
       <div class="form-group">
         <label class="form-label">전화번호 (선택)</label>
         <input class="form-input" name="phone" placeholder="선택 입력" />
@@ -269,29 +225,29 @@
         var confirmInput = document.getElementById("confirmPasswordInput");
         var mismatchMsg = document.getElementById("passwordMismatchMsg");
         var form = document.getElementById("editProfileForm");
-        if (currentInput) {
-          function syncPasswordFields() {
-            var hasCurrent = currentInput.value.length > 0;
-            newInput.disabled = !hasCurrent;
-            confirmInput.disabled = !hasCurrent;
-            if (!hasCurrent) {
-              newInput.value = "";
-              confirmInput.value = "";
-              mismatchMsg.style.display = "none";
-            }
+        if (!currentInput) return;
+
+        function syncPasswordFields() {
+          var hasCurrent = currentInput.value.length > 0;
+          newInput.disabled = !hasCurrent;
+          confirmInput.disabled = !hasCurrent;
+          if (!hasCurrent) {
+            newInput.value = "";
+            confirmInput.value = "";
+            mismatchMsg.style.display = "none";
           }
-
-          currentInput.addEventListener("input", syncPasswordFields);
-          syncPasswordFields();
-
-          form.addEventListener("submit", function (e) {
-            if (newInput.value && newInput.value !== confirmInput.value) {
-              e.preventDefault();
-              mismatchMsg.style.display = "block";
-              confirmInput.focus();
-            }
-          });
         }
+
+        currentInput.addEventListener("input", syncPasswordFields);
+        syncPasswordFields();
+
+        form.addEventListener("submit", function (e) {
+          if (newInput.value && newInput.value !== confirmInput.value) {
+            e.preventDefault();
+            mismatchMsg.style.display = "block";
+            confirmInput.focus();
+          }
+        });
 
         // ===== 이메일 잠금 → 수정 → 인증 (회원가입 화면과 같은 6자리 코드 방식) =====
         var emailInput = document.getElementById("emailInput");
@@ -349,6 +305,11 @@
           emailEditBtn.dataset.mode = "edit";
           emailCodeRow.style.display = "none";
           stopEmailTimer();
+        }
+
+        if (!emailEditBtn) {
+          // 소셜 계정과 연동된 회원 - 이메일 수정 버튼 자체가 화면에 없으니(settings.html의 th:if) 관련 이벤트도 안 붙인다.
+          return;
         }
 
         emailEditBtn.addEventListener("click", function () {

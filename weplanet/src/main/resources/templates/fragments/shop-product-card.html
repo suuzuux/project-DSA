@@ -8,7 +8,11 @@
     <a class="product-card__thumb"
        th:href="@{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})}">
       <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
-      상품 이미지
+      <img th:if="${product.thumbnailPublicUrl() != null}"
+           th:src="${product.thumbnailPublicUrl()}"
+           th:alt="${product.title()}"
+           style="width:100%;height:100%;object-fit:cover;" />
+      <span th:unless="${product.thumbnailPublicUrl() != null}">상품 이미지</span>
     </a>
     <button type="button"
             class="product-card__cart-btn"
@@ -34,7 +38,11 @@
     <a class="shop-marquee-card__thumb"
        th:href="@{/shop/products/{id}(id=${product.id()})}">
       <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
-      상품
+      <img th:if="${product.thumbnailPublicUrl() != null}"
+           th:src="${product.thumbnailPublicUrl()}"
+           th:alt="${product.title()}"
+           style="width:100%;height:100%;object-fit:cover;" />
+      <span th:unless="${product.thumbnailPublicUrl() != null}">상품</span>
     </a>
     <button type="button"
             class="product-card__cart-btn product-card__cart-btn--sm"

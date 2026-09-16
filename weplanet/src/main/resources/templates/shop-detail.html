@@ -38,7 +38,13 @@
        th:href="${fromCommunity} ? @{/shop/community/{id}(id=${product.artistId()})} : @{/shop(artistId=${product.artistId()})}">← Shop 목록</a>
 
     <article class="product-detail">
-      <div class="product-detail__gallery">상품 이미지 영역</div>
+      <div class="product-detail__gallery">
+        <img th:if="${product.thumbnailPublicUrl() != null}"
+             th:src="${product.thumbnailPublicUrl()}"
+             th:alt="${product.title()}"
+             style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" />
+        <span th:unless="${product.thumbnailPublicUrl() != null}">상품 이미지 영역</span>
+      </div>
 
       <div class="product-detail__info">
         <p class="text-sm" style="color:var(--wp-brand);font-weight:700;">
@@ -59,6 +65,11 @@
         </div>
 
         <p class="product-detail__desc"
+           style="white-space:pre-wrap;"
+           th:if="${product.description() != null and !#strings.isEmpty(product.description())}"
+           th:text="${product.description()}">상품 설명</p>
+        <p class="product-detail__desc"
+           th:unless="${product.description() != null and !#strings.isEmpty(product.description())}"
            th:text="${product.artistName() + ' 공식 굿즈입니다. WePlaNet Shop에서 안전하게 구매할 수 있습니다.'}">
           상품 설명
         </p>
@@ -81,6 +92,10 @@
                   onclick="WePlaNet.alert('결제 페이지 (목업)')">
             바로 구매
           </button>
+          <a class="btn btn--ghost btn--block"
+             th:if="${product.officialUrl() != null and !#strings.isEmpty(product.officialUrl())}"
+             th:href="${product.officialUrl()}"
+             target="_blank" rel="noopener noreferrer">공식 판매처</a>
           <a class="btn btn--ghost btn--block"
              th:href="@{/community/{id}/highlight(id=${product.artistId()})}"
              th:text="${product.artistName() + ' 커뮤니티로'}">커뮤니티로</a>
