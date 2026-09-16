@@ -117,6 +117,23 @@
             line-height: 1;
             cursor: pointer;
         }
+        /* 닉네임 왼쪽 자물쇠 - 오른쪽 ✕ 버튼과 좌우 대칭 위치 */
+        .pe-lock {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            display: grid;
+            place-items: center;
+            color: var(--wp-muted, #8a8a8a);
+            pointer-events: none;
+        }
+        .pe-lock svg {
+            width: 14px;
+            height: 14px;
+        }
         .pe-count {
             text-align: right;
             margin: 4px 0 18px;
@@ -220,30 +237,34 @@
                           th:text="${#strings.substring(displayName, 0, 1)}">나</span>
                 </div>
 
-                <!-- 닉네임 - 숨김 상태에서도 항상 보이는 유일한 정보 -->
-                <h2 style="margin-top:14px;font-size:var(--wp-fs-lg);font-weight:800;word-break:break-all;">
+                <!-- 닉네임 - 숨김 중이면 옆에 자물쇠가 붙는다(본인에게만 보이는 표시) -->
+                <h2 style="margin-top:14px;font-size:var(--wp-fs-lg);font-weight:800;word-break:break-all;
+                           display:flex;align-items:center;justify-content:center;gap:6px;">
                     <span th:text="${displayName}">닉네임</span>
+                    <svg th:if="${contentHidden}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         style="width:16px;height:16px;flex-shrink:0;color:var(--wp-muted, #8a8a8a);">
+                        <title>콘텐츠 숨김 중 · 다른 사람에게는 닉네임만 보입니다</title>
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
                 </h2>
 
-                <!-- 커뮤니티 가입일 - 계정 생성일(users.created_at)과 구분한다. -->
+                <!-- 커뮤니티 가입일 - 계정 생성일(users.created_at)과 구분한다.
+                     이 화면은 본인만 보는 '내 프로필'이라, 숨김 설정과 무관하게 본인에게는 보여준다. -->
                 <p class="profile-card__joined-date"
-                   th:if="${!contentHidden and communityJoinInfo != null}"
+                   th:if="${communityJoinInfo != null}"
                    th:text="|${#temporals.format(communityJoinInfo.joinedDate, 'yyyy.MM.dd')} 가입|">2026.09.01 가입</p>
 
-                <!-- 소개글 - 공개범위가 숨김이면 노출하지 않음 / 아티스트 본인은 포털 intro -->
+                <!-- 소개글 - 아티스트 본인은 포털 intro -->
                 <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;word-break:break-all;"
                    th:if="${cardIntro != null and !#strings.isEmpty(cardIntro)}"
                    th:text="${cardIntro}">소개글</p>
 
-                <!-- 팔로잉 - 공개범위가 숨김이면 노출하지 않음 -->
-                <p style="margin:16px 0;font-size:var(--wp-fs-sm);" th:if="${!contentHidden}">
+                <!-- 팔로잉 - 가입일과 같은 이유로 본인에게는 항상 보여준다 -->
+                <p style="margin:16px 0;font-size:var(--wp-fs-sm);">
                     <strong th:text="${myFollowingCount}">0</strong>
                     <span class="text-xs text-muted" style="margin-left:4px;">팔로잉</span>
-                </p>
-
-                <!-- 숨김 상태 안내 - 본인에게만 보이는 표시 -->
-                <p class="text-xs text-muted" style="margin:16px 0;line-height:1.5;" th:if="${contentHidden}">
-                    🔒 콘텐츠 숨김 중<br/>다른 사람에게는 닉네임만 보입니다
                 </p>
 
                 <!-- 가입한 커뮤니티에서만 편집 가능 (community_profiles 행이 있어야 수정할 수 있음) -->
@@ -256,12 +277,12 @@
         <!-- ==================== 2행 2열: 히스토리 목록 ==================== -->
         <div class="profile-body">
 
-            <div class="mb-16">
-                <a class="form-select" style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;"
-                   th:href="@{''(sort='latest')}" th:classappend="${sort != 'oldest'} ? ' is-active'">최신순</a>
-                <a class="form-select"
-                   style="width:auto;display:inline-flex;padding:0 12px;text-decoration:none;margin-left:8px;"
-                   th:href="@{''(sort='oldest')}" th:classappend="${sort == 'oldest'} ? ' is-active'">오래된 순</a>
+            <!-- 정렬 - 선택된 쪽을 브랜드색 버튼으로 채워서 지금 어느 순서인지 바로 보이게 한다 -->
+            <div class="mb-16" style="display:flex;gap:8px;">
+                <a style="text-decoration:none;" th:href="@{''(sort='latest')}"
+                   th:class="${sort != 'oldest'} ? 'btn btn--sm btn--primary' : 'btn btn--sm btn--ghost'">최신순</a>
+                <a style="text-decoration:none;" th:href="@{''(sort='oldest')}"
+                   th:class="${sort == 'oldest'} ? 'btn btn--sm btn--primary' : 'btn btn--sm btn--ghost'">오래된 순</a>
             </div>
 
             <!-- 댓글 히스토리 -->
@@ -387,6 +408,12 @@
 
                 <!-- 닉네임 -->
                 <div class="pe-field">
+                    <!-- 콘텐츠 숨기기가 켜져 있을 때만 보이는 표시. 아래 토글과 연동된다. -->
+                    <span class="pe-lock" id="profileEditLockIcon" title="콘텐츠 숨김 중"
+                          th:classappend="${contentHidden} ? '' : ' hidden'">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    </span>
                     <input type="text" id="profileEditNickname" name="nickname"
                            maxlength="10" autocomplete="off" required
                            aria-label="닉네임"
@@ -453,10 +480,6 @@
                              th:classappend="${contentHidden} ? ' is-on'"
                              role="switch" tabindex="0" style="cursor:pointer;flex-shrink:0;"></div>
                     </div>
-                    <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
-                        다른 사람이 내 프로필 공간에 접근할 수는 있지만, 작성한 콘텐츠와 팔로잉, 팔로워 목록은
-                        볼 수 없고, 나를 팔로우할 수도 없습니다.
-                    </p>
                 </div>
 
                 <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin:16px -24px 0;padding:16px 24px;">
@@ -609,11 +632,14 @@
       // 공개범위 토글 - 보이는 스위치와 실제로 전송되는 체크박스를 동기화
       var hiddenToggle = document.getElementById("profileEditHiddenToggle");
       var hiddenInput = document.getElementById("profileEditHidden");
+      var lockIcon = document.getElementById("profileEditLockIcon");
       if (hiddenToggle && hiddenInput) {
         var syncHidden = function () {
           var on = hiddenToggle.classList.toggle("is-on");
           hiddenInput.checked = on;
           hiddenToggle.setAttribute("aria-checked", String(on));
+          // 설명문 대신 닉네임 옆 자물쇠로 현재 상태를 보여준다
+          if (lockIcon) lockIcon.classList.toggle("hidden", !on);
         };
         hiddenToggle.addEventListener("click", syncHidden);
         hiddenToggle.addEventListener("keydown", function (e) {
