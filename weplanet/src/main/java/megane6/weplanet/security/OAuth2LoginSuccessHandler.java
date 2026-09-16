@@ -5,12 +5,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.controller.SocialLoginEntryController;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.SocialLoginIntent;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.UsernameGenerator;
 import org.springframework.security.core.Authentication;
@@ -24,6 +26,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
@@ -32,6 +35,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	private final UsernameGenerator usernameGenerator;
 	private final NicknameGenerator nicknameGenerator;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
+	private final MarketingConsentEmailService marketingConsentEmailService;
 	private record SocialProfile(String providerId, String email, String realName, String suggestedNickname) {}
 
 	@Override
@@ -216,7 +220,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 		String nickname = resolveNickname(profile.suggestedNickname());
 
 		User newUser = User.createSocialFan(username, null, profile.realName(), nickname, profile.email(), provider, profile.providerId());
-		return userRepository.save(newUser);
+		User saved = userRepository.save(newUser);
+		
+		// [광고성 정보 알림] 데모용 - 소셜 계정은 "(선택) 광고 및 마케팅 활용 동의" 체크박스 자체가 없어서
+		// 항상 marketingConsentGiven=false로 보낸다. 가입 완료 메일은 아이디/비밀번호 가입과 동일하게
+		// 동의 여부와 무관하게 무조건 1통 보낸다 (UserService.signup() 참고).
+		try {
+			marketingConsentEmailService.sendSignupWelcomeEmail(saved, false);
+		} catch (Exception e) {
+			log.error("[광고성 정보 알림] 소셜 회원가입 환영 메일 발송 실패: user={}", saved.getId(), e);
+		}
+		
+		return saved;
 	}
 	
 	private String resolveNickname(String suggestedNickname) {

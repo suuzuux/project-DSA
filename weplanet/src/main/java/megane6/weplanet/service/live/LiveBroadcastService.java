@@ -14,6 +14,7 @@ import megane6.weplanet.repository.live.LiveCommentRepository;
 import megane6.weplanet.repository.live.LiveSessionRepository;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.email.CommunityActivityNotifier;
 import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ public class LiveBroadcastService {
 	private final LiveCommentReportRepository liveCommentReportRepository;
 	private final UserRepository userRepository;
 	private final CommunityJoinService communityJoinService;
+	private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 라이브 시작 → 팔로워 이메일
 	private final ChatFilterService chatFilterService;
 	private final BoardMediaService boardMediaService;
 
@@ -64,6 +66,8 @@ public class LiveBroadcastService {
 			return LiveStatusView.from(session);
 		}
 		LiveSession saved = liveSessionRepository.save(LiveSession.start(artist, host));
+		// [이벤트·혜택 알림] 이미 방송 중이면 위에서 일찍 return되므로, 여기 도달하는 건 항상 "새로 시작"한 경우.
+		communityActivityNotifier.notifyLiveStart(artist, saved);
 		return LiveStatusView.from(saved);
 	}
 

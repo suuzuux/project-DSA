@@ -118,6 +118,24 @@ public class SettingsController {
 		return result;
 	}
 
+	// [이벤트·혜택 알림 설정] type: marketing(광고성 정보) / email(커뮤니티 활동 이메일) / night(야간 알림)
+	@PostMapping("/settings/notifications")
+	@ResponseBody
+	public Map<String, Object> updateNotificationPreference(@AuthenticationPrincipal AuthenticatedUser principal,
+															 @RequestParam String type,
+															 @RequestParam boolean enabled) {
+		Map<String, Object> result = new HashMap<>();
+		User user = userResolver.requireAuthenticated(principal);
+		try {
+			userService.updateNotificationPreference(user, type, enabled);
+			result.put("success", true);
+		} catch (IllegalArgumentException e) {
+			result.put("success", false);
+			result.put("message", e.getMessage());
+		}
+		return result;
+	}
+
 	// [회원탈퇴] 소프트 삭제 처리 후 즉시 로그아웃시킨다 (세션에 남은 만료 계정으로 계속 요청이 오는 걸 막기 위함).
 	@PostMapping("/settings/withdraw")
 	public String withdraw(@AuthenticationPrincipal AuthenticatedUser principal, HttpServletRequest request) {
