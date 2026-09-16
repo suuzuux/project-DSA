@@ -6,6 +6,7 @@ import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
@@ -25,6 +26,7 @@ public class UserService {
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
 	private final SignupEmailVerificationService emailVerificationService;
+	private final MarketingConsentEmailService marketingConsentEmailService;
 	
 	@Transactional
 	public User signup(SignupRequestDto dto) {
@@ -52,7 +54,32 @@ public class UserService {
 		// 실제 회원가입 이메일 인증을 구현하기 전까지 사용하는 모의 인증 처리
 		user.markEmailVerified(LocalDateTime.now());
 		
-		return userRepository.save(user);
+		// [설정 - 이벤트·혜택 알림] 가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스 값을 그대로 반영.
+		// 이후 설정 화면의 "광고성 정보 알림 받기" 토글과 같은 값을 공유한다.
+		user.changeMarketingConsent(dto.isMarketingConsent());
+		
+		User saved = userRepository.save(user);
+		
+		// [광고성 정보 알림] 데모용 - 실제 운영 기능은 아니고, 이 기능이 살아있다는 걸 보여주기 위해
+		// 인증된 이메일로 가입 완료 메일을 무조건 1통 보낸다 (광고·마케팅 동의 체크 여부와 무관).
+		try {
+			marketingConsentEmailService.sendSignupWelcomeEmail(saved, saved.isMarketingConsent());
+		} catch (Exception e) {
+			log.error("[광고성 정보 알림] 회원가입 환영 메일 발송 실패: user={}", saved.getId(), e);
+		}
+		
+		// 그중 "(선택) 광고 및 마케팅 활용 동의"까지 체크한 사람에게는 곧바로 커뮤니티 가입 유도 메일을
+		// 1통 더 보낸다. 체크 안 했으면(기본값) 여기서 끝 - 나중에 설정 화면에서 토글을 켜면 그때 별도로
+		// 동의 확인 메일 1통만 보낸다 (아래 updateNotificationPreference 참고).
+		if (saved.isMarketingConsent()) {
+			try {
+				marketingConsentEmailService.sendCommunityInviteEmail(saved);
+			} catch (Exception e) {
+				log.error("[광고성 정보 알림] 커뮤니티 가입 유도 메일 발송 실패: user={}", saved.getId(), e);
+			}
+		}
+		
+		return saved;
 	}
 	
 	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
@@ -142,6 +169,29 @@ public class UserService {
 	@Transactional
 	public void withdraw(User user) {
 		user.withdraw();
+	}
+
+	// [설정 - 이벤트·혜택 알림] type: marketing(광고성 정보) / email(커뮤니티 활동 이메일) / night(야간 알림)
+	@Transactional
+	public void updateNotificationPreference(User user, String type, boolean enabled) {
+		switch (type) {
+			case "marketing" -> {
+				user.changeMarketingConsent(enabled);
+				// [광고성 정보 알림] 데모용 - 가입 때 체크를 안 했거나 소셜 계정으로 가입해서 동의값이
+				// 없던 사람이, 여기 설정 화면에서 토글을 켜는 순간(=enabled) 동의 확인 메일 1통만 보낸다.
+				// (가입 때 이미 체크해서 signup()에서 메일을 보낸 경우는 이 메서드를 타지 않으므로 안 겹침)
+				if (enabled) {
+					try {
+						marketingConsentEmailService.sendMarketingConsentConfirmedEmail(user);
+					} catch (Exception e) {
+						log.error("[광고성 정보 알림] 설정 화면 동의 확인 메일 발송 실패: user={}", user.getId(), e);
+					}
+				}
+			}
+			case "email" -> user.changeCommunityActivityEmailEnabled(enabled);
+			case "night" -> user.changeNightNotificationAllowed(enabled);
+			default -> throw new IllegalArgumentException("알 수 없는 알림 종류입니다.");
+		}
 	}
 
 	// [AUTH-10] 소셜 연동 해제. 비밀번호는 건드리지 않는다 - User.unlinkSocialProvider() 참고.

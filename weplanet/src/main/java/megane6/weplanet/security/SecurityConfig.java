@@ -57,6 +57,7 @@ public class SecurityConfig {
             "/shop/**",
             "/membership",
             "/partnership",
+            "/policy/**",
             "/css/**",
             "/js/**",
             "/img/**",

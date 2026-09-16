@@ -20,6 +20,8 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 	
 	List<CommunityMember> findByFanId(Long fanId);
 
+	List<CommunityMember> findByArtistId(Long artistId);
+
 	long countByArtistId(Long artistId);
 	
 	@Query("""

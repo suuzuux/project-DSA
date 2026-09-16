@@ -25,4 +25,18 @@ public class AsyncConfig {
 		executor.initialize();
 		return executor;
 	}
+
+	// [이벤트·혜택 알림] 게시글/공지/라이브 시작 시 팔로워에게 이메일을 보내는 작업 전용 풀.
+	// 팔로워 수가 많으면 순차 발송(JavaMailSender는 건당 SMTP 호출이라 순차 처리)이 오래 걸릴 수 있어서
+	// aiFanExecutor(AI 채팅용, 큐 20)와는 분리했다. 큐를 더 넉넉하게 잡아둠.
+	@Bean(name = "communityNotifyExecutor")
+	public Executor communityNotifyExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(2);
+		executor.setMaxPoolSize(4);
+		executor.setQueueCapacity(100);
+		executor.setThreadNamePrefix("community-notify-");
+		executor.initialize();
+		return executor;
+	}
 }

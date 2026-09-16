@@ -105,6 +105,25 @@ public class User {
 	
 	@Column(name = "provider_id", length = 255)
 	private String providerId;		// 소셜 플랫폼 고유 ID (연동 없으면 null)
+
+	// [설정 - 이벤트·혜택 알림] 광고성 정보(이벤트/혜택/신상품 등) 수신 동의. 기본값 false(미동의).
+	// 회원가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스와 같은 값을 공유한다 - 가입 때 정한 값이
+	// 곧바로 설정 화면에 반영되고, 설정 화면에서 바꾸면 그게 최종값이 된다.
+	@Column(name = "marketing_consent", nullable = false)
+	private boolean marketingConsent;
+
+	// [설정 - 이벤트·혜택 알림] 내가 가입(CommunityMember)한 커뮤니티 아티스트의 새 게시글/공지/라이브 시작을
+	// 이메일로 받을지. marketingConsent(광고 동의)와는 별개의 값 - 이건 광고가 아니라 가입한 아티스트의
+	// 실제 활동 소식이라 독립적으로 켜고 끌 수 있게 했다. 기본값 false.
+	// (팔로우(GroupFollow)는 About 위젯 전용 기능이라 여기 기준이 아님 - 게시판 접근 권한/기존 벨 알림과
+	// 동일하게 "가입" 기준으로 맞춤)
+	@Column(name = "community_activity_email_enabled", nullable = false)
+	private boolean communityActivityEmailEnabled;
+
+	// [설정 - 이벤트·혜택 알림] 오후 9시~오전 8시(KST)에도 알림을 받을지. 기본값 false.
+	// CommunityActivityNotifier가 이메일 발송 직전에 이 값을 확인해서, 꺼져 있으면 야간 시간대엔 건너뛴다.
+	@Column(name = "night_notification_allowed", nullable = false)
+	private boolean nightNotificationAllowed;
 	
 	private User(String username, String password, String realName, String nickname, String email, Role role, AuthProvider provider, String providerId) {
 		this.username = username;
@@ -259,5 +278,18 @@ public class User {
 
 	public Long agencyId() {
 		return agency == null ? null : agency.getId();
+	}
+
+	// [설정 - 이벤트·혜택 알림] 토글 클릭 시 서버가 최종값을 확정한다 (화면 상태를 그대로 믿지 않음).
+	public void changeMarketingConsent(boolean consent) {
+		this.marketingConsent = consent;
+	}
+
+	public void changeCommunityActivityEmailEnabled(boolean enabled) {
+		this.communityActivityEmailEnabled = enabled;
+	}
+
+	public void changeNightNotificationAllowed(boolean allowed) {
+		this.nightNotificationAllowed = allowed;
 	}
 }

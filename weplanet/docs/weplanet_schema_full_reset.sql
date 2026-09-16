@@ -22,6 +22,13 @@
 --     LOCAL 값 삭제 (연동 없음 = NULL), DEFAULT 'LOCAL' 제거, ck_users_provider에서 LOCAL 제외
 --     (기존 데이터는 UPDATE users SET provider = NULL WHERE provider = 'LOCAL'; 로 정리)
 -- ------------------------------------------------------------
+-- 수정: 2026-09-16 (SETTINGS-01, 이벤트·혜택 알림 설정)
+--   - users.marketing_consent : 광고성 정보 수신 동의. 회원가입 화면 "(선택) 광고 및 마케팅 활용 동의"
+--     체크박스와 같은 값을 공유함 (가입 시 반영, 설정 화면에서 다시 변경 가능)
+--   - users.community_activity_email_enabled : 가입(community_members)한 아티스트의 새 게시글/공지/
+--     라이브 시작을 이메일로 받을지. marketing_consent와는 별개의 값
+--   - users.night_notification_allowed : 오후 9시~오전 8시(KST)에도 위 이메일을 받을지
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -152,6 +159,9 @@ CREATE TABLE `users` (
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '탈퇴(soft delete) 시각',
   `provider` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '연동된 소셜 provider: GOOGLE/KAKAO/LINE (연동 없으면 NULL)',
   `provider_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소셜 플랫폼 고유 ID (LOCAL 가입자는 NULL)',
+  `marketing_consent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '광고성 정보 수신 동의 (회원가입 체크박스와 공유)',
+  `community_activity_email_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT '가입한 아티스트 활동(게시글/공지/라이브) 이메일 수신 여부',
+  `night_notification_allowed` tinyint(1) NOT NULL DEFAULT '0' COMMENT '오후 9시~오전 8시(KST) 알림 수신 여부',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
   UNIQUE KEY `uk_users_email` (`email`),
