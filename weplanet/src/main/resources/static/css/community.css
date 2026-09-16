@@ -81,10 +81,7 @@
   color: var(--wp-brand);
 }
 
-.community-top__right .icon-btn .icon {
-  width: 20px;
-  height: 20px;
-}
+/* 아이콘 크기는 메인 헤더(.icon = 1em)와 동일하게 둔다 - 따로 키우지 않음 */
 
 .community-top__left a.home-link {
   width: 36px;

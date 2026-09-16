@@ -1743,3 +1743,9 @@ p {
 .comment-scroll--artist {
   max-height: 240px;
 }
+
+/* ---------- 테마 토글 ---------- */
+/* 라이트일 땐 해, 다크일 땐 달만 보이게 */
+[data-theme-icon="dark"] { display: none; }
+:root[data-theme="dark"] [data-theme-icon="dark"] { display: block; }
+:root[data-theme="dark"] [data-theme-icon="light"] { display: none; }

@@ -60,4 +60,42 @@
   /* ---------- Elevation (그림자 최소화) ---------- */
   --wp-shadow: 0 1px 0 rgba(20, 24, 31, 0.06);
   --wp-shadow-modal: 0 16px 48px rgba(20, 24, 31, 0.18);
+
+  color-scheme: light;
+}
+
+/* ============================================================
+ * 다크 모드
+ * ------------------------------------------------------------
+ * <html data-theme="dark"> 가 붙으면 위 토큰 값만 갈아끼운다.
+ * 토큰을 쓰는 화면은 자동으로 따라오고, 색을 직접 박아넣은 곳은
+ * 개별로 손봐야 한다.
+ * ============================================================ */
+:root[data-theme="dark"] {
+  --wp-ink: #e9ebef;
+  --wp-ink-soft: #bcc2cc;
+  --wp-muted: #8d95a2;
+  --wp-faint: #6c737e;
+  --wp-paper: #14171c;
+  --wp-surface: #1c2027;
+  --wp-hairline: #2b3038;
+  --wp-line: #3a414c;
+
+  /* 어두운 배경에서도 읽히도록 브랜드 블루를 한 단계 밝게 */
+  --wp-brand: #4d7fd0;
+  --wp-brand-dark: #6b97e0;
+  --wp-brand-soft: #1d2838;
+  --wp-brand-tint: #35507d;
+  --wp-accent: #d9794a;
+  --wp-accent-soft: #2f2119;
+
+  --wp-danger: #ef8279;
+  --wp-danger-soft: #331e1c;
+  --wp-success: #45b98a;
+  --wp-live: #f2607e;
+
+  --wp-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --wp-shadow-modal: 0 16px 48px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
 }
