@@ -15,6 +15,7 @@ import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.PostAttachmentRepository;
 import megane6.weplanet.repository.PostRepository;
 import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +38,7 @@ public class PostService {
     private final LikeRepository likeRepository;
     private final BookmarkRepository bookmarkRepository;
     private final CommentRepository commentRepository;
+    private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 아티스트 새 글 → 팔로워 이메일
     private final ReportRepository reportRepository;
     private final CommentReportRepository commentReportRepository;
     private final PostAttachmentRepository postAttachmentRepository;
@@ -98,7 +100,13 @@ public class PostService {
                 .hiddenFromArtist(hiddenFromArtist)
                 .build();
 
-        return postRepository.save(post);
+        Post saved = postRepository.save(post);
+        // [이벤트·혜택 알림] 아티스트 커뮤니티 게시판(ARTIST)에 새 글이 올라온 경우에만 팔로워에게 알림.
+        // 팬 게시판(FAN) 글이나 artist가 null인 경우(단독 오버로드)는 대상이 아님.
+        if (boardType == BoardType.ARTIST && artist != null) {
+            communityActivityNotifier.notifyNewPost(artist, saved);
+        }
+        return saved;
     }
 
     /**

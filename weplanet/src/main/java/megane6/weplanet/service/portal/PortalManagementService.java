@@ -19,6 +19,7 @@ import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
 import megane6.weplanet.service.FileStorageService;
+import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,6 +53,7 @@ public class PortalManagementService {
     private final CommentReportRepository commentReportRepository;
     private final LiveCommentReportRepository liveCommentReportRepository;
     private final FileStorageService fileStorageService;
+    private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 새 공지 → 팔로워 이메일
 
     public static final int MAX_PINNED = 5;
 
@@ -83,14 +85,21 @@ public class PortalManagementService {
     public PortalNotice saveNotice(User artist, Long noticeId, String title, String content, boolean published, boolean pinned) {
         validateText(title, "제목을 입력해주세요.");
         validateText(content, "본문을 입력해주세요.");
-        PortalNotice notice = noticeId == null
+        boolean isNew = noticeId == null;
+        PortalNotice notice = isNew
                 ? PortalNotice.create(artist, title.trim(), content.trim(), published)
                 : getNotice(artist, noticeId);
         if (noticeId != null) {
             notice.update(title, content, published);
         }
         applyPinState(artist, notice, pinned);
-        return portalNoticeRepository.save(notice);
+        PortalNotice saved = portalNoticeRepository.save(notice);
+        // [이벤트·혜택 알림] 새로 작성 + 바로 공개(published)한 공지에만 팔로워 알림. 기존 공지 수정이거나
+        // 아직 비공개(임시저장) 상태면 대상이 아님 - 수정할 때마다, 또는 공개 전에 메일이 가면 안 됨.
+        if (isNew && published) {
+            communityActivityNotifier.notifyNewNotice(artist, saved);
+        }
+        return saved;
     }
 
     public void reorderPinned(User artist, List<Long> ids) {
