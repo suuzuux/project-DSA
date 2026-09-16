@@ -133,4 +133,9 @@ public interface AdminActionLogRepository
 	long countByTargetType(
 			AdminTargetType targetType
 	);
+	
+	long countByActionInAndCreatedAtGreaterThanEqual(
+			List<AdminActionType> actions,
+			LocalDateTime createdAt
+	);
 }

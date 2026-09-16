@@ -2,10 +2,7 @@ package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.AdminActionLog;
-import megane6.weplanet.domain.entity.enumfolder.ReportReason;
-import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
-import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,8 +65,11 @@ public class AdminDashboardService {
 		LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 		
 		long resolvedTodayCount =
-				reportRepository.countByResolvedAtAfter(todayStart)
-						+ commentReportRepository.countByResolvedAtAfter(
+				adminActionLogRepository.countByActionInAndCreatedAtGreaterThanEqual(
+						List.of(
+								AdminActionType.REPORT_RESOLVE,
+								AdminActionType.REPORT_DISMISS
+						),
 						todayStart
 				);
 		
