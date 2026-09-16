@@ -19,10 +19,12 @@ public record ScheduleEventView(
 		String location,
 		String ticketUrl,
 		String date,
-		String time
+		String time,
+		String createdAt
 ) {
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+	private static final DateTimeFormatter CREATED = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 	public static ScheduleEventView from(ArtistSchedule schedule) {
 		return from(schedule, schedule.getScheduleAt());
@@ -30,6 +32,7 @@ public record ScheduleEventView(
 
 	public static ScheduleEventView from(ArtistSchedule schedule, LocalDateTime occurrenceAt) {
 		ScheduleCategory category = schedule.getCategory();
+		LocalDateTime created = schedule.getCreatedAt() != null ? schedule.getCreatedAt() : occurrenceAt;
 		return new ScheduleEventView(
 				schedule.getId(),
 				schedule.getArtist().getId(),
@@ -42,7 +45,8 @@ public record ScheduleEventView(
 				schedule.getLocation(),
 				schedule.getTicketUrl(),
 				occurrenceAt.format(DATE),
-				occurrenceAt.format(TIME)
+				occurrenceAt.format(TIME),
+				created.format(CREATED)
 		);
 	}
 

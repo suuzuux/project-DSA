@@ -49,20 +49,6 @@
               <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
             </select>
           </label>
-
-          <button type="button"
-                  class="btn btn--primary btn--sm"
-                  data-modal-open="projectCreateModal"
-                  th:if="${!isOwnCommunity}"
-                  sec:authorize="hasAnyRole('FAN','ARTIST')">
-            프로젝트 등록하기
-          </button>
-
-          <a class="btn btn--primary btn--sm"
-             th:href="@{/login}"
-             sec:authorize="isAnonymous()">
-            로그인 후 등록
-          </a>
         </div>
       </div>
 
