@@ -14,6 +14,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.ShopCartService;
 import megane6.weplanet.service.ShopService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.shop.ShopCheckoutService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -40,6 +41,7 @@ public class ShopController {
 
 	private final ShopService shopService;
 	private final ShopCartService shopCartService;
+	private final ShopCheckoutService shopCheckoutService;
 	private final UserRepository userRepository;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
@@ -126,26 +128,73 @@ public class ShopController {
 			return Map.of("ok", false, "message", "로그인이 필요합니다.");
 		}
 		User me = userResolver.requireAuthenticated(principal);
-		shopCartService.addItem(me, productId, quantity);
-		ShopCartSummaryView cart = shopCartService.getCartSummary(me);
-		Map<String, Object> body = new LinkedHashMap<>();
-		body.put("ok", true);
-		body.put("message", "장바구니에 담았습니다.");
-		body.put("cartCount", shopCartService.countItems(me));
-		body.put("addedProductId", productId);
-		body.put("cart", toCartJson(cart));
-		return body;
+		try {
+			shopCartService.addItem(me, productId, quantity);
+			ShopCartSummaryView cart = shopCartService.getCartSummary(me);
+			Map<String, Object> body = new LinkedHashMap<>();
+			body.put("ok", true);
+			body.put("message", "장바구니에 담았습니다.");
+			body.put("cartCount", shopCartService.countItems(me));
+			body.put("addedProductId", productId);
+			body.put("cart", toCartJson(cart));
+			return body;
+		} catch (IllegalArgumentException e) {
+			return Map.of("ok", false, "message", e.getMessage());
+		}
+	}
+
+	@PostMapping("/shop/cart/checkout")
+	public String checkoutCart(@AuthenticationPrincipal AuthenticatedUser principal,
+	                           RedirectAttributes redirectAttributes) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User me = userResolver.requireAuthenticated(principal);
+		try {
+			shopCheckoutService.checkout(me);
+			redirectAttributes.addFlashAttribute("message", "주문이 완료되었습니다.");
+			return "redirect:/shop/cart";
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			return "redirect:/shop/cart";
+		}
+	}
+
+	@PostMapping("/shop/products/{productId}/buy")
+	public String buyNow(@PathVariable String productId,
+	                     @RequestParam(defaultValue = "1") int quantity,
+	                     @RequestParam(required = false, defaultValue = "global") String from,
+	                     @AuthenticationPrincipal AuthenticatedUser principal,
+	                     RedirectAttributes redirectAttributes) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User me = userResolver.requireAuthenticated(principal);
+		String back = "redirect:/shop/products/" + productId + "?from=" + from;
+		try {
+			shopCheckoutService.buyNow(me, productId, quantity);
+			redirectAttributes.addFlashAttribute("message", "주문이 완료되었습니다.");
+			return back;
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			return back;
+		}
 	}
 
 	@PostMapping("/shop/cart/{itemId}/update")
 	public String updateCartQuantity(@PathVariable Long itemId,
 	                                 @RequestParam int quantity,
-	                                 @AuthenticationPrincipal AuthenticatedUser principal) {
+	                                 @AuthenticationPrincipal AuthenticatedUser principal,
+	                                 RedirectAttributes redirectAttributes) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
 		User me = userResolver.requireAuthenticated(principal);
-		shopCartService.updateQuantity(me, itemId, quantity);
+		try {
+			shopCartService.updateQuantity(me, itemId, quantity);
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("message", e.getMessage());
+		}
 		return "redirect:/shop/cart";
 	}
 
@@ -236,6 +285,8 @@ public class ShopController {
 		map.put("categoryLabel", product.categoryLabel());
 		map.put("membershipOnly", product.membershipOnly());
 		map.put("formattedPrice", product.formattedPrice());
+		map.put("stockQuantity", product.stockQuantity());
+		map.put("soldOut", product.soldOut());
 		return map;
 	}
 }

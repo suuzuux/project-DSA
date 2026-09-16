@@ -2,15 +2,17 @@ package megane6.weplanet.service;
 
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.ShopProductView;
+import megane6.weplanet.domain.entity.Goods;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.repository.GoodsRepository;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -22,45 +24,53 @@ import java.util.Set;
 public class ShopService {
 
 	private final UserRepository userRepository;
-	private final Map<Long, List<ShopProductView>> catalogByArtist = new LinkedHashMap<>();
+	private final GoodsRepository goodsRepository;
+	private final PortalManagementService portalManagementService;
 
-	public ShopService(UserRepository userRepository) {
+	public ShopService(UserRepository userRepository,
+					   GoodsRepository goodsRepository,
+					   PortalManagementService portalManagementService) {
 		this.userRepository = userRepository;
+		this.goodsRepository = goodsRepository;
+		this.portalManagementService = portalManagementService;
 	}
 
 	public List<ArtistCardView> getShopArtists() {
-		return userRepository.findByRole(Role.ARTIST).stream()
-				.map(ArtistCardView::from)
+		List<User> artists = userRepository.findByRole(Role.ARTIST);
+		Map<Long, String> logos = portalManagementService.logoImageUrlsByArtistIds(
+				artists.stream().map(User::getId).toList());
+		return artists.stream()
+				.map(user -> ArtistCardView.from(user, logos.get(user.getId())))
 				.toList();
 	}
 
 	public Optional<ArtistCardView> findArtist(Long artistId) {
 		return userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.map(ArtistCardView::from);
+				.map(user -> ArtistCardView.from(user, portalManagementService.findLogoImageUrl(user)));
 	}
 
 	public List<ShopProductView> getProducts(Long artistId) {
-		ensureCatalog();
-		if (artistId == null) {
-			return catalogByArtist.values().stream()
-					.flatMap(List::stream)
-					.toList();
-		}
-		return catalogByArtist.getOrDefault(artistId, List.of());
+		List<Goods> goods = artistId == null
+				? goodsRepository.findByStatusAndDeletedAtIsNullOrderBySortOrderAscIdAsc(GoodsStatus.ON_SALE)
+				: goodsRepository.findByArtist_IdAndStatusAndDeletedAtIsNullOrderBySortOrderAscIdAsc(
+				artistId, GoodsStatus.ON_SALE);
+		Map<Long, String> logos = portalManagementService.logoImageUrlsByArtistIds(
+				goods.stream().map(g -> g.getArtist().getId()).distinct().toList());
+		return goods.stream().map(g -> toView(g, logos.get(g.getArtist().getId()))).toList();
 	}
 
 	public Optional<ShopProductView> findProduct(String productId) {
-		ensureCatalog();
-		return catalogByArtist.values().stream()
-				.flatMap(List::stream)
-				.filter(product -> product.id().equals(productId))
-				.findFirst();
+		Long id = parseId(productId);
+		if (id == null) {
+			return Optional.empty();
+		}
+		return goodsRepository.findByIdAndDeletedAtIsNull(id)
+				.filter(g -> g.getStatus() == GoodsStatus.ON_SALE)
+				.map(g -> toView(g, portalManagementService.findLogoImageUrl(g.getArtist())));
 	}
 
-	/** 장바구니 추천 — 담긴 상품 제외, 부족하면 전체에서 채움 */
 	public List<ShopProductView> getRecommendedProducts(Collection<String> excludeProductIds, int limit) {
-		ensureCatalog();
 		List<ShopProductView> all = getProducts(null);
 		Set<String> exclude = excludeProductIds == null
 				? Set.of()
@@ -74,67 +84,34 @@ public class ShopService {
 		return candidates.stream().limit(limit).toList();
 	}
 
-	private void ensureCatalog() {
-		if (!catalogByArtist.isEmpty()) {
-			return;
-		}
-		for (User artist : userRepository.findByRole(Role.ARTIST)) {
-			catalogByArtist.put(artist.getId(), productsFor(artist));
-		}
+	private static ShopProductView toView(Goods goods, String logoUrl) {
+		ArtistCardView card = ArtistCardView.from(goods.getArtist(), logoUrl);
+		return new ShopProductView(
+				String.valueOf(goods.getId()),
+				goods.getArtist().getId(),
+				card.nickname(),
+				card.logo(),
+				goods.getName(),
+				goods.getPrice(),
+				"md",
+				"MD · 굿즈",
+				false,
+				null,
+				goods.getThumbnailUrl(),
+				goods.getDescription(),
+				goods.getOfficialUrl(),
+				goods.getStockQuantity()
+		);
 	}
 
-	private List<ShopProductView> productsFor(User artist) {
-		ArtistCardView card = ArtistCardView.from(artist);
-		String name = card.nickname();
-		List<ShopProductView> products = new ArrayList<>();
-		products.add(new ShopProductView(
-				"md-" + artist.getId() + "-lightstick",
-				artist.getId(),
-				name,
-				card.logo(),
-				"2026 " + name + " OFFICIAL LIGHT STICK Ver.2",
-				59000,
-				"md",
-				"MD · 굿즈",
-				false,
-				null
-		));
-		products.add(new ShopProductView(
-				"md-" + artist.getId() + "-photocard",
-				artist.getId(),
-				name,
-				card.logo(),
-				"멤버십 전용 포토카드 세트 (8종)",
-				28000,
-				"membership",
-				"멤버십 전용",
-				true,
-				null
-		));
-		products.add(new ShopProductView(
-				"md-" + artist.getId() + "-tshirt",
-				artist.getId(),
-				name,
-				card.logo(),
-				"2026 " + name + " TOUR 티셔츠 (Black)",
-				45000,
-				"md",
-				"MD · 굿즈",
-				false,
-				null
-		));
-		products.add(new ShopProductView(
-				"digital-" + artist.getId() + "-package",
-				artist.getId(),
-				name,
-				card.logo(),
-				name + " MAP Vol.1 디지털 패키지",
-				12000,
-				"digital",
-				"디지털",
-				false,
-				"다운로드"
-		));
-		return products;
+	private static Long parseId(String productId) {
+		if (productId == null || productId.isBlank()) {
+			return null;
+		}
+		try {
+			return Long.parseLong(productId.trim());
+		} catch (NumberFormatException ex) {
+			return null;
+		}
 	}
 }

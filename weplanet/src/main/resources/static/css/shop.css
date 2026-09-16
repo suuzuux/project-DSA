@@ -171,6 +171,65 @@
   left: 10px;
 }
 
+/* 공통 썸네일 + SOLD OUT (모든 샵·커뮤니티 동일) */
+.shop-thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--wp-muted);
+}
+
+.shop-thumb__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shop-thumb.is-sold-out .shop-thumb__img {
+  filter: grayscale(1);
+}
+
+.shop-sold-out-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.38);
+  color: #fff;
+  font-weight: 800;
+  font-size: var(--wp-fs-sm);
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.shop-sold-out-overlay--compact {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+
+.product-card__cart-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.product-card__stock {
+  margin-top: 6px;
+  font-size: var(--wp-fs-xs);
+  font-weight: 700;
+}
+
+.product-card__stock--low {
+  color: #c45c26;
+}
+
+.product-card__stock--sold {
+  color: var(--wp-muted);
+}
+
 /* ---------- 추천 상품 마퀴 ---------- */
 .shop-recommend {
   margin-top: 48px;
@@ -318,6 +377,7 @@
 }
 
 .product-detail__gallery {
+  position: relative;
   aspect-ratio: 1;
   background: linear-gradient(145deg, #e8eeed, #ddd5c8);
   border-radius: var(--wp-radius);

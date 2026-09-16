@@ -37,8 +37,11 @@
        style="display:inline-block;"
        th:href="${fromCommunity} ? @{/shop/community/{id}(id=${product.artistId()})} : @{/shop(artistId=${product.artistId()})}">← Shop 목록</a>
 
-    <article class="product-detail">
-      <div class="product-detail__gallery">상품 이미지 영역</div>
+    <p th:if="${message}" class="alert alert--success mb-16" th:text="${message}">알림</p>
+
+    <article class="product-detail" th:classappend="${product.soldOut()} ? ' is-sold-out'">
+      <th:block th:replace="~{fragments/shop-product-thumb :: shopThumb(
+        ${product}, null, 'product-detail__gallery', false)}"></th:block>
 
       <div class="product-detail__info">
         <p class="text-sm" style="color:var(--wp-brand);font-weight:700;">
@@ -51,6 +54,10 @@
           <span th:text="${product.formattedPrice()}">₩ 0</span>
           <small th:if="${product.priceSuffix() != null}" th:text="${product.priceSuffix()}">다운로드</small>
         </p>
+        <p th:if="${product.lowStock()}"
+           class="product-card__stock product-card__stock--low"
+           th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</p>
+        <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
 
         <div class="membership-notice" th:if="${product.membershipOnly()}">
           <strong>멤버십 전용 상품</strong><br />
@@ -59,28 +66,43 @@
         </div>
 
         <p class="product-detail__desc"
+           style="white-space:pre-wrap;"
+           th:if="${product.description() != null and !#strings.isEmpty(product.description())}"
+           th:text="${product.description()}">상품 설명</p>
+        <p class="product-detail__desc"
+           th:unless="${product.description() != null and !#strings.isEmpty(product.description())}"
            th:text="${product.artistName() + ' 공식 굿즈입니다. WePlaNet Shop에서 안전하게 구매할 수 있습니다.'}">
           상품 설명
         </p>
 
-        <div class="product-detail__options">
+        <div class="product-detail__options" th:unless="${product.soldOut()}">
           <label for="qty">수량</label>
-          <select class="form-select" id="qty" name="quantity" form="addToCartForm" style="max-width:120px;">
-            <option th:each="n : ${#numbers.sequence(1, 5)}" th:value="${n}" th:text="${n}">1</option>
-          </select>
+          <input class="form-input" id="qty" name="quantity" type="number" min="1"
+                 th:max="${product.stockQuantity()}"
+                 form="addToCartForm" value="1" style="max-width:120px;" />
+          <p class="text-xs text-muted mt-8">재고 범위 내에서 수량 제한 없이 주문할 수 있습니다.</p>
         </div>
 
         <div class="stack">
-          <form id="addToCartForm" th:action="@{/shop/cart/add}" method="post">
+          <form id="addToCartForm" th:action="@{/shop/cart/add}" method="post"
+                th:unless="${product.soldOut()}">
             <input type="hidden" name="productId" th:value="${product.id()}" />
             <button type="submit" class="btn btn--primary btn--block btn--lg">
               장바구니 담기
             </button>
           </form>
-          <button type="button" class="btn btn--accent btn--block"
-                  onclick="WePlaNet.alert('결제 페이지 (목업)')">
-            바로 구매
-          </button>
+          <form th:action="@{/shop/products/{id}/buy(id=${product.id()})}" method="post"
+                th:unless="${product.soldOut()}">
+            <input type="hidden" name="from" th:value="${fromCommunity} ? 'community' : 'global'" />
+            <input type="hidden" name="quantity" id="buyQty" value="1" />
+            <button type="submit" class="btn btn--accent btn--block">바로 구매</button>
+          </form>
+          <button type="button" class="btn btn--accent btn--block" disabled
+                  th:if="${product.soldOut()}">품절</button>
+          <a class="btn btn--ghost btn--block"
+             th:if="${product.officialUrl() != null and !#strings.isEmpty(product.officialUrl())}"
+             th:href="${product.officialUrl()}"
+             target="_blank" rel="noopener noreferrer">공식 판매처</a>
           <a class="btn btn--ghost btn--block"
              th:href="@{/community/{id}/highlight(id=${product.artistId()})}"
              th:text="${product.artistName() + ' 커뮤니티로'}">커뮤니티로</a>
@@ -93,6 +115,16 @@
     window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
     window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
+    (function () {
+      var qty = document.getElementById("qty");
+      var buyQty = document.getElementById("buyQty");
+      if (qty && buyQty) {
+        buyQty.value = qty.value;
+        qty.addEventListener("change", function () {
+          buyQty.value = qty.value;
+        });
+      }
+    })();
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>

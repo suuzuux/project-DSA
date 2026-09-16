@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${goods} != null ? '굿즈 수정 | Artist Portal' : '굿즈 등록 | Artist Portal'">굿즈 등록 | Artist Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+</head>
+<body>
+  <div class="portal-shell"
+       th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
+    <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
+
+    <main class="portal-main">
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('굿즈 등록')}"></th:block>
+      <th:block th:if="${artistSelected}">
+      <div class="portal-main__head">
+        <h1 th:text="${goods} != null ? '굿즈 수정' : '굿즈 등록'">굿즈 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/goods}">← 뒤로 가기</a>
+      </div>
+
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+      <form class="settings-block goods-form" style="max-width:800px;" id="goodsForm"
+            th:action="${goods} != null ? @{/portal/goods/{id}(id=${goods.id})} : @{/portal/goods}"
+            method="post"
+            enctype="multipart/form-data">
+        <input type="hidden" name="categoryOptionsJson" id="categoryOptionsJson"
+               th:value="${categoryOptionsJson}" />
+
+        <div class="form-group">
+          <label class="form-label" for="name">상품명</label>
+          <input class="form-input" id="name" name="name" required maxlength="200"
+                 th:value="${goods != null ? goods.name : ''}"
+                 placeholder="상품명을 입력해주세요." />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">카테고리 <span class="text-xs text-muted">(복수 선택)</span></label>
+          <div class="goods-category-chips" id="goodsCategoryChips" role="group" aria-label="굿즈 카테고리">
+            <button type="button" th:each="cat : ${goodsCategoryTypes}"
+                    class="goods-cat-chip"
+                    th:classappend="${cat.chipClass}"
+                    th:attr="data-cat-chip=${cat.name()}"
+                    th:text="${cat.label}">의류</button>
+          </div>
+        </div>
+
+        <div class="form-group" id="goodsCategoryOptionsWrap">
+          <label class="form-label">카테고리별 옵션</label>
+          <div id="goodsCategoryOptions" class="goods-category-options"></div>
+          <p class="text-xs text-muted mt-8">카테고리를 선택하면 아래에 맞는 옵션 입력란이 나타납니다.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="goodsDescription">상세 설명</label>
+          <textarea id="goodsDescription" name="description" hidden maxlength="20000"
+                    th:text="${goods != null ? goods.description : ''}"></textarea>
+          <div id="goodsDescriptionEditor"></div>
+          <p class="text-xs text-muted mt-8">팬 게시글과 동일한 Toast UI 에디터 · 툴바에서 이미지 삽입 가능</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="price">가격 (원)</label>
+          <input class="form-input" id="price" name="price" type="number" min="0" required
+                 th:value="${goods != null ? goods.price : 0}" style="max-width:200px;" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="stockQuantity">재고 수량</label>
+          <input class="form-input" id="stockQuantity" name="stockQuantity" type="number" min="0" required
+                 th:value="${goods != null ? goods.stockQuantity : 0}" style="max-width:200px;" />
+          <p class="text-xs text-muted mt-8">0이면 유저 샵에 품절(SOLD OUT)로 표시됩니다.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="thumbnail">썸네일 이미지</label>
+          <div th:if="${goods != null and goods.thumbnailUrl != null}" class="mb-8">
+            <img th:src="@{'/uploads/' + ${goods.thumbnailUrl}}"
+                 alt="현재 썸네일"
+                 style="width:120px;height:120px;object-fit:cover;border-radius:8px;" />
+          </div>
+          <input class="form-input" id="thumbnail" name="thumbnail" type="file"
+                 accept="image/jpeg,image/png,image/webp,image/gif,.jpg,.jpeg,.png,.webp,.gif"
+                 th:required="${goods == null}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="officialUrl">공식 판매처 URL</label>
+          <input class="form-input" id="officialUrl" name="officialUrl" type="url" maxlength="500"
+                 th:value="${goods != null ? goods.officialUrl : ''}"
+                 placeholder="https://" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="status">상태</label>
+          <select class="form-select" id="status" name="status" style="max-width:200px;">
+            <option th:each="s : ${goodsStatuses}"
+                    th:value="${s.name()}"
+                    th:text="${s.label}"
+                    th:selected="${goods != null ? goods.status == s : s.name() == 'ON_SALE'}">판매중</option>
+          </select>
+        </div>
+
+        <div class="flex-center" style="justify-content:flex-end;">
+          <button type="submit" class="btn btn--primary"
+                  th:text="${goods} != null ? '수정 저장' : '바로등록'">바로등록</button>
+        </div>
+      </form>
+      </th:block>
+    </main>
+  </div>
+  <script th:inline="javascript">
+    window.__GOODS_EDITOR_IMAGE_URL__ = /*[[@{/portal/goods/editor-image}]]*/ "/portal/goods/editor-image";
+  </script>
+  <script th:src="@{/js/portal-goods-form.js}"></script>
+  <script>
+    (function () {
+      var contentEl = document.getElementById("goodsDescription");
+      var editorEl = document.getElementById("goodsDescriptionEditor");
+      var form = document.getElementById("goodsForm");
+      if (!contentEl || !editorEl || !window.toastui) return;
+
+      var editor = new toastui.Editor({
+        el: editorEl,
+        height: "320px",
+        initialEditType: "wysiwyg",
+        previewStyle: "vertical",
+        initialValue: contentEl.value || "",
+        placeholder: "상품 상세 설명을 입력하세요 …",
+        toolbarItems: [
+          ["heading", "bold", "italic", "strike"],
+          ["hr", "quote"],
+          ["ul", "ol", "task", "indent", "outdent"],
+          ["table", "link", "image"],
+          ["code", "codeblock"]
+        ],
+        hooks: {
+          addImageBlobHook: function (blob, callback) {
+            var fd = new FormData();
+            fd.append("image", blob);
+            fetch(window.__GOODS_EDITOR_IMAGE_URL__ || "/portal/goods/editor-image", {
+              method: "POST",
+              body: fd
+            })
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                if (data && data.url) callback(data.url, "상품 설명 이미지");
+              })
+              .catch(function () {});
+          }
+        }
+      });
+
+      editor.on("change", function () {
+        contentEl.value = editor.getMarkdown();
+      });
+
+      form.addEventListener("submit", function () {
+        contentEl.value = editor.getMarkdown();
+      });
+    })();
+  </script>
+</body>
+</html>
