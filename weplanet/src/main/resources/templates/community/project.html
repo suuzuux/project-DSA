@@ -15,7 +15,7 @@
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
   <header th:replace="~{community/fragments/layout :: header}"></header>

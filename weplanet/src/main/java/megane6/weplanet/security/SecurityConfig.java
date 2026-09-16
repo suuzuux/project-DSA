@@ -43,6 +43,8 @@ public class SecurityConfig {
             "/admin/login",
             "/api/schedules",
             "/api/notifications",
+            // 햄버거 메뉴 커뮤니티 목록 - 비로그인도 전체 커뮤니티는 볼 수 있다
+            "/api/side-menu/communities",
             "/api/artists",
             "/posts/**",
             "/chat/**",

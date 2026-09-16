@@ -517,7 +517,7 @@
   height: 30px;
   border: none;
   border-radius: 999px;
-  background: #fff;
+  background: var(--wp-surface);
   cursor: pointer;
   display: grid;
   place-items: center;

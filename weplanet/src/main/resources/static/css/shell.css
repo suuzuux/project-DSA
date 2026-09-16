@@ -81,6 +81,15 @@
   margin-bottom: 10px;
 }
 
+/* 커뮤니티 목록 영역이 남은 공간을 차지해서, 아래 메뉴(컬렉션·공지사항·Shop·설정)가
+   목록 길이와 상관없이 항상 드로어 맨 아래에 붙게 한다. */
+#drawerCommunities {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .drawer-menu__communities {
   display: flex;
   flex-direction: column;
@@ -88,6 +97,13 @@
   margin-bottom: 24px;
   flex: 1;
   overflow: auto;
+  /* 목록이 길면 스크롤은 되되 스크롤바는 보이지 않게 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.drawer-menu__communities::-webkit-scrollbar {
+  display: none;
 }
 
 .drawer-menu__communities a {
@@ -419,7 +435,7 @@
 .dm-msg__bubble {
   padding: 10px 12px;
   border-radius: 14px;
-  background: #fff;
+  background: var(--wp-surface);
   border: 1px solid var(--wp-hairline);
   font-size: var(--wp-fs-sm);
   line-height: 1.45;

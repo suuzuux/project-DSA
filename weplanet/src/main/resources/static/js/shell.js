@@ -91,25 +91,26 @@
   <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
     }
 
+    // 가입 여부와 상관없이 목록 아래에 늘 두는 탐색 링크
+    const exploreLink =
+      `<a href="#" data-community-search style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>`;
+
     let html = "";
     const primaryTitle = isArtist ? "내 커뮤니티" : "가입한 커뮤니티";
     if (primaryList.length) {
       html += `<p class="drawer-menu__section-title">${primaryTitle}</p>
-  <div class="drawer-menu__communities">${linksHtml(primaryList)}</div>`;
+  <div class="drawer-menu__communities">${linksHtml(primaryList)}${isArtist ? "" : exploreLink}</div>`;
     } else if (!isArtist) {
       html += `<p class="drawer-menu__section-title">가입한 커뮤니티</p>
   <div class="drawer-menu__communities">
     <p class="text-xs text-muted" style="padding:8px 0;line-height:1.5;">
-      아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입하고 팬으로 참여해보세요!
+      아직 가입한 커뮤니티가 없어요.<br />좋아하는 아티스트 커뮤니티에 가입해보세요!
     </p>
-    <a href="${root}?openSearch=1" style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">커뮤니티 찾아보기 ›</a>
+    ${exploreLink}
   </div>`;
     }
 
-    if (allList.length) {
-      html += `<p class="drawer-menu__section-title">모든 커뮤니티</p>
-  <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
-    }
+    // "모든 커뮤니티" 목록은 메뉴가 길어지기만 해서 뺐다. 탐색은 검색 모달로.
     return html;
   }
 
@@ -133,7 +134,7 @@
     // (로그인해야 쓸 수 있는 메뉴들이라, 눌러봤자 로그인 화면으로 튕기기만 했음)
     const menuBody = isAuthenticated
       ? `${greetBlock}
-  ${communitiesBlock}
+  <div id="drawerCommunities">${communitiesBlock}</div>
 
   <nav class="drawer-menu__nav">
     <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
@@ -296,6 +297,33 @@
   // 헤더에 햄버거가 없으면 brand 앞에 삽입
   ensureMenuToggle();
   ensureAdminPageLink();
+
+  /* ---------------------------------------------------------
+   * 커뮤니티 목록 보충
+   * 페이지가 window.__WEPLANET_*__ 를 안 심어준 경우(공지사항 등)
+   * 서버에서 받아와 메뉴를 다시 그린다. 심어준 페이지는 그대로 둔다.
+   * --------------------------------------------------------- */
+  (function fillCommunitiesIfEmpty() {
+    const joined = window.__WEPLANET_JOINED_ARTISTS__;
+    const others = window.__WEPLANET_OTHER_ARTISTS__;
+    const alreadyHas =
+      (Array.isArray(joined) && joined.length) || (Array.isArray(others) && others.length);
+    if (alreadyHas) return;
+
+    fetch(root + "api/side-menu/communities", { headers: { Accept: "application/json" } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        window.__WEPLANET_JOINED_ARTISTS__ = data.joined || [];
+        window.__WEPLANET_OTHER_ARTISTS__ = data.others || [];
+        window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
+        const box = document.getElementById("drawerCommunities");
+        if (box) box.innerHTML = communitiesBlockHtml();
+      })
+      .catch(() => {
+        /* 목록을 못 받아와도 메뉴 나머지는 그대로 쓸 수 있어야 함 */
+      });
+  })();
 
   // 멤버십 가입 모달(P27)의 실제 가입 폼 action을 현재 커뮤니티 아티스트로 채움
   // (모달 자체는 페이지 공통 삽입이라 서버 쪽 artist.id()를 직접 못 씀 - URL에서 뽑아옴)
@@ -554,4 +582,114 @@
     s.src = src;
     document.body.appendChild(s);
   })();
+
+  /* ---------------------------------------------------------
+   * 커뮤니티 찾아보기
+   * 예전엔 ?openSearch=1 로 메인에 다시 들어가는 링크였다. 주소가 바뀌고
+   * 페이지가 통째로 새로 뜨니 메뉴도 닫혀버려서, 메인 돋보기와 똑같이
+   * 그 자리에서 모달만 띄우도록 바꿨다. 모달이 없는 페이지에는 만들어 넣는다.
+   * --------------------------------------------------------- */
+  function scriptUrl(name) {
+    var current = document.querySelector('script[src*="shell.js"]');
+    return current && current.src
+      ? current.src.replace(/shell\.js(\?.*)?$/, name + "$1")
+      : ((document.body.getAttribute("data-base") || "/") + "js/" + name).replace("//js", "/js");
+  }
+
+  function loadScriptOnce(name) {
+    if (document.querySelector('script[src*="' + name + '"]')) return;
+    var s = document.createElement("script");
+    s.src = scriptUrl(name);
+    document.body.appendChild(s);
+  }
+
+  function appendHtml(html) {
+    var holder = document.createElement("div");
+    holder.innerHTML = html.trim();
+    document.body.appendChild(holder.firstElementChild);
+  }
+
+  function ensureExploreUi() {
+    if (!document.getElementById("communitySearchModal")) {
+      appendHtml(`
+<div class="modal-backdrop" id="communitySearchModal">
+  <div class="modal">
+    <div class="modal__head">
+      <strong class="modal__title">커뮤니티 검색</strong>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <input type="text" id="exploreKeyword" class="form-input" placeholder="아티스트/그룹명 검색" style="margin-bottom:12px;" />
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div>
+        <label class="text-xs text-muted" for="exploreGender">성별</label>
+        <select id="exploreGender" class="form-input">
+          <option value="">전체</option>
+          <option value="MALE">보이그룹/남성</option>
+          <option value="FEMALE">걸그룹/여성</option>
+          <option value="MIXED">혼성</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-muted" for="exploreCategory">직업/카테고리</label>
+        <select id="exploreCategory" class="form-input">
+          <option value="">전체</option>
+          <option value="아이돌">아이돌</option>
+          <option value="배우">배우</option>
+        </select>
+      </div>
+    </div>
+    <button type="button" id="exploreSearchBtn" class="btn btn--primary btn--sm btn--block" style="margin-bottom:12px;">검색</button>
+    <div id="exploreResults" class="rising-grid" style="grid-template-columns:1fr;"></div>
+  </div>
+</div>`);
+    }
+
+    // 검색 결과에서 바로 가입하려면 닉네임 모달도 있어야 한다
+    if (!document.getElementById("communityJoinModal")) {
+      appendHtml(`
+<div class="modal-backdrop" id="communityJoinModal">
+  <div class="modal">
+    <div class="modal__head">
+      <strong class="modal__title">커뮤니티 가입하기</strong>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <p class="mb-24"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>
+    <div class="form-group" id="communityJoinNicknameGroup">
+      <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
+      <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
+      <p class="form-error" id="communityJoinNicknameError"></p>
+      <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
+        커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.
+      </p>
+    </div>
+    <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
+  </div>
+</div>`);
+    }
+
+    loadScriptOnce("community-explore.js");
+    loadScriptOnce("community-join.js");
+  }
+
+  document.addEventListener("click", function (e) {
+    // 드로어에서 만든 모달은 main.js 의 initModals() 가 못 잡으므로 여기서 직접 연다
+    if (e.target.closest("[data-community-search]")) {
+      e.preventDefault();
+      closeMenu();
+      ensureExploreUi();
+      var modal = document.getElementById("communitySearchModal");
+      if (modal) modal.classList.add("is-open");
+      return;
+    }
+    // 우리가 붙인 모달의 닫기 / 배경 클릭
+    var closeBtn = e.target.closest("#communitySearchModal [data-modal-close], #communityJoinModal [data-modal-close]");
+    if (closeBtn) {
+      var back = closeBtn.closest(".modal-backdrop");
+      if (back) back.classList.remove("is-open");
+      return;
+    }
+    if (e.target.id === "communitySearchModal" || e.target.id === "communityJoinModal") {
+      e.target.classList.remove("is-open");
+    }
+  });
 })();

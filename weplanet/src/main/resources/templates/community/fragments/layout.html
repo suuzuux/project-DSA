@@ -145,7 +145,12 @@
       </div>
       <div th:unless="${membershipActive}">
         <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-        <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
+        <!-- 멤버십은 커뮤니티 회원만 살 수 있다. 아직 커뮤니티에 가입하지 않았으면
+             멤버십 결제창 대신 커뮤니티 가입(닉네임) 모달부터 띄운다. -->
+        <button th:if="${!communityJoined}" type="button" class="btn btn--accent btn--block" data-join-btn
+                th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">Membership 가입하기</button>
+        <button th:if="${communityJoined}" type="button" class="btn btn--accent btn--block"
+                data-modal-open="membershipJoinModal">Membership 가입하기</button>
       </div>
     </th:block>
     <th:block sec:authorize="isAuthenticated() and !hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -224,6 +229,9 @@
       <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
       <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
       <p class="form-error" id="communityJoinNicknameError"></p>
+      <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
+        커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.
+      </p>
     </div>
     <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
   </div>

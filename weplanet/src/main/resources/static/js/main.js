@@ -22,6 +22,43 @@
   const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 
   /* ---------------------------------------------------------
+   * 라이트 / 다크 테마
+   * - 고른 값은 localStorage에 남겨서 다음 방문/다른 페이지에서도 유지
+   * - 고른 적이 없으면 OS 설정(prefers-color-scheme)을 따라간다
+   * --------------------------------------------------------- */
+  const THEME_KEY = "weplanet-theme";
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch (e) {
+      /* 시크릿 모드 등에서 저장이 막혀도 화면 전환은 되어야 함 */
+    }
+  }
+
+  function initialTheme() {
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (saved === "dark" || saved === "light") return saved;
+    } catch (e) {
+      /* 무시하고 OS 설정으로 */
+    }
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  applyTheme(initialTheme());
+
+  document.addEventListener("click", function (e) {
+    const toggle = e.target.closest("[data-theme-toggle]");
+    if (!toggle) return;
+    const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    applyTheme(isDark ? "light" : "dark");
+  });
+
+  /* ---------------------------------------------------------
    * 공용 알림/확인 다이얼로그 (브라우저 기본 alert/confirm 대체)
    * -----------------------------------------------------------
    * 기본 alert/confirm은 브라우저가 그리는 창이라 디자인을 맞출 수 없고,
