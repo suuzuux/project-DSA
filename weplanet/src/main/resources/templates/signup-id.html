@@ -29,7 +29,7 @@
         <label class="form-label" for="userId">아이디</label>
         <div class="form-row">
           <input class="form-input" id="userId" th:field="*{username}" type="text" placeholder="아이디 입력" autocomplete="username" />
-          <button type="button" class="btn btn--ghost btn--sm" id="checkUsernameBtn">중복 확인</button>
+          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="checkUsernameBtn">중복 확인</button>
         </div>
         <p class="form-hint">조건: 4~20자 이내, 영문·숫자</p>
         <p class="text-xs" id="usernameCheckMsg" style="margin-top:6px;"></p>
@@ -66,7 +66,7 @@
         <label class="form-label" for="email">이메일</label>
         <div class="form-row">
           <input class="form-input" id="email" th:field="*{email}" type="email" placeholder="your@email.com" />
-          <button type="button" class="btn btn--ghost btn--sm" id="sendEmailCodeBtn">인증코드 받기</button>
+          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="sendEmailCodeBtn">인증코드 받기</button>
         </div>
         <p class="form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('email')}"></p>
@@ -74,7 +74,7 @@
         <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
           <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
           <span class="text-xs" id="emailCodeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
-          <button type="button" class="btn btn--ghost btn--sm" id="verifyEmailCodeBtn">인증하기</button>
+          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="verifyEmailCodeBtn">인증하기</button>
         </div>
         <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>

@@ -129,6 +129,25 @@
       ? `<a href="${root}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> 금칙어 관리</a>`
       : "";
 
+    // 비로그인 상태에서는 커뮤니티 목록·메뉴를 감추고 가입 유도 문구만 보여준다.
+    // (로그인해야 쓸 수 있는 메뉴들이라, 눌러봤자 로그인 화면으로 튕기기만 했음)
+    const menuBody = isAuthenticated
+      ? `${greetBlock}
+  ${communitiesBlock}
+
+  <nav class="drawer-menu__nav">
+    <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
+    <a href="${isAdmin ? root + "admin/notices" : root + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
+    <a href="${root}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
+    <a href="${root}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
+    ${adminBlock}
+  </nav>`
+      : `<p class="drawer-menu__greet">회원가입 후<br />다양한 서비스를<br />이용해보세요!</p>
+
+  <nav class="drawer-menu__nav">
+    <a href="${root}signup">회원가입</a>
+  </nav>`;
+
     // 관리자는 DM을 주고받을 일이 없는 계정이라(메시지 발신/수신 대상이 아님) 채팅 버튼 자체를 노출하지 않음
     const chatFabHtml = isAdmin
       ? ""
@@ -144,16 +163,7 @@
     <strong>메뉴</strong>
     <button type="button" class="icon-btn" data-shell-close="menu" aria-label="메뉴 닫기">✕</button>
   </div>
-  ${greetBlock}
-  ${communitiesBlock}
-
-  <nav class="drawer-menu__nav">
-    <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
-    <a href="${isAdmin ? root + "admin/notices" : root + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
-    <a href="${root}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
-    <a href="${root}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
-    ${adminBlock}
-  </nav>
+  ${menuBody}
 </aside>
 
 <!-- ========== 2. FAB ========== -->
