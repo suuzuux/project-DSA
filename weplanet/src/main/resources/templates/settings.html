@@ -100,22 +100,17 @@
   </section>
 
   <!-- 언어 -->
+  <!-- SETTINGS-02: "기본 서비스 언어" 하나로 통합. 원래 있던 "번역 언어" 드롭다운은 없앴음 -
+       UI 언어랑 번역 대상 언어를 따로 고를 이유가 없어서(둘 다 같은 값을 쓰면 됨), 이 값 하나가
+       나중에 ① 게시글/댓글 AI 번역 대상 언어, ② 사이트 UI 언어 둘 다에 재사용될 예정. -->
   <section class="settings-block">
     <h2 class="settings-block__title">언어 설정</h2>
     <div class="settings-row">
       <span>🌐 기본 서비스 언어</span>
-      <select class="form-select" style="width:120px;min-height:38px;">
-        <option>KOR</option>
-        <option>ENG</option>
-        <option>JPN</option>
-      </select>
-    </div>
-    <div class="settings-row">
-      <span>🔠 번역 언어</span>
-      <select class="form-select" style="width:120px;min-height:38px;">
-        <option>JPN</option>
-        <option>KOR</option>
-        <option>ENG</option>
+      <select class="form-select" id="languageSelect" style="width:120px;min-height:38px;">
+        <option value="KO" th:selected="${user.preferredLanguage.name() == 'KO'}">한국어</option>
+        <option value="JA" th:selected="${user.preferredLanguage.name() == 'JA'}">日本語</option>
+        <option value="EN" th:selected="${user.preferredLanguage.name() == 'EN'}">English</option>
       </select>
     </div>
   </section>
@@ -475,6 +470,43 @@
             btn.disabled = false;
           });
       });
+    });
+  })();
+</script>
+<script>
+  // [설정 - 언어 설정] SETTINGS-02: "기본 서비스 언어" 드롭다운 - 선택 즉시 서버에 저장.
+  // 이 값이 게시글/댓글 "번역보기"(TranslateService)의 번역 대상 언어로도 그대로 쓰인다.
+  (function () {
+    "use strict";
+    var select = document.getElementById("languageSelect");
+    if (!select) return;
+    var previousValue = select.value;
+
+    select.addEventListener("change", function () {
+      var nextValue = select.value;
+      select.disabled = true;
+
+      fetch("/settings/language", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "language=" + encodeURIComponent(nextValue)
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.success) {
+            previousValue = nextValue;
+          } else {
+            select.value = previousValue;
+            window.WePlaNet.alert(data.message || "저장에 실패했습니다.");
+          }
+        })
+        .catch(function () {
+          select.value = previousValue;
+          window.WePlaNet.alert("저장 중 오류가 발생했습니다.");
+        })
+        .finally(function () {
+          select.disabled = false;
+        });
     });
   })();
 </script>

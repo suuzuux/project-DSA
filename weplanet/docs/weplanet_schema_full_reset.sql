@@ -29,6 +29,10 @@
 --     라이브 시작을 이메일로 받을지. marketing_consent와는 별개의 값
 --   - users.night_notification_allowed : 오후 9시~오전 8시(KST)에도 위 이메일을 받을지
 -- ------------------------------------------------------------
+-- 수정: 2026-09-17 (SETTINGS-02, 언어 설정 / 게시글·댓글 AI 자동번역)
+--   - users.preferred_language : "기본 서비스 언어" (KO/JA/EN, 기본값 KO). 게시글/댓글 AI 번역
+--     (TranslateService)의 대상 언어로도 그대로 재사용됨 - UI 언어랑 번역 언어를 따로 두지 않음
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -162,6 +166,7 @@ CREATE TABLE `users` (
   `marketing_consent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '광고성 정보 수신 동의 (회원가입 체크박스와 공유)',
   `community_activity_email_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT '가입한 아티스트 활동(게시글/공지/라이브) 이메일 수신 여부',
   `night_notification_allowed` tinyint(1) NOT NULL DEFAULT '0' COMMENT '오후 9시~오전 8시(KST) 알림 수신 여부',
+  `preferred_language` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'KO' COMMENT '기본 서비스 언어 (KO/JA/EN) - 게시글/댓글 AI 번역 대상 언어로도 재사용',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
   UNIQUE KEY `uk_users_email` (`email`),
@@ -174,7 +179,8 @@ CREATE TABLE `users` (
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
   CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN')),
-  CONSTRAINT `ck_users_provider` CHECK ((`provider` IS NULL) OR (`provider` IN (_utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE')))
+  CONSTRAINT `ck_users_provider` CHECK ((`provider` IS NULL) OR (`provider` IN (_utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE'))),
+  CONSTRAINT `ck_users_preferred_language` CHECK (`preferred_language` IN (_utf8mb4'KO', _utf8mb4'JA', _utf8mb4'EN'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
 
 -- filter_keyword: 채팅 금칙어

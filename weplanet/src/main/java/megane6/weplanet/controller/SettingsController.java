@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
@@ -133,6 +134,19 @@ public class SettingsController {
 			result.put("success", false);
 			result.put("message", e.getMessage());
 		}
+		return result;
+	}
+
+	// [설정 - 언어 설정] "기본 서비스 언어" 저장 - 이 값이 게시글/댓글 AI 번역(TranslateService) 대상
+	// 언어로도 그대로 쓰인다 (PostController.translatePost/translateComment 참고).
+	@PostMapping("/settings/language")
+	@ResponseBody
+	public Map<String, Object> updateLanguage(@AuthenticationPrincipal AuthenticatedUser principal,
+											  @RequestParam Language language) {
+		Map<String, Object> result = new HashMap<>();
+		User user = userResolver.requireAuthenticated(principal);
+		userService.updateLanguage(user, language);
+		result.put("success", true);
 		return result;
 	}
 
