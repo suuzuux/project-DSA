@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">멤버십 연속 2년 · 획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#23304A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#9B8CFF" d="M5 29 14 16h20l8 13-18 24Z"/>
+  <path fill="#5CC8FF" d="M25 24 34 11h17l8 13-17 24Z"/>
+  <path fill="none" d="M5 29h37M25 24h34M14 16l10 37 10-37M34 11l8 37 9-37"/>
+</g>
+</svg>

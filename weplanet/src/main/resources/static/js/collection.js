@@ -22,6 +22,8 @@
     icon.className = "badge-cell__icon";
 
     if (badge.imageUrl) {
+      // 이미지는 서버가 이미 컬러/흑백 파일을 골라서 주므로 CSS 흑백 필터를 걸지 않는다
+      icon.classList.add("has-image");
       const img = document.createElement("img");
       img.src = badge.imageUrl;
       img.alt = badge.badgeName;

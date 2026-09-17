@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">댓글 5개 작성 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#AEB5BF" d="M8 13h34a8 8 0 0 1 8 8v13a8 8 0 0 1-8 8H26l-10 8v-8a8 8 0 0 1-8-8Z"/>
+  <path fill="#D3D7DD" d="M35 31h12a7 7 0 0 1 7 7v5a7 7 0 0 1-7 7h-4l-7 5v-5h-1"/>
+  <circle cx="18" cy="28" r="2.4" fill="#F8F9FA" stroke="none"/><circle cx="29" cy="28" r="2.4" fill="#F8F9FA" stroke="none"/><circle cx="40" cy="28" r="2.4" fill="#F8F9FA" stroke="none"/>
+  <circle cx="44" cy="40" r="1.8" fill="#F8F9FA" stroke="none"/><circle cx="50" cy="40" r="1.8" fill="#F8F9FA" stroke="none"/>
+</g>
+</svg>

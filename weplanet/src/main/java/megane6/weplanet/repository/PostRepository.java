@@ -55,4 +55,20 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 팬 + 아티스트 게시글 합쳐 최신 10개 호출
     @EntityGraph(attributePaths = "author")
     List<Post> findTop10ByArtistOrderByCreatedAtDesc(User artist);
+    
+    // [배지] 이 커뮤니티 팬 게시판에 글을 쓴 적이 있는지 (첫 게시글 배지)
+    boolean existsByAuthor_IdAndArtist_IdAndBoardType(
+            Long authorId, Long artistId, BoardType boardType
+    );
+    
+    // [배지] 이 커뮤니티에 쓴 내 글들이 받은 좋아요 합계 (받은 좋아요 배지)
+    // 글이 하나도 없으면 SUM 결과가 null 이라 coalesce로 0 처리
+    @Query("""
+        SELECT COALESCE(SUM(p.likeCount), 0)
+        FROM Post p
+        WHERE p.author.id = :authorId
+        AND p.artist.id = :artistId
+        """)
+    long sumLikeCountByAuthorAndArtist(@Param("authorId") Long authorId,
+                                       @Param("artistId") Long artistId);
 }
