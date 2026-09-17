@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">아티스트 프로필 팔로우 · 획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#23304A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#FFC84A" d="m27 7 7 14 16 2-12 11 3 16-14-8-14 8 3-16L4 23l16-2Z"/>
+  <circle cx="48" cy="46" r="11" fill="#FF8F70"/>
+  <path fill="none" d="M48 40v12M42 46h12"/>
+</g>
+</svg>

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FanBadgeRepository extends JpaRepository<FanBadge, Long> {
@@ -15,4 +16,7 @@ public interface FanBadgeRepository extends JpaRepository<FanBadge, Long> {
 	 * 유형이 늘어나면 순서기준이 깨지므로 @Query로 명시적 순서 지정해야 함
 	 */
 	List<FanBadge> findAllByOrderByBadgeTypeAscSortOrderAsc();
+	
+	// 지급할 때 배지 이름/유형을 스냅샷으로 복사하려고 코드 하나로 카탈로그를 찾는다
+	Optional<FanBadge> findByBadgeCode(String badgeCode);
 }

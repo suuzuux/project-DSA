@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">아티스트 데뷔 2주년 · 획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#23304A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="22.5" y="10" width="5" height="12" rx="2" fill="#9B8CFF"/><path fill="#FFF1D2" d="M25 9c-4-4 0-8 0-8s4 4 0 8Z"/><rect x="36.5" y="10" width="5" height="12" rx="2" fill="#FF7182"/><path fill="#FFF1D2" d="M39 9c-4-4 0-8 0-8s4 4 0 8Z"/>
+    <path fill="#FFF1D2" d="M12 29c0-5 4-9 9-9h22c5 0 9 4 9 9v23H12Z"/>
+    <path fill="#F6F1FF" d="M12 29h40v9c-4 0-4 6-8 6s-4-6-8-6-4 6-8 6-4-6-8-6c-3 0-4 3-8 3Z"/>
+    <path fill="#FF7182" d="M8 52h48v6H8Z"/>
+  </g>
+</svg>

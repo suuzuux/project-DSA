@@ -397,3 +397,52 @@ WHERE CONSTRAINT_SCHEMA = DATABASE()
 ORDER BY CONSTRAINT_NAME;
 
 SELECT 'ADMIN-2 + AUTH-10 + SETTINGS-01 통합 증분 DB 적용 완료' AS result;
+
+
+-- 2026.09.17(목) fan_badge 증분 DB
+-- ============================================================
+-- WePlaNet BADGE-2 : 배지 SVG 이미지 적용 (증분)
+-- ------------------------------------------------------------
+-- 대상: 이미 weplanet DB를 사용 중인 팀원
+-- 실행: 이 파일 하나만 MySQL Workbench에서 전체 선택 후 실행
+--
+-- 변경사항
+--   1) fan_badge.image_url 에 배지 SVG 파일명 저장
+--      실제 파일: static/img/badges/color/(획득), static/img/badges/grayscale/(미획득)
+--      두 폴더의 파일명이 같아서 DB에는 파일명만 저장하고, 폴더는 BadgeView 가 고른다.
+--   2) 가입 후 1년/3년 이모지(fallback) 순서 교정 (🥉=3, 🥇=1 로 보이던 문제)
+--
+-- 기존 데이터는 삭제하지 않으며 여러 번 실행해도 안전합니다.
+-- ============================================================
+
+USE `weplanet`;
+
+UPDATE `fan_badge` SET `image_url` = 'community-first-join.svg'  WHERE `badge_code` = 'BASIC_FIRST_JOIN';
+UPDATE `fan_badge` SET `image_url` = 'first-post.svg'            WHERE `badge_code` = 'BASIC_FIRST_POST';
+UPDATE `fan_badge` SET `image_url` = 'five-comments.svg'         WHERE `badge_code` = 'BASIC_COMMENT_5';
+UPDATE `fan_badge` SET `image_url` = 'media-view.svg'            WHERE `badge_code` = 'BASIC_MEDIA_VIEW';
+UPDATE `fan_badge` SET `image_url` = 'member-100-days.svg'       WHERE `badge_code` = 'BASIC_DAY_100';
+UPDATE `fan_badge` SET `image_url` = 'member-200-days.svg'       WHERE `badge_code` = 'BASIC_DAY_200';
+UPDATE `fan_badge` SET `image_url` = 'member-300-days.svg'       WHERE `badge_code` = 'BASIC_DAY_300';
+UPDATE `fan_badge` SET `image_url` = 'ten-likes.svg'             WHERE `badge_code` = 'BASIC_LIKE_10';
+UPDATE `fan_badge` SET `image_url` = 'five-likes-received.svg'   WHERE `badge_code` = 'BASIC_LIKED_5';
+UPDATE `fan_badge` SET `image_url` = 'artist-profile-follow.svg' WHERE `badge_code` = 'BASIC_FOLLOW_ARTIST';
+UPDATE `fan_badge` SET `image_url` = 'shop-purchase.svg'         WHERE `badge_code` = 'BASIC_SHOP_PURCHASE';
+UPDATE `fan_badge` SET `image_url` = 'live-view.svg'             WHERE `badge_code` = 'BASIC_LIVE_VIEW';
+UPDATE `fan_badge` SET `image_url` = 'community-1-year.svg',  `icon` = '🥇' WHERE `badge_code` = 'BASIC_YEAR_1';
+UPDATE `fan_badge` SET `image_url` = 'community-2-years.svg', `icon` = '🥈' WHERE `badge_code` = 'BASIC_YEAR_2';
+UPDATE `fan_badge` SET `image_url` = 'community-3-years.svg', `icon` = '🥉' WHERE `badge_code` = 'BASIC_YEAR_3';
+UPDATE `fan_badge` SET `image_url` = 'artist-debut-1-year.svg'   WHERE `badge_code` = 'SPECIAL_DEBUT_1';
+UPDATE `fan_badge` SET `image_url` = 'artist-debut-2-years.svg'  WHERE `badge_code` = 'SPECIAL_DEBUT_2';
+UPDATE `fan_badge` SET `image_url` = 'artist-debut-3-years.svg'  WHERE `badge_code` = 'SPECIAL_DEBUT_3';
+UPDATE `fan_badge` SET `image_url` = 'ten-followers.svg'         WHERE `badge_code` = 'SPECIAL_FOLLOWER_10';
+UPDATE `fan_badge` SET `image_url` = 'first-membership.svg'      WHERE `badge_code` = 'SPECIAL_MEMBERSHIP_1';
+UPDATE `fan_badge` SET `image_url` = 'membership-2-years.svg'    WHERE `badge_code` = 'SPECIAL_MEMBERSHIP_2';
+UPDATE `fan_badge` SET `image_url` = 'membership-3-years.svg'    WHERE `badge_code` = 'SPECIAL_MEMBERSHIP_3';
+UPDATE `fan_badge` SET `image_url` = 'membership-4-years.svg'    WHERE `badge_code` = 'SPECIAL_MEMBERSHIP_4';
+UPDATE `fan_badge` SET `image_url` = 'membership-5-years.svg'    WHERE `badge_code` = 'SPECIAL_MEMBERSHIP_5';
+UPDATE `fan_badge` SET `image_url` = 'project-registered.svg'    WHERE `badge_code` = 'SPECIAL_PROJECT_CREATE';
+
+-- [확인] 25가 나오면 모든 배지에 이미지가 연결된 것입니다.
+SELECT COUNT(*) AS badges_with_image FROM `fan_badge` WHERE `image_url` IS NOT NULL;
+

@@ -61,6 +61,7 @@
 
       <div class="badge-row">
         <span class="badge-icon" th:each="badge : ${card.previewBadges()}"
+              th:classappend="${badge.hasImage()} ? 'has-image'"
               th:title="${badge.badgeName()}">
           <img th:if="${badge.hasImage()}" th:src="${badge.imageUrl()}" th:alt="${badge.badgeName()}" />
           <span th:unless="${badge.hasImage()}" th:text="${badge.icon()}">🏅</span>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">미디어 시청 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="8" y="22" width="48" height="34" rx="7" fill="#E9EBEF"/>
+  <path fill="#AEB5BF" d="M8 22 13 9h43l-5 13Z"/>
+  <path fill="none" d="m19 10-5 12m18-12-5 12m18-12-5 12"/>
+  <path fill="#D3D7DD" d="m27 31 13 8-13 8Z"/>
+</g>
+</svg>
