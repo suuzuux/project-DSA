@@ -442,20 +442,6 @@
   color: var(--wp-danger, #d64545);
 }
 
-.portal-profile-bg-preview {
-  margin: 0 0 20px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--wp-hairline, #e5e5e5);
-}
-
-.portal-profile-bg-preview img {
-  display: block;
-  width: 100%;
-  max-height: 160px;
-  object-fit: cover;
-}
-
 .portal-profile-extra {
   border-top: 1px solid var(--wp-hairline, #e5e5e5);
   padding-top: 18px;
