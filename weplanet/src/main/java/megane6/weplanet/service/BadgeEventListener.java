@@ -47,7 +47,7 @@ public class BadgeEventListener {
 		
 		switch (event.activity()) {
 			case COMMUNITY_JOINED -> {
-				award(fanId, artistId, BadgeCode.BASIC_FIRST_POST);
+				award(fanId, artistId, BadgeCode.BASIC_FIRST_JOIN);
 				checkFirstPost(fanId, artistId);
 				checkComments(fanId, artistId);
 				checkLikesGiven(fanId, artistId);

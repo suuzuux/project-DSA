@@ -3,7 +3,9 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.GroupFollow;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.GroupFollowRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 public class FollowService {
 
     private final GroupFollowRepository groupFollowRepository;
+    private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
 
     // 이미 팔로우 중이면 취소, 아니면 팔로우 - 토글 후 결과(true=팔로우됨) 반환
     @Transactional
@@ -31,6 +34,12 @@ public class FollowService {
                 .groupId(artistId)
                 .createdAt(LocalDateTime.now())
                 .build());
+        
+        // [배지] 팔로우했을 때만 (언팔로우는 배지 회수 안함)
+        eventPublisher.publishEvent(new BadgeActivityEvent(
+                fan.getId(), artistId, BadgeActivityEvent.Activity.ARTIST_FOLLOWED
+        ));
+        
         return true;
     }
 
