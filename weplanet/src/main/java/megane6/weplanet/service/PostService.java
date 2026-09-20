@@ -1,24 +1,15 @@
 package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.domain.entity.BoardType;
-import megane6.weplanet.domain.entity.Bookmark;
-import megane6.weplanet.domain.entity.Like;
-import megane6.weplanet.domain.entity.Post;
-import megane6.weplanet.domain.entity.PostAttachment;
-import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.BookmarkRepository;
-import megane6.weplanet.repository.CommentReportRepository;
-import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.PostAttachmentRepository;
-import megane6.weplanet.repository.PostRepository;
-import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.domain.event.BadgeActivityEvent;
+import megane6.weplanet.repository.*;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +34,7 @@ public class PostService {
     private final CommentReportRepository commentReportRepository;
     private final PostAttachmentRepository postAttachmentRepository;
     private final FileStorageService fileStorageService;
+    private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
 
     // 게시판 종류별 목록 조회 - sort 값에 따라 최신순/인기순 중 하나를 골라서 리포지토리에 위임
     public List<Post> getPostsByBoardType(BoardType boardType, String sort) {
@@ -105,6 +97,13 @@ public class PostService {
         // 팬 게시판(FAN) 글이나 artist가 null인 경우(단독 오버로드)는 대상이 아님.
         if (boardType == BoardType.ARTIST && artist != null) {
             communityActivityNotifier.notifyNewPost(artist, saved);
+        }
+        
+        // [배지] 팬 게시판 글만 "첫 게시글" 배지 대상
+        if (boardType == BoardType.FAN && artist != null) {
+            eventPublisher.publishEvent(new BadgeActivityEvent(
+                    author.getId(), artist.getId(), BadgeActivityEvent.Activity.POST_CREATED
+            ));
         }
         return saved;
     }
@@ -173,6 +172,16 @@ public class PostService {
             likeRepository.save(like);
             post.setLikeCount(post.getLikeCount() + 1);
             postRepository.save(post);
+            // [배지] 커뮤니티 글일 때만. 누른 사람(좋아요 10개)과 글쓴이(받은 좋아요 5개) 둞 다 확인
+            if (post.getArtist() != null) {
+                Long artistId = post.getArtist().getId();
+                eventPublisher.publishEvent(new BadgeActivityEvent(
+                        user.getId(), artistId, BadgeActivityEvent.Activity.LIKE_GIVEN
+                ));
+                eventPublisher.publishEvent(new BadgeActivityEvent(
+                        post.getAuthor().getId(), artistId, BadgeActivityEvent.Activity.LIKE_RECEIVED
+                ));
+            }
             return true; // 좋아요가 새로 눌렸음을 컨트롤러에 알려줌
         }
     }
