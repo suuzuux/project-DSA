@@ -484,6 +484,11 @@
       var nextValue = select.value;
       select.disabled = true;
 
+      if (window.WePlaNetGlobalIcons && window.WePlaNetGlobalIcons.setLang) {
+        window.WePlaNetGlobalIcons.setLang(nextValue.toLowerCase());
+        return;
+      }
+
       fetch("/settings/language", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -493,6 +498,7 @@
         .then(function (data) {
           if (data.success) {
             previousValue = nextValue;
+            window.location.reload();
           } else {
             select.value = previousValue;
             window.WePlaNet.alert(data.message || "저장에 실패했습니다.");

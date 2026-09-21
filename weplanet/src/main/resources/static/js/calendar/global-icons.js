@@ -713,6 +713,16 @@
     hydrateWeekGrid();
     syncSettingsSelect();
     document.dispatchEvent(new CustomEvent("weplanet:langchange", { detail: { lang: code } }));
+
+    if (!(opts && opts.silent)) {
+      fetch("/language", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "language=" + encodeURIComponent(code.toUpperCase())
+      }).finally(function () {
+        window.location.reload();
+      });
+    }
   }
 
   /* ---------- inject root ---------- */
@@ -1605,6 +1615,11 @@
     var params = new URLSearchParams(location.search);
     if (params.get("calendar") === "1") openCalendar();
   }
+
+  window.WePlaNetGlobalIcons = {
+    setLang: setLang,
+    getLang: getLang,
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
