@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.email.MarketingConsentEmailService;
@@ -192,6 +193,13 @@ public class UserService {
 			case "night" -> user.changeNightNotificationAllowed(enabled);
 			default -> throw new IllegalArgumentException("알 수 없는 알림 종류입니다.");
 		}
+	}
+
+	// [설정 - 언어 설정] SETTINGS-02: "기본 서비스 언어" 저장. 이 값이 게시글/댓글 AI 번역
+	// (TranslateService) 대상 언어로도 그대로 쓰인다 (PostController.translatePost/translateComment 참고).
+	@Transactional
+	public void updateLanguage(User user, Language language) {
+		user.changePreferredLanguage(language);
 	}
 
 	// [AUTH-10] 소셜 연동 해제. 비밀번호는 건드리지 않는다 - User.unlinkSocialProvider() 참고.
