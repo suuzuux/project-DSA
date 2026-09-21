@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>등록 신청 관리 | WePlaNet ADMIN</title>
+
+  <link
+          rel="stylesheet"
+          th:href="@{/css/style.css}"
+  />
+
+  <link
+          rel="stylesheet"
+          th:href="@{/css/portal.css}"
+  />
+</head>
+
+<body>
+<div class="portal-shell">
+
+  <!-- 관리자 사이드바 -->
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <a th:href="@{/admin/dashboard}">
+        📊 통합 대시보드
+      </a>
+
+      <a
+              class="is-active"
+              th:href="@{/admin/applications}"
+      >
+        📥 등록 신청
+      </a>
+
+      <a th:href="@{/admin/agencies}">
+        🏢 소속사 관리
+      </a>
+
+      <a th:href="@{/admin/artists}">
+        🎤 아티스트 관리
+      </a>
+
+      <a th:href="@{/admin/users}">
+        👥 전체 회원
+      </a>
+
+      <a th:href="@{/admin/reports}">
+        🚩 통합 신고 · 제재
+      </a>
+
+      <a th:href="@{/admin/notices}">
+        📢 전체 공지
+      </a>
+
+      <a th:href="@{/admin/communities}">
+        💬 커뮤니티 운영
+      </a>
+
+      <a th:href="@{/admin/logs}">
+        🧾 관리자 로그
+      </a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <form
+              th:action="@{/admin/logout}"
+              method="post"
+              style="margin: 0;"
+      >
+        <button type="submit" class="btn">
+          🚪 로그아웃
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- 관리자 본문 -->
+  <main class="portal-main">
+
+    <div class="portal-main__head">
+      <div>
+        <h1>아티스트·소속사 등록 신청</h1>
+
+        <p class="text-sm text-muted">
+          외부에서 접수된 등록 신청을 확인하고 처리합니다.
+        </p>
+      </div>
+
+      <div class="admin-topbar">
+                <span class="admin-badge">
+                    🛡 SUPER ADMIN
+                </span>
+      </div>
+    </div>
+
+    <!-- 오류 메시지 -->
+    <p
+            th:if="${error}"
+            th:text="${error}"
+            class="admin-login__notice
+                       admin-login__notice--error"
+    >
+      오류가 발생했습니다.
+    </p>
+
+    <!-- 통계 카드 -->
+    <div class="admin-stat-grid">
+
+      <article class="admin-stat">
+                <span class="admin-stat__icon
+                             admin-stat__icon--violet">
+                    📋
+                </span>
+
+        <span class="admin-stat__body">
+                    <span class="admin-stat__label">
+                        전체 신청
+                    </span>
+
+                    <strong
+                            class="admin-stat__value"
+                            th:text="${#numbers.formatInteger(
+                                stats.totalCount(),
+                                0,
+                                'COMMA'
+                            )}"
+                    >
+                        0
+                    </strong>
+                </span>
+      </article>
+
+      <article class="admin-stat admin-stat--alert">
+                <span class="admin-stat__icon
+                             admin-stat__icon--orange">
+                    🕐
+                </span>
+
+        <span class="admin-stat__body">
+                    <span class="admin-stat__label">
+                        검토 대기
+                    </span>
+
+                    <strong
+                            class="admin-stat__value"
+                            th:text="${#numbers.formatInteger(
+                                stats.pendingCount(),
+                                0,
+                                'COMMA'
+                            )}"
+                    >
+                        0
+                    </strong>
+                </span>
+      </article>
+
+      <article class="admin-stat">
+                <span class="admin-stat__icon
+                             admin-stat__icon--green">
+                    ✅
+                </span>
+
+        <span class="admin-stat__body">
+                    <span class="admin-stat__label">
+                        승인
+                    </span>
+
+                    <strong
+                            class="admin-stat__value"
+                            th:text="${#numbers.formatInteger(
+                                stats.approvedCount(),
+                                0,
+                                'COMMA'
+                            )}"
+                    >
+                        0
+                    </strong>
+                </span>
+      </article>
+
+      <article class="admin-stat">
+                <span class="admin-stat__icon
+                             admin-stat__icon--khaki">
+                    ↩
+                </span>
+
+        <span class="admin-stat__body">
+                    <span class="admin-stat__label">
+                        반려
+                    </span>
+
+                    <strong
+                            class="admin-stat__value"
+                            th:text="${#numbers.formatInteger(
+                                stats.rejectedCount(),
+                                0,
+                                'COMMA'
+                            )}"
+                    >
+                        0
+                    </strong>
+                </span>
+      </article>
+
+    </div>
+
+    <!-- 목록 + 상세 패널 -->
+    <div class="panel-grid">
+
+      <!-- 신청 목록 -->
+      <section class="panel" style="min-width: 0;">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">
+              신청 목록
+            </h2>
+
+            <p class="text-xs text-muted">
+              신청 유형, 상태 또는 검색어로 조회할 수 있습니다.
+            </p>
+          </div>
+
+          <span
+                  class="tag tag--member"
+                  th:text="${#numbers.formatInteger(
+                                applications.totalElements,
+                                0,
+                                'COMMA'
+                            ) + '건 조회'}"
+          >
+                        0건 조회
+                    </span>
+        </div>
+
+        <!-- 검색 필터 -->
+        <form
+                class="report-filter-bar"
+                method="get"
+                th:action="@{/admin/applications}"
+        >
+          <select name="status">
+            <option value="">
+              전체 처리 상태
+            </option>
+
+            <option
+                    th:each="statusOption : ${statusOptions}"
+                    th:value="${statusOption.name()}"
+                    th:text="${statusOption.getDisplayName()}"
+                    th:selected="${selectedStatus
+                                    == statusOption.name()}"
+            >
+              처리 상태
+            </option>
+          </select>
+
+          <select name="applicantType">
+            <option value="">
+              전체 신청 유형
+            </option>
+
+            <option
+                    th:each="typeOption
+                                    : ${applicantTypeOptions}"
+                    th:value="${typeOption.name()}"
+                    th:text="${typeOption.getDisplayName()}"
+                    th:selected="${selectedApplicantType
+                                    == typeOption.name()}"
+            >
+              신청 유형
+            </option>
+          </select>
+
+          <input
+                  type="text"
+                  name="keyword"
+                  th:value="${keyword}"
+                  placeholder="신청자명, 담당자명, 이메일 검색"
+          />
+
+          <button
+                  type="submit"
+                  class="btn btn--primary btn--sm"
+          >
+            검색
+          </button>
+
+          <a
+                  class="btn btn--ghost btn--sm"
+                  th:href="@{/admin/applications}"
+          >
+            초기화
+          </a>
+        </form>
+
+        <!-- 신청 목록 표 -->
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+            <tr>
+              <th>접수일</th>
+              <th>유형</th>
+              <th>신청자</th>
+              <th>담당자</th>
+              <th>상태</th>
+              <th>관리</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:if="${applications.empty}">
+              <td
+                      colspan="6"
+                      class="text-sm text-muted"
+              >
+                검색 조건에 해당하는 신청이 없습니다.
+              </td>
+            </tr>
+
+            <tr
+                    th:each="applicationItem
+                                    : ${applications.content}"
+            >
+              <td
+                      class="text-xs"
+                      th:text="${#temporals.format(
+                                        applicationItem.createdAt(),
+                                        'yyyy.MM.dd HH:mm'
+                                    )}"
+              >
+                2026.09.22 12:00
+              </td>
+
+              <td>
+                <span
+                        class="tag tag--member"
+                                        th:text="${applicationItem
+                                            .applicantTypeLabel()}"
+                                >
+                                    아티스트
+                                </span>
+              </td>
+
+              <td>
+                <strong
+                        th:text="${applicationItem
+                                            .applicantName()}"
+                >
+                  신청자명
+                </strong>
+
+                <br/>
+
+                <span
+                        class="text-xs text-muted"
+                        th:text="${applicationItem.email()}"
+                >
+                                    email@example.com
+                                </span>
+              </td>
+
+              <td>
+                <span
+                                        th:text="${applicationItem.contactName()}"
+                                >
+                                    담당자
+                                </span>
+
+                <br/>
+
+                <span
+                        class="text-xs text-muted"
+                        th:text="${applicationItem.phone() == null
+                                            ? '연락처 미입력'
+                                            : applicationItem.phone()}"
+                >
+                                    연락처
+                                </span>
+              </td>
+
+              <td>
+                <span
+                        class="tag tag--danger"
+                                        th:if="${applicationItem.statusName()
+                                            == 'PENDING_APPROVAL'}"
+                                        th:text="${applicationItem.statusLabel()}"
+                                >
+                                    검토 대기
+                                </span>
+
+                <span
+                        class="tag tag--public"
+                        th:if="${applicationItem.statusName()
+                                            == 'APPROVED'}"
+                        th:text="${applicationItem.statusLabel()}"
+                >
+                                    승인
+                                </span>
+
+                <span
+                        class="tag tag--private"
+                        th:if="${applicationItem.statusName()
+                                            == 'REJECTED'}"
+                        th:text="${applicationItem.statusLabel()}"
+                >
+                                    반려
+                                </span>
+              </td>
+
+              <td>
+                <a
+                        class="btn btn--ghost btn--sm"
+                        th:href="@{/admin/applications(
+                                            applicationId=${applicationItem
+                                                .applicationId()},
+                                            page=${applications.number},
+                                            status=${selectedStatus},
+                                            applicantType=${
+                                                selectedApplicantType
+                                            },
+                                            keyword=${keyword}
+                                        )}"
+                >
+                  상세
+                </a>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 페이지 이동 -->
+        <nav
+                class="pagination"
+                th:if="${applications.totalPages > 1}"
+                aria-label="등록 신청 페이지 이동"
+        >
+                    <span th:if="${applications.first}">
+                        이전
+                    </span>
+
+          <a
+                  th:unless="${applications.first}"
+                  th:href="@{/admin/applications(
+                                page=${applications.number - 1},
+                                status=${selectedStatus},
+                                applicantType=${selectedApplicantType},
+                                keyword=${keyword}
+                            )}"
+          >
+            이전
+          </a>
+
+          <th:block
+                  th:each="pageNumber : ${#numbers.sequence(
+                                0,
+                                applications.totalPages - 1
+                            )}"
+          >
+                        <span
+                                class="is-active"
+                                th:if="${pageNumber
+                                    == applications.number}"
+                                th:text="${pageNumber + 1}"
+                        >
+                            1
+                        </span>
+
+            <a
+                    th:unless="${pageNumber
+                                    == applications.number}"
+                    th:text="${pageNumber + 1}"
+                    th:href="@{/admin/applications(
+                                    page=${pageNumber},
+                                    status=${selectedStatus},
+                                    applicantType=${
+                                        selectedApplicantType
+                                    },
+                                    keyword=${keyword}
+                                )}"
+            >
+              1
+            </a>
+          </th:block>
+
+          <span th:if="${applications.last}">
+                        다음
+                    </span>
+
+          <a
+                  th:unless="${applications.last}"
+                  th:href="@{/admin/applications(
+                                page=${applications.number + 1},
+                                status=${selectedStatus},
+                                applicantType=${selectedApplicantType},
+                                keyword=${keyword}
+                            )}"
+          >
+            다음
+          </a>
+        </nav>
+      </section>
+
+      <!-- 상세 패널 -->
+      <aside class="panel">
+        <div class="panel__head">
+          <div>
+            <h2 class="panel__title">
+              신청 상세
+            </h2>
+
+            <p
+                    class="text-xs text-muted"
+                    th:if="${selectedApplication == null}"
+            >
+              목록에서 확인할 신청을 선택해주세요.
+            </p>
+
+            <p
+                    class="text-xs text-muted"
+                    th:if="${selectedApplication != null}"
+                    th:text="${'신청 번호 #'
+                                    + selectedApplication.applicationId()}"
+            >
+              신청 번호
+            </p>
+          </div>
+        </div>
+
+        <!-- 선택 전 -->
+        <div
+                th:if="${selectedApplication == null}"
+                style="
+                            padding: 32px 12px;
+                            text-align: center;
+                        "
+        >
+          <div
+                  style="
+                                font-size: 34px;
+                                margin-bottom: 12px;
+                            "
+          >
+            📥
+          </div>
+
+          <strong>
+            선택된 신청이 없습니다.
+          </strong>
+
+          <p
+                  class="text-sm text-muted"
+                  style="margin-top: 8px;"
+          >
+            목록에서 상세 버튼을 누르면 신청 내용과
+            검토 상태를 확인할 수 있습니다.
+          </p>
+        </div>
+
+        <!-- 선택 후 -->
+        <div th:if="${selectedApplication != null}">
+
+          <div style="margin-bottom: 20px;">
+                        <span
+                                class="tag tag--danger"
+                                th:if="${selectedApplication.statusName()
+                                    == 'PENDING_APPROVAL'}"
+                                th:text="${selectedApplication.statusLabel()}"
+                        >
+                            검토 대기
+                        </span>
+
+            <span
+                    class="tag tag--public"
+                    th:if="${selectedApplication.statusName()
+                                    == 'APPROVED'}"
+                    th:text="${selectedApplication.statusLabel()}"
+            >
+                            승인
+                        </span>
+
+            <span
+                    class="tag tag--private"
+                    th:if="${selectedApplication.statusName()
+                                    == 'REJECTED'}"
+                    th:text="${selectedApplication.statusLabel()}"
+            >
+                            반려
+                        </span>
+
+            <h3
+                    style="margin: 10px 0 4px;"
+                    th:text="${selectedApplication
+                                    .applicantName()}"
+            >
+              신청자명
+            </h3>
+
+            <p class="text-xs text-muted">
+                            <span
+                                    th:text="${selectedApplication
+                                        .applicantTypeLabel()}"
+                            >
+                                신청 유형
+                            </span>
+
+              ·
+
+              <span
+                      th:text="${#temporals.format(
+                                        selectedApplication.createdAt(),
+                                        'yyyy.MM.dd HH:mm'
+                                    )}"
+              >
+                                신청일
+                            </span>
+            </p>
+          </div>
+
+          <div
+                  style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 12px;
+                                margin-bottom: 20px;
+                            "
+          >
+            <div>
+                            <span class="text-xs text-muted">
+                                담당자
+                            </span>
+
+              <br/>
+
+              <strong
+                      th:text="${selectedApplication
+                                        .contactName()}"
+              >
+                담당자명
+              </strong>
+            </div>
+
+            <div>
+                            <span class="text-xs text-muted">
+                                연락처
+                            </span>
+
+              <br/>
+
+              <strong
+                      th:text="${selectedApplication.phone()
+                                        == null
+                                        ? '-'
+                                        : selectedApplication.phone()}"
+              >
+                연락처
+              </strong>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 16px;">
+                        <span class="text-xs text-muted">
+                            회신 이메일
+                        </span>
+
+            <p class="text-sm">
+              <a
+                      th:href="${'mailto:'
+                                        + selectedApplication.email()}"
+                      th:text="${selectedApplication.email()}"
+              >
+                email@example.com
+              </a>
+            </p>
+          </div>
+
+          <div style="margin-bottom: 20px;">
+                        <span class="text-xs text-muted">
+                            신청 내용
+                        </span>
+
+            <p
+                    class="text-sm"
+                    style="
+                                    margin-top: 6px;
+                                    white-space: pre-wrap;
+                                    overflow-wrap: anywhere;
+                                "
+                    th:text="${selectedApplication.message()}"
+            >
+              신청 내용
+            </p>
+          </div>
+
+          <!-- 처리 완료 정보 -->
+          <div
+                  th:if="${selectedApplication.statusName()
+                                != 'PENDING_APPROVAL'}"
+                  style="
+                                padding-top: 16px;
+                                border-top: 1px solid
+                                    var(--wp-line, #ddd);
+                            "
+          >
+            <div style="margin-bottom: 12px;">
+                            <span class="text-xs text-muted">
+                                처리 관리자
+                            </span>
+
+              <p
+                      class="text-sm"
+                      th:text="${selectedApplication
+                                        .reviewerNickname() == null
+                                        ? '-'
+                                        : selectedApplication
+                                            .reviewerNickname()}"
+              >
+                관리자
+              </p>
+            </div>
+
+            <div style="margin-bottom: 12px;">
+                            <span class="text-xs text-muted">
+                                처리 시각
+                            </span>
+
+              <p
+                      class="text-sm"
+                      th:text="${selectedApplication
+                                        .reviewedAt() == null
+                                        ? '-'
+                                        : #temporals.format(
+                                            selectedApplication.reviewedAt(),
+                                            'yyyy.MM.dd HH:mm:ss'
+                                        )}"
+              >
+                처리 시각
+              </p>
+            </div>
+
+            <div
+                    th:if="${selectedApplication
+                                    .rejectionReason() != null}"
+            >
+                            <span class="text-xs text-muted">
+                                반려 사유
+                            </span>
+
+              <p
+                      class="text-sm"
+                      style="
+                                        margin-top: 6px;
+                                        white-space: pre-wrap;
+                                    "
+                      th:text="${selectedApplication
+                                        .rejectionReason()}"
+              >
+                반려 사유
+              </p>
+            </div>
+          </div>
+
+          <!-- 다음 단계에서 승인/반려 버튼이 들어갈 자리 -->
+          <p
+                  th:if="${selectedApplication.statusName()
+                                == 'PENDING_APPROVAL'}"
+                  class="text-xs text-muted"
+                  style="
+                                margin-top: 20px;
+                                padding-top: 16px;
+                                border-top: 1px solid
+                                    var(--wp-line, #ddd);
+                            "
+          >
+            다음 단계에서 이 위치에 승인 및 반려 기능이
+            추가됩니다.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</body>
+</html>
