@@ -99,42 +99,54 @@
           </strong>
 
           <span class="project-history-card__status"
-                th:text="${participation.paymentStatus() == 'PAID'
-                        ? '참여 완료'
-                        : participation.paymentStatus()}">
-          참여 완료
-        </span>
+                th:classappend="${'is-' + participation.statusCode()}"
+                th:text="${participation.statusLabel()}">
+            참여 완료
+          </span>
         </div>
 
         <dl class="project-history-card__info">
           <div>
             <dt>참여 금액</dt>
-            <dd th:text="${#numbers.formatInteger(
-                          participation.amount(), 0, 'COMMA'
-                        )} + '원'">
+            <dd th:text="${#numbers.formatInteger(participation.amount(), 0, 'COMMA')} + '원'">
               10,000원
             </dd>
           </div>
 
           <div>
             <dt>참여 방식</dt>
-            <dd th:text="${participation.anonymous()
-                        ? '익명 참여'
-                        : '닉네임 공개'}">
+            <dd th:text="${participation.anonymous() ? '익명 참여' : '닉네임 공개'}">
               익명 참여
             </dd>
           </div>
 
-          <div>
-            <dt>참여 일시</dt>
-            <dd th:text="${#temporals.format(
-                          participation.participatedAt(),
-                          'yyyy.MM.dd HH:mm'
-                        )}">
-              2026.08.29 16:19
+          <!-- 입금 완료 전에는 신청 일시, 완료 후에는 입금 완료 일시 -->
+          <div th:if="${participation.paidAt() != null}">
+            <dt>입금 완료</dt>
+            <dd th:text="${#temporals.format(participation.paidAt(), 'yyyy.MM.dd HH:mm')}">
+              2026.09.22 16:19
+            </dd>
+          </div>
+          <div th:if="${participation.paidAt() == null}">
+            <dt>신청 일시</dt>
+            <dd th:text="${#temporals.format(participation.orderedAt(), 'yyyy.MM.dd HH:mm')}">
+              2026.09.22 16:19
             </dd>
           </div>
         </dl>
+
+        <!-- 입금 대기 중일 때만: 입금할 계좌 안내 -->
+        <div class="project-history-card__account"
+             th:if="${participation.waitingForDeposit()}">
+          <p>
+            <span th:text="${participation.bankName()}">은행</span>
+            <strong th:text="${participation.accountNumber()}">000-0000-0000</strong>
+          </p>
+          <p class="text-muted"
+             th:text="${#temporals.format(participation.dueDate(), 'MM.dd HH:mm')} + ' 까지 입금해주세요'">
+            09.23 17:30 까지 입금해주세요
+          </p>
+        </div>
       </article>
     </div>
 

@@ -242,6 +242,42 @@
     font-weight: 700;
 }
 
+
+/* 결제 상태별 뱃지 색 - FanProjectPaymentStatus.badgeCode 와 짝 (is-{badgeCode}) */
+.project-history-card__status.is-paid {
+    background: var(--wp-brand-soft);
+    color: var(--wp-brand-dark);
+}
+
+.project-history-card__status.is-waiting {
+    background: var(--wp-accent-soft);
+    color: var(--wp-accent);
+}
+
+.project-history-card__status.is-ready,
+.project-history-card__status.is-closed {
+    background: var(--wp-paper);
+    color: var(--wp-muted, #8a8a8a);
+    border: 1px solid var(--wp-hairline);
+}
+
+/* 입금 대기 카드의 계좌 안내 박스 */
+.project-history-card__account {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: var(--wp-radius-sm);
+    background: var(--wp-paper);
+    border: 1px dashed var(--wp-line);
+    font-size: var(--wp-fs-xs);
+    line-height: 1.7;
+}
+
+.project-history-card__account strong {
+    margin-left: 6px;
+    font-size: var(--wp-fs-sm);
+    letter-spacing: 0.02em;
+}
+
 .project-history-card__info {
     display: grid;
     gap: 10px;
