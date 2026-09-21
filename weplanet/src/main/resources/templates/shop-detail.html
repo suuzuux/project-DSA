@@ -37,8 +37,11 @@
        style="display:inline-block;"
        th:href="${fromCommunity} ? @{/shop/community/{id}(id=${product.artistId()})} : @{/shop(artistId=${product.artistId()})}">← Shop 목록</a>
 
-    <article class="product-detail">
-      <div class="product-detail__gallery">상품 이미지 영역</div>
+    <p th:if="${message}" class="alert alert--success mb-16" th:text="${message}">알림</p>
+
+    <article class="product-detail" th:classappend="${product.soldOut()} ? ' is-sold-out'">
+      <th:block th:replace="~{fragments/shop-product-thumb :: shopThumb(
+        ${product}, null, 'product-detail__gallery', false)}"></th:block>
 
       <div class="product-detail__info">
         <p class="text-sm" style="color:var(--wp-brand);font-weight:700;">
@@ -51,36 +54,68 @@
           <span th:text="${product.formattedPrice()}">₩ 0</span>
           <small th:if="${product.priceSuffix() != null}" th:text="${product.priceSuffix()}">다운로드</small>
         </p>
+        <p th:if="${!product.soldOut() and product.lowStock()}"
+           class="product-card__stock product-card__stock--low"
+           th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</p>
+        <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
 
         <div class="membership-notice" th:if="${product.membershipOnly()}">
           <strong>멤버십 전용 상품</strong><br />
           <span th:text="${product.artistName() + ' Membership 가입 회원만 구매할 수 있습니다.'}">멤버십 안내</span>
-          <a th:href="@{/community/{id}(id=${product.artistId()})}">커뮤니티에서 멤버십 가입하기 ›</a>
+          <a th:href="@{/membership}">멤버십 가입하기 ›</a>
         </div>
 
         <p class="product-detail__desc"
+           style="white-space:pre-wrap;"
+           th:if="${product.description() != null and !#strings.isEmpty(product.description())}"
+           th:text="${product.description()}">상품 설명</p>
+        <p class="product-detail__desc"
+           th:unless="${product.description() != null and !#strings.isEmpty(product.description())}"
            th:text="${product.artistName() + ' 공식 굿즈입니다. WePlaNet Shop에서 안전하게 구매할 수 있습니다.'}">
           상품 설명
         </p>
 
-        <div class="product-detail__options">
+        <div class="product-detail__options" th:unless="${product.soldOut()}">
+          <th:block th:with="selectable=${product.variants().?[selectable()]}">
+            <th:block th:if="${selectable != null and !#lists.isEmpty(selectable)}">
+              <label for="variantSelect">옵션</label>
+              <select class="form-select" id="variantSelect" style="max-width:240px;margin-bottom:10px;">
+                <option th:each="v : ${selectable}"
+                        th:value="${v.id()}"
+                        th:disabled="${v.soldOut()}"
+                        th:attr="data-stock=${v.stockQuantity()}"
+                        th:text="${v.label() + (v.soldOut() ? ' (품절)' : (v.lowStock() ? ' · 재고 ' + v.stockQuantity() + '개' : ''))}">
+                  S
+                </option>
+              </select>
+            </th:block>
+            <input th:if="${selectable == null or #lists.isEmpty(selectable)}"
+                   type="hidden" id="variantSelect"
+                   th:value="${!#lists.isEmpty(product.variants()) ? product.variants().get(0).id() : ''}" />
+          </th:block>
           <label for="qty">수량</label>
-          <select class="form-select" id="qty" name="quantity" form="addToCartForm" style="max-width:120px;">
-            <option th:each="n : ${#numbers.sequence(1, 5)}" th:value="${n}" th:text="${n}">1</option>
-          </select>
+          <input class="form-input" id="qty" name="quantity" type="number" min="1"
+                 value="1" style="max-width:120px;" />
+          <p class="text-xs text-muted mt-8">선택한 옵션 재고 범위 내에서 주문할 수 있습니다.</p>
         </div>
 
         <div class="stack">
-          <form id="addToCartForm" th:action="@{/shop/cart/add}" method="post">
-            <input type="hidden" name="productId" th:value="${product.id()}" />
-            <button type="submit" class="btn btn--primary btn--block btn--lg">
-              장바구니 담기
-            </button>
+          <button type="button" id="addToCartBtn" class="btn btn--primary btn--block btn--lg"
+                  th:disabled="${product.soldOut()}"
+                  th:text="${product.soldOut()} ? 'SOLD OUT' : '장바구니 담기'">장바구니 담기</button>
+          <form id="buyNowForm" th:action="@{/shop/products/{id}/buy(id=${product.id()})}" method="post"
+                th:unless="${product.soldOut()}">
+            <input type="hidden" name="from" th:value="${fromCommunity} ? 'community' : 'global'" />
+            <input type="hidden" name="variantProductId" id="buyVariantProductId" value="" />
+            <input type="hidden" name="quantity" id="buyQty" value="1" />
+            <button type="submit" class="btn btn--accent btn--block">바로 구매</button>
           </form>
-          <button type="button" class="btn btn--accent btn--block"
-                  onclick="WePlaNet.alert('결제 페이지 (목업)')">
-            바로 구매
-          </button>
+          <button type="button" class="btn btn--accent btn--block" disabled
+                  th:if="${product.soldOut()}">품절</button>
+          <a class="btn btn--ghost btn--block"
+             th:if="${product.officialUrl() != null and !#strings.isEmpty(product.officialUrl())}"
+             th:href="${product.officialUrl()}"
+             target="_blank" rel="noopener noreferrer">공식 판매처</a>
           <a class="btn btn--ghost btn--block"
              th:href="@{/community/{id}/highlight(id=${product.artistId()})}"
              th:text="${product.artistName() + ' 커뮤니티로'}">커뮤니티로</a>
@@ -93,9 +128,45 @@
     window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
     window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
+    window.__SHOP_GOODS_ID__ = /*[[${product.id()}]]*/ '';
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/shop.js}"></script>
+  <script>
+    (function () {
+      var goodsId = window.__SHOP_GOODS_ID__;
+      var variantEl = document.getElementById("variantSelect");
+      var qtyEl = document.getElementById("qty");
+      var buyPid = document.getElementById("buyVariantProductId");
+      var buyQty = document.getElementById("buyQty");
+      var addBtn = document.getElementById("addToCartBtn");
+
+      function cartProductId() {
+        if (!variantEl || !variantEl.value) return goodsId;
+        return goodsId + ":" + variantEl.value;
+      }
+
+      function sync() {
+        if (buyPid) buyPid.value = cartProductId();
+        if (buyQty && qtyEl) buyQty.value = qtyEl.value || "1";
+      }
+
+      if (variantEl) variantEl.addEventListener("change", sync);
+      if (qtyEl) qtyEl.addEventListener("change", sync);
+      sync();
+
+      if (addBtn && !addBtn.disabled) {
+        addBtn.addEventListener("click", function () {
+          var qty = qtyEl ? parseInt(qtyEl.value, 10) || 1 : 1;
+          if (window.WePlaNetShop && WePlaNetShop.addProductToCart) {
+            WePlaNetShop.addProductToCart(cartProductId(), qty, addBtn);
+          } else if (window.WePlaNetShop && WePlaNetShop.addToCart) {
+            WePlaNetShop.addToCart(cartProductId(), qty, addBtn);
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
