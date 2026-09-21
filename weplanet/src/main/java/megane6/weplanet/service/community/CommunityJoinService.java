@@ -1,6 +1,7 @@
 package megane6.weplanet.service.community;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
@@ -218,12 +219,55 @@ public class CommunityJoinService {
 
 	/** 템플릿에서 안전하게 쓰기 위한 String 키 맵 */
 	public Map<String, String> displayNicknamesByAuthorIdKey(Collection<User> authors, Long artistId) {
-		Map<String, String> result = new HashMap<>();
+		Map<String, String> result = new LinkedHashMap<>();
+		authorViewsByAuthorIdKey(authors, artistId).forEach(
+				(authorId, view) -> result.put(authorId, view.nickname()));
+		return result;
+	}
+
+	/**
+	 * 게시글 목록에서 사용할 커뮤니티 전용 닉네임과 프로필 이미지 URL을 한 번에 만든다.
+	 * 작성자별 조회를 반복하지 않고 현재 페이지 작성자들의 프로필을 한 쿼리로 읽는다.
+	 */
+	public Map<String, CommunityAuthorView> authorViewsByAuthorIdKey(
+			Collection<User> authors,
+			Long artistId
+	) {
+		if (authors == null || authors.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<Long, User> uniqueAuthors = new LinkedHashMap<>();
 		for (User author : authors) {
-			if (author != null) {
-				result.putIfAbsent(String.valueOf(author.getId()), displayNickname(author, artistId));
+			if (author != null && author.getId() != null) {
+				uniqueAuthors.putIfAbsent(author.getId(), author);
 			}
 		}
+		if (uniqueAuthors.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<Long, CommunityProfile> profilesByAuthorId = new HashMap<>();
+		if (artistId != null) {
+			for (CommunityProfile profile : communityProfileRepository.findForAuthorsInCommunity(
+					artistId, uniqueAuthors.keySet())) {
+				profilesByAuthorId.put(profile.getCommunityMember().getFanId(), profile);
+			}
+		}
+
+		Map<String, CommunityAuthorView> result = new LinkedHashMap<>();
+		uniqueAuthors.forEach((authorId, author) -> {
+			CommunityProfile profile = profilesByAuthorId.get(authorId);
+			String nickname = profile != null ? profile.getNickname() : author.getNickname();
+			String avatarUrl = null;
+			if (profile != null
+					&& !profile.isContentHidden()
+					&& profile.getAvatarStoredName() != null
+					&& !profile.getAvatarStoredName().isBlank()) {
+				avatarUrl = "/uploads/" + profile.getAvatarStoredName();
+			}
+			result.put(String.valueOf(authorId), new CommunityAuthorView(nickname, avatarUrl));
+		});
 		return result;
 	}
 

@@ -52,6 +52,10 @@
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
 
+  <button type="button" id="postScrollTop" class="post-scroll-top" aria-label="게시판 상단으로 이동" hidden>
+    <span aria-hidden="true">↑</span>
+  </button>
+
   <!-- 아티스트 포스트 작성 모달 (해당 커뮤니티 아티스트만) -->
   <div class="modal-backdrop" id="writePostModal"
        th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">

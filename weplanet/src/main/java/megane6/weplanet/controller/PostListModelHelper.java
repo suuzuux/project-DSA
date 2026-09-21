@@ -1,6 +1,7 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Like;
 import megane6.weplanet.domain.entity.Post;
@@ -9,6 +10,7 @@ import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
 
@@ -52,6 +54,34 @@ public class PostListModelHelper {
 			posts = posts.stream().filter(post -> !post.isHiddenFromArtist()).toList();
 		}
 
+		populateModel(model, boardType, sort, artist, currentUser, posts);
+	}
+
+	public void populateCommunityPage(
+			Model model,
+			BoardType boardType,
+			String sort,
+			User artist,
+			boolean hideFromArtists,
+			User currentUser,
+			int page
+	) {
+		Slice<Post> slice = postService.getCommunityPostSlice(
+				boardType, artist, sort, page, hideFromArtists);
+		populateModel(model, boardType, sort, artist, currentUser, slice.getContent());
+		model.addAttribute("postPage", Math.max(page, 0));
+		model.addAttribute("hasMorePosts", slice.hasNext());
+	}
+
+	private void populateModel(
+			Model model,
+			BoardType boardType,
+			String sort,
+			User artist,
+			User currentUser,
+			List<Post> posts
+	) {
+
 		Map<Long, Long> commentCounts = new HashMap<>();
 		Map<Long, String> thumbnailUrls = new HashMap<>();
 		for (Post post : posts) {
@@ -66,14 +96,19 @@ public class PostListModelHelper {
 		// [닉네임 관리] 목록에 작성자 닉네임을 뿌릴 때, 커뮤니티(artist)별 게시판이면 가입할 때 설정한
 		// 커뮤니티 닉네임을 쓰고, artist가 없는 레거시 전역 게시판이면 계정 닉네임을 그대로 쓴다.
 		List<User> authors = posts.stream().map(Post::getAuthor).toList();
-		Map<String, String> authorNicknames = artist != null
-				? communityJoinService.displayNicknamesByAuthorIdKey(authors, artist.getId())
+		Map<String, CommunityAuthorView> authorViews = artist != null
+				? communityJoinService.authorViewsByAuthorIdKey(authors, artist.getId())
 				: authors.stream()
 						.filter(author -> author != null)
 						.collect(Collectors.toMap(
 								author -> String.valueOf(author.getId()),
-								User::getNickname,
+								author -> new CommunityAuthorView(author.getNickname(), null),
 								(a, b) -> a));
+		Map<String, String> authorNicknames = authorViews.entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().nickname()));
+		Map<String, String> authorAvatarUrls = authorViews.entrySet().stream()
+				.filter(entry -> entry.getValue().avatarUrl() != null)
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().avatarUrl()));
 
 		Set<Long> likedPostIds = new HashSet<>();
 		if (currentUser != null && !posts.isEmpty()) {
@@ -91,6 +126,12 @@ public class PostListModelHelper {
 		model.addAttribute("commentCounts", commentCounts);
 		model.addAttribute("thumbnailUrls", thumbnailUrls);
 		model.addAttribute("authorNicknames", authorNicknames);
+		model.addAttribute("authorAvatarUrls", authorAvatarUrls);
 		model.addAttribute("likedPostIds", likedPostIds);
+		// 레거시 전역 게시판도 같은 fragment를 사용하므로 기본값을 함께 제공한다.
+		if (!model.containsAttribute("postPage")) {
+			model.addAttribute("postPage", 0);
+			model.addAttribute("hasMorePosts", false);
+		}
 	}
 }

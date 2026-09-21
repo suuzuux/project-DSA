@@ -119,6 +119,7 @@ public class CommunityController {
 	public String fan(
 			@PathVariable Long artistId,
 			@RequestParam(defaultValue = "latest") String sort,
+			@RequestParam(defaultValue = "0") int page,
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -133,7 +134,8 @@ public class CommunityController {
 			return "community/membership-required";
 		}
 		// 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
-		postListModelHelper.populate(model, BoardType.FAN, sort, artist, userResolver.isArtist(principal), me);
+		postListModelHelper.populateCommunityPage(
+				model, BoardType.FAN, sort, artist, userResolver.isArtist(principal), me, page);
 		
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
@@ -155,6 +157,7 @@ public class CommunityController {
 	public String artistBoard(
 			@PathVariable Long artistId,
 			@RequestParam(defaultValue = "latest") String sort,
+			@RequestParam(defaultValue = "0") int page,
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -168,7 +171,8 @@ public class CommunityController {
 			model.addAttribute("gatedTab", "artist");
 			return "community/membership-required";
 		}
-		postListModelHelper.populate(model, BoardType.ARTIST, sort, artist, false, me);
+		postListModelHelper.populateCommunityPage(
+				model, BoardType.ARTIST, sort, artist, false, me, page);
 		
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
