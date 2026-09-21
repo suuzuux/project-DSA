@@ -29,6 +29,10 @@
 --     라이브 시작을 이메일로 받을지. marketing_consent와는 별개의 값
 --   - users.night_notification_allowed : 오후 9시~오전 8시(KST)에도 위 이메일을 받을지
 -- ------------------------------------------------------------
+-- 수정: 2026-09-17 (SETTINGS-02, 언어 설정 / 게시글·댓글 AI 자동번역)
+--   - users.preferred_language : "기본 서비스 언어" (KO/JA/EN, 기본값 KO). 게시글/댓글 AI 번역
+--     (TranslateService)의 대상 언어로도 그대로 재사용됨 - UI 언어랑 번역 언어를 따로 두지 않음
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -81,6 +85,10 @@ DROP TABLE IF EXISTS `live_comment_report`;
 DROP TABLE IF EXISTS `live_comment`;
 DROP TABLE IF EXISTS `live_session`;
 DROP TABLE IF EXISTS `shop_cart_item`;
+DROP TABLE IF EXISTS `shop_goods_variant`;
+DROP TABLE IF EXISTS `shop_goods_option`;
+DROP TABLE IF EXISTS `shop_goods_category`;
+DROP TABLE IF EXISTS `shop_goods`;
 DROP TABLE IF EXISTS `board_media_like`;
 DROP TABLE IF EXISTS `board_media_files`;
 DROP TABLE IF EXISTS `board_media`;
@@ -163,6 +171,7 @@ CREATE TABLE `users` (
   `marketing_consent` tinyint(1) NOT NULL DEFAULT '0' COMMENT '광고성 정보 수신 동의 (회원가입 체크박스와 공유)',
   `community_activity_email_enabled` tinyint(1) NOT NULL DEFAULT '0' COMMENT '가입한 아티스트 활동(게시글/공지/라이브) 이메일 수신 여부',
   `night_notification_allowed` tinyint(1) NOT NULL DEFAULT '0' COMMENT '오후 9시~오전 8시(KST) 알림 수신 여부',
+  `preferred_language` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'KO' COMMENT '기본 서비스 언어 (KO/JA/EN) - 게시글/댓글 AI 번역 대상 언어로도 재사용',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
   UNIQUE KEY `uk_users_email` (`email`),
@@ -175,7 +184,8 @@ CREATE TABLE `users` (
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
   CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
   CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN')),
-  CONSTRAINT `ck_users_provider` CHECK ((`provider` IS NULL) OR (`provider` IN (_utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE')))
+  CONSTRAINT `ck_users_provider` CHECK ((`provider` IS NULL) OR (`provider` IN (_utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE'))),
+  CONSTRAINT `ck_users_preferred_language` CHECK (`preferred_language` IN (_utf8mb4'KO', _utf8mb4'JA', _utf8mb4'EN'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
 
 -- filter_keyword: 채팅 금칙어
@@ -679,6 +689,62 @@ CREATE TABLE `board_media_like` (
   CONSTRAINT `fk_bml_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 좋아요';
 
+-- shop_goods: 에이전시 등록 굿즈
+CREATE TABLE `shop_goods` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '굿즈 PK',
+  `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
+  `name` varchar(200) NOT NULL COMMENT '상품명',
+  `description` text COMMENT '상세 설명(마크다운)',
+  `price` int NOT NULL COMMENT '가격(원)',
+  `thumbnail_url` varchar(500) DEFAULT NULL COMMENT '썸네일 저장 파일명',
+  `official_url` varchar(500) DEFAULT NULL COMMENT '공식 판매처 URL',
+  `status` varchar(20) NOT NULL COMMENT 'ON_SALE / HIDDEN (공개여부, 품절과 무관)',
+  `sort_order` int NOT NULL DEFAULT 0 COMMENT '유저 샵 노출 순서(오름차순)',
+  `membership_only` tinyint(1) NOT NULL DEFAULT 0 COMMENT '멤버십 전용 여부 (1=전용)',
+  `deleted_at` datetime(6) DEFAULT NULL COMMENT '소프트 삭제 시각',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_shop_goods_artist_sort` (`artist_id`, `deleted_at`, `sort_order`, `id`),
+  KEY `idx_shop_goods_status` (`status`, `deleted_at`, `sort_order`, `id`),
+  CONSTRAINT `fk_shop_goods_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='에이전시 등록 굿즈';
+
+-- shop_goods_category: 굿즈 카테고리
+CREATE TABLE `shop_goods_category` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `goods_id` bigint NOT NULL,
+  `category` varchar(20) NOT NULL COMMENT 'CLOTHING/SHOES/BAG/ACCESSORY/OTHER',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_goods_category` (`goods_id`, `category`),
+  CONSTRAINT `fk_shop_goods_category_goods` FOREIGN KEY (`goods_id`) REFERENCES `shop_goods` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈 카테고리';
+
+-- shop_goods_option: 가방 치수·자유 메모 등 (재고 없음)
+CREATE TABLE `shop_goods_option` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `goods_id` bigint NOT NULL,
+  `category` varchar(20) NOT NULL,
+  `option_key` varchar(30) NOT NULL COMMENT 'WIDTH, HEIGHT, DEPTH, NOTE',
+  `option_value` varchar(500) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_shop_goods_option_goods` (`goods_id`, `category`),
+  CONSTRAINT `fk_shop_goods_option_goods` FOREIGN KEY (`goods_id`) REFERENCES `shop_goods` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈 옵션(치수·메모, 재고 없음)';
+
+-- shop_goods_variant: 판매단위 + 옵션별 재고 (굿즈+옵션값 조합)
+CREATE TABLE `shop_goods_variant` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `goods_id` bigint NOT NULL,
+  `option_key` varchar(30) NOT NULL COMMENT 'SIZE / SHOE_MM / DEFAULT',
+  `option_value` varchar(50) NOT NULL DEFAULT '',
+  `stock_quantity` int NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_goods_variant` (`goods_id`, `option_key`, `option_value`),
+  KEY `idx_shop_goods_variant_goods` (`goods_id`),
+  CONSTRAINT `fk_shop_goods_variant_goods` FOREIGN KEY (`goods_id`) REFERENCES `shop_goods` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈 옵션별 재고(Variant)';
+
 -- shop_cart_item: 굿즈샵 장바구니
 CREATE TABLE `shop_cart_item` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '장바구니 항목 PK',
@@ -1088,6 +1154,6 @@ JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
 
 -- ------------------------------------------------------------
--- [확인] 48이 나오면 테이블은 모두 준비된 것입니다.
+-- [확인] 52이 나오면 테이블은 모두 준비된 것입니다.
 -- ------------------------------------------------------------
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();
