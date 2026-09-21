@@ -1,10 +1,7 @@
 package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.domain.dto.ProjectCardView;
-import megane6.weplanet.domain.dto.ProjectDetailView;
-import megane6.weplanet.domain.dto.ProjectFundingSummary;
-import megane6.weplanet.domain.dto.ProjectRequestDTO;
+import megane6.weplanet.domain.dto.*;
 import megane6.weplanet.domain.entity.Project;
 import megane6.weplanet.domain.entity.ProjectImage;
 import megane6.weplanet.domain.entity.ProjectSettlementAccount;
@@ -39,8 +36,6 @@ public class ProjectService {
 	private final ProjectImageRepository pir;
 	// 정산계좌 저장
 	private final ProjectSettlementAccountRepository psr;
-	private static final long MIN_BASIC_BADGE_COUNT = 5L;
-	private static final long MIN_SPECIAL_BADGE_COUNT = 1L;
 	private final FileStorageService fs;
 	private final AccountProtectionService aps;
 	private final FanProjectCommunityAccessRepository fcr;
@@ -50,6 +45,9 @@ public class ProjectService {
 	private final EmailVerificationService evs;
 	
 	private final AdminActionLogService actionLogService;
+	
+	public static final long MIN_BASIC_BADGE_COUNT = 5L;
+	public static final long MIN_SPECIAL_BADGE_COUNT = 1L;
 
 	// 목록 정렬 기준 - 화면 select의 value와 짝을 이룸
 	public static final String SORT_DEADLINE = "deadline";
@@ -273,7 +271,34 @@ public class ProjectService {
 	private boolean hasRole(AuthenticatedUser viewer, Role role) {
 		return viewer != null && role.authority().equals(viewer.getRoleName());
 	}
-
+	
+	/**
+	 * 프로젝트 등록 자격(배지 개수)을 확인
+	 * 등록 버튼 눌렀을 때 미리 확인하는 용도 + createProject에서도 같은 메서드 사용
+	 * 두 군데 조건을 따로 적으면 한쪽만 고쳤을 때 화면과 서버 판단이 달라진다.
+	 */
+	@Transactional(readOnly = true)
+	public ProjectEligibilityView checkEligibility(Long fanId, Long artistId) {
+		long basicBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
+				fanId, artistId, FanBadgeType.BASIC);
+		long specialBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
+				fanId, artistId, FanBadgeType.SPECIAL);
+		boolean eligible = basicBadgeCount >= MIN_BASIC_BADGE_COUNT
+				&& specialBadgeCount >= MIN_SPECIAL_BADGE_COUNT;
+		String message = eligible ? null : String.format(
+				"프로젝트 등록에는 일반 배지 %d개와 스페셜 배지 %d가 필요해요. %n현재 일반 %d개, 스페셜 %d개를 모았어요.",
+				MIN_BASIC_BADGE_COUNT, MIN_SPECIAL_BADGE_COUNT, basicBadgeCount, specialBadgeCount);
+		
+		return new ProjectEligibilityView(
+				eligible,
+				basicBadgeCount,
+				specialBadgeCount,
+				MIN_BASIC_BADGE_COUNT,
+				MIN_SPECIAL_BADGE_COUNT,
+				message
+		);
+	}
+	
 	@Transactional
 	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
 		// 1. 로그인 회원 조회
@@ -297,20 +322,15 @@ public class ProjectService {
 			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
 		}
 		
-		// 3. 뱃지 개수 확인
-		long basicBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
-				creator.getId(),
-				artist.getId(),
-				FanBadgeType.BASIC
-		);
-		long specialBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
-				creator.getId(),
-				artist.getId(),
-				FanBadgeType.SPECIAL
-		);
-		if (basicBadgeCount < MIN_BASIC_BADGE_COUNT ||  specialBadgeCount < MIN_SPECIAL_BADGE_COUNT) {
-			throw new IllegalStateException("프로젝트 등록에는 기본 뱃지 5개 이상과 스페셜 뱃지 1개 이상이 필요합니다.");
+		// 3. 뱃지 개수 확인 (화면의 등록 버튼에서 쓰는 것과 같은 메서드)
+		ProjectEligibilityView eligibility = checkEligibility(creator.getId(), artist.getId());
+		if (!eligibility.eligible()) {
+			throw new IllegalStateException("프로젝트 등록에는 기본 배지 5개 이상과 스페셜 배지 1개 이상이 필요합니다.");
 		}
+		
+		long basicBadgeCount = eligibility.basicCount();
+		long specialBadgeCount = eligibility.specialCount();
+		
 		LocalDateTime emailVerifiedAt = evs.consumeProjectVerification(
 				creator.getId(),
 				dto.getEmailVerificationKey()

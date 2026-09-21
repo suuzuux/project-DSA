@@ -98,6 +98,7 @@ DROP TABLE IF EXISTS `portal_notice`;
 DROP TABLE IF EXISTS `artist_attendance`;
 DROP TABLE IF EXISTS `artist_schedule`;
 DROP TABLE IF EXISTS `artist_block`;
+DROP TABLE IF EXISTS `membership_period`;
 DROP TABLE IF EXISTS `membership`;
 DROP TABLE IF EXISTS `group_follow`;
 DROP TABLE IF EXISTS `group_members`;
@@ -349,6 +350,25 @@ CREATE TABLE `membership` (
   CONSTRAINT `fk_membership_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_membership_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬–아티스트 유료 멤버십';
+
+-- membership_period: 멤버십 가입/갱신 이력 (연속 N년 배지 판정용)
+--   streak_count : 새 시작일이 직전 만료일 + 7일 안이면 +1, 넘으면 1
+CREATE TABLE `membership_period` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '멤버십 기간 PK',
+  `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
+  `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
+  `started_at` datetime(6) NOT NULL COMMENT '이 기간의 가입/갱신 시각',
+  `expires_at` datetime(6) NOT NULL COMMENT '이 기간의 만료 시각',
+  `streak_count` int NOT NULL DEFAULT 1 COMMENT '연속 몇 번째 기간인지(1=첫 가입)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_membership_period_latest` (`fan_id`, `artist_id`, `started_at`),
+  KEY `fk_membership_period_artist` (`artist_id`),
+  CONSTRAINT `fk_membership_period_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_membership_period_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_membership_period` CHECK (`expires_at` > `started_at`),
+  CONSTRAINT `ck_membership_streak` CHECK (`streak_count` >= 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 가입/갱신 이력';
 
 -- artist_block: 아티스트 유저 차단
 CREATE TABLE `artist_block` (
@@ -995,7 +1015,7 @@ VALUES
   ('SPECIAL_MEMBERSHIP_3',  '멤버십 연속 3년',      'SPECIAL', '🔷', 'membership-3-years.svg',   '멤버십을 3년 연속 유지하면 획득',            7,  NOW(6)),
   ('SPECIAL_MEMBERSHIP_4',  '멤버십 연속 4년',      'SPECIAL', '🔶', 'membership-4-years.svg',   '멤버십을 4년 연속 유지하면 획득',            8,  NOW(6)),
   ('SPECIAL_MEMBERSHIP_5',  '멤버십 연속 5년',      'SPECIAL', '👑', 'membership-5-years.svg',   '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
-  ('SPECIAL_PROJECT_CREATE','프로젝트 등록 달성',   'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트를 등록하면 획득',               10, NOW(6));
+  ('SPECIAL_PROJECT_CREATE','프로젝트 참여',        'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트에 참여(결제 완료)하면 획득',    10, NOW(6));
 
 -- ============================================================
 -- [3] 소속사 시드
@@ -1057,7 +1077,9 @@ SELECT u.id, u.agency_id, '혜선여왕', '2023-01-01', 'VOCAL', '테스트용 �
 FROM `users` u WHERE u.username = 'artist_hyeseon';
 
 -- ============================================================
--- [5] 배지 소유 / 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
+-- [5] 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
+--   배지(fan_badge_ownership)는 더 이상 시드로 넣지 않는다.
+--   실제 활동/기간 조건을 채우면 BadgeAwardService 를 통해 지급된다.
 -- ============================================================
 INSERT INTO `group_follow` (`fan_id`, `group_id`, `created_at`)
 SELECT f.id, g.id, NOW(6)
@@ -1065,27 +1087,7 @@ FROM `users` f
 JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
 
-INSERT INTO `fan_badge_ownership`
-    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
-SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
-FROM `users` f, `users` a, `fan_badge` b
-WHERE f.username IN ('qatest99', 'asd123')
-  AND a.username = 'artist_hwiwon'
-  AND b.badge_code IN (
-    'BASIC_FIRST_JOIN', 'BASIC_FIRST_POST', 'BASIC_COMMENT_5', 'BASIC_MEDIA_VIEW',
-    'BASIC_DAY_100', 'BASIC_LIKE_10', 'BASIC_LIKED_5', 'BASIC_FOLLOW_ARTIST',
-    'SPECIAL_DEBUT_1', 'SPECIAL_MEMBERSHIP_1'
-  );
-
-INSERT INTO `fan_badge_ownership`
-    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
-SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
-FROM `users` f, `users` a, `fan_badge` b
-WHERE f.username IN ('qatest99', 'asd123')
-  AND a.username = 'artist_jungsik'
-  AND b.badge_code IN ('BASIC_FIRST_JOIN', 'BASIC_FIRST_POST', 'BASIC_MEDIA_VIEW');
-
 -- ------------------------------------------------------------
--- [확인] 46가 나오면 테이블은 모두 준비된 것입니다.
+-- [확인] 48이 나오면 테이블은 모두 준비된 것입니다.
 -- ------------------------------------------------------------
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();

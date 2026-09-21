@@ -100,6 +100,20 @@ public class BadgePeriodService {
 			return;
 		}
 		
-		// 오늘이 데뷔일의 N주년 
+		// 오늘이 데뷔일의 N주년 당일인가?
+		if (!debutDate.plusYears(debutYears).isEqual(today)) {
+			return;
+		}
+		
+		if (joinedDate.isAfter(today)) {
+			return;
+		}
+		
+		BadgeCode code = switch ((int) debutYears) {
+			case 1 -> BadgeCode.SPECIAL_DEBUT_1;
+			case 2 -> BadgeCode.SPECIAL_DEBUT_2;
+			default -> BadgeCode.SPECIAL_DEBUT_3;
+		};
+		bas.award(fanId, artistId, code);
 	}
 }
