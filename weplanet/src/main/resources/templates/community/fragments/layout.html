@@ -91,7 +91,7 @@
     <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <div style="min-width:0;">
-          <span style="color:var(--wp-success, #63704a);font-weight:600;font-size:13px;">✓ 커뮤니티 가입중</span>
+          <span style="color:var(--wp-success, #1a8a5c);font-weight:600;font-size:13px;">✓ 커뮤니티 가입중</span>
           <p class="text-xs text-muted" style="margin-top:2px;"
              th:if="${myCommunityProfile != null}"
              th:text="|닉네임 · ${myCommunityProfile.nickname}|">닉네임</p>
@@ -139,18 +139,13 @@
 
     <th:block sec:authorize="hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <div th:if="${membershipActive}">
-        <p style="color:var(--wp-success, #63704a);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
+        <p style="color:var(--wp-success, #1a8a5c);font-weight:700;font-size:13px;margin-bottom:6px;">✓ 가입중</p>
         <p class="text-xs text-muted" th:text="${#temporals.format(membershipExpiresAt, 'yyyy.MM.dd')} + ' 까지'">만료일</p>
         <button type="button" class="btn btn--ghost btn--block mt-8" data-modal-open="membershipDetailModal">Membership 상세보기</button>
       </div>
       <div th:unless="${membershipActive}">
         <p class="membership-card__desc">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-        <!-- 멤버십은 커뮤니티 회원만 살 수 있다. 아직 커뮤니티에 가입하지 않았으면
-             멤버십 결제창 대신 커뮤니티 가입(닉네임) 모달부터 띄운다. -->
-        <button th:if="${!communityJoined}" type="button" class="btn btn--accent btn--block" data-join-btn
-                th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">Membership 가입하기</button>
-        <button th:if="${communityJoined}" type="button" class="btn btn--accent btn--block"
-                data-modal-open="membershipJoinModal">Membership 가입하기</button>
+        <button type="button" class="btn btn--accent btn--block" data-modal-open="membershipJoinModal">Membership 가입하기</button>
       </div>
     </th:block>
     <th:block sec:authorize="isAuthenticated() and !hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -229,9 +224,6 @@
       <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
       <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
       <p class="form-error" id="communityJoinNicknameError"></p>
-      <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
-        커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.
-      </p>
     </div>
     <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
   </div>
@@ -263,15 +255,15 @@
 
 <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통, 본인 커뮤니티 제외) -->
 <div th:fragment="membershipTeaser" th:if="${!communityJoined and !isOwnCommunity}"
-     style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #a85d67);
+     style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #1a8a5c);
               color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:16px;
               flex-wrap:wrap;">
   <span style="font-weight:600;">가입하고 더 다양한 콘텐츠를 즐겨보세요!</span>
   <th:block sec:authorize="isAnonymous()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-    <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #a85d67);" th:href="@{/login}">로그인 후 계속 ›</a>
+    <a class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);" th:href="@{/login}">로그인 후 계속 ›</a>
   </th:block>
   <th:block sec:authorize="hasAnyRole('FAN','ARTIST')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-    <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #a85d67);"
+    <button type="button" class="btn btn--sm" style="background:#fff;color:var(--wp-brand, #1a8a5c);"
             data-join-btn th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}">가입 후 계속 ›</button>
   </th:block>
 </div>

@@ -55,6 +55,7 @@
         <p>여러 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠 · 멤버십 전용 상품</p>
       </th:block>
       <div class="shop-header__actions">
+        <a class="btn btn--soft btn--sm" th:href="@{/membership}">멤버십 혜택 보기</a>
         <a class="btn btn--ghost btn--sm" th:href="@{/shop/cart}">
           장바구니
           <span th:if="${cartItemCount != null && cartItemCount > 0}"

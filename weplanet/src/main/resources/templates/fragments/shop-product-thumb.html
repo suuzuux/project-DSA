@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+<!--
+  유저 굿즈샵 공통 썸네일 + SOLD OUT 오버레이.
+  product: ShopProductView, linkHref: String|null (null이면 링크 없음)
+  thumbClass: product-card__thumb | shop-marquee-card__thumb | product-detail__gallery
+  compact: true면 SOLD OUT 글자 크기 축소
+-->
+<th:block th:fragment="shopThumb(product, linkHref, thumbClass, compact)">
+  <th:block th:if="${linkHref != null}">
+    <a th:href="${linkHref}"
+       th:class="${thumbClass + (product.soldOut() ? ' shop-thumb is-sold-out' : ' shop-thumb')}"
+       th:attr="aria-label=${product.title()}">
+      <th:block th:replace="~{fragments/shop-product-thumb :: shopThumbInner(${product}, ${compact})}"></th:block>
+    </a>
+  </th:block>
+  <th:block th:unless="${linkHref != null}">
+    <div th:class="${thumbClass + (product.soldOut() ? ' shop-thumb is-sold-out' : ' shop-thumb')}">
+      <th:block th:replace="~{fragments/shop-product-thumb :: shopThumbInner(${product}, ${compact})}"></th:block>
+    </div>
+  </th:block>
+</th:block>
+
+<th:block th:fragment="shopThumbInner(product, compact)">
+  <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
+  <span th:if="${product.soldOut()}"
+        class="shop-sold-out-overlay"
+        th:classappend="${compact} ? ' shop-sold-out-overlay--compact' : ''"
+        aria-hidden="true">SOLD OUT</span>
+  <img th:if="${product.thumbnailPublicUrl() != null}"
+       class="shop-thumb__img"
+       th:src="${product.thumbnailPublicUrl()}"
+       th:alt="${product.title()}" />
+  <span th:unless="${product.thumbnailPublicUrl() != null}" class="shop-thumb__placeholder">상품 이미지</span>
+</th:block>
+</body>
+</html>
