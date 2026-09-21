@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>가상계좌 발급 완료 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-left">
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+</header>
+
+<main class="container section" style="max-width:560px;padding-top:56px;">
+  <h1 style="font-size:20px;font-weight:700;margin-bottom:8px;"
+      th:text="${result.paid()} ? '입금이 확인되었어요' : '가상계좌가 발급되었어요'">가상계좌가 발급되었어요</h1>
+  <p class="text-muted" style="margin-bottom:24px;line-height:1.6;"
+     th:text="${result.paid()} ? '프로젝트 참여가 확정되었습니다.' : '아래 계좌로 입금기한 안에 입금하면 참여가 확정돼요.'">
+    아래 계좌로 입금기한 안에 입금하면 참여가 확정돼요.
+  </p>
+
+  <div style="border:1px solid var(--wp-hairline, #e5e5e5);border-radius:12px;padding:20px;display:grid;gap:12px;">
+    <div class="flex-between"><span class="text-muted">프로젝트</span><strong th:text="${result.projectTitle()}">프로젝트</strong></div>
+    <div class="flex-between"><span class="text-muted">참여 금액</span>
+      <strong th:text="${#numbers.formatInteger(result.amount(), 1, 'COMMA')} + '원'">10,000원</strong></div>
+    <div class="flex-between"><span class="text-muted">입금 은행</span><strong th:text="${result.bankName()}">은행</strong></div>
+    <div class="flex-between"><span class="text-muted">계좌번호</span><strong th:text="${result.accountNumber()}">000-0000-0000</strong></div>
+    <div class="flex-between"><span class="text-muted">입금 기한</span>
+      <strong th:text="${#temporals.format(result.dueDate(), 'yyyy.MM.dd HH:mm')} + ' 까지'">기한</strong></div>
+  </div>
+
+  <p class="text-xs text-muted" style="margin-top:12px;line-height:1.6;" th:unless="${result.paid()}">
+    입금기한이 지나면 주문은 자동으로 취소돼요. 입금 확인까지 몇 분 걸릴 수 있어요.
+  </p>
+
+  <div class="flex-center" style="gap:10px;justify-content:center;margin-top:28px;">
+    <a class="btn btn--ghost" th:href="@{/community/{id}/project(id=${result.artistId()})}">프로젝트로 돌아가기</a>
+    <a class="btn btn--primary" th:href="@{/collection}">참여 내역 보기</a>
+  </div>
+</main>
+
+</body>
+</html>

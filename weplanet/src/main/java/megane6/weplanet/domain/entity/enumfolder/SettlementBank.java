@@ -52,4 +52,13 @@ public enum SettlementBank {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 은행 코드입니다: " + financialCode));
     }
+    
+    // 토스 은행 코드 (예: "20") -> 화면에 보여줄 은행 이름. 목록에 없는 은행이면 코드를 그대로 보여준다.
+    public static String displayNameOfTossCode(String tossCode) {
+        return Arrays.stream(values())
+                .filter(bank -> bank.tossPaymentsCode.equals(tossCode))
+                .map(SettlementBank::getDisplayName)
+                .findFirst()
+                .orElse("은행(코드 " + tossCode + ")");
+    }
 }
