@@ -10,6 +10,7 @@ import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.admin.AdminActionLogService;
+import megane6.weplanet.service.email.MailSenderService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +44,8 @@ public class ProjectService {
 	
 	// 이메일
 	private final EmailVerificationService evs;
-	
+	private final MailSenderService mss;
+
 	private final AdminActionLogService actionLogService;
 	
 	public static final long MIN_BASIC_BADGE_COUNT = 5L;
@@ -52,6 +54,26 @@ public class ProjectService {
 	// 목록 정렬 기준 - 화면 select의 value와 짝을 이룸
 	public static final String SORT_DEADLINE = "deadline";
 	public static final String SORT_LATEST = "latest";
+
+	/**
+	 * 프로젝트 등록 본인확인 인증번호를 발급하고 회원가입 때 인증한 이메일로 발송한다.
+	 * 발급과 발송을 한 트랜잭션으로 묶어서, 메일 발송이 실패하면 인증 기록도 롤백된다.
+	 * (롤백되지 않으면 받지도 못한 인증번호 때문에 60초 재전송 제한에 걸린다.)
+	 *
+	 * @return 화면이 확인 단계에서 되돌려줘야 할 인증 키
+	 */
+	@Transactional
+	public String sendProjectVerificationCode(Long userId) {
+		EmailVerificationService.IssuedVerification issued = evs.issueProjectVerification(userId);
+
+		mss.sendProjectVerificationCode(
+				issued.recipientEmail(),
+				issued.rawCode(),
+				EmailVerificationService.EXPIRATION_MINUTES
+		);
+
+		return issued.verificationKey();
+	}
 
 	/**
 	 * 커뮤니티(아티스트)별 프로젝트 목록을 카드용 DTO로 만들어 돌려준다.
