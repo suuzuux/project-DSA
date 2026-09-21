@@ -60,9 +60,9 @@
         <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
 
         <div class="membership-notice" th:if="${product.membershipOnly()}">
-          <strong>멤버십 전용 굿즈입니다</strong><br />
-          <span>장바구니 담기·바로 구매는 해당 아티스트 멤버십 가입 회원만 가능합니다.</span>
-          <a th:href="@{/membership}">멤버십 가입하기 ›</a>
+          <strong>멤버십 전용 상품</strong><br />
+          <span th:text="${product.artistName() + ' Membership 가입 회원만 구매할 수 있습니다.'}">멤버십 안내</span>
+          <a th:href="@{/community/{id}(id=${product.artistId()})}">커뮤니티에서 멤버십 가입하기 ›</a>
         </div>
 
         <p class="product-detail__desc"

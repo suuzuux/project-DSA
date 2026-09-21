@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * 아티스트/에이전시는 포털 로그인으로, 그 외는 메인홈으로 보낸다.
+ * 관리자는 관리자 로그인으로, 아티스트/에이전시는 포털 로그인으로, 그 외는 메인홈으로 보낸다.
  */
 @Component
 public class RoleAwareLogoutSuccessHandler implements LogoutSuccessHandler {
@@ -23,6 +23,11 @@ public class RoleAwareLogoutSuccessHandler implements LogoutSuccessHandler {
 		if (authentication != null) {
 			for (GrantedAuthority authority : authentication.getAuthorities()) {
 				String role = authority.getAuthority();
+				// 관리자는 일반 회원 로그인 화면이 아니라 관리자 로그인 화면으로 돌아가야 한다.
+				if ("ROLE_ADMIN".equals(role)) {
+					target = "/admin/login?logout";
+					break;
+				}
 				if ("ROLE_ARTIST".equals(role)) {
 					target = "/portal/login?role=ARTIST";
 					break;

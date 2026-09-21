@@ -10,7 +10,7 @@
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
                data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
 
@@ -36,16 +36,18 @@
 </header>
 
 <main class="container section">
-  <div class="flex-between mb-24">
+  <div class="flex-between mb-16">
     <h1 class="section__title" style="font-size:var(--wp-fs-xl);">공지사항</h1>
-    <div class="chip-row mb-24">
-      <a th:href="@{/notices}" class="chip" th:classappend="${selectedCategory == null} ? ' is-active'">전체</a>
-      <a th:href="@{/notices(category='GENERAL')}" class="chip" th:classappend="${selectedCategory == 'GENERAL'} ? ' is-active'">일반</a>
-      <a th:href="@{/notices(category='EVENT')}" class="chip" th:classappend="${selectedCategory == 'EVENT'} ? ' is-active'">이벤트</a>
-      <a th:href="@{/notices(category='MAINTENANCE')}" class="chip" th:classappend="${selectedCategory == 'MAINTENANCE'} ? ' is-active'">점검</a>
-      <a th:href="@{/notices(category='UPDATE')}" class="chip" th:classappend="${selectedCategory == 'UPDATE'} ? ' is-active'">업데이트</a>
-    </div>
     <a class="btn btn--ghost btn--sm" th:href="@{/}">← 홈</a>
+  </div>
+
+  <!-- 분류 필터 - 제목 아래 줄에서 왼쪽 정렬 -->
+  <div class="chip-row mb-24">
+    <a th:href="@{/notices}" class="chip" th:classappend="${selectedCategory == null} ? ' is-active'">전체</a>
+    <a th:href="@{/notices(category='GENERAL')}" class="chip" th:classappend="${selectedCategory == 'GENERAL'} ? ' is-active'">일반</a>
+    <a th:href="@{/notices(category='EVENT')}" class="chip" th:classappend="${selectedCategory == 'EVENT'} ? ' is-active'">이벤트</a>
+    <a th:href="@{/notices(category='MAINTENANCE')}" class="chip" th:classappend="${selectedCategory == 'MAINTENANCE'} ? ' is-active'">점검</a>
+    <a th:href="@{/notices(category='UPDATE')}" class="chip" th:classappend="${selectedCategory == 'UPDATE'} ? ' is-active'">업데이트</a>
   </div>
 
   <p th:if="${#lists.isEmpty(notices)}" class="list-empty">등록된 공지가 없습니다.</p>
@@ -64,7 +66,6 @@
                 th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2026.08.31</span>
         </div>
       </div>
-      <p class="post-card__excerpt" th:text="${notice.content}">공지 내용</p>
     </a>
   </article>
 </main>
