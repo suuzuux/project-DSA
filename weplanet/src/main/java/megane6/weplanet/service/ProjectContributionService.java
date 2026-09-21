@@ -11,10 +11,12 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.FanProjectCommunityAccessRepository;
 import megane6.weplanet.repository.ProjectContributionRepository;
 import megane6.weplanet.repository.ProjectRepository;
 import megane6.weplanet.repository.UserRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +35,7 @@ public class ProjectContributionService {
     private final ProjectContributionRepository contributionRepository;
     private final UserRepository userRepository;
     private final FanProjectCommunityAccessRepository communityAccessRepository;
+    private final ApplicationEventPublisher eventPublisher; // [배지] 참여 완료 알림 발행용
 
     @Transactional
     public ProjectContributionResult contribute(
@@ -105,6 +108,12 @@ public class ProjectContributionService {
                         now
                 )
         );
+        // [배지] 모의결제까지 끝난 시점 = 실제 참여 확정. 등록이 아닌 "참여"에 주는 배지
+        eventPublisher.publishEvent(new BadgeActivityEvent(
+                contributor.getId(),
+                project.getArtist().getId(),
+                BadgeActivityEvent.Activity.PROJECT_JOINED
+        ));
 
         return toResult(contribution, "모의결제가 완료되어 프로젝트 참여가 기록되었습니다.");
     }

@@ -3,12 +3,10 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.BoardType;
+import megane6.weplanet.domain.entity.MembershipPeriod;
 import megane6.weplanet.domain.entity.enumfolder.BadgeCode;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
-import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.GroupFollowRepository;
-import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.PostRepository;
+import megane6.weplanet.repository.*;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -27,6 +25,7 @@ public class BadgeEventListener {
 	private final CommentRepository cr;
 	private final LikeRepository lr;
 	private final GroupFollowRepository gfr;
+	private final MembershipPeriodRepository mpr;
 	
 	/**
 	 * AFTER_COMMIT : 원래 작업(글 저장 등)이 DB에 "확정"된 뒤에 실행한다.
@@ -59,6 +58,11 @@ public class BadgeEventListener {
 			case LIKE_GIVEN -> checkLikesGiven(fanId, artistId);
 			case LIKE_RECEIVED -> checkLikesReceived(fanId, artistId);
 			case ARTIST_FOLLOWED -> checkFollow(fanId, artistId);
+			// 아래 셋은 "한 번이라도 했으면 끝"이라 따로 개수를 셀 필요가 X
+			// 이벤트가 왔다는 것 자체가 조건 달성
+			case MEDIA_VIEWED -> award(fanId, artistId, BadgeCode.BASIC_MEDIA_VIEW);
+			case LIVE_VIEWED -> award(fanId, artistId, BadgeCode.BASIC_LIVE_VIEW);
+			case PROJECT_JOINED -> award(fanId, artistId, BadgeCode.SPECIAL_PROJECT_CREATE);
 		}
 	}
 	
@@ -90,6 +94,29 @@ public class BadgeEventListener {
 	private void checkFollow(Long fanId, Long artistId) {
 		if (gfr.existsByFanIdAndGroupId(fanId, artistId)) {
 			award(fanId, artistId, BadgeCode.BASIC_FOLLOW_ARTIST);
+		}
+	}
+	
+	/**
+	 * 멤버십 연속 N년 배지.
+	 * 연속 횟수는 가입할 때 이미 계산해서 이력에 저장해뒀으므로, 마지막 한 줄만 읽으면 된다.
+	 * 1번째 = 첫 멤버십 가입, 2~5번째 = 연속N년
+	 */
+	private void checkMembership(Long fanId, Long artistId) {
+		int streak = mpr.findTopByFanIdAndArtistIdOrderByStartedAtDesc(fanId, artistId)
+				.map(MembershipPeriod::getStreakCount)
+				.orElse(0);
+		
+		BadgeCode code = switch (streak) {
+			case 1 -> BadgeCode.SPECIAL_MEMBERSHIP_1;
+			case 2 -> BadgeCode.SPECIAL_MEMBERSHIP_2;
+			case 3 -> BadgeCode.SPECIAL_MEMBERSHIP_3;
+			case 4 -> BadgeCode.SPECIAL_MEMBERSHIP_4;
+			case 5 -> BadgeCode.SPECIAL_MEMBERSHIP_5;
+			default -> null;		// 0회(이력없음) 또는 6년차 이상은 줄 배지가 X
+		};
+		if (code != null) {
+			award(fanId, artistId, code);
 		}
 	}
 	

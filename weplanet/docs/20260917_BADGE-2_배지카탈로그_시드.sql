@@ -62,7 +62,7 @@ VALUES
   ('SPECIAL_MEMBERSHIP_3',  '멤버십 연속 3년',      'SPECIAL', '🔷', 'membership-3-years.svg',   '멤버십을 3년 연속 유지하면 획득',            7,  NOW(6)),
   ('SPECIAL_MEMBERSHIP_4',  '멤버십 연속 4년',      'SPECIAL', '🔶', 'membership-4-years.svg',   '멤버십을 4년 연속 유지하면 획득',            8,  NOW(6)),
   ('SPECIAL_MEMBERSHIP_5',  '멤버십 연속 5년',      'SPECIAL', '👑', 'membership-5-years.svg',   '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
-  ('SPECIAL_PROJECT_CREATE','프로젝트 등록 달성',   'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트를 등록하면 획득',               10, NOW(6))
+  ('SPECIAL_PROJECT_CREATE','프로젝트 참여',        'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트에 참여(결제 완료)하면 획득',    10, NOW(6))
 ON DUPLICATE KEY UPDATE
   `badge_name`  = VALUES(`badge_name`),
   `badge_type`  = VALUES(`badge_type`),
