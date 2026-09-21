@@ -10,7 +10,7 @@
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
-               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.name : null},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
                data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
   <div class="portal-shell">
@@ -44,7 +44,7 @@
         <a class="btn btn--primary btn--sm" th:href="@{/admin/notices/new}">글쓰기</a>
       </div>
 
-      <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
+      <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
       <div class="admin-stat-grid" style="margin-bottom:20px;">
         <article class="admin-stat">
