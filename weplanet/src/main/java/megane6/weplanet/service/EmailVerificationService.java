@@ -20,7 +20,7 @@ import java.util.Locale;
 @Transactional(readOnly = true)
 public class EmailVerificationService {
 	
-	private static final long EXPIRATION_MINUTES = 5;
+	public static final long EXPIRATION_MINUTES = 5;
 	private static final long RESEND_COOLDOWN_SECONDS = 60;
 
 	// 관리자 로그인은 보안 등급이 높아 유효시간을 짧게 두고, 재전송 제한은 두지 않는다.
