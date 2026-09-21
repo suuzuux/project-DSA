@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.ProjectDetailView;
+import megane6.weplanet.domain.dto.ProjectEligibilityView;
 import megane6.weplanet.domain.dto.ProjectRequestDTO;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
@@ -77,6 +78,19 @@ public class ProjectController {
 		addPageModel(artistId, model, sort, principal);
 
 		return "community/project";
+	}
+	
+	@GetMapping("/eligibility")
+	@ResponseBody
+	public ProjectEligibilityView projectEligibility(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		if (principal == null) {
+			throw new IllegalStateException("로그인이 필요합니다.");
+		}
+		
+		return ps.checkEligibility(principal.getId(), artistId);
 	}
 	
 	// 프로젝트 상세 화면

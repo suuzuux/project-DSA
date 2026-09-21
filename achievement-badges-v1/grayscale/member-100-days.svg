@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">가입 후 100일 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="9" y="11" width="46" height="44" rx="8" fill="#E9EBEF"/>
+    <path fill="#AEB5BF" d="M9 21h46v-3a7 7 0 0 0-7-7H16a7 7 0 0 0-7 7Z"/>
+    <path fill="none" d="M20 7v9M44 7v9"/>
+    <path fill="#939CA8" stroke-width="2.2" d="m32 32 1.9 3.8 4.2.6-3 2.9.7 4.1-3.8-2-3.8 2 .7-4.1-3-2.9 4.2-.6Z"/>
+    <path fill="none" d="M20 48h24"/>
+  </g>
+</svg>

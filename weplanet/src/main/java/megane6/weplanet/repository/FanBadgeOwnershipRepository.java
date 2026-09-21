@@ -15,4 +15,7 @@ public interface FanBadgeOwnershipRepository extends JpaRepository<FanBadgeOwner
             FanBadgeType badgeType
     );
     
+    // 배지를 받은 "기록"이 있는지. 회수(revoked)된 기록도 포함
+    // 관리자가 회수한 배지를 시스템이 다시 자동 지급하면 X
+    boolean existsByFan_IdAndArtist_IdAndBadgeCode(Long fanId, Long artistId, String badgeCode);
 }

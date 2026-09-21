@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">프로젝트 등록 달성 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#E9EBEF" d="M22 41c-4-12 2-28 19-35 8 17 2 33-10 39Z"/>
+  <path fill="#AEB5BF" d="M39 7c3 6 4 11 3 16l-10-9c2-3 4-5 7-7Z"/>
+  <circle cx="33" cy="27" r="6" fill="#D3D7DD"/>
+  <path fill="#AEB5BF" d="m23 35-12 3-5 9 16-2M32 44l-2 14 9-6 2-12"/>
+  <path fill="#939CA8" d="M20 46c-7 2-10 6-12 12 6-2 10-5 12-12Z"/>
+  <path fill="none" d="M13 29 8 24M50 38l6 4M49 13l5-3"/>
+</g>
+</svg>

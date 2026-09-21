@@ -3,6 +3,7 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.BadgeCollectionView;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.BadgePeriodService;
 import megane6.weplanet.service.CollectionService;
 import megane6.weplanet.service.ProjectContributionService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +23,7 @@ public class CollectionController {
 	 */
 	private final CollectionService cs;
 	private final ProjectContributionService pcs;
+	private final BadgePeriodService bps;
 	
 	@GetMapping("/collection")
 	public String collection(
@@ -31,6 +33,10 @@ public class CollectionController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
+		// 기간 배지는 스케줄러가 새벽에 확인하지만, 화면에 들어올 때 한 번 더 확인해서
+		// 조건을 채운 배지가 바로 보이게 한다 (본인 것만 확인)
+		bps.checkForFan(principal.getId());
+		
 		model.addAttribute("cards", cs.getMyCollection(principal.getId()));
 		model.addAttribute(
 				"projectParticipations",

@@ -5,14 +5,14 @@ import megane6.weplanet.domain.dto.BadgeCollectionView;
 import megane6.weplanet.domain.dto.BadgeView;
 import megane6.weplanet.domain.dto.CollectionCardView;
 import megane6.weplanet.domain.entity.FanBadge;
-import megane6.weplanet.domain.entity.GroupFollow;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.FanBadgeOwnershipRepository;
 import megane6.weplanet.repository.FanBadgeRepository;
-import megane6.weplanet.repository.GroupFollowRepository;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.community.CommunityMemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +23,17 @@ import java.util.stream.Collectors;
 /**
  * "나의 컬렉션" 조회 전용 서비스.
  * <p>
- * 배지 지급은 여기서 하지 않는다. 지금은 시드로만 넣고, 조회만 담당한다.
+ * 지급은 BadgeAwardService가 전담
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CollectionService {
 	
-	private final GroupFollowRepository groupFollowRepository;
 	private final FanBadgeRepository fanBadgeRepository;
 	private final FanBadgeOwnershipRepository ownershipRepository;
 	private final UserRepository userRepository;
+	private final CommunityMemberRepository communityMemberRepository;
 	
 	// 카드에 미리보기로 띄울 배지 개수
 	private static final int PREVIEW_SIZE = 3;
@@ -41,12 +41,12 @@ public class CollectionService {
 	/**
 	 * 내가 가입한 커뮤니티별 배지 요약 카드 목록.
 	 * <p>
-	 * group_follow.group_id 는 그 아티스트의 users.id 와 같은 값으로 시딩돼 있어서
-	 * (MediaGroupDataInitializer 참고) 별도 변환 없이 아티스트 id 로 쓴다.
+	 * 기준은 community_members(커뮤니티 가입)다. group_follow(프로필 팔로우)는 배지 하나의 조건일 뿐,
+	 * "내 커뮤니티" 목록의 기준이 아니다.
 	 */
 	public List<CollectionCardView> getMyCollection(Long fanId) {
-		List<Long> artistIds = groupFollowRepository.findByFanId(fanId).stream()
-				.map(GroupFollow::getGroupId)
+		List<Long> artistIds = communityMemberRepository.findByFanId(fanId).stream()
+				.map(CommunityMember::getArtistId)
 				.toList();
 		
 		if (artistIds.isEmpty()) {

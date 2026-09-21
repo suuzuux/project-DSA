@@ -6,20 +6,18 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.community.CommunityProfileRepository;
 import megane6.weplanet.service.FileStorageService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +27,7 @@ public class CommunityJoinService {
 	private final CommunityProfileRepository communityProfileRepository;
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
+	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
 	
 	// EXPLORE-03: "선택한 아티스트의 커뮤니티에 가입 후 커뮤니티 프로필 생성"이 한 세트라
 	// 가입(community_members)과 프로필 생성(community_profiles)을 트랜잭션 하나로 묶음
@@ -69,6 +68,11 @@ public class CommunityJoinService {
 				.avatarStoredName(avatarStoredName)
 				.backgroundStoredName(backgroundStoredName)
 				.build());
+		
+		// [배지] 가입 완료 알림 -> 첫 가입 배지 + 가입 전 활동 배지 확인 (트랜잭션 커밋 후 실행됨)
+		eventPublisher.publishEvent(new BadgeActivityEvent(
+				fan.getId(), artistId, BadgeActivityEvent.Activity.COMMUNITY_JOINED
+		));
 	}
 
 	/**

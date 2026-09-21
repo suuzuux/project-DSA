@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">커뮤니티 가입 후 2년 · 획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#23304A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path fill="#DDE2E8" d="m17 8 12 18h6L47 8h-10l-5 9-5-9Z"/>
+    <circle cx="32" cy="39" r="17" fill="#AEB7C4"/>
+    <circle cx="32" cy="39" r="12" fill="none" stroke="#FFFFFF"/>
+    <rect x="26" y="34" width="4" height="12" rx="2" fill="#F3F5F8" stroke="none"/><rect x="34" y="34" width="4" height="12" rx="2" fill="#F3F5F8" stroke="none"/>
+  </g>
+</svg>

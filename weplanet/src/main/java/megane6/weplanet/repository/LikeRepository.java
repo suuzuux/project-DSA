@@ -19,4 +19,7 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     // 내 프로필 "좋아요 히스토리" 탭 - 내가 좋아요 누른 게시글 전체를 최신순으로
     List<Like> findByUserOrderByCreatedAtDesc(User user);
     List<Like> findByUserOrderByCreatedAtAsc(User user);
+    
+    // [배지] 이 커뮤니티 글들에 내가 누른 좋아요 수
+    long countByUser_IdAndPost_Artist_Id(Long userId, Long artistId);
 }

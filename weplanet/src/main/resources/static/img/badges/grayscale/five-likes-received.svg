@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">받은 좋아요 5개 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#AEB5BF" d="M32 53C16 43 8 35 8 24c0-8 6-13 13-13 5 0 9 3 11 7 2-4 6-7 11-7 7 0 13 5 13 13 0 11-8 19-24 29Z"/>
+  <path fill="none" stroke="#F8F9FA" d="M18 23c1-4 4-6 8-5"/>
+  <circle cx="12" cy="10" r="2.4" fill="#939CA8"/><circle cx="53" cy="12" r="2.4" fill="#D3D7DD"/>
+</g>
+</svg>

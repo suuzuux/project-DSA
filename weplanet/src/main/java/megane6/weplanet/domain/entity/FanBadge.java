@@ -32,7 +32,8 @@ public class FanBadge {
 	@Column(nullable = false, length = 8)
 	private String icon;
 	
-	// 배지 이미지 경로 (이미지 안 만든 배지 = null, icon 사용)
+	// 배지 이미지 파일명 (예: community-first-join.svg). 이미지 안 만든 배지 = null, icon 사용
+	// 획득/미획득에 따라 static/img/badges/color 또는 grayscale 폴더에서 같은 파일명을 쓴다 (BadgeView 참고)
 	@Column(name = "image_url", length = 255)
 	private String imageUrl;
 	

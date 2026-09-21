@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">첫 멤버십 가입 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#AEB5BF" d="M9 24 19 10h26l10 14-23 32Z"/>
+  <path fill="#D3D7DD" d="m19 10 6 14 7-14 7 14 6-14Z" stroke="none"/>
+  <path fill="none" d="M9 24h46M25 24l7 32 7-32"/>
+  <path fill="#939CA8" d="m49 7 2 4 4 .6-3 3 .7 4-3.7-2-3.7 2 .7-4-3-3 4-.6Z" stroke-width="2"/>
+</g>
+</svg>

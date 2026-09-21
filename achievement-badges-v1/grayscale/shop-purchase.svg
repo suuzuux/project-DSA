@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">샵 구매 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <path fill="#AEB5BF" d="M11 23h42l-3 33H14Z"/>
+  <path fill="none" d="M22 26v-7a10 10 0 0 1 20 0v7"/>
+  <path fill="#E9EBEF" d="M32 47c-7-4-10-8-10-12a6 6 0 0 1 10-4 6 6 0 0 1 10 4c0 4-3 8-10 12Z"/>
+</g>
+</svg>
