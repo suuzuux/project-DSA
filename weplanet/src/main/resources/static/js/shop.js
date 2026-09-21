@@ -55,7 +55,8 @@
       var form = stepper.closest(".cart-qty-form");
       if (!form) return;
       var min = parseInt(stepper.getAttribute("data-qty-min"), 10) || 1;
-      var max = parseInt(stepper.getAttribute("data-qty-max"), 10) || 5;
+      var max = parseInt(stepper.getAttribute("data-qty-max"), 10);
+      if (!max || max < 1) max = 999999;
       var input = form.querySelector('input[name="quantity"]');
       if (!input) return;
       var current = parseInt(input.value, 10) || min;
@@ -97,7 +98,9 @@
       '<form action="/shop/cart/' +
       item.itemId +
       '/update" method="post" class="cart-qty-form">' +
-      '<div class="cart-qty-stepper" data-qty-min="1" data-qty-max="5">' +
+      '<div class="cart-qty-stepper" data-qty-min="1" data-qty-max="' +
+      (product.stockQuantity > 0 ? product.stockQuantity : 999999) +
+      '">' +
       '<button type="button" class="cart-qty-stepper__btn" data-qty-delta="-1" aria-label="수량 줄이기">−</button>' +
       '<output class="cart-qty-stepper__value">' +
       item.quantity +
@@ -192,20 +195,18 @@
       headers: { Accept: "application/json" },
     })
       .then(function (res) {
-        return res.ok ? res.json() : null;
+        return res.json().catch(function () {
+          return null;
+        });
       })
       .then(function (data) {
         if (data && data.ok) {
           showShopToast(data.message || "장바구니에 담았습니다.", 1000);
-          if (typeof data.cartCount === "number") {
-            updateCartBadge(data.cartCount);
-          }
-          if (data.cart) {
-            updateCartPage(data.cart, data.addedProductId || productId);
-          }
+          if (typeof data.cartCount === "number") updateCartBadge(data.cartCount);
+          if (data.cart) updateCartPage(data.cart, data.addedProductId || productId);
           return true;
         }
-        showShopToast((data && data.message) || "장바구니에 담지 못했습니다.", 1000);
+        showShopToast((data && data.message) || "담기에 실패했습니다.", 1800);
         return false;
       })
       .catch(function () {
@@ -232,7 +233,7 @@
 
   document.addEventListener("click", function (e) {
     var btn = e.target.closest("[data-shop-add-cart]");
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
     e.preventDefault();
     e.stopPropagation();
     addProductToCart(btn.getAttribute("data-product-id"), 1, btn);
@@ -247,7 +248,8 @@
     if (!stepper || !form) return;
 
     var min = parseInt(stepper.getAttribute("data-qty-min"), 10) || 1;
-    var max = parseInt(stepper.getAttribute("data-qty-max"), 10) || 5;
+    var max = parseInt(stepper.getAttribute("data-qty-max"), 10);
+    if (!max || max < 1) max = 999999;
     var delta = parseInt(stepBtn.getAttribute("data-qty-delta"), 10) || 0;
     var input = form.querySelector('input[name="quantity"]');
     var output = stepper.querySelector(".cart-qty-stepper__value");

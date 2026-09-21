@@ -126,7 +126,7 @@ p {
   height: 32px;
   border-radius: 8px;
   background: linear-gradient(145deg, var(--wp-brand) 0%, var(--wp-brand-dark) 100%);
-  color: var(--wp-on-brand, #fff);
+  color: #fff;
   display: grid;
   place-items: center;
   font-size: 14px;
@@ -211,7 +211,7 @@ p {
 
 .btn--primary {
   background: var(--wp-brand);
-  color: var(--wp-on-brand, #fff);
+  color: #fff;
 }
 
 .btn--primary:hover {
@@ -220,7 +220,7 @@ p {
 
 .btn--accent {
   background: var(--wp-accent);
-  color: var(--wp-on-accent, #fff);
+  color: #fff;
 }
 
 .btn--accent:hover {
@@ -336,7 +336,7 @@ p {
 .form-textarea:focus {
   outline: none;
   border-color: var(--wp-brand);
-  box-shadow: 0 0 0 3px var(--wp-brand-tint);
+  box-shadow: 0 0 0 3px var(--wp-brand-soft);
 }
 
 .form-input::placeholder,
@@ -521,7 +521,7 @@ p {
   justify-content: flex-end;
   background:
     linear-gradient(180deg, transparent 20%, rgba(0, 0, 0, 0.55) 100%),
-    linear-gradient(120deg, #2d3a47 0%, #8a5a66 55%, #f7c8d3 140%);
+    linear-gradient(120deg, #0f6b6b 0%, #1a3a4a 55%, #c45c26 140%);
 }
 
 .banner__kicker {
@@ -619,7 +619,7 @@ p {
   height: 72px;
   margin: 0 auto 8px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #fdeef2, #f7c8d3);
+  background: linear-gradient(145deg, #dfeceb, #b8d4d4);
   border: 2px solid var(--wp-surface);
   box-shadow: var(--wp-shadow);
   display: grid;
@@ -788,7 +788,7 @@ p {
 .media-ph {
   aspect-ratio: 1;
   background:
-    linear-gradient(135deg, #f1eee8, #ddd9d1);
+    linear-gradient(135deg, #e8eeed, #d5e0df);
   display: grid;
   place-items: center;
   color: var(--wp-muted);

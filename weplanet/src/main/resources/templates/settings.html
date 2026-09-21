@@ -42,9 +42,9 @@
 
   <!-- 프로필 요약 -->
   <section class="settings-block">
-    <p th:if="${profileMessage}" th:text="${profileMessage}" style="color:#63704a;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
+    <p th:if="${profileMessage}" th:text="${profileMessage}" style="color:#2f8f5b;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
     <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
-    <p th:if="${param.linked}" style="color:#63704a;font-size:var(--wp-fs-xs);margin-bottom:12px;">소셜 계정이 연동되었습니다.</p>
+    <p th:if="${param.linked}" style="color:#2f8f5b;font-size:var(--wp-fs-xs);margin-bottom:12px;">소셜 계정이 연동되었습니다.</p>
     <p th:if="${param.linkNotice}" style="color:var(--wp-ink-soft);font-size:var(--wp-fs-xs);margin-bottom:12px;">이미 연동되어 있는 계정입니다.</p>
     <p th:if="${param.linkError}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;">이미 다른 계정에 연동된 소셜 계정이에요.</p>
     <div class="flex-between">
@@ -312,7 +312,7 @@
 
         function setEmailMsg(text, ok) {
           emailMsg.textContent = text;
-          emailMsg.style.color = ok ? "#63704a" : "#c45c26";
+          emailMsg.style.color = ok ? "#2f8f5b" : "#c45c26";
         }
 
         function formatEmailTime(seconds) {

@@ -79,7 +79,8 @@
                   </td>
                   <td class="cart-table__qty">
                     <form th:action="@{/shop/cart/{id}/update(id=${item.itemId()})}" method="post" class="cart-qty-form">
-                      <div class="cart-qty-stepper" data-qty-min="1" data-qty-max="5">
+                      <div class="cart-qty-stepper" data-qty-min="1"
+                           th:attr="data-qty-max=${item.product().stockQuantity()}">
                         <button type="button" class="cart-qty-stepper__btn" data-qty-delta="-1" aria-label="수량 줄이기">−</button>
                         <output class="cart-qty-stepper__value" th:text="${item.quantity()}">1</output>
                         <input type="hidden" name="quantity" th:value="${item.quantity()}" />
@@ -114,12 +115,13 @@
             <span>결제 예정</span>
             <span id="shopCartTotal" th:text="${cart.formattedTotal()}">₩ 0</span>
           </div>
-          <button type="button" class="btn btn--accent btn--block btn--lg mt-16"
-                  onclick="WePlaNet.alert('결제 페이지 (목업)')">
-            주문하기
-          </button>
+          <form th:action="@{/shop/cart/checkout}" method="post">
+            <button type="submit" class="btn btn--accent btn--block btn--lg mt-16">
+              주문하기
+            </button>
+          </form>
           <p class="text-xs text-muted mt-12" style="text-align:center;">
-            멤버십 전용 상품은 가입 상태에서만 결제됩니다.
+            결제 완료 시 재고가 차감됩니다. 재고가 부족하면 주문이 취소됩니다.
           </p>
         </aside>
       </div>

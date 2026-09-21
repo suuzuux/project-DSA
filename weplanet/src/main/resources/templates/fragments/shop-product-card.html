@@ -3,19 +3,21 @@
 <body>
 <article th:fragment="shopProductCard(product, fromCommunity)"
          class="product-card"
+         th:classappend="${product.soldOut()} ? ' is-sold-out'"
          th:attr="data-category=${product.category()},data-title=${product.title()},data-product-id=${product.id()}">
   <div class="product-card__media">
-    <a class="product-card__thumb"
-       th:href="@{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})}">
-      <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
-      상품 이미지
-    </a>
+    <th:block th:replace="~{fragments/shop-product-thumb :: shopThumb(
+      ${product},
+      @{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})},
+      'product-card__thumb',
+      false)}"></th:block>
     <button type="button"
             class="product-card__cart-btn"
             data-shop-add-cart="1"
             th:attr="data-product-id=${product.id()}"
-            aria-label="장바구니 담기"
-            title="장바구니 담기">🛒</button>
+            th:disabled="${product.soldOut()}"
+            th:title="${product.soldOut()} ? '품절' : '장바구니 담기'"
+            aria-label="장바구니 담기">🛒</button>
   </div>
   <a class="product-card__body"
      th:href="@{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})}">
@@ -25,27 +27,36 @@
       <span th:text="${product.formattedPrice()}">₩ 0</span>
       <small th:if="${product.priceSuffix() != null}" th:text="${product.priceSuffix()}">다운로드</small>
     </p>
+    <p th:if="${product.lowStock()}"
+       class="product-card__stock product-card__stock--low"
+       th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</p>
+    <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
   </a>
 </article>
 
 <article th:fragment="shopMarqueeCard(product)"
-         class="shop-marquee-card">
+         class="shop-marquee-card"
+         th:classappend="${product.soldOut()} ? ' is-sold-out'">
   <div class="shop-marquee-card__media">
-    <a class="shop-marquee-card__thumb"
-       th:href="@{/shop/products/{id}(id=${product.id()})}">
-      <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
-      상품
-    </a>
+    <th:block th:replace="~{fragments/shop-product-thumb :: shopThumb(
+      ${product},
+      @{/shop/products/{id}(id=${product.id()})},
+      'shop-marquee-card__thumb',
+      true)}"></th:block>
     <button type="button"
             class="product-card__cart-btn product-card__cart-btn--sm"
             data-shop-add-cart="1"
             th:attr="data-product-id=${product.id()}"
-            aria-label="장바구니 담기"
-            title="장바구니 담기">🛒</button>
+            th:disabled="${product.soldOut()}"
+            th:title="${product.soldOut()} ? '품절' : '장바구니 담기'"
+            aria-label="장바구니 담기">🛒</button>
   </div>
   <a class="shop-marquee-card__body" th:href="@{/shop/products/{id}(id=${product.id()})}">
     <strong th:text="${product.title()}">상품명</strong>
     <span th:text="${product.formattedPrice()}">₩ 0</span>
+    <small th:if="${product.lowStock()}"
+           class="product-card__stock product-card__stock--low"
+           th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</small>
   </a>
 </article>
 </body>
