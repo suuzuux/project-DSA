@@ -102,6 +102,7 @@ DROP TABLE IF EXISTS `portal_notice`;
 DROP TABLE IF EXISTS `artist_attendance`;
 DROP TABLE IF EXISTS `artist_schedule`;
 DROP TABLE IF EXISTS `artist_block`;
+DROP TABLE IF EXISTS `membership_period`;
 DROP TABLE IF EXISTS `membership`;
 DROP TABLE IF EXISTS `group_follow`;
 DROP TABLE IF EXISTS `group_members`;
@@ -355,6 +356,25 @@ CREATE TABLE `membership` (
   CONSTRAINT `fk_membership_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_membership_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬–아티스트 유료 멤버십';
+
+-- membership_period: 멤버십 가입/갱신 이력 (연속 N년 배지 판정용)
+--   streak_count : 새 시작일이 직전 만료일 + 7일 안이면 +1, 넘으면 1
+CREATE TABLE `membership_period` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '멤버십 기간 PK',
+  `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
+  `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
+  `started_at` datetime(6) NOT NULL COMMENT '이 기간의 가입/갱신 시각',
+  `expires_at` datetime(6) NOT NULL COMMENT '이 기간의 만료 시각',
+  `streak_count` int NOT NULL DEFAULT 1 COMMENT '연속 몇 번째 기간인지(1=첫 가입)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_membership_period_latest` (`fan_id`, `artist_id`, `started_at`),
+  KEY `fk_membership_period_artist` (`artist_id`),
+  CONSTRAINT `fk_membership_period_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_membership_period_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_membership_period` CHECK (`expires_at` > `started_at`),
+  CONSTRAINT `ck_membership_streak` CHECK (`streak_count` >= 1)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 가입/갱신 이력';
 
 -- artist_block: 아티스트 유저 차단
 CREATE TABLE `artist_block` (
@@ -975,33 +995,33 @@ SET UNIQUE_CHECKS = 1;
 -- [2] 배지 카탈로그 25종 (일반 15 + 스페셜 10) - 전 아티스트 공통
 -- ============================================================
 INSERT INTO `fan_badge`
-  (`badge_code`, `badge_name`, `badge_type`, `icon`, `description`, `sort_order`, `created_at`)
+  (`badge_code`, `badge_name`, `badge_type`, `icon`, `image_url`, `description`, `sort_order`, `created_at`)
 VALUES
-  ('BASIC_FIRST_JOIN',    '커뮤니티 첫 가입',      'BASIC', '🎉', '커뮤니티에 처음 가입하면 획득',              1,  NOW(6)),
-  ('BASIC_FIRST_POST',    '첫 게시글 작성',        'BASIC', '✍️', '팬 게시판에 첫 글을 쓰면 획득',           2,  NOW(6)),
-  ('BASIC_COMMENT_5',     '댓글 5개 작성',         'BASIC', '💬', '이 커뮤니티에 댓글 5개를 쓰면 획득',      3,  NOW(6)),
-  ('BASIC_MEDIA_VIEW',    '미디어 시청',           'BASIC', '🎬', 'Media 탭 콘텐츠를 보면 획득',             4,  NOW(6)),
-  ('BASIC_DAY_100',       '가입 후 100일',         'BASIC', '💯', '가입 후 100일이 지나면 획득',        5,  NOW(6)),
-  ('BASIC_DAY_200',       '가입 후 200일',         'BASIC', '📅', '가입 후 200일이 지나면 획득',        6,  NOW(6)),
-  ('BASIC_DAY_300',       '가입 후 300일',         'BASIC', '🗓️', '가입 후 300일이 지나면 획득',        7,  NOW(6)),
-  ('BASIC_LIKE_10',       '좋아요 10개',           'BASIC', '👍', '게시글에 좋아요를 10번 누르면 획득',          8,  NOW(6)),
-  ('BASIC_LIKED_5',       '받은 좋아요 5개',       'BASIC', '❤️', '내 게시글이 좋아요 5개를 받으면 획득',        9,  NOW(6)),
-  ('BASIC_FOLLOW_ARTIST', '아티스트 프로필 팔로우', 'BASIC', '⭐', '아티스트 프로필을 팔로우하면 획득',          10, NOW(6)),
-  ('BASIC_SHOP_PURCHASE', '샵 구매',               'BASIC', '🛍️', 'Shop에서 상품을 구매하면 획득',              11, NOW(6)),
-  ('BASIC_LIVE_VIEW',     '라이브 시청',           'BASIC', '📡', 'Live 방송을 보면 획득',                  12, NOW(6)),
-  ('BASIC_YEAR_1',        '커뮤니티 가입 후 1년',  'BASIC', '🥉', '가입 후 1년이 지나면 획득',         13, NOW(6)),
-  ('BASIC_YEAR_2',        '커뮤니티 가입 후 2년',  'BASIC', '🥈', '가입 후 2년이 지나면 획득',         14, NOW(6)),
-  ('BASIC_YEAR_3',        '커뮤니티 가입 후 3년',  'BASIC', '🥇', '가입 후 3년이 지나면 획득',         15, NOW(6)),
-  ('SPECIAL_DEBUT_1',       '아티스트 데뷔 1주년',  'SPECIAL', '🎂', '데뷔 1주년을 함께하면 획득',        1,  NOW(6)),
-  ('SPECIAL_DEBUT_2',       '아티스트 데뷔 2주년',  'SPECIAL', '🎊', '데뷔 2주년을 함께하면 획득',        2,  NOW(6)),
-  ('SPECIAL_DEBUT_3',       '아티스트 데뷔 3주년',  'SPECIAL', '🏆', '데뷔 3주년을 함께하면 획득',        3,  NOW(6)),
-  ('SPECIAL_FOLLOWER_10',   '팔로워 10명 달성',     'SPECIAL', '👥', '내 팔로워가 10명이 되면 획득',               4,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_1',  '첫 멤버십 가입',       'SPECIAL', '💎', '멤버십에 처음 가입하면 획득',      5,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_2',  '멤버십 연속 2년',      'SPECIAL', '💠', '멤버십을 2년 연속 유지하면 획득',            6,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_3',  '멤버십 연속 3년',      'SPECIAL', '🔷', '멤버십을 3년 연속 유지하면 획득',            7,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_4',  '멤버십 연속 4년',      'SPECIAL', '🔶', '멤버십을 4년 연속 유지하면 획득',            8,  NOW(6)),
-  ('SPECIAL_MEMBERSHIP_5',  '멤버십 연속 5년',      'SPECIAL', '👑', '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
-  ('SPECIAL_PROJECT_CREATE','프로젝트 등록 달성',   'SPECIAL', '🚀', '팬 프로젝트를 등록하면 획득',               10, NOW(6));
+  ('BASIC_FIRST_JOIN',    '커뮤니티 첫 가입',      'BASIC', '🎉', 'community-first-join.svg',  '커뮤니티에 처음 가입하면 획득',              1,  NOW(6)),
+  ('BASIC_FIRST_POST',    '첫 게시글 작성',        'BASIC', '✍️', 'first-post.svg',            '팬 게시판에 첫 글을 쓰면 획득',           2,  NOW(6)),
+  ('BASIC_COMMENT_5',     '댓글 5개 작성',         'BASIC', '💬', 'five-comments.svg',         '이 커뮤니티에 댓글 5개를 쓰면 획득',      3,  NOW(6)),
+  ('BASIC_MEDIA_VIEW',    '미디어 시청',           'BASIC', '🎬', 'media-view.svg',            'Media 탭 콘텐츠를 보면 획득',             4,  NOW(6)),
+  ('BASIC_DAY_100',       '가입 후 100일',         'BASIC', '💯', 'member-100-days.svg',       '가입 후 100일이 지나면 획득',        5,  NOW(6)),
+  ('BASIC_DAY_200',       '가입 후 200일',         'BASIC', '📅', 'member-200-days.svg',       '가입 후 200일이 지나면 획득',        6,  NOW(6)),
+  ('BASIC_DAY_300',       '가입 후 300일',         'BASIC', '🗓️', 'member-300-days.svg',       '가입 후 300일이 지나면 획득',        7,  NOW(6)),
+  ('BASIC_LIKE_10',       '좋아요 10개',           'BASIC', '👍', 'ten-likes.svg',             '게시글에 좋아요를 10번 누르면 획득',          8,  NOW(6)),
+  ('BASIC_LIKED_5',       '받은 좋아요 5개',       'BASIC', '❤️', 'five-likes-received.svg',   '내 게시글이 좋아요 5개를 받으면 획득',        9,  NOW(6)),
+  ('BASIC_FOLLOW_ARTIST', '아티스트 프로필 팔로우', 'BASIC', '⭐', 'artist-profile-follow.svg', '아티스트 프로필을 팔로우하면 획득',          10, NOW(6)),
+  ('BASIC_SHOP_PURCHASE', '샵 구매',               'BASIC', '🛍️', 'shop-purchase.svg',         'Shop에서 상품을 구매하면 획득',              11, NOW(6)),
+  ('BASIC_LIVE_VIEW',     '라이브 시청',           'BASIC', '📡', 'live-view.svg',             'Live 방송을 보면 획득',                  12, NOW(6)),
+  ('BASIC_YEAR_1',        '커뮤니티 가입 후 1년',  'BASIC', '🥇', 'community-1-year.svg',      '가입 후 1년이 지나면 획득',         13, NOW(6)),
+  ('BASIC_YEAR_2',        '커뮤니티 가입 후 2년',  'BASIC', '🥈', 'community-2-years.svg',     '가입 후 2년이 지나면 획득',         14, NOW(6)),
+  ('BASIC_YEAR_3',        '커뮤니티 가입 후 3년',  'BASIC', '🥉', 'community-3-years.svg',     '가입 후 3년이 지나면 획득',         15, NOW(6)),
+  ('SPECIAL_DEBUT_1',       '아티스트 데뷔 1주년',  'SPECIAL', '🎂', 'artist-debut-1-year.svg',  '데뷔 1주년을 함께하면 획득',        1,  NOW(6)),
+  ('SPECIAL_DEBUT_2',       '아티스트 데뷔 2주년',  'SPECIAL', '🎊', 'artist-debut-2-years.svg', '데뷔 2주년을 함께하면 획득',        2,  NOW(6)),
+  ('SPECIAL_DEBUT_3',       '아티스트 데뷔 3주년',  'SPECIAL', '🏆', 'artist-debut-3-years.svg', '데뷔 3주년을 함께하면 획득',        3,  NOW(6)),
+  ('SPECIAL_FOLLOWER_10',   '팔로워 10명 달성',     'SPECIAL', '👥', 'ten-followers.svg',        '내 팔로워가 10명이 되면 획득',               4,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_1',  '첫 멤버십 가입',       'SPECIAL', '💎', 'first-membership.svg',     '멤버십에 처음 가입하면 획득',      5,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_2',  '멤버십 연속 2년',      'SPECIAL', '💠', 'membership-2-years.svg',   '멤버십을 2년 연속 유지하면 획득',            6,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_3',  '멤버십 연속 3년',      'SPECIAL', '🔷', 'membership-3-years.svg',   '멤버십을 3년 연속 유지하면 획득',            7,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_4',  '멤버십 연속 4년',      'SPECIAL', '🔶', 'membership-4-years.svg',   '멤버십을 4년 연속 유지하면 획득',            8,  NOW(6)),
+  ('SPECIAL_MEMBERSHIP_5',  '멤버십 연속 5년',      'SPECIAL', '👑', 'membership-5-years.svg',   '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
+  ('SPECIAL_PROJECT_CREATE','프로젝트 참여',        'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트에 참여(결제 완료)하면 획득',    10, NOW(6));
 
 -- ============================================================
 -- [3] 소속사 시드
@@ -1063,7 +1083,9 @@ SELECT u.id, u.agency_id, '혜선여왕', '2023-01-01', 'VOCAL', '테스트용 �
 FROM `users` u WHERE u.username = 'artist_hyeseon';
 
 -- ============================================================
--- [5] 배지 소유 / 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
+-- [5] 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
+--   배지(fan_badge_ownership)는 더 이상 시드로 넣지 않는다.
+--   실제 활동/기간 조건을 채우면 BadgeAwardService 를 통해 지급된다.
 -- ============================================================
 INSERT INTO `group_follow` (`fan_id`, `group_id`, `created_at`)
 SELECT f.id, g.id, NOW(6)
@@ -1071,27 +1093,7 @@ FROM `users` f
 JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
 
-INSERT INTO `fan_badge_ownership`
-    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
-SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
-FROM `users` f, `users` a, `fan_badge` b
-WHERE f.username IN ('qatest99', 'asd123')
-  AND a.username = 'artist_hwiwon'
-  AND b.badge_code IN (
-    'BASIC_FIRST_JOIN', 'BASIC_FIRST_POST', 'BASIC_COMMENT_5', 'BASIC_MEDIA_VIEW',
-    'BASIC_DAY_100', 'BASIC_LIKE_10', 'BASIC_LIKED_5', 'BASIC_FOLLOW_ARTIST',
-    'SPECIAL_DEBUT_1', 'SPECIAL_MEMBERSHIP_1'
-  );
-
-INSERT INTO `fan_badge_ownership`
-    (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
-SELECT f.id, a.id, b.badge_code, b.badge_name, b.badge_type, NOW(6), NOW(6)
-FROM `users` f, `users` a, `fan_badge` b
-WHERE f.username IN ('qatest99', 'asd123')
-  AND a.username = 'artist_jungsik'
-  AND b.badge_code IN ('BASIC_FIRST_JOIN', 'BASIC_FIRST_POST', 'BASIC_MEDIA_VIEW');
-
 -- ------------------------------------------------------------
--- [확인] 46가 나오면 테이블은 모두 준비된 것입니다.
+-- [확인] 48이 나오면 테이블은 모두 준비된 것입니다.
 -- ------------------------------------------------------------
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();

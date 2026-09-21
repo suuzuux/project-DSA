@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">라이브 시청 · 획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#23304A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="12" y="13" width="40" height="38" rx="8" fill="#5CC8FF"/>
+  <path fill="#EAF8FF" d="m27 24 14 8-14 8Z"/>
+  <path fill="none" d="M7 22c-5 6-5 14 0 20M57 22c5 6 5 14 0 20"/>
+  <path fill="#FFC84A" d="M25 51h14l4 6H21Z"/>
+</g>
+</svg>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">첫 게시글 작성 · 미획득</title>
+  <desc id="desc">기기와 운영체제에 관계없이 동일하게 표시되는 업적 배지 아이콘</desc>
+  <g stroke="#747D8B" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="9" y="12" width="37" height="41" rx="8" fill="#E9EBEF"/>
+  <path fill="none" d="M17 23h18M17 31h13M17 39h8"/>
+  <path fill="#AEB5BF" d="m27 47 4-11 17-17 7 7-17 17Z"/>
+  <path fill="#939CA8" d="m48 19 3-3a3 3 0 0 1 4 4l-3 3Z"/>
+  <path fill="#D3D7DD" d="m27 47 3-8 5 5Z"/>
+</g>
+</svg>

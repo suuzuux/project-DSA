@@ -142,6 +142,12 @@
     font-size: 28px;
 }
 
+/* SVG 배지는 자체 모양이 있어서 원형 배경을 깔지 않는다 */
+.badge-cell__icon.has-image,
+.badge-icon.has-image {
+    background: transparent;
+}
+
 .badge-cell__icon img {
     width: 100%;
     height: 100%;
@@ -158,8 +164,9 @@
 
 /* ---------- 미획득 배지 : 흑백 ---------- */
 
-/* 아이콘만 흑백으로. 이름은 읽혀야 하므로 필터를 걸지 않는다. */
-.badge-cell.is-locked .badge-cell__icon {
+/* 아이콘만 흑백으로. 이름은 읽혀야 하므로 필터를 걸지 않는다.
+   이미지 배지(has-image)는 grayscale 폴더의 전용 파일을 쓰므로 이모지 배지에만 필터를 건다. */
+.badge-cell.is-locked .badge-cell__icon:not(.has-image) {
     filter: grayscale(1);
     opacity: .4;
 }

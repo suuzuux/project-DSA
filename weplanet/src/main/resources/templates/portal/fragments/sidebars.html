@@ -30,6 +30,7 @@
         <a th:href="@{/portal/notices}" th:classappend="${activeMenu == 'notices'} ? ' is-active'">📢 공지사항 관리</a>
         <a th:href="@{/portal/schedule}" th:classappend="${activeMenu == 'schedule'} ? ' is-active'">📆 스케줄 관리</a>
         <a th:href="@{/portal/media}" th:classappend="${activeMenu == 'media'} ? ' is-active'">🎬 미디어 관리</a>
+        <a th:href="@{/portal/goods}" th:classappend="${activeMenu == 'goods'} ? ' is-active'">🛒 굿즈 관리</a>
       </th:block>
       <a th:href="@{/portal/live}" th:classappend="${activeMenu == 'live'} ? ' is-active'">📡 방송</a>
       <th:block th:if="${isAgency}">

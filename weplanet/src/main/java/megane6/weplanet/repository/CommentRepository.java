@@ -41,4 +41,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
             ORDER BY c.createdAt DESC
             """)
     List<Comment> findRecentOnMyPosts(@Param("postAuthor") User postAuthor);
+    
+    // [배지] 이 커뮤니티(댓글이 달린 글의 아티스트) 안에서 내가 쓴 댓글 수
+    // Post_Artist_Id : comment.post.artist.id 를 따라가라는 뜻
+    long countByAuthor_IdAndPost_Artist_Id(Long authorId, Long artistId);
 }

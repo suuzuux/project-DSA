@@ -3,45 +3,33 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
-import megane6.weplanet.domain.entity.BoardType;
-import megane6.weplanet.domain.entity.Post;
-import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.dto.live.LiveStatusView;
+import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.domain.event.BadgeActivityEvent;
+import megane6.weplanet.repository.BookmarkRepository;
 import megane6.weplanet.repository.CommentRepository;
 import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.BookmarkRepository;
-import megane6.weplanet.domain.entity.Comment;
-import megane6.weplanet.domain.entity.Like;
-import megane6.weplanet.domain.entity.Bookmark;
+import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
-import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -66,6 +54,8 @@ public class CommunityController {
 	private final ArtistAttendanceService artistAttendanceService;
 	private final PortalManagementService portalManagementService;
 	private final LiveBroadcastService liveBroadcastService;
+	
+	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
 	
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -309,21 +299,29 @@ public class CommunityController {
 		model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId));
 		model.addAttribute("groupId", artistId);
 		model.addAttribute("liked", boardMediaService.isLiked(mediaId, me));
+		
+		// [배지] 미디어 상세를 열었으면 시청으로 본다 (멤버십 게이트를 통과한 뒤 위치)
+		eventPublisher.publishEvent(new BadgeActivityEvent(
+				me.getId(), artistId, BadgeActivityEvent.Activity.MEDIA_VIEWED
+		));
+		
 		return "community/media-detail";
 	}
 	
 	@GetMapping("/community/{artistId}/live")
 	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
-		if (principal == null) {
-			return "redirect:/login";
-		}
-		populateArtistModel(artistId, principal, model);
-		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
-			model.addAttribute("gatedTab", "live");
-			return "community/membership-required";
-		}
-		model.addAttribute("liveStatus", liveBroadcastService.status(artistId));
+		LiveStatusView liveStatus = liveBroadcastService.status(artistId);
+		model.addAttribute("liveStatus", liveStatus);
 		model.addAttribute("liveReplays", boardMediaService.listLiveReplays(artistId));
+		
+		// [배지] 방송 중일 때 들어온 경우만 "라이브 시청", 꺼져 있는 방에 들어온 건 시청 X
+		if (liveStatus.live()) {
+			eventPublisher.publishEvent(new BadgeActivityEvent(
+					userResolver.resolve(principal, 1L).getId(), artistId,
+					BadgeActivityEvent.Activity.LIVE_VIEWED
+			));
+		}
+		
 		return "community/live";
 	}
 	

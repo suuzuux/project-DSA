@@ -5,8 +5,10 @@ import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.CommentRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final CommentReportRepository commentReportRepository;
+    private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
 
     // 댓글 목록 조회
     public List<Comment> getComments(Post post) {
@@ -44,7 +47,15 @@ public class CommentService {
                 .content(content)
                 .build();
 
-        return commentRepository.save(comment);
+        Comment saved = commentRepository.save(comment);
+        // [배지] 커뮤니티 글에 단 댓글만 "댓글 5개" 배지 대상
+        if (post.getAuthor() != null) {
+            eventPublisher.publishEvent(new BadgeActivityEvent(
+                    author.getId(), post.getArtist().getId(), BadgeActivityEvent.Activity.COMMENT_CREATED
+            ));
+        }
+        
+        return saved;
     }
 
     // 댓글 삭제 - 작성자 본인 또는 관리자만 삭제 가능 (관리자는 신고 처리를 위해 남의 댓글도 삭제할 수 있어야 함)

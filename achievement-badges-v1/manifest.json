@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "iconCount": 25,
+  "states": [
+    "color",
+    "grayscale"
+  ],
+  "viewBox": "0 0 64 64",
+  "badges": [
+    {
+      "slug": "community-first-join",
+      "label": "커뮤니티 첫 가입",
+      "category": "일반 배지",
+      "color": "color/community-first-join.svg",
+      "grayscale": "grayscale/community-first-join.svg"
+    },
+    {
+      "slug": "first-post",
+      "label": "첫 게시글 작성",
+      "category": "일반 배지",
+      "color": "color/first-post.svg",
+      "grayscale": "grayscale/first-post.svg"
+    },
+    {
+      "slug": "five-comments",
+      "label": "댓글 5개 작성",
+      "category": "일반 배지",
+      "color": "color/five-comments.svg",
+      "grayscale": "grayscale/five-comments.svg"
+    },
+    {
+      "slug": "media-view",
+      "label": "미디어 시청",
+      "category": "일반 배지",
+      "color": "color/media-view.svg",
+      "grayscale": "grayscale/media-view.svg"
+    },
+    {
+      "slug": "member-100-days",
+      "label": "가입 후 100일",
+      "category": "일반 배지",
+      "color": "color/member-100-days.svg",
+      "grayscale": "grayscale/member-100-days.svg"
+    },
+    {
+      "slug": "member-200-days",
+      "label": "가입 후 200일",
+      "category": "일반 배지",
+      "color": "color/member-200-days.svg",
+      "grayscale": "grayscale/member-200-days.svg"
+    },
+    {
+      "slug": "member-300-days",
+      "label": "가입 후 300일",
+      "category": "일반 배지",
+      "color": "color/member-300-days.svg",
+      "grayscale": "grayscale/member-300-days.svg"
+    },
+    {
+      "slug": "ten-likes",
+      "label": "좋아요 10개",
+      "category": "일반 배지",
+      "color": "color/ten-likes.svg",
+      "grayscale": "grayscale/ten-likes.svg"
+    },
+    {
+      "slug": "five-likes-received",
+      "label": "받은 좋아요 5개",
+      "category": "일반 배지",
+      "color": "color/five-likes-received.svg",
+      "grayscale": "grayscale/five-likes-received.svg"
+    },
+    {
+      "slug": "artist-profile-follow",
+      "label": "아티스트 프로필 팔로우",
+      "category": "일반 배지",
+      "color": "color/artist-profile-follow.svg",
+      "grayscale": "grayscale/artist-profile-follow.svg"
+    },
+    {
+      "slug": "shop-purchase",
+      "label": "샵 구매",
+      "category": "일반 배지",
+      "color": "color/shop-purchase.svg",
+      "grayscale": "grayscale/shop-purchase.svg"
+    },
+    {
+      "slug": "live-view",
+      "label": "라이브 시청",
+      "category": "일반 배지",
+      "color": "color/live-view.svg",
+      "grayscale": "grayscale/live-view.svg"
+    },
+    {
+      "slug": "community-1-year",
+      "label": "커뮤니티 가입 후 1년",
+      "category": "일반 배지",
+      "color": "color/community-1-year.svg",
+      "grayscale": "grayscale/community-1-year.svg"
+    },
+    {
+      "slug": "community-2-years",
+      "label": "커뮤니티 가입 후 2년",
+      "category": "일반 배지",
+      "color": "color/community-2-years.svg",
+      "grayscale": "grayscale/community-2-years.svg"
+    },
+    {
+      "slug": "community-3-years",
+      "label": "커뮤니티 가입 후 3년",
+      "category": "일반 배지",
+      "color": "color/community-3-years.svg",
+      "grayscale": "grayscale/community-3-years.svg"
+    },
+    {
+      "slug": "artist-debut-1-year",
+      "label": "아티스트 데뷔 1주년",
+      "category": "스페셜 배지",
+      "color": "color/artist-debut-1-year.svg",
+      "grayscale": "grayscale/artist-debut-1-year.svg"
+    },
+    {
+      "slug": "artist-debut-2-years",
+      "label": "아티스트 데뷔 2주년",
+      "category": "스페셜 배지",
+      "color": "color/artist-debut-2-years.svg",
+      "grayscale": "grayscale/artist-debut-2-years.svg"
+    },
+    {
+      "slug": "artist-debut-3-years",
+      "label": "아티스트 데뷔 3주년",
+      "category": "스페셜 배지",
+      "color": "color/artist-debut-3-years.svg",
+      "grayscale": "grayscale/artist-debut-3-years.svg"
+    },
+    {
+      "slug": "ten-followers",
+      "label": "팔로워 10명 달성",
+      "category": "스페셜 배지",
+      "color": "color/ten-followers.svg",
+      "grayscale": "grayscale/ten-followers.svg"
+    },
+    {
+      "slug": "first-membership",
+      "label": "첫 멤버십 가입",
+      "category": "스페셜 배지",
+      "color": "color/first-membership.svg",
+      "grayscale": "grayscale/first-membership.svg"
+    },
+    {
+      "slug": "membership-2-years",
+      "label": "멤버십 연속 2년",
+      "category": "스페셜 배지",
+      "color": "color/membership-2-years.svg",
+      "grayscale": "grayscale/membership-2-years.svg"
+    },
+    {
+      "slug": "membership-3-years",
+      "label": "멤버십 연속 3년",
+      "category": "스페셜 배지",
+      "color": "color/membership-3-years.svg",
+      "grayscale": "grayscale/membership-3-years.svg"
+    },
+    {
+      "slug": "membership-4-years",
+      "label": "멤버십 연속 4년",
+      "category": "스페셜 배지",
+      "color": "color/membership-4-years.svg",
+      "grayscale": "grayscale/membership-4-years.svg"
+    },
+    {
+      "slug": "membership-5-years",
+      "label": "멤버십 연속 5년",
+      "category": "스페셜 배지",
+      "color": "color/membership-5-years.svg",
+      "grayscale": "grayscale/membership-5-years.svg"
+    },
+    {
+      "slug": "project-registered",
+      "label": "프로젝트 등록 달성",
+      "category": "스페셜 배지",
+      "color": "color/project-registered.svg",
+      "grayscale": "grayscale/project-registered.svg"
+    }
+  ]
+}
