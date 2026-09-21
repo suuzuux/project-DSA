@@ -1,10 +1,10 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.EmailVerificationService;
+import megane6.weplanet.service.ProjectService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,12 +13,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/community/{artistId}/project/email-verification")
 public class ProjectEmailVerificationController {
 	private final EmailVerificationService evs;
+	private final ProjectService ps;
 	
 	// 프로젝트 등록용 인증번호 전송
 	@PostMapping
@@ -26,18 +26,13 @@ public class ProjectEmailVerificationController {
 			@AuthenticationPrincipal AuthenticatedUser principal
 	) {
 		requireLogin(principal);
-		
-		EmailVerificationService.IssuedVerification issued =
-				evs.issueProjectVerification(principal.getId());
-		
-		// 실제 이메일 발송 Service를 연결하기 전까지 사용하는 모의 발송
-		// 실제 이메일 발송 구현 후에는 반드시 이 로그 삭제
-		log.info("[모의 이메일 인증] recipient={}, code={}", issued.recipientEmail(), issued.rawCode());
-		
+
+		String verificationKey = ps.sendProjectVerificationCode(principal.getId());
+
 		// 인증번호 자체는 브라우저 응답에 포함 X
 		return Map.of("success", true,
-					  "verificationKey", issued.verificationKey(),
-					  "message", "인증번호를 전송했습니다. 현재는 서버 콘솔에서 인증번호를 확인해주세요.");
+					  "verificationKey", verificationKey,
+					  "message", "가입하신 이메일로 인증번호를 전송했습니다. 메일함을 확인해주세요.");
 	}
 	
 	// 사용자가 입력한 프로젝트 등록용 인증번호 확인
