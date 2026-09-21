@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.convert.PlaintextBytesConverter;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Gender;
+import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 
@@ -124,6 +125,12 @@ public class User {
 	// CommunityActivityNotifier가 이메일 발송 직전에 이 값을 확인해서, 꺼져 있으면 야간 시간대엔 건너뛴다.
 	@Column(name = "night_notification_allowed", nullable = false)
 	private boolean nightNotificationAllowed;
+
+	// [설정 - 언어 설정] SETTINGS-02: "기본 서비스 언어". 게시글/댓글 AI 번역(TranslateService)의
+	// 대상 언어로도 그대로 재사용된다 (PostController.translatePost/translateComment 참고). 기본값 KO.
+	@Enumerated(EnumType.STRING)
+	@Column(name = "preferred_language", nullable = false, length = 10)
+	private Language preferredLanguage = Language.KO;
 	
 	private User(String username, String password, String realName, String nickname, String email, Role role, AuthProvider provider, String providerId) {
 		this.username = username;
@@ -291,5 +298,10 @@ public class User {
 
 	public void changeNightNotificationAllowed(boolean allowed) {
 		this.nightNotificationAllowed = allowed;
+	}
+
+	// [설정 - 언어 설정] "기본 서비스 언어" 저장. 이 값이 게시글/댓글 AI 번역 대상 언어로도 그대로 쓰인다.
+	public void changePreferredLanguage(Language language) {
+		this.preferredLanguage = language;
 	}
 }

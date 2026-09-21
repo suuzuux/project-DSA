@@ -20,11 +20,8 @@
 
   var LANGUAGES = [
     { code: "ko", label: "한국어" },
-    { code: "en", label: "English" },
     { code: "ja", label: "日本語" },
-    { code: "zh", label: "中文" },
-    { code: "fr", label: "Français" },
-    { code: "es", label: "Español" },
+    { code: "en", label: "English" },
   ];
 
   var UI = {
@@ -716,6 +713,16 @@
     hydrateWeekGrid();
     syncSettingsSelect();
     document.dispatchEvent(new CustomEvent("weplanet:langchange", { detail: { lang: code } }));
+
+    if (!(opts && opts.silent)) {
+      fetch("/language", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "language=" + encodeURIComponent(code.toUpperCase())
+      }).finally(function () {
+        window.location.reload();
+      });
+    }
   }
 
   /* ---------- inject root ---------- */
@@ -1586,7 +1593,13 @@
     updateNotiBadges();
     hydrateMiniCal();
     hydrateWeekGrid();
-    enhanceSettingsLang();
+    // SETTINGS-02: enhanceSettingsLang()은 설정 페이지의 "기본 서비스 언어" select(#languageSelect)를
+    // 이 파일의 소문자 언어 코드(ko/en/ja/zh/fr/es) 옵션으로 통째로 덮어쓰고 자체 change 리스너까지
+    // 붙여서, User.preferredLanguage(KO/JA/EN, 대문자)를 실제로 저장하는 SettingsController
+    // /settings/language 저장 로직과 충돌했다(항상 소문자 값을 보내 enum 변환이 실패함).
+    // 헤더 🌐 버튼(캘린더/알림 문구 클라이언트 전환)은 그대로 두고, 설정 페이지 select를
+    // 가로채는 이 호출만 막는다.
+    // enhanceSettingsLang();
     loadSchedulesFromApi();
     loadPostNotifications();
     scheduleMidnightRefresh();
@@ -1602,6 +1615,11 @@
     var params = new URLSearchParams(location.search);
     if (params.get("calendar") === "1") openCalendar();
   }
+
+  window.WePlaNetGlobalIcons = {
+    setLang: setLang,
+    getLang: getLang,
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

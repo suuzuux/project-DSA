@@ -504,20 +504,24 @@ public class PostController {
      * <p>
      * 그래서 ① 로그인 여부와 ② 그 게시글이 속한 커뮤니티에 가입(팔로우)했는지를 함께 확인함.
      */
-    private void requireAiAccess(Post post, AuthenticatedUser principal) {
+    // SETTINGS-02: translatePost/translateComment가 로그인 사용자의 "기본 서비스 언어"를
+    // 번역 대상 언어로 넘겨줘야 해서, 이미 조회해둔 User를 그대로 반환하도록 바꿨다
+    // (summarizePost처럼 반환값이 필요 없는 호출부는 그냥 statement로 호출하면 됨).
+    private User requireAiAccess(Post post, AuthenticatedUser principal) {
         User user = userResolver.requireAuthenticated(principal);
 
         User artist = post.getArtist();
         if (artist == null) {
-            return; // 커뮤니티에 속하지 않은 레거시 게시글은 로그인만 확인
+            return user; // 커뮤니티에 속하지 않은 레거시 게시글은 로그인만 확인
         }
         // 그 커뮤니티 아티스트 본인은 당연히 열람 가능
         if (artist.getId().equals(user.getId())) {
-            return;
+            return user;
         }
         if (!followService.isFollowing(user, artist.getId())) {
             throw new IllegalStateException("커뮤니티에 가입해야 이용할 수 있습니다.");
         }
+        return user;
     }
 
     /**
@@ -549,8 +553,9 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        requireAiAccess(post, principal);
-        String translated = translateService.translate(post.getContent());
+        User user = requireAiAccess(post, principal);
+        // SETTINGS-02: 더 이상 영어 고정이 아니라, 로그인 사용자의 "기본 서비스 언어"로 번역
+        String translated = translateService.translate(post.getContent(), user.getPreferredLanguage());
 
         return Map.of("translated", translated);
     }
@@ -564,9 +569,9 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        requireAiAccess(post, principal);
+        User user = requireAiAccess(post, principal);
         Comment comment = commentService.getComment(commentId);
-        String translated = translateService.translate(comment.getContent());
+        String translated = translateService.translate(comment.getContent(), user.getPreferredLanguage());
 
         return Map.of("translated", translated);
     }

@@ -218,6 +218,41 @@
       });
   }
 
+  /** 바로 구매 — 장바구니 담기와 같은 toast로 성공/실패 안내 */
+  function buyNowProduct(form, triggerBtn) {
+    if (!form) {
+      return Promise.resolve(false);
+    }
+    if (triggerBtn) triggerBtn.disabled = true;
+    return fetch(form.action, {
+      method: "POST",
+      body: new FormData(form),
+      headers: {
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    })
+      .then(function (res) {
+        return res.json().catch(function () {
+          return null;
+        });
+      })
+      .then(function (data) {
+        showShopToast(
+          (data && data.message) || (data && data.ok ? "주문이 완료되었습니다." : "구매에 실패했습니다."),
+          data && data.ok ? 1000 : 1800
+        );
+        return !!(data && data.ok);
+      })
+      .catch(function () {
+        showShopToast("구매에 실패했습니다.", 1800);
+        return false;
+      })
+      .finally(function () {
+        if (triggerBtn) triggerBtn.disabled = false;
+      });
+  }
+
   var form = document.getElementById("addToCartForm");
   if (form) {
     form.addEventListener("submit", function (e) {
@@ -270,5 +305,6 @@
     updateCartBadge: updateCartBadge,
     updateCartPage: updateCartPage,
     addProductToCart: addProductToCart,
+    buyNowProduct: buyNowProduct,
   };
 })();

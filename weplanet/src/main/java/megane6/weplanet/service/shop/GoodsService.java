@@ -110,9 +110,12 @@ public class GoodsService {
 			goods.setThumbnailUrl(shopImageStorage.storeImage(thumbnail));
 			shopImageStorage.delete(previous);
 		}
+		// orphanRemoval clear → 동일 유니크키로 재삽입 시 INSERT가 DELETE보다 먼저 나가면
+		// uk_goods_variant / uk_goods_category 충돌로 수정이 실패한다. flush로 삭제를 먼저 확정.
 		goods.getCategoryLinks().clear();
 		goods.getOptions().clear();
 		goods.getVariants().clear();
+		goodsRepository.flush();
 		applyPayload(goods, categoryOptions);
 		return goodsRepository.save(goods);
 	}

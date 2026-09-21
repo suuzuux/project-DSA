@@ -37,6 +37,7 @@ public class SecurityConfig {
             "/find-password/**",
             "/login",
             "/login/id",
+            "/language",
             "/login/reactivate",
             "/login/reactivate/**",
             "/portal/login",
