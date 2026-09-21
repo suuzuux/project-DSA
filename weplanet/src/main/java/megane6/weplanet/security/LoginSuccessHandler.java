@@ -35,9 +35,11 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 										Authentication authentication) throws IOException, ServletException {
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
+		boolean portalLogin = "true".equals(request.getParameter("portalLogin"));
+		boolean adminLogin = "true".equals(request.getParameter("adminLogin"));
 
 		// 포털 로그인: 아티스트/에이전시 전용. 선택 탭과 실제 역할이 일치해야 함.
-		if ("true".equals(request.getParameter("portalLogin"))) {
+		if (portalLogin) {
 			String roleName = principal.getRoleName();
 
 			// 팬·관리자 등 포털 대상이 아닌 계정 → 메인 팬 로그인으로
@@ -53,6 +55,15 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				String tab = "ROLE_ARTIST".equals(expected) ? "ARTIST" : "AGENCY";
 				getRedirectStrategy().sendRedirect(request, response,
 						"/portal/login?error=role&role=" + tab);
+				return;
+			}
+		} else if (!adminLogin) {
+			// 일반 팬 로그인(/login, /login/id): 아티스트·에이전시 계정 차단
+			// 역할 정보는 노출하지 않고, 일반 로그인 실패와 동일한 화면으로 보낸다.
+			String roleName = principal.getRoleName();
+			if ("ROLE_ARTIST".equals(roleName) || "ROLE_AGENCY".equals(roleName)) {
+				clearAuthentication(request);
+				getRedirectStrategy().sendRedirect(request, response, "/login/id?error");
 				return;
 			}
 		}

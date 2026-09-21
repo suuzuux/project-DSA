@@ -310,10 +310,18 @@ public class CommunityController {
 	
 	@GetMapping("/community/{artistId}/live")
 	public String live(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		populateArtistModel(artistId, principal, model);
+		if (!hasCommunityAccess(userResolver.resolve(principal, 1L), artistId)) {
+			model.addAttribute("gatedTab", "live");
+			return "community/membership-required";
+		}
 		LiveStatusView liveStatus = liveBroadcastService.status(artistId);
 		model.addAttribute("liveStatus", liveStatus);
 		model.addAttribute("liveReplays", boardMediaService.listLiveReplays(artistId));
-		
+
 		// [배지] 방송 중일 때 들어온 경우만 "라이브 시청", 꺼져 있는 방에 들어온 건 시청 X
 		if (liveStatus.live()) {
 			eventPublisher.publishEvent(new BadgeActivityEvent(
@@ -321,7 +329,7 @@ public class CommunityController {
 					BadgeActivityEvent.Activity.LIVE_VIEWED
 			));
 		}
-		
+
 		return "community/live";
 	}
 	

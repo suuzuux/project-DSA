@@ -62,6 +62,7 @@ public class ShopCartService {
 		}
 		ShopProductView product = shopService.findProduct(productId)
 				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+		shopService.requirePurchasable(user, product);
 		if (product.soldOut()) {
 			throw new IllegalArgumentException("품절된 상품입니다.");
 		}
