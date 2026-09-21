@@ -35,15 +35,8 @@
     <th:block sec:authorize="hasRole('AGENCY')">
       <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" data-admin-page-link="1">관리자 페이지로</a>
     </th:block>
-    <th:block sec:authorize="isAuthenticated()">
-      <button type="button" class="icon-btn" data-modal-open="communitySearchModal" aria-label="커뮤니티 검색">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      </button>
-    </th:block>
-    <!-- 라이트/다크 전환 - 현재 테마에 맞는 아이콘만 보인다 -->
-    <button type="button" class="icon-btn" data-theme-toggle aria-label="화면 테마 전환">
-      <svg class="icon" data-theme-icon="light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-      <svg class="icon" data-theme-icon="dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    <button type="button" class="icon-btn" data-modal-open="communitySearchModal" aria-label="커뮤니티 검색">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
     </button>
     <th:block sec:authorize="isAuthenticated()">
       <button type="button" class="icon-btn icon-btn--badge" aria-label="알림" onclick="WePlaNet.alert('알림 목록 (목업)')">
@@ -54,7 +47,7 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
     </button>
     <th:block sec:authorize="isAnonymous()">
-      <!-- 회원가입은 햄버거 메뉴의 가입 유도 문구에서 들어간다 -->
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
       <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
     </th:block>
     <th:block sec:authorize="isAuthenticated()">
@@ -75,7 +68,7 @@
           <p class="banner__kicker">WePlaNet</p>
           <h2 class="banner__title">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
         </div>
-        <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#8a5a66 60%,#f7c8d3);">
+        <div class="banner__slide" style="background:linear-gradient(120deg,#1a3a4a,#0f6b6b 60%,#c45c26);">
           <p class="banner__kicker">Community</p>
           <h2 class="banner__title">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
         </div>
@@ -118,7 +111,7 @@
           <p class="banner__kicker">Event &amp; Schedule</p>
           <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
         </div>
-        <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#a85d67 70%,#f7c8d3);">
+        <div class="banner__slide" style="background:linear-gradient(120deg,#0f3d3d,#c45c26);">
           <p class="banner__kicker">Membership</p>
           <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
         </div>
