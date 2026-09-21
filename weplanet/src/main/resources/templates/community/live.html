@@ -65,7 +65,7 @@
             <h2 class="live-replays__title">라이브</h2>
           </div>
           <button type="button" id="live-featured" class="live-replay-card live-replay-card--live live-featured-card"
-                  th:hidden="${liveStatus == null or !liveStatus.live}">
+                  th:hidden="${liveStatus == null or !liveStatus.live()}">
             <div class="live-replay-card__thumb">
               <span class="tag tag--live live-replay-card__badge">LIVE</span>
               <span class="live-replay-card__logo" th:text="${artist.logo()}">WP</span>

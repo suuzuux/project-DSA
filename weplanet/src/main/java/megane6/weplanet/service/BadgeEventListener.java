@@ -63,6 +63,7 @@ public class BadgeEventListener {
 			case MEDIA_VIEWED -> award(fanId, artistId, BadgeCode.BASIC_MEDIA_VIEW);
 			case LIVE_VIEWED -> award(fanId, artistId, BadgeCode.BASIC_LIVE_VIEW);
 			case PROJECT_JOINED -> award(fanId, artistId, BadgeCode.SPECIAL_PROJECT_CREATE);
+			case MEMBERSHIP_JOINED -> checkMembership(fanId, artistId);
 		}
 	}
 	

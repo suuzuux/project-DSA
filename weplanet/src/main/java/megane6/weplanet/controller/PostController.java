@@ -221,7 +221,8 @@ public class PostController {
                 // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
                 model.addAttribute("artist", portalManagementService.toArtistCard(communityArtist));
                 boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
-                postListModelHelper.populate(model, type, "latest", communityArtist, hideFromArtists);
+                postListModelHelper.populateCommunityPage(
+                        model, type, "latest", communityArtist, hideFromArtists, tempAuthor, 0);
                 return "community/fragments/postList :: postListFragment";
             }
             return list(boardType, "latest", "fetch", principal, model);
