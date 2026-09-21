@@ -60,8 +60,8 @@
         <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
 
         <div class="membership-notice" th:if="${product.membershipOnly()}">
-          <strong>멤버십 전용 상품</strong><br />
-          <span th:text="${product.artistName() + ' Membership 가입 회원만 구매할 수 있습니다.'}">멤버십 안내</span>
+          <strong>멤버십 전용 굿즈입니다</strong><br />
+          <span>장바구니 담기·바로 구매는 해당 아티스트 멤버십 가입 회원만 가능합니다.</span>
           <a th:href="@{/membership}">멤버십 가입하기 ›</a>
         </div>
 
@@ -84,7 +84,7 @@
                         th:value="${v.id()}"
                         th:disabled="${v.soldOut()}"
                         th:attr="data-stock=${v.stockQuantity()}"
-                        th:text="${v.label() + (v.soldOut() ? ' (품절)' : (v.lowStock() ? ' · 재고 ' + v.stockQuantity() + '개' : ''))}">
+                        th:text="${v.label() + (v.soldOut() ? ' (품절)' : (v.showOptionStockHint() ? ' · 재고 ' + v.stockQuantity() + '개' : ''))}">
                   S
                 </option>
               </select>
@@ -164,6 +164,16 @@
           } else if (window.WePlaNetShop && WePlaNetShop.addToCart) {
             WePlaNetShop.addToCart(cartProductId(), qty, addBtn);
           }
+        });
+      }
+
+      var buyForm = document.getElementById("buyNowForm");
+      if (buyForm && window.WePlaNetShop && WePlaNetShop.buyNowProduct) {
+        buyForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          sync();
+          var submitBtn = buyForm.querySelector('button[type="submit"]');
+          WePlaNetShop.buyNowProduct(buyForm, submitBtn);
         });
       }
     })();
