@@ -779,6 +779,9 @@
     search: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
     notification: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>',
     language: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
+    theme:
+      '<svg class="icon" data-theme-icon="light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>' +
+      '<svg class="icon" data-theme-icon="dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>',
   };
 
   function headerIconButtons() {
@@ -792,6 +795,19 @@
     if (!actions) return;
 
     var icons = headerIconButtons();
+
+    // 검색·알림은 로그인한 사람에게만 쓸모가 있다.
+    // 템플릿에서 sec:authorize 로 걸러도 여기서 다시 만들어 넣으면 소용이 없어서,
+    // 비로그인이면 아예 만들지 않고 이미 붙어 있는 것도 걷어낸다. (언어는 누구나 쓴다)
+    var isAuthed = document.body.getAttribute("data-authenticated") === "true";
+    if (!isAuthed) {
+      icons.filter(isSearchBtn).concat(icons.filter(isNotiBtn)).forEach(function (btn) {
+        var slot = btn.closest(".wp-global-slot");
+        (slot || btn).remove();
+      });
+      icons = headerIconButtons();
+    }
+
     var searchBtn = icons.filter(isSearchBtn)[0] || null;
     var hasLang = icons.some(isLangBtn);
     var hasNoti = icons.some(isNotiBtn);
@@ -804,13 +820,15 @@
     }
 
     if (!searchBtn) {
-      searchBtn = document.createElement("a");
-      searchBtn.className = "icon-btn";
-      searchBtn.href = "/?openSearch=1";
-      searchBtn.setAttribute("aria-label", "커뮤니티 검색");
-      searchBtn.setAttribute("title", "커뮤니티 검색");
-      searchBtn.innerHTML = HEADER_ICONS.search;
-      insert(searchBtn);
+      if (isAuthed) {
+        searchBtn = document.createElement("a");
+        searchBtn.className = "icon-btn";
+        searchBtn.href = "/?openSearch=1";
+        searchBtn.setAttribute("aria-label", "커뮤니티 검색");
+        searchBtn.setAttribute("title", "커뮤니티 검색");
+        searchBtn.innerHTML = HEADER_ICONS.search;
+        insert(searchBtn);
+      }
     } else {
       searchBtn.innerHTML = HEADER_ICONS.search;
     }
@@ -828,19 +846,39 @@
     }
     var notiBtn = icons.filter(isNotiBtn)[0] || null;
     if (!hasNoti) {
-      notiBtn = document.createElement("button");
-      notiBtn.type = "button";
-      notiBtn.className = "icon-btn icon-btn--badge";
-      notiBtn.setAttribute("aria-label", "알림");
-      notiBtn.innerHTML = HEADER_ICONS.notification;
-      insert(notiBtn);
+      if (isAuthed) {
+        notiBtn = document.createElement("button");
+        notiBtn.type = "button";
+        notiBtn.className = "icon-btn icon-btn--badge";
+        notiBtn.setAttribute("aria-label", "알림");
+        notiBtn.innerHTML = HEADER_ICONS.notification;
+        insert(notiBtn);
+      }
     } else {
       notiBtn.innerHTML = HEADER_ICONS.notification;
     }
 
-    actions.insertBefore(searchBtn, actions.firstElementChild);
-    actions.insertBefore(notiBtn, searchBtn.nextSibling);
-    actions.insertBefore(langBtn, notiBtn.nextSibling);
+    // 라이트/다크 토글 - 로그인 여부와 무관하게 모든 페이지 헤더에 둔다.
+    // (메인처럼 템플릿에 이미 박혀 있으면 그걸 그대로 쓴다)
+    var themeBtn = actions.querySelector("[data-theme-toggle]");
+    if (!themeBtn) {
+      themeBtn = document.createElement("button");
+      themeBtn.type = "button";
+      themeBtn.className = "icon-btn";
+      themeBtn.setAttribute("data-theme-toggle", "");
+      themeBtn.setAttribute("aria-label", "화면 테마 전환");
+      themeBtn.innerHTML = HEADER_ICONS.theme;
+      insert(themeBtn);
+    }
+
+    // 순서 맞추기 - 비로그인이면 검색·알림이 없으므로 있는 것만 앞으로 당긴다
+    var prev = null;
+    [searchBtn, notiBtn, langBtn, themeBtn].forEach(function (btn) {
+      if (!btn) return;
+      if (prev) actions.insertBefore(btn, prev.nextSibling);
+      else actions.insertBefore(btn, actions.firstElementChild);
+      prev = btn;
+    });
   }
 
   function bindHeaderIcons() {
