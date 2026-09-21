@@ -24,16 +24,35 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class ShopService {
 
+	public static final String MEMBERSHIP_ONLY_MESSAGE = "멤버십 전용 굿즈입니다.";
+
 	private final UserRepository userRepository;
 	private final GoodsRepository goodsRepository;
 	private final PortalManagementService portalManagementService;
+	private final MembershipService membershipService;
 
 	public ShopService(UserRepository userRepository,
 					   GoodsRepository goodsRepository,
-					   PortalManagementService portalManagementService) {
+					   PortalManagementService portalManagementService,
+					   MembershipService membershipService) {
 		this.userRepository = userRepository;
 		this.goodsRepository = goodsRepository;
 		this.portalManagementService = portalManagementService;
+		this.membershipService = membershipService;
+	}
+
+	/**
+	 * 멤버십 전용 상품은 노출은 하되, 담기/구매는 활성 멤버만 허용.
+	 */
+	public void requirePurchasable(User buyer, ShopProductView product) {
+		if (product == null || !product.membershipOnly()) {
+			return;
+		}
+		User artist = userRepository.findById(product.artistId())
+				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+		if (!membershipService.isActiveMember(buyer, artist)) {
+			throw new IllegalArgumentException(MEMBERSHIP_ONLY_MESSAGE);
+		}
 	}
 
 	public List<ArtistCardView> getShopArtists() {

@@ -48,12 +48,12 @@ public record ShopProductView(
 	}
 
 	public boolean lowStock() {
-		return minPositiveStock > 0
-				&& minPositiveStock < megane6.weplanet.domain.entity.Goods.LOW_STOCK_THRESHOLD;
+		return totalStock > 0
+				&& totalStock < megane6.weplanet.domain.entity.Goods.LOW_STOCK_THRESHOLD;
 	}
 
-	/** 목록·임박 표시용 (양수 최소 재고, 없으면 총재고) */
+	/** 목록·임박 표시용 — 옵션(Variant) 재고 합계 */
 	public int stockQuantity() {
-		return minPositiveStock > 0 ? minPositiveStock : totalStock;
+		return totalStock;
 	}
 }

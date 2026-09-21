@@ -1,9 +1,11 @@
 package megane6.weplanet.service.shop;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.ShopProductView;
 import megane6.weplanet.domain.entity.ShopCartItem;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.ShopCartItemRepository;
+import megane6.weplanet.service.ShopService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,7 @@ public class ShopCheckoutService {
 
 	private final ShopCartItemRepository shopCartItemRepository;
 	private final GoodsService goodsService;
+	private final ShopService shopService;
 
 	@Transactional
 	public int checkout(User user) {
@@ -26,6 +29,9 @@ public class ShopCheckoutService {
 			throw new IllegalArgumentException("장바구니가 비어 있습니다.");
 		}
 		for (ShopCartItem item : items) {
+			ShopProductView product = shopService.findProduct(item.getProductId())
+					.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+			shopService.requirePurchasable(user, product);
 			Long variantId = parseVariantId(item.getProductId());
 			goodsService.decreaseVariantStock(variantId, item.getQuantity());
 		}
@@ -35,6 +41,9 @@ public class ShopCheckoutService {
 
 	@Transactional
 	public void buyNow(User user, String productId, int quantity) {
+		ShopProductView product = shopService.findProduct(productId)
+				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+		shopService.requirePurchasable(user, product);
 		Long variantId = parseVariantId(productId);
 		goodsService.decreaseVariantStock(variantId, quantity);
 	}

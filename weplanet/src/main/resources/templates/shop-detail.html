@@ -84,7 +84,7 @@
                         th:value="${v.id()}"
                         th:disabled="${v.soldOut()}"
                         th:attr="data-stock=${v.stockQuantity()}"
-                        th:text="${v.label() + (v.soldOut() ? ' (품절)' : (v.lowStock() ? ' · 재고 ' + v.stockQuantity() + '개' : ''))}">
+                        th:text="${v.label() + (v.soldOut() ? ' (품절)' : (v.showOptionStockHint() ? ' · 재고 ' + v.stockQuantity() + '개' : ''))}">
                   S
                 </option>
               </select>
@@ -164,6 +164,16 @@
           } else if (window.WePlaNetShop && WePlaNetShop.addToCart) {
             WePlaNetShop.addToCart(cartProductId(), qty, addBtn);
           }
+        });
+      }
+
+      var buyForm = document.getElementById("buyNowForm");
+      if (buyForm && window.WePlaNetShop && WePlaNetShop.buyNowProduct) {
+        buyForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+          sync();
+          var submitBtn = buyForm.querySelector('button[type="submit"]');
+          WePlaNetShop.buyNowProduct(buyForm, submitBtn);
         });
       }
     })();
