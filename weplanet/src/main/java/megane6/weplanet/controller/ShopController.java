@@ -160,6 +160,27 @@ public class ShopController {
 		}
 	}
 
+	@PostMapping(value = "/shop/products/{productId}/buy", headers = "X-Requested-With=XMLHttpRequest")
+	@ResponseBody
+	public Map<String, Object> buyNowAjax(@PathVariable String productId,
+	                                      @RequestParam(required = false) String variantProductId,
+	                                      @RequestParam(defaultValue = "1") int quantity,
+	                                      @AuthenticationPrincipal AuthenticatedUser principal) {
+		if (principal == null) {
+			return Map.of("ok", false, "message", "로그인이 필요합니다.");
+		}
+		User me = userResolver.requireAuthenticated(principal);
+		String checkoutId = (variantProductId != null && !variantProductId.isBlank())
+				? variantProductId
+				: productId;
+		try {
+			shopCheckoutService.buyNow(me, checkoutId, quantity);
+			return Map.of("ok", true, "message", "주문이 완료되었습니다.");
+		} catch (IllegalArgumentException e) {
+			return Map.of("ok", false, "message", e.getMessage());
+		}
+	}
+
 	@PostMapping("/shop/products/{productId}/buy")
 	public String buyNow(@PathVariable String productId,
 	                     @RequestParam(required = false) String variantProductId,
