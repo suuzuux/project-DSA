@@ -108,7 +108,7 @@ DROP TABLE IF EXISTS `artist_schedule`;
 DROP TABLE IF EXISTS `artist_block`;
 DROP TABLE IF EXISTS `membership_period`;
 DROP TABLE IF EXISTS `membership`;
-DROP TABLE IF EXISTS `group_follow`;
+DROP TABLE IF EXISTS `user_follows`;
 DROP TABLE IF EXISTS `group_members`;
 DROP TABLE IF EXISTS `artist_group_profiles`;
 DROP TABLE IF EXISTS `artist_profile`;
@@ -336,16 +336,23 @@ CREATE TABLE `group_members` (
   CONSTRAINT `ck_gm_period` CHECK ((`left_at` IS NULL) OR (`left_at` >= `joined_at`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹–아티스트 소속 이력';
 
--- group_follow: 팬–그룹 팔로우
-CREATE TABLE `group_follow` (
-  `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
-  `group_id` bigint NOT NULL COMMENT '팔로우한 그룹(artist_groups.id)',
+-- user_follows: GroupFollow/UserFollow 통합. 사람↔사람(팬↔팬, 팬↔아티스트 계정) 팔로우.
+-- 팔로우는 특정 커뮤니티(community_id)에 종속된다 - 같은 두 사람이 여러 커뮤니티에 함께 가입돼
+-- 있어도 팔로우는 커뮤니티마다 별개의 관계이며, 한쪽이 그 커뮤니티를 탈퇴하면 그 커뮤니티 소속
+-- 팔로우 관계만 함께 삭제된다(CommunityJoinService.leave). 팬→아티스트 팔로우는 following_id ==
+-- community_id(그 아티스트의 users.id)다.
+CREATE TABLE `user_follows` (
+  `follower_id` bigint NOT NULL COMMENT '팔로우 하는 사람(users.id)',
+  `following_id` bigint NOT NULL COMMENT '팔로우 당하는 사람(users.id)',
+  `community_id` bigint NOT NULL COMMENT '이 팔로우가 속한 커뮤니티(그 커뮤니티 아티스트의 users.id)',
   `created_at` datetime(6) NOT NULL COMMENT '팔로우 시각',
-  PRIMARY KEY (`fan_id`, `group_id`),
-  KEY `fk_gf_group` (`group_id`),
-  CONSTRAINT `fk_gf_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `fk_gf_group` FOREIGN KEY (`group_id`) REFERENCES `artist_groups` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬–그룹 팔로우';
+  PRIMARY KEY (`follower_id`, `following_id`, `community_id`),
+  KEY `fk_uf_following` (`following_id`),
+  KEY `fk_uf_community` (`community_id`),
+  CONSTRAINT `fk_uf_follower` FOREIGN KEY (`follower_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_uf_following` FOREIGN KEY (`following_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_uf_community` FOREIGN KEY (`community_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사람↔사람 팔로우(커뮤니티에 종속)';
 
 -- membership: 팬–아티스트 유료 멤버십
 CREATE TABLE `membership` (
@@ -1146,9 +1153,11 @@ FROM `users` u WHERE u.username = 'artist_hyeseon';
 -- [5] 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
 --   배지(fan_badge_ownership)는 더 이상 시드로 넣지 않는다.
 --   실제 활동/기간 조건을 채우면 BadgeAwardService 를 통해 지급된다.
+--   GroupFollow/UserFollow 통합: 아티스트 팔로우는 이제 user_follows에 community_id(=그 아티스트의
+--   users.id) 값과 함께 들어간다. group_id가 곧 그 아티스트 User.id이므로 following_id/community_id 둘 다 g.id.
 -- ============================================================
-INSERT INTO `group_follow` (`fan_id`, `group_id`, `created_at`)
-SELECT f.id, g.id, NOW(6)
+INSERT INTO `user_follows` (`follower_id`, `following_id`, `community_id`, `created_at`)
+SELECT f.id, g.id, g.id, NOW(6)
 FROM `users` f
 JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
