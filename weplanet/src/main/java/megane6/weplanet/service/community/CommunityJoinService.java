@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -169,12 +170,17 @@ public class CommunityJoinService {
 
 	// 가입한 커뮤니티 목록. 프로필 유무와 관계없이 community_members 기준.
 	public Set<Long> joinedArtistIds(User fan) {
-		if (fan == null) return Set.of();
-		Set<Long> ids = new HashSet<>();
+		return joinedAtByArtistId(fan).keySet();
+	}
+
+	/** 가입 커뮤니티별 joinedAt. 알림/일정에서 가입 이전 이벤트를 걸러낼 때 쓴다. */
+	public Map<Long, LocalDateTime> joinedAtByArtistId(User fan) {
+		if (fan == null) return Map.of();
+		Map<Long, LocalDateTime> result = new LinkedHashMap<>();
 		for (CommunityMember member : communityMemberRepository.findByFanId(fan.getId())) {
-			ids.add(member.getArtistId());
+			result.put(member.getArtistId(), member.getJoinedAt());
 		}
-		return ids;
+		return result;
 	}
 	
 	// 내 프로필 화면에 계정 아이디 대신 이 커뮤니티 전용 닉네임을 띄우기 위해 씀. 미가입이면 null.

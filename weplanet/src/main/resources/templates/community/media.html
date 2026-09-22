@@ -72,13 +72,13 @@
                th:text="${post.content}"></p>
           </a>
 
-          <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
+          <div class="post-card__media post-card__media--lg" th:if="${not #lists.isEmpty(post.files)}">
             <th:block th:each="file : ${post.files}">
               <a th:href="@{/community/{artistId}/media/{mediaId}(artistId=${artist.id()}, mediaId=${post.id})}"
                  th:if="${file.mediaType == 'IMAGE'}">
                 <img th:src="@{/board/media/file/{id}(id=${file.id})}"
                      th:alt="${file.originalName}"
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:420px;object-fit:cover;margin-bottom:8px;" />
+                     width="800" height="500" loading="lazy" />
               </a>
               <video th:if="${file.mediaType == 'VIDEO'}"
                      th:src="@{/board/media/file/{id}(id=${file.id})}"

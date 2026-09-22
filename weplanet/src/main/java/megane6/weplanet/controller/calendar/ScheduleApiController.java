@@ -6,7 +6,6 @@ import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
-import megane6.weplanet.domain.entity.SiteNotice;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.LiveSessionStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
@@ -28,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -66,24 +66,33 @@ public class ScheduleApiController {
 
 		List<User> artists = userRepository.findByRole(Role.ARTIST);
 		User me = userResolver.requireAuthenticated(principal);
-		Set<Long> joined = artistId != null
+		Map<Long, LocalDateTime> joinedAtByArtist = me.getRole() == Role.ARTIST
+				? Map.of(me.getId(), LocalDateTime.MIN)
+				: communityJoinService.joinedAtByArtistId(me);
+		// 캘린더는 요청 artistId(커뮤니티 페이지)를 그대로 쓰고, 알림용 joinedAt은 실제 가입만 내려준다.
+		Set<Long> calendarArtists = artistId != null
 				? Set.of(artistId)
-				: me.getRole() == Role.ARTIST
-				? Set.of(me.getId())
-				: communityJoinService.joinedArtistIds(me);
+				: joinedAtByArtist.keySet();
 
+		DateTimeFormatter joinFmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 		List<Map<String, String>> communities = artists.stream()
-				.filter(artist -> joined.contains(artist.getId()))
-				.map(artist -> Map.of(
-						"id", String.valueOf(artist.getId()),
-						"name", artist.getNickname()
-				))
+				.filter(artist -> calendarArtists.contains(artist.getId()))
+				.map(artist -> {
+					Map<String, String> row = new LinkedHashMap<>();
+					row.put("id", String.valueOf(artist.getId()));
+					row.put("name", artist.getNickname());
+					LocalDateTime joinedAt = joinedAtByArtist.get(artist.getId());
+					if (joinedAt != null && !LocalDateTime.MIN.equals(joinedAt)) {
+						row.put("joinedAt", joinedAt.format(joinFmt));
+					}
+					return row;
+				})
 				.toList();
 
 		body.put("communities", communities);
-		body.put("eventsByDate", joined.isEmpty()
+		body.put("eventsByDate", calendarArtists.isEmpty()
 				? Map.of()
-				: portalManagementService.getPublicEventsByDateForArtists(joined));
+				: portalManagementService.getPublicEventsByDateForArtists(calendarArtists));
 
 		// 출석은 "요청한 커뮤니티 주인"만. artistId 없으면 로그인 아티스트 출석으로 절대 fallback 하지 않음
 		// (타 커뮤니티 캘린더에 본인 도장이 새는 버그 방지)
@@ -107,11 +116,8 @@ public class ScheduleApiController {
 		}
 
 		User me = userResolver.requireAuthenticated(principal);
-		Set<Long> artistIds = artistId != null
-				? Set.of(artistId)
-				: me.getRole() == Role.ARTIST
-				? Set.of(me.getId())
-				: communityJoinService.joinedArtistIds(me);
+		Map<Long, LocalDateTime> joinedAtByArtist = resolveJoinedAtByArtist(me, artistId);
+		Set<Long> artistIds = joinedAtByArtist.keySet();
 
 		DateTimeFormatter dateTime = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 		List<Map<String, Object>> items = new ArrayList<>();
@@ -119,19 +125,23 @@ public class ScheduleApiController {
 		if (!artistIds.isEmpty()) {
 			postRepository
 					.findTop20ByBoardTypeAndArtist_IdInOrderByCreatedAtDesc(BoardType.ARTIST, artistIds)
+					.stream()
+					.filter(post -> afterJoin(post.getCreatedAt(), post.getArtist().getId(), joinedAtByArtist))
 					.forEach(post -> items.add(toPostNotification(post, dateTime)));
 			portalNoticeRepository
 					.findTop20ByPublishedTrueAndArtist_IdInOrderByCreatedAtDesc(artistIds)
+					.stream()
+					.filter(notice -> afterJoin(notice.getCreatedAt(), notice.getArtist().getId(), joinedAtByArtist))
 					.forEach(notice -> items.add(toCommunityNoticeNotification(notice, dateTime)));
 			liveSessionRepository
 					.findLiveByArtistIds(LiveSessionStatus.LIVE, artistIds)
 					.stream()
+					.filter(session -> afterJoin(session.getStartedAt(), session.getArtist().getId(), joinedAtByArtist))
 					.limit(20)
 					.forEach(session -> items.add(toLiveStartNotification(session, dateTime)));
 		}
 
-		siteNoticeRepository.findTop20ByPublishedTrueOrderByCreatedAtDesc()
-				.forEach(notice -> items.add(toSiteNoticeNotification(notice, dateTime)));
+		// 시스템 공지(site_notice)는 헤더 알림이 아니라 햄버거 메뉴 공지사항 뱃지로만 안내한다.
 
 		// 내 글 댓글 알림: 가입 커뮤니티와 무관하게 본인 게시글 기준
 		commentRepository.findRecentOnMyPosts(me).stream()
@@ -140,6 +150,50 @@ public class ScheduleApiController {
 
 		items.sort(Comparator.comparing((Map<String, Object> n) -> String.valueOf(n.get("time"))).reversed());
 		return Map.of("posts", items.size() > 50 ? items.subList(0, 50) : items);
+	}
+
+	/** 햄버거 메뉴 공지사항 뱃지용 — 공개된 시스템 공지 id 목록 */
+	@GetMapping("/site-notices")
+	public Map<String, Object> siteNotices() {
+		DateTimeFormatter dateTime = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+		List<Map<String, Object>> notices = siteNoticeRepository.findVisible(null).stream()
+				.map(notice -> {
+					Map<String, Object> row = new LinkedHashMap<>();
+					row.put("id", notice.getId());
+					row.put("title", notice.getTitle());
+					row.put("createdAt", notice.getCreatedAt() != null
+							? notice.getCreatedAt().format(dateTime)
+							: null);
+					return row;
+				})
+				.toList();
+		return Map.of("notices", notices);
+	}
+
+	private Map<Long, LocalDateTime> resolveJoinedAtByArtist(User me, Long artistId) {
+		if (me.getRole() == Role.ARTIST) {
+			return Map.of(me.getId(), LocalDateTime.MIN);
+		}
+		Map<Long, LocalDateTime> all = communityJoinService.joinedAtByArtistId(me);
+		if (artistId == null) {
+			return all;
+		}
+		LocalDateTime joinedAt = all.get(artistId);
+		return joinedAt == null ? Map.of() : Map.of(artistId, joinedAt);
+	}
+
+	private boolean afterJoin(LocalDateTime eventTime, Long artistId, Map<Long, LocalDateTime> joinedAtByArtist) {
+		if (eventTime == null || artistId == null) {
+			return false;
+		}
+		LocalDateTime joinedAt = joinedAtByArtist.get(artistId);
+		if (joinedAt == null) {
+			return false;
+		}
+		if (LocalDateTime.MIN.equals(joinedAt)) {
+			return true;
+		}
+		return !eventTime.isBefore(joinedAt);
 	}
 
 	private Map<String, Object> toPostNotification(Post post, DateTimeFormatter dateTime) {
@@ -338,47 +392,6 @@ public class ScheduleApiController {
 				"zh", artist.getNickname() + "社区公告：" + notice.getTitle(),
 				"fr", "Avis de " + artist.getNickname() + " : " + notice.getTitle(),
 				"es", "Aviso de " + artist.getNickname() + ": " + notice.getTitle()
-		));
-		return notification;
-	}
-
-	private Map<String, Object> toSiteNoticeNotification(SiteNotice notice, DateTimeFormatter dateTime) {
-		Map<String, Object> notification = new LinkedHashMap<>();
-		notification.put("id", "site-notice-" + notice.getId());
-		notification.put("type", "site_notice");
-		notification.put("eventId", null);
-		notification.put("date", notice.getCreatedAt().toLocalDate().toString());
-		notification.put("time", notice.getCreatedAt().format(dateTime));
-		notification.put("read", false);
-		notification.put("global", true);
-		notification.put("artistId", "system");
-		notification.put("artist", "WePlaNet");
-		notification.put("artistName", "WePlaNet");
-		notification.put("artistLogo", "WP");
-		notification.put("postUrl", "/notices/" + notice.getId());
-		notification.put("category", Map.of(
-				"ko", "시스템 공지",
-				"en", "System notice",
-				"ja", "システムお知らせ",
-				"zh", "系统公告",
-				"fr", "Avis système",
-				"es", "Aviso del sistema"
-		));
-		notification.put("title", Map.of(
-				"ko", notice.getTitle(),
-				"en", notice.getTitle(),
-				"ja", notice.getTitle(),
-				"zh", notice.getTitle(),
-				"fr", notice.getTitle(),
-				"es", notice.getTitle()
-		));
-		notification.put("message", Map.of(
-				"ko", "시스템 공지: " + notice.getTitle(),
-				"en", "System notice: " + notice.getTitle(),
-				"ja", "システムお知らせ: " + notice.getTitle(),
-				"zh", "系统公告：" + notice.getTitle(),
-				"fr", "Avis système : " + notice.getTitle(),
-				"es", "Aviso del sistema: " + notice.getTitle()
 		));
 		return notification;
 	}

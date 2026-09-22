@@ -138,6 +138,7 @@
   font-size: var(--wp-fs-sm);
   font-weight: 600;
   color: var(--wp-ink-soft);
+  position: relative;
 }
 
 .drawer-menu__nav a:hover {
@@ -149,6 +150,19 @@
   width: 28px;
   text-align: center;
   font-size: 16px;
+}
+
+.drawer-menu__badge {
+  margin-left: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wp-live, #e11d48);
+  flex-shrink: 0;
+}
+
+.drawer-menu__badge[hidden] {
+  display: none;
 }
 
 /* =========================================================

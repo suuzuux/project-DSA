@@ -146,6 +146,8 @@ p {
 .icon-btn {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 999px;
   display: grid;
   place-items: center;
@@ -153,9 +155,22 @@ p {
   transition: background var(--wp-fast) var(--wp-ease), color var(--wp-fast);
 }
 
+.icon-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
 .icon-btn:hover {
   background: var(--wp-brand-soft);
   color: var(--wp-brand);
+}
+
+.icon-btn--profile .avatar,
+.icon-btn--profile .avatar--sm {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
 }
 
 .icon-btn--badge {
@@ -687,6 +702,8 @@ p {
 .avatar {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 50%;
   background: var(--wp-brand-soft);
   color: var(--wp-brand-dark);
@@ -708,12 +725,16 @@ p {
 .avatar--sm {
   width: 28px;
   height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   font-size: 11px;
 }
 
 .avatar--lg {
   width: 72px;
   height: 72px;
+  min-width: 72px;
+  min-height: 72px;
   font-size: 22px;
 }
 
@@ -780,10 +801,32 @@ p {
   gap: 4px;
   border-radius: var(--wp-radius-sm);
   overflow: hidden;
+  background: linear-gradient(135deg, #f1eee8, #ddd9d1);
 }
 
 .post-card__media--2 { grid-template-columns: 1fr 1fr; }
 .post-card__media--4 { grid-template-columns: 1fr 1fr; }
+
+/* 썸네일 로드 전에도 높이 예약 → 사진이 뜨면서 피드가 밀리지 않게 */
+.post-card__media img {
+  width: 100%;
+  height: 240px;
+  max-height: 320px;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--wp-radius-sm);
+  background: linear-gradient(135deg, #f1eee8, #ddd9d1);
+}
+
+.post-card__media--sm img {
+  height: 180px;
+  max-height: 180px;
+}
+
+.post-card__media--lg img {
+  height: 360px;
+  max-height: 420px;
+}
 
 .media-ph {
   aspect-ratio: 1;
@@ -1745,10 +1788,22 @@ p {
 }
 
 /* ---------- 테마 토글 ---------- */
-/* 라이트일 땐 해, 다크일 땐 달만 보이게 */
+/* 라이트일 땐 해, 다크일 땐 달만 보이게 — 둘 다 absolute로 겹쳐 버튼 크기 고정 */
 [data-theme-icon="dark"] { display: none; }
 :root[data-theme="dark"] [data-theme-icon="dark"] { display: block; }
 :root[data-theme="dark"] [data-theme-icon="light"] { display: none; }
+
+.icon-btn[data-theme-toggle] {
+  position: relative;
+}
+
+.icon-btn[data-theme-toggle] [data-theme-icon] {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 20px;
+  height: 20px;
+}
 
 /* ---------- 다크모드: 게시글 본문 ---------- */
 /* 본문은 toastui 뷰어로 그려지는데, 라이브러리 CSS가 요소마다 어두운 글자색을
