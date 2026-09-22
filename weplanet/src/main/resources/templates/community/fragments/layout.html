@@ -199,15 +199,17 @@
               sec:authorize="hasAnyRole('FAN','ARTIST')"
               xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <div class="flex-between" style="align-items:center;">
-        <div class="flex-center" style="gap:8px;">
+        <!-- FOLLOW-01 통합: 커뮤니티에 가입한 사람이면 누구나 눌러서 아티스트 자기 프로필로 이동 가능
+             (팔로우 여부와 무관 - 프로필 안에서 콘텐츠가 보이고 안 보이고는 팔로우 여부로 갈린다) -->
+        <a class="flex-center" style="gap:8px;"
+           th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${artist.id()})}">
           <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</span>
           <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() != null}">
             <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
           </span>
           <span th:text="${artist.nickname()}">아티스트</span>
-        </div>
-        <form th:action="@{/community/{id}/follow(id=${artist.id()})}" method="post">
-          <input type="hidden" name="returnTo" th:value="${artist.id()}" />
+        </a>
+        <form th:action="@{/community/{artistId}/profile/{userId}/follow(artistId=${artist.id()}, userId=${artist.id()})}" method="post">
           <button type="submit" class="btn btn--sm"
                   th:classappend="${followingCurrentArtist} ? ' btn--soft' : ' btn--ghost'"
                   th:text="${followingCurrentArtist} ? '팔로잉 ✓' : '팔로우'">팔로우</button>

@@ -3,6 +3,7 @@ package megane6.weplanet.service.community;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
+import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.community.CommunityProfileRepository;
@@ -30,7 +31,8 @@ class CommunityJoinServiceTest {
 				profileRepository,
 				mock(UserRepository.class),
 				mock(FileStorageService.class),
-				mock(ApplicationEventPublisher.class));
+				mock(ApplicationEventPublisher.class),
+				mock(UserFollowRepository.class));
 		User visibleAuthor = author(11L, "계정닉네임");
 		User hiddenAuthor = author(12L, "숨김계정");
 		CommunityProfile visibleProfile = profile(11L, "커뮤니티닉", "avatar.png", false);

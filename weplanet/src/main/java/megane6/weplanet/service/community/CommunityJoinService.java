@@ -8,6 +8,7 @@ import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
+import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.community.CommunityProfileRepository;
@@ -29,6 +30,10 @@ public class CommunityJoinService {
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
 	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
+	// GroupFollow 통합: 탈퇴 시 그 커뮤니티에 종속된 팔로우 관계도 함께 정리하기 위해 직접 의존한다
+	// (UserFollowService는 반대로 CommunityJoinService에 의존하고 있어서, 여기선 서비스가 아니라
+	// 리포지토리를 직접 써서 순환 의존을 피한다).
+	private final UserFollowRepository userFollowRepository;
 	
 	// EXPLORE-03: "선택한 아티스트의 커뮤니티에 가입 후 커뮤니티 프로필 생성"이 한 세트라
 	// 가입(community_members)과 프로필 생성(community_profiles)을 트랜잭션 하나로 묶음
@@ -159,6 +164,10 @@ public class CommunityJoinService {
 			communityProfileRepository.delete(profile);
 		});
 		communityMemberRepository.delete(member);
+		// GroupFollow 통합: 팔로우는 특정 커뮤니티에 종속되므로, 이 커뮤니티를 탈퇴하면 다른 공유 커뮤니티가
+		// 남아있어도 상관없이 이 커뮤니티(artistId) 소속 팔로우 관계는 모두 함께 삭제한다.
+		userFollowRepository.deleteByCommunityIdAndFollowerId(artistId, fan.getId());
+		userFollowRepository.deleteByCommunityIdAndFollowingId(artistId, fan.getId());
 	}
 	
 	// 커뮤니티 페이지에서 "이 커뮤니티에 가입했는지" 판단 - 가입/탭 접근 제어의 기준

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -37,20 +37,28 @@
         </div>
         <div th:if="${!artistPosts.isEmpty()}" th:with="post=${artistPosts[0]}">
           <article class="post-card">
+            <div class="post-card__head">
+              <a th:if="${post.author != null}"
+                 th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
+                 class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+                 th:text="${#strings.substring(post.author.nickname,0,1)}"></a>
+              <div th:unless="${post.author != null}" class="avatar avatar--sm">?</div>
+              <div class="post-card__meta">
+                <div class="post-card__name">
+                  <a th:if="${post.author != null}"
+                     th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
+                     style="color:inherit;text-decoration:none;"
+                     th:text="${post.author.nickname}">닉네임</a>
+                  <span th:unless="${post.author != null}">(알 수 없음)</span>
+                  <span class="badge-verified">✓</span>
+                </div>
+                <div class="post-card__time"
+                     th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                     th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+              </div>
+            </div>
             <a th:href="@{/community/{artistId}/artist/{postId}(artistId=${artist.id()}, postId=${post.id})}"
                style="display:block;color:inherit;">
-              <div class="post-card__head">
-                <div class="avatar avatar--sm" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
-                <div class="post-card__meta">
-                  <div class="post-card__name">
-                    <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
-                    <span class="badge-verified">✓</span>
-                  </div>
-                  <div class="post-card__time"
-                       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                       th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
-                </div>
-              </div>
               <p class="post-card__body" th:text="${post.title}"></p>
               <div th:if="${artistPostThumbnails.get(post.id)} != null" class="post-card__media">
                 <img th:src="@{'/uploads/' + ${artistPostThumbnails.get(post.id)}}" alt=""
@@ -79,22 +87,26 @@
         </div>
         <div class="feed feed--grid" th:if="${!artistCommentsWidget.isEmpty()}">
           <article class="post-card" th:each="comment : ${artistCommentsWidget}">
+            <div class="post-card__head">
+              <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
+                 class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+                 th:text="${#strings.substring(comment.author.nickname,0,1)}"></a>
+              <div class="post-card__meta">
+                <div class="post-card__name">
+                  <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
+                     style="color:inherit;text-decoration:none;"
+                     th:text="${comment.author.nickname}">닉네임</a>
+                  <span class="badge-verified">✓</span>
+                </div>
+                <div class="post-card__time"
+                     th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                     th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+              </div>
+            </div>
             <a th:href="${comment.post.boardType.name() == 'FAN'}
                           ? @{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${comment.post.id})}
                           : @{/community/{artistId}/artist/{postId}(artistId=${artist.id()}, postId=${comment.post.id})}"
                style="display:block;color:inherit;">
-              <div class="post-card__head">
-                <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
-                <div class="post-card__meta">
-                  <div class="post-card__name">
-                    <span th:text="${comment.author.nickname}"></span>
-                    <span class="badge-verified">✓</span>
-                  </div>
-                  <div class="post-card__time"
-                       th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                       th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
-                </div>
-              </div>
               <p class="post-card__body" th:text="${comment.content}"></p>
             </a>
           </article>
@@ -110,20 +122,28 @@
         </div>
         <div class="feed feed--grid" th:if="${!fanPosts.isEmpty()}">
           <article class="post-card" th:each="post : ${fanPosts}">
+            <div class="post-card__head">
+              <a th:if="${post.author != null}"
+                 th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
+                 class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+                 th:text="${#strings.substring(fanPostAuthorNicknames.get('' + post.author.id),0,1)}"></a>
+              <div th:unless="${post.author != null}" class="avatar avatar--sm">?</div>
+              <div class="post-card__meta">
+                <div class="post-card__name">
+                  <a th:if="${post.author != null}"
+                     th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
+                     style="color:inherit;text-decoration:none;"
+                     th:text="${fanPostAuthorNicknames.get('' + post.author.id)}">닉네임</a>
+                  <span th:unless="${post.author != null}">(알 수 없음)</span>
+                  <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+                </div>
+                <div class="post-card__time"
+                     th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                     th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
+              </div>
+            </div>
             <a th:href="@{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${post.id})}"
                style="display:block;color:inherit;">
-              <div class="post-card__head">
-                <div class="avatar avatar--sm" th:text="${post.author != null ? #strings.substring(fanPostAuthorNicknames.get('' + post.author.id),0,1) : '?'}"></div>
-                <div class="post-card__meta">
-                  <div class="post-card__name">
-                    <span th:text="${post.author != null ? fanPostAuthorNicknames.get('' + post.author.id) : '(알 수 없음)'}"></span>
-                    <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
-                  </div>
-                  <div class="post-card__time"
-                       th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
-                       th:text="${y == curY} ? ${#temporals.format(post.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}"></div>
-                </div>
-              </div>
               <p class="post-card__body" th:text="${post.title}"></p>
               <div th:if="${fanPostThumbnails.get(post.id)} != null" class="post-card__media">
                 <img th:src="@{'/uploads/' + ${fanPostThumbnails.get(post.id)}}" alt=""

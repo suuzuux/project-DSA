@@ -116,8 +116,9 @@ public class User {
 	// [설정 - 이벤트·혜택 알림] 내가 가입(CommunityMember)한 커뮤니티 아티스트의 새 게시글/공지/라이브 시작을
 	// 이메일로 받을지. marketingConsent(광고 동의)와는 별개의 값 - 이건 광고가 아니라 가입한 아티스트의
 	// 실제 활동 소식이라 독립적으로 켜고 끌 수 있게 했다. 기본값 false.
-	// (팔로우(GroupFollow)는 About 위젯 전용 기능이라 여기 기준이 아님 - 게시판 접근 권한/기존 벨 알림과
-	// 동일하게 "가입" 기준으로 맞춤)
+	// GroupFollow/UserFollow 통합 이후: CommunityActivityNotifier의 발송 대상은 "가입 + 이 아티스트
+	// 팔로우"를 함께 보도록 바뀌었다 - 이 값(communityActivityEmailEnabled)은 그중 "이메일 알림 자체를
+	// 켰는지"만 담당하고, 가입/팔로우 여부는 CommunityActivityNotifier가 따로 확인한다.
 	@Column(name = "community_activity_email_enabled", nullable = false)
 	private boolean communityActivityEmailEnabled;
 
