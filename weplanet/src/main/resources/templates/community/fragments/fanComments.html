@@ -29,10 +29,14 @@
       <div th:each="comment : ${artistComments}" class="comment-item"
            th:classappend="${reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)} ? ' comment-item--reported'"
            style="background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;">
-        <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get('' + comment.author.id),0,1)}"></div>
+        <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
+           class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+           th:text="${#strings.substring(authorNicknames.get('' + comment.author.id),0,1)}"></a>
         <div class="comment-item__body">
           <div class="comment-item__meta">
-            <strong th:text="${authorNicknames.get('' + comment.author.id)}"></strong> <span class="badge-verified">✓</span>
+            <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
+               style="color:inherit;text-decoration:none;font-weight:700;"
+               th:text="${authorNicknames.get('' + comment.author.id)}"></a> <span class="badge-verified">✓</span>
             · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                     th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
           </div>
@@ -92,10 +96,14 @@
       <div th:if="${not #lists.isEmpty(otherComments)}">
         <div class="comment-item" th:each="comment : ${otherComments}"
              th:classappend="${reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)} ? ' comment-item--reported'">
-          <div class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get('' + comment.author.id),0,1)}"></div>
+          <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
+             class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+             th:text="${#strings.substring(authorNicknames.get('' + comment.author.id),0,1)}"></a>
           <div class="comment-item__body">
             <div class="comment-item__meta">
-              <strong th:text="${authorNicknames.get('' + comment.author.id)}"></strong>
+              <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
+                 style="color:inherit;text-decoration:none;font-weight:700;"
+                 th:text="${authorNicknames.get('' + comment.author.id)}"></a>
               <span th:if="${comment.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
               · <span th:with="y=${#temporals.year(comment.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
                       th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
