@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.admin.AdminPartnershipApplicationResponse;
 import megane6.weplanet.domain.entity.PartnershipApplication;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicantType;
-import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicationStatus;
+import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.PartnershipApplicationRepository;
+import megane6.weplanet.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -20,6 +20,8 @@ public class AdminPartnershipApplicationService {
 	private static final int PAGE_SIZE = 20;
 	
 	private final PartnershipApplicationRepository applicationRepository;
+	private final UserRepository userRepository;
+	private final AdminActionLogService actionLogService;
 	
 	public Page<AdminPartnershipApplicationResponse> getApplications(
 			PartnershipApplicationStatus status,
@@ -74,6 +76,91 @@ public class AdminPartnershipApplicationService {
 						PartnershipApplicationStatus.REJECTED
 				)
 		);
+	}
+	
+	@Transactional
+	public PartnershipApplication approveApplication(
+			Long applicationId,
+			Long adminId,
+			String ipAddress
+	) {
+		User admin = requireAdmin(adminId);
+		PartnershipApplication application =
+				requireApplication(applicationId);
+		
+		application.approve(admin);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PARTNERSHIP_APPLICATION_APPROVE,
+				AdminTargetType.PARTNERSHIP_APPLICATION,
+				applicationId,
+				application.getApplicantName() + " 등록 신청 승인",
+				ipAddress
+		);
+		
+		return application;
+	}
+	
+	@Transactional
+	public PartnershipApplication rejectApplication(
+			Long applicationId,
+			Long adminId,
+			String rejectionReason,
+			String ipAddress
+	) {
+		User admin = requireAdmin(adminId);
+		PartnershipApplication application =
+				requireApplication(applicationId);
+		
+		application.reject(admin, rejectionReason);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PARTNERSHIP_APPLICATION_REJECT,
+				AdminTargetType.PARTNERSHIP_APPLICATION,
+				applicationId,
+				application.getApplicantName()
+						+ " 등록 신청 반려: "
+						+ application.getRejectionReason(),
+				ipAddress
+		);
+		
+		return application;
+	}
+	
+	private PartnershipApplication requireApplication(
+			Long applicationId
+	) {
+		if (applicationId == null) {
+			throw new IllegalArgumentException(
+					"신청 번호가 필요합니다."
+			);
+		}
+		
+		return applicationRepository.findById(applicationId)
+				.orElseThrow(() ->
+						new IllegalArgumentException(
+								"입점 신청을 찾을 수 없습니다."
+						)
+				);
+	}
+	
+	private User requireAdmin(Long adminId) {
+		User admin = userRepository.findById(adminId)
+				.orElseThrow(() ->
+						new IllegalArgumentException(
+								"관리자 계정을 찾을 수 없습니다."
+						)
+				);
+		
+		if (admin.getRole() != Role.ADMIN) {
+			throw new IllegalStateException(
+					"관리자 권한이 필요합니다."
+			);
+		}
+		
+		return admin;
 	}
 	
 	private AdminPartnershipApplicationResponse toResponse(
