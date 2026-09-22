@@ -14,7 +14,7 @@ import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
-import megane6.weplanet.service.FollowService;
+import megane6.weplanet.service.UserFollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
@@ -48,7 +48,7 @@ public class CommunityController {
 	private final BoardMediaService boardMediaService;
 	// [머지 충돌 해결] main에서 포털(Portal) 기능이 되돌려지면서 PortalManagementService 클래스 자체가
 	// 삭제됨 -> portalManagementService 필드도 함께 제거 (남기면 타입을 못 찾아 컴파일 실패)
-	private final FollowService followService;
+	private final UserFollowService userFollowService; // GroupFollow 통합: 사람↔사람 팔로우 (팬↔팬, 팬→아티스트 공용)
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final ArtistAttendanceService artistAttendanceService;
@@ -337,11 +337,27 @@ public class CommunityController {
 		return "community/live";
 	}
 	
-	// 와이어프레임 20~23번: 내 프로필 - 댓글/포스트/좋아요/북마크 히스토리
-	// 화면에 뜨는 이름은 계정 아이디가 아니라 populateArtistModel이 넣어준 myCommunityProfile(닉네임)을 쓴다.
+	// "내 프로필" 버튼 - 예전엔 이 주소가 곧 "내 프로필"이었는데, FOLLOW-01에서 다른 사람 프로필도
+	// 볼 수 있게 되면서 /profile/{userId}로 일반화했다. 헤더 링크는 그대로 두고 여기서 내 id로 보낸다.
 	@GetMapping("/community/{artistId}/profile")
-	public String myProfile(
+	public String myProfileRedirect(
 			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User me = userResolver.resolve(principal, 1L);
+		return "redirect:/community/" + artistId + "/profile/" + me.getId();
+	}
+
+	// 와이어프레임 20~23번 + FOLLOW-01: 프로필 - 댓글/포스트/좋아요/북마크 히스토리.
+	// 본인이면 예전과 동일(편집 가능), 타인이면 그 사람 기준 히스토리 + 팔로우 버튼.
+	// 화면에 뜨는 이름은 계정 아이디가 아니라 populateArtistModel이 넣어준 myCommunityProfile(닉네임)을 쓴다.
+	@GetMapping("/community/{artistId}/profile/{userId}")
+	public String profile(
+			@PathVariable Long artistId,
+			@PathVariable Long userId,
 			@RequestParam(defaultValue = "latest") String sort,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -351,14 +367,28 @@ public class CommunityController {
 		}
 		populateArtistModel(artistId, principal, model);
 		User me = userResolver.resolve(principal, 1L);
-		if (!hasCommunityAccess(me, artistId)) {
+		User targetUser = userRepository.findOneById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+
+		// 프로필 열람 = 나도 이 커뮤니티 가입 + 상대도 이 커뮤니티 가입.
+		// hasCommunityAccess에 이미 "커뮤니티 주인(아티스트 본인)은 가입 없이 항상 접근 가능" 등의 예외가
+		// 있어서, 양쪽에 그대로 재사용하면 "아티스트 본인 프로필은 가입 여부 무관하게 항상 열람 가능"도
+		// 자동으로 만족된다.
+		if (!hasCommunityAccess(me, artistId) || !hasCommunityAccess(targetUser, artistId)) {
 			model.addAttribute("gatedTab", "profile");
 			return "community/membership-required";
 		}
 
-		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다.
+		boolean isOwnProfile = me.getId().equals(userId);
+		model.addAttribute("isOwnProfile", isOwnProfile);
+		model.addAttribute("profileUserId", userId);
+		// 이 프로필의 주인이 이 커뮤니티의 아티스트 본인인지 - 맞다면 팔로우 버튼/콘텐츠 잠금 문구가
+		// "아티스트 팔로우" 기준으로 동작한다 (UserFollowService.toggle이 알아서 가입 요건 없이 처리).
+		model.addAttribute("isCommunityOwnerProfile", userId.equals(artistId));
+
+		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
 		// 아티스트 본인이나 관리자는 가입 절차 없이 접근할 수 있으므로 joinedAt이 null일 수 있다.
-		CommunityJoinInfo communityJoinInfo = communityJoinService.joinInfoOf(me, artistId);
+		CommunityJoinInfo communityJoinInfo = communityJoinService.joinInfoOf(targetUser, artistId);
 		if (communityJoinInfo != null) {
 			model.addAttribute("communityJoinInfo", communityJoinInfo);
 		}
@@ -366,26 +396,26 @@ public class CommunityController {
 		boolean oldest = "oldest".equals(sort);
 		
 		List<Comment> myComments = oldest
-				? commentRepository.findByAuthorOrderByCreatedAtAsc(me)
-				: commentRepository.findByAuthorOrderByCreatedAtDesc(me);
+				? commentRepository.findByAuthorOrderByCreatedAtAsc(targetUser)
+				: commentRepository.findByAuthorOrderByCreatedAtDesc(targetUser);
 		
 		List<Post> myPosts = oldest
-				? postService.getPostsByAuthor(me, true)
-				: postService.getPostsByAuthor(me, false);
+				? postService.getPostsByAuthor(targetUser, true)
+				: postService.getPostsByAuthor(targetUser, false);
 		Map<Long, Long> myPostCommentCounts = new HashMap<>();
 		for (Post post : myPosts) {
 			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
 		}
 		
-		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(me).stream()
+		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
 				.map(Like::getPost)
 				.toList();
 		
-		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(me).stream()
+		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
 				.map(Bookmark::getPost)
 				.toList();
 		
-		// [닉네임 관리] 내 프로필에서 댓글/좋아요/북마크한 "다른 사람들"의 글이 함께 보이는데,
+		// [닉네임 관리] 프로필에서 댓글/좋아요/북마크한 "다른 사람들"의 글이 함께 보이는데,
 		// 그 작성자 닉네임도 이 커뮤니티에서 통용되는 닉네임(가입할 때 닉네임)으로 통일해서 보여준다.
 		List<User> profileAuthors = new ArrayList<>();
 		myComments.forEach(c -> profileAuthors.add(c.getPost().getAuthor()));
@@ -398,10 +428,84 @@ public class CommunityController {
 		model.addAttribute("likedPosts", likedPosts);
 		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
 		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(profileAuthors, artistId));
-		model.addAttribute("myFollowingCount", followService.getFollowedArtistIds(me).size());
+		// GroupFollow 통합: 팔로우는 이 커뮤니티(artistId)에 종속되므로 항상 artistId를 함께 넘긴다.
+		// 대상이 아티스트 본인이면 이 값들이 곧 "아티스트 팔로우" 여부/카운트가 된다(따로 attribute 안 나눔).
+		model.addAttribute("myFollowingCount", userFollowService.countFollowing(userId, artistId));
+		model.addAttribute("followerCount", userFollowService.countFollowers(userId, artistId));
+		model.addAttribute("isFollowingTarget", userFollowService.isFollowing(me, userId, artistId));
 		model.addAttribute("sort", sort);
+		// 프로필 카드(닉네임/소개/아바타/배경/숨김여부)는 항상 "대상 유저" 기준으로 그린다.
+		// isOwnProfile이면 targetUser == me라 지금까지의 myCommunityProfile(populateArtistModel이 이미
+		// 세팅함)과 값이 같다.
+		model.addAttribute("targetCommunityProfile", communityJoinService.profileOf(targetUser, artistId));
+		model.addAttribute("targetUser", targetUser);
 		
 		return "community/profile";
+	}
+
+	// GroupFollow 통합: 팔로우 버튼 하나로 팬↔팬, 팬→아티스트(구 About 위젯 GroupFollow) 모두 처리.
+	// userId == artistId면 "이 커뮤니티 아티스트를 팔로우"로 취급된다(UserFollowService.toggle 내부 판단).
+	// 어디서 눌렀는지(About 위젯/프로필 화면)에 따라 되돌아갈 곳이 다르므로 Referer로 되돌려보낸다.
+	@PostMapping("/community/{artistId}/profile/{userId}/follow")
+	public String toggleFollow(
+			@PathVariable Long artistId,
+			@PathVariable Long userId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			@RequestHeader(value = "Referer", required = false) String referer
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User me = userResolver.resolve(principal, 1L);
+		userFollowService.toggle(me, userId, artistId);
+		return "redirect:" + (referer != null ? referer : "/community/" + artistId + "/profile/" + userId);
+	}
+
+	// FOLLOW-01: 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트(닉네임+아바타) - 모달에서 fetch로 불러 씀
+	@GetMapping("/community/{artistId}/profile/{userId}/followers")
+	public String followersFragment(
+			@PathVariable Long artistId,
+			@PathVariable Long userId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		return userListFragment(artistId, userId, true, principal, model);
+	}
+
+	@GetMapping("/community/{artistId}/profile/{userId}/following")
+	public String followingFragment(
+			@PathVariable Long artistId,
+			@PathVariable Long userId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		return userListFragment(artistId, userId, false, principal, model);
+	}
+
+	private String userListFragment(
+			Long artistId,
+			Long userId,
+			boolean followers,
+			AuthenticatedUser principal,
+			Model model
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User me = userResolver.resolve(principal, 1L);
+		User targetUser = userRepository.findOneById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+		if (!hasCommunityAccess(me, artistId) || !hasCommunityAccess(targetUser, artistId)) {
+			return "redirect:/community/" + artistId + "/highlight";
+		}
+
+		List<User> users = followers
+				? userFollowService.listFollowers(userId, artistId)
+				: userFollowService.listFollowing(userId, artistId);
+		model.addAttribute("artistId", artistId);
+		model.addAttribute("users", users);
+		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(users, artistId));
+		return "community/fragments/userList :: userListFragment";
 	}
 	
 	// Membership 가입하기 버튼 - 팬 + 타 커뮤니티 방문 아티스트 (본인 커뮤니티 제외)
@@ -481,31 +585,6 @@ public class CommunityController {
 		return result;
 	}
 	
-	// 와이어프레임 26번: About 위젯의 팔로우/팔로잉 버튼
-	// 커뮤니티 "가입"과는 별개다. 가입은 /community/{id}/join (닉네임 필요), 여기는 순수 팔로우.
-	@PostMapping("/community/{artistId}/follow")
-	public String toggleFollow(
-			@PathVariable Long artistId,
-			@RequestParam(required = false) Long returnTo,
-			@AuthenticationPrincipal AuthenticatedUser principal,
-			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith
-	) {
-		if (principal == null) {
-			return "redirect:/login";
-		}
-		User me = userResolver.resolve(principal, 1L);
-		if (me.getId().equals(artistId)) {
-			throw new IllegalStateException("본인 커뮤니티는 팔로우할 수 없습니다.");
-		}
-		if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
-			throw new IllegalStateException("팬 또는 아티스트 계정만 팔로우할 수 있습니다.");
-		}
-		followService.toggle(me, artistId);
-		
-		Long backTo = returnTo != null ? returnTo : artistId;
-		return "redirect:/community/" + backTo + "/highlight";
-	}
-	
 	// Fan/Artist/Media/Live/Notice 탭 접근 제어: 로그인은 각 라우트에서 먼저 체크하고,
 	// 여기서는 "이 커뮤니티에 가입(CommunityMember)했는지"만 확인함.
 	// 예전엔 Follow 기준이었는데, 검색/커뮤니티 페이지 어디서 가입하든 닉네임을 받도록 통일하면서
@@ -578,7 +657,7 @@ public class CommunityController {
 			artistAttendanceService.recordVisitIfArtist(currentUser);
 		}
 		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
-		Set<Long> followedIds = followService.getFollowedArtistIds(currentUser);
+		Set<Long> followedIds = userFollowService.getFollowedArtistIds(currentUser);
 		model.addAttribute("followingCurrentArtist", followedIds.contains(artistId));
 		
 		Map<Long, CommunityProfile> joinedProfiles = currentUser != null
