@@ -114,6 +114,15 @@
       오류가 발생했습니다.
     </p>
 
+      <p
+              th:if="${msg}"
+              th:text="${msg}"
+              class="admin-login__notice
+               admin-login__notice--success"
+      >
+          처리가 완료되었습니다.
+      </p>
+
     <!-- 통계 카드 -->
     <div class="admin-stat-grid">
 
@@ -771,21 +780,128 @@
             </div>
           </div>
 
-          <!-- 다음 단계에서 승인/반려 버튼이 들어갈 자리 -->
-          <p
-                  th:if="${selectedApplication.statusName()
-                                == 'PENDING_APPROVAL'}"
-                  class="text-xs text-muted"
-                  style="
-                                margin-top: 20px;
-                                padding-top: 16px;
-                                border-top: 1px solid
-                                    var(--wp-line, #ddd);
-                            "
-          >
-            다음 단계에서 이 위치에 승인 및 반려 기능이
-            추가됩니다.
-          </p>
+            <div
+                    th:if="${selectedApplication.statusName()
+            == 'PENDING_APPROVAL'}"
+                    style="
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid
+                var(--wp-line, #ddd);
+        "
+            >
+                <!-- 승인 처리 -->
+                <form
+                        th:action="@{/admin/applications/{applicationId}/approve(
+                applicationId=${selectedApplication.applicationId()}
+            )}"
+                        method="post"
+                        onsubmit="return confirm(
+                '이 등록 신청을 승인하시겠습니까?'
+            );"
+                        style="margin-bottom: 20px;"
+                >
+                    <input
+                            type="hidden"
+                            name="status"
+                            th:value="${selectedStatus}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="applicantType"
+                            th:value="${selectedApplicantType}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="keyword"
+                            th:value="${keyword}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="page"
+                            th:value="${applications.number}"
+                    />
+
+                    <button
+                            type="submit"
+                            class="btn btn--primary btn--block"
+                    >
+                        등록 신청 승인
+                    </button>
+                </form>
+
+                <!-- 반려 처리 -->
+                <form
+                        th:action="@{/admin/applications/{applicationId}/reject(
+                applicationId=${selectedApplication.applicationId()}
+            )}"
+                        method="post"
+                        onsubmit="return confirm(
+                '입력한 사유로 등록 신청을 반려하시겠습니까?'
+            );"
+                >
+                    <input
+                            type="hidden"
+                            name="status"
+                            th:value="${selectedStatus}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="applicantType"
+                            th:value="${selectedApplicantType}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="keyword"
+                            th:value="${keyword}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="page"
+                            th:value="${applications.number}"
+                    />
+
+                    <div class="form-group">
+                        <label
+                                for="rejectionReason"
+                                class="form-label"
+                        >
+                            반려 사유
+                        </label>
+
+                        <textarea
+                                id="rejectionReason"
+                                name="rejectionReason"
+                                class="form-textarea"
+                                rows="5"
+                                maxlength="500"
+                                placeholder="신청자에게 안내할 반려 사유를 입력해주세요."
+                                required
+                        ></textarea>
+
+                        <p
+                                class="text-xs text-muted"
+                                style="margin-top: 6px;"
+                        >
+                            입력한 사유가 신청자의 결과 이메일에 포함됩니다.
+                            최대 500자까지 입력할 수 있습니다.
+                        </p>
+                    </div>
+
+                    <button
+                            type="submit"
+                            class="btn btn--ghost btn--block"
+                    >
+                        등록 신청 반려
+                    </button>
+                </form>
+            </div>
         </div>
       </aside>
     </div>
