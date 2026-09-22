@@ -236,6 +236,21 @@
     return found ? found.name : id;
   }
 
+  /** 가입 시각(ISO). 없으면 null → 가입 필터 미적용(아티스트 본인 등) */
+  function joinedAtForArtist(artistId) {
+    var sid = String(artistId);
+    var found = MY_COMMUNITIES.filter(function (c) { return String(c.id) === sid; })[0];
+    return found && found.joinedAt ? String(found.joinedAt) : null;
+  }
+
+  /** 이벤트 시각이 해당 커뮤니티 가입 시각 이후인지 */
+  function isAfterJoin(artistId, timeStr) {
+    var joined = joinedAtForArtist(artistId);
+    if (!joined) return true;
+    if (!timeStr) return false;
+    return String(timeStr) >= joined;
+  }
+
   function parseYmd(str) {
     var p = (str || "").split("-");
     return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
@@ -386,6 +401,7 @@
         var createdDate = String(createdRaw).slice(0, 10);
         var createdSort = String(createdRaw).length > 10 ? String(createdRaw) : createdDate + "T00:00:00";
         var registeredAge = Math.round((startOfToday() - parseYmd(createdDate)) / 86400000);
+        if (!isAfterJoin(ev.artist, createdSort)) return;
         items.push({
           id: "ev-" + ev.id,
           type: nType,
@@ -451,6 +467,13 @@
     var readIds = loadReadIds();
     var merged = POST_NOTIFICATIONS.concat(notificationsFromSchedule()).concat(EXTRA_NOTIFICATIONS);
     return merged
+      .filter(function (n) {
+        // 시스템 공지는 헤더 알림에서 제외 (햄버거 공지사항 뱃지 전용)
+        if (n.type === "site_notice") return false;
+        // 커뮤니티 이벤트는 가입 이후만
+        if (n.global || n.type === "comment" || n.type === "artist_comment") return true;
+        return isAfterJoin(n.artistId || n.artist, notificationSortKey(n));
+      })
       .map(function (n) {
         var copy = Object.assign({}, n);
         if (readIds.indexOf(n.id) !== -1) copy.read = true;
@@ -505,9 +528,8 @@
   function notificationsForPanel() {
     var target = notificationCommunityId();
     return allNotifications().filter(function (notification) {
-      // 시스템 공지·내 글 댓글은 커뮤니티 필터와 무관하게 항상 표시
+      // 내 글 댓글은 커뮤니티 필터와 무관하게 항상 표시
       if (notification.global
-          || notification.type === "site_notice"
           || notification.type === "comment"
           || notification.type === "artist_comment") {
         return true;
@@ -623,7 +645,7 @@
       POST_NOTIFICATIONS = [];
       return Promise.resolve();
     }
-    // 커뮤니티 페이지에서도 전체(가입 커뮤니티 + 시스템 공지)를 받아 뱃지/패널 필터에 사용
+    // 커뮤니티 페이지에서도 전체(가입 커뮤니티)를 받아 뱃지/패널 필터에 사용
     return fetch("/api/notifications", { headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
@@ -797,6 +819,13 @@
     );
   }
 
+  function ensureSvg(btn, html) {
+    if (!btn) return;
+    // 이미 SVG가 있으면 건드리지 않는다 — innerHTML 교체는 아이콘/사진 CLS의 주범
+    if (btn.querySelector("svg.icon")) return;
+    btn.innerHTML = html;
+  }
+
   function ensureHeaderIcons() {
     var actions = document.querySelector(".community-top__right") || document.querySelector(".header-actions");
     if (!actions) return;
@@ -816,11 +845,12 @@
     }
 
     var searchBtn = icons.filter(isSearchBtn)[0] || null;
-    var hasLang = icons.some(isLangBtn);
-    var hasNoti = icons.some(isNotiBtn);
+    var langBtn = icons.filter(isLangBtn)[0] || null;
+    var notiBtn = icons.filter(isNotiBtn)[0] || null;
+    var themeBtn = actions.querySelector("[data-theme-toggle]");
 
+    // 템플릿에 없는 버튼만 끝에 추가. 기존 노드는 순서/내용을 바꾸지 않는다.
     var anchor = actions.querySelector("a.btn, form, span[sec\\:authorize]") || null;
-
     function insert(btn) {
       if (anchor && anchor.parentElement === actions) actions.insertBefore(btn, anchor);
       else actions.appendChild(btn);
@@ -837,11 +867,10 @@
         insert(searchBtn);
       }
     } else {
-      searchBtn.innerHTML = HEADER_ICONS.search;
+      ensureSvg(searchBtn, HEADER_ICONS.search);
     }
 
-    var langBtn = icons.filter(isLangBtn)[0] || null;
-    if (!hasLang) {
+    if (!langBtn) {
       langBtn = document.createElement("button");
       langBtn.type = "button";
       langBtn.className = "icon-btn";
@@ -849,10 +878,10 @@
       langBtn.innerHTML = HEADER_ICONS.language;
       insert(langBtn);
     } else {
-      langBtn.innerHTML = HEADER_ICONS.language;
+      ensureSvg(langBtn, HEADER_ICONS.language);
     }
-    var notiBtn = icons.filter(isNotiBtn)[0] || null;
-    if (!hasNoti) {
+
+    if (!notiBtn) {
       if (isAuthed) {
         notiBtn = document.createElement("button");
         notiBtn.type = "button";
@@ -862,12 +891,10 @@
         insert(notiBtn);
       }
     } else {
-      notiBtn.innerHTML = HEADER_ICONS.notification;
+      ensureSvg(notiBtn, HEADER_ICONS.notification);
     }
 
-    // 라이트/다크 토글 - 로그인 여부와 무관하게 모든 페이지 헤더에 둔다.
-    // (메인처럼 템플릿에 이미 박혀 있으면 그걸 그대로 쓴다)
-    var themeBtn = actions.querySelector("[data-theme-toggle]");
+    // 라이트/다크 토글 - 없으면 추가, 있으면 아이콘만 보강 (순서 재배치 금지)
     if (!themeBtn) {
       themeBtn = document.createElement("button");
       themeBtn.type = "button";
@@ -876,16 +903,12 @@
       themeBtn.setAttribute("aria-label", "화면 테마 전환");
       themeBtn.innerHTML = HEADER_ICONS.theme;
       insert(themeBtn);
+    } else if (
+      !themeBtn.querySelector('[data-theme-icon="light"]') ||
+      !themeBtn.querySelector('[data-theme-icon="dark"]')
+    ) {
+      themeBtn.innerHTML = HEADER_ICONS.theme;
     }
-
-    // 순서 맞추기 - 비로그인이면 검색·알림이 없으므로 있는 것만 앞으로 당긴다
-    var prev = null;
-    [searchBtn, notiBtn, langBtn, themeBtn].forEach(function (btn) {
-      if (!btn) return;
-      if (prev) actions.insertBefore(btn, prev.nextSibling);
-      else actions.insertBefore(btn, actions.firstElementChild);
-      prev = btn;
-    });
   }
 
   function bindHeaderIcons() {

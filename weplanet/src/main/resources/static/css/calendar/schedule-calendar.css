@@ -157,7 +157,17 @@
   margin-top: 16px;
 }
 
-.wp-global-slot { position: relative; display: inline-flex; }
+.wp-global-slot {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
 .wp-global-slot .icon-btn.is-open { background: var(--wp-brand-soft); }
 .wp-lang-menu,
 .wp-noti-panel {

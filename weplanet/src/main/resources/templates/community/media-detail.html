@@ -47,16 +47,16 @@
            th:if="${mediaPost.content != null and !#strings.isEmpty(mediaPost.content)}"
            th:text="${mediaPost.content}"></p>
 
-        <div class="post-card__media" th:if="${not #lists.isEmpty(mediaPost.files)}">
+        <div class="post-card__media post-card__media--lg" th:if="${not #lists.isEmpty(mediaPost.files)}">
           <th:block th:each="file : ${mediaPost.files}">
             <img th:if="${file.mediaType == 'IMAGE'}"
                  th:src="@{/board/media/file/{id}(id=${file.id})}"
                  th:alt="${file.originalName}"
-                 style="width:100%;border-radius:var(--wp-radius-sm);max-height:480px;object-fit:cover;margin-bottom:8px;" />
+                 width="800" height="500" loading="lazy" />
             <video th:if="${file.mediaType == 'VIDEO'}"
                    th:src="@{/board/media/file/{id}(id=${file.id})}"
                    controls
-                   style="width:100%;border-radius:var(--wp-radius-sm);max-height:480px;margin-bottom:8px;"></video>
+                   class="post-card__video"></video>
           </th:block>
         </div>
 

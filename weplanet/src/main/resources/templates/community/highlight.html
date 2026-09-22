@@ -61,8 +61,7 @@
                style="display:block;color:inherit;">
               <p class="post-card__body" th:text="${post.title}"></p>
               <div th:if="${artistPostThumbnails.get(post.id)} != null" class="post-card__media">
-                <img th:src="@{'/uploads/' + ${artistPostThumbnails.get(post.id)}}" alt=""
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:320px;object-fit:cover;">
+                <img th:src="@{'/uploads/' + ${artistPostThumbnails.get(post.id)}}" alt="" width="800" height="500" loading="lazy">
               </div>
             </a>
             <div class="post-card__actions">
@@ -145,9 +144,8 @@
             <a th:href="@{/community/{artistId}/fan/{postId}(artistId=${artist.id()}, postId=${post.id})}"
                style="display:block;color:inherit;">
               <p class="post-card__body" th:text="${post.title}"></p>
-              <div th:if="${fanPostThumbnails.get(post.id)} != null" class="post-card__media">
-                <img th:src="@{'/uploads/' + ${fanPostThumbnails.get(post.id)}}" alt=""
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:180px;object-fit:cover;">
+              <div th:if="${fanPostThumbnails.get(post.id)} != null" class="post-card__media post-card__media--sm">
+                <img th:src="@{'/uploads/' + ${fanPostThumbnails.get(post.id)}}" alt="" width="800" height="450" loading="lazy">
               </div>
             </a>
             <div class="post-card__actions">

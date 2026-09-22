@@ -138,7 +138,10 @@
 
   <nav class="drawer-menu__nav">
     <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> 나의 컬렉션</a>
-    <a href="${isAdmin ? root + "admin/notices" : root + "notices"}"><span class="nav-ico">${ICONS.notice}</span> 공지사항</a>
+    <a href="${isAdmin ? root + "admin/notices" : root + "notices"}" data-site-notice-link>
+      <span class="nav-ico">${ICONS.notice}</span> 공지사항
+      <span class="drawer-menu__badge" data-site-notice-badge hidden aria-hidden="true"></span>
+    </a>
     <a href="${root}shop"><span class="nav-ico">${ICONS.shop}</span> Shop</a>
     <a href="${root}settings"><span class="nav-ico">${ICONS.settings}</span> 회원정보 및 설정</a>
     ${adminBlock}
@@ -297,6 +300,69 @@
   // 헤더에 햄버거가 없으면 brand 앞에 삽입
   ensureMenuToggle();
   ensureAdminPageLink();
+
+  /* ---------------------------------------------------------
+   * 시스템 공지 뱃지 (햄버거 → 공지사항)
+   * 헤더 알림에는 넣지 않고, 메뉴 공지사항 링크에만 미읽음 점을 띄운다.
+   * --------------------------------------------------------- */
+  (function siteNoticeBadge() {
+    const READ_KEY = "weplanet.site-notice.read";
+    const link = document.querySelector("[data-site-notice-link]");
+    const badge = document.querySelector("[data-site-notice-badge]");
+    if (!link || !badge) return;
+
+    function loadReadIds() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(READ_KEY) || "[]");
+        return Array.isArray(raw) ? raw.map(String) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveReadIds(ids) {
+      const unique = Array.from(new Set(ids.map(String)));
+      localStorage.setItem(READ_KEY, JSON.stringify(unique));
+    }
+
+    function setBadgeVisible(visible) {
+      if (visible) {
+        badge.removeAttribute("hidden");
+        badge.setAttribute("aria-hidden", "false");
+        link.setAttribute("aria-label", "공지사항, 새 공지 있음");
+      } else {
+        badge.setAttribute("hidden", "");
+        badge.setAttribute("aria-hidden", "true");
+        link.removeAttribute("aria-label");
+      }
+    }
+
+    function markAllRead(ids) {
+      if (!ids.length) {
+        setBadgeVisible(false);
+        return;
+      }
+      saveReadIds(loadReadIds().concat(ids));
+      setBadgeVisible(false);
+    }
+
+    fetch(root + "api/site-notices", { headers: { Accept: "application/json" } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const notices = data && Array.isArray(data.notices) ? data.notices : [];
+        const ids = notices.map((n) => String(n.id));
+        const path = location.pathname || "";
+        // 공지 목록/상세를 보면 현재 공개 공지를 모두 읽음 처리
+        if (/^\/notices(\/|$)/.test(path) || /^\/admin\/notices(\/|$)/.test(path)) {
+          markAllRead(ids);
+          return;
+        }
+        const read = loadReadIds();
+        const unread = ids.filter((id) => read.indexOf(id) === -1);
+        setBadgeVisible(unread.length > 0);
+      })
+      .catch(function () { /* ignore */ });
+  })();
 
   /* ---------------------------------------------------------
    * 커뮤니티 목록 보충

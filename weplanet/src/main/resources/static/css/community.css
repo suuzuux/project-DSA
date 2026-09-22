@@ -69,11 +69,45 @@
 .community-top__right .icon-btn {
   width: 40px;
   height: 40px;
+  min-width: 40px;
+  min-height: 40px;
   border-radius: 999px;
   display: grid;
   place-items: center;
   color: var(--wp-ink-soft);
   transition: background var(--wp-fast) var(--wp-ease), color var(--wp-fast);
+}
+
+.community-top__right .wp-global-slot {
+  position: relative;
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.community-top__right .icon-btn .icon,
+.header-actions .icon-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+.community-top__right .icon-btn[data-theme-toggle],
+.header-actions .icon-btn[data-theme-toggle] {
+  position: relative;
+}
+
+.community-top__right .icon-btn[data-theme-toggle] .icon,
+.header-actions .icon-btn[data-theme-toggle] .icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 20px;
+  height: 20px;
 }
 
 .community-top__right .icon-btn:hover {
@@ -109,10 +143,14 @@
 /* ---------- Hero Header Image ---------- */
 .community-hero {
   height: 180px;
+  min-height: 180px;
   background:
     linear-gradient(180deg, transparent 30%, rgba(20, 24, 31, 0.55)),
     linear-gradient(120deg, #1e4d4d, #2a5a6a 50%, #8b4513);
   color: #fff;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: flex-end;
   padding: 20px 24px;

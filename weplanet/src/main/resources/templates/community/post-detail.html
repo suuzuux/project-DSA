@@ -76,10 +76,10 @@
         <span th:text="${post.linkUrl}"></span>
       </a>
 
-      <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media mt-12">
+      <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media post-card__media--lg mt-12">
         <div th:each="file : ${attachments}">
           <img th:if="${file.image}" th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}"
-               style="width:100%;border-radius:var(--wp-radius-sm);max-height:480px;object-fit:cover;">
+               width="800" height="500" loading="lazy">
           <a th:unless="${file.image}" class="translate-link" th:href="@{'/uploads/' + ${file.storedName}}"
              th:text="${file.originalName}" download></a>
         </div>
