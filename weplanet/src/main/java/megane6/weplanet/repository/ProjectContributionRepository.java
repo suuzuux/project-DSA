@@ -23,6 +23,9 @@ public interface ProjectContributionRepository extends JpaRepository<ProjectCont
     @Query("select c from ProjectContribution c where c.orderNo = :orderNo")
     Optional<ProjectContribution> findByOrderNoForUpdate(@Param("orderNo") String orderNo);
     
+    // 상태만 확인하면 되는 경우(안내 화면 폴링)는 행을 잠그지 않고 읽는다
+    Optional<ProjectContribution> findByOrderNo(String orderNo);
+
     // [스케줄러] 특정 상태인 주문번호 목록
     @Query("select c.orderNo from ProjectContribution c where c.paymentStatus = :status")
     List<String> findOrderNosByStatus(@Param("status") FanProjectPaymentStatus status);
