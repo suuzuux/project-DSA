@@ -281,20 +281,9 @@
           </div>
 
           <div class="project-mock-account">
-            <div><span>입금 은행</span><strong>WePlaNet 모의은행</strong></div>
-            <div><span>가상계좌번호</span><strong id="projectMockAccountNumber">999-0000-000000</strong></div>
-            <div><span>입금 기한</span><strong class="project-mock-account__deadline">10분 이내</strong></div>
-            <p>실제 금액은 이체되지 않으며 참여 기록만 DB에 저장됩니다.</p>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="projectDepositorName">입금자명</label>
-            <input id="projectDepositorName"
-                   class="form-input"
-                   type="text"
-                   maxlength="50"
-                   required
-                   placeholder="입금하실 분의 성함을 입력해주세요" />
+            <div><span>결제 수단</span><strong>가상계좌 (무통장 입금)</strong></div>
+            <div><span>입금 기한</span><strong>발급 후 최대 24시간 (모금 마감 전까지)</strong></div>
+            <p>참여하기를 누르면 토스페이먼츠 결제창이 열려요. 발급된 계좌로 입금이 확인되면 참여가 확정됩니다.</p>
           </div>
 
           <div class="project-contribution-agreements">
@@ -310,7 +299,7 @@
 
             <details>
               <summary>환불 규정 보기</summary>
-              <p>현재는 모의결제 단계이며 실제 결제·환불은 처리되지 않습니다. 실제 결제를 연결할 때 결제 취소 및 환불 기준을 별도로 적용합니다.</p>
+              <p>입금 전에는 입금기한이 지나면 주문이 자동으로 취소됩니다. 입금 후 취소·환불은 모금 마감 전까지 요청할 수 있으며, 가상계좌 특성상 환불받을 계좌 정보가 필요합니다.</p>
             </details>
           </div>
 
@@ -601,6 +590,7 @@
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/dm-realtime.js}"></script>
@@ -676,10 +666,8 @@
       const contributionProgressLabel = document.getElementById("projectContributionProgressLabel");
       const contributionDday = document.getElementById("projectContributionDday");
       const contributionAmount = document.getElementById("projectContributionAmount");
-      const depositorName = document.getElementById("projectDepositorName");
       const anonymousContribution = document.getElementById("projectContributionAnonymous");
       const refundPolicyAgreed = document.getElementById("projectContributionRefundAgreed");
-      const mockAccountNumber = document.getElementById("projectMockAccountNumber");
       const contributionStatus = document.getElementById("projectContributionStatus");
       const contributionSubmitButton = document.getElementById("projectContributionSubmitButton");
 
@@ -789,7 +777,6 @@
         contributionProgressLabel.textContent = `${Number(project.progressPercent || 0)}% 달성`;
         contributionDday.textContent = projectDdayLabel(Number(project.remainingDays));
         updateProgressBar(contributionProgressBar, project.progressPercent || 0);
-        mockAccountNumber.textContent = `999-0000-${String(project.id).padStart(6, "0")}`;
 
         if (project.coverImageUrl) {
           contributionCover.src = project.coverImageUrl;
@@ -890,20 +877,14 @@
             ));
       });
 
-      contributionForm?.addEventListener("submit", async function (event) {
+            contributionForm?.addEventListener("submit", async function (event) {
         event.preventDefault();
 
         const amount = Number(contributionAmount.value);
-        const depositor = depositorName.value.trim();
 
         if (!Number.isInteger(amount) || amount < 1000 || amount > 3000000) {
           showContributionStatus("참여 금액은 1,000원 이상 3,000,000원 이하로 입력해주세요.", true);
           contributionAmount.focus();
-          return;
-        }
-        if (!depositor) {
-          showContributionStatus("입금자명을 입력해주세요.", true);
-          depositorName.focus();
           return;
         }
         if (!refundPolicyAgreed.checked) {
@@ -913,10 +894,10 @@
         }
 
         contributionSubmitButton.disabled = true;
-        showContributionStatus("모의결제를 처리하고 있습니다.", false);
-        let completed = false;
+        showContributionStatus("주문을 만들고 있습니다.", false);
 
         try {
+          // 1) 우리 서버에 주문(READY) 생성 요청 -> 결제창 정보 받기
           const response = await fetch(selectedContributionUrl, {
             method: "POST",
             headers: {
@@ -925,7 +906,6 @@
             },
             body: JSON.stringify({
               amount: amount,
-              depositorName: depositor,
               anonymous: anonymousContribution.checked,
               refundPolicyAgreed: refundPolicyAgreed.checked,
               idempotencyKey: contributionIdempotencyKey
@@ -937,28 +917,42 @@
             return;
           }
 
-          const result = await response.json();
-          if (!response.ok || !result.success) {
-            throw new Error(result.message || "프로젝트 참여에 실패했습니다.");
+          const prepared = await response.json();
+          if (!response.ok || !prepared.success) {
+            throw new Error(prepared.message || "프로젝트 참여에 실패했습니다.");
           }
 
-          completed = true;
-          selectedProject = {
-            ...selectedProject,
-            fundedAmount: result.fundedAmount,
-            participantCount: result.participantCount,
-            progressPercent: result.progressPercent
-          };
-          updateDetailFunding(selectedProject);
-          fillContributionSummary(selectedProject);
-          showContributionStatus(result.message, false);
-          contributionSubmitButton.textContent = "참여 완료";
+          // 2) 토스 결제창 열기 (가상계좌)
+          showContributionStatus("결제창을 여는 중입니다.", false);
+          const tossPayments = TossPayments(prepared.clientKey);
+          // 우리 서비스는 카드 저장 같은 회원 기능을 안 쓰므로 비회원(ANONYMOUS)으로 연다
+          const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
+
+          await payment.requestPayment({
+            method: "VIRTUAL_ACCOUNT",
+            amount: { currency: "KRW", value: prepared.amount },
+            orderId: prepared.orderId,
+            orderName: prepared.orderName,
+            customerName: prepared.customerName,
+            // 결제창에서 계좌 발급을 마치면 토스가 이 주소로 보내준다 (Step 4에서 만들 예정)
+            successUrl: window.location.origin + "/payments/toss/success",
+            failUrl: window.location.origin + "/payments/toss/fail",
+            virtualAccount: {
+              cashReceipt: { type: "미발행" },
+              useEscrow: false,
+              validHours: prepared.validHours
+            }
+          });
+          // 성공하면 페이지가 successUrl로 이동하므로 이 아래는 실행되지 않는다.
         } catch (error) {
-          showContributionStatus(error.message, true);
-        } finally {
-          if (!completed) {
-            contributionSubmitButton.disabled = false;
-          }
+          // 사용자가 결제창을 그냥 닫으면 토스 SDK가 USER_CANCEL 에러를 던진다
+          const message = error.code === "USER_CANCEL"
+              ? "결제를 취소했어요. 다시 시도할 수 있어요."
+              : error.message;
+          showContributionStatus(message, true);
+          // 다음 시도에서 금액을 바꿔도 되도록 새 요청 키 발급
+          contributionIdempotencyKey = createIdempotencyKey();
+          contributionSubmitButton.disabled = false;
         }
       });
 
