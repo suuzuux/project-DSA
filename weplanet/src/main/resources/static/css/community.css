@@ -1276,3 +1276,72 @@
       -1px 1px 0 rgba(255, 255, 255, 0.7);
   }
 }
+
+/* ---------- Post feed pagination / quick actions ---------- */
+.post-author-avatar {
+  background: var(--wp-brand-soft);
+}
+
+.avatar__placeholder {
+  width: 23px;
+  height: 23px;
+  color: var(--wp-brand-dark);
+}
+
+.post-comment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.post-comment:hover,
+.post-comment:focus-visible {
+  color: var(--wp-brand);
+}
+
+.post-list-more {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0 4px;
+}
+
+.post-list-more__button {
+  min-width: 150px;
+}
+
+.post-list-more__button[disabled] {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.post-scroll-top {
+  position: fixed;
+  right: max(20px, calc((100vw - 1240px) / 2));
+  bottom: 24px;
+  z-index: 80;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: 50%;
+  background: var(--wp-surface, #fff);
+  color: var(--wp-ink, #222);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.post-scroll-top:hover,
+.post-scroll-top:focus-visible {
+  color: var(--wp-brand);
+  border-color: var(--wp-brand);
+}
+
+@media (max-width: 720px) {
+  .post-scroll-top {
+    right: 16px;
+    bottom: 18px;
+  }
+}

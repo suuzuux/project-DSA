@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+<!-- FOLLOW-01: 팔로워/팔로잉 리스트 모달 내용 (닉네임+아바타, 클릭하면 그 사람 프로필로 이동) -->
+<div class="profile-user-list" th:fragment="userListFragment">
+    <!-- GroupFollow/UserFollow 통합: 팔로우는 이제 커뮤니티(artistId)에 종속되므로, 이 목록에 나오는
+         사람은 전부 지금 보고 있는 이 커뮤니티 안에서 맺어진 관계다(아티스트 본인이 포함되더라도
+         이 커뮤니티의 주인이므로 artistId가 곧 그 사람의 커뮤니티 id와 같다) - 그래서 항상 지금
+         커뮤니티(artistId)로만 링크하면 된다. -->
+    <a th:each="user : ${users}"
+       th:href="@{/community/{artistId}/profile/{userId}(artistId=${artistId}, userId=${user.id})}">
+        <span class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get('' + user.id),0,1)}">?</span>
+        <span th:text="${authorNicknames.get('' + user.id)}">닉네임</span>
+    </a>
+    <p th:if="${#lists.isEmpty(users)}" class="list-empty text-sm">아직 아무도 없습니다.</p>
+</div>
+</body>
+</html>

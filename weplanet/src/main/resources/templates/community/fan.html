@@ -68,6 +68,10 @@
     <aside th:replace="~{community/fragments/layout :: sidebarAside(true, false)}"></aside>
   </div>
 
+  <button type="button" id="postScrollTop" class="post-scroll-top" aria-label="게시판 상단으로 이동" hidden>
+    <span aria-hidden="true">↑</span>
+  </button>
+
   <!-- 포스트 작성 모달 (팬 + 타 커뮤니티 방문 아티스트) -->
   <div class="modal-backdrop" id="writePostModal"
        th:if="${!isOwnCommunity}"

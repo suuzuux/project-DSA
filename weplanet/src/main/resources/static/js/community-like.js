@@ -25,7 +25,7 @@
         btn.classList.toggle("is-liked", !!data.liked);
         var countEl = btn.querySelector("[data-like-count]");
         if (countEl) {
-          countEl.textContent = data.likeCount > 0 ? String(data.likeCount) : "";
+          countEl.textContent = String(data.likeCount);
         }
       })
       .finally(function () {

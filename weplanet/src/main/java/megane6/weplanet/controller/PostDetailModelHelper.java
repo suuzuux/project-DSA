@@ -1,6 +1,7 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
@@ -51,15 +52,20 @@ public class PostDetailModelHelper {
 		authors.add(post.getAuthor());
 		comments.forEach(c -> authors.add(c.getAuthor()));
 
-		Map<String, String> authorNicknames = artistId != null
-				? communityJoinService.displayNicknamesByAuthorIdKey(authors, artistId)
+		Map<String, CommunityAuthorView> authorViews = artistId != null
+				? communityJoinService.authorViewsByAuthorIdKey(authors, artistId)
 				: authors.stream()
 						.filter(author -> author != null)
 						.collect(Collectors.toMap(
 								author -> String.valueOf(author.getId()),
-								User::getNickname,
+								author -> new CommunityAuthorView(author.getNickname(), null),
 								(a, b) -> a,
 								HashMap::new));
+		Map<String, String> authorNicknames = authorViews.entrySet().stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().nickname()));
+		Map<String, String> authorAvatarUrls = authorViews.entrySet().stream()
+				.filter(entry -> entry.getValue().avatarUrl() != null)
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().avatarUrl()));
 
 		boolean liked = currentUser != null
 				&& likeRepository.findByPostAndUser(post, currentUser).isPresent();
@@ -78,6 +84,7 @@ public class PostDetailModelHelper {
 		model.addAttribute("bookmarked", postService.isBookmarked(post, currentUser));
 		model.addAttribute("liked", liked);
 		model.addAttribute("authorNicknames", authorNicknames);
+		model.addAttribute("authorAvatarUrls", authorAvatarUrls);
 		model.addAttribute("reportedCommentIds", reportedCommentIds);
 	}
 }

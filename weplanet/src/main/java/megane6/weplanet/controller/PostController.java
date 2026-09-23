@@ -12,11 +12,11 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
-import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.ReportService;
 import megane6.weplanet.service.SummaryService;
 import megane6.weplanet.service.TranslateService;
+import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -56,8 +56,10 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
     private final TranslateService translateService;
-    // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부)
-    private final FollowService followService;
+    // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부) - GroupFollow/UserFollow 통합 전에는 이 체크가
+    // 실수로 UserFollowService.isFollowingArtist(팔로우 여부)를 봤었는데, 팔로우는 가입 없이도 가능해져서
+    // "가입 안 해도 요약/번역은 된다"는 구멍이 될 뻔했다. CommunityJoinService.isJoined(가입 여부)로 바로잡음.
+    private final CommunityJoinService communityJoinService;
     private final PortalManagementService portalManagementService;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
@@ -221,7 +223,8 @@ public class PostController {
                 // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
                 model.addAttribute("artist", portalManagementService.toArtistCard(communityArtist));
                 boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
-                postListModelHelper.populate(model, type, "latest", communityArtist, hideFromArtists);
+                postListModelHelper.populateCommunityPage(
+                        model, type, "latest", communityArtist, hideFromArtists, tempAuthor, 0);
                 return "community/fragments/postList :: postListFragment";
             }
             return list(boardType, "latest", "fetch", principal, model);
@@ -518,7 +521,7 @@ public class PostController {
         if (artist.getId().equals(user.getId())) {
             return user;
         }
-        if (!followService.isFollowing(user, artist.getId())) {
+        if (!communityJoinService.isJoined(user, artist.getId())) {
             throw new IllegalStateException("커뮤니티에 가입해야 이용할 수 있습니다.");
         }
         return user;
