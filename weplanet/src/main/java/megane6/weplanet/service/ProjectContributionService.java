@@ -7,6 +7,7 @@ import megane6.weplanet.domain.dto.ProjectContributionRequestDTO;
 import megane6.weplanet.domain.dto.ProjectParticipationView;
 import megane6.weplanet.domain.dto.ProjectPaymentPrepareResponse;
 import megane6.weplanet.domain.dto.ProjectPaymentResultView;
+import megane6.weplanet.domain.dto.ProjectPaymentStatusView;
 import megane6.weplanet.domain.dto.payment.TossDepositCallback;
 import megane6.weplanet.domain.dto.payment.TossPaymentResponse;
 import megane6.weplanet.domain.entity.Project;
@@ -237,7 +238,39 @@ public class ProjectContributionService {
                 != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
             return;
         }
-        LocalDateTime now = LocalDateTime.now();
+        syncWithToss(contribution, LocalDateTime.now());
+    }
+
+    /**
+     * [입금 확인] 가상계좌 안내 화면이 주기적으로 물어보는 조회.
+     * 입금 대기 상태면 토스에 바로 확인해서, 스케줄러(5분 주기)를 기다리지 않고 반영한다.
+     */
+    @Transactional
+    public ProjectPaymentStatusView refreshDepositStatus(Long contributorId, String orderNo) {
+        // 폴링은 몇 초마다 들어오므로, 입금 대기가 아닐 때는 행을 잠그지 않고 상태만 읽는다.
+        ProjectContribution contribution = contributionRepository.findByOrderNo(orderNo)
+                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+        if (!contribution.getContributor().getId().equals(contributorId)) {
+            throw new AccessDeniedException("본인 주문만 확인할 수 있습니다.");
+        }
+        if (contribution.getPaymentStatus() != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
+            return ProjectPaymentStatusView.from(contribution);
+        }
+
+        // 상태를 바꿀 수 있는 구간이므로 웹훅·스케줄러와 같은 방식으로 행을 잠그고 다시 확인한다
+        ProjectContribution locked = findMyOrderForUpdate(contributorId, orderNo);
+        if (locked.getPaymentStatus() == FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
+            syncWithToss(locked, LocalDateTime.now());
+        }
+        return ProjectPaymentStatusView.from(locked);
+    }
+
+    /**
+     * 입금 대기 주문 하나를 토스의 실제 상태와 맞춘다. (스케줄러 / 화면 폴링 공용)
+     * 호출하는 쪽에서 이미 WAITING_FOR_DEPOSIT 인지 확인한 뒤 부른다.
+     */
+    private void syncWithToss(ProjectContribution contribution, LocalDateTime now) {
+        String orderNo = contribution.getOrderNo();
         TossPaymentResponse payment;
         try {
             payment = tossClient.getPayment(contribution.getProviderTransactionId());
