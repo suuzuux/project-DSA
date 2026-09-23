@@ -24,7 +24,7 @@ public class BadgeEventListener {
 	private final PostRepository pr;
 	private final CommentRepository cr;
 	private final LikeRepository lr;
-	private final GroupFollowRepository gfr;
+	private final UserFollowRepository ufr;
 	private final MembershipPeriodRepository mpr;
 	
 	/**
@@ -63,6 +63,7 @@ public class BadgeEventListener {
 			case MEDIA_VIEWED -> award(fanId, artistId, BadgeCode.BASIC_MEDIA_VIEW);
 			case LIVE_VIEWED -> award(fanId, artistId, BadgeCode.BASIC_LIVE_VIEW);
 			case PROJECT_JOINED -> award(fanId, artistId, BadgeCode.SPECIAL_PROJECT_CREATE);
+			case MEMBERSHIP_JOINED -> checkMembership(fanId, artistId);
 		}
 	}
 	
@@ -92,7 +93,8 @@ public class BadgeEventListener {
 	}
 	
 	private void checkFollow(Long fanId, Long artistId) {
-		if (gfr.existsByFanIdAndGroupId(fanId, artistId)) {
+		// GroupFollow 통합: 아티스트 팔로우는 following_id == community_id == artistId다.
+		if (ufr.existsByFollowerIdAndFollowingIdAndCommunityId(fanId, artistId, artistId)) {
 			award(fanId, artistId, BadgeCode.BASIC_FOLLOW_ARTIST);
 		}
 	}

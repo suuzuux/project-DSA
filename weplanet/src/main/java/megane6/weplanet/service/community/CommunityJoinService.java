@@ -1,12 +1,14 @@
 package megane6.weplanet.service.community;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
+import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.community.CommunityProfileRepository;
@@ -28,6 +30,10 @@ public class CommunityJoinService {
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
 	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
+	// GroupFollow 통합: 탈퇴 시 그 커뮤니티에 종속된 팔로우 관계도 함께 정리하기 위해 직접 의존한다
+	// (UserFollowService는 반대로 CommunityJoinService에 의존하고 있어서, 여기선 서비스가 아니라
+	// 리포지토리를 직접 써서 순환 의존을 피한다).
+	private final UserFollowRepository userFollowRepository;
 	
 	// EXPLORE-03: "선택한 아티스트의 커뮤니티에 가입 후 커뮤니티 프로필 생성"이 한 세트라
 	// 가입(community_members)과 프로필 생성(community_profiles)을 트랜잭션 하나로 묶음
@@ -158,6 +164,10 @@ public class CommunityJoinService {
 			communityProfileRepository.delete(profile);
 		});
 		communityMemberRepository.delete(member);
+		// GroupFollow 통합: 팔로우는 특정 커뮤니티에 종속되므로, 이 커뮤니티를 탈퇴하면 다른 공유 커뮤니티가
+		// 남아있어도 상관없이 이 커뮤니티(artistId) 소속 팔로우 관계는 모두 함께 삭제한다.
+		userFollowRepository.deleteByCommunityIdAndFollowerId(artistId, fan.getId());
+		userFollowRepository.deleteByCommunityIdAndFollowingId(artistId, fan.getId());
 	}
 	
 	// 커뮤니티 페이지에서 "이 커뮤니티에 가입했는지" 판단 - 가입/탭 접근 제어의 기준
@@ -218,12 +228,55 @@ public class CommunityJoinService {
 
 	/** 템플릿에서 안전하게 쓰기 위한 String 키 맵 */
 	public Map<String, String> displayNicknamesByAuthorIdKey(Collection<User> authors, Long artistId) {
-		Map<String, String> result = new HashMap<>();
+		Map<String, String> result = new LinkedHashMap<>();
+		authorViewsByAuthorIdKey(authors, artistId).forEach(
+				(authorId, view) -> result.put(authorId, view.nickname()));
+		return result;
+	}
+
+	/**
+	 * 게시글 목록에서 사용할 커뮤니티 전용 닉네임과 프로필 이미지 URL을 한 번에 만든다.
+	 * 작성자별 조회를 반복하지 않고 현재 페이지 작성자들의 프로필을 한 쿼리로 읽는다.
+	 */
+	public Map<String, CommunityAuthorView> authorViewsByAuthorIdKey(
+			Collection<User> authors,
+			Long artistId
+	) {
+		if (authors == null || authors.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<Long, User> uniqueAuthors = new LinkedHashMap<>();
 		for (User author : authors) {
-			if (author != null) {
-				result.putIfAbsent(String.valueOf(author.getId()), displayNickname(author, artistId));
+			if (author != null && author.getId() != null) {
+				uniqueAuthors.putIfAbsent(author.getId(), author);
 			}
 		}
+		if (uniqueAuthors.isEmpty()) {
+			return Map.of();
+		}
+
+		Map<Long, CommunityProfile> profilesByAuthorId = new HashMap<>();
+		if (artistId != null) {
+			for (CommunityProfile profile : communityProfileRepository.findForAuthorsInCommunity(
+					artistId, uniqueAuthors.keySet())) {
+				profilesByAuthorId.put(profile.getCommunityMember().getFanId(), profile);
+			}
+		}
+
+		Map<String, CommunityAuthorView> result = new LinkedHashMap<>();
+		uniqueAuthors.forEach((authorId, author) -> {
+			CommunityProfile profile = profilesByAuthorId.get(authorId);
+			String nickname = profile != null ? profile.getNickname() : author.getNickname();
+			String avatarUrl = null;
+			if (profile != null
+					&& !profile.isContentHidden()
+					&& profile.getAvatarStoredName() != null
+					&& !profile.getAvatarStoredName().isBlank()) {
+				avatarUrl = "/uploads/" + profile.getAvatarStoredName();
+			}
+			result.put(String.valueOf(authorId), new CommunityAuthorView(nickname, avatarUrl));
+		});
 		return result;
 	}
 
