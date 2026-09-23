@@ -33,7 +33,10 @@ public enum AdminActionType {
 	
 	NOTICE_CREATE("공지 등록"),
 	NOTICE_UPDATE("공지 수정"),
-	NOTICE_DELETE("공지 삭제");
+	NOTICE_DELETE("공지 삭제"),
+	
+	PARTNERSHIP_APPLICATION_APPROVE("등록 신청 승인"),
+	PARTNERSHIP_APPLICATION_REJECT("등록 신청 반려");
 	
 	private final String label;
 }
