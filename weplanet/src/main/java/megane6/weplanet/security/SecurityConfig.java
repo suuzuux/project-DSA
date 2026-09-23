@@ -58,6 +58,8 @@ public class SecurityConfig {
             "/notices/**",
             "/shop",
             "/shop/**",
+            // 토스 입금 웹훅 - 토스 서버가 호출하므로 로그인 없음 (secret 값으로 검증)
+            "/payments/toss/webhook",
             "/membership",
             "/partnership",
             "/policy/**",
