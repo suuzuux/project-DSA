@@ -130,6 +130,9 @@ public class ShopService {
 		List<String> labels = goods.getCategories().stream()
 				.map(c -> c.getLabel())
 				.toList();
+		List<String> typeKeys = goods.getCategories().stream()
+				.map(c -> c.name().toLowerCase())
+				.toList();
 		GoodsShopCategory shopCategory = resolveShopCategory(goods);
 		return new ShopProductView(
 				String.valueOf(goods.getId()),
@@ -148,7 +151,8 @@ public class ShopService {
 				goods.getTotalStock(),
 				goods.getMinPositiveStock(),
 				variants,
-				labels
+				labels,
+				typeKeys
 		);
 	}
 

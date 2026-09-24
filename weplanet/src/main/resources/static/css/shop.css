@@ -67,6 +67,10 @@
   flex-direction: column;
 }
 
+.product-card[hidden] {
+  display: none;
+}
+
 .product-card__media {
   position: relative;
 }
