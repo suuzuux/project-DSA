@@ -140,6 +140,19 @@
   color: var(--wp-ink-soft);
 }
 
+.drawer-menu__badge {
+  margin-left: auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wp-live, #e11d48);
+  flex-shrink: 0;
+}
+
+.drawer-menu__badge[hidden] {
+  display: none;
+}
+
 .drawer-menu__nav a:hover {
   background: var(--wp-paper);
   color: var(--wp-ink);

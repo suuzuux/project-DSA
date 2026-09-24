@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
+import megane6.weplanet.domain.entity.enumfolder.GoodsShopCategory;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.calendar.ScheduleCategory;
@@ -412,6 +413,7 @@ public class PortalController {
 	public String createMedia(@RequestParam String title,
 							  @RequestParam(required = false) String content,
 							  @RequestParam(value = "files", required = false) List<MultipartFile> files,
+							  @RequestParam(defaultValue = "false") boolean membershipOnly,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
 							  RedirectAttributes redirectAttributes) {
 		User artist = currentArtist(principal);
@@ -419,7 +421,7 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		try {
-			boardMediaService.create(artist.getId(), artist.getId(), title, content, files);
+			boardMediaService.create(artist.getId(), artist.getId(), title, content, files, membershipOnly);
 			redirectAttributes.addFlashAttribute("msg", "미디어가 등록되었습니다.");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -464,6 +466,7 @@ public class PortalController {
 		model.addAttribute("goods", null);
 		model.addAttribute("goodsStatuses", GoodsStatus.values());
 		model.addAttribute("goodsCategoryTypes", GoodsCategoryType.values());
+		model.addAttribute("goodsShopCategories", GoodsShopCategory.values());
 		model.addAttribute("categoryOptionsJson", "{}");
 		return "portal/goods-form";
 	}
@@ -486,6 +489,7 @@ public class PortalController {
 			model.addAttribute("goods", goods);
 			model.addAttribute("goodsStatuses", GoodsStatus.values());
 			model.addAttribute("goodsCategoryTypes", GoodsCategoryType.values());
+			model.addAttribute("goodsShopCategories", GoodsShopCategory.values());
 			model.addAttribute("categoryOptionsJson", goodsService.categoryOptionsPayload(goods).toJson());
 			return "portal/goods-form";
 		} catch (IllegalArgumentException e) {
@@ -500,7 +504,7 @@ public class PortalController {
 							  @RequestParam int price,
 							  @RequestParam(required = false) String officialUrl,
 							  @RequestParam(defaultValue = "ON_SALE") GoodsStatus status,
-							  @RequestParam(defaultValue = "false") boolean membershipOnly,
+							  @RequestParam(defaultValue = "MD") GoodsShopCategory shopCategory,
 							  @RequestParam("thumbnail") MultipartFile thumbnail,
 							  @RequestParam(name = "categoryOptionsJson", defaultValue = "{}") String categoryOptionsJson,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
@@ -515,7 +519,7 @@ public class PortalController {
 			}
 			GoodsCategoryOptionsPayload categoryOptions = GoodsCategoryOptionsPayload.parse(categoryOptionsJson);
 			goodsService.create(artist, name, description, price, officialUrl, status,
-					membershipOnly, thumbnail, categoryOptions);
+					shopCategory, thumbnail, categoryOptions);
 			redirectAttributes.addFlashAttribute("msg", "굿즈가 등록되었습니다.");
 			return "redirect:/portal/goods";
 		} catch (IllegalArgumentException e) {
@@ -531,7 +535,7 @@ public class PortalController {
 							  @RequestParam int price,
 							  @RequestParam(required = false) String officialUrl,
 							  @RequestParam(defaultValue = "ON_SALE") GoodsStatus status,
-							  @RequestParam(defaultValue = "false") boolean membershipOnly,
+							  @RequestParam(defaultValue = "MD") GoodsShopCategory shopCategory,
 							  @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
 							  @RequestParam(name = "categoryOptionsJson", defaultValue = "{}") String categoryOptionsJson,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
@@ -546,7 +550,7 @@ public class PortalController {
 			}
 			GoodsCategoryOptionsPayload categoryOptions = GoodsCategoryOptionsPayload.parse(categoryOptionsJson);
 			goodsService.update(artist, goodsId, name, description, price, officialUrl, status,
-					membershipOnly, thumbnail, categoryOptions);
+					shopCategory, thumbnail, categoryOptions);
 			redirectAttributes.addFlashAttribute("msg", "굿즈가 수정되었습니다.");
 			return "redirect:/portal/goods";
 		} catch (IllegalArgumentException e) {

@@ -27,6 +27,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -275,7 +276,7 @@ public class CommunityController {
 			model.addAttribute("gatedTab", "media");
 			return "community/membership-required";
 		}
-		model.addAttribute("mediaList", boardMediaService.listWithoutLiveReplays(artistId));
+		model.addAttribute("mediaList", boardMediaService.listWithoutLiveReplays(artistId, canSeeMembershipMedia(model)));
 		model.addAttribute("groupId", artistId);
 		Set<Long> likedMediaIds = Collections.emptySet();
 		if (principal != null) {
@@ -290,7 +291,8 @@ public class CommunityController {
 	public String mediaDetail(@PathVariable Long artistId,
 							  @PathVariable Long mediaId,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
-							  Model model) {
+							  Model model,
+							  RedirectAttributes redirectAttributes) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
@@ -300,7 +302,12 @@ public class CommunityController {
 			return "community/membership-required";
 		}
 		User me = userResolver.resolve(principal, 1L);
-		model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId));
+		try {
+			model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId, canSeeMembershipMedia(model)));
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/community/" + artistId + "/media";
+		}
 		model.addAttribute("groupId", artistId);
 		model.addAttribute("liked", boardMediaService.isLiked(mediaId, me));
 		
@@ -623,6 +630,12 @@ public class CommunityController {
 		return user;
 	}
 	
+	private static boolean canSeeMembershipMedia(Model model) {
+		return Boolean.TRUE.equals(model.getAttribute("isOwnCommunity"))
+				|| Boolean.TRUE.equals(model.getAttribute("isManagedAgency"))
+				|| Boolean.TRUE.equals(model.getAttribute("membershipActive"));
+	}
+
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findOneById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)

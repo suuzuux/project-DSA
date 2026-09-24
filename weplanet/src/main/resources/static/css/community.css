@@ -535,35 +535,93 @@
   margin-left: auto;
 }
 
-/* 정렬·필터 select — 게시판 공통 라인 아이콘 */
+/* 정렬 select — 칩과 같은 알약 + 둥근 메뉴 */
 .board-select {
   position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: 36px;
+}
+
+.board-select > select,
+.board-select__native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .board-select__ico {
   position: absolute;
-  left: 10px;
-  width: 15px;
-  height: 15px;
-  color: var(--wp-muted);
+  left: 12px;
+  width: 14px;
+  height: 14px;
+  color: var(--wp-ink-soft);
   pointer-events: none;
   z-index: 1;
 }
 
-.board-select .form-select {
-  width: auto;
-  min-height: 36px;
-  padding-left: 32px;
-  padding-right: 28px;
-  appearance: none;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+.board-select__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 28px 6px 32px;
+  border-radius: 999px;
+  border: 1px solid var(--wp-line);
+  font-size: var(--wp-fs-xs);
+  font-weight: 600;
+  color: var(--wp-ink-soft);
+  background: var(--wp-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235a6773' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 10px center;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.board-select:hover .board-select__trigger,
+.board-select.is-open .board-select__trigger {
+  background-color: var(--wp-brand);
+  border-color: var(--wp-brand);
+  color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  background-color: var(--wp-surface);
+}
+
+.board-select:hover .board-select__ico,
+.board-select.is-open .board-select__ico {
+  color: #fff;
+}
+
+.board-select__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: max(100%, 7.5em);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-line);
+  border-radius: 18px;
+  box-shadow: var(--wp-shadow-modal);
+}
+
+.board-select__menu [role="option"] {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: var(--wp-fs-xs);
+  font-weight: 600;
+  color: var(--wp-ink-soft);
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.board-select__menu [role="option"]:hover,
+.board-select__menu [role="option"].is-active {
+  background: var(--wp-brand);
+  color: #fff;
 }
 
 .tabs--icons a {
