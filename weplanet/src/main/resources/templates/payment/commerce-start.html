@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>결제 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <script th:src="@{/js/commerce-toss.js}"></script>
+</head>
+<body>
+<main class="container section" style="max-width:560px;padding-top:72px;text-align:center;">
+  <h1 style="font-size:20px;font-weight:700;margin-bottom:10px;">결제창을 여는 중입니다</h1>
+  <p class="text-muted" id="payHint">잠시만 기다려주세요.</p>
+</main>
+<script th:inline="javascript">
+  (async function () {
+    const prepared = {
+      success: /*[[${prepared.success()}]]*/ true,
+      clientKey: /*[[${prepared.clientKey()}]]*/ "",
+      orderId: /*[[${prepared.orderId()}]]*/ "",
+      orderName: /*[[${prepared.orderName()}]]*/ "",
+      amount: /*[[${prepared.amount()}]]*/ 0,
+      customerName: /*[[${prepared.customerName()}]]*/ "",
+      validHours: /*[[${prepared.validHours()}]]*/ 24,
+      message: /*[[${prepared.message()}]]*/ ""
+    };
+    const successUrl = window.location.origin + /*[[${successUrl}]]*/ "/payments/shop/success";
+    const failUrl = window.location.origin + /*[[${failUrl}]]*/ "/payments/shop/fail";
+    try {
+      await WePlaNetToss.openVirtualAccount(prepared, successUrl, failUrl);
+    } catch (error) {
+      const hint = document.getElementById("payHint");
+      if (hint) hint.textContent = error.code === "USER_CANCEL"
+        ? "결제를 취소했어요."
+        : (error.message || "결제창을 열지 못했습니다.");
+    }
+  })();
+</script>
+</body>
+</html>
