@@ -32,6 +32,7 @@
             <tr>
               <th>유형</th>
               <th>제목</th>
+              <th>공개</th>
               <th>업로드일자</th>
               <th>파일 수</th>
               <th>관리</th>
@@ -39,7 +40,7 @@
           </thead>
           <tbody>
             <tr th:if="${#lists.isEmpty(mediaList)}">
-              <td colspan="5" class="text-sm text-muted">등록된 미디어가 없습니다.</td>
+              <td colspan="6" class="text-sm text-muted">등록된 미디어가 없습니다.</td>
             </tr>
             <tr th:each="media : ${mediaList}"
                 class="portal-media-row"
@@ -52,6 +53,10 @@
                       th:text="${media.files != null && !media.files.isEmpty() ? media.files[0].mediaType : 'MEDIA'}">VIDEO</span>
               </td>
               <td th:text="${media.title}">미디어 제목</td>
+              <td>
+                <span th:if="${media.membershipOnly}" class="tag tag--member">멤버십</span>
+                <span th:unless="${media.membershipOnly}" class="text-xs text-muted">전체</span>
+              </td>
               <td th:text="${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
               <td th:text="${media.fileCount}">1</td>
               <td>
