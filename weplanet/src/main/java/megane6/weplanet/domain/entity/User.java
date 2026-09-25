@@ -166,6 +166,16 @@ public class User {
 		return new User(username, encodedPassword, realName, nickname, email, Role.AGENCY);
 	}
 	
+	// 관리자가 입점 신청을 승인할 때 만드는 소속사 대표 계정.
+	// 비밀번호는 본인이 초대 링크에서 직접 정하므로 여기서는 비워둔다(null).
+	// 관리자가 비밀번호를 정해서 메일로 보내면 평문이 메일과 로그에 남기 때문이다.
+	public static User createPendingAgencyOwner(String username, String realName, String nickname, String email) {
+		User user = new User(username, null, realName, nickname, email, Role.AGENCY);
+		user.status = UserStatus.PENDING_ACTIVATION;
+		
+		return user;
+	}
+	
 	public static User createAdmin(String username, String encodedPassword, String realName, String nickname, String email) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.ADMIN);
 	}
@@ -231,6 +241,22 @@ public class User {
 	
 	public void changePassword(String encodedPassword) {
 		this.password = encodedPassword;
+	}
+	
+	// 초대 링크로 들어온 소속사가 비밀번호를 설정하면 호출
+	// 메일 링크를 실제로 열었다는 뜻이므로, 이메일 인증도 이 시점에 완료 처리한다.
+	public void activateWithPassword(String encodedPassword) {
+		if (this.status != UserStatus.PENDING_ACTIVATION) {
+			throw new IllegalStateException("활성화 대기 중인 계정이 아닙니다.");
+		}
+		
+		if (encodedPassword == null || encodedPassword.isBlank()) {
+			throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+		}
+		
+		this.password = encodedPassword;
+		this.status = UserStatus.ACTIVE;
+		this.emailVerifiedAt = LocalDateTime.now();
 	}
 	
 	public void markDormantNoticeSent() {

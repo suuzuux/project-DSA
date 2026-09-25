@@ -23,6 +23,9 @@ public class AdminPartnershipApplicationService {
 	private final UserRepository userRepository;
 	private final AdminActionLogService actionLogService;
 	
+	private final AdminActionLogService aas;
+	private final AgencyAccountProvisioningService provisioningService;
+	
 	public Page<AdminPartnershipApplicationResponse> getApplications(
 			PartnershipApplicationStatus status,
 			PartnershipApplicantType applicantType,
@@ -79,27 +82,33 @@ public class AdminPartnershipApplicationService {
 	}
 	
 	@Transactional
-	public PartnershipApplication approveApplication(
+	public ApprovalResult approveApplication(
 			Long applicationId,
 			Long adminId,
+			String agencyName,
 			String ipAddress
 	) {
 		User admin = requireAdmin(adminId);
-		PartnershipApplication application =
-				requireApplication(applicationId);
+		PartnershipApplication application = requireApplication(applicationId);
 		
 		application.approve(admin);
 		
-		actionLogService.recordAction(
+		// 계정 발급이 실패하면 승인 자체가 롤백됨
+		// "승인은 됐는데 계정이 없는" 상태를 만들기 않기 위해서
+		AgencyAccountProvisioningService.ProvisionedAccount account
+				= provisioningService.provision(application, admin, agencyName);
+		
+		aas.recordAction(
 				adminId,
 				AdminActionType.PARTNERSHIP_APPLICATION_APPROVE,
 				AdminTargetType.PARTNERSHIP_APPLICATION,
 				applicationId,
-				application.getApplicantName() + " 등록 신청 승인",
+				application.getApplicantName() + " 등록 신청 승인 (소속사 계정 발급: "
+				+ account.username() + ")",
 				ipAddress
 		);
 		
-		return application;
+		return new ApprovalResult(application, account);
 	}
 	
 	@Transactional
@@ -211,6 +220,12 @@ public class AdminPartnershipApplicationService {
 		
 		return keyword.trim();
 	}
+	
+	// 승인 결과. 컨트롤러가 이 정보로 초대 메일을 보낸다.
+	public record ApprovalResult(
+			PartnershipApplication application,
+			AgencyAccountProvisioningService.ProvisionedAccount account
+	) {}
 	
 	public record ApplicationStats(
 			long totalCount,

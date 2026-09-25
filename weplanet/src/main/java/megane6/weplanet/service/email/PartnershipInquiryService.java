@@ -28,6 +28,11 @@ public class PartnershipInquiryService {
     )
     private String recipient;
     
+    @Value(
+            "${weplanet.base-url:http://localhost:9999}"
+    )
+    private String baseUrl;
+    
     /**
      * 새로운 신청이 접수되었음을 관리자에게 알린다.
      */
@@ -57,34 +62,50 @@ public class PartnershipInquiryService {
     }
     
     /**
-     * 신청 승인 결과를 신청자에게 알린다.
+     * 신청 승인 결과와 계정 활성화 링크를 신청자에게 알린다.
      */
     public void sendApprovalNotice(
-            PartnershipApplication application
+            PartnershipApplication application,
+            String username,
+            String verificationKey,
+            String rawToken,
+            LocalDateTime expiresAt
     ) {
-        SimpleMailMessage message =
-                new SimpleMailMessage();
+        SimpleMailMessage message = new SimpleMailMessage();
         
         message.setTo(application.getEmail());
         message.setReplyTo(recipient);
         message.setSubject(
-                "[WePlaNet] 등록 신청이 승인되었습니다"
+                "[WePlaNet] 등록 신청이 승인되었습니다 - 계정 활성화 안내"
         );
         message.setText(
-                buildApprovalBody(application)
+                buildApprovalBody(
+                        application,
+                        username,
+                        buildActivationUrl(verificationKey, rawToken),
+                        expiresAt
+                )
         );
-        
         mailSender.send(message);
         
-        log.info(
-                "입점 신청 승인 메일 발송: applicationId={}",
-                application.getId()
-        );
+        log.info("입점 신청 승인 메일 발송: applicationId={}", application.getId());
+    }
+    
+    private String buildActivationUrl(
+            String verificationKey,
+            String rawToken
+    ) {
+        return baseUrl
+                + "/partner/activate?key="
+                + verificationKey
+                + "&token="
+                + rawToken;
     }
     
     /**
      * 신청 반려 결과와 반려 사유를 신청자에게 알린다.
      */
+    
     public void sendRejectionNotice(
             PartnershipApplication application
     ) {
@@ -146,7 +167,10 @@ public class PartnershipInquiryService {
     }
     
     private String buildApprovalBody(
-            PartnershipApplication application
+            PartnershipApplication application,
+            String username,
+            String activationUrl,
+            LocalDateTime expiresAt
     ) {
         return """
                 안녕하세요, %s님.
@@ -157,8 +181,16 @@ public class PartnershipInquiryService {
                 ■ 처리 결과 : 승인
                 ■ 처리 시각 : %s
 
-                실제 계정 등록과 이용 절차는
-                담당자가 별도로 안내드릴 예정입니다.
+                아래 링크에서 비밀번호를 설정하시면
+                소속사 페이지를 이용하실 수 있습니다.
+
+                ■ 로그인 아이디 : %s
+                ■ 활성화 링크   : %s
+                ■ 링크 유효기간 : %s 까지
+
+                보안을 위해 비밀번호는 관리자가 정하지 않습니다.
+                링크는 한 번만 사용할 수 있으며, 기간이 지나면
+                관리자에게 재발송을 요청해주세요.
 
                 감사합니다.
                 WePlaNet 드림
@@ -171,7 +203,10 @@ public class PartnershipInquiryService {
                         application.getId(),
                         formatTime(
                                 application.getReviewedAt()
-                        )
+                        ),
+                        username,
+                        activationUrl,
+                        formatTime(expiresAt)
                 );
     }
     

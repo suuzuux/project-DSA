@@ -797,7 +797,7 @@
             )}"
                         method="post"
                         onsubmit="return confirm(
-                '이 등록 신청을 승인하시겠습니까?'
+                '이 등록 신청을 승인하고 소속사 계정을 발급하시겠습니까?'
             );"
                         style="margin-bottom: 20px;"
                 >
@@ -824,6 +824,35 @@
                             name="page"
                             th:value="${applications.number}"
                     />
+
+                    <!-- 승인하면 이 이름으로 소속사(Agency)가 만들어진다.
+     Agency.name은 중복될 수 없어서, 동명이인 1인 소속사일 때 여기서 고친다. -->
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label
+                                class="form-label"
+                                for="agencyName"
+                        >
+                            발급할 소속사명
+                        </label>
+
+                        <input
+                                class="form-input"
+                                id="agencyName"
+                                type="text"
+                                name="agencyName"
+                                maxlength="100"
+                                th:value="${selectedApplication.applicantName()}"
+                        />
+
+                        <p
+                                class="text-xs text-muted"
+                                style="margin-top: 6px;"
+                        >
+                            로그인 아이디는 신청서 이메일(<span
+                                th:text="${selectedApplication.email()}"
+                        >email</span>)로 발급됩니다.
+                        </p>
+                    </div>
 
                     <button
                             type="submit"

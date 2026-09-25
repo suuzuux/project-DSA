@@ -9,7 +9,9 @@ import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicantType;
 import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicationStatus;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.admin.AdminPartnershipApplicationService;
+import megane6.weplanet.service.admin.AgencyAccountProvisioningService;
 import megane6.weplanet.service.email.PartnershipInquiryService;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -77,6 +79,10 @@ public class AdminPartnershipApplicationController {
 	public String approve(
 			@PathVariable Long applicationId,
 			
+			// 승인 화면에서 관리자가 고친 소속사명 (비우면 신청서 이름 그대로)
+			@RequestParam(required = false)
+			String agencyName,
+			
 			@RequestParam(required = false)
 			String status,
 			
@@ -99,18 +105,33 @@ public class AdminPartnershipApplicationController {
 		requireAdmin(principal);
 		
 		try {
-			PartnershipApplication application =
+			AdminPartnershipApplicationService.ApprovalResult result =
 					service.approveApplication(
 							applicationId,
 							principal.getId(),
+							agencyName,
 							request.getRemoteAddr()
 					);
 			
+			AgencyAccountProvisioningService.ProvisionedAccount account =
+					result.account();
+			
+			// 메일은 승인 트랜잭션이 커밋된 뒤에 보낸다.
+			// 메일이 실패해도 승인과 계정은 이미 저장된 상태라, 재발송으로 복구할 수 있다.
 			try {
-				inquiryEmailService.sendApprovalNotice(application);
+				inquiryEmailService.sendApprovalNotice(
+						result.application(),
+						account.username(),
+						account.verificationKey(),
+						account.rawToken(),
+						account.expiresAt()
+				);
+				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"등록 신청을 승인하고 결과 이메일을 발송했습니다."
+						"등록 신청을 승인하고 소속사 계정("
+								+ account.username()
+								+ ")을 발급했습니다. 활성화 안내 메일을 발송했습니다."
 				);
 			} catch (Exception mailException) {
 				log.warn(
@@ -121,13 +142,26 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"등록 신청은 승인했지만 결과 이메일 발송에 실패했습니다."
+						"등록 신청을 승인하고 소속사 계정("
+								+ account.username()
+								+ ")을 발급했지만, 활성화 메일 발송에 실패했습니다."
 				);
 			}
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
 					e.getMessage()
+			);
+		} catch (DataAccessException e) {
+			// DB 제약 위반 같은 예상 못 한 저장 오류. 트랜잭션은 이미 롤백됐다
+			log.error(
+					"등록 신청 승인 중 DB 오류: applicationId={}",
+					applicationId, e
+			);
+			
+			redirectAttributes.addFlashAttribute(
+					"error",
+					"계정 발급 중 오류가 발생해 승인을 취소했습니다. 관리자 로그를 확인해주세요."
 			);
 		}
 		

@@ -146,6 +146,27 @@ public class EmailVerification {
 		);
 	}
 	
+	// 입점 승인 후 발급하는 소속사 계정 활성화 토큰.
+	// 다른 용도와 달리 6자리 숫자가 아니라 긴 랜덤 문자열을 쓰고,
+	// 메일 링크에 담아서 보내브로 codeHash에는 그 토큰의 해시만 저장한다.
+	public static EmailVerification createForAgencyActivation(
+			User agencyUser,
+			String tokenHash,
+			LocalDateTime expiresAt
+	) {
+		if (agencyUser == null) {
+			throw new IllegalArgumentException("이메일 인증 회원이 필요합니다.");
+		}
+		
+		return new EmailVerification(
+				agencyUser,
+				agencyUser.getEmail(),
+				EmailVerificationPurpose.AGENCY_ACTIVATION,
+				tokenHash,
+				expiresAt
+		);
+	}
+	
 	public boolean isExpired(LocalDateTime now) {
 		return !now.isBefore(expiresAt);
 	}

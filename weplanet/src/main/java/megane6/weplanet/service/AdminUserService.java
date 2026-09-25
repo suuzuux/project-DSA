@@ -238,6 +238,7 @@ public class AdminUserService {
 			case DORMANT -> "휴면";
 			case SUSPENDED -> "정지";
 			case WITHDRAWN -> "탈퇴";
+			case PENDING_ACTIVATION -> "활성화 대기";
 		};
 	}
 	

@@ -62,6 +62,8 @@ public class SecurityConfig {
             "/payments/toss/webhook",
             "/membership",
             "/partnership",
+            // 입점 승인 메일의 계정 활성화 링크 - 아직 로그인할 수 없는 사용자가 들어온다
+            "/partner/activate",
             "/policy/**",
             "/css/**",
             "/js/**",
@@ -143,6 +145,20 @@ public class SecurityConfig {
                 String roleQs = (portalRole != null && !portalRole.isBlank())
                         ? "&role=" + portalRole.trim().toUpperCase()
                         : "";
+                
+                // 입점 승인은 됐지만, 아직 메일 링크로 비밀번호를 설정하지 않은 소속사 계정
+                if (exception instanceof DisabledException) {
+                    String username = request.getParameter("username");
+                    boolean pendingActivation = username != null && userRepository.findByUsername(username)
+                            .map(u -> u.getStatus() == UserStatus.PENDING_ACTIVATION)
+                            .orElse(false);
+                    
+                    if (pendingActivation) {
+                        response.sendRedirect("/portal/login?error=pending" + roleQs);
+                        return;
+                    }
+                }
+                
                 response.sendRedirect("/portal/login?error" + roleQs);
                 return;
             }

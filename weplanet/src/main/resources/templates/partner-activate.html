@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WePlaNet – 소속사 계정 활성화</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <h1 class="auth-card__title">소속사 계정 활성화</h1>
+
+  <!-- 링크가 잘못됐거나 만료된 경우: 폼 없이 안내만 -->
+  <div th:if="${linkError}">
+    <p class="text-sm" style="color:#c45c26;margin:16px 0;" th:text="${linkError}">
+      유효하지 않은 활성화 링크입니다.
+    </p>
+    <a class="btn btn--ghost btn--block" th:href="@{/portal/login(role='AGENCY')}">
+      로그인 화면으로
+    </a>
+  </div>
+
+  <!-- 정상 링크: 비밀번호 설정 폼 -->
+  <div th:if="${linkError == null}">
+    <p class="text-sm text-muted" style="margin:12px 0 20px;">
+      <strong th:text="${target.nickname()}">소속사명</strong>님, 입점을 환영합니다.<br />
+      사용하실 비밀번호를 설정하면 바로 로그인할 수 있습니다.
+    </p>
+
+    <form th:action="@{/partner/activate}" method="post">
+      <!-- 링크에 있던 값을 그대로 다시 보낸다 -->
+      <input type="hidden" name="key" th:value="${key}" />
+      <input type="hidden" name="token" th:value="${token}" />
+
+      <div class="form-group">
+        <label class="form-label" for="username">로그인 아이디</label>
+        <input class="form-input" id="username" type="text"
+               th:value="${target.username()}" readonly />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="newPassword">비밀번호</label>
+        <input class="form-input" id="newPassword" name="newPassword" type="password"
+               placeholder="영문, 숫자 포함 8~20자" autocomplete="new-password"
+               minlength="8" maxlength="20" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirmPassword">비밀번호 확인</label>
+        <input class="form-input" id="confirmPassword" name="confirmPassword" type="password"
+               placeholder="비밀번호 다시 입력" autocomplete="new-password"
+               minlength="8" maxlength="20" required />
+      </div>
+
+      <p th:if="${formError}" class="text-sm" style="color:#c45c26;margin-bottom:12px;"
+         th:text="${formError}">
+        비밀번호 형식을 확인해주세요.
+      </p>
+
+      <button type="submit" class="btn btn--primary btn--block">계정 활성화</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>
