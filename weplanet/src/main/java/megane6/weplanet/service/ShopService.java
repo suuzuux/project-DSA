@@ -5,6 +5,7 @@ import megane6.weplanet.domain.dto.ShopProductView;
 import megane6.weplanet.domain.dto.ShopVariantView;
 import megane6.weplanet.domain.entity.Goods;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.GoodsShopCategory;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.GoodsRepository;
@@ -129,7 +130,10 @@ public class ShopService {
 		List<String> labels = goods.getCategories().stream()
 				.map(c -> c.getLabel())
 				.toList();
-		String categoryLabel = labels.isEmpty() ? "MD · 굿즈" : String.join(" · ", labels);
+		List<String> typeKeys = goods.getCategories().stream()
+				.map(c -> c.name().toLowerCase())
+				.toList();
+		GoodsShopCategory shopCategory = resolveShopCategory(goods);
 		return new ShopProductView(
 				String.valueOf(goods.getId()),
 				goods.getArtist().getId(),
@@ -137,9 +141,9 @@ public class ShopService {
 				card.logo(),
 				goods.getName(),
 				goods.getPrice(),
-				labels.isEmpty() ? "md" : labels.getFirst(),
-				categoryLabel,
-				goods.isMembershipOnly(),
+				shopCategory.getFilterKey(),
+				shopCategory.getLabel(),
+				goods.isMembershipOnly() || shopCategory.isMembershipOnly(),
 				null,
 				goods.getThumbnailUrl(),
 				goods.getDescription(),
@@ -147,8 +151,16 @@ public class ShopService {
 				goods.getTotalStock(),
 				goods.getMinPositiveStock(),
 				variants,
-				labels
+				labels,
+				typeKeys
 		);
+	}
+
+	private static GoodsShopCategory resolveShopCategory(Goods goods) {
+		if (goods.getShopCategory() != null) {
+			return goods.getShopCategory();
+		}
+		return goods.isMembershipOnly() ? GoodsShopCategory.MEMBERSHIP : GoodsShopCategory.MD;
 	}
 
 	private static Long parseGoodsId(String productId) {

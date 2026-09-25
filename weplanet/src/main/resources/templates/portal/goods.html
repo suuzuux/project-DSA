@@ -56,11 +56,10 @@
               </td>
               <td th:text="${item.name}">상품명</td>
               <td>
-                <span th:each="cat, iterStat : ${item.categories}"
-                      class="goods-cat-chip goods-cat-chip--readonly"
-                      th:classappend="${cat.chipClass}"
+                <span class="chip" th:text="${item.shopCategory.label}">MD · 굿즈</span>
+                <span th:each="cat : ${item.categories}"
+                      class="chip"
                       th:text="${cat.label}">의류</span>
-                <span th:if="${#lists.isEmpty(item.categories)}" class="text-xs text-muted">—</span>
               </td>
               <td th:text="${#numbers.formatInteger(item.price, 1, 'COMMA') + '원'}">0원</td>
               <td>

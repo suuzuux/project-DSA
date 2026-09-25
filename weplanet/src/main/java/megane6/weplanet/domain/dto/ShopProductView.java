@@ -23,8 +23,15 @@ public record ShopProductView(
 		int totalStock,
 		int minPositiveStock,
 		List<ShopVariantView> variants,
-		List<String> categoryLabels
+		List<String> categoryLabels,
+		List<String> typeKeys
 ) {
+	public String typeKeysAttr() {
+		if (typeKeys == null || typeKeys.isEmpty()) {
+			return "";
+		}
+		return String.join(" ", typeKeys);
+	}
 	public String formattedPrice() {
 		return "₩ " + String.format("%,d", price);
 	}

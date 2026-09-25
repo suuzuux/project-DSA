@@ -558,6 +558,7 @@ CREATE TABLE IF NOT EXISTS `board_media` (
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '삭제(soft delete) 시각',
   `like_count` int NOT NULL DEFAULT '0' COMMENT '좋아요 수(비정규화 카운트)',
+  `membership_only` tinyint(1) NOT NULL DEFAULT 0 COMMENT '멤버십 전용 여부 (1=전용)',
   PRIMARY KEY (`id`),
   KEY `idx_bm_group` (`group_id`, `created_at`),
   KEY `idx_bm_uploader` (`uploader_id`),
@@ -605,6 +606,7 @@ CREATE TABLE IF NOT EXISTS `shop_goods` (
   `status` varchar(20) NOT NULL COMMENT 'ON_SALE / HIDDEN (공개여부, 품절과 무관)',
   `sort_order` int NOT NULL DEFAULT 0 COMMENT '유저 샵 노출 순서(오름차순)',
   `membership_only` tinyint(1) NOT NULL DEFAULT 0 COMMENT '멤버십 전용 여부 (1=전용)',
+  `shop_category` varchar(20) NOT NULL DEFAULT 'MD' COMMENT '샵 필터: MD / DIGITAL / MEMBERSHIP',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '소프트 삭제 시각',
   `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
@@ -1219,6 +1221,7 @@ CALL `wp_sync_add_column`('board_media', 'created_at', 'datetime(6) NOT NULL DEF
 CALL `wp_sync_add_column`('board_media', 'updated_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''수정 시각''', 1);
 CALL `wp_sync_add_column`('board_media', 'deleted_at', 'datetime(6) DEFAULT NULL COMMENT ''삭제(soft delete) 시각''', 0);
 CALL `wp_sync_add_column`('board_media', 'like_count', 'int NOT NULL DEFAULT ''0'' COMMENT ''좋아요 수(비정규화 카운트)''', 0);
+CALL `wp_sync_add_column`('board_media', 'membership_only', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''멤버십 전용 여부 (1=전용)''', 0);
 
 -- board_media_files
 CALL `wp_sync_add_column`('board_media_files', 'board_id', 'bigint NOT NULL COMMENT ''미디어 게시글(board_media.id)''', 0);
@@ -1245,6 +1248,7 @@ CALL `wp_sync_add_column`('shop_goods', 'official_url', 'varchar(500) DEFAULT NU
 CALL `wp_sync_add_column`('shop_goods', 'status', 'varchar(20) NOT NULL COMMENT ''ON_SALE / HIDDEN (공개여부, 품절과 무관)''', 0);
 CALL `wp_sync_add_column`('shop_goods', 'sort_order', 'int NOT NULL DEFAULT 0 COMMENT ''유저 샵 노출 순서(오름차순)''', 0);
 CALL `wp_sync_add_column`('shop_goods', 'membership_only', 'tinyint(1) NOT NULL DEFAULT 0 COMMENT ''멤버십 전용 여부 (1=전용)''', 0);
+CALL `wp_sync_add_column`('shop_goods', 'shop_category', 'varchar(20) NOT NULL DEFAULT ''MD'' COMMENT ''샵 필터: MD / DIGITAL / MEMBERSHIP''', 0);
 CALL `wp_sync_add_column`('shop_goods', 'deleted_at', 'datetime(6) DEFAULT NULL COMMENT ''소프트 삭제 시각''', 0);
 CALL `wp_sync_add_column`('shop_goods', 'created_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''등록 시각''', 1);
 CALL `wp_sync_add_column`('shop_goods', 'updated_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''수정 시각''', 1);
@@ -1823,6 +1827,7 @@ INSERT INTO `wp_expected_columns` VALUES
   ('board_media', 'updated_at', 'datetime'),
   ('board_media', 'deleted_at', 'datetime'),
   ('board_media', 'like_count', 'int'),
+  ('board_media', 'membership_only', 'tinyint'),
   ('board_media_files', 'id', 'bigint'),
   ('board_media_files', 'board_id', 'bigint'),
   ('board_media_files', 'original_name', 'varchar'),
@@ -1846,6 +1851,7 @@ INSERT INTO `wp_expected_columns` VALUES
   ('shop_goods', 'status', 'varchar'),
   ('shop_goods', 'sort_order', 'int'),
   ('shop_goods', 'membership_only', 'tinyint'),
+  ('shop_goods', 'shop_category', 'varchar'),
   ('shop_goods', 'deleted_at', 'datetime'),
   ('shop_goods', 'created_at', 'datetime'),
   ('shop_goods', 'updated_at', 'datetime'),

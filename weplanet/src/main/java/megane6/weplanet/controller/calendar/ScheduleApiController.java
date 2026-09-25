@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -72,12 +73,22 @@ public class ScheduleApiController {
 				? Set.of(me.getId())
 				: communityJoinService.joinedArtistIds(me);
 
+		Map<Long, LocalDateTime> joinedAtByArtist = me.getRole() == Role.ARTIST
+				? Map.of()
+				: communityJoinService.joinedAtByArtistId(me);
+		DateTimeFormatter joinFmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 		List<Map<String, String>> communities = artists.stream()
 				.filter(artist -> joined.contains(artist.getId()))
-				.map(artist -> Map.of(
-						"id", String.valueOf(artist.getId()),
-						"name", artist.getNickname()
-				))
+				.map(artist -> {
+					Map<String, String> row = new LinkedHashMap<>();
+					row.put("id", String.valueOf(artist.getId()));
+					row.put("name", artist.getNickname());
+					LocalDateTime joinedAt = joinedAtByArtist.get(artist.getId());
+					if (joinedAt != null) {
+						row.put("joinedAt", joinedAt.format(joinFmt));
+					}
+					return row;
+				})
 				.toList();
 
 		body.put("communities", communities);
@@ -107,11 +118,8 @@ public class ScheduleApiController {
 		}
 
 		User me = userResolver.requireAuthenticated(principal);
-		Set<Long> artistIds = artistId != null
-				? Set.of(artistId)
-				: me.getRole() == Role.ARTIST
-				? Set.of(me.getId())
-				: communityJoinService.joinedArtistIds(me);
+		Map<Long, LocalDateTime> joinedAtByArtist = resolveJoinedAtByArtist(me, artistId);
+		Set<Long> artistIds = joinedAtByArtist.keySet();
 
 		DateTimeFormatter dateTime = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 		List<Map<String, Object>> items = new ArrayList<>();
@@ -119,19 +127,23 @@ public class ScheduleApiController {
 		if (!artistIds.isEmpty()) {
 			postRepository
 					.findTop20ByBoardTypeAndArtist_IdInOrderByCreatedAtDesc(BoardType.ARTIST, artistIds)
+					.stream()
+					.filter(post -> afterJoin(post.getCreatedAt(), post.getArtist().getId(), joinedAtByArtist))
 					.forEach(post -> items.add(toPostNotification(post, dateTime)));
 			portalNoticeRepository
 					.findTop20ByPublishedTrueAndArtist_IdInOrderByCreatedAtDesc(artistIds)
+					.stream()
+					.filter(notice -> afterJoin(notice.getCreatedAt(), notice.getArtist().getId(), joinedAtByArtist))
 					.forEach(notice -> items.add(toCommunityNoticeNotification(notice, dateTime)));
 			liveSessionRepository
 					.findLiveByArtistIds(LiveSessionStatus.LIVE, artistIds)
 					.stream()
+					.filter(session -> afterJoin(session.getStartedAt(), session.getArtist().getId(), joinedAtByArtist))
 					.limit(20)
 					.forEach(session -> items.add(toLiveStartNotification(session, dateTime)));
 		}
 
-		siteNoticeRepository.findTop20ByPublishedTrueOrderByCreatedAtDesc()
-				.forEach(notice -> items.add(toSiteNoticeNotification(notice, dateTime)));
+		// 시스템 공지(site_notice)는 헤더 알림이 아니라 햄버거 공지사항 뱃지로만 안내한다.
 
 		// 내 글 댓글 알림: 가입 커뮤니티와 무관하게 본인 게시글 기준
 		commentRepository.findRecentOnMyPosts(me).stream()
@@ -140,6 +152,50 @@ public class ScheduleApiController {
 
 		items.sort(Comparator.comparing((Map<String, Object> n) -> String.valueOf(n.get("time"))).reversed());
 		return Map.of("posts", items.size() > 50 ? items.subList(0, 50) : items);
+	}
+
+	/** 햄버거 메뉴 공지사항 뱃지용 — 공개된 시스템 공지 id 목록 */
+	@GetMapping("/site-notices")
+	public Map<String, Object> siteNotices() {
+		DateTimeFormatter dateTime = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+		List<Map<String, Object>> notices = siteNoticeRepository.findVisible(null).stream()
+				.map(notice -> {
+					Map<String, Object> row = new LinkedHashMap<>();
+					row.put("id", notice.getId());
+					row.put("title", notice.getTitle());
+					row.put("createdAt", notice.getCreatedAt() != null
+							? notice.getCreatedAt().format(dateTime)
+							: null);
+					return row;
+				})
+				.toList();
+		return Map.of("notices", notices);
+	}
+
+	private Map<Long, LocalDateTime> resolveJoinedAtByArtist(User me, Long artistId) {
+		if (me.getRole() == Role.ARTIST) {
+			return Map.of(me.getId(), LocalDateTime.MIN);
+		}
+		Map<Long, LocalDateTime> all = communityJoinService.joinedAtByArtistId(me);
+		if (artistId == null) {
+			return all;
+		}
+		LocalDateTime joinedAt = all.get(artistId);
+		return joinedAt == null ? Map.of() : Map.of(artistId, joinedAt);
+	}
+
+	private boolean afterJoin(LocalDateTime eventTime, Long artistId, Map<Long, LocalDateTime> joinedAtByArtist) {
+		if (eventTime == null || artistId == null) {
+			return false;
+		}
+		LocalDateTime joinedAt = joinedAtByArtist.get(artistId);
+		if (joinedAt == null) {
+			return false;
+		}
+		if (LocalDateTime.MIN.equals(joinedAt)) {
+			return true;
+		}
+		return !eventTime.isBefore(joinedAt);
 	}
 
 	private Map<String, Object> toPostNotification(Post post, DateTimeFormatter dateTime) {
