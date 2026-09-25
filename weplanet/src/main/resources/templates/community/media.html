@@ -25,20 +25,20 @@
       <nav th:replace="~{community/fragments/layout :: tabs('media')}"></nav>
 
       <div class="board-toolbar">
-        <div class="chip-row" style="margin:0;">
-          <button type="button" class="chip is-active">
+        <div class="chip-row" style="margin:0;" id="mediaFilterChips">
+          <button type="button" class="chip is-active" data-media-filter="all">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
             전체
           </button>
-          <button type="button" class="chip">멤버십</button>
-          <button type="button" class="chip">인기</button>
+          <button type="button" class="chip" data-media-filter="membership">멤버십</button>
+          <button type="button" class="chip" data-media-filter="popular">인기</button>
         </div>
         <div class="board-toolbar__actions">
           <label class="board-select">
             <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5h10"></path><path d="M11 12h10"></path><path d="M11 19h10"></path><path d="M3 5l2 2 4-4"></path><path d="M3 12h4"></path><path d="M3 19h4"></path></svg>
-            <select class="form-select" aria-label="미디어 정렬">
-              <option>최신순</option>
-              <option>오래된 순</option>
+            <select id="mediaSort" class="form-select" aria-label="미디어 정렬">
+              <option value="latest">최신순</option>
+              <option value="oldest">등록순</option>
             </select>
           </label>
           <button type="button" class="btn btn--primary btn--sm"
@@ -48,10 +48,12 @@
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:var(--wp-brand);margin:8px 0;" th:text="${msg}"></p>
-      <p th:if="${error}" class="form-error" th:text="${error}"></p>
+      <p th:if="${error}" class="text-sm" style="color:var(--wp-danger);margin:8px 0;" th:text="${error}"></p>
 
-      <div class="feed" th:if="${not #lists.isEmpty(mediaList)}">
-        <article class="post-card" th:each="post : ${mediaList}">
+      <div class="feed" id="mediaFeed" th:if="${not #lists.isEmpty(mediaList)}">
+        <article class="post-card"
+                 th:each="post : ${mediaList}"
+                 th:attr="data-membership=${post.membershipOnly},data-likes=${post.likeCount},data-created=${#temporals.format(post.createdAt, 'yyyyMMddHHmmss')}">
           <a th:href="@{/community/{artistId}/media/{mediaId}(artistId=${artist.id()}, mediaId=${post.id})}"
              style="display:block;color:inherit;">
             <div class="post-card__head">
@@ -59,6 +61,7 @@
               <div class="post-card__meta">
                 <div class="post-card__name">
                   <span th:text="${post.title}">제목</span>
+                  <span class="tag tag--member" th:if="${post.membershipOnly}">멤버십</span>
                   <span class="tag tag--live"
                         th:if="${post.title != null and #strings.startsWith(post.title, '라이브 다시보기')}">다시보기</span>
                 </div>
@@ -110,6 +113,7 @@
       </div>
 
       <p th:if="${#lists.isEmpty(mediaList)}" class="list-empty">표시할 미디어가 없습니다.</p>
+      <p class="list-empty" id="mediaEmptyFilter" hidden>조건에 맞는 미디어가 없습니다.</p>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
@@ -131,6 +135,10 @@
         <textarea class="form-textarea" name="content" maxlength="2000" placeholder="설명을 입력하세요 (선택)"></textarea>
         <label class="form-label mt-12">파일 (이미지/영상, 1개 이상)</label>
         <input class="form-input" type="file" name="files" accept="image/*,video/*" multiple required />
+        <label class="form-label mt-12">
+          <input type="checkbox" name="membershipOnly" value="true" />
+          멤버십 전용 (해당 커뮤니티 멤버십 가입 팬만 볼 수 있음)
+        </label>
         <button type="submit" class="btn btn--primary btn--block mt-16">등록하기</button>
       </form>
     </div>
@@ -140,5 +148,50 @@
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/dm-realtime.js}"></script>
+  <script>
+    (function () {
+      var feed = document.getElementById("mediaFeed");
+      var emptyFilter = document.getElementById("mediaEmptyFilter");
+      var sortSelect = document.getElementById("mediaSort");
+      if (!feed) return;
+      var cards = Array.prototype.slice.call(feed.querySelectorAll(".post-card"));
+      var activeFilter = "all";
+
+      function apply() {
+        var sort = (sortSelect && sortSelect.value) || "latest";
+        var visible = [];
+        cards.forEach(function (card) {
+          var membership = card.getAttribute("data-membership") === "true";
+          var likes = parseInt(card.getAttribute("data-likes") || "0", 10);
+          var ok = activeFilter === "all"
+            || (activeFilter === "membership" && membership)
+            || (activeFilter === "popular" && likes >= 100);
+          card.hidden = !ok;
+          if (ok) visible.push(card);
+        });
+        visible.sort(function (a, b) {
+          var ta = a.getAttribute("data-created") || "";
+          var tb = b.getAttribute("data-created") || "";
+          return sort === "oldest" ? ta.localeCompare(tb) : tb.localeCompare(ta);
+        });
+        visible.forEach(function (card) { feed.appendChild(card); });
+        if (emptyFilter) emptyFilter.hidden = visible.length > 0 || cards.length === 0;
+      }
+
+      document.querySelectorAll("[data-media-filter]").forEach(function (chip) {
+        chip.addEventListener("click", function () {
+          document.querySelectorAll("[data-media-filter]").forEach(function (c) {
+            c.classList.remove("is-active");
+          });
+          chip.classList.add("is-active");
+          activeFilter = chip.getAttribute("data-media-filter") || "all";
+          apply();
+        });
+      });
+      if (sortSelect) {
+        sortSelect.addEventListener("change", apply);
+      }
+    })();
+  </script>
 </body>
 </html>

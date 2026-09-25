@@ -42,10 +42,16 @@ public class BoardMediaService {
     );
 
     public static final String LIVE_REPLAY_TITLE_PREFIX = "라이브 다시보기";
+    public static final int POPULAR_LIKE_THRESHOLD = 100;
 
     // ── 저장(업로드) : 게시글 + 파일 여러 개를 한 번에 저장 ──
     public Long create(Long groupId, Long uploaderId, String title, String content,
                        List<MultipartFile> files) {
+        return create(groupId, uploaderId, title, content, files, false);
+    }
+
+    public Long create(Long groupId, Long uploaderId, String title, String content,
+                       List<MultipartFile> files, boolean membershipOnly) {
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -55,6 +61,7 @@ public class BoardMediaService {
                 .uploaderId(uploaderId)
                 .title(title)
                 .content(content)
+                .membershipOnly(membershipOnly)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
@@ -143,9 +150,16 @@ public class BoardMediaService {
 
     @Transactional(readOnly = true)
     public BoardMediaViewDTO getInCommunity(Long id, Long groupId) {
+        return getInCommunity(id, groupId, true);
+    }
+
+    public BoardMediaViewDTO getInCommunity(Long id, Long groupId, boolean canSeeMembership) {
         BoardMediaEntity post = getActivePost(id);
         if (!post.getGroupId().equals(groupId)) {
             throw new IllegalArgumentException("이 커뮤니티의 미디어가 아닙니다.");
+        }
+        if (post.isMembershipOnly() && !canSeeMembership) {
+            throw new IllegalArgumentException("멤버십 전용 미디어입니다.");
         }
         return toViewDTO(post);
     }
@@ -162,8 +176,13 @@ public class BoardMediaService {
 
     @Transactional(readOnly = true)
     public List<BoardMediaViewDTO> listWithoutLiveReplays(Long groupId) {
+        return listWithoutLiveReplays(groupId, true);
+    }
+
+    public List<BoardMediaViewDTO> listWithoutLiveReplays(Long groupId, boolean includeMembershipOnly) {
         return listEntities(groupId).stream()
                 .filter(post -> !isLiveReplayTitle(post.getTitle()))
+                .filter(post -> includeMembershipOnly || !post.isMembershipOnly())
                 .map(this::toViewDTO)
                 .toList();
     }
@@ -306,6 +325,7 @@ public class BoardMediaService {
                 .createdAt(post.getCreatedAt())
                 .fileCount(fileViews.size())
                 .likeCount(post.getLikeCount())
+                .membershipOnly(post.isMembershipOnly())
                 .files(fileViews)
                 .build();
     }
