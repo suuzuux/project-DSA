@@ -141,7 +141,7 @@ public class PartnershipApplication {
 	}
 	
 	private String normalizeEmail(String value) {
-		String normalized = requireText(value, 150, "이메일을 입력해주세요.").toLowerCase(Locale.ROOT);
+		String normalized = requireText(value, 50, "이메일을 입력해주세요.").toLowerCase(Locale.ROOT);
 		
 		if (!EMAIL_PATTERN.matcher(normalized).matches()) {
 			throw new IllegalArgumentException("이메일 주소 형식을 확인해주세요.");

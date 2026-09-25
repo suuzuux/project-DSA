@@ -30,8 +30,13 @@
           <button type="button" data-portal-role="AGENCY" aria-pressed="false">에이전시</button>
         </div>
 
+        <p th:if="${param.activated}" class="text-sm" style="color:#63704a;margin-bottom:16px;">
+          계정이 활성화되었습니다. 설정한 비밀번호로 로그인해주세요.
+        </p>
         <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;"
-           th:text="${param.error[0] == 'role'} ? '선택한 유형과 계정 역할이 일치하지 않습니다. 아티스트/에이전시를 다시 선택해 주세요.' : '아이디 또는 비밀번호가 올바르지 않습니다.'">
+           th:text="${param.error[0] == 'role'} ? '선택한 유형과 계정 역할이 일치하지 않습니다. 아티스트/에이전시를 다시 선택해 주세요.'
+                    : (${param.error[0] == 'pending'} ? '아직 활성화되지 않은 계정입니다. 승인 메일의 링크에서 비밀번호를 먼저 설정해주세요.'
+                    : '아이디 또는 비밀번호가 올바르지 않습니다.')">
           아이디 또는 비밀번호가 올바르지 않습니다.
         </p>
         <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
