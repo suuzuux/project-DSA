@@ -870,6 +870,27 @@
     }
 }
 
+/* 대시보드 하단 줄: 관리자 활동 표의 긴 대상 문구가 옆 패널(회원 계정 상태)을 밀어내지 않도록
+   표에 넓은 칸을 주고, 표 안에서 줄바꿈되게 한다. */
+.admin-dashboard-lower {
+    grid-template-columns: 1fr 0.8fr 1.8fr;
+}
+
+.admin-dashboard-lower > .panel {
+    min-width: 0;
+}
+
+.admin-dashboard-lower .data-table td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1100px) {
+    .admin-dashboard-lower {
+        grid-template-columns: 1fr;
+    }
+}
+
 .panel__head {
     display: flex;
     align-items: center;

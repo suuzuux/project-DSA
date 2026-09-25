@@ -36,7 +36,8 @@ public enum AdminActionType {
 	NOTICE_DELETE("공지 삭제"),
 	
 	PARTNERSHIP_APPLICATION_APPROVE("등록 신청 승인"),
-	PARTNERSHIP_APPLICATION_REJECT("등록 신청 반려");
+	PARTNERSHIP_APPLICATION_REJECT("등록 신청 반려"),
+	PARTNERSHIP_ACTIVATION_RESEND("소속사 계정 활성화 메일 재발송");
 	
 	private final String label;
 }

@@ -227,6 +227,16 @@ public class EmailVerification {
 		this.consumedAt = now;
 	}
 	
+	// 활성화 메일을 재발송할 때 이전에 보낸 링크가 더 이상 못 쓰게 만든다.
+	// 만료 시각을 지금으로 당겨서 isExpired()가 true가 되게 한다.
+	public void invalidate(LocalDateTime now) {
+		if (isConsumed() || isExpired(now)) {
+			return;
+		}
+		
+		this.expiresAt = now;
+	}
+	
 	private static void validate(
 			String email,
 			EmailVerificationPurpose purpose,

@@ -67,6 +67,20 @@ public class AgencyActivationService {
 		);
 	}
 	
+	// 활성화 메일 재발송. 이전 링크 모두 무효화한 뒤 새 토큰 발급
+	// 메일을 여러 번 받았을 때 옛날 링크가 살아있으면 안 됨
+	@Transactional
+	public IssuedActivation reissueActivationToken(User agencyUser) {
+		LocalDateTime now = LocalDateTime.now();
+		
+		evr.findByUser_IdAndPurposeAndConsumedAtIsNull(
+				agencyUser.getId(),
+				EmailVerificationPurpose.AGENCY_ACTIVATION)
+				.forEach(previous -> previous.invalidate(now));
+		
+		return issueActivationToken(agencyUser);
+	}
+	
 	// 활성화 화면을 열 때 링크가 아직 쓸 수 있는지 확인
 	public ActivationTarget loadActivationTarget(
 			String verificationKey,
