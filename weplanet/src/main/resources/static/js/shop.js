@@ -218,7 +218,18 @@
       });
   }
 
-  /** 바로 구매 — 장바구니 담기와 같은 toast로 성공/실패 안내 */
+  function openShopPayment(prepared) {
+    if (!window.WePlaNetToss) {
+      return Promise.reject(new Error("결제 모듈을 불러오지 못했습니다."));
+    }
+    return WePlaNetToss.openVirtualAccount(
+      prepared,
+      window.location.origin + "/payments/shop/success",
+      window.location.origin + "/payments/shop/fail"
+    );
+  }
+
+  /** 바로 구매 — 토스 가상계좌 결제창 */
   function buyNowProduct(form, triggerBtn) {
     if (!form) {
       return Promise.resolve(false);
@@ -233,20 +244,56 @@
       },
     })
       .then(function (res) {
+        if (res.status === 401) {
+          window.location.href = "/login";
+          return null;
+        }
         return res.json().catch(function () {
           return null;
         });
       })
       .then(function (data) {
-        showShopToast(
-          (data && data.message) || (data && data.ok ? "주문이 완료되었습니다." : "구매에 실패했습니다."),
-          data && data.ok ? 1000 : 1800
-        );
-        return !!(data && data.ok);
+        if (!data) {
+          return false;
+        }
+        if (!data.success) {
+          showShopToast(data.message || "구매에 실패했습니다.", 1800);
+          return false;
+        }
+        return openShopPayment(data).then(function () {
+          return true;
+        });
       })
-      .catch(function () {
-        showShopToast("구매에 실패했습니다.", 1800);
+      .catch(function (error) {
+        if (error && error.code === "USER_CANCEL") {
+          showShopToast("결제를 취소했어요.", 1800);
+        } else {
+          showShopToast((error && error.message) || "구매에 실패했습니다.", 1800);
+        }
         return false;
+      })
+      .finally(function () {
+        if (triggerBtn) triggerBtn.disabled = false;
+      });
+  }
+
+  function checkoutCart(form, triggerBtn) {
+    if (!form) return;
+    if (triggerBtn) triggerBtn.disabled = true;
+    var fields = { idempotencyKey: window.WePlaNetToss ? WePlaNetToss.createIdempotencyKey() : "" };
+    var request = window.WePlaNetToss
+      ? WePlaNetToss.postForm("/shop/payments/prepare-cart", fields)
+      : Promise.reject(new Error("결제 모듈을 불러오지 못했습니다."));
+    request
+      .then(function (prepared) {
+        return openShopPayment(prepared);
+      })
+      .catch(function (error) {
+        if (error && error.code === "USER_CANCEL") {
+          showShopToast("결제를 취소했어요.", 1800);
+        } else {
+          showShopToast((error && error.message) || "결제 준비에 실패했습니다.", 1800);
+        }
       })
       .finally(function () {
         if (triggerBtn) triggerBtn.disabled = false;
@@ -299,6 +346,14 @@
   });
 
   initCartQtySteppers();
+
+  var checkoutForm = document.querySelector('form[action="/shop/cart/checkout"], form[action$="/shop/cart/checkout"]');
+  if (checkoutForm) {
+    checkoutForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      checkoutCart(checkoutForm, checkoutForm.querySelector('button[type="submit"]'));
+    });
+  }
 
   window.WePlaNetShop = {
     showToast: showShopToast,

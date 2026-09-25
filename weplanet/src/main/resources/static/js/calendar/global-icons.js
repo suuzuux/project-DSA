@@ -236,6 +236,21 @@
     return found ? found.name : id;
   }
 
+  /** 가입 시각(ISO). 없으면 null → 가입 필터 미적용(아티스트 본인 등) */
+  function joinedAtForArtist(artistId) {
+    var sid = String(artistId);
+    var found = MY_COMMUNITIES.filter(function (c) { return String(c.id) === sid; })[0];
+    return found && found.joinedAt ? String(found.joinedAt) : null;
+  }
+
+  /** 이벤트 시각이 해당 커뮤니티 가입 시각 이후인지 */
+  function isAfterJoin(artistId, timeStr) {
+    var joined = joinedAtForArtist(artistId);
+    if (!joined) return true;
+    if (!timeStr) return false;
+    return String(timeStr) >= joined;
+  }
+
   function parseYmd(str) {
     var p = (str || "").split("-");
     return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
@@ -386,6 +401,7 @@
         var createdDate = String(createdRaw).slice(0, 10);
         var createdSort = String(createdRaw).length > 10 ? String(createdRaw) : createdDate + "T00:00:00";
         var registeredAge = Math.round((startOfToday() - parseYmd(createdDate)) / 86400000);
+        if (!isAfterJoin(ev.artist, createdSort)) return;
         items.push({
           id: "ev-" + ev.id,
           type: nType,
@@ -451,6 +467,11 @@
     var readIds = loadReadIds();
     var merged = POST_NOTIFICATIONS.concat(notificationsFromSchedule()).concat(EXTRA_NOTIFICATIONS);
     return merged
+      .filter(function (n) {
+        if (n.type === "site_notice") return false;
+        if (n.global || n.type === "comment" || n.type === "artist_comment") return true;
+        return isAfterJoin(n.artistId || n.artist, notificationSortKey(n));
+      })
       .map(function (n) {
         var copy = Object.assign({}, n);
         if (readIds.indexOf(n.id) !== -1) copy.read = true;
@@ -505,9 +526,8 @@
   function notificationsForPanel() {
     var target = notificationCommunityId();
     return allNotifications().filter(function (notification) {
-      // 시스템 공지·내 글 댓글은 커뮤니티 필터와 무관하게 항상 표시
+      // 내 글 댓글은 커뮤니티 필터와 무관하게 항상 표시
       if (notification.global
-          || notification.type === "site_notice"
           || notification.type === "comment"
           || notification.type === "artist_comment") {
         return true;
@@ -782,6 +802,19 @@
     return label.indexOf("검색") !== -1 || title.indexOf("검색") !== -1;
   }
 
+  function isShopBtn(btn) {
+    if (!btn || btn.tagName !== "A") return false;
+    var label = (btn.getAttribute("aria-label") || "").trim();
+    var href = (btn.getAttribute("href") || "").trim();
+    if (label === "장바구니") return false;
+    return label === "Shop" || href === "/shop" || href.indexOf("/shop/community/") === 0;
+  }
+
+  function nodeForIcon(btn) {
+    if (!btn) return null;
+    return btn.closest(".wp-global-slot") || btn;
+  }
+
   var HEADER_ICONS = {
     search: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>',
     notification: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>',
@@ -816,8 +849,10 @@
     }
 
     var searchBtn = icons.filter(isSearchBtn)[0] || null;
-    var hasLang = icons.some(isLangBtn);
-    var hasNoti = icons.some(isNotiBtn);
+    var langBtn = icons.filter(isLangBtn)[0] || null;
+    var notiBtn = icons.filter(isNotiBtn)[0] || null;
+    var shopBtn = icons.filter(isShopBtn)[0] || null;
+    var hasLang = !!langBtn;
 
     var anchor = actions.querySelector("a.btn, form, span[sec\\:authorize]") || null;
 
@@ -826,21 +861,11 @@
       else actions.appendChild(btn);
     }
 
+    // 검색·알림은 템플릿에 있는 페이지만 유지한다. (메인홈에는 두지 않음)
     if (!searchBtn) {
-      if (isAuthed) {
-        searchBtn = document.createElement("a");
-        searchBtn.className = "icon-btn";
-        searchBtn.href = "/?openSearch=1";
-        searchBtn.setAttribute("aria-label", "커뮤니티 검색");
-        searchBtn.setAttribute("title", "커뮤니티 검색");
-        searchBtn.innerHTML = HEADER_ICONS.search;
-        insert(searchBtn);
-      }
-    } else {
-      searchBtn.innerHTML = HEADER_ICONS.search;
+      searchBtn = null;
     }
 
-    var langBtn = icons.filter(isLangBtn)[0] || null;
     if (!hasLang) {
       langBtn = document.createElement("button");
       langBtn.type = "button";
@@ -848,21 +873,6 @@
       langBtn.setAttribute("aria-label", "언어");
       langBtn.innerHTML = HEADER_ICONS.language;
       insert(langBtn);
-    } else {
-      langBtn.innerHTML = HEADER_ICONS.language;
-    }
-    var notiBtn = icons.filter(isNotiBtn)[0] || null;
-    if (!hasNoti) {
-      if (isAuthed) {
-        notiBtn = document.createElement("button");
-        notiBtn.type = "button";
-        notiBtn.className = "icon-btn icon-btn--badge";
-        notiBtn.setAttribute("aria-label", "알림");
-        notiBtn.innerHTML = HEADER_ICONS.notification;
-        insert(notiBtn);
-      }
-    } else {
-      notiBtn.innerHTML = HEADER_ICONS.notification;
     }
 
     // 라이트/다크 토글 - 로그인 여부와 무관하게 모든 페이지 헤더에 둔다.
@@ -878,13 +888,25 @@
       insert(themeBtn);
     }
 
-    // 순서 맞추기 - 비로그인이면 검색·알림이 없으므로 있는 것만 앞으로 당긴다
-    var prev = null;
-    [searchBtn, notiBtn, langBtn, themeBtn].forEach(function (btn) {
-      if (!btn) return;
-      if (prev) actions.insertBefore(btn, prev.nextSibling);
-      else actions.insertBefore(btn, actions.firstElementChild);
-      prev = btn;
+    if (!notiBtn) {
+      notiBtn = null;
+    }
+
+    // 순서: 검색 → 다국어 → 다크모드 → 알림 → 굿즈 (있는 것만)
+    var ordered = [searchBtn, langBtn, themeBtn, notiBtn, shopBtn]
+      .map(nodeForIcon)
+      .filter(Boolean);
+    var firstExtra = null;
+    Array.prototype.forEach.call(actions.children, function (child) {
+      if (firstExtra) return;
+      if (ordered.indexOf(child) !== -1) return;
+      if (child.getAttribute && child.getAttribute("data-admin-page-link")) return;
+      if (child.querySelector && child.querySelector("[data-admin-page-link]")) return;
+      firstExtra = child;
+    });
+    ordered.forEach(function (node) {
+      if (firstExtra) actions.insertBefore(node, firstExtra);
+      else actions.appendChild(node);
     });
   }
 
