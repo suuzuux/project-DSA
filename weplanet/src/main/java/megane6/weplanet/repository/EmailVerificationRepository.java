@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -37,5 +38,10 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
 	Optional<EmailVerification> findTopByUser_IdAndPurposeOrderByCreatedAtDesc(
 			Long userId,
 			EmailVerificationPurpose emailVerificationPurpose
+	);
+	
+	// 소속사 활성화 메일 재발송 시 아직 사용하지 않은 이전 링크를 모두 무효화하기 위한 조회
+	List<EmailVerification> findByUser_IdAndPurposeAndConsumedAtIsNull(
+			Long userId, EmailVerificationPurpose emailVerificationPurpose
 	);
 }

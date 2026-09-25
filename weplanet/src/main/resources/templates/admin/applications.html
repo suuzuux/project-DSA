@@ -931,6 +931,67 @@
                     </button>
                 </form>
             </div>
+
+            <!-- 승인된 신청: 활성화 메일 재발송 -->
+            <div
+                    th:if="${selectedApplication.statusName()
+            == 'APPROVED'}"
+                    style="
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid
+                var(--wp-line, #ddd);
+        "
+            >
+                <form
+                        th:action="@{/admin/applications/{applicationId}/resend-activation(
+                applicationId=${selectedApplication.applicationId()}
+            )}"
+                        method="post"
+                        onsubmit="return confirm(
+                '활성화 메일을 다시 보내시겠습니까?\n이전에 보낸 링크는 더 이상 사용할 수 없게 됩니다.'
+            );"
+                >
+                    <input
+                            type="hidden"
+                            name="status"
+                            th:value="${selectedStatus}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="applicantType"
+                            th:value="${selectedApplicantType}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="keyword"
+                            th:value="${keyword}"
+                    />
+
+                    <input
+                            type="hidden"
+                            name="page"
+                            th:value="${applications.number}"
+                    />
+
+                    <button
+                            type="submit"
+                            class="btn btn--ghost btn--block"
+                    >
+                        활성화 메일 재발송
+                    </button>
+
+                    <p
+                            class="text-xs text-muted"
+                            style="margin-top: 6px;"
+                    >
+                        링크가 만료됐거나 메일을 받지 못한 경우 사용합니다.
+                        이미 활성화된 계정에는 보낼 수 없습니다.
+                    </p>
+                </form>
+            </div>
         </div>
       </aside>
     </div>

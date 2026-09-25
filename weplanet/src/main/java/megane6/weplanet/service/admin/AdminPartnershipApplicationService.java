@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.PartnershipApplicationRepository;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.AgencyActivationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class AdminPartnershipApplicationService {
 	
 	private final AdminActionLogService aas;
 	private final AgencyAccountProvisioningService provisioningService;
+	private final AgencyActivationService activationService;
 	
 	public Page<AdminPartnershipApplicationResponse> getApplications(
 			PartnershipApplicationStatus status,
@@ -138,6 +140,43 @@ public class AdminPartnershipApplicationService {
 		return application;
 	}
 	
+	@Transactional
+	public ResendResult resendActivation(
+			Long applicationId, Long adminId, String ipAddress) {
+		requireAdmin(adminId);
+		PartnershipApplication application = requireApplication(applicationId);
+		
+		if (application.getStatus() != PartnershipApplicationStatus.APPROVED) {
+			throw new IllegalStateException("승인된 신청만 활성화 메일을 재발송할 수 있습니다.");
+		}
+		
+		// 승인할 때 신청서 이메일을 그대로 로그인 아이디로 만들었으므로, 같은 값으로 찾는다.
+		User agencyUser = userRepository.findByUsername(application.getEmail())
+				.orElseThrow(() -> new IllegalStateException("이 신청으로 발급된 소속사 계정을 찾을 수 없습니다: "
+						+ application.getEmail()));
+		
+		AgencyActivationService.IssuedActivation issuedActivation
+				= activationService.reissueActivationToken(agencyUser);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PARTNERSHIP_ACTIVATION_RESEND,
+				AdminTargetType.PARTNERSHIP_APPLICATION,
+				applicationId,
+				application.getApplicantName()
+						+ " 소속사 계정 활성화 메일 재발송 ("
+						+ agencyUser.getUsername()
+						+ ")",
+				ipAddress
+		);
+		
+		return new ResendResult(
+				application,
+				agencyUser.getUsername(),
+				issuedActivation
+		);
+	}
+	
 	private PartnershipApplication requireApplication(
 			Long applicationId
 	) {
@@ -225,6 +264,13 @@ public class AdminPartnershipApplicationService {
 	public record ApprovalResult(
 			PartnershipApplication application,
 			AgencyAccountProvisioningService.ProvisionedAccount account
+	) {}
+	
+	// 재발송 결과. 컨트롤러가 이 정보로 새 링크를 메일로 보낸다.
+	public record ResendResult(
+			PartnershipApplication application,
+			String username,
+			AgencyActivationService.IssuedActivation activation
 	) {}
 	
 	public record ApplicationStats(

@@ -177,6 +177,60 @@ public class AdminPartnershipApplicationController {
 		return "redirect:/admin/applications";
 	}
 	
+	@PostMapping("/{applicationId}/resend-activation")
+	public String resendActivation(@PathVariable Long applicationId,
+								   @RequestParam(required = false) String status,
+								   @RequestParam(required = false) String applicantType,
+								   @RequestParam(required = false) String keyword,
+								   @RequestParam(defaultValue = "0") int page,
+								   HttpServletRequest request,
+								   @AuthenticationPrincipal AuthenticatedUser principal,
+								   RedirectAttributes redirectAttributes) {
+		requireAdmin(principal);
+		
+		try {
+			AdminPartnershipApplicationService.ResendResult result
+					= service.resendActivation(
+							applicationId,
+							principal.getId(),
+							request.getRemoteAddr()
+					);
+			// 승인 메일과 내용이 같아서 (아이디 + 새 링크) 같은 메서드를 보낸다.
+			try {
+				inquiryEmailService.sendApprovalNotice(
+						result.application(),
+						result.username(),
+						result.activation().verificationKey(),
+						result.activation().rawToken(),
+						result.activation().expiresAt()
+				);
+				
+				redirectAttributes.addFlashAttribute(
+						"msg",
+						"활성화 메일을 재발송했습니다. 이전에 보낸 링크는 더 이상 사용할 수 없습니다"
+				);
+			} catch (Exception mailException) {
+				log.warn("활성화 메일 재발송 실패: applicationId={}",
+						applicationId, mailException);
+				
+				redirectAttributes.addFlashAttribute(
+						"error",
+						"새 링크는 발급했지만, 메일 발송에 실패했습니다. 잠시 후 다시 재발송해주세요."
+				);
+			}
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute(
+					"error", e.getMessage()
+			);
+		}
+		
+		addRedirectFilters(
+				applicationId, status, applicantType, keyword, page, redirectAttributes
+		);
+		
+		return "redirect:/admin/applications";
+	}
+	
 	@PostMapping("/{applicationId}/reject")
 	public String reject(
 			@PathVariable Long applicationId,
