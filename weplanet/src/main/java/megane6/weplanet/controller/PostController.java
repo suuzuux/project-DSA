@@ -268,6 +268,8 @@ public class PostController {
             @RequestParam String content,
             @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
+            // [대댓글] 답글 폼에서만 넘어오는 값. 없으면 지금까지처럼 일반 댓글로 저장됨
+            @RequestParam(required = false) Long parentId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
             Model model
@@ -283,7 +285,8 @@ public class PostController {
             throw new IllegalArgumentException("댓글은 100자를 초과할 수 없습니다.");
         }
 
-        commentService.createComment(post, author, content);
+        Comment parent = parentId != null ? commentService.getComment(parentId) : null;
+        commentService.createComment(post, author, content, parent);
 
         return renderCommentsResponse(post, artistId, principal, testUserId, requestedWith, model);
     }
