@@ -14,6 +14,7 @@
   function loadList(url, pushHistory) {
     fetch(url, { headers: { "X-Requested-With": "fetch" } })
       .then(function (response) {
+        if (!response.ok) throw new Error("목록을 불러오지 못했습니다.");
         return response.text();
       })
       .then(function (html) {
@@ -30,7 +31,67 @@
         if (pushHistory) {
           history.pushState({}, "", url);
         }
+        updateScrollTopVisibility();
       });
+  }
+
+  // 다음 Slice(10개)만 받아 현재 목록 뒤에 붙인다. 이벤트는 위임 방식이라 새 카드의
+  // 좋아요/댓글 버튼도 별도 재바인딩 없이 바로 동작한다.
+  document.addEventListener("click", function (e) {
+    const moreButton = e.target.closest("[data-view-more]");
+    if (!moreButton) return;
+
+    e.preventDefault();
+    const url = moreButton.dataset.moreUrl;
+    if (!url || moreButton.disabled) return;
+
+    moreButton.disabled = true;
+    moreButton.textContent = "불러오는 중…";
+    fetch(url, { headers: { "X-Requested-With": "fetch" } })
+      .then(function (response) {
+        if (!response.ok) throw new Error("다음 게시글을 불러오지 못했습니다.");
+        return response.text();
+      })
+      .then(function (html) {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const incomingArea = doc.getElementById("postListArea");
+        const currentArea = document.getElementById("postListArea");
+        const currentFeed = currentArea ? currentArea.querySelector(".feed") : null;
+        const incomingFeed = incomingArea ? incomingArea.querySelector(".feed") : null;
+        if (!currentArea || !currentFeed || !incomingArea || !incomingFeed) {
+          throw new Error("게시글 응답 형식이 올바르지 않습니다.");
+        }
+
+        incomingFeed.querySelectorAll(".post-card").forEach(function (card) {
+          currentFeed.appendChild(card);
+        });
+
+        const oldMore = currentArea.querySelector(".post-list-more");
+        const nextMore = incomingArea.querySelector(".post-list-more");
+        if (oldMore) {
+          if (nextMore) oldMore.replaceWith(nextMore);
+          else oldMore.remove();
+        }
+      })
+      .catch(function () {
+        moreButton.disabled = false;
+        moreButton.innerHTML = '더보기 <span aria-hidden="true">∨</span>';
+      });
+  });
+
+  const scrollTopButton = document.getElementById("postScrollTop");
+
+  function updateScrollTopVisibility() {
+    if (!scrollTopButton) return;
+    scrollTopButton.hidden = window.scrollY < 500;
+  }
+
+  if (scrollTopButton) {
+    window.addEventListener("scroll", updateScrollTopVisibility, { passive: true });
+    scrollTopButton.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    updateScrollTopVisibility();
   }
 
   document.querySelectorAll(".sort-link").forEach(function (link) {
@@ -216,7 +277,7 @@
             }
             writeModal.classList.remove("is-open");
             resetWriteModal();
-            loadList(listBase + "?sort=latest", true);
+            loadList(listBase + "?sort=latest&page=0", true);
           });
         }
         if (contentType.indexOf("application/json") !== -1) {
@@ -231,7 +292,7 @@
         // 서버 오류 HTML 등이면 목록만 다시 불러와 실제 등록 여부 확인
         writeModal.classList.remove("is-open");
         resetWriteModal();
-        loadList(listBase + "?sort=latest", true);
+        loadList(listBase + "?sort=latest&page=0", true);
       })
       .catch(function () {
         if (errorEl) {
@@ -239,7 +300,7 @@
           errorEl.style.display = "block";
         }
         submitBtn.disabled = false;
-        loadList(listBase + "?sort=latest", false);
+        loadList(listBase + "?sort=latest&page=0", false);
       });
   });
 })();

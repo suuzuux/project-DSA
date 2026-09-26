@@ -44,6 +44,7 @@ public class SecurityConfig {
             "/admin/login",
             "/api/schedules",
             "/api/notifications",
+            "/api/site-notices",
             // 햄버거 메뉴 커뮤니티 목록 - 비로그인도 전체 커뮤니티는 볼 수 있다
             "/api/side-menu/communities",
             "/api/artists",
@@ -58,6 +59,8 @@ public class SecurityConfig {
             "/notices/**",
             "/shop",
             "/shop/**",
+            // 토스 입금 웹훅 - 토스 서버가 호출하므로 로그인 없음 (secret 값으로 검증)
+            "/payments/toss/webhook",
             "/membership",
             "/partnership",
             "/policy/**",

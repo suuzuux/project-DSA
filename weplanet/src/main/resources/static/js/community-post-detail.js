@@ -7,6 +7,19 @@
   const postId = document.body.dataset.postId;
   if (!postId) return;
 
+  function focusCommentInput() {
+    if (window.location.hash !== "#commentContentInput") return;
+    const input = document.getElementById("commentContentInput");
+    if (!input) return;
+    input.scrollIntoView({ behavior: "smooth", block: "center" });
+    window.setTimeout(function () {
+      input.focus({ preventScroll: true });
+    }, 250);
+  }
+
+  focusCommentInput();
+  window.addEventListener("hashchange", focusCommentInput);
+
   function markCommentReported(commentId) {
     const text = document.getElementById("commentText-" + commentId);
     const item = text ? text.closest(".comment-item") : null;
@@ -39,7 +52,7 @@
           return response.json();
         })
         .then(function (data) {
-          document.getElementById("likeCount").textContent = data.likeCount > 0 ? data.likeCount : "";
+          document.getElementById("likeCount").textContent = String(data.likeCount);
           likeButton.classList.toggle("is-liked", !!data.liked);
         });
     });

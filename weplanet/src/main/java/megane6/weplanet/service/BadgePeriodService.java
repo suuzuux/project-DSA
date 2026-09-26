@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.ArtistAccountProfile;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.BadgeCode;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
+import megane6.weplanet.repository.MembershipPeriodRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.List;
 public class BadgePeriodService {
 	private final CommunityMemberRepository cmr;
 	private final ArtistAccountProfileRepository apr;
+	private final MembershipPeriodRepository mpr;
 	private final BadgeAwardService bas;
 	
 	// 한 팬의 모든 커뮤니티를 확인한다 (컬렉션 화면에서 호출)
@@ -80,8 +82,28 @@ public class BadgePeriodService {
 		if (years >= 3) {
 			bas.award(fanId, artistId, BadgeCode.BASIC_YEAR_3);
 		}
+
+		// 멤버십 이벤트 처리 누락으로 과거 가입 이력은 있지만 배지가 없는 사용자도 복구한다.
+		// 정상 지급됐던 사용자에게 다시 호출해도 BadgeAwardService가 멱등하게 무시한다.
+		checkMembershipBadges(fanId, artistId);
 		
 		checkDebutAnniversary(fanId, artistId, joinedDate, today);
+	}
+
+	private void checkMembershipBadges(Long fanId, Long artistId) {
+		int streak = mpr.findTopByFanIdAndArtistIdOrderByStartedAtDesc(fanId, artistId)
+				.map(period -> period.getStreakCount())
+				.orElse(0);
+		BadgeCode[] membershipBadges = {
+				BadgeCode.SPECIAL_MEMBERSHIP_1,
+				BadgeCode.SPECIAL_MEMBERSHIP_2,
+				BadgeCode.SPECIAL_MEMBERSHIP_3,
+				BadgeCode.SPECIAL_MEMBERSHIP_4,
+				BadgeCode.SPECIAL_MEMBERSHIP_5
+		};
+		for (int i = 0; i < Math.min(streak, membershipBadges.length); i++) {
+			bas.award(fanId, artistId, membershipBadges[i]);
+		}
 	}
 	
 	// ---------- 데뷔 N주년 배지 ----------

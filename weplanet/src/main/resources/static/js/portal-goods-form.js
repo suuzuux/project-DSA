@@ -53,6 +53,7 @@
     chipRoot.querySelectorAll("[data-cat-chip]").forEach(function (btn) {
       var code = btn.getAttribute("data-cat-chip");
       var on = isSelected(code);
+      btn.classList.toggle("is-active", on);
       btn.classList.toggle("is-selected", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });

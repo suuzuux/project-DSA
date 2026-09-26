@@ -14,7 +14,8 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.ShopCartService;
 import megane6.weplanet.service.ShopService;
 import megane6.weplanet.service.community.CommunityJoinService;
-import megane6.weplanet.service.shop.ShopCheckoutService;
+import megane6.weplanet.domain.dto.ProjectPaymentPrepareResponse;
+import megane6.weplanet.service.shop.ShopPaymentService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -41,7 +42,7 @@ public class ShopController {
 
 	private final ShopService shopService;
 	private final ShopCartService shopCartService;
-	private final ShopCheckoutService shopCheckoutService;
+	private final ShopPaymentService shopPaymentService;
 	private final UserRepository userRepository;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
@@ -145,16 +146,19 @@ public class ShopController {
 
 	@PostMapping("/shop/cart/checkout")
 	public String checkoutCart(@AuthenticationPrincipal AuthenticatedUser principal,
-	                           RedirectAttributes redirectAttributes) {
+	                           RedirectAttributes redirectAttributes,
+	                           Model model) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		try {
-			shopCheckoutService.checkout(me);
-			redirectAttributes.addFlashAttribute("message", "주문이 완료되었습니다.");
-			return "redirect:/shop/cart";
-		} catch (IllegalArgumentException e) {
+			ProjectPaymentPrepareResponse prepared = shopPaymentService.prepareCart(me, null);
+			model.addAttribute("prepared", prepared);
+			model.addAttribute("successUrl", "/payments/shop/success");
+			model.addAttribute("failUrl", "/payments/shop/fail");
+			return "payment/commerce-start";
+		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute("message", e.getMessage());
 			return "redirect:/shop/cart";
 		}
@@ -167,17 +171,27 @@ public class ShopController {
 	                                      @RequestParam(defaultValue = "1") int quantity,
 	                                      @AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) {
-			return Map.of("ok", false, "message", "로그인이 필요합니다.");
+			return Map.of("success", false, "message", "로그인이 필요합니다.");
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		String checkoutId = (variantProductId != null && !variantProductId.isBlank())
 				? variantProductId
 				: productId;
 		try {
-			shopCheckoutService.buyNow(me, checkoutId, quantity);
-			return Map.of("ok", true, "message", "주문이 완료되었습니다.");
-		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", e.getMessage());
+			ProjectPaymentPrepareResponse prepared = shopPaymentService.prepareBuyNow(
+					me, checkoutId, quantity, null);
+			Map<String, Object> body = new LinkedHashMap<>();
+			body.put("success", prepared.success());
+			body.put("clientKey", prepared.clientKey());
+			body.put("orderId", prepared.orderId());
+			body.put("orderName", prepared.orderName());
+			body.put("amount", prepared.amount());
+			body.put("customerName", prepared.customerName());
+			body.put("validHours", prepared.validHours());
+			body.put("message", prepared.message());
+			return body;
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			return Map.of("success", false, "message", e.getMessage());
 		}
 	}
 
@@ -187,7 +201,8 @@ public class ShopController {
 	                     @RequestParam(defaultValue = "1") int quantity,
 	                     @RequestParam(required = false, defaultValue = "global") String from,
 	                     @AuthenticationPrincipal AuthenticatedUser principal,
-	                     RedirectAttributes redirectAttributes) {
+	                     RedirectAttributes redirectAttributes,
+	                     Model model) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
@@ -198,10 +213,13 @@ public class ShopController {
 				? variantProductId
 				: productId;
 		try {
-			shopCheckoutService.buyNow(me, checkoutId, quantity);
-			redirectAttributes.addFlashAttribute("message", "주문이 완료되었습니다.");
-			return back;
-		} catch (IllegalArgumentException e) {
+			ProjectPaymentPrepareResponse prepared = shopPaymentService.prepareBuyNow(
+					me, checkoutId, quantity, null);
+			model.addAttribute("prepared", prepared);
+			model.addAttribute("successUrl", "/payments/shop/success");
+			model.addAttribute("failUrl", "/payments/shop/fail");
+			return "payment/commerce-start";
+		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute("message", e.getMessage());
 			return back;
 		}

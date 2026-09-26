@@ -117,7 +117,7 @@
           </div>
           <form th:action="@{/shop/cart/checkout}" method="post">
             <button type="submit" class="btn btn--accent btn--block btn--lg mt-16">
-              주문하기
+              가상계좌로 결제
             </button>
           </form>
           <p class="text-xs text-muted mt-12" style="text-align:center;">
@@ -150,8 +150,10 @@
     window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
   </script>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/commerce-toss.js}"></script>
   <script th:src="@{/js/shop.js}"></script>
 </body>
 </html>

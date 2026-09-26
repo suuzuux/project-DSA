@@ -12,7 +12,6 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
-import megane6.weplanet.service.FollowService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
@@ -37,7 +36,6 @@ public class HomeController {
 	private final UserRepository userRepository;
 	private final PostService postService;
 	private final ArtistGroupRepository artistGroupRepository;
-	private final FollowService followService;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;

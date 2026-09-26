@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>멤버십 결제 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}"/>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <script th:src="@{/js/commerce-toss.js}"></script>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-left">
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+</header>
+
+<main class="container section" style="max-width:480px;padding-top:56px;">
+  <h1 style="font-size:20px;font-weight:700;margin-bottom:8px;">멤버십 결제</h1>
+  <p class="text-muted" style="margin-bottom:20px;line-height:1.6;">
+    <strong th:text="${artistName}">아티스트</strong> 공식 멤버십 (1년)
+  </p>
+  <p style="font-size:28px;font-weight:800;margin-bottom:24px;"
+     th:text="${#numbers.formatInteger(amount, 1, 'COMMA')} + '원'">30,000원</p>
+  <p id="payHint" class="text-sm text-muted" style="margin-bottom:16px;">결제창을 여는 중입니다.</p>
+  <button type="button" class="btn btn--accent btn--block btn--lg" id="payButton">가상계좌로 결제</button>
+  <a class="btn btn--ghost btn--block mt-8"
+     th:href="@{/community/{id}/highlight(id=${artistId})}">돌아가기</a>
+</main>
+
+<script th:inline="javascript">
+  (function () {
+    const artistId = /*[[${artistId}]]*/ 0;
+    const prepareUrl = "/payments/membership/" + artistId + "/prepare";
+    const successUrl = window.location.origin + "/payments/membership/success";
+    const failUrl = window.location.origin + "/payments/membership/fail";
+    const hint = document.getElementById("payHint");
+    const button = document.getElementById("payButton");
+
+    async function startPay() {
+      button.disabled = true;
+      hint.textContent = "주문을 만들고 있습니다.";
+      try {
+        const prepared = await WePlaNetToss.postForm(prepareUrl, {
+          idempotencyKey: WePlaNetToss.createIdempotencyKey()
+        });
+        hint.textContent = "결제창을 여는 중입니다.";
+        await WePlaNetToss.openVirtualAccount(prepared, successUrl, failUrl);
+      } catch (error) {
+        hint.textContent = error.code === "USER_CANCEL"
+          ? "결제를 취소했어요. 다시 시도할 수 있어요."
+          : (error.message || "결제에 실패했습니다.");
+        button.disabled = false;
+      }
+    }
+
+    button.addEventListener("click", startPay);
+    startPay();
+  })();
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
+import megane6.weplanet.domain.entity.enumfolder.GoodsShopCategory;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 
 import java.time.LocalDateTime;
@@ -57,6 +58,12 @@ public class Goods {
 	@Builder.Default
 	private boolean membershipOnly = false;
 
+	/** 샵 필터: MD / DIGITAL / MEMBERSHIP */
+	@Enumerated(EnumType.STRING)
+	@Column(name = "shop_category", nullable = false, length = 20)
+	@Builder.Default
+	private GoodsShopCategory shopCategory = GoodsShopCategory.MD;
+
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;
 
@@ -87,6 +94,9 @@ public class Goods {
 		this.updatedAt = now;
 		if (this.status == null) {
 			this.status = GoodsStatus.ON_SALE;
+		}
+		if (this.shopCategory == null) {
+			this.shopCategory = this.membershipOnly ? GoodsShopCategory.MEMBERSHIP : GoodsShopCategory.MD;
 		}
 	}
 

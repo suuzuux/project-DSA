@@ -33,6 +33,7 @@
             <div class="post-card__name">
               <span th:text="${artist.nickname()}">아티스트</span>
               <span class="badge-verified">✓</span>
+              <span class="tag tag--member" th:if="${mediaPost.membershipOnly}">멤버십</span>
               <span class="tag tag--live"
                     th:if="${mediaPost.title != null and #strings.startsWith(mediaPost.title, '라이브 다시보기')}">다시보기</span>
             </div>

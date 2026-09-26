@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +27,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor // final로 선언된 필드들을 파라미터로 받는 생성자를 롬복이 자동으로 만들어줌 (의존성 주입)
 public class PostService {
+
+    public static final int COMMUNITY_PAGE_SIZE = 10;
 
     private final PostRepository postRepository;
     private final LikeRepository likeRepository;
@@ -52,6 +57,27 @@ public class PostService {
         return postRepository.findByBoardTypeAndArtistOrderByCreatedAtDesc(boardType, artist);
     }
 
+    // 커뮤니티 Fan / Artist 게시판용 10개 단위 조회. Slice는 불필요한 전체 개수 COUNT 없이
+    // 다음 묶음의 존재 여부만 알려주므로 "더보기" UI에 알맞다.
+    public Slice<Post> getCommunityPostSlice(
+            BoardType boardType,
+            User artist,
+            String sort,
+            int page,
+            boolean hideFromArtists
+    ) {
+        Sort postSort = "popular".equals(sort)
+                ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
+                : Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), COMMUNITY_PAGE_SIZE, postSort);
+
+        if (hideFromArtists) {
+            return postRepository.findByBoardTypeAndArtistAndHiddenFromArtistFalse(
+                    boardType, artist, pageable);
+        }
+        return postRepository.findByBoardTypeAndArtist(boardType, artist, pageable);
+    }
+
     // 내 프로필 "포스트 히스토리" 탭 - 내가 쓴 게시글 전체
     public List<Post> getPostsByAuthor(User author, boolean oldest) {
         return oldest
@@ -61,7 +87,7 @@ public class PostService {
 
     // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 구분 없이 전체 인기 게시글 상위 4개
     public List<Post> getPopularPosts() {
-        return postRepository.findTop4ByOrderByLikeCountDescCreatedAtDesc();
+        return postRepository.findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc();
     }
 
     // 하이라이트 "Fan Posts" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 4개

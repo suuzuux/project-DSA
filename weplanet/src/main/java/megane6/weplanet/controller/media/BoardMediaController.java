@@ -51,12 +51,13 @@ public class BoardMediaController {
                          @RequestParam String title,
                          @RequestParam(required = false) String content,
                          @RequestParam(value = "files", required = false) List<MultipartFile> files,
+                         @RequestParam(defaultValue = "false") boolean membershipOnly,
                          @RequestParam(required = false) Long artistId,
                          @AuthenticationPrincipal AuthenticatedUser principal,
                          RedirectAttributes redirectAttributes) {
         try {
             requireCommunityOwner(principal, communityKey(artistId, groupId));
-            boardMediaService.create(groupId, principal.getId(), title, content, files);
+            boardMediaService.create(groupId, principal.getId(), title, content, files, membershipOnly);
             redirectAttributes.addFlashAttribute("msg", "업로드되었습니다.");
         } catch (IllegalArgumentException | IllegalStateException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());

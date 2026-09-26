@@ -4,7 +4,7 @@
 <article th:fragment="shopProductCard(product, fromCommunity)"
          class="product-card"
          th:classappend="${product.soldOut()} ? ' is-sold-out'"
-         th:attr="data-category=${product.category()},data-title=${product.title()},data-product-id=${product.id()}">
+         th:attr="data-category=${product.category()},data-types=${product.typeKeysAttr()},data-title=${product.title()},data-product-id=${product.id()}">
   <div class="product-card__media">
     <th:block th:replace="~{fragments/shop-product-thumb :: shopThumb(
       ${product},

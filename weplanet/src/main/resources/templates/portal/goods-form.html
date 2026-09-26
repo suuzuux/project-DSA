@@ -39,11 +39,25 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">카테고리 <span class="text-xs text-muted">(복수 선택)</span></label>
-          <div class="goods-category-chips" id="goodsCategoryChips" role="group" aria-label="굿즈 카테고리">
+          <label class="form-label">샵 카테고리 <span class="text-xs text-muted">(필수 · 1개)</span></label>
+          <div class="chip-row" role="radiogroup" aria-label="샵 카테고리">
+            <label th:each="cat : ${goodsShopCategories}"
+                   class="chip goods-shop-cat">
+              <input type="radio" name="shopCategory"
+                     th:value="${cat.name()}"
+                     th:checked="${goods != null and goods.shopCategory != null ? goods.shopCategory == cat : cat.name() == 'MD'}"
+                     required />
+              <span th:text="${cat.label}">MD · 굿즈</span>
+            </label>
+          </div>
+          <p class="text-xs text-muted mt-8">방문자가 굿즈샵 필터(MD · 굿즈 / 디지털 / 멤버십전용)에서 보는 분류입니다. 멤버십전용은 해당 커뮤니티 멤버십 가입 팬만 구매할 수 있습니다.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">상품 유형 <span class="text-xs text-muted">(사이즈·재고 · 복수 선택)</span></label>
+          <div class="chip-row" id="goodsCategoryChips" role="group" aria-label="상품 유형">
             <button type="button" th:each="cat : ${goodsCategoryTypes}"
-                    class="goods-cat-chip"
-                    th:classappend="${cat.chipClass}"
+                    class="chip"
                     th:attr="data-cat-chip=${cat.name()}"
                     th:text="${cat.label}">의류</button>
           </div>
@@ -96,14 +110,6 @@
                     th:text="${s.label}"
                     th:selected="${goods != null ? goods.status == s : s.name() == 'ON_SALE'}">판매중</option>
           </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">
-            <input type="checkbox" name="membershipOnly" value="true"
-                   th:checked="${goods != null and goods.membershipOnly}" />
-            멤버십 전용 (해당 커뮤니티 멤버십 가입 팬에게만 노출)
-          </label>
         </div>
 
         <div class="flex-center" style="justify-content:flex-end;">

@@ -13,7 +13,9 @@ public enum AdminTargetType {
 	REPORT("신고"),
 	KEYWORD("금칙어"),
 	SETTLEMENT("정산"),
-	NOTICE("공지");
+	NOTICE("공지"),
+	
+	PARTNERSHIP_APPLICATION("등록 신청");
 	
 	private final String label;
 }

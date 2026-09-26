@@ -1234,6 +1234,13 @@ p {
   font-weight: 600;
   color: var(--wp-ink-soft);
   background: var(--wp-surface);
+  cursor: pointer;
+  position: relative;
+  text-decoration: none;
+}
+
+span.chip {
+  cursor: default;
 }
 
 .chip .tab-ico {
@@ -1242,10 +1249,19 @@ p {
 }
 
 .chip.is-active,
-.chip:hover {
+.chip.is-selected,
+.chip:hover,
+.chip:has(input:checked) {
   background: var(--wp-brand);
   border-color: var(--wp-brand);
   color: #fff;
+}
+
+.chip input[type="radio"],
+.chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* =========================================================

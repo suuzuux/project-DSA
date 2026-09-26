@@ -7,6 +7,8 @@ import megane6.weplanet.domain.entity.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
@@ -27,7 +29,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByBoardTypeAndArtistOrderByLikeCountDescCreatedAtDesc(BoardType boardType, User artist);
 
     // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 종류 구분 없이 전체에서 인기순 상위 4개
-    List<Post> findTop4ByOrderByLikeCountDescCreatedAtDesc();
+    List<Post> findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc();
+
+    // 커뮤니티 게시판 더보기: 처음부터 전체 글을 올리지 않고 10개 단위 Slice로 조회한다.
+    @EntityGraph(attributePaths = {"author", "artist"})
+    Slice<Post> findByBoardTypeAndArtist(BoardType boardType, User artist, Pageable pageable);
+
+    // 아티스트 계정으로 팬 게시판을 볼 때 Hide from Artists 글은 DB 조회 단계에서 제외한다.
+    @EntityGraph(attributePaths = {"author", "artist"})
+    Slice<Post> findByBoardTypeAndArtistAndHiddenFromArtistFalse(
+            BoardType boardType, User artist, Pageable pageable);
 
     // 하이라이트 "Fan Posts" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 4개
     List<Post> findTop4ByBoardTypeAndArtistOrderByCreatedAtDesc(BoardType boardType, User artist);
