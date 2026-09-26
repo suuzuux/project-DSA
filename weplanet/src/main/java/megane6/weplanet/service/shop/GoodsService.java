@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.GoodsOption;
 import megane6.weplanet.domain.entity.GoodsVariant;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
+import megane6.weplanet.domain.entity.enumfolder.GoodsShopCategory;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.repository.GoodsRepository;
 import megane6.weplanet.repository.GoodsVariantRepository;
@@ -60,7 +61,7 @@ public class GoodsService {
 						int price,
 						String officialUrl,
 						GoodsStatus status,
-						boolean membershipOnly,
+						GoodsShopCategory shopCategory,
 						MultipartFile thumbnail,
 						GoodsCategoryOptionsPayload categoryOptions) {
 		requireArtist(artist);
@@ -70,6 +71,7 @@ public class GoodsService {
 		int nextOrder = existing.isEmpty()
 				? 0
 				: existing.stream().mapToInt(Goods::getSortOrder).max().orElse(-1) + 1;
+		GoodsShopCategory resolved = GoodsShopCategory.fromOrDefault(shopCategory);
 		Goods goods = Goods.builder()
 				.artist(artist)
 				.name(name.trim())
@@ -79,7 +81,8 @@ public class GoodsService {
 				.officialUrl(blankToNull(officialUrl))
 				.status(status != null ? status : GoodsStatus.ON_SALE)
 				.sortOrder(nextOrder)
-				.membershipOnly(membershipOnly)
+				.shopCategory(resolved)
+				.membershipOnly(resolved.isMembershipOnly())
 				.build();
 		applyPayload(goods, categoryOptions);
 		return goodsRepository.save(goods);
@@ -92,16 +95,18 @@ public class GoodsService {
 						int price,
 						String officialUrl,
 						GoodsStatus status,
-						boolean membershipOnly,
+						GoodsShopCategory shopCategory,
 						MultipartFile thumbnail,
 						GoodsCategoryOptionsPayload categoryOptions) {
 		categoryOptions.validate();
 		Goods goods = getOwned(artist, goodsId);
+		GoodsShopCategory resolved = GoodsShopCategory.fromOrDefault(shopCategory);
 		goods.setName(name.trim());
 		goods.setDescription(blankToNull(description));
 		goods.setPrice(price);
 		goods.setOfficialUrl(blankToNull(officialUrl));
-		goods.setMembershipOnly(membershipOnly);
+		goods.setShopCategory(resolved);
+		goods.setMembershipOnly(resolved.isMembershipOnly());
 		if (status != null) {
 			goods.setStatus(status);
 		}

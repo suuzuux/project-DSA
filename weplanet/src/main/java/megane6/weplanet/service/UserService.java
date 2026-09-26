@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
+import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.util.NicknameGenerator;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 @Service
@@ -28,6 +31,9 @@ public class UserService {
 	private final NicknameGenerator nicknameGenerator;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final MarketingConsentEmailService marketingConsentEmailService;
+	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
+	private final CommunityJoinService communityJoinService;
+	private final UserFollowRepository userFollowRepository;
 	
 	@Transactional
 	public User signup(SignupRequestDto dto) {
@@ -166,10 +172,23 @@ public class UserService {
 				.build();
 	}
 
-	// [회원탈퇴] 상태만 WITHDRAWN으로 바꾸는 소프트 삭제 - User.withdraw() 참고.
+	// [회원탈퇴] 상태 변경(WITHDRAWN)/개인정보 익명화는 User.withdraw() 참고.
+	// 거기서 못 지우는(다른 테이블 걸쳐있는) 것들 - 가입해둔 커뮤니티, 팔로우 관계 - 은 여기서 정리한다.
 	@Transactional
 	public void withdraw(User user) {
 		user.withdraw();
+
+		// 가입해둔 커뮤니티는 CommunityJoinService.leave()로 하나씩 탈퇴 처리 - 프로필/이미지 파일 정리와
+		// 그 커뮤니티에 종속된 팔로우 관계 삭제까지 leave() 안에서 함께 처리된다.
+		// (반환된 Set을 그대로 순회하며 그 안에서 지우면 ConcurrentModificationException이 날 수 있어 복사해서 순회)
+		for (Long artistId : Set.copyOf(communityJoinService.joinedArtistIds(user))) {
+			communityJoinService.leave(user, artistId);
+		}
+
+		// 팬→아티스트 팔로우는 커뮤니티 가입 여부와 무관하게 가능했고, 아티스트 본인은 자기 커뮤니티에
+		// CommunityMember가 없어 위 루프를 안 타므로, 남아있을 수 있는 팔로우 관계를 방향 상관없이 마저 정리한다.
+		userFollowRepository.deleteByFollowerId(user.getId());
+		userFollowRepository.deleteByFollowingId(user.getId());
 	}
 
 	// [설정 - 이벤트·혜택 알림] type: marketing(광고성 정보) / email(커뮤니티 활동 이메일) / night(야간 알림)

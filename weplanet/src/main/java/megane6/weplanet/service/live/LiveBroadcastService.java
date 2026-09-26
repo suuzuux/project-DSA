@@ -44,7 +44,8 @@ public class LiveBroadcastService {
 
 	@Transactional(readOnly = true)
 	public Optional<LiveSession> findLive(Long artistId) {
-		return liveSessionRepository.findFirstByArtist_IdAndStatus(artistId, LiveSessionStatus.LIVE);
+		return liveSessionRepository.findFirstByArtist_IdAndStatusOrderByStartedAtDesc(
+				artistId, LiveSessionStatus.LIVE);
 	}
 
 	@Transactional(readOnly = true)
@@ -57,7 +58,8 @@ public class LiveBroadcastService {
 	@Transactional
 	public LiveStatusView start(User host, User artist) {
 		requirePortalHost(host, artist);
-		Optional<LiveSession> existing = liveSessionRepository.findFirstByArtistAndStatus(artist, LiveSessionStatus.LIVE);
+		Optional<LiveSession> existing = liveSessionRepository
+				.findFirstByArtistAndStatusOrderByStartedAtDesc(artist, LiveSessionStatus.LIVE);
 		if (existing.isPresent()) {
 			LiveSession session = existing.get();
 			if (!session.isHost(host)) {
@@ -74,7 +76,8 @@ public class LiveBroadcastService {
 	@Transactional
 	public LiveStatusView end(User actor, User artist) {
 		requirePortalHost(actor, artist);
-		LiveSession session = liveSessionRepository.findFirstByArtistAndStatus(artist, LiveSessionStatus.LIVE)
+		LiveSession session = liveSessionRepository
+				.findFirstByArtistAndStatusOrderByStartedAtDesc(artist, LiveSessionStatus.LIVE)
 				.orElse(null);
 		if (session == null) {
 			return LiveStatusView.offline();
@@ -88,7 +91,8 @@ public class LiveBroadcastService {
 
 	@Transactional
 	public boolean endIfLive(Long artistId) {
-		Optional<LiveSession> live = liveSessionRepository.findFirstByArtist_IdAndStatus(artistId, LiveSessionStatus.LIVE);
+		Optional<LiveSession> live = liveSessionRepository
+				.findFirstByArtist_IdAndStatusOrderByStartedAtDesc(artistId, LiveSessionStatus.LIVE);
 		if (live.isEmpty()) {
 			return false;
 		}

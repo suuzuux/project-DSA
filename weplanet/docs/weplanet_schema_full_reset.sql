@@ -1,37 +1,47 @@
 -- ============================================================
--- WePlaNet DB 통합 스키마 — 이 파일 하나만 실행하면 됩니다
+-- WePlaNet 통합 DB 스키마 [파일 1] 전체 초기화용 (DROP → CREATE)
 -- ------------------------------------------------------------
--- 정리: 2026-09-27
---   그동안 나뉘어 있던 SQL 3개를 이 파일 하나로 합쳤습니다.
---     - weplanet_schema_full_reset.sql            (빈 DB 초기 구성용)
---     - weplanet_통합_증분_DB적용.sql              (이미 DB가 있는 팀원용)
---     - 20260917_shop_goods_alter_membership.sql  (굿즈 테이블만 따로)
---   나뉘어 있던 이유는 "새로 시작하는 사람"과 "이미 DB가 있는 사람"이
---   실행해야 할 파일이 달랐기 때문입니다. 이 파일은 두 경우를 모두 처리하므로
---   더 이상 골라 쓸 필요가 없습니다.
+-- 작성: 2026-09-03
+-- [이번에 새로 추가한 것]
+--   - users.agency_id : 아티스트 계정의 소속사(agencies.id) 표시용 컬럼
+--     (FAN/ADMIN 등 소속사가 없는 계정은 NULL)
 -- ------------------------------------------------------------
--- 이 파일의 성격
---   - DROP TABLE 이 없습니다. 기존 데이터는 지워지지 않습니다.
---   - 없는 테이블만 만들고(CREATE TABLE IF NOT EXISTS), 없는 컬럼만 추가하며,
---     시드 데이터는 이미 있으면 건너뜁니다(INSERT IGNORE).
---   - 그래서 여러 번 실행해도 안전합니다.
---   - 반대로 "싹 비우고 처음부터" 하고 싶을 때는 이 파일로는 안 됩니다.
---     그 경우에는 DROP DATABASE `weplanet`; 을 먼저 실행한 뒤 이 파일을 돌리세요.
+-- 수정: 2026-09-08 (AUTH-08, 휴면계정 자동전환/해제)
+--   - users.dormant_notice_sent_at : 휴면 전환 30일 전 사전 안내 메일 발송 시각
 -- ------------------------------------------------------------
+-- 수정: 2026-09-09 (ADMIN-2, 관리자 기능 통합)
+--   - email_verification.purpose에 ADMIN_LOGIN 허용
+--   - report/comment_report에 status, resolved_at 추가
+--   - site_notice에 category, publish_at, pinned, pin_order 추가
+--   - admin_action_logs 감사 로그 테이블 반영
+--   - 테스트 계정 비밀번호를 Test1234로 통일
+-- ------------------------------------------------------------
+-- 수정: 2026-09-14 (AUTH-10, 소셜 로그인 연동/해제)
+--   - users.password : 소셜 전용 가입자는 비밀번호가 없을 수 있어 NOT NULL 해제 (nullable)
+--   - users.provider : "가입 경로"가 아니라 "지금 연동된 소셜 provider"로 의미 변경.
+--     LOCAL 값 삭제 (연동 없음 = NULL), DEFAULT 'LOCAL' 제거, ck_users_provider에서 LOCAL 제외
+--     (기존 데이터는 UPDATE users SET provider = NULL WHERE provider = 'LOCAL'; 로 정리)
+-- ------------------------------------------------------------
+-- 수정: 2026-09-16 (SETTINGS-01, 이벤트·혜택 알림 설정)
+--   - users.marketing_consent : 광고성 정보 수신 동의. 회원가입 화면 "(선택) 광고 및 마케팅 활용 동의"
+--     체크박스와 같은 값을 공유함 (가입 시 반영, 설정 화면에서 다시 변경 가능)
+--   - users.community_activity_email_enabled : 가입(community_members)한 아티스트의 새 게시글/공지/
+--     라이브 시작을 이메일로 받을지. marketing_consent와는 별개의 값
+--   - users.night_notification_allowed : 오후 9시~오전 8시(KST)에도 위 이메일을 받을지
+-- ------------------------------------------------------------
+-- 수정: 2026-09-17 (SETTINGS-02, 언어 설정 / 게시글·댓글 AI 자동번역)
+--   - users.preferred_language : "기본 서비스 언어" (KO/JA/EN, 기본값 KO). 게시글/댓글 AI 번역
+--     (TranslateService)의 대상 언어로도 그대로 재사용됨 - UI 언어랑 번역 언어를 따로 두지 않음
+-- ------------------------------------------------------------
+-- !! 주의 !!
+--   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
+--   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
+--   절대 이 파일을 실행하지 말고 [파일 2] (증분 마이그레이션)를 쓰세요.
+--   이 파일은 "새로 시작하는 사람" 또는 "완전히 리셋하고 싶은 사람" 전용입니다.
+--
 -- 실행 방법
---   MySQL Workbench에서 이 파일을 열고 전체 선택(Ctrl+A) → 실행(Ctrl+Shift+Enter)
---   파일 안에 USE `weplanet` 이 들어 있어서 스키마를 미리 선택하지 않아도 됩니다.
--- ------------------------------------------------------------
--- 반영 내역 (최근 순)
---   2026-09-27 FEED       comment.parent_id / comment.deleted_at — 댓글의 대댓글(답글)
---   2026-09-17 SETTINGS-02 users.preferred_language — 기본 서비스 언어 / AI 번역 대상 언어
---   2026-09-17 SHOP        굿즈 옵션별 재고(shop_goods_variant), 멤버십 전용(membership_only)
---   2026-09-16 SETTINGS-01 users 알림 수신 설정 3종
---   2026-09-14 AUTH-10     users.provider 의미 변경, password nullable 전환
---   2026-09-09 ADMIN-2     신고 처리 상태, 공지 분류/예약발행/상단고정, 감사 로그
---   2026-09-08 AUTH-08     users.dormant_notice_sent_at — 휴면 사전 안내
---   BADGE-2               배지 카탈로그 25종, membership_period(멤버십 이력)
--- ------------------------------------------------------------
+--   mysql -uroot -p --default-character-set=utf8mb4 < weplanet_schema_full_reset.sql
+--
 -- 테스트 계정 (비밀번호 공통: Test1234)
 --   admin_test      ADMIN   관리자테스트   <- 금칙어 관리 화면(/chat/admin/keywords)
 --   agency_wp       AGENCY  휘원공주정식왕자매니저   (소속사: 휘원공주정식왕자)
@@ -44,12 +54,9 @@
 --   aifan_bot       FAN     AI팬봇
 --   aifan_mina      FAN     별빛민아   (아티스트 DM 가상 팬)
 --   aifan_hayul     FAN     하율짱
---   aifan_haerin    FAN     해린공주
+--   aifan_haerin    FAN     달콤해린
 --   aifan_jun       FAN     우주준
 --   aifan_yuna      FAN     햇살유나
--- ============================================================
---
--- [1] 테이블 — 없는 것만 생성한다
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS `weplanet` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -60,11 +67,68 @@ SET FOREIGN_KEY_CHECKS = 0;
 SET UNIQUE_CHECKS = 0;
 
 -- ------------------------------------------------------------
+-- DROP (자식 -> 부모 역순, users.agency_id 추가로 인해 agencies 도 맨 마지막)
+-- ------------------------------------------------------------
+DROP TABLE IF EXISTS `notification_setting`;
+DROP TABLE IF EXISTS `notification`;
+DROP TABLE IF EXISTS `group_schedule`;
+DROP TABLE IF EXISTS `fan_project_fraud_check`;
+DROP TABLE IF EXISTS `fan_project_settlement_account`;
+DROP TABLE IF EXISTS `fan_project_contribution`;
+DROP TABLE IF EXISTS `fan_project_cover_image`;
+DROP TABLE IF EXISTS `fan_project`;
+DROP TABLE IF EXISTS `email_verification`;
+DROP TABLE IF EXISTS `fan_badge_ownership`;
+DROP TABLE IF EXISTS `chat_quota`;
+DROP TABLE IF EXISTS `chat_message`;
+DROP TABLE IF EXISTS `live_comment_report`;
+DROP TABLE IF EXISTS `live_comment`;
+DROP TABLE IF EXISTS `live_session`;
+DROP TABLE IF EXISTS `shop_cart_item`;
+DROP TABLE IF EXISTS `shop_goods_variant`;
+DROP TABLE IF EXISTS `shop_goods_option`;
+DROP TABLE IF EXISTS `shop_goods_category`;
+DROP TABLE IF EXISTS `shop_goods`;
+DROP TABLE IF EXISTS `board_media_like`;
+DROP TABLE IF EXISTS `board_media_files`;
+DROP TABLE IF EXISTS `board_media`;
+DROP TABLE IF EXISTS `report`;
+DROP TABLE IF EXISTS `comment_report`;
+DROP TABLE IF EXISTS `comment`;
+DROP TABLE IF EXISTS `post_bookmark`;
+DROP TABLE IF EXISTS `post_like`;
+DROP TABLE IF EXISTS `post_attachment`;
+DROP TABLE IF EXISTS `post`;
+DROP TABLE IF EXISTS `community_profiles`;
+DROP TABLE IF EXISTS `community_members`;
+DROP TABLE IF EXISTS `site_notice`;
+DROP TABLE IF EXISTS `portal_notice`;
+DROP TABLE IF EXISTS `artist_attendance`;
+DROP TABLE IF EXISTS `artist_schedule`;
+DROP TABLE IF EXISTS `artist_block`;
+DROP TABLE IF EXISTS `membership_period`;
+DROP TABLE IF EXISTS `membership`;
+DROP TABLE IF EXISTS `user_follows`;
+DROP TABLE IF EXISTS `group_members`;
+DROP TABLE IF EXISTS `artist_group_profiles`;
+DROP TABLE IF EXISTS `artist_profile`;
+DROP TABLE IF EXISTS `artist_groups`;
+DROP TABLE IF EXISTS `artist_profiles`;
+DROP TABLE IF EXISTS `agency_profiles`;
+DROP TABLE IF EXISTS `partnership_applications`;
+DROP TABLE IF EXISTS `admin_action_logs`;
+DROP TABLE IF EXISTS `admin_profiles`;
+DROP TABLE IF EXISTS `fan_badge`;
+DROP TABLE IF EXISTS `filter_keyword`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `agencies`;
+
+-- ------------------------------------------------------------
 -- CREATE (부모 -> 자식)
 -- ------------------------------------------------------------
 
 -- agencies: 소속사 마스터 (users.agency_id 가 참조하므로 users 보다 먼저 생성)
-CREATE TABLE IF NOT EXISTS `agencies` (
+CREATE TABLE `agencies` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '소속사 PK',
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '소속사명',
   `business_no` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '사업자등록번호',
@@ -80,7 +144,7 @@ CREATE TABLE IF NOT EXISTS `agencies` (
 
 -- users: 팬/아티스트/소속사/관리자 공통 계정 (AUTH)
 --        agency_id: 아티스트 계정의 소속사 표시용 (신규 추가 컬럼)
-CREATE TABLE IF NOT EXISTS `users` (
+CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '회원 PK',
   `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '로그인 아이디',
   `password` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '비밀번호(BCrypt 해시, 소셜 전용 가입자는 NULL)',
@@ -126,7 +190,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
 
 -- filter_keyword: 채팅 금칙어
-CREATE TABLE IF NOT EXISTS `filter_keyword` (
+CREATE TABLE `filter_keyword` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '키워드 PK',
   `keyword` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '필터링 대상 문자열',
   PRIMARY KEY (`id`),
@@ -134,7 +198,7 @@ CREATE TABLE IF NOT EXISTS `filter_keyword` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='채팅 부적절 언어 필터 키워드';
 
 -- fan_badge: 배지 카탈로그(마스터, 전 아티스트 공통)
-CREATE TABLE IF NOT EXISTS `fan_badge` (
+CREATE TABLE `fan_badge` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '배지 PK',
   `badge_code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 코드(전체 고유)',
   `badge_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배지 표시명',
@@ -151,7 +215,7 @@ CREATE TABLE IF NOT EXISTS `fan_badge` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='배지 카탈로그(전 아티스트 공통)';
 
 -- admin_profiles: 운영자(ADMIN) 프로필
-CREATE TABLE IF NOT EXISTS `admin_profiles` (
+CREATE TABLE `admin_profiles` (
   `user_id` bigint NOT NULL COMMENT 'users.id (ADMIN 1:1)',
   `admin_level` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'STAFF' COMMENT '관리 등급: SUPER/STAFF',
   `department` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '소속 부서',
@@ -163,7 +227,7 @@ CREATE TABLE IF NOT EXISTS `admin_profiles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='운영자(ADMIN) 프로필';
 
 -- admin_action_logs: 운영 조치 감사 로그
-CREATE TABLE IF NOT EXISTS `admin_action_logs` (
+CREATE TABLE `admin_action_logs` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '로그 PK',
   `actor_id` bigint NOT NULL COMMENT '조치 수행 운영자(users.id)',
   `action` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '조치 유형(제재/승인 등)',
@@ -178,8 +242,64 @@ CREATE TABLE IF NOT EXISTS `admin_action_logs` (
   CONSTRAINT `fk_aal_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='운영자 조치 감사 로그';
 
+-- partnership_applications: 아티스트·소속사 등록 신청
+CREATE TABLE `partnership_applications` (
+ `id` bigint NOT NULL AUTO_INCREMENT COMMENT '입점 신청 PK',
+ `applicant_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신청 유형: ARTIST/AGENCY',
+ `applicant_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '아티스트명 또는 소속사명',
+ `contact_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '담당자명',
+ `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '회신 이메일',
+ `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '연락처',
+ `message` varchar(2000) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신청 내용',
+ `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING_APPROVAL' COMMENT '처리 상태',
+ `reviewed_by` bigint DEFAULT NULL COMMENT '검토 관리자(users.id)',
+ `reviewed_at` datetime(6) DEFAULT NULL COMMENT '검토 시각',
+ `rejection_reason` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '반려 사유',
+ `created_at` datetime(6) NOT NULL COMMENT '신청 시각',
+ `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+PRIMARY KEY (`id`),
+  KEY `idx_pa_status_created` (`status`, `created_at`),
+  KEY `idx_pa_type_status` (`applicant_type`, `status`),
+  KEY `idx_pa_email` (`email`),
+  KEY `idx_pa_reviewer` (`reviewed_by`, `reviewed_at`),
+CONSTRAINT `fk_pa_reviewer`
+FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`),
+CONSTRAINT `ck_pa_applicant_type`
+ CHECK (`applicant_type` IN (_utf8mb4'ARTIST', _utf8mb4'AGENCY')),
+CONSTRAINT `ck_pa_status`
+ CHECK (`status` IN (
+ _utf8mb4'PENDING_APPROVAL',
+ _utf8mb4'APPROVED',
+ _utf8mb4'REJECTED'
+ )),
+CONSTRAINT `ck_pa_review_state`
+ CHECK (
+  (
+   `status` = _utf8mb4'PENDING_APPROVAL'
+   AND `reviewed_by` IS NULL
+   AND `reviewed_at` IS NULL
+   AND `rejection_reason` IS NULL
+  )
+ OR (
+   `status` = _utf8mb4'APPROVED'
+   AND `reviewed_by` IS NOT NULL
+   AND `reviewed_at` IS NOT NULL
+   AND `rejection_reason` IS NULL
+  )
+ OR (
+   `status` = _utf8mb4'REJECTED'
+   AND `reviewed_by` IS NOT NULL
+   AND `reviewed_at` IS NOT NULL
+   AND `rejection_reason` IS NOT NULL
+  )
+ )
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci
+  COMMENT='아티스트·소속사 등록 신청';
+
 -- agency_profiles: 소속사 담당자(AGENCY) 프로필
-CREATE TABLE IF NOT EXISTS `agency_profiles` (
+CREATE TABLE `agency_profiles` (
   `user_id` bigint NOT NULL COMMENT 'users.id (AGENCY 1:1)',
   `agency_id` bigint NOT NULL COMMENT '소속 소속사(agencies.id)',
   `department` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '담당 부서',
@@ -196,7 +316,7 @@ CREATE TABLE IF NOT EXISTS `agency_profiles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='소속사 담당자(AGENCY) 프로필';
 
 -- artist_profiles: 아티스트 계정 전용 프로필
-CREATE TABLE IF NOT EXISTS `artist_profiles` (
+CREATE TABLE `artist_profiles` (
   `user_id` bigint NOT NULL COMMENT 'users.id (ARTIST 1:1)',
   `agency_id` bigint NOT NULL COMMENT '소속 소속사(agencies.id)',
   `stage_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '활동명(스테이지명)',
@@ -211,7 +331,7 @@ CREATE TABLE IF NOT EXISTS `artist_profiles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 계정 전용 프로필';
 
 -- artist_groups: 아티스트 그룹/커뮤니티
-CREATE TABLE IF NOT EXISTS `artist_groups` (
+CREATE TABLE `artist_groups` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '그룹(커뮤니티) PK',
   `agency_id` bigint NOT NULL COMMENT '소속 소속사(agencies.id)',
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '그룹명(한글)',
@@ -229,7 +349,7 @@ CREATE TABLE IF NOT EXISTS `artist_groups` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 그룹/커뮤니티';
 
 -- artist_profile: 아티스트 커뮤니티 포털 테마/소개
-CREATE TABLE IF NOT EXISTS `artist_profile` (
+CREATE TABLE `artist_profile` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '포털 프로필 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
   `intro` text COLLATE utf8mb4_unicode_ci COMMENT '커뮤니티 포털 소개문',
@@ -243,7 +363,7 @@ CREATE TABLE IF NOT EXISTS `artist_profile` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 커뮤니티 포털 테마/소개';
 
 -- artist_group_profiles: 커뮤니티 탐색 필터용 메타
-CREATE TABLE IF NOT EXISTS `artist_group_profiles` (
+CREATE TABLE `artist_group_profiles` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '탐색 프로필 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
   `gender` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '그룹/아티스트 성별(탐색 필터)',
@@ -258,7 +378,7 @@ CREATE TABLE IF NOT EXISTS `artist_group_profiles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티 탐색 필터용 메타';
 
 -- group_members: 그룹-아티스트 소속 이력
-CREATE TABLE IF NOT EXISTS `group_members` (
+CREATE TABLE `group_members` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '멤버십 이력 PK',
   `group_id` bigint NOT NULL COMMENT '그룹(artist_groups.id)',
   `artist_id` bigint NOT NULL COMMENT '아티스트(artist_profiles.user_id)',
@@ -273,19 +393,26 @@ CREATE TABLE IF NOT EXISTS `group_members` (
   CONSTRAINT `ck_gm_period` CHECK ((`left_at` IS NULL) OR (`left_at` >= `joined_at`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹–아티스트 소속 이력';
 
--- group_follow: 팬–그룹 팔로우
-CREATE TABLE IF NOT EXISTS `group_follow` (
-  `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
-  `group_id` bigint NOT NULL COMMENT '팔로우한 그룹(artist_groups.id)',
+-- user_follows: GroupFollow/UserFollow 통합. 사람↔사람(팬↔팬, 팬↔아티스트 계정) 팔로우.
+-- 팔로우는 특정 커뮤니티(community_id)에 종속된다 - 같은 두 사람이 여러 커뮤니티에 함께 가입돼
+-- 있어도 팔로우는 커뮤니티마다 별개의 관계이며, 한쪽이 그 커뮤니티를 탈퇴하면 그 커뮤니티 소속
+-- 팔로우 관계만 함께 삭제된다(CommunityJoinService.leave). 팬→아티스트 팔로우는 following_id ==
+-- community_id(그 아티스트의 users.id)다.
+CREATE TABLE `user_follows` (
+  `follower_id` bigint NOT NULL COMMENT '팔로우 하는 사람(users.id)',
+  `following_id` bigint NOT NULL COMMENT '팔로우 당하는 사람(users.id)',
+  `community_id` bigint NOT NULL COMMENT '이 팔로우가 속한 커뮤니티(그 커뮤니티 아티스트의 users.id)',
   `created_at` datetime(6) NOT NULL COMMENT '팔로우 시각',
-  PRIMARY KEY (`fan_id`, `group_id`),
-  KEY `fk_gf_group` (`group_id`),
-  CONSTRAINT `fk_gf_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `fk_gf_group` FOREIGN KEY (`group_id`) REFERENCES `artist_groups` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬–그룹 팔로우';
+  PRIMARY KEY (`follower_id`, `following_id`, `community_id`),
+  KEY `fk_uf_following` (`following_id`),
+  KEY `fk_uf_community` (`community_id`),
+  CONSTRAINT `fk_uf_follower` FOREIGN KEY (`follower_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_uf_following` FOREIGN KEY (`following_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_uf_community` FOREIGN KEY (`community_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='사람↔사람 팔로우(커뮤니티에 종속)';
 
 -- membership: 팬–아티스트 유료 멤버십
-CREATE TABLE IF NOT EXISTS `membership` (
+CREATE TABLE `membership` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '멤버십 PK',
   `created_at` datetime(6) NOT NULL COMMENT '가입 시각',
   `expires_at` datetime(6) NOT NULL COMMENT '만료 시각(만료 시 DM 제한)',
@@ -300,7 +427,7 @@ CREATE TABLE IF NOT EXISTS `membership` (
 
 -- membership_period: 멤버십 가입/갱신 이력 (연속 N년 배지 판정용)
 --   streak_count : 새 시작일이 직전 만료일 + 7일 안이면 +1, 넘으면 1
-CREATE TABLE IF NOT EXISTS `membership_period` (
+CREATE TABLE `membership_period` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '멤버십 기간 PK',
   `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
@@ -318,7 +445,7 @@ CREATE TABLE IF NOT EXISTS `membership_period` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 가입/갱신 이력';
 
 -- artist_block: 아티스트 유저 차단
-CREATE TABLE IF NOT EXISTS `artist_block` (
+CREATE TABLE `artist_block` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '차단 PK',
   `artist_id` bigint NOT NULL COMMENT '차단한 아티스트(users.id)',
   `blocked_user_id` bigint NOT NULL COMMENT '차단된 유저(users.id)',
@@ -333,7 +460,7 @@ CREATE TABLE IF NOT EXISTS `artist_block` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 유저 차단';
 
 -- artist_schedule: 아티스트 스케줄
-CREATE TABLE IF NOT EXISTS `artist_schedule` (
+CREATE TABLE `artist_schedule` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '일정 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
   `category` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT 'OTHER' COMMENT '스케줄 카테고리(TV_BROADCAST/YOUTUBE/CONCERT/RADIO/AWARDS/PHOTO_MAGAZINE/BIRTHDAY/OTHER)',
@@ -350,7 +477,7 @@ CREATE TABLE IF NOT EXISTS `artist_schedule` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 스케줄';
 
 -- artist_attendance: 아티스트 홈페이지 출석(발바닥)
-CREATE TABLE IF NOT EXISTS `artist_attendance` (
+CREATE TABLE `artist_attendance` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '출석 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
   `visit_date` date NOT NULL COMMENT '홈페이지 방문일',
@@ -363,7 +490,7 @@ CREATE TABLE IF NOT EXISTS `artist_attendance` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 홈페이지 출석(발바닥)';
 
 -- portal_notice: 아티스트 커뮤니티 공지
-CREATE TABLE IF NOT EXISTS `portal_notice` (
+CREATE TABLE `portal_notice` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '공지 PK',
   `artist_id` bigint NOT NULL COMMENT '커뮤니티 아티스트(users.id)',
   `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '공지 제목',
@@ -380,7 +507,7 @@ CREATE TABLE IF NOT EXISTS `portal_notice` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 커뮤니티 공지';
 
 -- live_session: 아티스트 라이브 방송 세션 (아티스트당 LIVE 1개)
-CREATE TABLE IF NOT EXISTS `live_session` (
+CREATE TABLE `live_session` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 세션 PK',
   `artist_id` bigint NOT NULL COMMENT '방송 아티스트(users.id)',
   `host_id` bigint NOT NULL COMMENT '송출 호스트(아티스트 또는 에이전시 users.id)',
@@ -395,7 +522,7 @@ CREATE TABLE IF NOT EXISTS `live_session` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 라이브 방송 세션';
 
 -- live_comment: 라이브 방송 중 실시간 댓글
-CREATE TABLE IF NOT EXISTS `live_comment` (
+CREATE TABLE `live_comment` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 댓글 PK',
   `session_id` bigint NOT NULL COMMENT 'live_session.id',
   `author_id` bigint NOT NULL COMMENT '작성자(users.id)',
@@ -409,7 +536,7 @@ CREATE TABLE IF NOT EXISTS `live_comment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 실시간 댓글';
 
 -- live_comment_report: 라이브 댓글 신고
-CREATE TABLE IF NOT EXISTS `live_comment_report` (
+CREATE TABLE `live_comment_report` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '라이브 댓글 신고 PK',
   `comment_id` bigint NOT NULL COMMENT 'live_comment.id',
   `reporter_id` bigint NOT NULL COMMENT '신고자(users.id)',
@@ -423,7 +550,7 @@ CREATE TABLE IF NOT EXISTS `live_comment_report` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='라이브 방송 댓글 신고';
 
 -- site_notice: 홈페이지 관리 공지사항
-CREATE TABLE IF NOT EXISTS `site_notice` (
+CREATE TABLE `site_notice` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '홈페이지 공지 PK',
   `author_id` bigint NOT NULL COMMENT '작성 관리자(users.id)',
   `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '공지 제목',
@@ -443,7 +570,7 @@ CREATE TABLE IF NOT EXISTS `site_notice` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='홈페이지 관리 공지사항';
 
 -- community_members: 팬의 아티스트 커뮤니티 가입
-CREATE TABLE IF NOT EXISTS `community_members` (
+CREATE TABLE `community_members` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '가입 PK',
   `fan_id` bigint NOT NULL COMMENT '가입 팬(users.id)',
   `artist_id` bigint NOT NULL COMMENT '커뮤니티 아티스트(users.id)',
@@ -456,7 +583,7 @@ CREATE TABLE IF NOT EXISTS `community_members` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬의 아티스트 커뮤니티 가입';
 
 -- community_profiles: 커뮤니티별 독립 프로필 (중복 정의 제거, content_hidden 포함해서 1개로 통합)
-CREATE TABLE IF NOT EXISTS `community_profiles` (
+CREATE TABLE `community_profiles` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '커뮤니티 프로필 PK',
   `community_member_id` bigint NOT NULL COMMENT 'community_members.id (1:1)',
   `nickname` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '해당 커뮤니티 전용 닉네임',
@@ -472,7 +599,7 @@ CREATE TABLE IF NOT EXISTS `community_profiles` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티별 독립 프로필';
 
 -- post: 커뮤니티 게시글
-CREATE TABLE IF NOT EXISTS `post` (
+CREATE TABLE `post` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '게시글 PK',
   `board_type` enum('ARTIST', 'FAN') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '게시판 구분: ARTIST/FAN',
   `artist_id` bigint DEFAULT NULL COMMENT '커뮤니티 소속 아티스트(users.id)',
@@ -491,7 +618,7 @@ CREATE TABLE IF NOT EXISTS `post` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='커뮤니티 게시글';
 
 -- post_attachment: 게시글 첨부파일
-CREATE TABLE IF NOT EXISTS `post_attachment` (
+CREATE TABLE `post_attachment` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '첨부 PK',
   `content_type` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'MIME 타입',
   `created_at` datetime(6) NOT NULL COMMENT '업로드 시각',
@@ -506,7 +633,7 @@ CREATE TABLE IF NOT EXISTS `post_attachment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 첨부파일';
 
 -- post_like: 게시글 좋아요
-CREATE TABLE IF NOT EXISTS `post_like` (
+CREATE TABLE `post_like` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '좋아요 PK',
   `created_at` datetime(6) NOT NULL COMMENT '좋아요 시각',
   `post_id` bigint NOT NULL COMMENT '게시글(post.id)',
@@ -519,7 +646,7 @@ CREATE TABLE IF NOT EXISTS `post_like` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 좋아요';
 
 -- post_bookmark: 게시글 북마크
-CREATE TABLE IF NOT EXISTS `post_bookmark` (
+CREATE TABLE `post_bookmark` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '북마크 PK',
   `created_at` datetime(6) NOT NULL COMMENT '북마크 시각',
   `post_id` bigint NOT NULL COMMENT '게시글(post.id)',
@@ -532,7 +659,7 @@ CREATE TABLE IF NOT EXISTS `post_bookmark` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 북마크';
 
 -- comment: 게시글 댓글
-CREATE TABLE IF NOT EXISTS `comment` (
+CREATE TABLE `comment` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '댓글 PK',
   `content` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '댓글 내용',
   `created_at` datetime(6) NOT NULL COMMENT '작성 시각',
@@ -549,7 +676,7 @@ CREATE TABLE IF NOT EXISTS `comment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 댓글';
 
 -- comment_report: 댓글 신고
-CREATE TABLE IF NOT EXISTS `comment_report` (
+CREATE TABLE `comment_report` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '신고 PK',
   `created_at` datetime(6) NOT NULL COMMENT '신고 시각',
   `reason` enum('ABUSE', 'ETC', 'SEXUAL', 'SPAM') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신고 사유',
@@ -565,7 +692,7 @@ CREATE TABLE IF NOT EXISTS `comment_report` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='댓글 신고';
 
 -- report: 게시글 신고
-CREATE TABLE IF NOT EXISTS `report` (
+CREATE TABLE `report` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '신고 PK',
   `created_at` datetime(6) NOT NULL COMMENT '신고 시각',
   `reason` enum('ABUSE', 'ETC', 'SEXUAL', 'SPAM') COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신고 사유',
@@ -581,7 +708,7 @@ CREATE TABLE IF NOT EXISTS `report` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 신고';
 
 -- board_media: 그룹별 미디어 게시판
-CREATE TABLE IF NOT EXISTS `board_media` (
+CREATE TABLE `board_media` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '미디어 게시글 PK',
   `group_id` bigint NOT NULL COMMENT '그룹(artist_groups.id)',
   `uploader_id` bigint NOT NULL COMMENT '업로더(users.id, 주로 소속사)',
@@ -591,6 +718,7 @@ CREATE TABLE IF NOT EXISTS `board_media` (
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '삭제(soft delete) 시각',
   `like_count` int NOT NULL DEFAULT '0' COMMENT '좋아요 수(비정규화 카운트)',
+  `membership_only` tinyint(1) NOT NULL DEFAULT 0 COMMENT '멤버십 전용 여부 (1=전용)',
   PRIMARY KEY (`id`),
   KEY `idx_bm_group` (`group_id`, `created_at`),
   KEY `idx_bm_uploader` (`uploader_id`),
@@ -599,7 +727,7 @@ CREATE TABLE IF NOT EXISTS `board_media` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹별 미디어 게시판';
 
 -- board_media_files: 미디어 게시글 첨부 파일
-CREATE TABLE IF NOT EXISTS `board_media_files` (
+CREATE TABLE `board_media_files` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '미디어 파일 PK',
   `board_id` bigint NOT NULL COMMENT '미디어 게시글(board_media.id)',
   `original_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '원본 파일명(표시용)',
@@ -617,7 +745,7 @@ CREATE TABLE IF NOT EXISTS `board_media_files` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 첨부 파일';
 
 -- board_media_like: 미디어 게시글 좋아요
-CREATE TABLE IF NOT EXISTS `board_media_like` (
+CREATE TABLE `board_media_like` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '좋아요 PK',
   `board_id` bigint NOT NULL COMMENT '미디어 게시글(board_media.id)',
   `user_id` bigint NOT NULL COMMENT '좋아요한 회원(users.id)',
@@ -630,7 +758,7 @@ CREATE TABLE IF NOT EXISTS `board_media_like` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='미디어 게시글 좋아요';
 
 -- shop_goods: 에이전시 등록 굿즈
-CREATE TABLE IF NOT EXISTS `shop_goods` (
+CREATE TABLE `shop_goods` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '굿즈 PK',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id)',
   `name` varchar(200) NOT NULL COMMENT '상품명',
@@ -641,6 +769,7 @@ CREATE TABLE IF NOT EXISTS `shop_goods` (
   `status` varchar(20) NOT NULL COMMENT 'ON_SALE / HIDDEN (공개여부, 품절과 무관)',
   `sort_order` int NOT NULL DEFAULT 0 COMMENT '유저 샵 노출 순서(오름차순)',
   `membership_only` tinyint(1) NOT NULL DEFAULT 0 COMMENT '멤버십 전용 여부 (1=전용)',
+  `shop_category` varchar(20) NOT NULL DEFAULT 'MD' COMMENT '샵 필터: MD / DIGITAL / MEMBERSHIP',
   `deleted_at` datetime(6) DEFAULT NULL COMMENT '소프트 삭제 시각',
   `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
   `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
@@ -651,7 +780,7 @@ CREATE TABLE IF NOT EXISTS `shop_goods` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='에이전시 등록 굿즈';
 
 -- shop_goods_category: 굿즈 카테고리
-CREATE TABLE IF NOT EXISTS `shop_goods_category` (
+CREATE TABLE `shop_goods_category` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `goods_id` bigint NOT NULL,
   `category` varchar(20) NOT NULL COMMENT 'CLOTHING/SHOES/BAG/ACCESSORY/OTHER',
@@ -661,7 +790,7 @@ CREATE TABLE IF NOT EXISTS `shop_goods_category` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈 카테고리';
 
 -- shop_goods_option: 가방 치수·자유 메모 등 (재고 없음)
-CREATE TABLE IF NOT EXISTS `shop_goods_option` (
+CREATE TABLE `shop_goods_option` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `goods_id` bigint NOT NULL,
   `category` varchar(20) NOT NULL,
@@ -673,7 +802,7 @@ CREATE TABLE IF NOT EXISTS `shop_goods_option` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈 옵션(치수·메모, 재고 없음)';
 
 -- shop_goods_variant: 판매단위 + 옵션별 재고 (굿즈+옵션값 조합)
-CREATE TABLE IF NOT EXISTS `shop_goods_variant` (
+CREATE TABLE `shop_goods_variant` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `goods_id` bigint NOT NULL,
   `option_key` varchar(30) NOT NULL COMMENT 'SIZE / SHOE_MM / DEFAULT',
@@ -686,7 +815,7 @@ CREATE TABLE IF NOT EXISTS `shop_goods_variant` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈 옵션별 재고(Variant)';
 
 -- shop_cart_item: 굿즈샵 장바구니
-CREATE TABLE IF NOT EXISTS `shop_cart_item` (
+CREATE TABLE `shop_cart_item` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '장바구니 항목 PK',
   `user_id` bigint NOT NULL COMMENT '회원(users.id)',
   `product_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '목업 카탈로그 상품 ID',
@@ -701,7 +830,7 @@ CREATE TABLE IF NOT EXISTS `shop_cart_item` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 장바구니';
 
 -- chat_message: 팬–아티스트 채팅 메시지
-CREATE TABLE IF NOT EXISTS `chat_message` (
+CREATE TABLE `chat_message` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '메시지 PK',
   `content` text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '메시지 본문',
   `created_at` datetime(6) NOT NULL COMMENT '전송 시각',
@@ -719,7 +848,7 @@ CREATE TABLE IF NOT EXISTS `chat_message` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬–아티스트 채팅 메시지';
 
 -- chat_quota: 채팅 전송 횟수 쿼터
-CREATE TABLE IF NOT EXISTS `chat_quota` (
+CREATE TABLE `chat_quota` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '쿼터 PK',
   `charged_date` date NOT NULL COMMENT '쿼터 충전(기준)일',
   `remaining_count` int NOT NULL COMMENT '남은 전송 횟수',
@@ -733,7 +862,7 @@ CREATE TABLE IF NOT EXISTS `chat_quota` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='채팅 전송 횟수 쿼터';
 
 -- fan_badge_ownership: 팬 배지 보유/회수 (badge_code 로 fan_badge 와 논리적 연결)
-CREATE TABLE IF NOT EXISTS `fan_badge_ownership` (
+CREATE TABLE `fan_badge_ownership` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '배지 보유 PK',
   `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
   `artist_id` bigint NOT NULL COMMENT '아티스트(users.id) - 커뮤니티 단위',
@@ -757,7 +886,7 @@ CREATE TABLE IF NOT EXISTS `fan_badge_ownership` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 배지 보유/회수';
 
 -- email_verification: 회원가입, 팬 프로젝트 및 관리자 로그인 이메일 인증
-CREATE TABLE IF NOT EXISTS `email_verification` (
+CREATE TABLE `email_verification` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '이메일 인증 PK',
   `user_id` bigint DEFAULT NULL COMMENT '프로젝트 인증 회원(users.id), 회원가입 인증은 NULL',
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '인증 대상 이메일',
@@ -782,7 +911,7 @@ CREATE TABLE IF NOT EXISTS `email_verification` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원가입, 팬 프로젝트 및 관리자 로그인 이메일 인증';
 
 -- fan_project: 팬 프로젝트(개설·승인·모금) - creator_id 타입 오타 수정 완료
-CREATE TABLE IF NOT EXISTS `fan_project` (
+CREATE TABLE `fan_project` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '프로젝트 PK',
   `artist_id` bigint NOT NULL COMMENT '대상 아티스트 커뮤니티(users.id)',
   `creator_id` bigint NOT NULL COMMENT '개설 신청자(users.id)',
@@ -831,7 +960,7 @@ CREATE TABLE IF NOT EXISTS `fan_project` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 프로젝트(개설·승인·모금)';
 
 -- fan_project_cover_image: 팬 프로젝트 커버 이미지
-CREATE TABLE IF NOT EXISTS `fan_project_cover_image` (
+CREATE TABLE `fan_project_cover_image` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '커버 이미지 PK',
   `project_id` bigint NOT NULL COMMENT '프로젝트(fan_project.id) 1:1',
   `original_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '원본 파일명',
@@ -848,7 +977,7 @@ CREATE TABLE IF NOT EXISTS `fan_project_cover_image` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 프로젝트 커버 이미지';
 
 -- fan_project_contribution: 팬 프로젝트 후원/결제
-CREATE TABLE IF NOT EXISTS `fan_project_contribution` (
+CREATE TABLE `fan_project_contribution` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '후원/결제 PK',
   `project_id` bigint NOT NULL COMMENT '프로젝트(fan_project.id)',
   `contributor_id` bigint NOT NULL COMMENT '후원자(users.id)',
@@ -857,11 +986,14 @@ CREATE TABLE IF NOT EXISTS `fan_project_contribution` (
   `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'MOCK' COMMENT '결제 제공자',
   `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '제공자 거래 ID',
   `amount` bigint NOT NULL COMMENT '결제 금액(원)',
-  `depositor_name` varbinary(255) NOT NULL COMMENT '입금자명(현재 변환 저장, 추후 암호화)',
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '가상계좌 은행 코드(토스 코드)',
+  `virtual_account_number` varbinary(255) DEFAULT NULL COMMENT '가상계좌 번호(현재 변환 저장, 추후 암호화)',
+  `due_date` datetime(6) DEFAULT NULL COMMENT '가상계좌 입금기한',
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '입금 웹훅 검증값(외부 노출 금지)',
   `is_anonymous` tinyint(1) NOT NULL DEFAULT '0' COMMENT '닉네임 비공개 참여 여부: 0/1',
   `refund_policy_agreed_at` datetime(6) NOT NULL COMMENT '환불 규정 동의 시각',
   `refund_amount` bigint NOT NULL DEFAULT '0' COMMENT '환불 금액(원)',
-  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY' COMMENT '결제 상태: READY/PAID/FAILED 등',
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY' COMMENT '결제 상태: READY/WAITING_FOR_DEPOSIT/PAID/FAILED/EXPIRED/CANCELLED/REFUND_REQUESTED/REFUNDED',
   `paid_at` datetime(6) DEFAULT NULL COMMENT '결제 완료 시각',
   `cancelled_at` datetime(6) DEFAULT NULL COMMENT '취소 시각',
   `refunded_at` datetime(6) DEFAULT NULL COMMENT '환불 시각',
@@ -879,13 +1011,13 @@ CREATE TABLE IF NOT EXISTS `fan_project_contribution` (
   CONSTRAINT `ck_fan_project_contribution_anonymous` CHECK (`is_anonymous` IN (0, 1)),
   CONSTRAINT `ck_fan_project_contribution_refund` CHECK ((`refund_amount` >= 0) AND (`refund_amount` <= `amount`)),
   CONSTRAINT `ck_fan_project_contribution_status` CHECK (`payment_status` IN (
-    _utf8mb4'READY', _utf8mb4'PAID', _utf8mb4'FAILED',
-    _utf8mb4'CANCELLED', _utf8mb4'REFUND_REQUESTED', _utf8mb4'REFUNDED'
+    _utf8mb4'READY', _utf8mb4'WAITING_FOR_DEPOSIT', _utf8mb4'PAID', _utf8mb4'FAILED',
+    _utf8mb4'EXPIRED', _utf8mb4'CANCELLED', _utf8mb4'REFUND_REQUESTED', _utf8mb4'REFUNDED'
   ))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 프로젝트 후원/결제';
 
 -- fan_project_settlement_account: 팬 프로젝트 정산 계좌
-CREATE TABLE IF NOT EXISTS `fan_project_settlement_account` (
+CREATE TABLE `fan_project_settlement_account` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '정산 계좌 PK',
   `project_id` bigint NOT NULL COMMENT '프로젝트(fan_project.id) 1:1',
   `bank_code` char(3) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '은행코드(3자리)',
@@ -909,7 +1041,7 @@ CREATE TABLE IF NOT EXISTS `fan_project_settlement_account` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 프로젝트 정산 계좌';
 
 -- fan_project_fraud_check: 팬 프로젝트 사기조회
-CREATE TABLE IF NOT EXISTS `fan_project_fraud_check` (
+CREATE TABLE `fan_project_fraud_check` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '사기조회 PK',
   `project_id` bigint NOT NULL COMMENT '프로젝트(fan_project.id)',
   `target_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '조회 대상: ACCOUNT',
@@ -941,7 +1073,7 @@ CREATE TABLE IF NOT EXISTS `fan_project_fraud_check` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬 프로젝트 사기조회';
 
 -- group_schedule: 그룹 스케줄/캘린더
-CREATE TABLE IF NOT EXISTS `group_schedule` (
+CREATE TABLE `group_schedule` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '그룹 일정 PK',
   `group_id` bigint NOT NULL COMMENT '그룹(artist_groups.id)',
   `created_by` bigint NOT NULL COMMENT '등록자(users.id)',
@@ -964,7 +1096,7 @@ CREATE TABLE IF NOT EXISTS `group_schedule` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹 스케줄/캘린더';
 
 -- notification: 회원 알림
-CREATE TABLE IF NOT EXISTS `notification` (
+CREATE TABLE `notification` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '알림 PK',
   `recipient_id` bigint NOT NULL COMMENT '수신자(users.id)',
   `type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '알림 유형(공지/댓글/채팅 등)',
@@ -980,7 +1112,7 @@ CREATE TABLE IF NOT EXISTS `notification` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원 알림';
 
 -- notification_setting: 알림 유형별 수신 설정
-CREATE TABLE IF NOT EXISTS `notification_setting` (
+CREATE TABLE `notification_setting` (
   `user_id` bigint NOT NULL COMMENT '회원(users.id)',
   `type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '알림 유형',
   `enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '해당 유형 수신 on/off',
@@ -994,7 +1126,7 @@ SET UNIQUE_CHECKS = 1;
 -- ============================================================
 -- [2] 배지 카탈로그 25종 (일반 15 + 스페셜 10) - 전 아티스트 공통
 -- ============================================================
-INSERT IGNORE INTO `fan_badge`
+INSERT INTO `fan_badge`
   (`badge_code`, `badge_name`, `badge_type`, `icon`, `image_url`, `description`, `sort_order`, `created_at`)
 VALUES
   ('BASIC_FIRST_JOIN',    '커뮤니티 첫 가입',      'BASIC', '🎉', 'community-first-join.svg',  '커뮤니티에 처음 가입하면 획득',              1,  NOW(6)),
@@ -1026,7 +1158,7 @@ VALUES
 -- ============================================================
 -- [3] 소속사 시드
 -- ============================================================
-INSERT IGNORE INTO `agencies` (`name`, `business_no`, `ceo_name`, `status`, `created_at`, `updated_at`)
+INSERT INTO `agencies` (`name`, `business_no`, `ceo_name`, `status`, `created_at`, `updated_at`)
 VALUES
   ('휘원공주정식왕자',   '000-00-00001', '테스트대표', 'ACTIVE', NOW(6), NOW(6)),
   ('혜선우주최강',       '000-00-00002', '테스트대표', 'ACTIVE', NOW(6), NOW(6));
@@ -1035,7 +1167,7 @@ VALUES
 -- [4] 테스트 계정 시드 (비밀번호 공통: Test1234)
 --     artist_hwiwon / artist_jungsik 은 위 소속사(agency_id)에 배정
 -- ============================================================
-INSERT IGNORE INTO `users`
+INSERT INTO `users`
   (`username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
   ('artist_hwiwon',  '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '휘원',      '휘원공주',      'hwiwon@weplanet.test',     NOW(6), NOW(6), NOW(6)),
@@ -1051,11 +1183,11 @@ VALUES
   ('aifan_yuna',     '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '햇살유나',  '햇살유나',      'aifan_yuna@weplanet.test', NOW(6), NOW(6), NOW(6));
 
 -- artist_profiles / artist_groups 등 다른 소속사 참조 컬럼도 같은 소속사로 맞춰줌
-INSERT IGNORE INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
+INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
 SELECT u.id, u.agency_id, CASE u.username WHEN 'artist_hwiwon' THEN '휘원' ELSE '정식' END, '2023-01-01', 'VOCAL', '테스트용 아티스트 소개'
 FROM `users` u WHERE u.username IN ('artist_hwiwon', 'artist_jungsik');
 
-INSERT IGNORE INTO `artist_groups` (`agency_id`, `name`, `name_en`, `fandom_name`, `debut_date`, `status`, `created_at`, `updated_at`)
+INSERT INTO `artist_groups` (`agency_id`, `name`, `name_en`, `fandom_name`, `debut_date`, `status`, `created_at`, `updated_at`)
 SELECT DISTINCT a.agency_id, '테스트그룹', 'TestGroup', '테스트팬덤', '2023-01-01', 'ACTIVE', NOW(6), NOW(6)
 FROM `users` a WHERE a.username = 'artist_hwiwon';
 
@@ -1065,7 +1197,7 @@ FROM `users` a WHERE a.username = 'artist_hwiwon';
 --   agency_hs        AGENCY  소속사: 혜선우주최강
 --   artist_hyeseon   ARTIST  소속사: 혜선우주최강, 활동명: 혜선여왕
 -- ============================================================
-INSERT IGNORE INTO `users`
+INSERT INTO `users`
   (`username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
   ('agency_wp',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '휘원공주정식왕자'), '휘원공주정식왕자담당자', '휘원공주정식왕자매니저', 'agency_wp@weplanet.test', NOW(6), NOW(6), NOW(6)),
@@ -1073,12 +1205,12 @@ VALUES
   ('artist_hyeseon', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선',                   '혜선여왕',               'hyeseon@weplanet.test',   NOW(6), NOW(6), NOW(6));
 
 -- agency_profiles: AGENCY 역할 계정은 1:1 프로필이 필요
-INSERT IGNORE INTO `agency_profiles` (`user_id`, `agency_id`, `department`, `position`, `is_owner`, `approved_by`, `approved_at`)
+INSERT INTO `agency_profiles` (`user_id`, `agency_id`, `department`, `position`, `is_owner`, `approved_by`, `approved_at`)
 SELECT u.id, u.agency_id, '매니지먼트팀', '담당자', 0, NULL, NULL
 FROM `users` u WHERE u.username IN ('agency_wp', 'agency_hs');
 
 -- artist_profiles: artist_hyeseon 도 같은 방식으로 등록
-INSERT IGNORE INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
+INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
 SELECT u.id, u.agency_id, '혜선여왕', '2023-01-01', 'VOCAL', '테스트용 아티스트 소개'
 FROM `users` u WHERE u.username = 'artist_hyeseon';
 
@@ -1086,345 +1218,16 @@ FROM `users` u WHERE u.username = 'artist_hyeseon';
 -- [5] 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
 --   배지(fan_badge_ownership)는 더 이상 시드로 넣지 않는다.
 --   실제 활동/기간 조건을 채우면 BadgeAwardService 를 통해 지급된다.
+--   GroupFollow/UserFollow 통합: 아티스트 팔로우는 이제 user_follows에 community_id(=그 아티스트의
+--   users.id) 값과 함께 들어간다. group_id가 곧 그 아티스트 User.id이므로 following_id/community_id 둘 다 g.id.
 -- ============================================================
-INSERT IGNORE INTO `group_follow` (`fan_id`, `group_id`, `created_at`)
-SELECT f.id, g.id, NOW(6)
+INSERT INTO `user_follows` (`follower_id`, `following_id`, `community_id`, `created_at`)
+SELECT f.id, g.id, g.id, NOW(6)
 FROM `users` f
 JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
 
--- ============================================================
--- [6] 예전부터 쓰던 DB 보정 — 이미 있는 테이블에 빠진 컬럼을 채운다
 -- ------------------------------------------------------------
--- 위쪽의 CREATE TABLE IF NOT EXISTS 는 "테이블이 이미 있으면" 아무것도 하지 않는다.
--- 그래서 예전 버전 테이블을 쓰는 팀원은 테이블은 있는데 컬럼만 없는 상태가 된다.
--- 아래 프로시저가 컬럼/인덱스/제약을 하나씩 확인해서 없는 것만 추가한다.
--- 빈 DB에서 실행하면 전부 이미 있는 상태라 그냥 지나간다.
--- ============================================================
-
-DROP PROCEDURE IF EXISTS `wp_sync_schema`;
-
-DELIMITER $$
-
-CREATE PROCEDURE `wp_sync_schema`()
-BEGIN
-    -- --------------------------------------------------------
-    -- users : 소속사
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND COLUMN_NAME = 'agency_id') THEN
-        ALTER TABLE `users`
-            ADD COLUMN `agency_id` bigint DEFAULT NULL
-                COMMENT '소속사(agencies.id). ARTIST/AGENCY만 사용, FAN/ADMIN은 NULL'
-                AFTER `status`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND INDEX_NAME = 'idx_users_agency_role') THEN
-        ALTER TABLE `users` ADD KEY `idx_users_agency_role` (`agency_id`, `role`);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
-                   WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND CONSTRAINT_NAME = 'fk_users_agency') THEN
-        ALTER TABLE `users`
-            ADD CONSTRAINT `fk_users_agency` FOREIGN KEY (`agency_id`) REFERENCES `agencies` (`id`);
-    END IF;
-
-    -- --------------------------------------------------------
-    -- users : 휴면 사전 안내(AUTH-08)
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND COLUMN_NAME = 'dormant_notice_sent_at') THEN
-        ALTER TABLE `users`
-            ADD COLUMN `dormant_notice_sent_at` datetime(6) DEFAULT NULL
-                COMMENT '휴면 전환 30일 전 사전 안내 메일 발송 시각';
-    END IF;
-
-    -- --------------------------------------------------------
-    -- users : 알림 수신 설정(SETTINGS-01)
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND COLUMN_NAME = 'marketing_consent') THEN
-        ALTER TABLE `users`
-            ADD COLUMN `marketing_consent` tinyint(1) NOT NULL DEFAULT '0'
-                COMMENT '광고성 정보 수신 동의 (회원가입 체크박스와 공유)'
-                AFTER `provider_id`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND COLUMN_NAME = 'community_activity_email_enabled') THEN
-        ALTER TABLE `users`
-            ADD COLUMN `community_activity_email_enabled` tinyint(1) NOT NULL DEFAULT '0'
-                COMMENT '가입한 아티스트 활동(게시글/공지/라이브) 이메일 수신 여부'
-                AFTER `marketing_consent`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND COLUMN_NAME = 'night_notification_allowed') THEN
-        ALTER TABLE `users`
-            ADD COLUMN `night_notification_allowed` tinyint(1) NOT NULL DEFAULT '0'
-                COMMENT '오후 9시~오전 8시(KST) 알림 수신 여부'
-                AFTER `community_activity_email_enabled`;
-    END IF;
-
-    -- --------------------------------------------------------
-    -- users : 기본 서비스 언어(SETTINGS-02)
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                     AND COLUMN_NAME = 'preferred_language') THEN
-        ALTER TABLE `users`
-            ADD COLUMN `preferred_language` varchar(10)
-                COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'KO'
-                COMMENT '기본 서비스 언어 (KO/JA/EN) - 게시글/댓글 AI 번역 대상 언어로도 재사용';
-    END IF;
-
-    -- --------------------------------------------------------
-    -- users : 소셜 연동 구조(AUTH-10)
-    --   provider 는 "가입 경로"가 아니라 "지금 연동된 소셜"을 뜻하도록 바뀌었고,
-    --   소셜 전용 가입자는 비밀번호가 없을 수 있어 password 가 nullable 이 됐다.
-    -- --------------------------------------------------------
-    IF EXISTS (SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
-               WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'users'
-                 AND CONSTRAINT_NAME = 'ck_users_provider' AND CONSTRAINT_TYPE = 'CHECK') THEN
-        ALTER TABLE `users` DROP CHECK `ck_users_provider`;
-    END IF;
-
-    UPDATE `users` SET `provider` = NULL WHERE `provider` = 'LOCAL';
-
-    ALTER TABLE `users`
-        MODIFY `provider` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL
-            COMMENT '연동된 소셜 provider: GOOGLE/KAKAO/LINE (연동 없으면 NULL)',
-        MODIFY `password` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL
-            COMMENT '비밀번호(BCrypt 해시, 소셜 전용 가입자는 NULL)';
-
-    ALTER TABLE `users`
-        ADD CONSTRAINT `ck_users_provider`
-            CHECK (`provider` IS NULL OR `provider` IN ('GOOGLE', 'KAKAO', 'LINE'));
-
-    -- --------------------------------------------------------
-    -- report / comment_report : 신고 처리 상태(ADMIN-2)
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'report'
-                     AND COLUMN_NAME = 'status') THEN
-        ALTER TABLE `report`
-            ADD COLUMN `status` enum('PENDING', 'DISMISSED', 'RESOLVED')
-                CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-                NOT NULL DEFAULT 'PENDING' COMMENT '처리 상태 (대기/기각/처리완료)'
-                AFTER `reason`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'report'
-                     AND COLUMN_NAME = 'resolved_at') THEN
-        ALTER TABLE `report`
-            ADD COLUMN `resolved_at` datetime(6) DEFAULT NULL
-                COMMENT '신고 처리 시각 (대기중이면 NULL)' AFTER `status`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comment_report'
-                     AND COLUMN_NAME = 'status') THEN
-        ALTER TABLE `comment_report`
-            ADD COLUMN `status` enum('PENDING', 'DISMISSED', 'RESOLVED')
-                CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-                NOT NULL DEFAULT 'PENDING' COMMENT '처리 상태 (대기/기각/처리완료)'
-                AFTER `reason`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comment_report'
-                     AND COLUMN_NAME = 'resolved_at') THEN
-        ALTER TABLE `comment_report`
-            ADD COLUMN `resolved_at` datetime(6) DEFAULT NULL
-                COMMENT '신고 처리 시각 (대기중이면 NULL)' AFTER `status`;
-    END IF;
-
-    -- --------------------------------------------------------
-    -- site_notice : 분류 / 예약발행 / 상단고정(ADMIN-2)
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_notice'
-                     AND COLUMN_NAME = 'category') THEN
-        ALTER TABLE `site_notice`
-            ADD COLUMN `category` enum('GENERAL', 'EVENT', 'MAINTENANCE', 'UPDATE')
-                CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
-                NOT NULL DEFAULT 'GENERAL' COMMENT '공지 분류 (일반/이벤트/점검/업데이트)'
-                AFTER `title`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_notice'
-                     AND COLUMN_NAME = 'publish_at') THEN
-        ALTER TABLE `site_notice`
-            ADD COLUMN `publish_at` datetime(6) DEFAULT NULL
-                COMMENT '예약 발행 시각 (NULL이면 예약 없음)' AFTER `published`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_notice'
-                     AND COLUMN_NAME = 'pinned') THEN
-        ALTER TABLE `site_notice`
-            ADD COLUMN `pinned` bit(1) NOT NULL DEFAULT b'0'
-                COMMENT '목록 상단 노출 여부' AFTER `publish_at`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_notice'
-                     AND COLUMN_NAME = 'pin_order') THEN
-        ALTER TABLE `site_notice`
-            ADD COLUMN `pin_order` int DEFAULT NULL
-                COMMENT '상단 노출 순서(1부터, 작을수록 위, 최대 5개)' AFTER `pinned`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'site_notice'
-                     AND INDEX_NAME = 'idx_site_notice_pinned') THEN
-        ALTER TABLE `site_notice` ADD KEY `idx_site_notice_pinned` (`pinned`, `pin_order`);
-    END IF;
-
-    -- --------------------------------------------------------
-    -- email_verification : 관리자 로그인 인증 목적 추가(ADMIN-2)
-    -- --------------------------------------------------------
-    IF EXISTS (SELECT 1 FROM information_schema.CHECK_CONSTRAINTS
-               WHERE CONSTRAINT_SCHEMA = DATABASE()
-                 AND CONSTRAINT_NAME = 'ck_email_verification_purpose'
-                 AND CHECK_CLAUSE NOT LIKE '%ADMIN_LOGIN%') THEN
-        ALTER TABLE `email_verification` DROP CHECK `ck_email_verification_purpose`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.CHECK_CONSTRAINTS
-                   WHERE CONSTRAINT_SCHEMA = DATABASE()
-                     AND CONSTRAINT_NAME = 'ck_email_verification_purpose') THEN
-        ALTER TABLE `email_verification`
-            ADD CONSTRAINT `ck_email_verification_purpose`
-                CHECK (`purpose` IN ('SIGNUP', 'FAN_PROJECT_CREATE', 'ADMIN_LOGIN'));
-    END IF;
-
-    -- --------------------------------------------------------
-    -- shop_goods : 멤버십 전용 여부(2026-09-17)
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'shop_goods'
-                     AND COLUMN_NAME = 'membership_only') THEN
-        ALTER TABLE `shop_goods`
-            ADD COLUMN `membership_only` tinyint(1) NOT NULL DEFAULT 0
-                COMMENT '멤버십 전용 여부 (1=전용)';
-    END IF;
-
-    -- --------------------------------------------------------
-    -- comment : 대댓글(답글) — 2026-09-27 FEED
-    --   parent_id  : 답글이면 부모 댓글(comment.id), 일반 댓글이면 NULL
-    --   deleted_at : 답글이 남아 있는 원댓글을 지웠을 때의 삭제 시각.
-    --                답글을 살려두기 위해 행은 남기고 "삭제된 댓글입니다"로만 보여준다.
-    -- --------------------------------------------------------
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comment'
-                     AND COLUMN_NAME = 'parent_id') THEN
-        ALTER TABLE `comment`
-            ADD COLUMN `parent_id` bigint DEFAULT NULL
-                COMMENT '답글이면 부모 댓글(comment.id), 일반 댓글이면 NULL'
-                AFTER `post_id`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comment'
-                     AND COLUMN_NAME = 'deleted_at') THEN
-        ALTER TABLE `comment`
-            ADD COLUMN `deleted_at` datetime(6) DEFAULT NULL
-                COMMENT '답글이 남아 있는 원댓글의 삭제 시각'
-                AFTER `parent_id`;
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.STATISTICS
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comment'
-                     AND INDEX_NAME = 'idx_comment_parent') THEN
-        ALTER TABLE `comment` ADD KEY `idx_comment_parent` (`parent_id`);
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
-                   WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'comment'
-                     AND CONSTRAINT_NAME = 'fk_comment_parent') THEN
-        ALTER TABLE `comment`
-            ADD CONSTRAINT `fk_comment_parent`
-                FOREIGN KEY (`parent_id`) REFERENCES `comment` (`id`);
-    END IF;
-END$$
-
-DELIMITER ;
-
-CALL `wp_sync_schema`();
-DROP PROCEDURE `wp_sync_schema`;
-
--- ============================================================
--- [7] 기존 DB 데이터 보정
--- ============================================================
-
--- 테스트 계정 비밀번호를 Test1234로 통일한다 (팀원이 직접 만든 계정은 건드리지 않음)
-UPDATE `users`
-SET `password` = '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu',
-    `updated_at` = NOW(6)
-WHERE `username` IN (
-    'admin_test', 'agency_wp', 'agency_hs',
-    'artist_hwiwon', 'artist_jungsik', 'artist_hyeseon',
-    'asd123', 'qatest99',
-    'aifan_bot', 'aifan_mina', 'aifan_hayul', 'aifan_haerin', 'aifan_jun', 'aifan_yuna'
-);
-
--- 대표 테스트 계정의 소속사를 이름 기준으로 연결한다
-UPDATE `users` u
-JOIN `agencies` a ON a.`name` = '휘원공주정식왕자'
-SET u.`agency_id` = a.`id`
-WHERE u.`username` IN ('artist_hwiwon', 'artist_jungsik', 'agency_wp')
-  AND u.`agency_id` IS NULL;
-
-UPDATE `users` u
-JOIN `agencies` a ON a.`name` = '혜선우주최강'
-SET u.`agency_id` = a.`id`
-WHERE u.`username` IN ('artist_hyeseon', 'agency_hs')
-  AND u.`agency_id` IS NULL;
-
--- 이미 멤버십에 가입한 사람의 "현재 기간"을 이력 테이블로 옮겨둔다.
--- (이력이 하나도 없으면 다음 갱신이 1번째로 잡혀서 연속 유지 기간 계산이 어긋난다)
-INSERT INTO `membership_period` (`fan_id`, `artist_id`, `started_at`, `expires_at`, `streak_count`, `created_at`)
-SELECT m.`fan_id`, m.`artist_id`, m.`created_at`, m.`expires_at`, 1, NOW(6)
-FROM `membership` m
-WHERE NOT EXISTS (
-    SELECT 1 FROM `membership_period` p
-    WHERE p.`fan_id` = m.`fan_id` AND p.`artist_id` = m.`artist_id`
-);
-
-SET FOREIGN_KEY_CHECKS = 1;
-SET UNIQUE_CHECKS = 1;
-
--- ============================================================
--- [8] 확인
---   table_count 52, badge_count 25 가 나오고
---   아래 컬럼 목록이 전부 보이면 정상입니다.
--- ============================================================
+-- [확인] 52이 나오면 테이블은 모두 준비된 것입니다.
+-- ------------------------------------------------------------
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();
-SELECT COUNT(*) AS badge_count FROM `fan_badge`;
-
-SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = DATABASE()
-  AND (
-      (TABLE_NAME = 'users' AND COLUMN_NAME IN (
-          'agency_id', 'provider', 'password', 'preferred_language',
-          'marketing_consent', 'community_activity_email_enabled', 'night_notification_allowed'))
-   OR (TABLE_NAME = 'comment' AND COLUMN_NAME IN ('parent_id', 'deleted_at'))
-   OR (TABLE_NAME = 'shop_goods' AND COLUMN_NAME = 'membership_only')
-   OR (TABLE_NAME IN ('report', 'comment_report') AND COLUMN_NAME IN ('status', 'resolved_at'))
-   OR (TABLE_NAME = 'site_notice' AND COLUMN_NAME IN ('category', 'publish_at', 'pinned', 'pin_order'))
-  )
-ORDER BY TABLE_NAME, ORDINAL_POSITION;
-
-SELECT 'WePlaNet DB 통합 스키마 적용 완료' AS result;

@@ -22,6 +22,7 @@ public class BoardMediaViewDTO {
     private LocalDateTime createdAt;
     private int fileCount;
     private int likeCount;
+    private boolean membershipOnly;
     private List<BoardMediaFileViewDTO> files;
 
     public boolean isLiveReplay() {

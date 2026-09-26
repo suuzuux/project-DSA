@@ -104,6 +104,11 @@
         <button type="button" class="chip" data-shop-filter="md">MD · 굿즈</button>
         <button type="button" class="chip" data-shop-filter="digital">디지털</button>
         <button type="button" class="chip" data-shop-filter="membership">멤버십 전용</button>
+        <button type="button" class="chip" data-shop-filter="clothing">의류</button>
+        <button type="button" class="chip" data-shop-filter="shoes">신발</button>
+        <button type="button" class="chip" data-shop-filter="bag">가방</button>
+        <button type="button" class="chip" data-shop-filter="accessory">악세서리</button>
+        <button type="button" class="chip" data-shop-filter="other">기타</button>
       </div>
       <input class="form-input shop-search" type="search" placeholder="상품명 검색" id="shopSearchInput" />
     </div>
@@ -146,13 +151,17 @@
       var searchInput = document.getElementById("shopSearchInput");
       var activeFilter = "all";
 
+      var typeFilters = { clothing: 1, shoes: 1, bag: 1, accessory: 1, other: 1 };
+
       function applyFilters() {
         var query = (searchInput && searchInput.value || "").trim().toLowerCase();
         var visible = 0;
         cards.forEach(function (card) {
           var category = card.getAttribute("data-category") || "";
+          var types = (card.getAttribute("data-types") || "").toLowerCase().split(/\s+/);
           var title = (card.getAttribute("data-title") || "").toLowerCase();
-          var categoryOk = activeFilter === "all" || category === activeFilter;
+          var categoryOk = activeFilter === "all"
+            || (typeFilters[activeFilter] ? types.indexOf(activeFilter) !== -1 : category === activeFilter);
           var searchOk = !query || title.indexOf(query) !== -1;
           var show = categoryOk && searchOk;
           card.hidden = !show;

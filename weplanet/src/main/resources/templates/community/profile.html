@@ -15,7 +15,9 @@
       공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다.
       단 편집 패널에는 실제 설정값이 그대로 보여서 언제든 수정할 수 있다.
       D-DAY와 가입일은 community_members.joined_at을 기준으로 표시한다.
-      팔로워, 최애 멤버는 다음 단계에서 추가 예정.
+      FOLLOW-01: 이제 이 화면은 "내 프로필"뿐 아니라 다른 사람 프로필도 보여준다(/profile/{userId}).
+      isOwnProfile이면 예전처럼 편집 버튼, 아니면 팔로우 버튼. 팔로워/팔로잉 숫자는 콘텐츠 숨김이면
+      이미지·소개글과 함께 가려지고, 댓글·포스트·좋아요·북마크 탭은 본인이거나 숨김이 아닐 때만 보인다.
     -->
     <title th:text="'내 프로필 | WePlaNet'">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -40,6 +42,33 @@
         .profile-layout.is-editing > .profile-tabs { visibility: hidden; }
         .profile-layout.is-editing > .profile-body { display: none; }
         .profile-layout.is-editing > .profile-edit { display: block; }
+
+        /* FOLLOW-01: 다른 사람이 콘텐츠 숨김 상태인 프로필을 볼 때, 탭+목록 자리에 대신 뜨는 안내 */
+        .profile-layout > .profile-hidden-notice { grid-column: 2; grid-row: 1 / span 2; }
+        .profile-hidden-notice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 240px;
+            border: 1px solid var(--wp-hairline, #e5e5e5);
+            border-radius: var(--wp-radius, 12px);
+            color: var(--wp-muted, #8a8a8a);
+            font-size: var(--wp-fs-sm);
+        }
+
+        /* FOLLOW-01: 팔로워/팔로잉 숫자를 버튼처럼 클릭 가능하게 */
+        .profile-follow-counts { display: flex; gap: 16px; justify-content: center; }
+        .profile-follow-counts button {
+            border: 0; background: none; cursor: pointer; color: inherit; font-family: inherit;
+            padding: 0; font-size: var(--wp-fs-sm);
+        }
+        .profile-follow-counts button strong { font-size: inherit; }
+        .profile-user-list { display: flex; flex-direction: column; gap: 4px; }
+        .profile-user-list a {
+            display: flex; align-items: center; gap: 10px; padding: 8px 4px;
+            border-radius: var(--wp-radius-sm, 8px); color: inherit; text-decoration: none;
+        }
+        .profile-user-list a:hover { background: var(--wp-brand-soft, #fbeef1); }
 
         .profile-card {
             background: var(--wp-surface, #fff);
@@ -193,25 +222,29 @@
   cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
 -->
 <main class="container section" style="max-width:1080px;"
-      th:with="isArtistSelf=${isOwnCommunity == true},
-               displayName=${isArtistSelf ? artist.nickname() : (myCommunityProfile != null ? myCommunityProfile.nickname : #authentication.name)},
-               contentHidden=${!isArtistSelf and myCommunityProfile != null and myCommunityProfile.contentHidden},
-               avatarName=${myCommunityProfile != null ? myCommunityProfile.avatarStoredName : null},
-               backgroundName=${myCommunityProfile != null ? myCommunityProfile.backgroundStoredName : null},
-               cardAvatarUrl=${isArtistSelf ? artistPortalAvatarUrl : (contentHidden or avatarName == null ? null : '/uploads/' + avatarName)},
-               cardBackgroundUrl=${isArtistSelf ? artistPortalBackgroundUrl : (contentHidden or backgroundName == null ? null : '/uploads/' + backgroundName)},
-               cardIntro=${isArtistSelf ? artistPortalIntro : ((!contentHidden and myCommunityProfile != null and !#strings.isEmpty(myCommunityProfile.bio)) ? myCommunityProfile.bio : null)},
+      th:with="isTargetArtist=${isCommunityOwnerProfile == true},
+               displayName=${isTargetArtist ? artist.nickname() : (targetCommunityProfile != null ? targetCommunityProfile.nickname : targetUser.nickname)},
+               contentHidden=${isTargetArtist ? !isFollowingTarget : (targetCommunityProfile != null and targetCommunityProfile.contentHidden)},
+               contentVisible=${isOwnProfile or !contentHidden},
+               avatarName=${targetCommunityProfile != null ? targetCommunityProfile.avatarStoredName : null},
+               backgroundName=${targetCommunityProfile != null ? targetCommunityProfile.backgroundStoredName : null},
+               cardAvatarUrl=${isTargetArtist ? artistPortalAvatarUrl : (contentHidden or avatarName == null ? null : '/uploads/' + avatarName)},
+               cardBackgroundUrl=${isTargetArtist ? artistPortalBackgroundUrl : (contentHidden or backgroundName == null ? null : '/uploads/' + backgroundName)},
+               cardIntro=${isTargetArtist ? artistPortalIntro : ((!contentHidden and targetCommunityProfile != null and !#strings.isEmpty(targetCommunityProfile.bio)) ? targetCommunityProfile.bio : null)},
                editBackgroundUrl=${backgroundName != null ? '/uploads/' + backgroundName : null}">
 
     <div class="profile-layout" data-tabs>
 
         <!-- ==================== 1행 2열: 탭 ==================== -->
-        <nav class="profile-tabs" style="border-top:0;border-bottom:1px solid var(--wp-hairline, #e5e5e5);">
+        <nav class="profile-tabs" th:if="${contentVisible}" style="border-top:0;border-bottom:1px solid var(--wp-hairline, #e5e5e5);">
             <a href="#" class="is-active" data-tab="comments" th:text="|댓글 ${#lists.size(myComments)}|">댓글</a>
             <a href="#" data-tab="posts" th:text="|포스트 ${#lists.size(myPosts)}|">포스트</a>
             <a href="#" data-tab="likes" th:text="|좋아요 ${#lists.size(likedPosts)}|">좋아요</a>
             <a href="#" data-tab="bookmarks" th:text="|북마크 ${#lists.size(bookmarkedPosts)}|">북마크</a>
         </nav>
+        <!-- FOLLOW-01: 상대가 콘텐츠를 숨긴 경우, 탭 자리에 이 안내만 뜬다 -->
+        <div class="profile-hidden-notice" th:unless="${contentVisible}"
+             th:text="${isTargetArtist ? '아티스트를 팔로우하면 볼 수 있는 콘텐츠입니다.' : '비공개로 설정한 프로필입니다.'}">비공개로 설정한 프로필입니다.</div>
 
         <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
         <aside class="profile-side profile-card">
@@ -253,9 +286,9 @@
                 </h2>
 
                 <!-- 커뮤니티 가입일 - 계정 생성일(users.created_at)과 구분한다.
-                     이 화면은 본인만 보는 '내 프로필'이라, 숨김 설정과 무관하게 본인에게는 보여준다. -->
+                     본인에게는 숨김 설정과 무관하게 항상 보여주고, 다른 사람에게는 숨김이면 감춘다. -->
                 <p class="profile-card__joined-date"
-                   th:if="${communityJoinInfo != null}"
+                   th:if="${communityJoinInfo != null and contentVisible}"
                    th:text="|${#temporals.format(communityJoinInfo.joinedDate, 'yyyy.MM.dd')} 가입|">2026.09.01 가입</p>
 
                 <!-- 소개글 - 아티스트 본인은 포털 intro -->
@@ -263,21 +296,40 @@
                    th:if="${cardIntro != null and !#strings.isEmpty(cardIntro)}"
                    th:text="${cardIntro}">소개글</p>
 
-                <!-- 팔로잉 - 가입일과 같은 이유로 본인에게는 항상 보여준다 -->
-                <p style="margin:16px 0;font-size:var(--wp-fs-sm);">
-                    <strong th:text="${myFollowingCount}">0</strong>
-                    <span class="text-xs text-muted" style="margin-left:4px;">팔로잉</span>
+                <!-- FOLLOW-01: 팔로워/팔로잉 숫자 - 콘텐츠 숨김이면 함께 가려진다. 클릭하면 리스트 모달 -->
+                <p class="profile-follow-counts" style="margin:16px 0;" th:unless="${contentHidden}">
+                    <button type="button" data-modal-open="followersModal"
+                            th:attr="data-list-url=@{/community/{artistId}/profile/{userId}/followers(artistId=${artist.id()}, userId=${profileUserId})}">
+                        <strong th:text="${followerCount}">0</strong>
+                        <span class="text-xs text-muted" style="margin-left:4px;">팔로워</span>
+                    </button>
+                    <button type="button" data-modal-open="followingModal"
+                            th:attr="data-list-url=@{/community/{artistId}/profile/{userId}/following(artistId=${artist.id()}, userId=${profileUserId})}">
+                        <strong th:text="${myFollowingCount}">0</strong>
+                        <span class="text-xs text-muted" style="margin-left:4px;">팔로잉</span>
+                    </button>
                 </p>
 
-                <!-- 가입한 커뮤니티에서만 편집 가능 (community_profiles 행이 있어야 수정할 수 있음) -->
+                <!-- 가입한 커뮤니티에서만 편집 가능 (community_profiles 행이 있어야 수정할 수 있음), 본인만 -->
                 <button type="button" class="btn btn--ghost btn--sm btn--block"
                         data-profile-edit-open
-                        th:if="${myCommunityProfile != null}">프로필 편집</button>
+                        th:if="${isOwnProfile and targetCommunityProfile != null}">프로필 편집</button>
+
+                <!-- GroupFollow/UserFollow 통합: 팬↔팬, 팬→아티스트 팔로우 버튼을 하나로 합쳤다.
+                     팬↔팬은 상대가 콘텐츠 숨김이면 팔로우 자체가 막히므로(UserFollowService) 버튼도
+                     같이 숨기고, 아티스트 대상은 그런 제약이 없어 항상 보여준다. -->
+                <form th:if="${!isOwnProfile and (isTargetArtist or !contentHidden)}"
+                      th:action="@{/community/{artistId}/profile/{userId}/follow(artistId=${artist.id()}, userId=${profileUserId})}"
+                      method="post">
+                    <button type="submit" class="btn btn--sm btn--block"
+                            th:classappend="${isFollowingTarget} ? 'btn--ghost' : 'btn--primary'"
+                            th:text="${isFollowingTarget} ? '팔로잉 ✓' : '팔로우'">팔로우</button>
+                </form>
             </div>
         </aside>
 
         <!-- ==================== 2행 2열: 히스토리 목록 ==================== -->
-        <div class="profile-body">
+        <div class="profile-body" th:if="${contentVisible}">
 
             <!-- 정렬 - 선택된 쪽을 브랜드색 버튼으로 채워서 지금 어느 순서인지 바로 보이게 한다 -->
             <div class="mb-16" style="display:flex;gap:8px;">
@@ -336,18 +388,24 @@
             <!-- 좋아요 -->
             <div class="hidden" data-tab-panel="likes">
                 <article class="post-card mb-16" th:each="post : ${likedPosts}">
+                    <div class="post-card__head">
+                        <a th:if="${post.author != null}"
+                           th:href="@{/community/{artistId}/profile/{userId}(artistId=${post.artist != null ? post.artist.id : 0}, userId=${post.author.id})}"
+                           class="avatar" aria-label="작성자 프로필로 이동"
+                           th:text="${#strings.substring(authorNicknames.get('' + post.author.id),0,1)}"></a>
+                        <div th:unless="${post.author != null}" class="avatar">?</div>
+                        <div class="post-card__meta">
+                            <a th:if="${post.author != null}"
+                               th:href="@{/community/{artistId}/profile/{userId}(artistId=${post.artist != null ? post.artist.id : 0}, userId=${post.author.id})}"
+                               class="post-card__name" style="color:inherit;text-decoration:none;"
+                               th:text="${authorNicknames.get('' + post.author.id)}"></a>
+                            <div th:unless="${post.author != null}" class="post-card__name">(알 수 없음)</div>
+                        </div>
+                    </div>
                     <a th:href="${post.boardType.name() == 'FAN'}
                               ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
                               : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
                        style="display:block;color:inherit;">
-                        <div class="post-card__head">
-                            <div class="avatar"
-                                 th:text="${post.author != null ? #strings.substring(authorNicknames.get('' + post.author.id),0,1) : '?'}"></div>
-                            <div class="post-card__meta">
-                                <div class="post-card__name"
-                                     th:text="${post.author != null ? authorNicknames.get('' + post.author.id) : '(알 수 없음)'}"></div>
-                            </div>
-                        </div>
                         <p class="post-card__body" th:text="${post.title}"></p>
                     </a>
                 </article>
@@ -357,18 +415,24 @@
             <!-- 북마크 -->
             <div class="hidden" data-tab-panel="bookmarks">
                 <article class="post-card mb-16" th:each="post : ${bookmarkedPosts}">
+                    <div class="post-card__head">
+                        <a th:if="${post.author != null}"
+                           th:href="@{/community/{artistId}/profile/{userId}(artistId=${post.artist != null ? post.artist.id : 0}, userId=${post.author.id})}"
+                           class="avatar" aria-label="작성자 프로필로 이동"
+                           th:text="${#strings.substring(authorNicknames.get('' + post.author.id),0,1)}"></a>
+                        <div th:unless="${post.author != null}" class="avatar">?</div>
+                        <div class="post-card__meta">
+                            <a th:if="${post.author != null}"
+                               th:href="@{/community/{artistId}/profile/{userId}(artistId=${post.artist != null ? post.artist.id : 0}, userId=${post.author.id})}"
+                               class="post-card__name" style="color:inherit;text-decoration:none;"
+                               th:text="${authorNicknames.get('' + post.author.id)}"></a>
+                            <div th:unless="${post.author != null}" class="post-card__name">(알 수 없음)</div>
+                        </div>
+                    </div>
                     <a th:href="${post.boardType.name() == 'FAN'}
                               ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
                               : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
                        style="display:block;color:inherit;">
-                        <div class="post-card__head">
-                            <div class="avatar"
-                                 th:text="${post.author != null ? #strings.substring(authorNicknames.get('' + post.author.id),0,1) : '?'}"></div>
-                            <div class="post-card__meta">
-                                <div class="post-card__name"
-                                     th:text="${post.author != null ? authorNicknames.get('' + post.author.id) : '(알 수 없음)'}"></div>
-                            </div>
-                        </div>
                         <p class="post-card__body" th:text="${post.title}"></p>
                     </a>
                 </article>
@@ -380,7 +444,7 @@
         </div>
 
 
-        <div class="profile-edit" th:if="${myCommunityProfile != null}">
+        <div class="profile-edit" th:if="${isOwnProfile and targetCommunityProfile != null}">
 
             <div style="position:relative;text-align:center;margin-bottom:24px;">
                 <strong style="font-size:var(--wp-fs-lg);font-weight:800;">프로필 편집</strong>
@@ -429,7 +493,7 @@
                     <input type="text" id="profileEditNickname" name="nickname"
                            maxlength="10" autocomplete="off" required
                            aria-label="닉네임"
-                           th:value="${myCommunityProfile.nickname}"/>
+                           th:value="${targetCommunityProfile.nickname}"/>
                     <button type="button" class="pe-clear" aria-label="닉네임 지우기"
                             data-clear-for="profileEditNickname">✕</button>
                 </div>
@@ -441,7 +505,7 @@
                            maxlength="30" autocomplete="off"
                            aria-label="소개글"
                            placeholder="(선택) 내 프로필에 노출될 소개글을 작성하세요"
-                           th:value="${myCommunityProfile.bio}"/>
+                           th:value="${targetCommunityProfile.bio}"/>
                     <button type="button" class="pe-clear" aria-label="소개글 지우기"
                             data-clear-for="profileEditBio">✕</button>
                 </div>
@@ -502,6 +566,26 @@
     </div>
 </main>
 
+
+<!-- FOLLOW-01: 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트 모달. 내용은 열릴 때 fetch로 채운다. -->
+<div class="modal-backdrop" id="followersModal">
+    <div class="modal" style="width:min(100%, 400px);">
+        <div class="modal__head">
+            <strong class="modal__title">팔로워</strong>
+            <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+        </div>
+        <div class="profile-user-list" id="followersModalList">불러오는 중…</div>
+    </div>
+</div>
+<div class="modal-backdrop" id="followingModal">
+    <div class="modal" style="width:min(100%, 400px);">
+        <div class="modal__head">
+            <strong class="modal__title">팔로잉</strong>
+            <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+        </div>
+        <div class="profile-user-list" id="followingModalList">불러오는 중…</div>
+    </div>
+</div>
 
 <div class="modal-backdrop" id="imageCropModal">
     <div class="modal" style="width:min(100%, 460px);">
@@ -704,6 +788,30 @@
         });
         hiddenToggle.setAttribute("aria-checked", String(hiddenInput.checked));
       }
+
+      // FOLLOW-01: 팔로워/팔로잉 모달 - 열릴 때마다 최신 목록을 fetch해서 채운다
+      function loadUserList(containerId, url) {
+        var container = document.getElementById(containerId);
+        if (!container || !url) return;
+        container.textContent = "불러오는 중…";
+        fetch(url, { headers: { "X-Requested-With": "fetch" } })
+          .then(function (res) {
+            if (!res.ok) throw new Error("목록을 불러오지 못했습니다.");
+            return res.text();
+          })
+          .then(function (html) { container.innerHTML = html; })
+          .catch(function () { container.textContent = "목록을 불러오지 못했습니다."; });
+      }
+      document.querySelectorAll('[data-modal-open="followersModal"]').forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          loadUserList("followersModalList", btn.getAttribute("data-list-url"));
+        });
+      });
+      document.querySelectorAll('[data-modal-open="followingModal"]').forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          loadUserList("followingModalList", btn.getAttribute("data-list-url"));
+        });
+      });
     })();
 </script>
 </body>
