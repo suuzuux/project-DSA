@@ -613,6 +613,27 @@
   min-width: 0;
 }
 
+/* [대댓글] 답글은 원댓글 아래에 한 단 들여써서 구분한다 */
+.comment-replies {
+  margin-top: 10px;
+}
+
+.comment-replies .comment-item {
+  padding: 10px 0 0;
+  border-bottom: 0;
+}
+
+.comment-item--reply {
+  padding-left: 14px;
+  border-left: 2px solid var(--wp-hairline);
+}
+
+/* 답글이 남아 있어서 자리만 남겨둔 원댓글 */
+.comment-item--deleted .comment-item__text {
+  font-style: italic;
+  color: var(--wp-muted);
+}
+
 .comment-item__meta {
   font-size: var(--wp-fs-xs);
   color: var(--wp-muted);
