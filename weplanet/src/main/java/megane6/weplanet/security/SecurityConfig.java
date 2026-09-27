@@ -45,6 +45,9 @@ public class SecurityConfig {
             "/api/schedules",
             "/api/notifications",
             "/api/site-notices",
+            // SETTINGS-03: shell.js(공통 헤더/사이드바)가 로그인 여부와 무관하게 fetch로 받아가는
+            // 다국어 문자열 API - 비로그인 화면(메인 등)에서도 셸이 그려지므로 공개해야 한다
+            "/api/i18n/**",
             // 햄버거 메뉴 커뮤니티 목록 - 비로그인도 전체 커뮤니티는 볼 수 있다
             "/api/side-menu/communities",
             "/api/artists",

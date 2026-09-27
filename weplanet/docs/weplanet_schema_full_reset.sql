@@ -33,6 +33,10 @@
 --   - users.preferred_language : "기본 서비스 언어" (KO/JA/EN, 기본값 KO). 게시글/댓글 AI 번역
 --     (TranslateService)의 대상 언어로도 그대로 재사용됨 - UI 언어랑 번역 언어를 따로 두지 않음
 -- ------------------------------------------------------------
+-- 수정: 2026-09-28 (굿즈샵/멤버십 토스 결제 주문 - 20260924_shop_membership_orders.sql 반영 누락분)
+--   - shop_order / shop_order_item : 굿즈샵 결제 주문 및 주문 라인
+--   - membership_order : 멤버십 결제 주문
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -85,6 +89,8 @@ DROP TABLE IF EXISTS `live_comment_report`;
 DROP TABLE IF EXISTS `live_comment`;
 DROP TABLE IF EXISTS `live_session`;
 DROP TABLE IF EXISTS `shop_cart_item`;
+DROP TABLE IF EXISTS `shop_order_item`;
+DROP TABLE IF EXISTS `shop_order`;
 DROP TABLE IF EXISTS `shop_goods_variant`;
 DROP TABLE IF EXISTS `shop_goods_option`;
 DROP TABLE IF EXISTS `shop_goods_category`;
@@ -106,6 +112,7 @@ DROP TABLE IF EXISTS `portal_notice`;
 DROP TABLE IF EXISTS `artist_attendance`;
 DROP TABLE IF EXISTS `artist_schedule`;
 DROP TABLE IF EXISTS `artist_block`;
+DROP TABLE IF EXISTS `membership_order`;
 DROP TABLE IF EXISTS `membership_period`;
 DROP TABLE IF EXISTS `membership`;
 DROP TABLE IF EXISTS `user_follows`;
@@ -443,6 +450,34 @@ CREATE TABLE `membership_period` (
   CONSTRAINT `ck_membership_period` CHECK (`expires_at` > `started_at`),
   CONSTRAINT `ck_membership_streak` CHECK (`streak_count` >= 1)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 가입/갱신 이력';
+
+-- membership_order: 멤버십 토스 결제 주문
+CREATE TABLE `membership_order` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `fan_id` bigint NOT NULL,
+  `artist_id` bigint NOT NULL,
+  `order_no` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TOSS',
+  `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` bigint NOT NULL,
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `virtual_account_number` varbinary(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
+  `paid_at` datetime(6) DEFAULT NULL,
+  `cancelled_at` datetime(6) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_membership_order_no` (`order_no`),
+  UNIQUE KEY `uk_membership_order_idempotency` (`idempotency_key`),
+  KEY `idx_membership_order_fan` (`fan_id`, `created_at`),
+  KEY `idx_membership_order_status` (`payment_status`),
+  CONSTRAINT `fk_membership_order_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_membership_order_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 토스 결제 주문';
 
 -- artist_block: 아티스트 유저 차단
 CREATE TABLE `artist_block` (
@@ -828,6 +863,48 @@ CREATE TABLE `shop_cart_item` (
   KEY `idx_shop_cart_user` (`user_id`, `updated_at`),
   CONSTRAINT `fk_shop_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 장바구니';
+
+-- shop_order: 굿즈샵 토스 결제 주문
+CREATE TABLE `shop_order` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `buyer_id` bigint NOT NULL,
+  `order_no` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TOSS',
+  `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` bigint NOT NULL,
+  `source` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `virtual_account_number` varbinary(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
+  `paid_at` datetime(6) DEFAULT NULL,
+  `cancelled_at` datetime(6) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_shop_order_no` (`order_no`),
+  UNIQUE KEY `uk_shop_order_idempotency` (`idempotency_key`),
+  KEY `idx_shop_order_buyer` (`buyer_id`, `created_at`),
+  KEY `idx_shop_order_status` (`payment_status`),
+  CONSTRAINT `fk_shop_order_buyer` FOREIGN KEY (`buyer_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 토스 결제 주문';
+
+-- shop_order_item: 굿즈샵 주문 라인
+CREATE TABLE `shop_order_item` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` bigint NOT NULL,
+  `goods_id` bigint NOT NULL,
+  `variant_id` bigint NOT NULL,
+  `product_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `product_name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `unit_price` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_shop_order_item_order` (`order_id`),
+  CONSTRAINT `fk_shop_order_item_order` FOREIGN KEY (`order_id`) REFERENCES `shop_order` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 주문 라인';
 
 -- chat_message: 팬–아티스트 채팅 메시지
 CREATE TABLE `chat_message` (

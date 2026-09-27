@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import org.springframework.security.core.Authentication;
@@ -14,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.LocaleResolver;
 
 import java.io.IOException;
 
@@ -23,6 +25,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 
 	private final UserRepository userRepository;
 	private final AgencyEnrollmentService agencyEnrollmentService;
+	private final LocaleResolver localeResolver;
 
 	@PostConstruct
 	public void init() {
@@ -73,6 +76,9 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 			if (user.getRole() == Role.AGENCY) {
 				agencyEnrollmentService.enrollManagedArtists(user);
 			}
+			// SETTINGS-03 로케일 버그#2 수정: 세션 로케일은 기본값(한국어)로 시작해서, DB에 저장된
+			// 선호 언어를 골라도 재로그인 전까지는 화면이 계속 한국어로 나왔다.
+			localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
 		});
 
 		getRedirectStrategy().sendRedirect(request, response, RoleHomeRedirects.pathFor(principal));

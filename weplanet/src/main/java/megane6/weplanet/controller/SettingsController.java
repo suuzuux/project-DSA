@@ -7,11 +7,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
@@ -38,6 +42,12 @@ public class SettingsController {
 	private final UserRepository userRepository;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
+	private final MessageSource messageSource;
+	private final LocaleResolver localeResolver;
+
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 	
 	@GetMapping("/settings")
 	public String settings(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -64,7 +74,7 @@ public class SettingsController {
 					refreshed, current.getCredentials(), refreshed.getAuthorities());
 			SecurityContextHolder.getContext().setAuthentication(updated);
 			
-			redirectAttributes.addFlashAttribute("profileMessage", "회원정보가 수정되었습니다.");
+			redirectAttributes.addFlashAttribute("profileMessage", msg("settings.profile.updateSuccess"));
 		} catch (IllegalArgumentException e) {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
@@ -84,27 +94,27 @@ public class SettingsController {
 		// 이메일을 바꿀 수 있다.
 		if (trimmed.isBlank()) {
 			result.put("success", false);
-			result.put("message", "이메일을 입력해주세요.");
+			result.put("message", msg("settings.modal.emailRequired"));
 			return result;
 		}
 		if (trimmed.equals(user.getEmail())) {
 			result.put("success", false);
-			result.put("message", "현재 이메일과 같습니다.");
+			result.put("message", msg("settings.modal.emailSameAsCurrent"));
 			return result;
 		}
 		if (userRepository.existsByEmail(trimmed)) {
 			result.put("success", false);
-			result.put("message", "이미 사용 중인 이메일입니다.");
+			result.put("message", msg("settings.email.alreadyInUse"));
 			return result;
 		}
 		try {
 			emailVerificationService.sendVerificationCode(trimmed);
 			result.put("success", true);
-			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+			result.put("message", msg("settings.email.codeSent"));
 		} catch (Exception e) {
 			log.error("[회원정보 수정] 이메일 변경 인증코드 발송 실패 (to={})", trimmed, e);
 			result.put("success", false);
-			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+			result.put("message", msg("settings.email.codeSendFailed"));
 		}
 		return result;
 	}
@@ -115,7 +125,7 @@ public class SettingsController {
 		Map<String, Object> result = new HashMap<>();
 		boolean verified = emailVerificationService.verifyCode(newEmail, code);
 		result.put("success", verified);
-		result.put("message", verified ? "이메일 인증이 완료되었습니다." : "인증코드가 일치하지 않거나 만료되었습니다.");
+		result.put("message", verified ? msg("settings.email.verifySuccess") : msg("settings.email.verifyFailed"));
 		return result;
 	}
 
@@ -142,10 +152,14 @@ public class SettingsController {
 	@PostMapping("/settings/language")
 	@ResponseBody
 	public Map<String, Object> updateLanguage(@AuthenticationPrincipal AuthenticatedUser principal,
-											  @RequestParam Language language) {
+											  @RequestParam Language language,
+											  HttpServletRequest request, HttpServletResponse response) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
 		userService.updateLanguage(user, language);
+		// SETTINGS-03 로케일 버그#1 수정: DB에만 저장하고 끝나면, 지금 이 세션의 실제 렌더링
+		// 로케일(PreferredLocaleResolver)은 안 바뀌어서 페이지를 새로고침해도 화면 언어가 그대로였다.
+		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(language));
 		result.put("success", true);
 		return result;
 	}
