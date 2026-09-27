@@ -220,18 +220,24 @@
 <!--
   avatarName/backgroundName : 실제 저장값 (편집 패널이 씀 - 숨김 중에도 내 설정은 보여야 함)
   cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
+  artistSide : 이 프로필 주인이 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)인지.
+               아티스트는 가입 프로필이 없으므로 카드/편집 패널을 계정별 포털 프로필(targetArtist*)로 그린다.
+  isTargetArtist : 커뮤니티 주인(솔로 계정) 프로필인지 - "팔로우해야 보이는 콘텐츠" 규칙은 이쪽만 적용
 -->
 <main class="container section" style="max-width:1080px;"
       th:with="isTargetArtist=${isCommunityOwnerProfile == true},
-               displayName=${isTargetArtist ? artist.nickname() : (targetCommunityProfile != null ? targetCommunityProfile.nickname : targetUser.nickname)},
-               contentHidden=${isTargetArtist ? !isFollowingTarget : (targetCommunityProfile != null and targetCommunityProfile.contentHidden)},
+               artistSide=${isTargetArtistSide == true},
+               displayName=${isTargetArtist ? artist.nickname() : (artistSide ? targetUser.nickname : (targetCommunityProfile != null ? targetCommunityProfile.nickname : targetUser.nickname))},
+               contentHidden=${isTargetArtist ? !isFollowingTarget : (!artistSide and targetCommunityProfile != null and targetCommunityProfile.contentHidden)},
                contentVisible=${isOwnProfile or !contentHidden},
                avatarName=${targetCommunityProfile != null ? targetCommunityProfile.avatarStoredName : null},
                backgroundName=${targetCommunityProfile != null ? targetCommunityProfile.backgroundStoredName : null},
-               cardAvatarUrl=${isTargetArtist ? artistPortalAvatarUrl : (contentHidden or avatarName == null ? null : '/uploads/' + avatarName)},
-               cardBackgroundUrl=${isTargetArtist ? artistPortalBackgroundUrl : (contentHidden or backgroundName == null ? null : '/uploads/' + backgroundName)},
-               cardIntro=${isTargetArtist ? artistPortalIntro : ((!contentHidden and targetCommunityProfile != null and !#strings.isEmpty(targetCommunityProfile.bio)) ? targetCommunityProfile.bio : null)},
-               editBackgroundUrl=${backgroundName != null ? '/uploads/' + backgroundName : null}">
+               cardAvatarUrl=${artistSide ? targetArtistAvatarUrl : (contentHidden or avatarName == null ? null : '/uploads/' + avatarName)},
+               cardBackgroundUrl=${artistSide ? targetArtistBackgroundUrl : (contentHidden or backgroundName == null ? null : '/uploads/' + backgroundName)},
+               cardIntro=${artistSide ? targetArtistIntro : ((!contentHidden and targetCommunityProfile != null and !#strings.isEmpty(targetCommunityProfile.bio)) ? targetCommunityProfile.bio : null)},
+               editAvatarUrl=${artistSide ? targetArtistAvatarUrl : (avatarName != null ? '/uploads/' + avatarName : null)},
+               editBackgroundUrl=${artistSide ? targetArtistBackgroundUrl : (backgroundName != null ? '/uploads/' + backgroundName : null)},
+               canEditProfile=${isOwnProfile and (artistSide or targetCommunityProfile != null)}">
 
     <div class="profile-layout" data-tabs>
 
@@ -313,12 +319,13 @@
                 <!-- 가입한 커뮤니티에서만 편집 가능 (community_profiles 행이 있어야 수정할 수 있음), 본인만 -->
                 <button type="button" class="btn btn--ghost btn--sm btn--block"
                         data-profile-edit-open
-                        th:if="${isOwnProfile and targetCommunityProfile != null}">프로필 편집</button>
+                        th:if="${canEditProfile}">프로필 편집</button>
 
                 <!-- GroupFollow/UserFollow 통합: 팬↔팬, 팬→아티스트 팔로우 버튼을 하나로 합쳤다.
                      팬↔팬은 상대가 콘텐츠 숨김이면 팔로우 자체가 막히므로(UserFollowService) 버튼도
                      같이 숨기고, 아티스트 대상은 그런 제약이 없어 항상 보여준다. -->
-                <form th:if="${!isOwnProfile and (isTargetArtist or !contentHidden)}"
+                <!-- 그룹 멤버 개인 팔로우는 아직 지원하지 않아 멤버 프로필에서는 숨긴다 (커뮤니티 주인 팔로우만) -->
+                <form th:if="${!isOwnProfile and (isTargetArtist or (!artistSide and !contentHidden))}"
                       th:action="@{/community/{artistId}/profile/{userId}/follow(artistId=${artist.id()}, userId=${profileUserId})}"
                       method="post">
                     <button type="submit" class="btn btn--sm btn--block"
@@ -444,7 +451,7 @@
         </div>
 
 
-        <div class="profile-edit" th:if="${isOwnProfile and targetCommunityProfile != null}">
+        <div class="profile-edit" th:if="${canEditProfile}">
 
             <div style="position:relative;text-align:center;margin-bottom:24px;">
                 <strong style="font-size:var(--wp-fs-lg);font-weight:800;">프로필 편집</strong>
@@ -474,10 +481,10 @@
                          th:attr="data-initial=${#strings.substring(displayName, 0, 1)}"
                          style="width:96px;height:96px;margin:-96px auto 0;font-size:34px;
                                 border:4px solid var(--wp-surface, #fff);position:relative;">
-                        <img th:if="${avatarName != null}"
-                             th:src="@{'/uploads/' + ${avatarName}}" alt=""
+                        <img th:if="${editAvatarUrl != null}"
+                             th:src="${editAvatarUrl}" alt=""
                              style="width:100%;height:100%;object-fit:cover;display:block;"/>
-                        <span th:if="${avatarName == null}"
+                        <span th:if="${editAvatarUrl == null}"
                               th:text="${#strings.substring(displayName, 0, 1)}">나</span>
                     </div>
                 </div>
@@ -486,18 +493,23 @@
                 <div class="pe-field">
                     <!-- 콘텐츠 숨기기가 켜져 있을 때만 보이는 표시. 아래 토글과 연동된다. -->
                     <span class="pe-lock" id="profileEditLockIcon" title="콘텐츠 숨김 중"
-                          th:classappend="${contentHidden} ? '' : ' hidden'">
+                          th:classappend="${contentHidden and !artistSide} ? '' : ' hidden'">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </span>
+                    <!-- 아티스트 이름은 커뮤니티 이름/멤버 구분에 쓰여 소속사가 관리 - 여기서는 읽기 전용 -->
                     <input type="text" id="profileEditNickname" name="nickname"
                            maxlength="10" autocomplete="off" required
                            aria-label="닉네임"
-                           th:value="${targetCommunityProfile.nickname}"/>
+                           th:value="${artistSide ? targetUser.nickname : targetCommunityProfile.nickname}"
+                           th:readonly="${artistSide}"/>
                     <button type="button" class="pe-clear" aria-label="닉네임 지우기"
-                            data-clear-for="profileEditNickname">✕</button>
+                            data-clear-for="profileEditNickname" th:unless="${artistSide}">✕</button>
                 </div>
-                <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 10</p>
+                <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname"
+                   th:unless="${artistSide}">0 / 10</p>
+                <p class="text-xs text-muted" style="text-align:center;margin-bottom:12px;"
+                   th:if="${artistSide}">아티스트 이름은 소속사에서 변경할 수 있습니다.</p>
 
                 <!-- 소개글 -->
                 <div class="pe-field">
@@ -505,7 +517,7 @@
                            maxlength="30" autocomplete="off"
                            aria-label="소개글"
                            placeholder="(선택) 내 프로필에 노출될 소개글을 작성하세요"
-                           th:value="${targetCommunityProfile.bio}"/>
+                           th:value="${artistSide ? targetArtistIntro : targetCommunityProfile.bio}"/>
                     <button type="button" class="pe-clear" aria-label="소개글 지우기"
                             data-clear-for="profileEditBio">✕</button>
                 </div>
@@ -525,7 +537,7 @@
                         <div class="pe-menu hidden" id="peAvatarMenu">
                             <button type="button" data-file-trigger="profileEditAvatar">사진첩에서 불러오기</button>
                             <button type="button" class="is-danger" data-image-remove="Avatar"
-                                    th:attr="data-has-image=${avatarName != null}">이미지 삭제하기</button>
+                                    th:attr="data-has-image=${editAvatarUrl != null}">이미지 삭제하기</button>
                         </div>
                     </div>
 
@@ -535,7 +547,7 @@
                         <div class="pe-menu hidden" id="peBackgroundMenu">
                             <button type="button" data-file-trigger="profileEditBackground">사진첩에서 불러오기</button>
                             <button type="button" class="is-danger" data-image-remove="Background"
-                                    th:attr="data-has-image=${backgroundName != null}">이미지 삭제하기</button>
+                                    th:attr="data-has-image=${editBackgroundUrl != null}">이미지 삭제하기</button>
                         </div>
                     </div>
                 </div>
@@ -549,7 +561,9 @@
                 <input type="checkbox" name="contentHidden" id="profileEditHidden" value="true"
                        aria-label="프로필의 콘텐츠 숨기기"
                        class="hidden" th:checked="${contentHidden}"/>
-                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);padding:18px 0 6px;text-align:left;">
+                <!-- 콘텐츠 숨기기는 팬 프로필 전용 (아티스트 프로필은 항상 공개) -->
+                <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);padding:18px 0 6px;text-align:left;"
+                     th:unless="${artistSide}">
                     <div class="flex-between" style="align-items:center;gap:12px;">
                         <strong style="font-size:var(--wp-fs-sm);">프로필의 콘텐츠 숨기기</strong>
                         <div class="toggle-managed" id="profileEditHiddenToggle"

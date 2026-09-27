@@ -395,6 +395,15 @@ public class CommunityController {
 		// 이 프로필의 주인이 이 커뮤니티의 아티스트 본인인지 - 맞다면 팔로우 버튼/콘텐츠 잠금 문구가
 		// "아티스트 팔로우" 기준으로 동작한다 (UserFollowService.toggle이 알아서 가입 요건 없이 처리).
 		model.addAttribute("isCommunityOwnerProfile", userId.equals(artistId));
+		// 이 프로필의 주인이 이 커뮤니티의 아티스트 쪽 계정(솔로 본인/그룹 멤버)인지.
+		// 맞다면 프로필 카드와 편집 패널은 가입 프로필 대신 그 계정의 포털 프로필(소개/사진/배경)로 그린다.
+		boolean targetIsArtistHere = communityArtistResolver.isArtistOf(targetUser, artistId);
+		model.addAttribute("isTargetArtistSide", targetIsArtistHere);
+		if (targetIsArtistHere) {
+			model.addAttribute("targetArtistAvatarUrl", portalManagementService.findLogoImageUrl(targetUser));
+			model.addAttribute("targetArtistBackgroundUrl", portalManagementService.findHeaderImageUrl(targetUser));
+			model.addAttribute("targetArtistIntro", portalManagementService.findIntro(targetUser));
+		}
 
 		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
 		// 아티스트 본인이나 관리자는 가입 절차 없이 접근할 수 있으므로 joinedAt이 null일 수 있다.
