@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,6 +25,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByUsername(String username);
     boolean existsByNickname(String nickname);
     boolean existsByEmail(String email);
+
+    // 닉네임 중복은 "같은 쪽" 계정끼리만 본다. 팬 닉네임과 아티스트(멤버) 닉네임은 겹쳐도 된다.
+    // 팬 쪽 검사: existsByNicknameAndRoleNotIn(nickname, Role.ARTIST_SIDE)
+    boolean existsByNicknameAndRoleNotIn(String nickname, Collection<Role> roles);
+    // 그룹(커뮤니티) 이름 검사: existsByNicknameAndRole(name, Role.ARTIST)
+    boolean existsByNicknameAndRole(String nickname, Role role);
 
     // DM 인박스(CHAT: 여러 아티스트 목록) 에서, 아직 대화 안 나눈 아티스트도 "추천" 칸에 보여주기 위해
     // 시스템에 있는 아티스트 전체 목록이 필요함

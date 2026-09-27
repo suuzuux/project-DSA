@@ -1,6 +1,8 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.service.AgencyActivationService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -45,11 +47,13 @@ public class PartnerActivationController {
 						   @RequestParam String newPassword,
 						   @RequestParam String confirmPassword,
 						   Model model) {
+		User activated;
+		
 		try {
-			aas.activate(key, token, newPassword, confirmPassword);
+			activated = aas.activate(key, token, newPassword, confirmPassword);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			// 비밀번호 형식 오류 같은 경우 다시 입력할 수 있도록 같은 화면을 돌려준다
-			// redirect로 돌리면 토큰을 다시 URL에 붙여야 해서, 여기서는 바로 화면을 그린다.
+			// 비밀번호 형식 오류 같은 경우 다시 입력할 수 있도록 같은 화면을 돌려준다.
+			// redirect로 돌리면 토큰을 다시 url에 붙여야 해서, 여기서는 바로 화면을 그린다.
 			model.addAttribute("formError", e.getMessage());
 			
 			try {
@@ -63,6 +67,9 @@ public class PartnerActivationController {
 			return "partner-activate";
 		}
 		
-		return "redirect:/portal/login?activated&role=AGENCY";
+		// 활성화한 계정 종류에 맞는 로그인 탭을 열어준다.
+		String tab = activated.getRole() == Role.ARTIST ? "ARTIST" : "AGENCY";
+		
+		return "redirect:/portal/login?activated&role=" + tab;
 	}
 }

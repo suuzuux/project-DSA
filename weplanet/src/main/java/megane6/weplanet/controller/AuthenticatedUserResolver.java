@@ -2,7 +2,6 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.exception.StaleSessionException;
 import megane6.weplanet.repository.UserRepository;
@@ -30,14 +29,14 @@ public class AuthenticatedUserResolver {
 		}
 		return getAuthenticatedUserOrThrow(principal.getId());
 	}
-
-	// 로그인한 사람이 ARTIST 역할인지 - "Hide from Artists" 필터링(36번)처럼
+	
+	// 로그인한 사람이 아티스트 쪽 계정(솔로/그룹 + 그룹 멤버)인지 - "Hide from Artists" 필터링(36번)처럼
 	// 여러 컨트롤러에서 공통으로 필요한 판단이라 여기에 모아둠
 	public boolean isArtist(AuthenticatedUser principal) {
 		if (principal == null) {
 			return false;
 		}
-		return getAuthenticatedUserOrThrow(principal.getId()).getRole() == Role.ARTIST;
+		return getAuthenticatedUserOrThrow(principal.getId()).isArtistSide();
 	}
 
 	// 세션에 남아있는 로그인 principal 기준 조회 - 계정이 DB에서 지워졌는데 세션엔 아직 로그인 상태로

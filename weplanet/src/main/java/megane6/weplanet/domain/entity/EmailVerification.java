@@ -167,6 +167,27 @@ public class EmailVerification {
 		);
 	}
 	
+	// 소속사가 포털에서 등록한 아티스트 그룹 계정의 활성화 링크
+	// 소속사 활성화와 구조는 같고, purpose만 다르다
+	// purpose를 나눠야 소속사용 링크로 아티스트 계정을, 아티스트용 링크로 소속사 계정을 여는 일이 없다
+	public static EmailVerification createForArtistActivation(
+			User artistUser,
+			String tokenHash,
+			LocalDateTime expiresAt
+	) {
+		if (artistUser == null) {
+			throw new IllegalArgumentException("이메일 인증 회원이 필요합니다.");
+		}
+		
+		return new EmailVerification(
+				artistUser,
+				artistUser.getEmail(),
+				EmailVerificationPurpose.ARTIST_ACTIVATION,
+				tokenHash,
+				expiresAt
+		);
+	}
+	
 	public boolean isExpired(LocalDateTime now) {
 		return !now.isBefore(expiresAt);
 	}

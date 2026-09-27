@@ -227,8 +227,9 @@ public class AdminUserService {
 		return switch (role) {
 			case FAN -> "팬";
 			case ARTIST -> "아티스트";
-			case AGENCY -> "소속사";
+			case AGENCY -> "에이전시";
 			case ADMIN -> "관리자";
+			case ARTIST_MEMBER -> "아티스트 멤버";
 		};
 	}
 	

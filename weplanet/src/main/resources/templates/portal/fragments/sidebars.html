@@ -13,6 +13,10 @@
     </nav>
     <p class="portal-artists__empty" th:if="${#lists.isEmpty(managedArtists)}">소속 아티스트가 없습니다.</p>
     <div class="portal-artists__footer">
+      <a class="btn btn--ghost btn--sm" th:href="@{/portal/artists/new}"
+         th:classappend="${activeMenu == 'artistNew'} ? ' is-active'"
+         style="display:block;text-align:center;margin-bottom:12px;">+ 아티스트 등록
+      </a>
       <form th:action="@{/logout}" method="post" style="display:inline;">
         <button type="submit" class="portal-logout-link">로그아웃</button>
       </form>
@@ -35,6 +39,7 @@
       <a th:href="@{/portal/live}" th:classappend="${activeMenu == 'live'} ? ' is-active'">📡 방송</a>
       <th:block th:if="${isAgency}">
         <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'">👤 프로필 관리</a>
+        <a th:href="@{/portal/members}" th:classappend="${activeMenu == 'members'} ? ' is-active'">👥 멤버 관리</a>
         <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'">⚙ 신고함 / 차단</a>
       </th:block>
     </nav>

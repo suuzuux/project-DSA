@@ -3,12 +3,15 @@ package megane6.weplanet.controller.community;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.controller.AuthenticatedUserResolver;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 @Controller
@@ -17,6 +20,7 @@ public class CommunityJoinController {
 	
 	private final CommunityJoinService communityJoinService;
 	private final AuthenticatedUserResolver userResolver;
+	private final CommunityArtistResolver communityArtistResolver;
 	
 	@PostMapping("/community/{artistId}/join")
 	public String join(@PathVariable Long artistId,
@@ -27,10 +31,10 @@ public class CommunityJoinController {
 					   @AuthenticationPrincipal AuthenticatedUser principal,
 					   @RequestHeader(value = "Referer", required = false) String referer) {
 		User me = userResolver.requireAuthenticated(principal);
-		if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
+		if (!me.canParticipateInCommunity()) {
 			throw new IllegalStateException("팬 또는 아티스트 계정만 커뮤니티에 가입할 수 있습니다.");
 		}
-		if (me.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(me, artistId)) {
 			throw new IllegalStateException("본인 커뮤니티에는 가입할 수 없습니다.");
 		}
 		communityJoinService.join(me, artistId, nickname, bio, avatar, background);

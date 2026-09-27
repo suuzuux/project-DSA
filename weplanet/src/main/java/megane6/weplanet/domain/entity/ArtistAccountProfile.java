@@ -48,4 +48,36 @@ public class ArtistAccountProfile {
 
 	@Column(name = "profile_img", length = 500)
 	private String profileImg;
+	
+	private ArtistAccountProfile(
+			User user,
+			Agency agency,
+			String stageName,
+			LocalDate debutDate
+	) {
+		this.user = user;
+		this.agency = agency;
+		this.stageName = stageName;
+		this.debutDate = debutDate;
+	}
+	
+	// 그룹 계정과 멤버 계정 모두 이 행이 있어야 한다.
+	// group_members.artist_id가 artist_profiles.user_id 를 FK로 참조하기 때문
+	// userId는 @MapsId가 user의 id로 채워주므로 따로 넣지 않는다
+	public static ArtistAccountProfile create(
+			User user,
+			Agency agency,
+			String stageName,
+			LocalDate debutDate
+	) {
+		if (user == null || agency == null) {
+			throw new IllegalArgumentException("아티스트 계정과 소속사가 필요합니다.");
+		}
+		
+		if (stageName == null || stageName.isBlank()) {
+			throw new IllegalArgumentException("활동명을 입력해주세요.");
+		}
+		
+		return new ArtistAccountProfile(user, agency, stageName.trim(), debutDate);
+	}
 }

@@ -50,7 +50,7 @@ public class UserFollowService {
         if (me.getId().equals(targetUserId)) {
             throw new IllegalStateException("본인을 팔로우할 수 없습니다.");
         }
-        if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
+        if (!me.canParticipateInCommunity()) {
             throw new IllegalStateException("팬 또는 아티스트 계정만 팔로우할 수 있습니다.");
         }
 

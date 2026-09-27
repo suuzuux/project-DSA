@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.controller.SocialLoginEntryController;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.SocialLoginIntent;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.UserRepository;
@@ -235,7 +236,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 	}
 	
 	private String resolveNickname(String suggestedNickname) {
-		if (suggestedNickname != null && !suggestedNickname.isBlank() && !userRepository.existsByNickname(suggestedNickname)) {
+		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
+		if (suggestedNickname != null && !suggestedNickname.isBlank()
+				&& !userRepository.existsByNicknameAndRoleNotIn(suggestedNickname, Role.ARTIST_SIDE)) {
 			return suggestedNickname;
 		}
 		return nicknameGenerator.generate();
