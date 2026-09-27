@@ -13,7 +13,11 @@
     <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() != null}">
       <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
     </span>
-    <h1 class="community-top__name" th:attr="data-artist-id=${artist.id()}" th:text="${artist.nickname()}">아티스트</h1>
+    <!-- 아티스트명을 누르면 이 커뮤니티 첫 화면(하이라이트)으로 -->
+    <h1 class="community-top__name" th:attr="data-artist-id=${artist.id()}">
+      <a th:href="@{/community/{id}/highlight(id=${artist.id()})}" th:text="${artist.nickname()}"
+         style="color:inherit;text-decoration:none;">아티스트</a>
+    </h1>
   </div>
   <div class="community-top__right">
     <th:block sec:authorize="hasRole('AGENCY')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -34,7 +38,13 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
     </a>
     <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <a class="icon-btn" th:href="@{/community/{id}/profile(id=${artist.id()})}" aria-label="내 프로필"><span class="avatar avatar--sm">나</span></a>
+      <!-- 내 프로필 사진이 있으면 사진, 없으면 '나' (myAvatarUrl 은 CommunityController.populateArtistModel 이 채움) -->
+      <a class="icon-btn" th:href="@{/community/{id}/profile(id=${artist.id()})}" aria-label="내 프로필">
+        <span class="avatar avatar--sm" th:if="${myAvatarUrl == null}">나</span>
+        <span class="avatar avatar--sm" th:if="${myAvatarUrl != null}">
+          <img th:src="${myAvatarUrl}" alt="내 프로필" />
+        </span>
+      </a>
     </th:block>
     <!-- 아티스트는 메인 사이트(로그아웃 버튼이 있는 곳)로 가지 않으므로 커뮤니티 헤더에서 바로 로그아웃.
          로그아웃 후에는 RoleAwareLogoutSuccessHandler 가 아티스트 로그인 탭으로 보낸다. -->

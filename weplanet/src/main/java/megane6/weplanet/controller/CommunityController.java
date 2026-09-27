@@ -692,13 +692,24 @@ public class CommunityController {
 		model.addAttribute("otherCommunities",
 				communityDrawerHelper.otherCommunities(currentUser, artists));
 		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artistId));
-		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
+		CommunityProfile myCommunityProfile = joinedProfiles.get(artistId);
+		model.addAttribute("myCommunityProfile", myCommunityProfile);
 		// 아티스트 본인 '나' 프로필: 에이전시/포털에서 등록한 배경·사진·소개 반영
 		if (isOwnCommunity) {
 			model.addAttribute("artistPortalAvatarUrl", portalManagementService.findLogoImageUrl(artist));
 			model.addAttribute("artistPortalBackgroundUrl", portalManagementService.findHeaderImageUrl(artist));
 			model.addAttribute("artistPortalIntro", portalManagementService.findIntro(artist));
 		}
+		// 헤더 오른쪽 '나' 아이콘에 보여줄 내 프로필 사진.
+		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 내 계정의 포털 프로필 사진, 팬은 이 커뮤니티 가입 프로필 사진.
+		String myAvatarUrl = null;
+		if (isOwnCommunity) {
+			myAvatarUrl = portalManagementService.findLogoImageUrl(currentUser);
+		} else if (myCommunityProfile != null && myCommunityProfile.getAvatarStoredName() != null
+				&& !myCommunityProfile.getAvatarStoredName().isBlank()) {
+			myAvatarUrl = "/uploads/" + myCommunityProfile.getAvatarStoredName();
+		}
+		model.addAttribute("myAvatarUrl", myAvatarUrl);
 		
 		if (principal != null) {
 			membershipService.getMembership(currentUser, artist).ifPresent(membership -> {

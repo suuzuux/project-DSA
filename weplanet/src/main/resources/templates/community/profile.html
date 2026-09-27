@@ -303,7 +303,8 @@
                    th:text="${cardIntro}">소개글</p>
 
                 <!-- FOLLOW-01: 팔로워/팔로잉 숫자 - 콘텐츠 숨김이면 함께 가려진다. 클릭하면 리스트 모달 -->
-                <p class="profile-follow-counts" style="margin:16px 0;" th:unless="${contentHidden}">
+                <!-- 아티스트(솔로 본인/그룹 멤버) 프로필에는 팔로워/팔로잉 숫자·목록을 보여주지 않는다 -->
+                <p class="profile-follow-counts" style="margin:16px 0;" th:unless="${contentHidden or artistSide}">
                     <button type="button" data-modal-open="followersModal"
                             th:attr="data-list-url=@{/community/{artistId}/profile/{userId}/followers(artistId=${artist.id()}, userId=${profileUserId})}">
                         <strong th:text="${followerCount}">0</strong>

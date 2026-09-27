@@ -12,6 +12,7 @@ import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.community.CommunityProfileRepository;
+import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.service.FileStorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class CommunityJoinService {
 	
 	private final CommunityMemberRepository communityMemberRepository;
 	private final CommunityProfileRepository communityProfileRepository;
+	private final ArtistProfileRepository artistProfileRepository;
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
 	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
@@ -270,11 +272,24 @@ public class CommunityJoinService {
 			}
 		}
 
+		// 아티스트 쪽 작성자(솔로 본인/그룹 멤버)는 커뮤니티에 가입하지 않아 가입 프로필이 없다.
+		// 대신 커뮤니티 프로필 편집에서 고친 계정별 포털 프로필(artist_profile) 사진을 쓴다. 역시 한 쿼리로 읽는다.
+		List<Long> artistSideAuthorIds = uniqueAuthors.values().stream()
+				.filter(author -> !profilesByAuthorId.containsKey(author.getId()) && author.isArtistSide())
+				.map(User::getId)
+				.toList();
+		Map<Long, String> artistAvatarUrls = new HashMap<>();
+		if (!artistSideAuthorIds.isEmpty()) {
+			for (Object[] row : artistProfileRepository.findLogoImageUrlsByArtistIds(artistSideAuthorIds)) {
+				artistAvatarUrls.put((Long) row[0], toPublicImageUrl(String.valueOf(row[1])));
+			}
+		}
+
 		Map<String, CommunityAuthorView> result = new LinkedHashMap<>();
 		uniqueAuthors.forEach((authorId, author) -> {
 			CommunityProfile profile = profilesByAuthorId.get(authorId);
 			String nickname = profile != null ? profile.getNickname() : author.getNickname();
-			String avatarUrl = null;
+			String avatarUrl = artistAvatarUrls.get(authorId);
 			if (profile != null
 					&& !profile.isContentHidden()
 					&& profile.getAvatarStoredName() != null
@@ -284,6 +299,15 @@ public class CommunityJoinService {
 			result.put(String.valueOf(authorId), new CommunityAuthorView(nickname, avatarUrl));
 		});
 		return result;
+	}
+
+	// 포털 프로필 이미지는 업로드 파일명 또는 외부 URL 로 저장된다 (PortalManagementService.toPublicImageUrl 과 같은 규칙)
+	private static String toPublicImageUrl(String storedOrUrl) {
+		String value = storedOrUrl.trim();
+		if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
+			return value;
+		}
+		return "/uploads/" + value;
 	}
 
 	// 화면에 프로필 카드(닉네임/소개글/아바타/배경) 그릴 때 씀
