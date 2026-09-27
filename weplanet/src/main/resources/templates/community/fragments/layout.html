@@ -40,6 +40,7 @@
   </div>
 </header>
 
+<!-- 커뮤니티 히어로 배너 - 배경 이미지를 3:1 비율로 꽉 채운다. -->
 <div th:fragment="hero" class="community-hero"
      th:style="${artistHeaderImageUrl != null and !#strings.isEmpty(artistHeaderImageUrl)}
                 ? |background-image:linear-gradient(180deg, transparent 30%, rgba(20, 24, 31, 0.55)), url('${artistHeaderImageUrl}'); background-size:cover; background-position:center;|
