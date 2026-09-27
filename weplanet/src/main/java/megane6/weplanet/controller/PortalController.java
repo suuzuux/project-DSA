@@ -23,6 +23,7 @@ import megane6.weplanet.security.RoleHomeRedirects;
 import megane6.weplanet.service.ArtistMemberService;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.email.ArtistInvitationMailService;
 import megane6.weplanet.service.live.LiveBroadcastService;
@@ -76,6 +77,8 @@ public class PortalController {
 	private final ArtistRegistrationService artistRegistrationService;
 	private final ArtistInvitationMailService artistInvitationMailService;
 	private final ArtistMemberService artistMemberService;
+	
+	private final CommunityArtistResolver communityArtistResolver;
 
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
@@ -226,21 +229,95 @@ public class PortalController {
 		
 		return "redirect:/portal/members";
 	}
+	
+	@PostMapping("/members/{memberId}/leave")
+	public String removeMember(@AuthenticationPrincipal AuthenticatedUser principal,
+							   @PathVariable Long memberId,
+							   RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			String name = artistMemberService.removeMember(actor, artist.getId(), memberId);
+			redirectAttributes.addFlashAttribute("msg", name + " 멤버를 탈퇴 처리했습니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/portal/members";
+	}
+	
+	@PostMapping("/members/{memberId}/reset-password")
+	public String resetMemberPassword(@AuthenticationPrincipal AuthenticatedUser principal,
+									  @PathVariable Long memberId,
+									  RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			String name = artistMemberService.resetMemberPassword(actor, artist.getId(), memberId);
+			redirectAttributes.addFlashAttribute("msg",
+					name + " 멤버의 개인 비밀번호를 초기화했습니다. 다음 로그인 때 새로 정합니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/portal/members";
+	}
+	
+	// 선택된 아티스트(그룹)의 계정 활성화 메일 재발송
+	@PostMapping("/artists/resend-activation")
+	public String resendArtistActivation(@AuthenticationPrincipal AuthenticatedUser principal,
+										 RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		
+		ArtistRegistrationService.RegisteredArtist reissued;
+		try {
+			reissued = artistRegistrationService.reissueActivation(actor, artist.getId());
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/portal/members";
+		}
+		
+		// 토큰 재발급 트랜잭션이 커밋된 뒤에 메일을 보낸다 (등록 때와 같은 이유)
+		try {
+			artistInvitationMailService.sendActivationMail(
+					reissued.username(),
+					reissued.groupName(),
+					reissued.agencyName(),
+					reissued.activation()
+			);
+			redirectAttributes.addFlashAttribute("msg",
+					reissued.username() + " 으로 활성화 메일을 다시 보냈습니다. 이전 링크는 더 이상 사용할 수 없습니다.");
+		} catch (Exception mailException) {
+			log.warn("아티스트 활성화 메일 재발송 실패: artistId={}", reissued.artistId(), mailException);
+			redirectAttributes.addFlashAttribute("error", "활성화 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+		}
+		return "redirect:/portal/members";
+	}
 
 	@GetMapping("/live")
 	public String live(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		if (principal == null) {
 			return "redirect:/portal/login";
 		}
-		// 아티스트는 본인 방송 페이지만 진입 가능 (커뮤니티 Live 탭의 '방송하기'에서 이동)
-		if ("ROLE_ARTIST".equals(principal.getRoleName())) {
-			User artist = userRepository.findById(principal.getId())
+		// 아티스트(솔로 본인/그룹 멤버)는 "내 커뮤니티" 방송 페이지만 진입 가능 (커뮤니티 Live 탭의 '방송하기'에서 이동)
+		if ("ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_ARTIST_MEMBER".equals(principal.getRoleName())) {
+			User me = userRepository.findById(principal.getId()).orElse(null);
+			Long ownCommunityId = communityArtistResolver.ownCommunityId(me);
+			User artist = ownCommunityId == null ? null : userRepository.findById(ownCommunityId)
 					.filter(user -> user.getRole() == Role.ARTIST)
 					.orElse(null);
 			if (artist == null) {
 				return "redirect:/portal/login";
 			}
-			populateCommon(model, artist, artist, "live");
+			populateCommon(model, me, artist, "live");
 			model.addAttribute("isAgency", false);
 			model.addAttribute("managedArtists", List.of());
 			model.addAttribute("liveStatus", liveBroadcastService.status(artist.getId()));

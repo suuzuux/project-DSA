@@ -9,6 +9,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.ArtistGroupProfile;
 import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
 import megane6.weplanet.repository.ArtistGroupRepository;
@@ -98,6 +99,25 @@ public class ArtistRegistrationService {
 				artist.getId(), agency.getId(), groupName);
 		
 		return new RegisteredArtist(artist.getId(), email, groupName, agency.getName(), activation);
+	}
+	
+	// 그룹 계정 활성화 메일 재발송. 이전 링크는 모두 무효가 된다(AgencyActivationService.reissue 참고).
+	@Transactional
+	public RegisteredArtist reissueActivation(User agencyUser, Long artistId) {
+		Agency agency = requireAgency(agencyUser);
+		
+		User artist = ur.findOneById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.filter(user -> agency.getId().equals(user.agencyId()))
+				.orElseThrow(() -> new IllegalStateException("관리할 수 있는 아티스트가 아닙니다."));
+		
+		if (artist.getStatus() != UserStatus.PENDING_ACTIVATION) {
+			throw new IllegalStateException("이미 활성화된 계정입니다.");
+		}
+		
+		AgencyActivationService.IssuedActivation activation = aas.reissueActivationToken(artist);
+		
+		return new RegisteredArtist(artist.getId(), artist.getUsername(), artist.getNickname(), agency.getName(), activation);
 	}
 	
 	private Agency requireAgency(User agencyUser) {

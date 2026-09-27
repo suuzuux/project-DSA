@@ -27,7 +27,28 @@
     // 아티스트 계정으로 로그인했는지 - 아티스트는 팬용 DM 인박스 대신
     // 자기 자신의 방송 채팅방 하나로 바로 들어가야 하므로 분기가 필요함
     const roleName = body.getAttribute("data-role") || "";
-    const isArtist = roleName === "ROLE_ARTIST";
+    const isArtist = roleName === "ROLE_ARTIST" || roleName === "ROLE_ARTIST_MEMBER";
+
+    // 아티스트 채팅방 번호(= 커뮤니티 id). 솔로 아티스트는 내 id 와 같고,
+    // 그룹 멤버는 내 id 가 아니라 소속 그룹 id 라서 서버에 한 번 물어본다
+    let artistRoomId = roleName === "ROLE_ARTIST" ? fanId : null;
+
+    function withArtistRoomId(callback) {
+        if (artistRoomId) {
+            callback(artistRoomId);
+            return;
+        }
+        fetch("/chat/my-artist-room")
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                artistRoomId = data.artistId;
+                if (artistRoomId) {
+                    callback(artistRoomId);
+                }
+            });
+    }
 
     // 관리자는 DM을 주고받을 일이 없는 계정이라(shell.js가 채팅 버튼 자체를 안 그림) 이 스크립트도 아예 동작 안 함
     if (roleName === "ROLE_ADMIN") return;
@@ -348,40 +369,43 @@
         if (composerEl) composerEl.style.display = "";
         updateQuota(null); // 하루 전송 한도도 팬 전용 제약이라 표시 안 함
 
-        fetch("/chat/room-data/artist?artistId=" + fanId)
-            .then(function (res) {
-                return res.json();
-            })
-            .then(function (data) {
-                const messages = document.getElementById("dmMessages");
-                if (messages) {
-                    messages.innerHTML = "";
-                    data.messages.forEach(function (m) {
-                        appendBubble(messages, m);
+        withArtistRoomId(function (roomId) {
+            fetch("/chat/room-data/artist?artistId=" + roomId)
+                .then(function (res) {
+                    return res.json();
+                })
+                .then(function (data) {
+                    const messages = document.getElementById("dmMessages");
+                    if (messages) {
+                        messages.innerHTML = "";
+                        data.messages.forEach(function (m) {
+                            appendBubble(messages, m);
+                        });
+                    }
+
+                    unsubscribeAll();
+                    ensureSocket(function () {
+                        // 우리 커뮤니티 방송이 그대로 되돌아오는 채널 (방 번호 = 커뮤니티 id)
+                        const broadcastTopic = "/topic/chat." + roomId;
+                        // 팬들이 보낸 메시지 중 30%만 도착하는 채널 (CHAT-02 비대칭 수신 - 도배 방지)
+                        const artistFeedTopic = "/topic/chat." + roomId + ".artistFeed";
+                        // 경고는 "보낸 사람 본인"에게 오므로 방 번호가 아니라 내 id
+                        const errorTopic = "/topic/chat.error." + fanId;
+
+                        subscriptions.push(stompClient.subscribe(broadcastTopic, function (frame) {
+                            appendBubble(messages, JSON.parse(frame.body));
+                        }));
+
+                        subscriptions.push(stompClient.subscribe(artistFeedTopic, function (frame) {
+                            appendBubble(messages, JSON.parse(frame.body));
+                        }));
+
+                        subscriptions.push(stompClient.subscribe(errorTopic, function (frame) {
+                            showWarning(JSON.parse(frame.body).message);
+                        }));
                     });
-                }
-
-                unsubscribeAll();
-                ensureSocket(function () {
-                    // 내가 방송한 메시지가 그대로 나에게도 되돌아오는 채널
-                    const broadcastTopic = "/topic/chat." + fanId;
-                    // 팬들이 보낸 메시지 중 30%만 도착하는 채널 (CHAT-02 비대칭 수신 - 도배 방지)
-                    const artistFeedTopic = "/topic/chat." + fanId + ".artistFeed";
-                    const errorTopic = "/topic/chat.error." + fanId;
-
-                    subscriptions.push(stompClient.subscribe(broadcastTopic, function (frame) {
-                        appendBubble(messages, JSON.parse(frame.body));
-                    }));
-
-                    subscriptions.push(stompClient.subscribe(artistFeedTopic, function (frame) {
-                        appendBubble(messages, JSON.parse(frame.body));
-                    }));
-
-                    subscriptions.push(stompClient.subscribe(errorTopic, function (frame) {
-                        showWarning(JSON.parse(frame.body).message);
-                    }));
                 });
-            });
+        });
     }
 
     document.addEventListener("click", function (e) {
@@ -420,11 +444,11 @@
             if (!text) return;
 
             if (isArtist) {
-                // fanId를 null로 보내면 아티스트 DM. 서버가 저장한 뒤 가상 팬 5명이 답장함
-                if (!fanId) return;
+                // fanId를 null로 보내면 아티스트 DM. 방 번호는 커뮤니티 id, 보낸 사람은 나
+                if (!artistRoomId) return;
                 ensureSocket(function () {
                     stompClient.send("/app/chat.send", {}, JSON.stringify({
-                        artistId: fanId,
+                        artistId: artistRoomId,
                         fanId: null,
                         senderId: fanId,
                         content: text
