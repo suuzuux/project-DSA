@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.EmailVerification;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.EmailVerificationPurpose;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.EmailVerificationRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +18,9 @@ import java.util.Base64;
 import java.util.regex.Pattern;
 
 /**
- * 입점 승인으로 만들어진 소속사 계정의 활성화(비밀번호 설정)를 담당
+ * 초대 링크로 만들어진 계정의 활성화(비밀번호 설정)를 담당
+ *  - 입점 승인으로 만들어진 소속사 계정 (AGENCY_ACTIVATION)
+ *  - 소속사가 포털에서 등록한 아티스트 계정 (ARTIST_ACTIVATION)
  * 회원가입 인증과 달리 6자리 숫자가 아니라 긴 랜덤 토큰 사용
  * 메일 링크를 그냥 누르면 되도록 만들기 위해서이고, 대신 추측이 불가능하도록 길이를 충분히 길게 잡음
  */
@@ -41,7 +44,7 @@ public class AgencyActivationService {
 	@Transactional
 	public IssuedActivation issueActivationToken(User agencyUser) {
 		if (agencyUser == null) {
-			throw new IllegalArgumentException("소속사 계정이 필요합니다.");
+			throw new IllegalArgumentException("활성화할 계정이 필요합니다.");
 		}
 		
 		if (agencyUser.getStatus() != UserStatus.PENDING_ACTIVATION) {
@@ -51,8 +54,9 @@ public class AgencyActivationService {
 		String rawToken = generateToken();
 		
 		// DB에는 해시만 저장. DB가 유출돼도 활성화 링크를 만들어낼 수 없음
+		// 소속사/아티스트 중 어떤 링크인지는 계정 역할로 정한다
 		EmailVerification saved = evr.save(
-				EmailVerification.createForAgencyActivation(
+				createVerification(
 						agencyUser,
 						pe.encode(rawToken),
 						LocalDateTime.now().plusHours(EXPIRATION_HOURS)
@@ -75,7 +79,7 @@ public class AgencyActivationService {
 		
 		evr.findByUser_IdAndPurposeAndConsumedAtIsNull(
 				agencyUser.getId(),
-				EmailVerificationPurpose.AGENCY_ACTIVATION)
+				purposeFor(agencyUser))
 				.forEach(previous -> previous.invalidate(now));
 		
 		return issueActivationToken(agencyUser);
@@ -94,7 +98,8 @@ public class AgencyActivationService {
 		
 		return new ActivationTarget(
 				user.getUsername(),
-				user.getNickname()
+				user.getNickname(),
+				user.getRole()
 		);
 	}
 	
@@ -122,7 +127,7 @@ public class AgencyActivationService {
 		verification.markVerified(now);
 		verification.consume(now);
 		
-		log.info("소속사 계정 활성화 완료: userId={}", user.getId());
+		log.info("계정 활성화 완료: userId={}, role={}", user.getId(), user.getRole());
 		
 		return user;
 	}
@@ -141,7 +146,8 @@ public class AgencyActivationService {
 			String rawToken,
 			LocalDateTime now
 	) {
-		if (verification.getPurpose() != EmailVerificationPurpose.AGENCY_ACTIVATION) {
+		// 계정 역할과 링크 용도가 맞아야 한다 (소속사 링크로 아티스트 계정을 여는 것 방지)
+		if (verification.getPurpose() != purposeFor(verification.getUser())) {
 			throw new IllegalArgumentException("유효하지 않은 활성화 링크입니다.");
 		}
 		
@@ -150,11 +156,11 @@ public class AgencyActivationService {
 		}
 		
 		if (verification.isExpired(now)) {
-			throw new IllegalStateException("활성화 링크가 만료되었습니다. 관리자에게 재발송을 요청해주세요.");
+			throw new IllegalStateException("활성화 링크가 만료되었습니다. 관리자(아티스트는 소속사)에게 재발송을 요청해주세요.");
 		}
 		
 		if (!verification.hasAttemptsRemaining()) {
-			throw new IllegalStateException("활성화 시도 횟수를 초과했습니다. 관리자에게 재발송을 요청해주세요.");
+			throw new IllegalStateException("활성화 시도 횟수를 초과했습니다. 관리자(아티스트는 소속사)에게 재발송을 요청해주세요.");
 		}
 		
 		if (rawToken == null || !pe.matches(rawToken, verification.getCodeHash())) {
@@ -170,6 +176,28 @@ public class AgencyActivationService {
 		if (!newPassword.equals(confirmPassword)) {
 			throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
 		}
+	}
+	
+	// 계정 역할 → 활성화 링크 용도
+	// 초대 링크로 활성화하는 계정은 소속사와 아티스트뿐이다
+	private EmailVerificationPurpose purposeFor(User user) {
+		if (user.getRole() == Role.AGENCY) {
+			return EmailVerificationPurpose.AGENCY_ACTIVATION;
+		}
+		
+		if (user.getRole() == Role.ARTIST) {
+			return EmailVerificationPurpose.ARTIST_ACTIVATION;
+		}
+		
+		throw new IllegalArgumentException("유효하지 않은 활성화 링크입니다.");
+	}
+	
+	private EmailVerification createVerification(User user, String tokenHash, LocalDateTime expiresAt) {
+		if (purposeFor(user) == EmailVerificationPurpose.ARTIST_ACTIVATION) {
+			return EmailVerification.createForArtistActivation(user, tokenHash, expiresAt);
+		}
+		
+		return EmailVerification.createForAgencyActivation(user, tokenHash, expiresAt);
 	}
 	
 	private String generateToken() {
@@ -190,8 +218,8 @@ public class AgencyActivationService {
 	){
 	}
 	
-	// 활성화 화면에 보여줄 정보
+	// 활성화 화면에 보여줄 정보 (role: 소속사/아티스트 문구와 로그인 탭 구분용)
 	public record ActivationTarget(
-			String username, String nickname
+			String username, String nickname, Role role
 	) {}
 }

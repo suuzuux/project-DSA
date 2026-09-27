@@ -41,6 +41,9 @@ public class SecurityConfig {
             "/login/reactivate",
             "/login/reactivate/**",
             "/portal/login",
+            // 아티스트 2단계 로그인(프로필 선택) - 로그인 전 화면. 세션의 대기 그룹 id 로만 접근 가능
+            "/portal/profiles",
+            "/portal/profiles/**",
             "/admin/login",
             "/api/schedules",
             "/api/notifications",

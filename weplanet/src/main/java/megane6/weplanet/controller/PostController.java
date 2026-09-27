@@ -2,7 +2,6 @@ package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
@@ -11,11 +10,8 @@ import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
-import megane6.weplanet.service.CommentService;
-import megane6.weplanet.service.PostService;
-import megane6.weplanet.service.ReportService;
-import megane6.weplanet.service.SummaryService;
-import megane6.weplanet.service.TranslateService;
+import megane6.weplanet.service.*;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.http.ResponseEntity;
@@ -61,6 +57,7 @@ public class PostController {
     // "가입 안 해도 요약/번역은 된다"는 구멍이 될 뻔했다. CommunityJoinService.isJoined(가입 여부)로 바로잡음.
     private final CommunityJoinService communityJoinService;
     private final PortalManagementService portalManagementService;
+    private final CommunityArtistResolver communityArtistResolver;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
         return userResolver.resolve(principal, testUserId);
@@ -178,28 +175,28 @@ public class PostController {
         // 로그인했으면 로그인한 사람이 작성자, 아니면 "테스트 작성자" 드롭다운으로 고른 사람이 작성자
         // (예전엔 testUserId로 비로그인 상태에서도 남의 계정 명의로 글을 쓸 수 있었음 - 이제 실제 로그인을 요구함)
         User tempAuthor = userResolver.requireAuthenticated(principal);
-
-        // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 해당 커뮤니티 본인만 작성 가능
-        if (type == BoardType.ARTIST && tempAuthor.getRole() != Role.ARTIST) {
+        
+        // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 해당 커뮤니티의 아티스트(솔로 본인/그룹 멤버)만 작성 가능
+        if (type == BoardType.ARTIST && !tempAuthor.isArtistSide()) {
             throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
         }
-
+        
         User communityArtist = null;
         if (artistId != null) {
             communityArtist = userRepository.findById(artistId)
                     .filter(user -> user.getRole() == Role.ARTIST)
                     .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-
-            if (type == BoardType.ARTIST && !tempAuthor.getId().equals(communityArtist.getId())) {
+            
+            if (type == BoardType.ARTIST && !communityArtistResolver.isArtistOf(tempAuthor, communityArtist.getId())) {
                 throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
             }
         }
-
-        // 팬 게시판: 팬 + (타 커뮤니티를 방문한 아티스트, 팬과 동일 권한)
+        
+        // 팬 게시판: 팬 + (타 커뮤니티를 방문한 아티스트/멤버, 팬과 동일 권한)
         if (type == BoardType.FAN) {
-            boolean visitingArtistAsFan = tempAuthor.getRole() == Role.ARTIST
+            boolean visitingArtistAsFan = tempAuthor.isArtistSide()
                     && communityArtist != null
-                    && !tempAuthor.getId().equals(communityArtist.getId());
+                    && !communityArtistResolver.isArtistOf(tempAuthor, communityArtist.getId());
             if (tempAuthor.getRole() != Role.FAN && !visitingArtistAsFan) {
                 throw new IllegalStateException("팬 게시판은 팬 회원만 작성할 수 있습니다.");
             }

@@ -5,7 +5,6 @@ import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.service.CommentService;
@@ -14,13 +13,7 @@ import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -42,10 +35,10 @@ public class PostDetailModelHelper {
 	public void populate(Model model, Post post, User currentUser, Long artistId) {
 		List<Comment> comments = commentService.getComments(post);
 		List<Comment> artistComments = comments.stream()
-				.filter(c -> c.getAuthor().getRole() == Role.ARTIST)
+				.filter(c -> c.getAuthor().isArtistSide())
 				.toList();
 		List<Comment> otherComments = comments.stream()
-				.filter(c -> c.getAuthor().getRole() != Role.ARTIST)
+				.filter(c -> !c.getAuthor().isArtistSide())
 				.toList();
 
 		List<User> authors = new ArrayList<>();

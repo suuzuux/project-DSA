@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>프로필 선택 | Artist Portal</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/portal.css}" />
+    <style>
+        .profile-grid { display:flex; flex-wrap:wrap; gap:20px; justify-content:center; margin:28px 0; }
+        .profile-card { width:110px; background:none; border:0; padding:0; cursor:pointer; text-align:center; }
+        .profile-card__avatar { width:96px; height:96px; margin:0 auto 8px; border-radius:50%; border:1.5px solid #333;
+                                display:flex; align-items:center; justify-content:center; font-size:28px; background:#fff; }
+        .profile-card:hover .profile-card__avatar { background:#f2f2f2; }
+        .profile-card__name { font-size:14px; font-weight:600; }
+        .profile-card__hint { font-size:11px; color:#888; }
+        .profile-modal { position:fixed; inset:0; z-index:100; display:none;
+                         align-items:center; justify-content:center; background:rgba(0,0,0,.45); }
+        .profile-modal.is-open { display:flex; }
+        .profile-modal__box { width:min(380px, 90vw); padding:28px; border-radius:16px; background:#fff; }
+    </style>
+</head>
+<body>
+<div class="portal-login">
+    <aside class="portal-login__visual">
+        <p class="text-xs" style="letter-spacing:0.12em;text-transform:uppercase;opacity:.7;margin-bottom:12px;">
+            ARTIST &amp; AGENCY PORTAL
+        </p>
+        <h1>아티스트와 팬을<br />더 가까이 연결합니다.</h1>
+        <p>공식 콘텐츠, 커뮤니티, 일정, 미디어를 하나의 공간에서 관리하세요.</p>
+        <a th:href="@{/}" class="mt-24" style="color:#9fd;font-size:13px;">← 메인 사이트로 이동</a>
+    </aside>
+
+    <div class="portal-login__form-wrap">
+        <div class="portal-login__form">
+            <h2 class="auth-card__title" style="margin-bottom:8px;">프로필 선택</h2>
+            <p class="text-sm text-muted" th:text="${screen.groupName() + ' 멤버 중 본인 프로필을 선택하세요.'}">
+                멤버 중 본인 프로필을 선택하세요.
+            </p>
+
+            <div class="profile-grid">
+                <button type="button" class="profile-card"
+                        th:each="p : ${screen.profiles()}"
+                        th:attr="data-member-id=${p.memberId()}, data-name=${p.name()}, data-password-set=${p.passwordSet()}">
+                    <span class="profile-card__avatar" th:text="${#strings.substring(p.name(), 0, 1)}">프</span>
+                    <span class="profile-card__name" th:text="${p.name()}">멤버</span><br />
+                    <span class="profile-card__hint" th:unless="${p.passwordSet()}">첫 로그인</span>
+                </button>
+            </div>
+
+            <form th:action="@{/portal/profiles/cancel}" method="post" style="text-align:center;">
+                <button type="submit" class="btn btn--ghost btn--sm">다른 그룹 계정으로 로그인</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 프로필 클릭 시 뜨는 모달 (와이어프레임: OO 로 로그인합니다 / 개인 비밀번호 / 취소·시작하기) -->
+<div class="profile-modal" id="profileModal" th:attr="data-error-member-id=${errorMemberId}">
+    <div class="profile-modal__box">
+        <div class="profile-card__avatar" id="modalAvatar">프</div>
+        <p style="text-align:center;margin-bottom:16px;"><strong id="modalName">멤버</strong> 로 로그인합니다.</p>
+
+        <p th:if="${profileError}" id="modalError" class="text-sm" style="color:#c45c26;margin-bottom:12px;"
+           th:text="${profileError}"></p>
+
+        <!-- action 의 0 은 자리표시. 클릭한 프로필의 memberId 로 스크립트가 바꾼다 -->
+        <form id="profileForm" th:action="@{/portal/profiles/0}" method="post">
+            <div class="form-group">
+                <label class="form-label" for="profilePassword">개인 비밀번호</label>
+                <input class="form-input" id="profilePassword" name="password" type="password"
+                       maxlength="20" required placeholder="비밀번호 입력" />
+            </div>
+            <div class="form-group" id="confirmGroup" style="display:none;">
+                <label class="form-label" for="profileConfirm">개인 비밀번호 확인</label>
+                <input class="form-input" id="profileConfirm" name="confirmPassword" type="password"
+                       maxlength="20" placeholder="비밀번호 다시 입력" />
+                <p class="text-sm text-muted" style="margin-top:6px;">
+                    처음 로그인하는 프로필입니다. 앞으로 쓸 개인 비밀번호를 정해주세요. (영문, 숫자 포함 8~20자)
+                </p>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button type="button" class="btn btn--ghost" style="flex:1;" id="modalCancel">취소</button>
+                <button type="submit" class="btn btn--primary" style="flex:1;">시작하기</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+      var modal = document.getElementById("profileModal");
+      var form = document.getElementById("profileForm");
+      var nameEl = document.getElementById("modalName");
+      var avatarEl = document.getElementById("modalAvatar");
+      var passwordInput = document.getElementById("profilePassword");
+      var confirmGroup = document.getElementById("confirmGroup");
+      var confirmInput = document.getElementById("profileConfirm");
+      var errorEl = document.getElementById("modalError");
+      // "/portal/profiles/0" → "/portal/profiles/"
+      var baseAction = form.getAttribute("action").replace(/0$/, "");
+
+      function openModal(card, keepError) {
+        var name = card.getAttribute("data-name");
+        var firstLogin = card.getAttribute("data-password-set") !== "true";
+
+        form.setAttribute("action", baseAction + card.getAttribute("data-member-id"));
+        nameEl.textContent = name;
+        avatarEl.textContent = name.charAt(0);
+
+        // 첫 로그인이면 "비밀번호 확인" 칸을 보여주고 필수로 만든다
+        confirmGroup.style.display = firstLogin ? "" : "none";
+        confirmInput.required = firstLogin;
+        passwordInput.autocomplete = firstLogin ? "new-password" : "current-password";
+
+        passwordInput.value = "";
+        confirmInput.value = "";
+        if (errorEl && !keepError) {
+          errorEl.style.display = "none";
+        }
+
+        modal.classList.add("is-open");
+        passwordInput.focus();
+      }
+
+      document.querySelectorAll(".profile-card").forEach(function (card) {
+        card.addEventListener("click", function () {
+          openModal(card, false);
+        });
+      });
+
+      document.getElementById("modalCancel").addEventListener("click", function () {
+        modal.classList.remove("is-open");
+      });
+
+      // 비밀번호가 틀려서 돌아온 경우: 그 프로필 모달을 에러 문구와 함께 다시 연다
+      var errorMemberId = modal.getAttribute("data-error-member-id");
+      if (errorMemberId) {
+        var card = document.querySelector('.profile-card[data-member-id="' + errorMemberId + '"]');
+        if (card) {
+          openModal(card, true);
+        }
+      }
+    })();
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>아티스트 등록 | Artist Portal</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+<div class="portal-shell"
+     th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
+  <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
+
+  <main class="portal-main">
+    <div class="portal-main__head">
+      <h1>아티스트 등록</h1>
+      <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}">← 대시보드</a>
+    </div>
+
+    <p class="text-sm text-muted" style="margin-bottom:16px;">
+      등록하면 커뮤니티가 바로 만들어지고, 아래 그룹 이메일로 비밀번호 설정 링크가 발송됩니다.<br />
+      멤버(프로필)는 등록 후 멤버 관리에서 추가합니다. 멤버가 없으면 솔로 아티스트로 동작합니다.
+    </p>
+
+    <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+    <form class="settings-block" style="max-width:800px;" th:action="@{/portal/artists}" method="post">
+      <div class="form-group">
+        <label class="form-label" for="groupName">아티스트(그룹)명 *</label>
+        <input class="form-input" id="groupName" name="groupName" maxlength="50" required
+               th:value="${form != null ? form.groupName() : ''}" placeholder="커뮤니티 이름으로 표시됩니다." />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">그룹 로그인 이메일 *</label>
+        <input class="form-input" id="email" name="email" type="email" maxlength="50" required
+               th:value="${form != null ? form.email() : ''}" placeholder="artist@domain.com" />
+        <p class="text-sm text-muted" style="margin-top:6px;">아티스트 포털 1단계 로그인 아이디가 됩니다.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="nameEn">영문명</label>
+        <input class="form-input" id="nameEn" name="nameEn" maxlength="100"
+               th:value="${form != null ? form.nameEn() : ''}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fandomName">팬덤명</label>
+        <input class="form-input" id="fandomName" name="fandomName" maxlength="50"
+               th:value="${form != null ? form.fandomName() : ''}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="debutDate">데뷔일</label>
+        <input class="form-input" id="debutDate" name="debutDate" type="date" style="max-width:220px;"
+               th:value="${form != null ? form.debutDate() : ''}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="gender">성별(탐색 필터)</label>
+        <select class="form-select" id="gender" name="gender" style="max-width:220px;">
+          <option value="">선택 안 함</option>
+          <option value="MALE" th:selected="${form != null and form.gender() != null and form.gender().name() == 'MALE'}">남성</option>
+          <option value="FEMALE" th:selected="${form != null and form.gender() != null and form.gender().name() == 'FEMALE'}">여성</option>
+          <option value="MIXED" th:selected="${form != null and form.gender() != null and form.gender().name() == 'MIXED'}">혼성</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="nationality">국적</label>
+        <input class="form-input" id="nationality" name="nationality" maxlength="50" style="max-width:220px;"
+               th:value="${form != null ? form.nationality() : 'KR'}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="category">카테고리</label>
+        <input class="form-input" id="category" name="category" maxlength="50" style="max-width:220px;"
+               th:value="${form != null ? form.category() : '아이돌'}" />
+      </div>
+      <div class="flex-center" style="justify-content:flex-end;">
+        <button type="submit" class="btn btn--primary">등록하고 초대 메일 보내기</button>
+      </div>
+    </form>
+  </main>
+</div>
+</body>
+</html>

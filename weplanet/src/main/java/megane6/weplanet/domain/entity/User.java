@@ -176,6 +176,24 @@ public class User {
 		return user;
 	}
 	
+	// 소속사가 포털에서 등록하는 아티스트(그룹/솔로) 계정
+	// 로그인 아이디 = 소속사가 입력한 그룹 이메일
+	// 소속사 대표 계정과 마찬가지로 비밀번호는 비워두고, 초대 링크에서 본인이 정한다
+	public static User createPendingArtist(String email, String groupName, String nickname) {
+		User user = new User(email, null, groupName, nickname, email, Role.ARTIST);
+		user.status = UserStatus.PENDING_ACTIVATION;
+		
+		return user;
+	}
+	
+	// 그룹 멤버(프로필) 계정
+	// 멤버는 아이디/비밀번호 폼으로 로그인하지 않고, 그룹 로그인 -> 프로필 선택으로만 돌린다
+	// 그래서 username / email은 서비서에서 시스템용 값으로 만들어 넣고,
+	// 개인 비밀번호는 프로필을 처음 선택할 때 본인이 정함 (그 전까지 password = null)
+	public static User createArtistMember(String username, String memberName, String nickname, String email) {
+		return new User(username, null, memberName, nickname, email, Role.ARTIST_MEMBER);
+	}
+	
 	public static User createAdmin(String username, String encodedPassword, String realName, String nickname, String email) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.ADMIN);
 	}
@@ -259,6 +277,24 @@ public class User {
 		this.emailVerifiedAt = LocalDateTime.now();
 	}
 	
+	// 멤버가 프로필을 처음 선택했을 때 개인 비밀번호를 저장한다
+	// 이미 비밀번호가 있으면 막는다 - 다른 사람이 남의 프로필 비밀번호를 덮어쓰지 못하게
+	public void setInitialMemberPassword(String encodedPassword) {
+		if (this.role != Role.ARTIST_MEMBER) {
+			throw new IllegalStateException("그룹 멤버 계정이 아닙니다.");
+		}
+		
+		if (hasPassword()) {
+			throw new IllegalStateException("이미 개인 비밀번호가 설정된 프로필입니다.");
+		}
+		
+		if (encodedPassword == null || encodedPassword.isBlank()) {
+			throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+		}
+		
+		this.password = encodedPassword;
+	}
+	
 	public void markDormantNoticeSent() {
 		this.dormantNoticeSentAt = LocalDateTime.now();
 	}
@@ -312,6 +348,18 @@ public class User {
 
 	public Long agencyId() {
 		return agency == null ? null : agency.getId();
+	}
+	
+	// 아티스트 쪽 계정인지 (그룹/솔로 계정 + 그룹 멤버)
+	// 이름 옆 체크 표시, "Hide from Artists" 필터 등에 쓴다. 템플릿에서는 ${user.artistSide} 로 읽힌다.
+	public boolean isArtistSide() {
+		return this.role != null && this.role.isArtistSide();
+	}
+	
+	// 커뮤니티 가입/팬 게시판 글쓰기/멤버십/팔로우 같은 "참여"를 할 수 있는 계정인지
+	// 아티스트 쪽 계정은 남의 커뮤니티에서 팬과 같은 자격으로 참여한다.
+	public boolean canParticipateInCommunity() {
+		return this.role == Role.FAN || isArtistSide();
 	}
 
 	// [설정 - 이벤트·혜택 알림] 토글 클릭 시 서버가 최종값을 확정한다 (화면 상태를 그대로 믿지 않음).

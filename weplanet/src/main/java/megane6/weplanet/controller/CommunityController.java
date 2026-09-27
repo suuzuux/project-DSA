@@ -14,10 +14,11 @@ import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
-import megane6.weplanet.service.UserFollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.UserFollowService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
@@ -57,6 +58,8 @@ public class CommunityController {
 	private final LiveBroadcastService liveBroadcastService;
 	
 	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
+	
+	private final CommunityArtistResolver communityArtistResolver;
 	
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -601,7 +604,7 @@ public class CommunityController {
 		// 커뮤니티 주인(그 아티스트 본인)은 가입 절차 없이 항상 열람 가능해야 함.
 		// 아티스트는 팬 전용 가입 절차를 밟을 수 없어서, 가입 여부만 보면
 		// 정작 본인이 자기 게시판에서 차단당하는 문제가 있었음
-		if (currentUser.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(currentUser, artistId)) {
 			return true;
 		}
 		// 관리자는 신고 처리 등을 위해 전체 열람이 필요함
@@ -621,10 +624,10 @@ public class CommunityController {
 	// 멤버십 가입/해지: 팬 + 타 커뮤니티 방문 아티스트. 본인 커뮤니티는 불가.
 	private User requireMembershipEligible(AuthenticatedUser principal, Long artistId) {
 		User user = userResolver.resolve(principal, 1L);
-		if (user.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(user, artistId)) {
 			throw new IllegalStateException("본인 커뮤니티 멤버십에는 가입할 수 없습니다.");
 		}
-		if (user.getRole() != Role.FAN && user.getRole() != Role.ARTIST) {
+		if (!user.canParticipateInCommunity()) {
 			throw new IllegalStateException("팬 또는 아티스트 계정만 이용할 수 있는 기능입니다.");
 		}
 		return user;
@@ -656,18 +659,16 @@ public class CommunityController {
 		model.addAttribute("artistHeaderImageUrl", portalManagementService.findHeaderImageUrl(artist));
 		
 		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
-		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());
-		model.addAttribute("isOwnCommunity", isOwnCommunity);
+		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artist.getId());		model.addAttribute("isOwnCommunity", isOwnCommunity);
 		boolean isManagedAgency = currentUser != null
 				&& currentUser.getRole() == Role.AGENCY
 				&& currentUser.agencyId() != null
 				&& currentUser.agencyId().equals(artist.agencyId());
 		model.addAttribute("isManagedAgency", isManagedAgency);
-
-		if (currentUser != null
-				&& currentUser.getRole() == Role.ARTIST
-				&& isOwnCommunity) {
-			artistAttendanceService.recordVisitIfArtist(currentUser);
+		
+		// 커뮤니티 주인(솔로 본인 또는 그 그룹의 멤버)이 들어오면 그 커뮤니티(아티스트)의 출석을 찍는다
+		if (isOwnCommunity) {
+			artistAttendanceService.recordVisitIfArtist(artist);
 		}
 		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
 		Set<Long> followedIds = userFollowService.getFollowedArtistIds(currentUser);

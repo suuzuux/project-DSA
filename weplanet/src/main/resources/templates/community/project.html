@@ -321,7 +321,7 @@
   <!-- 프로젝트 등록 모달 -->
   <div class="modal-backdrop" id="projectCreateModal"
        th:if="${!isOwnCommunity}"
-       sec:authorize="hasAnyRole('FAN','ARTIST')">
+       sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title">프로젝트 등록하기</h2>

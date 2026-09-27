@@ -25,7 +25,7 @@
         <div class="post-card__meta">
             <div class="post-card__name">
                 <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
-                <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+                <span th:if="${post.author != null and post.author.artistSide}" class="badge-verified">✓</span>
             </div>
             <div class="post-card__time"
                  th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"

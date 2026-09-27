@@ -2,7 +2,9 @@ package megane6.weplanet.controller;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.CommentReport;
+import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
@@ -18,13 +20,16 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.RoleHomeRedirects;
+import megane6.weplanet.service.ArtistMemberService;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.email.ArtistInvitationMailService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import megane6.weplanet.service.portal.ArtistBlockService;
+import megane6.weplanet.service.portal.ArtistRegistrationService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import megane6.weplanet.service.shop.GoodsCategoryOptionsPayload;
 import megane6.weplanet.service.shop.GoodsService;
@@ -46,6 +51,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Controller
 @RequestMapping("/portal")
 @RequiredArgsConstructor
@@ -67,6 +73,9 @@ public class PortalController {
 	private final CommentService commentService;
 	private final LiveBroadcastService liveBroadcastService;
 	private final GoodsService goodsService;
+	private final ArtistRegistrationService artistRegistrationService;
+	private final ArtistInvitationMailService artistInvitationMailService;
+	private final ArtistMemberService artistMemberService;
 
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
@@ -103,6 +112,7 @@ public class PortalController {
 			case "live" -> "redirect:/portal/live";
 			case "profile" -> "redirect:/portal/profile";
 			case "reports" -> "redirect:/portal/reports";
+			case "members" -> "redirect:/portal/members";
 			default -> "redirect:/portal/dashboard";
 		};
 	}
@@ -125,6 +135,96 @@ public class PortalController {
 		model.addAttribute("latestNotices", portalManagementService.getNotices(artist).stream().limit(5).toList());
 		model.addAttribute("upcomingSchedules", portalManagementService.getSchedules(artist).stream().limit(5).toList());
 		return "portal/dashboard";
+	}
+	
+	// 아티스트(그룹/솔로) 등록 화면. 특정 아티스트가 아니라 소속사 단위 메뉴라서 선택 여부와 상관없이 폼을 보여준다.
+	@GetMapping("/artists/new")
+	public String artistRegisterForm(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		String redirect = prepareArtistPage(principal, model, "artistNew");
+		if (redirect != null) {
+			return redirect;
+		}
+		return "portal/artist-form";
+	}
+	
+	@PostMapping("/artists")
+	public String registerArtist(@AuthenticationPrincipal AuthenticatedUser principal,
+								 @ModelAttribute ArtistRegistrationService.RegisterCommand command,
+								 HttpSession session,
+								 RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
+			return artistRedirect(principal);
+		}
+		
+		ArtistRegistrationService.RegisteredArtist registered;
+		try {
+			registered = artistRegistrationService.register(actor, command);
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			// 입력값을 돌려줘서 다시 처음부터 치지 않게 한다
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("form", command);
+			return "redirect:/portal/artists/new";
+		}
+		
+		// 메일은 등록 트랜잭션이 커밋된 뒤에 보낸다. 실패해도 계정은 남아 있어 재발송(7단계)으로 복구 가능
+		try {
+			artistInvitationMailService.sendActivationMail(
+					registered.username(),
+					registered.groupName(),
+					registered.agencyName(),
+					registered.activation()
+			);
+			redirectAttributes.addFlashAttribute("msg",
+					registered.groupName() + " 등록을 완료하고 " + registered.username() + " 으로 활성화 메일을 보냈습니다.");
+		} catch (Exception mailException) {
+			log.warn("아티스트 활성화 메일 발송 실패: artistId={}", registered.artistId(), mailException);
+			redirectAttributes.addFlashAttribute("msg",
+					registered.groupName() + " 등록은 완료됐지만 활성화 메일 발송에 실패했습니다.");
+		}
+		
+		// 방금 만든 아티스트를 선택된 상태로 대시보드에 보낸다
+		resolveManagedArtist(actor, registered.artistId(), session);
+		return "redirect:/portal/dashboard";
+	}
+	
+	// 선택한 아티스트(그룹)의 멤버 관리 화면
+	@GetMapping("/members")
+	public String members(@AuthenticationPrincipal AuthenticatedUser principal,
+						  Model model) {
+		String redirect = prepareArtistPage(principal, model, "members");
+		if (redirect != null) {
+			return redirect;
+		}
+		
+		User artist = artistFromModel(model);
+		if (artist != null) {
+			model.addAttribute("members", artistMemberService.activeMembers(artist.getId()));
+		}
+		
+		return "portal/members";
+	}
+	
+	@PostMapping("/members")
+	public String addMember(@AuthenticationPrincipal AuthenticatedUser principal,
+							@RequestParam String memberName,
+							RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		
+		try {
+			GroupMember added = artistMemberService.addMember(actor, artist.getId(), memberName);
+			redirectAttributes.addFlashAttribute("msg", added.getMember().getNickname()
+			+ " 멤버를 추가했습니다. 첫 로그인 시 본인이 개인 비밀번호를 정합니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		
+		return "redirect:/portal/members";
 	}
 
 	@GetMapping("/live")

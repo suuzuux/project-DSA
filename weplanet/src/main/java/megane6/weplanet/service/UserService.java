@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
@@ -116,7 +117,8 @@ public class UserService {
 			if (!NicknamePolicy.isAllowed(trimmedNickname)) {
 				throw new IllegalArgumentException("사용할 수 없는 닉네임 형식입니다.");
 			}
-			if (userRepository.existsByNickname(trimmedNickname)) {
+			// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
+			if (userRepository.existsByNicknameAndRoleNotIn(trimmedNickname, Role.ARTIST_SIDE)) {
 				throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
 			}
 		}
@@ -244,7 +246,8 @@ public class UserService {
 		if (!NicknamePolicy.isAllowed(requestedNickname)) {
 			throw new IllegalArgumentException("사용할 수 없는 닉네임 형식입니다.");
 		}
-		if (userRepository.existsByNickname(requestedNickname)) {
+		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
+		if (userRepository.existsByNicknameAndRoleNotIn(requestedNickname, Role.ARTIST_SIDE)) {
 			throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
 		}
 		return requestedNickname;

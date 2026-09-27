@@ -42,7 +42,7 @@
             프로젝트
           </a>
           <a class="chip" th:if="${!isOwnCommunity}"
-             sec:authorize="hasRole('ARTIST')"
+             sec:authorize="hasAnyRole('ARTIST','ARTIST_MEMBER')"
              th:href="@{/community/{id}/project(id=${artist.id()})}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             프로젝트
@@ -75,7 +75,7 @@
   <!-- 포스트 작성 모달 (팬 + 타 커뮤니티 방문 아티스트) -->
   <div class="modal-backdrop" id="writePostModal"
        th:if="${!isOwnCommunity}"
-       sec:authorize="hasAnyRole('FAN','ARTIST')">
+       sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title">포스트 작성하기</h2>

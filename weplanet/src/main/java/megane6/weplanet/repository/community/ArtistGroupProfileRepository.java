@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface ArtistGroupProfileRepository extends JpaRepository<ArtistGroupProfile, Long> {
 	
@@ -30,6 +31,10 @@ public interface ArtistGroupProfileRepository extends JpaRepository<ArtistGroupP
 			  AND (:debutTo IS NULL OR agp.debutDate <= :debutTo)
 			ORDER BY u.nickname ASC
 			""")
+	
+	// artist_id는 UNIQUE(uk_agp_artist) 라서 그룹단 최대 1행
+	Optional<ArtistGroupProfile> findByArtistId(Long artistId);
+	
 	List<ArtistSearchRow> search(
 			@Param("keyword") String keyword,
 			@Param("gender") GroupGender gender,
