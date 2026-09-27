@@ -31,12 +31,24 @@
       title: "배경 이미지 편집",
 
       letterboxAtMinZoom: true
+    },
+    // 에이전시 헤더 이미지(커뮤니티 히어로 배너 원본) 크롭 설정 - 3:1.
+    // community/profile.html의 개인 프로필 커버(Background, 2560:1660)와는 별개의 설정이다.
+    HeaderImage: {
+      aspectRatio: 3,
+      round: false,
+      outputWidth: 2400,
+      outputHeight: 800,
+      title: "헤더 이미지 편집",
+      letterboxAtMinZoom: true
     }
   };
 
   let modal, modalTitle, stage, image, zoomRange, applyBtn;
   let cropper = null;
   let activeKind = null;
+  // 크롭 비율(KIND_CONFIG) 조회용 kind. DOM id 조회는 activeKind를 그대로 쓴다.
+  let activeConfigKind = null;
   let activeInput = null;
   let activePreviewEl = null;
   let activeLabelEl = null;
@@ -90,17 +102,19 @@
       if (activeLabelEl) activeLabelEl.textContent = "";
     }
     activeKind = null;
+    activeConfigKind = null;
     activeInput = null;
     activePreviewEl = null;
     activeLabelEl = null;
   }
 
-  function open(kind, file, inputEl, previewEl, labelEl) {
+  function open(kind, file, inputEl, previewEl, labelEl, configKind) {
     if (!ensureModal() || typeof window.Cropper === "undefined") return false;
-    let cfg = KIND_CONFIG[kind];
+    let cfg = KIND_CONFIG[configKind || kind];
     if (!cfg || !file) return false;
 
     activeKind = kind;
+    activeConfigKind = configKind || kind;
     activeInput = inputEl;
     activePreviewEl = previewEl || null;
     activeLabelEl = labelEl || null;
@@ -171,7 +185,7 @@
 
   function applyCrop() {
     if (!cropper || !activeKind) return;
-    let cfg = KIND_CONFIG[activeKind];
+    let cfg = KIND_CONFIG[activeConfigKind || activeKind];
     let canvas = cropper.getCroppedCanvas({
       width: cfg.outputWidth,
       height: cfg.outputHeight,

@@ -30,7 +30,8 @@
       <form class="portal-profile-edit" style="max-width:520px;"
             th:action="@{/portal/profile}" method="post" enctype="multipart/form-data">
 
-        <div class="pe-cover-preview" id="profileEditBackgroundPreview"
+        <!-- 배경 이미지 미리보기 - 커뮤니티 히어로 배너 비율(3:1)로 표시 -->
+        <div class="pe-cover-preview pe-cover-preview--header" id="profileEditBackgroundPreview"
              th:classappend="${backgroundPublicUrl == null} ? ' is-empty'">
           <img th:if="${backgroundPublicUrl != null}" th:src="${backgroundPublicUrl}" alt=""/>
           <div class="pe-cover-preview__hint" th:if="${backgroundPublicUrl == null}">
@@ -149,8 +150,9 @@
     </main>
   </div>
 
+  <!-- 이미지 크롭 모달 (아바타/배경 이미지 편집 공통) -->
   <div class="modal-backdrop" id="imageCropModal">
-    <div class="modal" style="width:min(100%, 460px);">
+    <div class="modal" style="width:min(100%, 760px);">
       <div class="modal__head">
         <strong class="modal__title" id="imageCropModalTitle">이미지 편집</strong>
         <button type="button" class="modal__close" data-crop-cancel aria-label="닫기">✕</button>
@@ -266,6 +268,8 @@
         var input = document.getElementById(id);
         if (!input) return;
         var kind = id.replace("profileEdit", "");
+        // 배경 이미지는 HeaderImage 크롭 설정(3:1) 사용
+        var cropConfigKind = kind === "Background" ? "HeaderImage" : kind;
         input.addEventListener("change", function () {
           var file = input.files && input.files[0];
           if (!file) {
@@ -278,7 +282,7 @@
 
           var previewEl = document.getElementById("profileEdit" + kind + "Preview");
 
-          if (window.ProfileImageCrop && window.ProfileImageCrop.open(kind, file, input, previewEl, label)) {
+          if (window.ProfileImageCrop && window.ProfileImageCrop.open(kind, file, input, previewEl, label, cropConfigKind)) {
             return;
           }
 
