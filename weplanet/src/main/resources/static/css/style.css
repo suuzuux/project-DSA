@@ -1804,6 +1804,12 @@ p {
   border-bottom: 1px dashed var(--wp-hairline, #e5e5e5);
 }
 
+/* 포털 헤더 이미지 미리보기 비율 - 커뮤니티 히어로 배너와 동일한 3:1.
+   community/profile.html의 개인 프로필 커버는 기본값(2560:1660)을 그대로 쓴다. */
+.pe-cover-preview--header {
+  aspect-ratio: 3 / 1;
+}
+
 .pe-cover-preview__hint {
   position: absolute;
   inset: 0;
@@ -1824,9 +1830,10 @@ p {
 }
 
 
+/* 이미지 크롭 모달의 편집 영역 최대 높이 */
 .crop-stage {
   position: relative;
-  max-height: 360px;
+  max-height: 520px;
   overflow: hidden;
   background: #111;
   border-radius: var(--wp-radius-sm, 8px);
