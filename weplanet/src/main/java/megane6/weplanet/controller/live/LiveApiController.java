@@ -6,21 +6,18 @@ import megane6.weplanet.controller.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.live.LiveCommentView;
 import megane6.weplanet.domain.dto.live.LiveStatusView;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.live.LiveComment;
 import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.ReportService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.live.LiveRealtimePublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -37,6 +34,7 @@ public class LiveApiController {
 	private final UserRepository userRepository;
 	private final AuthenticatedUserResolver userResolver;
 	private final ReportService reportService;
+	private final CommunityArtistResolver communityArtistResolver;
 
 	@PostMapping("/api/portal/live/start")
 	public LiveStatusView start(@AuthenticationPrincipal AuthenticatedUser principal, HttpSession session) {
@@ -113,19 +111,25 @@ public class LiveApiController {
 		reportService.reportLiveComment(comment, me, reportReason);
 		return Map.of("success", true);
 	}
-
+	
 	private User requirePortalUser(AuthenticatedUser principal) {
 		if (principal == null) {
 			throw new AuthenticationRequiredException();
 		}
 		return userRepository.findById(principal.getId())
-				.filter(user -> user.getRole() == Role.ARTIST || user.getRole() == Role.AGENCY)
+				.filter(user -> user.isArtistSide() || user.getRole() == Role.AGENCY)
 				.orElseThrow(() -> new IllegalStateException("아티스트 또는 에이전시만 이용할 수 있습니다."));
 	}
-
+	
 	private User resolveManagedArtist(User actor, HttpSession session) {
-		if (actor.getRole() == Role.ARTIST) {
-			return actor;
+		// 아티스트 쪽 계정은 "내 커뮤니티"(솔로=본인, 멤버=소속 그룹)가 곧 방송 대상
+		if (actor.isArtistSide()) {
+			Long ownCommunityId = communityArtistResolver.ownCommunityId(actor);
+			if (ownCommunityId == null) {
+				throw new IllegalStateException("소속된 커뮤니티가 없습니다.");
+			}
+			return userRepository.findById(ownCommunityId)
+					.orElseThrow(() -> new IllegalStateException("커뮤니티를 찾을 수 없습니다."));
 		}
 		Long agencyId = actor.agencyId();
 		List<User> artists = agencyId == null

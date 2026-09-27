@@ -13,6 +13,7 @@ import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.repository.live.LiveCommentRepository;
 import megane6.weplanet.repository.live.LiveSessionRepository;
 import megane6.weplanet.service.ChatFilterService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
 import megane6.weplanet.service.media.BoardMediaService;
@@ -41,6 +42,7 @@ public class LiveBroadcastService {
 	private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 라이브 시작 → 팔로워 이메일
 	private final ChatFilterService chatFilterService;
 	private final BoardMediaService boardMediaService;
+	private final CommunityArtistResolver communityArtistResolver;
 
 	@Transactional(readOnly = true)
 	public Optional<LiveSession> findLive(Long artistId) {
@@ -82,7 +84,8 @@ public class LiveBroadcastService {
 		if (session == null) {
 			return LiveStatusView.offline();
 		}
-		if (!session.isHost(actor) && actor.getRole() != Role.AGENCY && !actor.getId().equals(artist.getId())) {
+		if (!session.isHost(actor) && actor.getRole() != Role.AGENCY
+				&& !communityArtistResolver.isArtistOf(actor, artist.getId())) {
 			throw new IllegalStateException("방송을 종료할 권한이 없습니다.");
 		}
 		session.end();
@@ -197,7 +200,7 @@ public class LiveBroadcastService {
 		if (live != null && live.isHost(user)) {
 			return;
 		}
-		if (user.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(user, artistId)) {
 			return;
 		}
 		if (user.getRole() == Role.ADMIN) {
@@ -223,7 +226,7 @@ public class LiveBroadcastService {
 		if (artist.getRole() != Role.ARTIST) {
 			throw new IllegalArgumentException("아티스트 계정이 아닙니다.");
 		}
-		if (host.getRole() == Role.ARTIST && host.getId().equals(artist.getId())) {
+		if (communityArtistResolver.isArtistOf(host, artist.getId())) {
 			return;
 		}
 		if (host.getRole() == Role.AGENCY) {

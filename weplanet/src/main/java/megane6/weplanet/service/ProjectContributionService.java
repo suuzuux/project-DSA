@@ -101,7 +101,7 @@ public class ProjectContributionService {
         User contributor = userRepository.findById(contributorId)
                 .orElseThrow(() -> new AccessDeniedException("로그인 회원을 찾을 수 없습니다."));
         
-        if (contributor.getRole() != Role.FAN && contributor.getRole() != Role.ARTIST) {
+        if (!contributor.canParticipateInCommunity()) {
             throw new AccessDeniedException("팬 또는 아티스트 계정만 참여 기록을 확인할 수 있습니다.");
         }
         

@@ -18,6 +18,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.ProjectService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityDrawerHelper;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
@@ -44,6 +45,8 @@ public class ProjectController {
 	private final ArtistAttendanceService artistAttendanceService;
 	private final CommunityDrawerHelper communityDrawerHelper;
 	private final PortalManagementService portalManagementService;
+	
+	private final CommunityArtistResolver communityArtistResolver;
 
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -58,13 +61,13 @@ public class ProjectController {
 
 		User currentUser = ur.findById(principal.getId())
 				.orElseThrow(() -> new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
-
-		boolean isOwnCommunity = currentUser.getId().equals(artistId);
-		if (isOwnCommunity && currentUser.getRole() == Role.ARTIST) {
+		
+		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artistId);
+		if (isOwnCommunity) {
 			return "redirect:/community/" + artistId + "/fan";
 		}
 		
-		if ((currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST)
+		if (currentUser.canParticipateInCommunity()
 				&& !cjs.isJoined(currentUser, artistId)) {
 			
 			addMembershipGateModel(artistId, currentUser, model);
@@ -236,8 +239,8 @@ public class ProjectController {
 		
 		User currentUser = ur.findById(viewer.getId()).orElseThrow(() ->
 				new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
-
-		if (currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST) {
+		
+		if (currentUser.canParticipateInCommunity()) {
 			model.addAttribute("registeredEmail", currentUser.getEmail());
 			model.addAttribute("accountHolderName", currentUser.getRealName());
 		}
@@ -279,7 +282,7 @@ public class ProjectController {
 			List<ArtistCardView> artists,
 			Model model
 	) {
-		boolean isOwnCommunity = currentUser.getId().equals(artist.getId());
+		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artist.getId());
 		model.addAttribute("isOwnCommunity", isOwnCommunity);
 
 		Map<Long, CommunityProfile> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
@@ -294,8 +297,8 @@ public class ProjectController {
 		model.addAttribute("myCommunityProfile", joinedProfiles.get(artist.getId()));
 		model.addAttribute("membershipActive", false);
 		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
-
-		if (currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST) {
+		
+		if (currentUser.canParticipateInCommunity()) {
 			ms.getMembership(currentUser, artist).ifPresent(membership -> {
 				model.addAttribute("membershipActive", !membership.isExpired());
 				model.addAttribute("membershipExpiresAt", membership.getExpiresAt());

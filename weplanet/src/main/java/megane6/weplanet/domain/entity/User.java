@@ -295,6 +295,16 @@ public class User {
 		this.password = encodedPassword;
 	}
 	
+	// 소속사가 멤버의 개인 비밀번호를 초기화한다
+	// null로 되돌리면 프로필 선택 화면에서 "첫 로그인"처럼 새 비밀번호를 정하게 된다
+	public void resetMemberPassword() {
+		if (this.role != Role.ARTIST_MEMBER) {
+			throw new IllegalStateException("그룹 멤버 계정이 아닙니다.");
+		}
+		
+		this.password = null;
+	}
+	
 	public void markDormantNoticeSent() {
 		this.dormantNoticeSentAt = LocalDateTime.now();
 	}

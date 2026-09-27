@@ -15,6 +15,7 @@ import megane6.weplanet.service.AiFanChatService;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
 import megane6.weplanet.service.ChatQuotaService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
@@ -50,6 +51,7 @@ public class ChatController {
     private final ChatFilterService chatFilterService;
     private final ChatQuotaService chatQuotaService;
     private final AiFanChatService aiFanChatService;
+    private final CommunityArtistResolver communityArtistResolver;
 
     // 유저 조회 공통 헬퍼 - label은 에러 메시지에 쓸 대상 이름 ("아티스트", "팬" 등)
     private User getUserOrThrow(Long userId, String label) {
@@ -227,6 +229,15 @@ public class ChatController {
         // 팬 전용 제약(멤버십/하루 한도)을 걸면 안 됨. 그동안 fan != null만 보고 체크해서,
         // 아티스트가 멤버십 만료된 팬에게 답장하거나, 그 팬의 한도를 대신 소진시켜버리는 문제가 있었음
         boolean sentByFan = fan != null && sender.getId().equals(fan.getId());
+        
+        // 팬 본인이 보낸 게 아니면 "이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)"가 보낸 것이어야 한다.
+        // 예전엔 이 확인이 없어서, 로그인만 하면 fanId 를 비워 보내는 것만으로
+        // 아티스트 방송 채널에 메시지를 뿌리거나 남의 DM 방에 끼어들 수 있었음
+        if (!sentByFan && !communityArtistResolver.isArtistOf(sender, artist.getId())) {
+            log.warn("아티스트가 아닌 계정의 아티스트 채널 전송 시도: senderId={}, artistId={}",
+                    sender.getId(), artist.getId());
+            return;
+        }
 
         // 와이어프레임 19번: 멤버십이 없거나 만료된 팬은 DM을 보낼 수 없음.
         // 그동안 프론트(dm-realtime.js)에서 입력창만 숨기고 서버 검증이 없어서,
@@ -278,7 +289,7 @@ public class ChatController {
             broadcast("/topic/chat." + artist.getId(), payload);
 
             // 아티스트 본인이 DM을 보낸 경우에만 가상 팬 5명이 백그라운드에서 답장한다
-            if (sender.getRole() == Role.ARTIST && sender.getId().equals(artist.getId())) {
+            if (communityArtistResolver.isArtistOf(sender, artist.getId())) {
                 aiFanChatService.replyToArtistDm(artist.getId(), saved.getContent());
             }
         } else {
@@ -455,6 +466,19 @@ public class ChatController {
         
         return "redirect:/chat/admin/keywords";
     }
+    
+    // 아티스트 쪽 계정이 채팅할 "내 커뮤니티(방)" 번호. 솔로는 본인 id, 그룹 멤버는 소속 그룹 id.
+    // dm-realtime.js 가 멤버로 로그인했을 때 방 번호를 알아내려고 호출한다.
+    @GetMapping("/chat/my-artist-room")
+    @ResponseBody
+    public Map<String, Object> myArtistRoom(@AuthenticationPrincipal AuthenticatedUser principal) {
+        User me = requireLoginUser(principal);
+        
+        // Map.of 는 null 값을 넣으면 에러가 나서, 커뮤니티가 없을 수도 있는 값은 HashMap 에 담는다
+        Map<String, Object> result = new HashMap<>();
+        result.put("artistId", communityArtistResolver.ownCommunityId(me));
+        return result;
+    }
 
     // AI 팬 메시지 생성 (CHAT-06, 시연용) - 아티스트 채팅방이 비어 있을 때
     // 가상 팬 5명이 먼저 인사하도록 수동으로 돌릴 수 있는 버튼용. 웹소켓이 아니라 fetch로 호출됨
@@ -468,7 +492,7 @@ public class ChatController {
         // 그동안 인증 확인이 없어서 비로그인 상태로 반복 호출하면 API 한도를 소진시킬 수 있었음.
         // 채팅방을 쓰는 아티스트 본인만 호출할 수 있도록 제한함
         User requester = requireLoginUser(principal);
-        if (!requester.getId().equals(artistId)) {
+        if (!communityArtistResolver.isArtistOf(requester, artistId)) {
             throw new IllegalStateException("본인 채팅방에서만 사용할 수 있습니다.");
         }
 

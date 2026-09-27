@@ -15,6 +15,7 @@ import megane6.weplanet.repository.community.ArtistGroupProfileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,6 +79,40 @@ public class ArtistMemberService {
 		log.info("그룹 멤버 추가: groupId={}, memberId={}, name={}", groupId, member.getId(), memberName);
 		
 		return saved;
+	}
+	
+	// 멤버 탈퇴 : 행은 남기고 left_at만 기록(글 작성자 이력 보존)
+	// 탈퇴 즉시 프로필 목록에서 빠지고, CommunityArtistResolver가 활동 중 소속만 보므로, 아티스트 권한도 사라짐
+	@Transactional
+	public String removeMember(User agencyUser, Long groupId, Long memberId) {
+		requireManagedGroup(agencyUser, groupId);
+		
+		GroupMember groupMember = requireActiveMember(groupId, memberId);
+		groupMember.leave(LocalDate.now());
+		
+		syncMemberCount(groupId);
+		
+		log.info("그룹 멤버 탈퇴 처리: groupId={}, memberId={}", groupId, memberId);
+		
+		return groupMember.getMember().getNickname();
+	}
+	
+	// 개인 비밀번호 초기화: 다음 프로필 선택 때 본인이 새로 정한다.
+	@Transactional
+	public String resetMemberPassword(User agencyUser, Long groupId, Long memberId) {
+		requireManagedGroup(agencyUser, groupId);
+		
+		User member = requireActiveMember(groupId, memberId).getMember();
+		member.resetMemberPassword();
+		
+		log.info("그룹 멤버 개인 비밀번호 초기화: groupId={}, memberId={}", groupId, memberId);
+		
+		return member.getNickname();
+	}
+	
+	private GroupMember requireActiveMember(Long groupId, Long memberId) {
+		return gmr.findByGroupIdAndMember_IdAndLeftAtIsNull(groupId, memberId)
+				.orElseThrow(() -> new IllegalStateException("이 그룹의 활동 중인 멤버가 아닙니다."));
 	}
 	
 	// 다른 소속사의 그룹에 멤버를 끼워 넣지 못하게, 이 소속사가 관리하는 ARTIST 계정인지 확인

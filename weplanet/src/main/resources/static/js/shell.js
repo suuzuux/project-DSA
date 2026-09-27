@@ -28,7 +28,7 @@
   const roleName = body.getAttribute("data-role") || "";
   const isAdmin = roleName === "ROLE_ADMIN";
     // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
-  const isArtist = roleName === "ROLE_ARTIST";
+  const isArtist = roleName === "ROLE_ARTIST" || roleName === "ROLE_ARTIST_MEMBER";
   const isAgency = roleName === "ROLE_AGENCY";
   // 로그인한 본인 id (아티스트일 땐 곧 artistId)
   const myId = body.getAttribute("data-fan-id") || "";
