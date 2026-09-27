@@ -7,6 +7,7 @@ import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -29,6 +30,7 @@ public class BoardMediaController {
 
     private final BoardMediaService boardMediaService;
     private final AuthenticatedUserResolver userResolver;
+    private final CommunityArtistResolver communityArtistResolver;
 
     // ── 목록 화면 : role=AGENCY 면 소속사 화면, 아니면 팬(읽기 전용) ──
     @GetMapping("/media")
@@ -145,7 +147,8 @@ public class BoardMediaController {
             throw new IllegalStateException("로그인이 필요합니다.");
         }
         boolean isAgency = "ROLE_AGENCY".equals(principal.getRoleName());
-        boolean isOwner = principal.getId().equals(communityArtistId);
+        // 솔로 아티스트 본인 또는 그 그룹의 멤버
+        boolean isOwner = communityArtistResolver.isArtistOf(userResolver.requireAuthenticated(principal), communityArtistId);
         if (!isAgency && !isOwner) {
             throw new IllegalStateException("이 커뮤니티의 아티스트만 미디어를 관리할 수 있습니다.");
         }

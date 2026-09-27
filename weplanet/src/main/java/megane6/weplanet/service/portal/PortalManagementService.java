@@ -527,7 +527,39 @@ public class PortalManagementService {
 
         ArtistProfile profile = getOrCreateProfile(artist);
         profile.updateIntro(intro);
+        applyProfileImages(profile, avatar, background, removeAvatar, removeBackground);
+        artistProfileRepository.save(profile);
+    }
 
+    /**
+     * 커뮤니티 프로필 화면에서 아티스트 쪽 계정(솔로 본인/그룹 멤버)이 자기 프로필을 고칠 때.
+     * 팬은 가입할 때 생기는 community_profiles 를 고치지만, 아티스트는 자기 커뮤니티에 가입하지 않으므로
+     * 계정별 포털 프로필(artist_profile: 소개/프로필 사진/배경)을 고친다.
+     * 솔로 아티스트는 이 값이 곧 커뮤니티 로고/헤더라서 포털 "프로필 관리"와 같은 데이터다.
+     * 이름(닉네임)은 커뮤니티 이름·멤버 구분에 쓰여 소속사가 관리하므로 여기서는 바꾸지 않는다.
+     */
+    public void updateArtistCommunityProfile(User account,
+                                             String intro,
+                                             MultipartFile avatar,
+                                             MultipartFile background,
+                                             boolean removeAvatar,
+                                             boolean removeBackground) {
+        if (intro != null && intro.length() > 30) {
+            throw new IllegalArgumentException("소개글은 30자 이내로 입력해주세요.");
+        }
+
+        ArtistProfile profile = getOrCreateProfile(account);
+        profile.updateIntro(intro);
+        applyProfileImages(profile, avatar, background, removeAvatar, removeBackground);
+        artistProfileRepository.save(profile);
+    }
+
+    // 프로필 사진(로고)/배경 교체·삭제 - 포털 프로필 관리와 커뮤니티 프로필 편집이 같이 쓴다
+    private void applyProfileImages(ArtistProfile profile,
+                                    MultipartFile avatar,
+                                    MultipartFile background,
+                                    boolean removeAvatar,
+                                    boolean removeBackground) {
         if (removeAvatar) {
             deleteUploadedIfPresent(profile.getLogoImageUrl());
             profile.clearLogoImage();
@@ -543,8 +575,6 @@ public class PortalManagementService {
             deleteUploadedIfPresent(profile.getHeaderImageUrl());
             profile.replaceHeaderImage(fileStorageService.store(background));
         }
-
-        artistProfileRepository.save(profile);
     }
 
     /** 프로필 생일을 캘린더 BIRTHDAY 일정과 동기화 (없으면 생성, 있으면 첫 생일 일정 갱신). */

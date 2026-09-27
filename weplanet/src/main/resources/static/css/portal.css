@@ -171,6 +171,11 @@
   flex-direction: column;
   gap: 16px;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
+  /* 관리 메뉴(.portal-sidebar)와 같이 화면에 고정. 아티스트가 많으면 이 칸 안에서만 스크롤 */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .portal-artists__label {
