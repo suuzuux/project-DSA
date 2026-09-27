@@ -13,6 +13,8 @@ import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,17 +36,23 @@ public class UserService {
 	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
 	private final CommunityJoinService communityJoinService;
 	private final UserFollowRepository userFollowRepository;
-	
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 회원가입(signup-id.html) 화면에서만 쓰이는 예외 메시지를 현재 세션 로케일로 번역한다.
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
 	@Transactional
 	public User signup(SignupRequestDto dto) {
 		if (!dto.isPasswordConfirmed()) {
-			throw new IllegalArgumentException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+			throw new IllegalArgumentException(msg("signup.error.passwordMismatch"));
 		}
 		if (userRepository.existsByUsername(dto.getUsername())) {
-			throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+			throw new IllegalArgumentException(msg("signup.error.usernameTaken"));
 		}
 		if (userRepository.existsByEmail(dto.getEmail())) {
-			throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+			throw new IllegalArgumentException(msg("signup.error.emailTaken"));
 		}
 		
 		String nickname = resolveNickname(dto.getNickname());
@@ -242,10 +250,10 @@ public class UserService {
 			return nicknameGenerator.generate();
 		}
 		if (!NicknamePolicy.isAllowed(requestedNickname)) {
-			throw new IllegalArgumentException("사용할 수 없는 닉네임 형식입니다.");
+			throw new IllegalArgumentException(msg("signup.error.nicknameInvalid"));
 		}
 		if (userRepository.existsByNickname(requestedNickname)) {
-			throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+			throw new IllegalArgumentException(msg("signup.error.nicknameTaken"));
 		}
 		return requestedNickname;
 	}

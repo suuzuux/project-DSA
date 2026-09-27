@@ -6,13 +6,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.LocaleResolver;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +35,12 @@ public class DormantAccountReactivationController {
     private final UserRepository userRepository;
     private final SignupEmailVerificationService emailVerificationService;
     private final SocialLoginSessionSupport socialLoginSessionSupport;
+    private final MessageSource messageSource;
+    private final LocaleResolver localeResolver;
+
+    private String msg(String code) {
+        return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+    }
 
     @GetMapping
     public String form() {
@@ -44,17 +54,17 @@ public class DormantAccountReactivationController {
         Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
             result.put("success", false);
-            result.put("message", "휴면 상태인 계정을 찾을 수 없습니다.");
+            result.put("message", msg("reactivate.accountNotFound"));
             return result;
         }
         try {
             emailVerificationService.sendVerificationCode(target.get().getEmail());
             result.put("success", true);
-            result.put("message", "가입 시 등록된 이메일로 인증코드를 보냈습니다.");
+            result.put("message", msg("reactivate.codeSent"));
         } catch (Exception e) {
             log.error("[휴면계정 해제] 인증코드 발송 실패", e);
             result.put("success", false);
-            result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+            result.put("message", msg("reactivate.codeSendFailed"));
         }
         return result;
     }
@@ -68,17 +78,21 @@ public class DormantAccountReactivationController {
                                        Model model) {
         Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
-            model.addAttribute("errorMessage", "휴면 상태인 계정을 찾을 수 없습니다.");
+            model.addAttribute("errorMessage", msg("reactivate.accountNotFound"));
             return "login/reactivate";
         }
         User user = target.get();
         if (!emailVerificationService.verifyCode(user.getEmail(), code)) {
-            model.addAttribute("errorMessage", "인증코드가 일치하지 않거나 만료되었습니다.");
+            model.addAttribute("errorMessage", msg("reactivate.codeInvalid"));
             return "login/reactivate";
         }
         emailVerificationService.clear(user.getEmail());
         user.reactivate();
         socialLoginSessionSupport.loginAs(user, request, response);
+        // SETTINGS-03 로케일 버그#2 유형 수정: 휴면계정 해제도 로그인을 새로 여는 지점이라, 다른
+        // 로그인 성공 핸들러들과 동일하게 세션 로케일을 DB에 저장된 선호 언어로 맞춰준다. 이게 없으면
+        // 재활성화 직후 화면이 재로그인 전까지 계속 한국어로 나온다.
+        localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
         return "redirect:/";
     }
 

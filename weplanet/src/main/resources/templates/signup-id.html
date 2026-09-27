@@ -8,29 +8,29 @@
     유효성: 아이디 5~15 영문숫자 / 비번 8~15 영문+숫자+특수 / 닉네임 3~10
     에러는 박스 밑 빨간 글씨 (.form-error)
   -->
-  <title>WePlaNet – 아이디로 회원가입</title>
+  <title th:text="#{signup.pageTitle}">WePlaNet – 아이디로 회원가입</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
 <body class="auth-page">
   <div class="auth-card" style="width:min(100%,480px);">
-    <a class="auth-card__back" th:href="@{/signup}">← 뒤로</a>
+    <a class="auth-card__back" th:href="@{/signup}" th:text="#{signup.back}">← 뒤로</a>
     <div class="flex-between">
       <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
     </div>
 
-    <h1 class="auth-card__title mt-16">회원가입</h1>
+    <h1 class="auth-card__title mt-16" th:text="#{signup.heading}">회원가입</h1>
 
     <p th:if="${errorMessage}" th:text="${errorMessage}" class="text-sm" style="color:#c45c26;margin-top:8px;"></p>
 
     <form id="signupForm" th:action="@{/signup}" th:object="${signupRequestDto}" method="post" novalidate>
       <!-- 아이디 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('username')} ? ' is-invalid'">
-        <label class="form-label" for="userId">아이디</label>
+        <label class="form-label" for="userId" th:text="#{signup.usernameLabel}">아이디</label>
         <div class="form-row">
-          <input class="form-input" id="userId" th:field="*{username}" type="text" placeholder="아이디 입력" autocomplete="username" />
-          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="checkUsernameBtn">중복 확인</button>
+          <input class="form-input" id="userId" th:field="*{username}" type="text" th:placeholder="#{signup.usernamePlaceholder}" placeholder="아이디 입력" autocomplete="username" />
+          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="checkUsernameBtn" th:text="#{signup.checkUsernameButton}">중복 확인</button>
         </div>
-        <p class="form-hint">조건: 4~20자 이내, 영문·숫자</p>
+        <p class="form-hint" th:text="#{signup.usernameHint}">조건: 4~20자 이내, 영문·숫자</p>
         <p class="text-xs" id="usernameCheckMsg" style="margin-top:6px;"></p>
         <p class="form-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('username')}"></p>
@@ -38,90 +38,106 @@
 
       <!-- 비밀번호 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('password')} ? ' is-invalid'">
-        <label class="form-label" for="password">비밀번호</label>
-        <input class="form-input" id="password" th:field="*{password}" type="password" placeholder="비밀번호 입력" autocomplete="new-password" />
-        <p class="form-hint">영문, 숫자 포함 8~20자</p>
+        <label class="form-label" for="password" th:text="#{signup.passwordLabel}">비밀번호</label>
+        <input class="form-input" id="password" th:field="*{password}" type="password" th:placeholder="#{signup.passwordPlaceholder}" placeholder="비밀번호 입력" autocomplete="new-password" />
+        <p class="form-hint" th:text="#{signup.passwordHint}">영문, 숫자 포함 8~20자</p>
         <p class="form-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('password')}"></p>
       </div>
 
       <div class="form-group" th:classappend="${#fields.hasErrors('passwordConfirm')} ? ' is-invalid'">
-        <label class="form-label" for="passwordConfirm">비밀번호 확인</label>
-        <input class="form-input" id="passwordConfirm" th:field="*{passwordConfirm}" type="password" placeholder="비밀번호 입력" />
+        <label class="form-label" for="passwordConfirm" th:text="#{signup.passwordConfirmLabel}">비밀번호 확인</label>
+        <input class="form-input" id="passwordConfirm" th:field="*{passwordConfirm}" type="password" th:placeholder="#{signup.passwordPlaceholder}" placeholder="비밀번호 입력" />
         <p class="form-error" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('passwordConfirm')}"></p>
       </div>
 
       <!-- 이름 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('realName')} ? ' is-invalid'">
-        <label class="form-label" for="realName">이름</label>
-        <input class="form-input" id="realName" th:field="*{realName}" type="text" placeholder="이름 입력" />
+        <label class="form-label" for="realName" th:text="#{signup.realNameLabel}">이름</label>
+        <input class="form-input" id="realName" th:field="*{realName}" type="text" th:placeholder="#{signup.realNamePlaceholder}" placeholder="이름 입력" />
         <p class="form-error" th:if="${#fields.hasErrors('realName')}" th:errors="*{realName}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('realName')}"></p>
       </div>
 
       <!-- 이메일 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('email')} ? ' is-invalid'">
-        <label class="form-label" for="email">이메일</label>
+        <label class="form-label" for="email" th:text="#{signup.emailLabel}">이메일</label>
         <div class="form-row">
           <input class="form-input" id="email" th:field="*{email}" type="email" placeholder="your@email.com" />
-          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="sendEmailCodeBtn">인증코드 받기</button>
+          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="sendEmailCodeBtn" th:text="#{signup.sendEmailCodeButton}">인증코드 받기</button>
         </div>
         <p class="form-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('email')}"></p>
 
         <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
-          <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
+          <input class="form-input" id="emailCode" type="text" maxlength="6" th:placeholder="#{signup.emailCodePlaceholder}" placeholder="인증번호 6자리" autocomplete="one-time-code" />
           <span class="text-xs" id="emailCodeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
-          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="verifyEmailCodeBtn">인증하기</button>
+          <button type="button" class="btn btn--ghost btn--sm" style="min-width:104px;min-height:46px;" id="verifyEmailCodeBtn" th:text="#{signup.verifyEmailButton}">인증하기</button>
         </div>
         <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>
 
       <!-- 닉네임 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('nickname')} ? ' is-invalid'">
-        <label class="form-label" for="nickname">닉네임</label>
-        <input class="form-input" id="nickname" th:field="*{nickname}" type="text" placeholder="상큼한고양이331" maxlength="10" />
-        <p class="form-hint">원하는 닉네임을 설정하세요. 비워두면 자동 생성됩니다. (3~10자)</p>
+        <label class="form-label" for="nickname" th:text="#{signup.nicknameLabel}">닉네임</label>
+        <input class="form-input" id="nickname" th:field="*{nickname}" type="text" th:placeholder="#{signup.nicknamePlaceholderExample}" placeholder="상큼한고양이331" maxlength="10" />
+        <p class="form-hint" th:text="#{signup.nicknameHint}">원하는 닉네임을 설정하세요. 비워두면 자동 생성됩니다. (3~10자)</p>
         <p class="form-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('nickname')}"></p>
       </div>
 
       <!-- 약관 -->
       <div class="form-group">
-        <p class="form-label">이용 약관 동의</p>
+        <p class="form-label" th:text="#{signup.termsHeading}">이용 약관 동의</p>
         <div class="check-list">
           <label class="check-item check-item--all">
-            <input type="checkbox" id="agreeAll" /> 모두 동의
+            <input type="checkbox" id="agreeAll" /> <span th:text="#{signup.agreeAll}">모두 동의</span>
           </label>
           <label class="check-item">
             <input type="checkbox" data-agree-item data-agree-required />
-            (필수) 만 14세 이상입니다.
+            <span th:text="#{signup.agreeAge}">(필수) 만 14세 이상입니다.</span>
           </label>
           <label class="check-item">
             <input type="checkbox" data-agree-item data-agree-required />
-            (필수) 회원가입을 위한 동의
+            <span th:text="#{signup.agreeRequired}">(필수) 회원가입을 위한 동의</span>
           </label>
           <label class="check-item">
             <input type="checkbox" th:field="*{marketingConsent}" data-agree-item />
-            (선택) 광고 및 마케팅 활용 동의
+            <span th:text="#{signup.agreeMarketing}">(선택) 광고 및 마케팅 활용 동의</span>
           </label>
         </div>
       </div>
 
-      <button type="submit" class="btn btn--primary btn--block btn--lg">가입하기</button>
+      <button type="submit" class="btn btn--primary btn--block btn--lg" th:text="#{signup.submitButton}">가입하기</button>
     </form>
 
     <p class="text-sm text-muted" style="margin-top:20px;text-align:center;">
-      이미 계정이 있으신가요?
-      <a th:href="@{/login}" style="color:var(--wp-brand);font-weight:600;">로그인</a>
+      <span th:text="#{signup.hasAccountPrompt}">이미 계정이 있으신가요?</span>
+      <a th:href="@{/login}" style="color:var(--wp-brand);font-weight:600;" th:text="#{common.login}">로그인</a>
     </p>
   </div>
 
   <script th:src="@{/js/main.js}"></script>
-  <script>
+  <script th:inline="javascript">
     (function () {
       "use strict";
+      // SETTINGS-03: 이 화면의 JS 검증/상태 메시지를 서버 로케일 기준으로 미리 받아온다.
+      var MSG = {
+        usernameRequired: /*[[#{signup.usernameRequired}]]*/ "아이디를 먼저 입력해주세요.",
+        usernameCheckReset: /*[[#{signup.usernameCheckReset}]]*/ "아이디가 변경되어 중복 확인이 초기화되었습니다. 다시 확인해주세요.",
+        usernameCheckRequired: /*[[#{signup.usernameCheckRequired}]]*/ "아이디 중복 확인을 먼저 완료해주세요.",
+        emailFirstRequired: /*[[#{signup.emailFirstRequired}]]*/ "이메일을 먼저 입력해주세요.",
+        sending: /*[[#{signup.sending}]]*/ "발송 중...",
+        sendEmailCodeButton: /*[[#{signup.sendEmailCodeButton}]]*/ "인증코드 받기",
+        emailSendError: /*[[#{signup.emailSendError}]]*/ "이메일 발송 중 오류가 발생했습니다.",
+        emailCodeRequired: /*[[#{signup.emailCodeRequired}]]*/ "인증코드를 입력해주세요.",
+        emailVerifyErrorGeneric: /*[[#{signup.emailVerifyErrorGeneric}]]*/ "인증 확인 중 오류가 발생했습니다.",
+        emailChangedResetVerify: /*[[#{signup.emailChangedResetVerify}]]*/ "이메일이 변경되어 인증이 초기화되었습니다. 다시 인증해주세요.",
+        emailCodeExpired: /*[[#{signup.emailCodeExpired}]]*/ "인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.",
+        emailVerifyRequired: /*[[#{signup.error.emailNotVerified}]]*/ "이메일 인증을 먼저 완료해주세요.",
+        usernameCheckError: /*[[#{signup.usernameCheckError}]]*/ "중복 확인 중 오류가 발생했습니다."
+      };
       var usernameInput = document.getElementById("userId");
       var checkUsernameBtn = document.getElementById("checkUsernameBtn");
       var usernameMsg = document.getElementById("usernameCheckMsg");
@@ -154,7 +170,7 @@
       checkUsernameBtn.addEventListener("click", function () {
         var username = usernameInput.value.trim();
         if (!username) {
-          setUsernameMsg("아이디를 먼저 입력해주세요.", false);
+          setUsernameMsg(MSG.usernameRequired, false);
           return;
         }
         usernameChecked = false;
@@ -172,7 +188,7 @@
             checkedUsername = data.available ? username : "";
           })
           .catch(function () {
-            setUsernameMsg("중복 확인 중 오류가 발생했습니다.", false);
+            setUsernameMsg(MSG.usernameCheckError, false);
           })
           .finally(function () {
             checkUsernameBtn.disabled = false;
@@ -182,7 +198,7 @@
       usernameInput.addEventListener("input", function () {
         if (usernameChecked && usernameInput.value.trim() !== checkedUsername) {
           usernameChecked = false;
-          setUsernameMsg("아이디가 변경되어 중복 확인이 초기화되었습니다. 다시 확인해주세요.", false);
+          setUsernameMsg(MSG.usernameCheckReset, false);
         }
       });
 
@@ -205,7 +221,7 @@
             timerEl.textContent = "00:00";
             codeInput.disabled = true;
             verifyBtn.disabled = true;
-            setMsg("인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.", false);
+            setMsg(MSG.emailCodeExpired, false);
             return;
           }
           timerEl.textContent = formatTime(remaining);
@@ -220,12 +236,12 @@
       sendBtn.addEventListener("click", function () {
         var email = emailInput.value.trim();
         if (!email) {
-          setMsg("이메일을 먼저 입력해주세요.", false);
+          setMsg(MSG.emailFirstRequired, false);
           return;
         }
         emailVerified = false;
         sendBtn.disabled = true;
-        sendBtn.textContent = "발송 중...";
+        sendBtn.textContent = MSG.sending;
 
         fetch("/signup/email/code", {
           method: "POST",
@@ -243,11 +259,11 @@
             }
           })
           .catch(function () {
-            setMsg("이메일 발송 중 오류가 발생했습니다.", false);
+            setMsg(MSG.emailSendError, false);
           })
           .finally(function () {
             sendBtn.disabled = false;
-            sendBtn.textContent = "인증코드 받기";
+            sendBtn.textContent = MSG.sendEmailCodeButton;
           });
       });
 
@@ -255,7 +271,7 @@
         var email = emailInput.value.trim();
         var code = codeInput.value.trim();
         if (!code) {
-          setMsg("인증코드를 입력해주세요.", false);
+          setMsg(MSG.emailCodeRequired, false);
           return;
         }
         fetch("/signup/email/verify", {
@@ -275,7 +291,7 @@
             }
           })
           .catch(function () {
-            setMsg("인증 확인 중 오류가 발생했습니다.", false);
+            setMsg(MSG.emailVerifyErrorGeneric, false);
           });
       });
 
@@ -283,20 +299,20 @@
         if (emailVerified && emailInput.value.trim() !== verifiedEmail) {
           emailVerified = false;
           stopTimer();
-          setMsg("이메일이 변경되어 인증이 초기화되었습니다. 다시 인증해주세요.", false);
+          setMsg(MSG.emailChangedResetVerify, false);
         }
       });
 
       form.addEventListener("submit", function (e) {
         if (!usernameChecked || usernameInput.value.trim() !== checkedUsername) {
           e.preventDefault();
-          setUsernameMsg("아이디 중복 확인을 먼저 완료해주세요.", false);
+          setUsernameMsg(MSG.usernameCheckRequired, false);
           usernameInput.focus();
           return;
         }
         if (!emailVerified || emailInput.value.trim() !== verifiedEmail) {
           e.preventDefault();
-          setMsg("이메일 인증을 먼저 완료해주세요.", false);
+          setMsg(MSG.emailVerifyRequired, false);
           emailInput.focus();
         }
       });

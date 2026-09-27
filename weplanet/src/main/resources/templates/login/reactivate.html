@@ -3,44 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WePlaNet – 휴면계정 해제</title>
+  <title th:text="#{reactivate.pageTitle}">WePlaNet – 휴면계정 해제</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
 <body class="auth-page">
   <div class="auth-card" style="width:min(100%,480px);">
-    <a class="auth-card__back" href="/login">← 로그인으로</a>
-    <h1 class="auth-card__title">휴면계정 해제</h1>
+    <a class="auth-card__back" href="/login" th:text="#{reactivate.backToLogin}">← 로그인으로</a>
+    <h1 class="auth-card__title" th:text="#{reactivate.heading}">휴면계정 해제</h1>
     <!-- AUTH-10: 로컬/소셜 로그인 중 어느 쪽으로 들어왔든 항상 같은 화면 하나로 통일했다. -->
-    <p class="text-sm text-muted">아이디를 입력하고 인증코드를 받으면, 가입 시 등록된 이메일로 인증코드를 보내드려요.</p>
+    <p class="text-sm text-muted" th:text="#{reactivate.desc}">아이디를 입력하고 인증코드를 받으면, 가입 시 등록된 이메일로 인증코드를 보내드려요.</p>
 
     <p th:if="${errorMessage}" class="text-sm" style="color:#c45c26;" th:text="${errorMessage}"></p>
 
     <form id="reactivateForm" method="post" th:action="@{/login/reactivate/verify}">
       <div class="form-group">
-        <label class="form-label" for="username">아이디</label>
+        <label class="form-label" for="username" th:text="#{reactivate.usernameLabel}">아이디</label>
         <div class="form-row">
-          <input class="form-input" type="text" name="username" id="username" placeholder="아이디 입력" autocomplete="username" required />
-          <button type="button" class="btn btn--ghost btn--sm" id="sendCodeBtn">인증코드 받기</button>
+          <input class="form-input" type="text" name="username" id="username" th:placeholder="#{reactivate.usernamePlaceholder}" placeholder="아이디 입력" autocomplete="username" required />
+          <button type="button" class="btn btn--ghost btn--sm" id="sendCodeBtn" th:text="#{reactivate.sendCodeButton}">인증코드 받기</button>
         </div>
         <p class="text-xs" id="sendCodeMsg" style="margin-top:6px;"></p>
       </div>
 
       <!-- 인증코드 (전송 전에는 숨김) -->
       <div class="form-group" id="codeGroup" style="display:none;">
-        <label class="form-label" for="code">인증코드</label>
+        <label class="form-label" for="code" th:text="#{reactivate.codeLabel}">인증코드</label>
         <div class="form-row" style="align-items:center;gap:8px;">
-          <input class="form-input" type="text" name="code" id="code" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" required />
+          <input class="form-input" type="text" name="code" id="code" maxlength="6" th:placeholder="#{reactivate.codePlaceholder}" placeholder="인증번호 6자리" autocomplete="one-time-code" required />
           <span class="text-xs" id="codeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
         </div>
         <p class="text-xs" id="codeMsg" style="margin-top:6px;"></p>
       </div>
 
-      <button type="submit" class="btn btn--primary btn--block btn--lg mt-16" id="submitBtn">해제하고 로그인</button>
+      <button type="submit" class="btn btn--primary btn--block btn--lg mt-16" id="submitBtn" th:text="#{reactivate.submitButton}">해제하고 로그인</button>
     </form>
   </div>
-  <script>
+  <script th:inline="javascript">
     (function () {
       "use strict";
+      // SETTINGS-03: 이 화면의 JS 상태 메시지를 서버 로케일 기준으로 미리 받아온다.
+      var MSG = {
+        sending: /*[[#{reactivate.sending}]]*/ "발송 중...",
+        sendCodeButton: /*[[#{reactivate.sendCodeButton}]]*/ "인증코드 받기",
+        sendError: /*[[#{reactivate.sendError}]]*/ "이메일 발송 중 오류가 발생했습니다.",
+        codeExpired: /*[[#{reactivate.codeExpired}]]*/ "인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.",
+        usernameRequired: /*[[#{reactivate.usernameRequired}]]*/ "아이디를 먼저 입력해주세요.",
+        codeRequired: /*[[#{reactivate.codeRequired}]]*/ "먼저 인증코드를 받아주세요."
+      };
 
       const usernameInput = document.getElementById("username");
       const sendBtn = document.getElementById("sendCodeBtn");
@@ -79,7 +88,7 @@
             timerEl.textContent = "00:00";
             codeInput.disabled = true;
             submitBtn.disabled = true;
-            codeMsg.textContent = "인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.";
+            codeMsg.textContent = MSG.codeExpired;
             codeMsg.style.color = "#c45c26";
             return;
           }
@@ -89,7 +98,7 @@
 
       function requestCode(username) {
         sendBtn.disabled = true;
-        sendBtn.textContent = "발송 중...";
+        sendBtn.textContent = MSG.sending;
         return fetch("/login/reactivate/code", {
           method: "POST",
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -109,20 +118,20 @@
             return data.success;
           })
           .catch(function () {
-            sendMsg.textContent = "이메일 발송 중 오류가 발생했습니다.";
+            sendMsg.textContent = MSG.sendError;
             sendMsg.style.color = "#c45c26";
             return false;
           })
           .finally(function () {
             sendBtn.disabled = false;
-            sendBtn.textContent = "인증코드 받기";
+            sendBtn.textContent = MSG.sendCodeButton;
           });
       }
 
       sendBtn.addEventListener("click", function () {
         const username = usernameInput.value.trim();
         if (!username) {
-          sendMsg.textContent = "아이디를 먼저 입력해주세요.";
+          sendMsg.textContent = MSG.usernameRequired;
           sendMsg.style.color = "#c45c26";
           return;
         }
@@ -132,13 +141,13 @@
       form.addEventListener("submit", function (e) {
         if (codeGroup.style.display === "none") {
           e.preventDefault();
-          codeMsg.textContent = "먼저 인증코드를 받아주세요.";
+          codeMsg.textContent = MSG.codeRequired;
           codeMsg.style.color = "#c45c26";
           return;
         }
         if (codeExpired) {
           e.preventDefault();
-          codeMsg.textContent = "인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.";
+          codeMsg.textContent = MSG.codeExpired;
           codeMsg.style.color = "#c45c26";
         }
       });
