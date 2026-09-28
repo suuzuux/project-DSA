@@ -759,6 +759,15 @@
   font-weight: 600;
 }
 
+.alert--error {
+  padding: 12px 14px;
+  border-radius: var(--wp-radius);
+  background: #ffe8ee;
+  color: #9f1239;
+  font-size: var(--wp-fs-sm);
+  font-weight: 600;
+}
+
 .shop-toast {
   position: fixed;
   top: 50%;
@@ -786,4 +795,55 @@
 
 .shop-toast[hidden] {
   display: block;
+}
+
+.btn--accent:disabled,
+.btn--accent:disabled:hover {
+  opacity: 0.45;
+  filter: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.shop-checkout {
+  width: min(100% - 40px, 720px);
+  margin-inline: auto;
+}
+
+.shop-checkout__section {
+  margin-bottom: 28px;
+}
+
+.shop-checkout__title {
+  font-size: var(--wp-fs-lg);
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.shop-checkout__list {
+  max-height: none;
+}
+
+.shop-checkout__fields {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+  background: var(--wp-surface);
+}
+
+.shop-checkout__postcode {
+  display: flex;
+  gap: 8px;
+}
+
+.shop-checkout__postcode .form-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.shop-checkout__hint {
+  margin-top: 12px;
+  text-align: center;
 }

@@ -8,6 +8,7 @@ import megane6.weplanet.domain.dto.CommercePaymentStatusView;
 import megane6.weplanet.domain.dto.ProjectPaymentPrepareResponse;
 import megane6.weplanet.domain.dto.ShopCartSummaryView;
 import megane6.weplanet.domain.dto.ShopProductView;
+import megane6.weplanet.domain.dto.ShopShippingRequest;
 import megane6.weplanet.domain.dto.payment.TossPaymentResponse;
 import megane6.weplanet.domain.entity.ShopCartItem;
 import megane6.weplanet.domain.entity.ShopOrder;
@@ -45,7 +46,12 @@ public class ShopPaymentService {
 	private final TossPaymentsClient tossClient;
 
 	@Transactional
-	public ProjectPaymentPrepareResponse prepareCart(User buyer, String idempotencyKey) {
+	public ProjectPaymentPrepareResponse prepareCart(User buyer, String idempotencyKey,
+													 ShopShippingRequest shipping) {
+		if (shipping == null) {
+			throw new IllegalArgumentException("배송지를 입력해주세요.");
+		}
+		shipping.requireComplete();
 		List<ShopCartItem> rows = shopCartItemRepository.findByUserOrderByCreatedAtAsc(buyer);
 		if (rows.isEmpty()) {
 			throw new IllegalArgumentException("장바구니가 비어 있습니다.");
@@ -62,8 +68,8 @@ public class ShopPaymentService {
 		}
 		String key = normalizeKey(idempotencyKey);
 		ShopOrder order = shopOrderRepository.findByIdempotencyKey(key)
-				.map(existing -> reuseReady(existing, buyer, cart.total()))
-				.orElseGet(() -> createCartOrder(buyer, rows, cart.total(), key));
+				.map(existing -> reuseReady(existing, buyer, cart.total(), shipping))
+				.orElseGet(() -> createCartOrder(buyer, rows, cart.total(), key, shipping));
 		return toPrepare(order, orderName(order));
 	}
 
@@ -88,7 +94,7 @@ public class ShopPaymentService {
 		long amount = (long) product.price() * quantity;
 		String key = normalizeKey(idempotencyKey);
 		ShopOrder order = shopOrderRepository.findByIdempotencyKey(key)
-				.map(existing -> reuseReady(existing, buyer, amount))
+				.map(existing -> reuseReady(existing, buyer, amount, null))
 				.orElseGet(() -> createBuyNowOrder(buyer, product, cartKey, variantId, quantity, amount, key));
 		return toPrepare(order, product.title());
 	}
@@ -219,7 +225,8 @@ public class ShopPaymentService {
 		log.info("[샵 결제] 입금 확인 완료. orderNo={}", order.getOrderNo());
 	}
 
-	private ShopOrder createCartOrder(User buyer, List<ShopCartItem> rows, int total, String key) {
+	private ShopOrder createCartOrder(User buyer, List<ShopCartItem> rows, int total, String key,
+									  ShopShippingRequest shipping) {
 		LocalDateTime now = LocalDateTime.now();
 		ShopOrder order = ShopOrder.createReady(
 				buyer,
@@ -240,6 +247,7 @@ public class ShopPaymentService {
 					row.getQuantity(),
 					row.getUnitPrice()));
 		}
+		applyShipping(order, shipping);
 		return shopOrderRepository.save(order);
 	}
 
@@ -265,20 +273,36 @@ public class ShopPaymentService {
 		return shopOrderRepository.save(order);
 	}
 
-	private ShopOrder reuseReady(ShopOrder existing, User buyer, long amount) {
+	private ShopOrder reuseReady(ShopOrder existing, User buyer, long amount, ShopShippingRequest shipping) {
 		boolean same = existing.getBuyer().getId().equals(buyer.getId())
 				&& existing.getAmount().equals(amount)
 				&& existing.getPaymentStatus() == FanProjectPaymentStatus.READY;
 		if (!same) {
 			throw new IllegalStateException("이미 사용된 결제 요청입니다. 다시 시도해주세요.");
 		}
+		applyShipping(existing, shipping);
 		return existing;
 	}
 
+	private static void applyShipping(ShopOrder order, ShopShippingRequest shipping) {
+		if (shipping == null) {
+			return;
+		}
+		order.applyShipping(
+				shipping.receiverName(),
+				shipping.receiverPhone(),
+				shipping.zipcode(),
+				shipping.address1(),
+				shipping.address2(),
+				shipping.deliveryMemo()
+		);
+	}
+
 	private ProjectPaymentPrepareResponse toPrepare(ShopOrder order, String orderName) {
-		String customer = order.getBuyer().getNickname() != null
-				? order.getBuyer().getNickname()
-				: "WePlaNet 회원";
+		String customer = firstNonBlank(order.getReceiverName(), order.getBuyer().getNickname());
+		if (customer == null) {
+			customer = "WePlaNet 회원";
+		}
 		return new ProjectPaymentPrepareResponse(
 				true,
 				tossProperties.clientKey(),
@@ -289,6 +313,16 @@ public class ShopPaymentService {
 				TossVirtualAccountSupport.VALID_HOURS,
 				"결제창을 여는 중입니다."
 		);
+	}
+
+	private static String firstNonBlank(String first, String second) {
+		if (first != null && !first.isBlank()) {
+			return first;
+		}
+		if (second != null && !second.isBlank()) {
+			return second;
+		}
+		return null;
 	}
 
 	private ShopOrder findMyOrderForUpdate(Long buyerId, String orderId) {
