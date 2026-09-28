@@ -36,7 +36,7 @@
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
---   절대 이 파일을 실행하지 말고 [파일 2] (증분 마이그레이션)를 쓰세요.
+--   절대 이 파일을 실행하지 말고 weplanet_DB적용.sql (데이터 보존 동기화)을 쓰세요.
 --   이 파일은 "새로 시작하는 사람" 또는 "완전히 리셋하고 싶은 사람" 전용입니다.
 --
 -- 실행 방법
@@ -84,6 +84,9 @@ DROP TABLE IF EXISTS `chat_message`;
 DROP TABLE IF EXISTS `live_comment_report`;
 DROP TABLE IF EXISTS `live_comment`;
 DROP TABLE IF EXISTS `live_session`;
+DROP TABLE IF EXISTS `membership_order`;
+DROP TABLE IF EXISTS `shop_order_item`;
+DROP TABLE IF EXISTS `shop_order`;
 DROP TABLE IF EXISTS `shop_cart_item`;
 DROP TABLE IF EXISTS `shop_goods_variant`;
 DROP TABLE IF EXISTS `shop_goods_option`;
@@ -665,11 +668,15 @@ CREATE TABLE `comment` (
   `created_at` datetime(6) NOT NULL COMMENT '작성 시각',
   `author_id` bigint NOT NULL COMMENT '작성자(users.id)',
   `post_id` bigint NOT NULL COMMENT '원글(post.id)',
+  `parent_id` bigint DEFAULT NULL COMMENT '답글이면 부모 댓글(comment.id), 일반 댓글이면 NULL',
+  `deleted_at` datetime(6) DEFAULT NULL COMMENT '답글이 남아 있는 원댓글의 삭제 시각 (NULL이면 정상 댓글)',
   PRIMARY KEY (`id`),
   KEY `FKir20vhrx08eh4itgpbfxip0s1` (`author_id`),
   KEY `FKs1slvnkuemjsq2kj4h3vhx7i1` (`post_id`),
+  KEY `idx_comment_parent` (`parent_id`),
   CONSTRAINT `FKir20vhrx08eh4itgpbfxip0s1` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `FKs1slvnkuemjsq2kj4h3vhx7i1` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
+  CONSTRAINT `FKs1slvnkuemjsq2kj4h3vhx7i1` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`),
+  CONSTRAINT `fk_comment_parent` FOREIGN KEY (`parent_id`) REFERENCES `comment` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 댓글';
 
 -- comment_report: 댓글 신고
@@ -825,6 +832,76 @@ CREATE TABLE `shop_cart_item` (
   KEY `idx_shop_cart_user` (`user_id`, `updated_at`),
   CONSTRAINT `fk_shop_cart_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 장바구니';
+
+-- shop_order: 굿즈샵 토스 결제 주문
+CREATE TABLE `shop_order` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `buyer_id` bigint NOT NULL,
+  `order_no` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TOSS',
+  `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` bigint NOT NULL,
+  `source` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `virtual_account_number` varbinary(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
+  `paid_at` datetime(6) DEFAULT NULL,
+  `cancelled_at` datetime(6) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_shop_order_no` (`order_no`),
+  UNIQUE KEY `uk_shop_order_idempotency` (`idempotency_key`),
+  KEY `idx_shop_order_buyer` (`buyer_id`, `created_at`),
+  KEY `idx_shop_order_status` (`payment_status`),
+  CONSTRAINT `fk_shop_order_buyer` FOREIGN KEY (`buyer_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 토스 결제 주문';
+
+-- shop_order_item: 굿즈샵 주문 라인
+CREATE TABLE `shop_order_item` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` bigint NOT NULL,
+  `goods_id` bigint NOT NULL,
+  `variant_id` bigint NOT NULL,
+  `product_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `product_name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `unit_price` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_shop_order_item_order` (`order_id`),
+  CONSTRAINT `fk_shop_order_item_order` FOREIGN KEY (`order_id`) REFERENCES `shop_order` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 주문 라인';
+
+-- membership_order: 멤버십 토스 결제 주문
+CREATE TABLE `membership_order` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `fan_id` bigint NOT NULL,
+  `artist_id` bigint NOT NULL,
+  `order_no` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TOSS',
+  `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` bigint NOT NULL,
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `virtual_account_number` varbinary(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
+  `paid_at` datetime(6) DEFAULT NULL,
+  `cancelled_at` datetime(6) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_membership_order_no` (`order_no`),
+  UNIQUE KEY `uk_membership_order_idempotency` (`idempotency_key`),
+  KEY `idx_membership_order_fan` (`fan_id`, `created_at`),
+  KEY `idx_membership_order_status` (`payment_status`),
+  CONSTRAINT `fk_membership_order_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_membership_order_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 토스 결제 주문';
 
 -- chat_message: 팬–아티스트 채팅 메시지
 CREATE TABLE `chat_message` (

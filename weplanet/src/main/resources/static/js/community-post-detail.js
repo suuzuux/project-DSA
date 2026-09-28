@@ -201,6 +201,20 @@
       if (row) row.style.display = row.style.display === "none" ? "flex" : "none";
       return;
     }
+    // [대댓글] 답글 입력칸 열고 닫기
+    if (e.target.classList.contains("comment-reply-toggle")) {
+      const commentId = e.target.getAttribute("data-comment-id");
+      const row = document.getElementById("commentReplyRow-" + commentId);
+      if (row) {
+        const opened = row.style.display !== "none";
+        row.style.display = opened ? "none" : "block";
+        if (!opened) {
+          const input = row.querySelector("input[name='content']");
+          if (input) input.focus();
+        }
+      }
+      return;
+    }
     if (!e.target.classList.contains("comment-translate-link")) return;
 
     const link = e.target;
@@ -262,7 +276,23 @@
       return;
     }
 
-    if (form.id !== "commentForm" && !form.classList.contains("comment-delete-form") && !form.classList.contains("comment-edit-form")) return;
+    if (
+      form.id !== "commentForm" &&
+      !form.classList.contains("comment-delete-form") &&
+      !form.classList.contains("comment-edit-form") &&
+      !form.classList.contains("comment-reply-form")
+    ) {
+      return;
+    }
+
+    // [대댓글] 답글은 내용이 비면 서버까지 갈 필요가 없음
+    if (form.classList.contains("comment-reply-form")) {
+      const replyInput = form.querySelector("input[name='content']");
+      if (replyInput && !replyInput.value.trim()) {
+        e.preventDefault();
+        return;
+      }
+    }
 
     e.preventDefault();
     fetch(form.action, {

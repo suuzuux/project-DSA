@@ -13,7 +13,13 @@ import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.stereotype.Component;
 import org.springframework.ui.Model;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -34,10 +40,24 @@ public class PostDetailModelHelper {
 	// 커뮤니티 가입 닉네임으로 통일해서 보여준다. artistId가 null이면(레거시 전역 게시판) 계정 닉네임 그대로.
 	public void populate(Model model, Post post, User currentUser, Long artistId) {
 		List<Comment> comments = commentService.getComments(post);
-		List<Comment> artistComments = comments.stream()
+
+		// [대댓글] 목록에는 원댓글만 올리고, 답글은 부모 id별로 묶어서 따로 넘긴다.
+		// 키를 문자열로 쓰는 이유는 authorNicknames와 마찬가지로 Thymeleaf에서 Long 키 조회가
+		// 타입 때문에 어긋나는 일을 피하기 위함 (repliesByParentId.get('' + comment.id) 형태로 씀)
+		Map<String, List<Comment>> repliesByParentId = comments.stream()
+				.filter(c -> c.getParent() != null)
+				.collect(Collectors.groupingBy(
+						c -> String.valueOf(c.getParent().getId()),
+						HashMap::new,
+						Collectors.toList()));
+
+		List<Comment> rootComments = comments.stream()
+				.filter(c -> c.getParent() == null)
+				.toList();
+		List<Comment> artistComments = rootComments.stream()
 				.filter(c -> c.getAuthor().isArtistSide())
 				.toList();
-		List<Comment> otherComments = comments.stream()
+		List<Comment> otherComments = rootComments.stream()
 				.filter(c -> !c.getAuthor().isArtistSide())
 				.toList();
 
@@ -73,6 +93,7 @@ public class PostDetailModelHelper {
 		model.addAttribute("comments", comments);
 		model.addAttribute("artistComments", artistComments);
 		model.addAttribute("otherComments", otherComments);
+		model.addAttribute("repliesByParentId", repliesByParentId);
 		model.addAttribute("attachments", postService.getAttachments(post));
 		model.addAttribute("bookmarked", postService.isBookmarked(post, currentUser));
 		model.addAttribute("liked", liked);
