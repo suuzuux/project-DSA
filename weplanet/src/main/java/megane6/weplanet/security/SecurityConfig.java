@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.web.CommunitySlugForwardFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.DisabledException;
@@ -84,7 +85,8 @@ public class SecurityConfig {
     private final RoleAwareLogoutSuccessHandler roleAwareLogoutSuccessHandler;
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final UserRepository userRepository;
-    
+    private final CommunitySlugForwardFilter communitySlugForwardFilter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -104,7 +106,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 PUBLIC_URLS.toArray(String[]::new)
                         ).permitAll()
-                        
+
+                        // 커뮤니티 영문 주소(/kiikii, /kiikii/fan) - /community/** 와 같은 공개 범위.
+                        // 등록된 영문명일 때만 공개하고, 아니면 아래 anyRequest 규칙을 그대로 탄다
+                        .requestMatchers(request -> communitySlugForwardFilter.forwardTargetOf(request).isPresent())
+                        .permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin

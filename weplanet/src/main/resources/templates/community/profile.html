@@ -36,12 +36,21 @@
         .profile-layout > .profile-tabs { grid-column: 2; grid-row: 1; margin: 0; }
         .profile-layout > .profile-side { grid-column: 1; grid-row: 2; }
         .profile-layout > .profile-body { grid-column: 2; grid-row: 2; }
-        .profile-layout > .profile-edit { grid-column: 2; grid-row: 1 / span 2; display: none; }
+        /* 편집 패널은 목록(댓글/포스트/좋아요/북마크)과 같은 칸에 뜬다.
+           예전엔 탭 줄까지 두 줄에 걸쳐 있어서, 패널이 길면 탭 줄이 늘어나며 왼쪽 카드가 아래로 밀렸다. */
+        .profile-layout > .profile-edit { grid-column: 2; grid-row: 2; display: none; }
 
         /* 편집 모드 - 탭은 자리를 유지한 채 감추고(카드가 위로 튀지 않게), 목록 대신 편집 패널을 띄움 */
         .profile-layout.is-editing > .profile-tabs { visibility: hidden; }
         .profile-layout.is-editing > .profile-body { display: none; }
         .profile-layout.is-editing > .profile-edit { display: block; }
+
+        /* 편집 패널의 배경 미리보기 - 기본 비율(2560:1660)이면 칸 너비만큼 커져서 패널이 갑자기 길어진다.
+           왼쪽 카드 커버와 비슷한 높이로 고정하고 이미지는 가운데 기준으로 채운다. */
+        .profile-edit .pe-cover-preview { aspect-ratio: auto; height: 220px; }
+        .profile-edit .pe-cover-preview img { height: 100%; object-fit: cover; }
+        /* 높이를 줄여서 아바타(아래로 겹침)가 안내 문구를 가리지 않도록 문구를 위쪽 절반에 둔다 */
+        .profile-edit .pe-cover-preview__hint { bottom: 96px; }
 
         /* FOLLOW-01: 다른 사람이 콘텐츠 숨김 상태인 프로필을 볼 때, 탭+목록 자리에 대신 뜨는 안내 */
         .profile-layout > .profile-hidden-notice { grid-column: 2; grid-row: 1 / span 2; }
@@ -82,21 +91,51 @@
             background-size: cover;
             background-position: center;
         }
-        .profile-card__dday {
+        /* 상태메시지(소개글) 말풍선 - 커버 위, 아바타 바로 위에 뜬다.
+           배경 이미지 위에 얹히므로 테마(라이트/다크)와 무관하게 흰 배경 + 검은 글자로 고정한다. */
+        .profile-card__status {
             position: absolute;
             left: 50%;
-            bottom: 66px;
+            bottom: 70px;               /* 아래 기준으로 붙여서, 줄이 늘면 위로 자란다 */
             transform: translateX(-50%);
-            padding: 5px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.65);
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.82);
-            color: var(--wp-ink, #202020);
+            z-index: 1;
+            width: max-content;
+            max-width: calc(100% - 40px);
+            margin: 0;
+            padding: 8px 14px;
+            border-radius: 14px;
+            background-color: #ffffff;
+            color: #111111;
+            opacity: 1;
             font-size: var(--wp-fs-xs);
+            font-weight: 600;
+            line-height: 1.45;
+            text-align: center;
+            white-space: normal;
+            /* 상태메시지는 최대 30자 - 자르지 않고 줄바꿈해서 전부 보여준다.
+               한글은 단어(띄어쓰기) 단위로 줄을 바꾸고, 띄어쓰기 없이 긴 문자열만 중간에서 끊는다 */
+            word-break: keep-all;
+            overflow-wrap: anywhere;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        }
+        /* 말풍선 꼬리 - 아래(아바타 쪽)를 가리킨다 */
+        .profile-card__status::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: #ffffff;
+            border-bottom: 0;
+        }
+        /* D-day - 닉네임 아래. 카드 흰 영역 위라 테마 글자색(--wp-ink)을 그대로 따른다 */
+        .profile-card__dday {
+            margin-top: 8px;
+            color: var(--wp-ink, #202020);
+            font-size: var(--wp-fs-sm);
             font-weight: 800;
             letter-spacing: 0.04em;
-            white-space: nowrap;
-            backdrop-filter: blur(4px);
         }
         .profile-card__joined-date {
             margin-top: 6px;
@@ -222,13 +261,14 @@
   cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
   artistSide : 이 프로필 주인이 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)인지.
                아티스트는 가입 프로필이 없으므로 카드/편집 패널을 계정별 포털 프로필(targetArtist*)로 그린다.
-  isTargetArtist : 커뮤니티 주인(솔로 계정) 프로필인지 - "팔로우해야 보이는 콘텐츠" 규칙은 이쪽만 적용
+  isTargetArtist : 커뮤니티 주인(솔로 계정) 프로필인지 - 이름 표시와 팔로우 버튼에만 쓴다.
+                   아티스트 프로필은 팬 프로필과 같은 화면이고(팔로우 여부와 무관하게 공개), 팔로워/팔로잉만 숨긴다.
 -->
 <main class="container section" style="max-width:1080px;"
       th:with="isTargetArtist=${isCommunityOwnerProfile == true},
                artistSide=${isTargetArtistSide == true},
                displayName=${isTargetArtist ? artist.nickname() : (artistSide ? targetUser.nickname : (targetCommunityProfile != null ? targetCommunityProfile.nickname : targetUser.nickname))},
-               contentHidden=${isTargetArtist ? !isFollowingTarget : (!artistSide and targetCommunityProfile != null and targetCommunityProfile.contentHidden)},
+               contentHidden=${!artistSide and targetCommunityProfile != null and targetCommunityProfile.contentHidden},
                contentVisible=${isOwnProfile or !contentHidden},
                avatarName=${targetCommunityProfile != null ? targetCommunityProfile.avatarStoredName : null},
                backgroundName=${targetCommunityProfile != null ? targetCommunityProfile.backgroundStoredName : null},
@@ -249,8 +289,7 @@
             <a href="#" data-tab="bookmarks" th:text="|북마크 ${#lists.size(bookmarkedPosts)}|">북마크</a>
         </nav>
         <!-- FOLLOW-01: 상대가 콘텐츠를 숨긴 경우, 탭 자리에 이 안내만 뜬다 -->
-        <div class="profile-hidden-notice" th:unless="${contentVisible}"
-             th:text="${isTargetArtist ? '아티스트를 팔로우하면 볼 수 있는 콘텐츠입니다.' : '비공개로 설정한 프로필입니다.'}">비공개로 설정한 프로필입니다.</div>
+        <div class="profile-hidden-notice" th:unless="${contentVisible}">비공개로 설정한 프로필입니다.</div>
 
         <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
         <aside class="profile-side profile-card">
@@ -260,9 +299,10 @@
                  th:style="${cardBackgroundUrl != null}
                            ? |background-image:url('${cardBackgroundUrl}');|
                            : 'background:linear-gradient(160deg,#3d5a5a,#8b6040);'">
-                <span class="profile-card__dday"
-                      th:if="${!contentHidden and communityJoinInfo != null}"
-                      th:text="|D + ${communityJoinInfo.dayNumber}|">D + 1</span>
+                <!-- 상태메시지(소개글) 말풍선 - 아티스트 본인은 포털 intro -->
+                <p class="profile-card__status"
+                   th:if="${cardIntro != null and !#strings.isEmpty(cardIntro)}"
+                   th:text="${cardIntro}">상태메시지</p>
             </div>
 
             <div style="padding:0 20px 24px;text-align:center;">
@@ -297,10 +337,10 @@
                    th:if="${communityJoinInfo != null and contentVisible}"
                    th:text="|${#temporals.format(communityJoinInfo.joinedDate, 'yyyy.MM.dd')} 가입|">2026.09.01 가입</p>
 
-                <!-- 소개글 - 아티스트 본인은 포털 intro -->
-                <p class="text-sm text-muted" style="margin-top:8px;line-height:1.5;word-break:break-all;"
-                   th:if="${cardIntro != null and !#strings.isEmpty(cardIntro)}"
-                   th:text="${cardIntro}">소개글</p>
+                <!-- 커뮤니티 가입 D-day (가입 당일 = D+1) -->
+                <p class="profile-card__dday"
+                   th:if="${!contentHidden and communityJoinInfo != null}"
+                   th:text="|D + ${communityJoinInfo.dayNumber}|">D + 1</p>
 
                 <!-- FOLLOW-01: 팔로워/팔로잉 숫자 - 콘텐츠 숨김이면 함께 가려진다. 클릭하면 리스트 모달 -->
                 <!-- 아티스트(솔로 본인/그룹 멤버) 프로필에는 팔로워/팔로잉 숫자·목록을 보여주지 않는다 -->

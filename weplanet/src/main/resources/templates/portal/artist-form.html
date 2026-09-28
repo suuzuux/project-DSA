@@ -38,9 +38,13 @@
         <p class="text-sm text-muted" style="margin-top:6px;">아티스트 포털 1단계 로그인 아이디가 됩니다.</p>
       </div>
       <div class="form-group">
-        <label class="form-label" for="nameEn">영문명</label>
-        <input class="form-input" id="nameEn" name="nameEn" maxlength="100"
-               th:value="${form != null ? form.nameEn() : ''}" />
+        <label class="form-label" for="nameEn">영문명 (커뮤니티 주소) *</label>
+        <input class="form-input" id="nameEn" name="nameEn" maxlength="100" required
+               pattern="[A-Za-z0-9][A-Za-z0-9\-]*" title="영문/숫자로 시작하고 영문, 숫자, 하이픈(-)만 쓸 수 있어요."
+               th:value="${form != null ? form.nameEn() : ''}" placeholder="kiikii" />
+        <p class="text-sm text-muted" style="margin-top:6px;">
+          커뮤니티 주소가 됩니다. 예) kiikii → localhost:9999/kiikii · 공백 없이 영문, 숫자, 하이픈(-)만
+        </p>
       </div>
       <div class="form-group">
         <label class="form-label" for="fandomName">팬덤명</label>

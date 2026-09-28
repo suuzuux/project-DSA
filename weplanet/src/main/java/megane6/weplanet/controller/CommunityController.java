@@ -19,6 +19,7 @@ import megane6.weplanet.service.PostService;
 import megane6.weplanet.service.UserFollowService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityArtistResolver;
+import megane6.weplanet.service.community.CommunityUrls;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
@@ -60,7 +61,9 @@ public class CommunityController {
 	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
 	
 	private final CommunityArtistResolver communityArtistResolver;
-	
+
+	private final CommunityUrls communityUrls; // 탭/메뉴 링크를 영문 주소(/kiikii/fan)로
+
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		User artist = populateArtistModel(artistId, principal, model);
@@ -392,7 +395,7 @@ public class CommunityController {
 		boolean isOwnProfile = me.getId().equals(userId);
 		model.addAttribute("isOwnProfile", isOwnProfile);
 		model.addAttribute("profileUserId", userId);
-		// 이 프로필의 주인이 이 커뮤니티의 아티스트 본인인지 - 맞다면 팔로우 버튼/콘텐츠 잠금 문구가
+		// 이 프로필의 주인이 이 커뮤니티의 아티스트 본인인지 - 맞다면 팔로우 버튼이
 		// "아티스트 팔로우" 기준으로 동작한다 (UserFollowService.toggle이 알아서 가입 요건 없이 처리).
 		model.addAttribute("isCommunityOwnerProfile", userId.equals(artistId));
 		// 이 프로필의 주인이 이 커뮤니티의 아티스트 쪽 계정(솔로 본인/그룹 멤버)인지.
@@ -657,11 +660,12 @@ public class CommunityController {
 		Map<Long, String> logoUrls = portalManagementService.logoImageUrlsByArtistIds(
 				artistUsers.stream().map(User::getId).toList());
 
-		List<ArtistCardView> artists = artistUsers.stream()
+		List<ArtistCardView> artists = communityUrls.withHomeUrls(artistUsers.stream()
 				.map(user -> ArtistCardView.from(user, logoUrls.get(user.getId())))
-				.toList();
+				.toList());
 
-		model.addAttribute("artist", ArtistCardView.from(artist, logoUrls.get(artist.getId())));
+		// artist.homeUrl() = 이 커뮤니티 첫 화면 주소. 탭 링크는 이 뒤에 /fan, /artist ... 를 붙인다
+		model.addAttribute("artist", communityUrls.withHomeUrl(ArtistCardView.from(artist, logoUrls.get(artist.getId()))));
 		model.addAttribute("artists", artists);
 		// 포털 프로필 관리의 소개글(artist_profile.intro) → 커뮤니티 About 소개란
 		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));

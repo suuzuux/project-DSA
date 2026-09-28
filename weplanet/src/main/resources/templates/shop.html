@@ -44,7 +44,7 @@
     <header class="shop-header">
       <th:block th:if="${communityMode && selectedArtist != null}">
         <p class="text-xs text-muted mb-8">
-          <a th:href="@{/community/{id}/highlight(id=${selectedArtist.id()})}" th:text="${selectedArtist.nickname() + ' 커뮤니티'}">커뮤니티</a>
+          <a th:href="@{${selectedArtist.homeUrl()}}" th:text="${selectedArtist.nickname() + ' 커뮤니티'}">커뮤니티</a>
           · 굿즈샵
         </p>
         <h1 th:text="${selectedArtist.nickname() + ' 굿즈샵'}">아티스트 굿즈샵</h1>
@@ -63,7 +63,7 @@
         <a th:if="${communityMode}" class="btn btn--ghost btn--sm" th:href="@{/shop}">전체 굿즈샵 보기</a>
         <a th:if="${communityMode && selectedArtist != null}"
            class="btn btn--ghost btn--sm"
-           th:href="@{/community/{id}/highlight(id=${selectedArtist.id()})}">← 커뮤니티</a>
+           th:href="@{${selectedArtist.homeUrl()}}">← 커뮤니티</a>
       </div>
     </header>
 

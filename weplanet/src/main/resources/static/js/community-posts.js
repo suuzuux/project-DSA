@@ -9,7 +9,8 @@
 
   const artistId = boardRoot.dataset.artistId;
   const boardTab = boardRoot.dataset.boardTab;
-  const listBase = "/community/" + artistId + "/" + boardTab;
+  // 목록 주소는 서버가 내려준 영문 주소(/kiikii/fan)를 우선 쓴다 - 정렬/새로고침 후에도 주소창이 영문 주소로 유지됨
+  const listBase = boardRoot.dataset.listBase || ("/community/" + artistId + "/" + boardTab);
 
   function loadList(url, pushHistory) {
     fetch(url, { headers: { "X-Requested-With": "fetch" } })
