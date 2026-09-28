@@ -74,7 +74,9 @@
           const img = a.profileImageUrl
             ? `<img src="${escapeHtml(a.profileImageUrl)}" alt="">`
             : logo;
-          return `<a href="${root}community/${a.id}"><span class="avatar avatar--sm">${img}</span> ${name}</a>`;
+          // homeUrl = 영문 주소(/kiikii). 서버가 못 채운 목록이면 예전 숫자 주소로
+          const href = a.homeUrl ? escapeHtml(a.homeUrl) : `${root}community/${a.id}`;
+          return `<a href="${href}"><span class="avatar avatar--sm">${img}</span> ${name}</a>`;
         })
         .join("");
     }
@@ -389,13 +391,23 @@
       });
   })();
 
+  // 지금 보고 있는 커뮤니티 번호.
+  // 영문 주소(/kiikii/fan)로 들어오면 URL에 번호가 없으므로, 커뮤니티 헤더(layout.html)의
+  // data-artist-id를 먼저 보고, 없으면 예전처럼 /community/{id} 주소에서 뽑는다.
+  function currentCommunityId() {
+    const header = document.querySelector(".community-top__name[data-artist-id]");
+    if (header && header.dataset.artistId) return header.dataset.artistId;
+    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
+    return artistMatch ? artistMatch[1] : null;
+  }
+
   // 멤버십 가입 모달(P27)의 실제 가입 폼 action을 현재 커뮤니티 아티스트로 채움
-  // (모달 자체는 페이지 공통 삽입이라 서버 쪽 artist.id()를 직접 못 씀 - URL에서 뽑아옴)
+  // (모달 자체는 페이지 공통 삽입이라 서버 쪽 artist.id()를 직접 못 씀)
   const membershipJoinForm = document.getElementById("membershipJoinForm");
   if (membershipJoinForm) {
-    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
-    if (artistMatch) {
-      membershipJoinForm.action = "/community/" + artistMatch[1] + "/membership/join";
+    const communityId = currentCommunityId();
+    if (communityId) {
+      membershipJoinForm.action = "/community/" + communityId + "/membership/join";
     }
   }
 
@@ -403,9 +415,9 @@
   // 멤버십 해지 폼도 같은 방식으로 action 채움
   const membershipCancelForm = document.getElementById("membershipCancelForm");
   if (membershipCancelForm) {
-    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
-    if (artistMatch) {
-      membershipCancelForm.action = "/community/" + artistMatch[1] + "/membership/cancel";
+    const communityId = currentCommunityId();
+    if (communityId) {
+      membershipCancelForm.action = "/community/" + communityId + "/membership/cancel";
     }
   }
 
@@ -414,9 +426,9 @@
   //  내려주고 있었는데 프론트에서 그걸 부르는 코드가 없었던 것)
   document.addEventListener("click", (e) => {
     if (!e.target.closest('[data-modal-open="membershipDetailModal"]')) return;
-    const artistMatch = location.pathname.match(/^\/community\/(\d+)/);
-    if (!artistMatch) return;
-    fetch("/community/" + artistMatch[1] + "/membership/detail")
+    const communityId = currentCommunityId();
+    if (!communityId) return;
+    fetch("/community/" + communityId + "/membership/detail")
       .then((res) => res.json())
       .then((data) => {
         document.getElementById("membershipDetailName").textContent = data.name || "-";
@@ -520,6 +532,8 @@
   function ensureMenuToggle() {
     // 이미 data-shell-open="menu" 버튼이 있으면 스킵
     if (document.querySelector('[data-shell-open="menu"]')) return;
+    // 소속 에이전시용 최소 헤더(community/fragments/layout.html)에는 햄버거를 넣지 않는다
+    if (document.querySelector("[data-header-minimal]")) return;
 
     const header = document.querySelector(".site-header, .community-top");
     if (!header) return;

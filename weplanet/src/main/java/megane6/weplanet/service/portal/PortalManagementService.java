@@ -19,6 +19,7 @@ import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
 import megane6.weplanet.service.FileStorageService;
+import megane6.weplanet.service.community.CommunityUrls;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +55,7 @@ public class PortalManagementService {
     private final LiveCommentReportRepository liveCommentReportRepository;
     private final FileStorageService fileStorageService;
     private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 새 공지 → 팔로워 이메일
+    private final CommunityUrls communityUrls; // 카드의 커뮤니티 주소를 영문 주소(/kiikii)로 채움
 
     public static final int MAX_PINNED = 5;
 
@@ -480,7 +482,7 @@ public class PortalManagementService {
 
     @Transactional(readOnly = true)
     public ArtistCardView toArtistCard(User artist) {
-        return ArtistCardView.from(artist, findLogoImageUrl(artist));
+        return communityUrls.withHomeUrl(ArtistCardView.from(artist, findLogoImageUrl(artist)));
     }
 
     @Transactional(readOnly = true)
@@ -489,9 +491,9 @@ public class PortalManagementService {
             return List.of();
         }
         Map<Long, String> logos = logoImageUrlsByArtistIds(artists.stream().map(User::getId).toList());
-        return artists.stream()
+        return communityUrls.withHomeUrls(artists.stream()
                 .map(user -> ArtistCardView.from(user, logos.get(user.getId())))
-                .toList();
+                .toList());
     }
 
     public void updateProfile(User artist,

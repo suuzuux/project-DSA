@@ -48,6 +48,7 @@ public class ShopController {
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
+	private final megane6.weplanet.service.community.CommunityUrls communityUrls;
 
 	/** 메인 메뉴 → 전체 굿즈샵 (아티스트 필터 선택 가능) */
 	@GetMapping("/shop")
@@ -97,6 +98,8 @@ public class ShopController {
 		populateShellMenu(principal, model);
 		populateCartBadge(principal, model);
 		model.addAttribute("product", product);
+		// "커뮤니티로" 링크 - 영문 주소(/kiikii)가 있으면 그 주소로
+		model.addAttribute("productCommunityUrl", communityUrls.of(product.artistId()));
 		model.addAttribute("fromCommunity", "community".equals(from));
 		return "shop-detail";
 	}

@@ -69,6 +69,7 @@ SET UNIQUE_CHECKS = 0;
 -- ------------------------------------------------------------
 -- DROP (자식 -> 부모 역순, users.agency_id 추가로 인해 agencies 도 맨 마지막)
 -- ------------------------------------------------------------
+DROP TABLE IF EXISTS `main_banner`;
 DROP TABLE IF EXISTS `notification_setting`;
 DROP TABLE IF EXISTS `notification`;
 DROP TABLE IF EXISTS `group_schedule`;
@@ -908,6 +909,32 @@ CREATE TABLE `membership_order` (
   CONSTRAINT `fk_membership_order_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_membership_order_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 토스 결제 주문';
+
+-- main_banner: 메인 페이지 상단 배너 (최고관리자 > 통합 대시보드 > 배너 영역 관리)
+CREATE TABLE IF NOT EXISTS `main_banner` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '배너 PK',
+  `banner_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배너 종류: COMMUNITY(커뮤니티 홍보)/PRODUCT(상품 홍보)',
+  `artist_id` bigint NOT NULL COMMENT '홍보할 아티스트 커뮤니티(users.id)',
+  `goods_id` bigint DEFAULT NULL COMMENT '상품 홍보일 때 연결할 굿즈(shop_goods.id)',
+  `title` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '대제목',
+  `body` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '본문',
+  `image_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배너 이미지 저장 파일명(uploads/)',
+  `bg_color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배경색(#rrggbb) - 이미지 대표색 자동',
+  `text_color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '글자색(#rrggbb) - 배경 밝기에 맞춰 흰색/차콜',
+  `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT '메인 노출 여부',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT '노출 순서(작을수록 앞)',
+  `created_by` bigint NOT NULL COMMENT '등록한 관리자(users.id)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_main_banner_active_sort` (`active`, `sort_order`, `id`),
+  KEY `idx_main_banner_artist` (`artist_id`),
+  KEY `idx_main_banner_goods` (`goods_id`),
+  CONSTRAINT `fk_main_banner_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_main_banner_goods` FOREIGN KEY (`goods_id`) REFERENCES `shop_goods` (`id`),
+  CONSTRAINT `fk_main_banner_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_main_banner_type` CHECK (`banner_type` IN (_utf8mb4'COMMUNITY', _utf8mb4'PRODUCT'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='메인 페이지 상단 배너';
 
 -- chat_message: 팬–아티스트 채팅 메시지
 CREATE TABLE `chat_message` (

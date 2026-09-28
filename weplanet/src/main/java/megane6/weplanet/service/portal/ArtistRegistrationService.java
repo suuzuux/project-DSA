@@ -16,6 +16,7 @@ import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.ArtistGroupProfileRepository;
 import megane6.weplanet.service.AgencyActivationService;
+import megane6.weplanet.service.community.CommunityUrls;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,9 +56,10 @@ public class ArtistRegistrationService {
 		Agency agency = requireAgency(agencyUser);
 		
 		String groupName = requireText(command.groupName(), "아티스트(그룹)명을 입력해주세요.", NAME_MAX_LENGTH);
+		String nameEn = requireNameEn(command.nameEn());
 		String email = requireEmail(command.email());
-		
-		assertAvailable(groupName, email);
+
+		assertAvailable(groupName, nameEn, email);
 		
 		// 1) 그룹 계정 = 커뮤니티의 주인. 닉네임이 곧 커뮤니티 이름으로 보인다.
 		User artist = User.createPendingArtist(email, groupName, groupName);
@@ -74,7 +76,7 @@ public class ArtistRegistrationService {
 				.id(artist.getId())
 				.agencyId(agency.getId())
 				.name(groupName)
-				.nameEn(optionalText(command.nameEn(), NAME_EN_MAX_LENGTH, "영문명"))
+				.nameEn(nameEn)
 				.fandomName(optionalText(command.fandomName(), SHORT_TEXT_MAX_LENGTH, "팬덤명"))
 				.debutDate(command.debutDate())
 				.status("ACTIVE")
@@ -133,7 +135,7 @@ public class ArtistRegistrationService {
 	
 	// 이메일(로그인 아이디)은 모든 계정과 겹치면 안 된다.
 	// 그룹명(커뮤니티 이름)은 다른 커뮤니티와만 겹치지 않으면 된다 - 팬 닉네임과는 겹쳐도 됨(체크 표시로 구분)
-	private void assertAvailable(String groupName, String email) {
+	private void assertAvailable(String groupName, String nameEn, String email) {
 		if (ur.existsByUsername(email) || ur.existsByEmail(email)) {
 			throw new IllegalStateException("이미 사용 중인 이메일입니다: " + email);
 		}
@@ -141,6 +143,26 @@ public class ArtistRegistrationService {
 		if (ur.existsByNicknameAndRole(groupName, Role.ARTIST) || agr.existsByName(groupName)) {
 			throw new IllegalStateException("이미 사용 중인 이름입니다: " + groupName + " (다른 이름으로 등록해주세요.)");
 		}
+
+		// 영문명 = 커뮤니티 주소(/kiikii). 대소문자만 다른 것도 같은 주소라 중복으로 본다(컬럼 콜레이션이 대소문자 무시)
+		if (agr.existsByNameEn(nameEn)) {
+			throw new IllegalStateException("이미 사용 중인 영문명입니다: " + nameEn + " (다른 영문명으로 등록해주세요.)");
+		}
+	}
+
+	// 영문명은 커뮤니티 주소(localhost:9999/{영문명})로 쓰이므로 필수 + 주소로 쓸 수 있는 모양이어야 한다
+	private String requireNameEn(String value) {
+		String nameEn = requireText(value, "커뮤니티 주소로 쓸 영문명을 입력해주세요.", NAME_EN_MAX_LENGTH);
+
+		if (!CommunityUrls.SLUG_PATTERN.matcher(nameEn).matches()) {
+			throw new IllegalArgumentException("영문명은 영문/숫자로 시작하고 영문, 숫자, 하이픈(-)만 쓸 수 있어요. (공백 불가)");
+		}
+
+		if (!CommunityUrls.isUsableSlug(nameEn)) {
+			throw new IllegalArgumentException("사이트 주소와 겹쳐서 쓸 수 없는 영문명입니다: " + nameEn);
+		}
+
+		return nameEn;
 	}
 	
 	private String requireEmail(String value) {
