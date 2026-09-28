@@ -26,7 +26,7 @@
 
   <div class="community-body">
     <div class="community-main" id="communityPostBoard"
-         th:attr="data-artist-id=${artist.id()}, data-board-tab='artist'">
+         th:attr="data-artist-id=${artist.id()}, data-board-tab='artist', data-list-base=@{${artist.homeUrl() + '/artist'}}">
       <nav th:replace="~{community/fragments/layout :: tabs('artist')}"></nav>
 
       <div class="board-toolbar">
@@ -36,7 +36,7 @@
             <select id="artistSort"
                     class="form-select"
                     aria-label="아티스트 게시판 정렬"
-                    th:attr="data-base-url=@{/community/{id}/artist(id=${artist.id()})}">
+                    th:attr="data-base-url=@{${artist.homeUrl() + '/artist'}}">
               <option value="latest" th:selected="${sort != 'popular'}">최신순</option>
               <option value="popular" th:selected="${sort == 'popular'}">인기순</option>
             </select>

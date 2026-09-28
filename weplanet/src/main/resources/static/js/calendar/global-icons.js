@@ -833,6 +833,8 @@
   function ensureHeaderIcons() {
     var actions = document.querySelector(".community-top__right") || document.querySelector(".header-actions");
     if (!actions) return;
+    // 소속 에이전시용 최소 헤더 - 템플릿에 둔 다크모드 버튼 + "관리자 페이지로"만 쓰고 아무것도 끼워 넣지 않는다
+    if (actions.closest("[data-header-minimal]")) return;
 
     var icons = headerIconButtons();
 

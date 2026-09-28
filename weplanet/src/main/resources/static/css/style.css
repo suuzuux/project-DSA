@@ -550,7 +550,8 @@ p {
 
 .banner__nav .icon-btn {
   pointer-events: auto;
-  background: rgba(255, 255, 255, 0.18);
+  /* 관리자 배너는 배경이 밝을 수도 있어서, 흰 반투명 대신 어두운 반투명으로 어디서나 보이게 */
+  background: rgba(20, 20, 20, 0.28);
   color: #fff;
   backdrop-filter: blur(4px);
 }
@@ -569,12 +570,129 @@ p {
   height: 6px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);   /* 밝은 배너 배경에서도 점이 보이도록 */
 }
 
 .banner__dot.is-active {
   background: #fff;
   width: 16px;
   border-radius: 999px;
+}
+
+/* 관리자가 등록한 메인 배너 (최고관리자 > 배너 영역 관리)
+   위버스처럼 왼쪽에 영문명/대제목/본문, 오른쪽에 이미지. 배경색·글자색은 배너마다 inline style로 들어온다 */
+a.banner__slide--promo,
+.banner__slide--promo {
+  padding: 0;
+  justify-content: stretch;
+  color: inherit;
+  text-decoration: none;
+}
+
+.banner-promo {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 100%;
+}
+
+/* 글 영역 - 위버스처럼 왼쪽 가장자리에서 한참 들어온 곳에서 시작 */
+.banner-promo__text {
+  flex: 1 1 52%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 24px 24px 24px 12%;
+}
+
+/* 아티스트 영문명 - 알약 모양 태그. 배경/테두리는 글자색을 옅게 섞어서 어떤 배경색에서도 어울리게 */
+.banner-promo__label {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin-bottom: 2px;
+}
+
+/* 대제목·본문은 관리자가 넣은 줄바꿈 그대로 (최대 두 줄) */
+.banner-promo__title {
+  font-size: clamp(20px, 2.4vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.28;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+.banner-promo__body {
+  font-size: clamp(13px, 1.25vw, 17px);
+  line-height: 1.45;
+  opacity: 0.9;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+/* 이미지 영역 - 오른쪽 가장자리에서 한참 들어온 곳에 둥근 카드(4:3)로 */
+.banner-promo__media {
+  flex: 1 1 48%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 6% 12% 6% 0;
+}
+
+.banner-promo__media img {
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 16px;
+  /* 투명 배경 이미지면 배경색보다 살짝 밝은 판이 비친다 */
+  background: rgba(255, 255, 255, 0.18);
+}
+
+@media (max-width: 768px) {
+  /* 좁은 화면에서는 좌우 화살표가 글자를 가려서 숨긴다 (아래 점 + 자동 넘김으로 이동) */
+  .banner__nav {
+    display: none;
+  }
+
+  .banner-promo__text {
+    padding: 14px 10px 14px 20px;
+    gap: 6px;
+  }
+
+  .banner-promo__title {
+    font-size: 17px;
+  }
+
+  .banner-promo__body {
+    font-size: 12px;
+  }
+
+  .banner-promo__label {
+    height: 22px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .banner-promo__media {
+    padding: 14px 20px 14px 0;
+  }
+
+  .banner-promo__media img {
+    border-radius: 10px;
+  }
 }
 
 /* =========================================================
@@ -647,6 +765,84 @@ p {
 
 .artist-chip:hover .artist-chip__logo {
   border-color: var(--wp-brand);
+}
+
+/* 지금 바로 만나보세요 - 위버스처럼 한 줄에 2명 (동그란 사진 + 오른쪽에 굵은 이름) */
+.artist-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 32px;
+  padding: 24px;
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+}
+
+.artist-tile {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  color: inherit;
+}
+
+.artist-tile__thumb {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: 2px solid var(--wp-surface);
+  box-shadow: var(--wp-shadow);
+  background: linear-gradient(145deg, #fdeef2, #f7c8d3);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: var(--wp-fs-lg);
+  font-weight: 800;
+  color: var(--wp-brand-dark);
+  transition: transform var(--wp-fast), border-color var(--wp-fast);
+}
+
+.artist-tile__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.artist-tile__name {
+  min-width: 0;
+  font-size: var(--wp-fs-lg);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist-tile:hover .artist-tile__thumb {
+  transform: translateY(-2px);
+  border-color: var(--wp-brand);
+}
+
+@media (max-width: 768px) {
+  .artist-grid {
+    gap: 16px 12px;
+    padding: 16px;
+  }
+
+  .artist-tile {
+    gap: 10px;
+  }
+
+  .artist-tile__thumb {
+    width: 56px;
+    height: 56px;
+    font-size: var(--wp-fs-sm);
+  }
+
+  .artist-tile__name {
+    font-size: var(--wp-fs-sm);
+  }
 }
 
 /* =========================================================
