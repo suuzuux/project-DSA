@@ -26,7 +26,7 @@
         <nav th:replace="~{community/fragments/layout :: tabs('fan')}"></nav>
 
         <a class="section__link mb-16" style="display:inline-block;"
-           th:href="@{/community/{id}/project(id=${artist.id()})}">← 프로젝트 목록</a>
+           th:href="@{/community/{id}/project(id=${artist.id()})}" th:text="#{community.projectDetail.backToList}">← 프로젝트 목록</a>
 
         <p th:if="${successMessage}"
            th:text="${successMessage}"
@@ -56,23 +56,23 @@
             <p class="project-detail__meta">
                 <span th:text="${project.creatorNickname()}">개설자</span>
                 <span class="project-card__dot">·</span>
-                <span th:text="${#temporals.format(project.createdAt(), 'yyyy.MM.dd')}">2026.08.25</span> 등록
+                <span th:text="#{community.projectDetail.registeredAt(${#temporals.format(project.createdAt(), 'yyyy.MM.dd')})}">2026.08.25 등록</span>
             </p>
 
             <!-- 반려된 경우에만 사유 안내 -->
             <div class="project-detail__rejected" th:if="${project.hasRejectionReason()}">
-                <strong>반려 사유</strong>
+                <strong th:text="#{community.projectDetail.rejectionReason}">반려 사유</strong>
                 <p th:text="${project.rejectionReason()}">사유</p>
             </div>
 
             <!-- 요약 정보 -->
             <dl class="project-detail__summary">
                 <div>
-                    <dt>목표 금액</dt>
-                    <dd th:text="${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')} + '원'">500,000원</dd>
+                    <dt th:text="#{community.project.goalLabel}">목표 금액</dt>
+                    <dd th:text="#{community.project.amount(${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')})}">500,000원</dd>
                 </div>
                 <div>
-                    <dt>모금 기간</dt>
+                    <dt th:text="#{community.project.periodLabel}">모금 기간</dt>
                     <dd>
                         <span th:text="${#temporals.format(project.fundingStartAt(), 'yyyy.MM.dd')}">2026.09.01</span>
                         ~
@@ -80,18 +80,18 @@
                     </dd>
                 </div>
                 <div>
-                    <dt>남은 기간</dt>
+                    <dt th:text="#{community.project.remainingLabel}">남은 기간</dt>
                     <dd>
               <span class="project-card__dday"
                     th:classappend="${project.isClosed()} ? 'is-closed' : ''"
-                    th:text="${project.dDayLabel()}">D-30</span>
+                    th:text="${project.isClosed()} ? #{community.project.js.ddayClosed} : ${project.dDayLabel()}">D-30</span>
                     </dd>
                 </div>
             </dl>
 
             <!-- 본문 -->
             <section class="project-detail__body">
-                <h2 class="project-detail__section-title">프로젝트 소개</h2>
+                <h2 class="project-detail__section-title" th:text="#{community.projectDetail.intro}">프로젝트 소개</h2>
                 <p class="project-detail__description" th:text="${project.description()}">설명</p>
             </section>
 
@@ -99,26 +99,27 @@
             <section class="project-review"
                      sec:authorize="hasRole('ADMIN')"
                      th:if="${project.statusBadgeCode() == 'pending'}">
-                <h2 class="project-detail__section-title">프로젝트 심사</h2>
+                <h2 class="project-detail__section-title" th:text="#{community.projectDetail.reviewTitle}">프로젝트 심사</h2>
 
                 <form th:action="@{/community/{artistId}/project/{projectId}/approve(
                                   artistId=${artist.id()}, projectId=${project.id()})}"
                       method="post">
-                    <button type="submit" class="btn btn--primary">승인</button>
+                    <button type="submit" class="btn btn--primary" th:text="#{community.projectDetail.approve}">승인</button>
                 </form>
 
                 <form class="project-review__reject"
                       th:action="@{/community/{artistId}/project/{projectId}/reject(
                                  artistId=${artist.id()}, projectId=${project.id()})}"
                       method="post">
-                    <label class="form-label" for="rejectionReason">반려 사유</label>
+                    <label class="form-label" for="rejectionReason" th:text="#{community.projectDetail.rejectionReason}">반려 사유</label>
                     <textarea id="rejectionReason"
                               name="rejectionReason"
                               class="form-textarea"
                               maxlength="500"
                               required
-                              placeholder="반려 사유를 입력해주세요"></textarea>
-                    <button type="submit" class="btn btn--danger">반려</button>
+                              placeholder="반려 사유를 입력해주세요"
+                              th:placeholder="#{community.projectDetail.rejectionPlaceholder}"></textarea>
+                    <button type="submit" class="btn btn--danger" th:text="#{community.projectDetail.reject}">반려</button>
                 </form>
             </section>
 

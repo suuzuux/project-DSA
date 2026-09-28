@@ -15,7 +15,9 @@
  * SETTINGS-03: 좌측 메뉴 드로어/헤더 보강 부분의 한국어 문구는 서버 렌더링이 아니라
  * 이 파일이 직접 DOM에 그려 넣는 거라 Thymeleaf #{...}를 쓸 수 없다. 그래서 페이지 로드 시
  * /api/i18n/shell 을 한 번 fetch해서 현재 로케일의 문구를 받아온 뒤 화면을 그린다.
- * (DM 패널 / 멤버십 모달 / 커뮤니티 검색·가입 모달은 이번 범위가 아니라 한국어 그대로 둠)
+ * (DM 패널 / 멤버십 모달은 이번 범위가 아니라 한국어 그대로 둠)
+ * SETTINGS-03 커밋3: 드로어에서 만들어 넣는 커뮤니티 검색·가입 모달도 같은 방식으로 번역한다
+ * (index.html / layout.html :: joinModal 과 같은 키를 /api/i18n/shell 로 함께 받는다).
  * ============================================================
  */
 (function () {
@@ -65,7 +67,26 @@
     "shell.fab.chatFan": "팬 채팅방",
     "shell.fab.chatDm": "채팅 (DM)",
     "shell.fab.chatOpen": "채팅 열기",
-    "shell.admin.pageLink": "관리자 페이지로"
+    "shell.admin.pageLink": "관리자 페이지로",
+    // SETTINGS-03 커밋3: 커뮤니티 검색·가입 모달 (ensureExploreUi)
+    "layout.header.searchTitle": "커뮤니티 검색",
+    "main.search.placeholder": "아티스트/그룹명 검색",
+    "main.search.gender": "성별",
+    "main.search.all": "전체",
+    "main.search.genderMale": "보이그룹/남성",
+    "main.search.genderFemale": "걸그룹/여성",
+    "main.search.genderMixed": "혼성",
+    "main.search.category": "직업/카테고리",
+    "main.search.categoryIdol": "아이돌",
+    "main.search.categoryActor": "배우",
+    "main.search.submit": "검색",
+    "community.join.button": "커뮤니티 가입하기",
+    "community.join.thisCommunity": "이 커뮤니티",
+    "community.join.modalPrompt": "<span id=\"communityJoinArtistName\">{0}</span>에서 사용할 닉네임을 정해주세요.",
+    "community.join.nicknameLabel": "닉네임",
+    "community.join.nicknamePlaceholder": "최대 10자",
+    "community.join.help": "커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.",
+    "community.join.submit": "가입하기"
   };
   let I18N = DEFAULT_I18N;
 
@@ -719,30 +740,30 @@
 <div class="modal-backdrop" id="communitySearchModal">
   <div class="modal">
     <div class="modal__head">
-      <strong class="modal__title">커뮤니티 검색</strong>
+      <strong class="modal__title">${escapeHtml(t("layout.header.searchTitle"))}</strong>
       <button type="button" class="modal__close" data-modal-close>✕</button>
     </div>
-    <input type="text" id="exploreKeyword" class="form-input" placeholder="아티스트/그룹명 검색" style="margin-bottom:12px;" />
+    <input type="text" id="exploreKeyword" class="form-input" placeholder="${escapeHtml(t("main.search.placeholder"))}" style="margin-bottom:12px;" />
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
       <div>
-        <label class="text-xs text-muted" for="exploreGender">성별</label>
+        <label class="text-xs text-muted" for="exploreGender">${escapeHtml(t("main.search.gender"))}</label>
         <select id="exploreGender" class="form-input">
-          <option value="">전체</option>
-          <option value="MALE">보이그룹/남성</option>
-          <option value="FEMALE">걸그룹/여성</option>
-          <option value="MIXED">혼성</option>
+          <option value="">${escapeHtml(t("main.search.all"))}</option>
+          <option value="MALE">${escapeHtml(t("main.search.genderMale"))}</option>
+          <option value="FEMALE">${escapeHtml(t("main.search.genderFemale"))}</option>
+          <option value="MIXED">${escapeHtml(t("main.search.genderMixed"))}</option>
         </select>
       </div>
       <div>
-        <label class="text-xs text-muted" for="exploreCategory">직업/카테고리</label>
+        <label class="text-xs text-muted" for="exploreCategory">${escapeHtml(t("main.search.category"))}</label>
         <select id="exploreCategory" class="form-input">
-          <option value="">전체</option>
-          <option value="아이돌">아이돌</option>
-          <option value="배우">배우</option>
+          <option value="">${escapeHtml(t("main.search.all"))}</option>
+          <option value="아이돌">${escapeHtml(t("main.search.categoryIdol"))}</option>
+          <option value="배우">${escapeHtml(t("main.search.categoryActor"))}</option>
         </select>
       </div>
     </div>
-    <button type="button" id="exploreSearchBtn" class="btn btn--primary btn--sm btn--block" style="margin-bottom:12px;">검색</button>
+    <button type="button" id="exploreSearchBtn" class="btn btn--primary btn--sm btn--block" style="margin-bottom:12px;">${escapeHtml(t("main.search.submit"))}</button>
     <div id="exploreResults" class="rising-grid" style="grid-template-columns:1fr;"></div>
   </div>
 </div>`);
@@ -754,19 +775,19 @@
 <div class="modal-backdrop" id="communityJoinModal">
   <div class="modal">
     <div class="modal__head">
-      <strong class="modal__title">커뮤니티 가입하기</strong>
+      <strong class="modal__title">${escapeHtml(t("community.join.button"))}</strong>
       <button type="button" class="modal__close" data-modal-close>✕</button>
     </div>
-    <p class="mb-24"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>
+    <p class="mb-24">${t("community.join.modalPrompt").replace("{0}", escapeHtml(t("community.join.thisCommunity")))}</p>
     <div class="form-group" id="communityJoinNicknameGroup">
-      <label class="form-label" for="communityJoinNicknameInput">닉네임</label>
-      <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="최대 10자" autocomplete="off" />
+      <label class="form-label" for="communityJoinNicknameInput">${escapeHtml(t("community.join.nicknameLabel"))}</label>
+      <input type="text" id="communityJoinNicknameInput" class="form-input" maxlength="10" placeholder="${escapeHtml(t("community.join.nicknamePlaceholder"))}" autocomplete="off" />
       <p class="form-error" id="communityJoinNicknameError"></p>
       <p class="text-xs text-muted" style="margin-top:8px;line-height:1.6;">
-        커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.
+        ${escapeHtml(t("community.join.help"))}
       </p>
     </div>
-    <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">가입하기</button>
+    <button type="button" id="communityJoinSubmitBtn" class="btn btn--primary btn--block">${escapeHtml(t("community.join.submit"))}</button>
   </div>
 </div>`);
       }

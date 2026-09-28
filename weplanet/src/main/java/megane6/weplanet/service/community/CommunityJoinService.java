@@ -43,21 +43,21 @@ public class CommunityJoinService {
 	public void join(User fan, Long artistId, String nickname, String bio,
 					 MultipartFile avatar, MultipartFile background) {
 		User artist = userRepository.findById(artistId)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아티스트(id=" + artistId + ")입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		if (artist.getRole() != Role.ARTIST) {
-			throw new IllegalArgumentException("아티스트 계정이 아닙니다(id=" + artistId + ").");
+			throw new IllegalArgumentException("error.community.artistNotFound");
 		}
 		if (communityMemberRepository.existsByFanIdAndArtistId(fan.getId(), artistId)) {
-			throw new IllegalStateException("이미 가입한 커뮤니티입니다.");
+			throw new IllegalStateException("error.community.alreadyJoined");
 		}
 		if (nickname == null || nickname.isBlank()) {
-			throw new IllegalArgumentException("닉네임을 입력해주세요.");
+			throw new IllegalArgumentException("error.community.nicknameRequired");
 		}
 		if (nickname.length() > 10) {
-			throw new IllegalArgumentException("닉네임은 10자 이내로 입력해주세요.");
+			throw new IllegalArgumentException("error.community.nicknameTooLong");
 		}
 		if (bio != null && bio.length() > 30) {
-			throw new IllegalArgumentException("소개글은 30자 이내로 입력해주세요.");
+			throw new IllegalArgumentException("error.community.bioTooLong");
 		}
 		
 		CommunityMember member = communityMemberRepository.save(CommunityMember.builder()
@@ -110,19 +110,19 @@ public class CommunityJoinService {
 							boolean removeAvatar, boolean removeBackground,
 							boolean contentHidden) {
 		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
-				.orElseThrow(() -> new IllegalStateException("가입하지 않은 커뮤니티입니다."));
+				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
 		CommunityProfile profile = communityProfileRepository.findByCommunityMember_Id(member.getId())
-				.orElseThrow(() -> new IllegalStateException("커뮤니티 프로필이 없습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.community.profileMissing"));
 		
 		if (nickname != null && !nickname.isBlank()) {
 			if (nickname.length() > 10) {
-				throw new IllegalArgumentException("닉네임은 10자 이내로 입력해주세요.");
+				throw new IllegalArgumentException("error.community.nicknameTooLong");
 			}
 			profile.setNickname(nickname);
 		}
 		if (bio != null) {
 			if (bio.length() > 30) {
-				throw new IllegalArgumentException("소개글은 30자 이내로 입력해주세요.");
+				throw new IllegalArgumentException("error.community.bioTooLong");
 			}
 			profile.setBio(bio);
 		}
@@ -158,7 +158,7 @@ public class CommunityJoinService {
 	@Transactional
 	public void leave(User fan, Long artistId) {
 		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
-				.orElseThrow(() -> new IllegalStateException("가입하지 않은 커뮤니티입니다."));
+				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
 		communityProfileRepository.findByCommunityMember_Id(member.getId()).ifPresent(profile -> {
 			if (profile.getAvatarStoredName() != null) fileStorageService.delete(profile.getAvatarStoredName());
 			if (profile.getBackgroundStoredName() != null) fileStorageService.delete(profile.getBackgroundStoredName());

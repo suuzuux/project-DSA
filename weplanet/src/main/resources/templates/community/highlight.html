@@ -40,7 +40,7 @@
             <div class="post-card__head">
               <a th:if="${post.author != null}"
                  th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
-                 class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+                 class="avatar avatar--sm" th:aria-label="#{community.post.authorProfileAria}"
                  th:text="${#strings.substring(post.author.nickname,0,1)}"></a>
               <div th:unless="${post.author != null}" class="avatar avatar--sm">?</div>
               <div class="post-card__meta">
@@ -49,7 +49,7 @@
                      th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
                      style="color:inherit;text-decoration:none;"
                      th:text="${post.author.nickname}">닉네임</a>
-                  <span th:unless="${post.author != null}">(알 수 없음)</span>
+                  <span th:unless="${post.author != null}" th:text="#{community.post.unknownAuthor}">(알 수 없음)</span>
                   <span class="badge-verified">✓</span>
                 </div>
                 <div class="post-card__time"
@@ -69,15 +69,15 @@
               <button type="button" class="post-like"
                       th:classappend="${likedPostIds != null and likedPostIds.contains(post.id)} ? ' is-liked'"
                       th:attr="data-post-like=${post.id}"
-                      aria-label="좋아요">
+                      th:aria-label="#{community.post.likeAria}">
                 <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 <span data-like-count th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
               </button>
             </div>
           </article>
         </div>
-        <p class="list-empty" th:if="${artistPosts.isEmpty()}">표시할 아티스트 게시글이 없습니다.</p>
-        <a class="btn btn--ghost btn--block mt-8" th:href="@{/community/{id}/artist(id=${artist.id()})}">더보기</a>
+        <p class="list-empty" th:if="${artistPosts.isEmpty()}" th:text="#{community.highlight.emptyArtistPosts}">표시할 아티스트 게시글이 없습니다.</p>
+        <a class="btn btn--ghost btn--block mt-8" th:href="@{/community/{id}/artist(id=${artist.id()})}" th:text="#{community.common.more}">더보기</a>
       </section>
 
       <!-- Artist comments -->
@@ -89,7 +89,7 @@
           <article class="post-card" th:each="comment : ${artistCommentsWidget}">
             <div class="post-card__head">
               <a th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
-                 class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+                 class="avatar avatar--sm" th:aria-label="#{community.post.authorProfileAria}"
                  th:text="${#strings.substring(comment.author.nickname,0,1)}"></a>
               <div class="post-card__meta">
                 <div class="post-card__name">
@@ -111,21 +111,21 @@
             </a>
           </article>
         </div>
-        <p class="list-empty" th:if="${artistCommentsWidget.isEmpty()}">표시할 댓글이 없습니다.</p>
+        <p class="list-empty" th:if="${artistCommentsWidget.isEmpty()}" th:text="#{community.highlight.emptyComments}">표시할 댓글이 없습니다.</p>
       </section>
 
       <!-- Fan posts preview -->
       <section class="mb-16">
         <div class="section__head">
           <h2 class="section__title">Fan Posts</h2>
-          <a class="section__link" th:href="@{/community/{id}/fan(id=${artist.id()})}">더보기</a>
+          <a class="section__link" th:href="@{/community/{id}/fan(id=${artist.id()})}" th:text="#{community.common.more}">더보기</a>
         </div>
         <div class="feed feed--grid" th:if="${!fanPosts.isEmpty()}">
           <article class="post-card" th:each="post : ${fanPosts}">
             <div class="post-card__head">
               <a th:if="${post.author != null}"
                  th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
-                 class="avatar avatar--sm" aria-label="작성자 프로필로 이동"
+                 class="avatar avatar--sm" th:aria-label="#{community.post.authorProfileAria}"
                  th:text="${#strings.substring(fanPostAuthorNicknames.get('' + post.author.id),0,1)}"></a>
               <div th:unless="${post.author != null}" class="avatar avatar--sm">?</div>
               <div class="post-card__meta">
@@ -134,7 +134,7 @@
                      th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
                      style="color:inherit;text-decoration:none;"
                      th:text="${fanPostAuthorNicknames.get('' + post.author.id)}">닉네임</a>
-                  <span th:unless="${post.author != null}">(알 수 없음)</span>
+                  <span th:unless="${post.author != null}" th:text="#{community.post.unknownAuthor}">(알 수 없음)</span>
                   <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
                 </div>
                 <div class="post-card__time"
@@ -154,7 +154,7 @@
               <button type="button" class="post-like"
                       th:classappend="${likedPostIds != null and likedPostIds.contains(post.id)} ? ' is-liked'"
                       th:attr="data-post-like=${post.id}"
-                      aria-label="좋아요">
+                      th:aria-label="#{community.post.likeAria}">
                 <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                 <span data-like-count th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
               </button>
@@ -165,16 +165,16 @@
             </div>
           </article>
         </div>
-        <p class="list-empty" th:if="${fanPosts.isEmpty()}">표시할 팬 게시글이 없습니다.</p>
+        <p class="list-empty" th:if="${fanPosts.isEmpty()}" th:text="#{community.highlight.emptyFanPosts}">표시할 팬 게시글이 없습니다.</p>
       </section>
 
       <!-- Lives preview -->
       <section>
         <div class="section__head">
           <h2 class="section__title">Lives</h2>
-          <a class="section__link" th:href="@{/community/{id}/live(id=${artist.id()})}">더보기</a>
+          <a class="section__link" th:href="@{/community/{id}/live(id=${artist.id()})}" th:text="#{community.common.more}">더보기</a>
         </div>
-        <p class="list-empty">표시할 라이브가 없습니다.</p>
+        <p class="list-empty" th:text="#{community.highlight.emptyLives}">표시할 라이브가 없습니다.</p>
       </section>
     </div>
 

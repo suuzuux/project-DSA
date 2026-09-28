@@ -7,6 +7,11 @@
   const postId = document.body.dataset.postId;
   if (!postId) return;
 
+  // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  const t = function (key, fallback, args) {
+    return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
+  };
+
   function focusCommentInput() {
     if (window.location.hash !== "#commentContentInput") return;
     const input = document.getElementById("commentContentInput");
@@ -27,7 +32,7 @@
       item.classList.add("comment-item--reported");
     }
     if (text) {
-      text.textContent = "신고접수된 댓글입니다";
+      text.textContent = t("community.comment.reported", "신고접수된 댓글입니다");
     }
     const reportRow = document.getElementById("commentReportRow-" + commentId);
     if (reportRow) {
@@ -82,11 +87,11 @@
 
       if (textArea.style.display !== "none") {
         textArea.style.display = "none";
-        link.textContent = "번역보기";
+        link.textContent = t("community.translate.show", "번역보기");
         return;
       }
 
-      link.textContent = "번역 중...";
+      link.textContent = t("client.translate.loading", "번역 중...");
       fetch("/posts/detail/" + postId + "/translate", { method: "POST" })
         .then(function (response) {
           return response.json();
@@ -94,7 +99,7 @@
         .then(function (data) {
           textArea.textContent = data.translated;
           textArea.style.display = "block";
-          link.textContent = "원문보기";
+          link.textContent = t("client.translate.original", "원문보기");
         });
     });
   }
@@ -121,10 +126,10 @@
           return response.json();
         })
         .then(function (data) {
-          if (msg) msg.textContent = data.message || "신고가 접수되었습니다.";
+          if (msg) msg.textContent = data.message || t("client.report.submitted", "신고가 접수되었습니다.");
         })
         .catch(function () {
-          if (msg) msg.textContent = "신고 접수에 실패했습니다.";
+          if (msg) msg.textContent = t("client.report.failed", "신고 접수에 실패했습니다.");
         });
     });
   }
@@ -169,7 +174,9 @@
   if (summarizeButton) {
     summarizeButton.addEventListener("click", function () {
       const area = document.getElementById("summaryArea");
-      area.innerHTML = "<p>AI가 요약을 만들고 있어요...</p>";
+      // 번역 문구는 HTML 문자열에 섞지 않고 textContent로 넣는다
+      area.innerHTML = "<p></p>";
+      area.querySelector("p").textContent = t("client.summary.loading", "AI가 요약을 만들고 있어요...");
 
       fetch("/posts/detail/" + postId + "/summarize", {
         method: "POST",
@@ -179,11 +186,13 @@
           return response.json();
         })
         .then(function (data) {
-          area.innerHTML = '<hr><h4>AI 요약</h4><p id="summaryText"></p>';
+          area.innerHTML = '<hr><h4></h4><p id="summaryText"></p>';
+          area.querySelector("h4").textContent = t("client.summary.title", "AI 요약");
           document.getElementById("summaryText").textContent = data.summary;
         })
         .catch(function () {
-          area.innerHTML = '<p class="text-xs" style="color:var(--wp-danger, #d33);">요약에 실패했습니다.</p>';
+          area.innerHTML = '<p class="text-xs" style="color:var(--wp-danger, #d33);"></p>';
+          area.querySelector("p").textContent = t("client.summary.failed", "요약에 실패했습니다.");
         });
     });
   }
@@ -223,11 +232,11 @@
 
     if (textArea.style.display !== "none") {
       textArea.style.display = "none";
-      link.textContent = "번역보기";
+      link.textContent = t("community.translate.show", "번역보기");
       return;
     }
 
-    link.textContent = "번역 중...";
+    link.textContent = t("client.translate.loading", "번역 중...");
     fetch("/posts/detail/" + postId + "/comment/" + commentId + "/translate", { method: "POST" })
       .then(function (response) {
         return response.json();
@@ -235,7 +244,7 @@
       .then(function (data) {
         textArea.textContent = data.translated;
         textArea.style.display = "block";
-        link.textContent = "원문보기";
+        link.textContent = t("client.translate.original", "원문보기");
       });
   });
 
@@ -265,13 +274,13 @@
         })
         .then(function (result) {
           if (!result.ok || result.data.success === false) {
-            if (msg) msg.textContent = (result.data && result.data.message) || "신고 접수에 실패했습니다.";
+            if (msg) msg.textContent = (result.data && result.data.message) || t("client.report.failed", "신고 접수에 실패했습니다.");
             return;
           }
           markCommentReported(commentId);
         })
         .catch(function () {
-          if (msg) msg.textContent = "신고 접수에 실패했습니다.";
+          if (msg) msg.textContent = t("client.report.failed", "신고 접수에 실패했습니다.");
         });
       return;
     }
@@ -303,7 +312,7 @@
       .then(function (response) {
         if (!response.ok) {
           return response.json().then(function (data) {
-            WePlaNet.alert(data.message || "요청에 실패했습니다.");
+            WePlaNet.alert(data.message || t("client.request.failed", "요청에 실패했습니다."));
           });
         }
         return response.text().then(function (html) {

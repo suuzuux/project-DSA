@@ -34,18 +34,18 @@
           <a th:unless="${isOwnCommunity}"
              class="chip is-active" th:href="@{/community/{id}/fan(id=${artist.id()})}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            포스트
+            <span th:text="#{community.board.postsChip}">포스트</span>
           </a>
           <a class="chip" sec:authorize="hasAnyRole('FAN','ADMIN')"
              th:href="@{/community/{id}/project(id=${artist.id()})}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            프로젝트
+            <span th:text="#{community.board.projectChip}">프로젝트</span>
           </a>
           <a class="chip" th:if="${!isOwnCommunity}"
              sec:authorize="hasRole('ARTIST')"
              th:href="@{/community/{id}/project(id=${artist.id()})}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            프로젝트
+            <span th:text="#{community.board.projectChip}">프로젝트</span>
           </a>
         </div>
         <div class="board-toolbar__actions">
@@ -53,10 +53,10 @@
             <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5h10"></path><path d="M11 12h10"></path><path d="M11 19h10"></path><path d="M3 5l2 2 4-4"></path><path d="M3 12h4"></path><path d="M3 19h4"></path></svg>
             <select id="fanSort"
                     class="form-select"
-                    aria-label="팬 게시판 정렬"
+                    th:aria-label="#{community.board.fanSortAria}"
                     th:attr="data-base-url=@{/community/{id}/fan(id=${artist.id()})}">
-              <option value="latest" th:selected="${sort != 'popular'}">최신순</option>
-              <option value="popular" th:selected="${sort == 'popular'}">인기순</option>
+              <option value="latest" th:selected="${sort != 'popular'}" th:text="#{community.board.sortLatest}">최신순</option>
+              <option value="popular" th:selected="${sort == 'popular'}" th:text="#{community.board.sortPopular}">인기순</option>
             </select>
           </label>
         </div>
@@ -68,7 +68,7 @@
     <aside th:replace="~{community/fragments/layout :: sidebarAside(true, false)}"></aside>
   </div>
 
-  <button type="button" id="postScrollTop" class="post-scroll-top" aria-label="게시판 상단으로 이동" hidden>
+  <button type="button" id="postScrollTop" class="post-scroll-top" th:aria-label="#{community.board.scrollTopAria}" hidden>
     <span aria-hidden="true">↑</span>
   </button>
 
@@ -78,7 +78,7 @@
        sec:authorize="hasAnyRole('FAN','ARTIST')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
-        <h2 class="modal__title">포스트 작성하기</h2>
+        <h2 class="modal__title" th:text="#{community.post.writeButton}">포스트 작성하기</h2>
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
       <form id="writePostForm"
@@ -92,17 +92,17 @@
 
         <div id="writePostLinkRow" class="mt-8" style="display:none;">
           <input type="url" id="writePostLinkUrl" name="linkUrl" class="form-input"
-                 placeholder="https:// 링크를 입력하세요" maxlength="500" />
+                 placeholder="https:// 링크를 입력하세요" th:placeholder="#{community.post.linkPlaceholder}" maxlength="500" />
         </div>
 
         <div class="flex-between mt-8">
           <div class="flex-center">
-            <label class="icon-btn" title="이미지" style="cursor:pointer;">
+            <label class="icon-btn" th:title="#{community.post.imageTitle}" style="cursor:pointer;">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
               <input type="file" id="writePostFiles" name="files" multiple
                      accept="image/*,application/pdf,.txt,.zip" style="display:none;" />
             </label>
-            <button type="button" id="writePostLinkToggleBtn" class="icon-btn" title="링크" aria-pressed="false">
+            <button type="button" id="writePostLinkToggleBtn" class="icon-btn" th:title="#{community.post.linkTitle}" aria-pressed="false">
               <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
             </button>
             <span id="writePostFileCount" class="text-xs text-muted"></span>
@@ -111,13 +111,13 @@
         </div>
 
         <div class="flex-between mt-8">
-          <span class="text-sm">Hide from Artists</span>
+          <span class="text-sm" th:text="#{community.post.hideFromArtists}">Hide from Artists</span>
           <button type="button" id="writePostHideToggle" class="toggle-managed" role="switch" aria-checked="false"></button>
           <input type="hidden" id="writePostHiddenFromArtist" name="hiddenFromArtist" value="false" />
         </div>
 
         <p id="writePostError" class="form-error mt-8" style="display:none;"></p>
-        <button type="submit" id="writePostSubmit" class="btn btn--primary btn--block mt-16" disabled>등록하기</button>
+        <button type="submit" id="writePostSubmit" class="btn btn--primary btn--block mt-16" disabled th:text="#{community.post.submit}">등록하기</button>
       </form>
     </div>
   </div>

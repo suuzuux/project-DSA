@@ -127,7 +127,7 @@ public class BoardMediaService {
                 }
                 String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
-                    throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
+                    throw new IllegalArgumentException("error.media.fileTypeNotAllowed");
                 }
                 String storedName = fileStorageService.store(file);
 
@@ -164,10 +164,10 @@ public class BoardMediaService {
     public BoardMediaViewDTO getInCommunity(Long id, Long groupId, boolean canSeeMembership) {
         BoardMediaEntity post = getActivePost(id);
         if (!post.getGroupId().equals(groupId)) {
-            throw new IllegalArgumentException("이 커뮤니티의 미디어가 아닙니다.");
+            throw new IllegalArgumentException("error.media.notInCommunity");
         }
         if (post.isMembershipOnly() && !canSeeMembership) {
-            throw new IllegalArgumentException("멤버십 전용 미디어입니다.");
+            throw new IllegalArgumentException("error.media.membershipOnly");
         }
         return toViewDTO(post);
     }
@@ -211,7 +211,7 @@ public class BoardMediaService {
     @Transactional(readOnly = true)
     public BoardMediaFileEntity getFile(Long fileId) {
         return boardMediaFileRepository.findById(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
+                .orElseThrow(() -> new IllegalArgumentException("error.media.fileNotFound"));
     }
 
     public Resource loadResource(BoardMediaFileEntity file) {
@@ -303,13 +303,13 @@ public class BoardMediaService {
 
     private BoardMediaEntity getActivePost(Long id) {
         return boardMediaRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("error.post.notFound"));
     }
 
     private BoardMediaEntity getActivePostInCommunity(Long id, Long communityGroupId) {
         BoardMediaEntity post = getActivePost(id);
         if (!post.getGroupId().equals(communityGroupId)) {
-            throw new IllegalStateException("다른 커뮤니티의 미디어는 수정/삭제할 수 없습니다.");
+            throw new IllegalStateException("error.media.otherCommunity");
         }
         return post;
     }

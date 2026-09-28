@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class TossPaymentController {
 	
 	private final ProjectContributionService pcs;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	// 가상계좌 발급 요청 완료 -> 승인 처리 후 계좌 안내 화면
 	@GetMapping("/success")
@@ -41,7 +42,7 @@ public class TossPaymentController {
 			return "payment/virtual-account";
 		} catch (TossPaymentException | IllegalArgumentException
 				 | IllegalStateException | AccessDeniedException e) {
-			model.addAttribute("message", e.getMessage());
+			model.addAttribute("message", messages.resolve(e.getMessage()));
 			return "payment/fail";
 		}
 	}
@@ -60,8 +61,8 @@ public class TossPaymentController {
 		pcs.failOrder(principal.getId(), orderId);
 		
 		String displayMessage = "PAY_PROCESS_CANCELED".equals(code)
-				? "결제를 취소했어요."
-				: (message != null ? message : "결제에 실패했습니다.");
+				? messages.get("payment.cancelled")
+				: (message != null ? message : messages.get("shop.error.paymentFailedGeneric"));
 		
 		model.addAttribute("message", displayMessage);
 		

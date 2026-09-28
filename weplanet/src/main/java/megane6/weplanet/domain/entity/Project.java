@@ -194,25 +194,25 @@ public class Project {
             throw new IllegalArgumentException("아티스트와 프로젝트 개설자는 필수입니다.");
         }
         if (title == null || title.isBlank() || title.length() > 20) {
-            throw new IllegalArgumentException("프로젝트 제목은 1자 이상 20자 이하로 입력해야 합니다.");
+            throw new IllegalArgumentException("error.project.titleLength");
         }
         if (eventType == null) {
-            throw new IllegalArgumentException("이벤트 유형을 선택해야 합니다.");
+            throw new IllegalArgumentException("error.project.eventTypeRequired");
         }
         if (goalAmount == null || goalAmount < MIN_GOAL_AMOUNT || goalAmount > MAX_GOAL_AMOUNT) {
-            throw new IllegalArgumentException("목표 금액은 10,000원 이상 3,000,000원 이하여야 합니다.");
+            throw new IllegalArgumentException("error.project.goalRange");
         }
         if (fundingStartAt == null || fundingEndAt == null || !fundingEndAt.isAfter(fundingStartAt)) {
-            throw new IllegalArgumentException("모금 마감일은 모금 시작일보다 이후여야 합니다.");
+            throw new IllegalArgumentException("error.project.endBeforeStart");
         }
         if (description == null || description.isBlank() || description.length() > 1000) {
-            throw new IllegalArgumentException("프로젝트 상세 설명은 1자 이상 1,000자 이하로 입력해야 합니다.");
+            throw new IllegalArgumentException("error.project.descriptionLength");
         }
         if (specialBadgeCount < 1 || basicBadgeCount < 5) {
-            throw new IllegalStateException("프로젝트 개설에는 스페셜 뱃지 1개와 기본 뱃지 5개 이상이 필요합니다.");
+            throw new IllegalStateException("error.project.badgeRequirement");
         }
         if (identityVerifiedAt == null) {
-            throw new IllegalStateException("이메일 인증을 완료해야 합니다.");
+            throw new IllegalStateException("error.project.emailVerificationRequired");
         }
     }
 
@@ -233,12 +233,12 @@ public class Project {
     public void reject(User admin, String reason) {
         validatePendingReview(admin);
         if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException("반려 사유를 입력해주세요.");
+            throw new IllegalArgumentException("error.project.rejectionReasonRequired");
         }
 
         String trimmedReason = reason.trim();
         if (trimmedReason.length() > 500) {
-            throw new IllegalArgumentException("반려 사유는 500자 이하로 입력해주세요.");
+            throw new IllegalArgumentException("error.project.rejectionReasonTooLong");
         }
 
         this.status = FanProjectStatus.REJECTED;
@@ -273,20 +273,20 @@ public class Project {
     // 진짜 정산
     public void completeSettlement(User admin) {
         if (admin == null || admin.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("ADMIN만 정산을 완료할 수 있습니다.");
+            throw new IllegalStateException("error.project.adminOnlySettlement");
         }
         if (status != FanProjectStatus.FUNDING_CLOSED) {
-            throw new IllegalStateException("모금이 마감된 프로젝트만 정산할 수 있습니다.");
+            throw new IllegalStateException("error.project.settleOnlyClosed");
         }
         this.status = FanProjectStatus.COMPLETED;
     }
 
     private void validatePendingReview(User admin) {
         if (admin == null || admin.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("ADMIN만 프로젝트를 승인하거나 반려할 수 있습니다.");
+            throw new IllegalStateException("error.project.adminOnlyReview");
         }
         if (this.status != FanProjectStatus.PENDING_APPROVAL) {
-            throw new IllegalStateException("승인대기 상태의 프로젝트만 심사할 수 있습니다.");
+            throw new IllegalStateException("error.project.reviewOnlyPending");
         }
     }
 

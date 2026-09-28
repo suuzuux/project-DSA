@@ -29,6 +29,8 @@ public class BoardMediaController {
 
     private final BoardMediaService boardMediaService;
     private final AuthenticatedUserResolver userResolver;
+    // SETTINGS-03 커밋3: 커뮤니티 미디어 탭의 flash 문구 번역용
+    private final megane6.weplanet.i18n.Messages messages;
 
     // ── 목록 화면 : role=AGENCY 면 소속사 화면, 아니면 팬(읽기 전용) ──
     @GetMapping("/media")
@@ -58,9 +60,9 @@ public class BoardMediaController {
         try {
             requireCommunityOwner(principal, communityKey(artistId, groupId));
             boardMediaService.create(groupId, principal.getId(), title, content, files, membershipOnly);
-            redirectAttributes.addFlashAttribute("msg", "업로드되었습니다.");
+            redirectAttributes.addFlashAttribute("msg", messages.get("community.media.uploaded"));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
         }
         return redirectAfterMutation(artistId, groupId);
     }
@@ -79,9 +81,9 @@ public class BoardMediaController {
             Long communityId = communityKey(artistId, groupId);
             requireCommunityOwner(principal, communityId);
             boardMediaService.edit(id, communityId, title, content, files);
-            redirectAttributes.addFlashAttribute("msg", "수정되었습니다.");
+            redirectAttributes.addFlashAttribute("msg", messages.get("community.media.updated"));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
         }
         return redirectAfterMutation(artistId, groupId);
     }
@@ -97,9 +99,9 @@ public class BoardMediaController {
             Long communityId = communityKey(artistId, groupId);
             requireCommunityOwner(principal, communityId);
             boardMediaService.softDelete(id, communityId);
-            redirectAttributes.addFlashAttribute("msg", "삭제되었습니다.");
+            redirectAttributes.addFlashAttribute("msg", messages.get("community.media.deleted"));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
         }
         return redirectAfterMutation(artistId, groupId);
     }
@@ -142,12 +144,12 @@ public class BoardMediaController {
      */
     private void requireCommunityOwner(AuthenticatedUser principal, Long communityArtistId) {
         if (principal == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
+            throw new IllegalStateException("common.error.loginRequired");
         }
         boolean isAgency = "ROLE_AGENCY".equals(principal.getRoleName());
         boolean isOwner = principal.getId().equals(communityArtistId);
         if (!isAgency && !isOwner) {
-            throw new IllegalStateException("이 커뮤니티의 아티스트만 미디어를 관리할 수 있습니다.");
+            throw new IllegalStateException("error.media.ownerOnly");
         }
     }
 }

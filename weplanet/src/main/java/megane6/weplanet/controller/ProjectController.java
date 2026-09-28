@@ -44,6 +44,8 @@ public class ProjectController {
 	private final ArtistAttendanceService artistAttendanceService;
 	private final CommunityDrawerHelper communityDrawerHelper;
 	private final PortalManagementService portalManagementService;
+	// SETTINGS-03 커밋3: flash 문구와 등록 실패 사유(예외 메시지 키) 번역용
+	private final megane6.weplanet.i18n.Messages messages;
 
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -57,7 +59,7 @@ public class ProjectController {
 		}
 
 		User currentUser = ur.findById(principal.getId())
-				.orElseThrow(() -> new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.project.memberNotFound"));
 
 		boolean isOwnCommunity = currentUser.getId().equals(artistId);
 		if (isOwnCommunity && currentUser.getRole() == Role.ARTIST) {
@@ -87,7 +89,7 @@ public class ProjectController {
 			@AuthenticationPrincipal AuthenticatedUser principal
 	) {
 		if (principal == null) {
-			throw new IllegalStateException("로그인이 필요합니다.");
+			throw new IllegalStateException("common.error.loginRequired");
 		}
 		
 		return ps.checkEligibility(principal.getId(), artistId);
@@ -106,7 +108,7 @@ public class ProjectController {
 		
 		User currentUser = ur.findById(principal.getId())
 				.orElseThrow(() ->
-						new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+						new IllegalArgumentException("error.project.memberNotFound"));
 
 		boolean isOwnCommunity = currentUser.getId().equals(artistId);
 		if (isOwnCommunity && currentUser.getRole() == Role.ARTIST) {
@@ -121,7 +123,7 @@ public class ProjectController {
 		}
 		
 		User artist = ur.findById(artistId).filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 
 		List<ArtistCardView> artists = portalManagementService.toArtistCards(ur.findByRole(Role.ARTIST));
 
@@ -144,7 +146,7 @@ public class ProjectController {
 		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() ->
-						new IllegalArgumentException("아티스트를 찾을 수 없습니다.")
+						new IllegalArgumentException("error.community.artistNotFound")
 				);
 
 		return ps.getProjectDetail(projectId, artist, principal);
@@ -175,10 +177,11 @@ public class ProjectController {
 			dto.setArtistId(artistId);
 			Long projectId = ps.createProject(principal.getId(), dto);
 			log.info("팬 프로젝트 등록 완료: projectId={}, creatorId={}", projectId, principal.getId());
-			redirectAttributes.addFlashAttribute("successMessage", "프로젝트 등록 신청이 완료되었습니다.");
+			redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.created"));
 			return "redirect:/community/" + artistId + "/project";
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			bindingResult.reject("projectCreateFailed", e.getMessage());
+			// 예외 메시지는 키(또는 아직 키로 안 바꾼 문장)라서 여기서 번역한 문구를 기본 메시지로 넘긴다
+			bindingResult.reject("projectCreateFailed", messages.resolve(e.getMessage()));
 			addPageModel(artistId, model, ProjectService.SORT_DEADLINE, principal);
 			return "community/project";
 		}
@@ -193,7 +196,7 @@ public class ProjectController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes) {
 		if (principal == null) {
-			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
+			throw new IllegalStateException("error.project.adminLoginRequired");
 		}
 
 		ps.approveProject(
@@ -201,7 +204,7 @@ public class ProjectController {
 				artistId,
 				principal.getId(),
 				request.getRemoteAddr());
-		redirectAttributes.addFlashAttribute("successMessage", "프로젝트를 승인했습니다.");
+		redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.approved"));
 		return "redirect:/community/" + artistId + "/project/" + projectId;
 	}
 
@@ -215,7 +218,7 @@ public class ProjectController {
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes) {
 		if (principal == null) {
-			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
+			throw new IllegalStateException("error.project.adminLoginRequired");
 		}
 
 		ps.rejectProject(
@@ -224,7 +227,7 @@ public class ProjectController {
 				principal.getId(),
 				rejectionReason,
 				request.getRemoteAddr());
-		redirectAttributes.addFlashAttribute("successMessage", "프로젝트를 반려했습니다.");
+		redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.rejected"));
 		return "redirect:/community/" + artistId + "/project/" + projectId;
 	}
 	
@@ -232,10 +235,10 @@ public class ProjectController {
 	private void addPageModel(Long artistId, Model model, String sort, AuthenticatedUser viewer) {
 		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		
 		User currentUser = ur.findById(viewer.getId()).orElseThrow(() ->
-				new IllegalArgumentException("로그인 회원을 찾을 수 없습니다."));
+				new IllegalArgumentException("error.project.memberNotFound"));
 
 		if (currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST) {
 			model.addAttribute("registeredEmail", currentUser.getEmail());
@@ -263,7 +266,7 @@ public class ProjectController {
 	) {
 		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		
 		List<ArtistCardView> artists = portalManagementService.toArtistCards(ur.findByRole(Role.ARTIST));
 		

@@ -31,6 +31,7 @@ public class AuthController {
 	private final SignupEmailVerificationService emailVerificationService;
 	private final NicknameGenerator nicknameGenerator;
 	private final MessageSource messageSource;
+	private final megane6.weplanet.i18n.Messages messages;
 
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
@@ -88,7 +89,7 @@ public class AuthController {
 			userService.signup(signupRequestDto);
 			emailVerificationService.clear(signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
-			model.addAttribute("errorMessage", e.getMessage());
+			model.addAttribute("errorMessage", messages.resolve(e.getMessage()));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}

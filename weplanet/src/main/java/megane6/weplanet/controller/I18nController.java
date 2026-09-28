@@ -48,7 +48,105 @@ public class I18nController {
 			"shell.fab.chatDm",
 			"shell.fab.chatOpen",
 			"shell.admin.pageLink",
+			// SETTINGS-03 커밋3: 드로어 "커뮤니티 찾아보기"로 페이지에 없던 검색/가입 모달을 shell.js가
+			// 직접 만들어 넣을 때 쓰는 문구. 템플릿(index.html, layout.html :: joinModal)과 같은 키를 재사용한다.
+			"layout.header.searchTitle",
+			"main.search.placeholder",
+			"main.search.gender",
+			"main.search.all",
+			"main.search.genderMale",
+			"main.search.genderFemale",
+			"main.search.genderMixed",
+			"main.search.category",
+			"main.search.categoryIdol",
+			"main.search.categoryActor",
+			"main.search.submit",
+			"community.join.button",
+			"community.join.thisCommunity",
+			"community.join.modalPrompt",
+			"community.join.nicknameLabel",
+			"community.join.nicknamePlaceholder",
+			"community.join.help",
+			"community.join.submit",
 	};
+
+	/**
+	 * SETTINGS-03 커밋3: main.js 공용 다이얼로그와 커뮤니티 화면의 순수 클라이언트 JS
+	 * (community-join/explore/posts/post-detail/live.js)가 쓰는 문구 묶음.
+	 * shell.js와 같은 방식으로 현재 세션 로케일 문구만 내려주고, 각 JS는 WePlaNet.t(key, 한국어기본값)로 꺼내 쓴다.
+	 * 템플릿과 같은 문구는 기존 키를 재사용하고, JS 전용 문구만 client.* 네임스페이스로 새로 만들었다.
+	 */
+	private static final String[] CLIENT_KEYS = {
+			// main.js - 공용 다이얼로그 / 배너 / 회원가입 폼 검증(signup-id.html의 #signupForm)
+			"common.cancel",
+			"common.confirm",
+			"client.carousel.slide",
+			"signup.validation.usernamePattern",
+			"signup.validation.passwordPattern",
+			"signup.error.passwordMismatch",
+			"signup.validation.realNameRequired",
+			"signup.validation.emailFormat",
+			"client.signup.nicknameLength",
+			"client.signup.agreeRequired",
+			"client.mockSubmit",
+			// community-join.js
+			"error.community.nicknameRequired",
+			"error.community.nicknameTooLong",
+			"client.join.failed",
+			// community-explore.js
+			"client.explore.solo",
+			"client.explore.joined",
+			"client.explore.join",
+			"client.explore.searching",
+			"client.explore.empty",
+			"client.explore.error",
+			// community-posts.js
+			"community.common.loading",
+			"community.common.more",
+			"community.profile.listLoadFailed",
+			"client.posts.moreFailed",
+			"client.posts.badResponse",
+			"client.posts.editorPlaceholder",
+			"client.editor.markdown",
+			"client.editor.markdownTitle",
+			"client.editor.wysiwyg",
+			"client.editor.wysiwygTitle",
+			"error.post.tooManyAttachments",
+			"client.posts.filesSelected",
+			"client.posts.submitFailed",
+			"client.posts.submitFailedCheckList",
+			// community-post-detail.js
+			"community.comment.reported",
+			"community.translate.show",
+			"client.translate.loading",
+			"client.translate.original",
+			"client.report.submitted",
+			"client.report.failed",
+			"client.summary.loading",
+			"client.summary.title",
+			"client.summary.failed",
+			"client.request.failed",
+			// community-live.js
+			"client.live.anonymous",
+			"community.report.toggle",
+			"client.live.reportPrompt",
+			"client.live.reportReasonInvalid",
+			"client.live.reportFailed",
+			"community.media.replayTag",
+			// community-board-select.js - select에 aria-label이 없을 때의 기본 문구
+			"client.board.sort",
+	};
+
+	@GetMapping(value = "/api/i18n/client", produces = "application/json;charset=UTF-8")
+	@ResponseBody
+	public Map<String, String> clientMessages() {
+		Map<String, String> messages = new LinkedHashMap<>();
+		for (String key : CLIENT_KEYS) {
+			// shellMessages()와 같은 이유로 args=null - {0} 자리표시자는 JS(WePlaNet.t)가 직접 치환한다.
+			messages.put(key, messageSource.getMessage(key, null, LocaleContextHolder.getLocale()));
+		}
+		return messages;
+	}
 
 	@GetMapping(value = "/api/i18n/shell", produces = "application/json;charset=UTF-8")
 	@ResponseBody

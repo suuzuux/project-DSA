@@ -24,6 +24,9 @@ public class AdminCommunityController {
 	
 	private final AdminCommunityService acs;
 	private final ProjectService ps;
+	// SETTINGS-03 커밋3: ProjectService/Project 예외가 메시지 키로 바뀌어서, flash로 내보낼 때 번역한다.
+	// (관리자 화면 자체의 번역은 커밋5 범위)
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String dashboard(@RequestParam(required = false) Long projectId,
@@ -209,7 +212,7 @@ public class AdminCommunityController {
 			action.run();
 			redirectAttributes.addFlashAttribute("msg", successMessage);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 		}
 	}
 	

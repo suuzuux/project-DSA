@@ -11,10 +11,15 @@
   const boardTab = boardRoot.dataset.boardTab;
   const listBase = "/community/" + artistId + "/" + boardTab;
 
+  // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  const t = function (key, fallback, args) {
+    return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
+  };
+
   function loadList(url, pushHistory) {
     fetch(url, { headers: { "X-Requested-With": "fetch" } })
       .then(function (response) {
-        if (!response.ok) throw new Error("목록을 불러오지 못했습니다.");
+        if (!response.ok) throw new Error(t("community.profile.listLoadFailed", "목록을 불러오지 못했습니다."));
         return response.text();
       })
       .then(function (html) {
@@ -46,10 +51,10 @@
     if (!url || moreButton.disabled) return;
 
     moreButton.disabled = true;
-    moreButton.textContent = "불러오는 중…";
+    moreButton.textContent = t("community.common.loading", "불러오는 중…");
     fetch(url, { headers: { "X-Requested-With": "fetch" } })
       .then(function (response) {
-        if (!response.ok) throw new Error("다음 게시글을 불러오지 못했습니다.");
+        if (!response.ok) throw new Error(t("client.posts.moreFailed", "다음 게시글을 불러오지 못했습니다."));
         return response.text();
       })
       .then(function (html) {
@@ -59,7 +64,7 @@
         const currentFeed = currentArea ? currentArea.querySelector(".feed") : null;
         const incomingFeed = incomingArea ? incomingArea.querySelector(".feed") : null;
         if (!currentArea || !currentFeed || !incomingArea || !incomingFeed) {
-          throw new Error("게시글 응답 형식이 올바르지 않습니다.");
+          throw new Error(t("client.posts.badResponse", "게시글 응답 형식이 올바르지 않습니다."));
         }
 
         incomingFeed.querySelectorAll(".post-card").forEach(function (card) {
@@ -75,7 +80,11 @@
       })
       .catch(function () {
         moreButton.disabled = false;
-        moreButton.innerHTML = '더보기 <span aria-hidden="true">∨</span>';
+        moreButton.textContent = t("community.common.more", "더보기") + " ";
+        const arrow = document.createElement("span");
+        arrow.setAttribute("aria-hidden", "true");
+        arrow.textContent = "∨";
+        moreButton.appendChild(arrow);
       });
   });
 
@@ -125,13 +134,18 @@
   // (예전엔 writePostContent가 그냥 평범한 textarea라 마크다운 리치 편집이 안 됐음)
   const editorEl = document.getElementById("writePostEditor");
   let postEditor = null;
-  if (editorEl && window.toastui) {
+  // SETTINGS-03 커밋3: 에디터 placeholder/모드 탭 라벨이 생성 시점에 정해지므로 i18n 응답을 받은 뒤에 만든다.
+  const i18nReady = (window.WePlaNet && window.WePlaNet.i18nReady) || Promise.resolve();
+  i18nReady.then(initPostEditor);
+
+  function initPostEditor() {
+    if (!editorEl || !window.toastui) return;
     postEditor = new toastui.Editor({
       el: editorEl,
       height: "260px",
       initialEditType: "wysiwyg",
       previewStyle: "vertical",
-      placeholder: "포스트를 남겨보세요 …",
+      placeholder: t("client.posts.editorPlaceholder", "포스트를 남겨보세요 …"),
       // 이미지 버튼 제외: 기본 동작이 base64로 통째로 마크다운에 박아넣어서 1000자 제한을 훌쩍 넘겨버림.
       // 진짜 이미지 첨부는 아래 별도 파일 첨부 버튼(writePostFiles, 실제 업로드) 쓰면 됨
       toolbarItems: [
@@ -158,8 +172,14 @@
 
   function relabelEditorModeTabs(root) {
     const labels = {
-      Markdown: { text: "마크다운", title: "# 제목, **굵게** 같은 기호를 직접 입력하는 모드" },
-      WYSIWYG: { text: "간편 편집", title: "위 툴바 버튼으로 서식을 지정하는 모드 (기호를 직접 쓰지 않아도 됨)" },
+      Markdown: {
+        text: t("client.editor.markdown", "마크다운"),
+        title: t("client.editor.markdownTitle", "# 제목, **굵게** 같은 기호를 직접 입력하는 모드"),
+      },
+      WYSIWYG: {
+        text: t("client.editor.wysiwyg", "간편 편집"),
+        title: t("client.editor.wysiwygTitle", "위 툴바 버튼으로 서식을 지정하는 모드 (기호를 직접 쓰지 않아도 됨)"),
+      },
     };
 
     // 에디터가 그려진 직후에 탭이 붙기 때문에 다음 프레임에 한 번 더 시도함
@@ -243,7 +263,7 @@
     filesEl.addEventListener("change", function () {
       if (filesEl.files.length > 10) {
         if (errorEl) {
-          errorEl.textContent = "첨부파일은 최대 10개까지 등록할 수 있습니다.";
+          errorEl.textContent = t("error.post.tooManyAttachments", "첨부파일은 최대 10개까지 등록할 수 있습니다.");
           errorEl.style.display = "block";
         }
         filesEl.value = "";
@@ -251,7 +271,9 @@
       } else {
         if (errorEl) errorEl.style.display = "none";
         if (fileCountEl) {
-          fileCountEl.textContent = filesEl.files.length > 0 ? filesEl.files.length + "개 선택됨" : "";
+          fileCountEl.textContent = filesEl.files.length > 0
+            ? t("client.posts.filesSelected", "{0}개 선택됨", [filesEl.files.length])
+            : "";
         }
       }
     });
@@ -283,7 +305,7 @@
         if (contentType.indexOf("application/json") !== -1) {
           return response.json().then(function (data) {
             if (errorEl) {
-              errorEl.textContent = data.message || "등록에 실패했습니다.";
+              errorEl.textContent = data.message || t("client.posts.submitFailed", "등록에 실패했습니다.");
               errorEl.style.display = "block";
             }
             submitBtn.disabled = false;
@@ -296,7 +318,7 @@
       })
       .catch(function () {
         if (errorEl) {
-          errorEl.textContent = "등록에 실패했습니다. 목록을 확인해주세요.";
+          errorEl.textContent = t("client.posts.submitFailedCheckList", "등록에 실패했습니다. 목록을 확인해주세요.");
           errorEl.style.display = "block";
         }
         submitBtn.disabled = false;

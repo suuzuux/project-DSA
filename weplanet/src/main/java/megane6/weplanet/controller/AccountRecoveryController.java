@@ -23,6 +23,7 @@ public class AccountRecoveryController {
 	private final AccountRecoveryService accountRecoveryService;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final MessageSource messageSource;
+	private final megane6.weplanet.i18n.Messages messages;
 
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
@@ -145,7 +146,7 @@ public class AccountRecoveryController {
 			result.put("message", msg("resetPassword.resetSuccess"));
 		} catch (IllegalArgumentException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e.getMessage()));
 		}
 		return result;
 	}

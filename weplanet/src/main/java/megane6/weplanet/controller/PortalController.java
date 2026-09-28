@@ -70,6 +70,8 @@ public class PortalController {
 	private final LiveBroadcastService liveBroadcastService;
 	private final GoodsService goodsService;
 	private final MessageSource messageSource;
+	// SETTINGS-03 커밋3: 서비스 예외가 메시지 키로 바뀌어서, 화면에 내보낼 때 현재 로케일 문구로 해석한다
+	private final megane6.weplanet.i18n.Messages messages;
 
 	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
 	private String msg(String code) {
@@ -227,7 +229,7 @@ public class PortalController {
 			portalManagementService.saveNotice(artist, null, title, content, published, pinned);
 			redirectAttributes.addFlashAttribute("msg", msg("noticeForm.msg.created"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/notices/new";
 		}
 		return "redirect:/portal/notices";
@@ -245,7 +247,7 @@ public class PortalController {
 			portalManagementService.reorderPinned(artist, ids);
 			return Map.of("ok", true);
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", e.getMessage());
+			return Map.of("ok", false, "message", messages.resolve(e.getMessage()));
 		}
 	}
 
@@ -265,7 +267,7 @@ public class PortalController {
 			portalManagementService.saveNotice(artist, noticeId, title, content, published, pinned);
 			redirectAttributes.addFlashAttribute("msg", msg("noticeForm.msg.updated"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/notices/" + noticeId + "/edit";
 		}
 		return "redirect:/portal/notices";
@@ -341,7 +343,7 @@ public class PortalController {
 			redirectAttributes.addFlashAttribute("msg", "일정이 등록되었습니다.");
 			return "redirect:/portal/schedule?month=" + YearMonth.from(scheduleAt) + "&artistId=" + artist.getId();
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/schedule";
 		}
 	}
@@ -367,7 +369,7 @@ public class PortalController {
 			return Map.of("ok", true);
 		} catch (Exception e) {
 			if (e instanceof IllegalArgumentException ex) {
-				return Map.of("ok", false, "message", ex.getMessage());
+				return Map.of("ok", false, "message", messages.resolve(ex.getMessage()));
 			}
 			return Map.of("ok", false, "message", "일정을 옮기지 못했습니다.");
 		}
@@ -432,7 +434,7 @@ public class PortalController {
 			boardMediaService.create(artist.getId(), artist.getId(), title, content, files, membershipOnly);
 			redirectAttributes.addFlashAttribute("msg", msg("mediaForm.msg.created"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/media/new";
 		}
 		return "redirect:/portal/media";
@@ -501,7 +503,7 @@ public class PortalController {
 			model.addAttribute("categoryOptionsJson", goodsService.categoryOptionsPayload(goods).toJson());
 			return "portal/goods-form";
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/goods";
 		}
 	}
@@ -531,7 +533,7 @@ public class PortalController {
 			redirectAttributes.addFlashAttribute("msg", msg("goodsForm.msg.created"));
 			return "redirect:/portal/goods";
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/goods/new";
 		}
 	}
@@ -562,7 +564,7 @@ public class PortalController {
 			redirectAttributes.addFlashAttribute("msg", msg("goodsForm.msg.updated"));
 			return "redirect:/portal/goods";
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/portal/goods/" + goodsId + "/edit";
 		}
 	}
@@ -579,7 +581,7 @@ public class PortalController {
 			goodsService.softDelete(artist, goodsId);
 			redirectAttributes.addFlashAttribute("msg", "굿즈가 삭제되었습니다.");
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 		}
 		return "redirect:/portal/goods";
 	}
@@ -596,7 +598,7 @@ public class PortalController {
 			goodsService.reorder(artist, orderedIds);
 			return Map.of("ok", true);
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", e.getMessage());
+			return Map.of("ok", false, "message", messages.resolve(e.getMessage()));
 		}
 	}
 
@@ -643,7 +645,7 @@ public class PortalController {
 					avatar, background, removeAvatar, removeBackground);
 			redirectAttributes.addFlashAttribute("msg", msg("portalProfile.msg.saved"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 		}
 		return "redirect:/portal/profile";
 	}

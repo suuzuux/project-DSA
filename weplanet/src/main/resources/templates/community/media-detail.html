@@ -24,7 +24,7 @@
     <div class="community-main">
       <a class="section__link mb-16" style="display:inline-block;"
          th:href="${mediaPost.liveReplay} ? @{/community/{id}/live(id=${artist.id()})} : @{/community/{id}/media(id=${artist.id()})}"
-         th:text="${mediaPost.liveReplay} ? '← Live' : '← Media 게시판'">← Media 게시판</a>
+         th:text="${mediaPost.liveReplay} ? '← Live' : #{community.media.back}">← Media 게시판</a>
 
       <article class="post-card">
         <div class="post-card__head">
@@ -33,9 +33,9 @@
             <div class="post-card__name">
               <span th:text="${artist.nickname()}">아티스트</span>
               <span class="badge-verified">✓</span>
-              <span class="tag tag--member" th:if="${mediaPost.membershipOnly}">멤버십</span>
+              <span class="tag tag--member" th:if="${mediaPost.membershipOnly}" th:text="#{community.media.membershipTag}">멤버십</span>
               <span class="tag tag--live"
-                    th:if="${mediaPost.title != null and #strings.startsWith(mediaPost.title, '라이브 다시보기')}">다시보기</span>
+                    th:if="${mediaPost.title != null and #strings.startsWith(mediaPost.title, '라이브 다시보기')}" th:text="#{community.media.replayTag}">다시보기</span>
             </div>
             <div class="post-card__time"
                  th:with="y=${#temporals.year(mediaPost.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
@@ -43,10 +43,10 @@
           </div>
         </div>
 
-        <h1 style="font-size:20px;font-weight:700;margin:12px 0 8px;" th:text="${mediaPost.title}">제목</h1>
+        <h1 style="font-size:20px;font-weight:700;margin:12px 0 8px;" th:text="${mediaPost.title != null and #strings.startsWith(mediaPost.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(mediaPost.title, 11)})} : ${mediaPost.title}">제목</h1>
         <p class="post-card__body" style="white-space:pre-wrap;"
            th:if="${mediaPost.content != null and !#strings.isEmpty(mediaPost.content)}"
-           th:text="${mediaPost.content}"></p>
+           th:text="${mediaPost.content == '라이브 방송 다시보기'} ? #{community.media.replayDescription} : ${mediaPost.content}"></p>
 
         <div class="post-card__media" th:if="${not #lists.isEmpty(mediaPost.files)}">
           <th:block th:each="file : ${mediaPost.files}">
@@ -68,14 +68,15 @@
             <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
             <span id="likeCount" data-like-count th:text="${mediaPost.likeCount > 0 ? mediaPost.likeCount : ''}"></span>
           </button>
-          <span class="text-xs text-muted" th:text="'첨부 ' + ${mediaPost.fileCount} + '개'"></span>
+          <span class="text-xs text-muted" th:text="#{community.media.fileCount(${mediaPost.fileCount})}"></span>
           <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
                 th:action="@{/board/media/{id}/delete(id=${mediaPost.id})}"
                 method="post"
-                onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
+                th:attr="data-confirm=#{community.media.deleteConfirm}"
+                onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
             <input type="hidden" name="groupId" th:value="${groupId}" />
             <input type="hidden" name="artistId" th:value="${artist.id()}" />
-            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+            <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
           </form>
         </div>
       </article>

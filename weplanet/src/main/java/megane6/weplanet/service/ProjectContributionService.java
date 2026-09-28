@@ -53,6 +53,8 @@ public class ProjectContributionService {
     private final ApplicationEventPublisher eventPublisher; // [배지] 입금 확인 시 발행 (Step 5에서 사용)
     private final TossPaymentsProperties tossProperties;
     private final TossPaymentsClient tossClient;
+    // SETTINGS-03 커밋3: 결제창 주문명/구매자명/상태 라벨을 요청 로케일로 만든다
+    private final megane6.weplanet.i18n.Messages messages;
     
     /**
      * [참여하기] - 주문(READY)을 만들고, 토스 결제창에 필요한 정보를 돌려준다.
@@ -66,16 +68,16 @@ public class ProjectContributionService {
             ProjectContributionRequestDTO request
     ) {
         User contributor = userRepository.findById(contributorId)
-                .orElseThrow(() -> new AccessDeniedException("로그인 회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new AccessDeniedException("error.project.memberNotFound"));
         if (contributor.getRole() != Role.FAN) {
-            throw new AccessDeniedException("팬 계정만 프로젝트에 참여할 수 있습니다.");
+            throw new AccessDeniedException("error.contribution.fanOnly");
         }
         if (!communityAccessRepository.existsByFanIdAndArtistId(contributorId, artistId)) {
-            throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
+            throw new AccessDeniedException("error.project.joinFirst");
         }
         
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.project.notFound"));
         validateProject(project, artistId);
         
         LocalDateTime now = LocalDateTime.now();
@@ -89,20 +91,20 @@ public class ProjectContributionService {
                 true,
                 tossProperties.clientKey(),
                 contribution.getOrderNo(),
-                project.getTitle() + " 참여",
+                messages.get("community.project.orderName", project.getTitle()),
                 contribution.getAmount(),
-                contributor.getNickname() != null ? contributor.getNickname() : "WePlaNet 회원",
+                contributor.getNickname() != null ? contributor.getNickname() : messages.get("community.project.customerFallback"),
                 validHours,
-                "결제창을 여는 중입니다."
+                messages.get("community.project.js.openingPayment")
         );
     }
     
     public List<ProjectParticipationView> getMyParticipationHistory(Long contributorId) {
         User contributor = userRepository.findById(contributorId)
-                .orElseThrow(() -> new AccessDeniedException("로그인 회원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new AccessDeniedException("error.project.memberNotFound"));
         
         if (contributor.getRole() != Role.FAN && contributor.getRole() != Role.ARTIST) {
-            throw new AccessDeniedException("팬 또는 아티스트 계정만 참여 기록을 확인할 수 있습니다.");
+            throw new AccessDeniedException("error.contribution.historyFanOrArtistOnly");
         }
         
         return contributionRepository.findParticipationHistory(contributorId)
@@ -129,7 +131,7 @@ public class ProjectContributionService {
             Long amount
     ) {
         if (paymentKey == null || paymentKey.isBlank() || orderId == null || amount == null) {
-            throw new IllegalArgumentException("결제 정보가 올바르지 않습니다.");
+            throw new IllegalArgumentException("error.contribution.invalidPayment");
         }
         
         ProjectContribution contribution = findMyOrderForUpdate(contributorId, orderId);
@@ -139,12 +141,12 @@ public class ProjectContributionService {
             if (paymentKey.equals(contribution.getProviderTransactionId())) {
                 return ProjectPaymentResultView.from(contribution);
             }
-            throw new IllegalStateException("이미 처리된 주문입니다. 참여 내역을 확인해주세요.");
+            throw new IllegalStateException("error.contribution.alreadyProcessedOrder");
         }
         
         // 주소창의 amount 는 사용자가 바꿀 수 있으므로, 반드시 DB 금액과 비교한다.
         if (!contribution.getAmount().equals(amount)) {
-            throw new IllegalArgumentException("결제 금액이 주문 금액과 일치하지 않습니다.");
+            throw new IllegalArgumentException("error.contribution.amountMismatch");
         }
         
         TossPaymentResponse response;
@@ -158,7 +160,7 @@ public class ProjectContributionService {
         TossPaymentResponse.VirtualAccount account = response.virtualAccount();
         if (!"WAITING_FOR_DEPOSIT".equals(response.status()) || account == null || account.dueDate() == null) {
             contribution.markFailed();
-            throw new TossPaymentException("UNEXPECTED_STATUS", "가상계좌 발급 결과를 확인할 수 없습니다. 다시 시도해주세요.");
+            throw new TossPaymentException("UNEXPECTED_STATUS", "error.contribution.virtualAccountUnknown");
         }
         
         contribution.markWaitingForDeposit(
@@ -249,12 +251,13 @@ public class ProjectContributionService {
     public ProjectPaymentStatusView refreshDepositStatus(Long contributorId, String orderNo) {
         // 폴링은 몇 초마다 들어오므로, 입금 대기가 아닐 때는 행을 잠그지 않고 상태만 읽는다.
         ProjectContribution contribution = contributionRepository.findByOrderNo(orderNo)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("shop.error.orderNotFound"));
         if (!contribution.getContributor().getId().equals(contributorId)) {
-            throw new AccessDeniedException("본인 주문만 확인할 수 있습니다.");
+            throw new AccessDeniedException("error.contribution.ownOrderOnlyView");
         }
         if (contribution.getPaymentStatus() != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-            return ProjectPaymentStatusView.from(contribution);
+            return ProjectPaymentStatusView.from(contribution,
+                    messages.get(contribution.getPaymentStatus().getMessageKey()));
         }
 
         // 상태를 바꿀 수 있는 구간이므로 웹훅·스케줄러와 같은 방식으로 행을 잠그고 다시 확인한다
@@ -262,7 +265,8 @@ public class ProjectContributionService {
         if (locked.getPaymentStatus() == FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
             syncWithToss(locked, LocalDateTime.now());
         }
-        return ProjectPaymentStatusView.from(locked);
+        return ProjectPaymentStatusView.from(locked,
+                messages.get(locked.getPaymentStatus().getMessageKey()));
     }
 
     /**
@@ -323,9 +327,9 @@ public class ProjectContributionService {
     
     private ProjectContribution findMyOrderForUpdate(Long contributorId, String orderId) {
         ProjectContribution contribution = contributionRepository.findByOrderNoForUpdate(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("shop.error.orderNotFound"));
         if (!contribution.getContributor().getId().equals(contributorId)) {
-            throw new AccessDeniedException("본인 주문만 결제할 수 있습니다.");
+            throw new AccessDeniedException("error.contribution.ownOrderOnlyPay");
         }
         return contribution;
     }
@@ -370,10 +374,10 @@ public class ProjectContributionService {
                 && existing.getProject().getId().equals(projectId)
                 && existing.getAmount().equals(amount);
         if (!sameRequest) {
-            throw new IllegalStateException("이미 사용된 결제 요청입니다. 다시 시도해주세요.");
+            throw new IllegalStateException("error.contribution.requestKeyUsed");
         }
         if (existing.getPaymentStatus() != FanProjectPaymentStatus.READY) {
-            throw new IllegalStateException("이미 처리된 참여 요청입니다. 참여 내역을 확인해주세요.");
+            throw new IllegalStateException("error.contribution.alreadyProcessedRequest");
         }
         return existing;
     }
@@ -382,26 +386,26 @@ public class ProjectContributionService {
     private int depositValidHours(Project project, LocalDateTime now) {
         long hoursUntilEnd = Duration.between(now, project.getFundingEndAt()).toHours();
         if (hoursUntilEnd < 1) {
-            throw new IllegalStateException("모금 마감까지 1시간이 남지 않아 가상계좌를 발급할 수 없습니다.");
+            throw new IllegalStateException("error.contribution.tooCloseToDeadline");
         }
         return (int) Math.min(MAX_DEPOSIT_HOURS, hoursUntilEnd);
     }
     
     private void validateProject(Project project, Long artistId) {
         if (project.getDeletedAt() != null || !project.getArtist().getId().equals(artistId)) {
-            throw new IllegalArgumentException("이 커뮤니티의 프로젝트를 찾을 수 없습니다.");
+            throw new IllegalArgumentException("error.contribution.projectNotInCommunity");
         }
         if (project.getStatus() != FanProjectStatus.APPROVED
                 && project.getStatus() != FanProjectStatus.FUNDING) {
-            throw new IllegalStateException("승인되어 모금 중인 프로젝트만 참여할 수 있습니다.");
+            throw new IllegalStateException("error.contribution.notFunding");
         }
         
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(project.getFundingStartAt())) {
-            throw new IllegalStateException("아직 모금이 시작되지 않은 프로젝트입니다.");
+            throw new IllegalStateException("error.contribution.notStarted");
         }
         if (now.isAfter(project.getFundingEndAt())) {
-            throw new IllegalStateException("모금이 마감된 프로젝트입니다.");
+            throw new IllegalStateException("error.contribution.closed");
         }
     }
     

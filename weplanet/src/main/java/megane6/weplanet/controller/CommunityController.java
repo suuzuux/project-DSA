@@ -57,6 +57,8 @@ public class CommunityController {
 	private final LiveBroadcastService liveBroadcastService;
 	
 	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
+	// SETTINGS-03 커밋3: flash로 내보내는 예외 메시지(키 또는 문장)를 현재 로케일 문구로 바꾸는 데 사용
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -215,17 +217,17 @@ public class CommunityController {
 		
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != expectedType) {
-			throw new IllegalArgumentException("게시판 종류가 맞지 않습니다.");
+			throw new IllegalArgumentException("error.post.boardMismatch");
 		}
 		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
-			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
+			throw new IllegalArgumentException("error.post.notInCommunity");
 		}
 		
 		// 36번(Hide from Artists) 필터가 목록에만 있고 상세엔 빠져 있어서,
 		// 아티스트가 주소창에 /community/1/fan/5 를 직접 치면 숨긴 글이 그대로 열렸음.
 		// 가입자 차단이 목록에만 있던 것과 똑같은 종류의 누락. 목록과 같은 기준을 상세에도 적용함
 		if (post.isHiddenFromArtist() && userResolver.isArtist(principal)) {
-			throw new IllegalArgumentException("작성자가 아티스트에게 공개하지 않은 게시글입니다.");
+			throw new IllegalArgumentException("error.post.hiddenFromArtist");
 		}
 		
 		User currentUser = userResolver.resolve(principal, 1L);
@@ -305,7 +307,7 @@ public class CommunityController {
 		try {
 			model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId, canSeeMembershipMedia(model)));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/community/" + artistId + "/media";
 		}
 		model.addAttribute("groupId", artistId);
@@ -375,7 +377,7 @@ public class CommunityController {
 		populateArtistModel(artistId, principal, model);
 		User me = userResolver.resolve(principal, 1L);
 		User targetUser = userRepository.findOneById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 
 		// 프로필 열람 = 나도 이 커뮤니티 가입 + 상대도 이 커뮤니티 가입.
 		// hasCommunityAccess에 이미 "커뮤니티 주인(아티스트 본인)은 가입 없이 항상 접근 가능" 등의 예외가
@@ -501,7 +503,7 @@ public class CommunityController {
 		}
 		User me = userResolver.resolve(principal, 1L);
 		User targetUser = userRepository.findOneById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 		if (!hasCommunityAccess(me, artistId) || !hasCommunityAccess(targetUser, artistId)) {
 			return "redirect:/community/" + artistId + "/highlight";
 		}
@@ -528,7 +530,7 @@ public class CommunityController {
 		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		User member = requireMembershipEligible(principal, artistId);
 		
 		membershipService.join(member, artist);
@@ -549,7 +551,7 @@ public class CommunityController {
 		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		User member = requireMembershipEligible(principal, artistId);
 		
 		membershipService.cancel(member, artist);
@@ -622,10 +624,10 @@ public class CommunityController {
 	private User requireMembershipEligible(AuthenticatedUser principal, Long artistId) {
 		User user = userResolver.resolve(principal, 1L);
 		if (user.getId().equals(artistId)) {
-			throw new IllegalStateException("본인 커뮤니티 멤버십에는 가입할 수 없습니다.");
+			throw new IllegalStateException("error.membership.ownCommunity");
 		}
 		if (user.getRole() != Role.FAN && user.getRole() != Role.ARTIST) {
-			throw new IllegalStateException("팬 또는 아티스트 계정만 이용할 수 있는 기능입니다.");
+			throw new IllegalStateException("error.community.fanOrArtistOnly");
 		}
 		return user;
 	}
@@ -639,7 +641,7 @@ public class CommunityController {
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findOneById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
 		Map<Long, String> logoUrls = portalManagementService.logoImageUrlsByArtistIds(

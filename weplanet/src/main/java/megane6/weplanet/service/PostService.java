@@ -177,7 +177,7 @@ public class PostService {
     //                    없으면 괄호 안의 예외를 만들어서 던져버림 (null을 그냥 돌려주는 것보다 안전함)
     public Post getPost(Long postId) {
         return postRepository.findById(postId)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다. id=" + postId));
+                .orElseThrow(() -> new IllegalArgumentException("error.post.notFound"));
     }
 
     // 좋아요 토글 - 이미 눌려 있으면 취소하고, 안 눌려 있으면 새로 누름 (같은 버튼이 두 가지 역할을 함)
@@ -249,7 +249,7 @@ public class PostService {
         boolean isAdmin = requester.getRole() == Role.ADMIN;
 
         if (!isAuthor && !isAdmin) {
-            throw new IllegalStateException("본인이 작성한 게시글 또는 관리자만 삭제할 수 있습니다.");
+            throw new IllegalStateException("error.post.deleteNoPermission");
         }
         deletePostCascade(post);
     }
@@ -258,7 +258,7 @@ public class PostService {
     @Transactional
     public void deletePostForArtistCommunity(Post post, User artist) {
         if (artist == null || post.getArtist() == null || !post.getArtist().getId().equals(artist.getId())) {
-            throw new IllegalStateException("이 커뮤니티의 게시글만 삭제할 수 있습니다.");
+            throw new IllegalStateException("error.post.deleteOnlyThisCommunity");
         }
         deletePostCascade(post);
     }
@@ -290,7 +290,7 @@ public class PostService {
         boolean isAdmin = requester.getRole() == Role.ADMIN;
 
         if (!isAuthor && !isAdmin) {
-            throw new IllegalStateException("본인이 작성한 게시글 또는 관리자만 수정할 수 있습니다.");
+            throw new IllegalStateException("error.post.editNoPermission");
         }
 
         // post 객체의 값만 바꿔주면, 트랜잭션이 끝날 때 JPA(Hibernate)가 알아서 변경된 부분만 UPDATE 쿼리로 반영해줌

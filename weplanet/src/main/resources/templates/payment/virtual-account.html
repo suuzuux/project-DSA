@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>가상계좌 발급 완료 | WePlaNet</title>
+  <title th:text="${result.paid()} ? #{payment.pageTitlePaid} : #{payment.pageTitleWaiting}">가상계좌 발급 완료 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
@@ -19,35 +19,35 @@
 
 <main class="container section" style="max-width:560px;padding-top:56px;">
   <h1 id="paymentTitle" style="font-size:20px;font-weight:700;margin-bottom:8px;"
-      th:text="${result.paid()} ? '입금이 확인되었어요' : '가상계좌가 발급되었어요'">가상계좌가 발급되었어요</h1>
+      th:text="${result.paid()} ? #{payment.paidTitle} : #{payment.waitingTitle}">가상계좌가 발급되었어요</h1>
   <p id="paymentDesc" class="text-muted" style="margin-bottom:24px;line-height:1.6;"
-     th:text="${result.paid()} ? '프로젝트 참여가 확정되었습니다.' : '아래 계좌로 입금기한 안에 입금하면 참여가 확정돼요.'">
+     th:text="${result.paid()} ? #{community.project.payment.paidDesc} : #{community.project.payment.waitingDesc}">
     아래 계좌로 입금기한 안에 입금하면 참여가 확정돼요.
   </p>
 
   <div style="border:1px solid var(--wp-hairline, #e5e5e5);border-radius:12px;padding:20px;display:grid;gap:12px;">
-    <div class="flex-between"><span class="text-muted">프로젝트</span><strong th:text="${result.projectTitle()}">프로젝트</strong></div>
-    <div class="flex-between"><span class="text-muted">참여 금액</span>
-      <strong th:text="${#numbers.formatInteger(result.amount(), 1, 'COMMA')} + '원'">10,000원</strong></div>
-    <div class="flex-between"><span class="text-muted">입금 은행</span><strong th:text="${result.bankName()}">은행</strong></div>
-    <div class="flex-between"><span class="text-muted">계좌번호</span><strong th:text="${result.accountNumber()}">000-0000-0000</strong></div>
-    <div class="flex-between"><span class="text-muted">입금 기한</span>
-      <strong th:text="${#temporals.format(result.dueDate(), 'yyyy.MM.dd HH:mm')} + ' 까지'">기한</strong></div>
+    <div class="flex-between"><span class="text-muted" th:text="#{community.board.projectChip}">프로젝트</span><strong th:text="${result.projectTitle()}">프로젝트</strong></div>
+    <div class="flex-between"><span class="text-muted" th:text="#{community.project.contributionAmountLabel}">참여 금액</span>
+      <strong th:text="#{payment.amountValue(${#numbers.formatInteger(result.amount(), 1, 'COMMA')})}">10,000원</strong></div>
+    <div class="flex-between"><span class="text-muted" th:text="#{payment.bankLabel}">입금 은행</span><strong th:text="${result.bankMessageKey() != null} ? ${#messages.msg(result.bankMessageKey())} : ${result.bankName()}">은행</strong></div>
+    <div class="flex-between"><span class="text-muted" th:text="#{payment.accountLabel}">계좌번호</span><strong th:text="${result.accountNumber()}">000-0000-0000</strong></div>
+    <div class="flex-between"><span class="text-muted" th:text="#{payment.dueDateLabel}">입금 기한</span>
+      <strong th:text="#{payment.dueDateValue(${#temporals.format(result.dueDate(), 'yyyy.MM.dd HH:mm')})}">기한</strong></div>
   </div>
 
   <div id="depositWaiting" th:unless="${result.paid()}">
-    <p class="text-xs text-muted" style="margin-top:12px;line-height:1.6;">
+    <p class="text-xs text-muted" style="margin-top:12px;line-height:1.6;" th:text="#{payment.waitingNotice}">
       입금기한이 지나면 주문은 자동으로 취소돼요. 입금이 확인되면 이 화면이 자동으로 바뀌어요.
     </p>
     <div class="flex-center" style="gap:10px;justify-content:center;margin-top:16px;">
-      <button type="button" id="checkDepositButton" class="btn btn--soft">입금 확인하기</button>
+      <button type="button" id="checkDepositButton" class="btn btn--soft" th:text="#{payment.checkDepositButton}">입금 확인하기</button>
     </div>
     <p id="checkDepositHint" class="text-xs text-muted" style="margin-top:8px;text-align:center;" hidden></p>
   </div>
 
   <div class="flex-center" style="gap:10px;justify-content:center;margin-top:28px;">
-    <a class="btn btn--ghost" th:href="@{/community/{id}/project(id=${result.artistId()})}">프로젝트로 돌아가기</a>
-    <a class="btn btn--primary" th:href="@{/collection}">참여 내역 보기</a>
+    <a class="btn btn--ghost" th:href="@{/community/{id}/project(id=${result.artistId()})}" th:text="#{community.project.payment.backToProject}">프로젝트로 돌아가기</a>
+    <a class="btn btn--primary" th:href="@{/collection}" th:text="#{community.project.payment.viewHistory}">참여 내역 보기</a>
   </div>
 </main>
 
@@ -57,6 +57,18 @@
   (function () {
     const orderNo = /*[[${result.orderNo()}]]*/ "";
     if (!orderNo) return;
+
+    // SETTINGS-03 커밋3: 화면 언어에 맞춘 문구 - 굿즈 가상계좌 화면(commerce-virtual-account.html)과 같은 payment.* 키를 재사용
+    const MSG = {
+      paidTitle: /*[[#{payment.paidTitle}]]*/ "입금이 확인되었어요",
+      paidDesc: /*[[#{community.project.payment.paidDesc}]]*/ "프로젝트 참여가 확정되었습니다.",
+      notPaidTitle: /*[[#{payment.notPaidTitle}]]*/ "입금이 확인되지 않았어요",
+      orderStatusPrefix: /*[[#{payment.orderStatusPrefix}]]*/ "주문 상태: {0}",
+      checkingNow: /*[[#{payment.checkingNow}]]*/ "확인하는 중이에요…",
+      notYetConfirmed: /*[[#{payment.notYetConfirmed}]]*/ "아직 입금이 확인되지 않았어요. 입금 후 잠시 기다려주세요.",
+      checkFailed: /*[[#{payment.checkFailed}]]*/ "확인에 실패했어요. 잠시 후 다시 시도해주세요.",
+      autoCheckStopped: /*[[#{payment.autoCheckStopped}]]*/ "자동 확인을 멈췄어요. 입금하셨다면 '입금 확인하기'를 눌러주세요."
+    };
 
     const POLL_INTERVAL_MS = 3000;
     const POLL_LIMIT_MS = 3 * 60 * 1000; // 3분 뒤에는 멈춘다. 이후는 5분 주기 스케줄러가 처리
@@ -88,16 +100,16 @@
     function applyResult(data) {
       if (data.paid) {
         stopPolling();
-        title.textContent = "입금이 확인되었어요";
-        desc.textContent = "프로젝트 참여가 확정되었습니다.";
+        title.textContent = MSG.paidTitle;
+        desc.textContent = MSG.paidDesc;
         waitingArea.hidden = true;
         return;
       }
       if (data.finished) {
         // 기한 만료·취소 등 더 기다려도 바뀌지 않는 상태
         stopPolling();
-        title.textContent = "입금이 확인되지 않았어요";
-        desc.textContent = "주문 상태: " + data.displayName;
+        title.textContent = MSG.notPaidTitle;
+        desc.textContent = MSG.orderStatusPrefix.replace("{0}", data.displayName);
         waitingArea.hidden = true;
       }
     }
@@ -107,7 +119,7 @@
       checking = true;
       if (manual) {
         button.disabled = true;
-        showHint("확인하는 중이에요…");
+        showHint(MSG.checkingNow);
       }
 
       fetch("/payments/toss/orders/" + encodeURIComponent(orderNo) + "/status", {
@@ -122,13 +134,13 @@
           errorCount = 0;
           applyResult(data);
           if (manual && !data.paid && !data.finished) {
-            showHint("아직 입금이 확인되지 않았어요. 입금 후 잠시 기다려주세요.");
+            showHint(MSG.notYetConfirmed);
           }
         })
         .catch(function () {
           errorCount += 1;
           if (errorCount >= MAX_ERRORS) stopPolling();
-          if (manual) showHint("확인에 실패했어요. 잠시 후 다시 시도해주세요.");
+          if (manual) showHint(MSG.checkFailed);
         })
         .finally(function () {
           checking = false;
@@ -141,7 +153,7 @@
       if (document.hidden) return;
       if (Date.now() > deadline) {
         stopPolling();
-        showHint("자동 확인을 멈췄어요. 입금하셨다면 '입금 확인하기'를 눌러주세요.");
+        showHint(MSG.autoCheckStopped);
         return;
       }
       check(false);

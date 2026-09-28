@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>요청을 처리할 수 없습니다 | WePlaNet</title>
+    <title th:text="#{error.page.title} + ' | WePlaNet'">요청을 처리할 수 없습니다 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
 </head>
 <body>
@@ -22,17 +22,18 @@
                 display:inline-flex;align-items:center;justify-content:center;font-size:30px;
                 color:var(--wp-muted, #8a8a8a);margin-bottom:20px;">!</div>
 
-    <h1 style="font-size:20px;font-weight:700;margin-bottom:10px;">요청을 처리할 수 없습니다</h1>
+    <h1 style="font-size:20px;font-weight:700;margin-bottom:10px;" th:text="#{error.page.title}">요청을 처리할 수 없습니다</h1>
 
     <p class="text-muted" style="font-size:15px;line-height:1.7;margin-bottom:8px;"
        th:text="${message}">잠시 후 다시 시도해주세요.</p>
 
+    <!-- status는 정수라 MessageFormat이 1,000 같은 자리 구분을 넣지 않도록 문자열로 넘긴다 -->
     <p class="text-xs text-muted" th:if="${status != null}"
-       th:text="'오류 코드 ' + ${status}">오류 코드</p>
+       th:text="#{error.page.statusCode(${'' + status})}">오류 코드</p>
 
     <div class="flex-center" style="gap:10px;justify-content:center;margin-top:28px;">
-        <button type="button" class="btn btn--ghost" onclick="history.back()">이전 화면으로</button>
-        <a class="btn btn--primary" th:href="@{/}">홈으로</a>
+        <button type="button" class="btn btn--ghost" onclick="history.back()" th:text="#{error.page.back}">이전 화면으로</button>
+        <a class="btn btn--primary" th:href="@{/}" th:text="#{error.page.home}">홈으로</a>
     </div>
 </main>
 

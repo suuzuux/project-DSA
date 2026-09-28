@@ -43,6 +43,8 @@ public class SettingsController {
 	private final SignupEmailVerificationService emailVerificationService;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
 	private final MessageSource messageSource;
+	// SETTINGS-03 커밋3: 이메일 인증 서비스 예외가 메시지 키로 바뀌어서 화면에 내보낼 때 해석한다
+	private final megane6.weplanet.i18n.Messages messages;
 	private final LocaleResolver localeResolver;
 
 	private String msg(String code) {
@@ -77,7 +79,7 @@ public class SettingsController {
 			redirectAttributes.addFlashAttribute("profileMessage", msg("settings.profile.updateSuccess"));
 		} catch (IllegalArgumentException e) {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
-			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e.getMessage()));
 		}
 		return "redirect:/settings";
 	}
@@ -142,7 +144,7 @@ public class SettingsController {
 			result.put("success", true);
 		} catch (IllegalArgumentException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e.getMessage()));
 		}
 		return result;
 	}
@@ -184,7 +186,7 @@ public class SettingsController {
 		try {
 			userService.unlinkSocialProvider(user);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e.getMessage()));
 			return "redirect:/settings";
 		}
 		socialLoginSessionSupport.clearSecurityContext(request, response);

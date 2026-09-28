@@ -2,7 +2,9 @@ package megane6.weplanet.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.i18n.Messages;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -33,7 +35,12 @@ import java.util.Map;
  */
 @Slf4j
 @ControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    // SETTINGS-03 커밋3: 예외 메시지는 메시지 키로 던지고(예: "error.post.contentRequired"), 여기서 사용자의
+    // 로케일 문구로 바꿔서 내보낸다. 아직 키로 바꾸지 않은 한국어 문구는 그대로 통과한다(Messages.resolve 참고).
+    private final Messages messages;
 
     private boolean isAsync(HttpServletRequest request) {
         return "fetch".equals(request.getHeader("X-Requested-With"));
@@ -43,7 +50,8 @@ public class GlobalExceptionHandler {
      * 화면(HTML) 응답과 JSON 응답을 한 곳에서 만들어주는 공통 처리.
      * 어떤 예외든 결국 이 메서드를 거치므로, Whitelabel 페이지로 새어나가지 않음.
      */
-    private Object respond(HttpServletRequest request, HttpStatus status, String message) {
+    private Object respond(HttpServletRequest request, HttpStatus status, String messageOrKey) {
+        String message = messages.resolve(messageOrKey);
         if (isAsync(request)) {
             return ResponseEntity.status(status).body(Map.of("success", false, "message", message));
         }
@@ -62,7 +70,7 @@ public class GlobalExceptionHandler {
 
         if (isAsync(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("success", false, "message", e.getMessage()));
+                    .body(Map.of("success", false, "message", messages.resolve(e.getMessage())));
         }
         return "redirect:/login";
     }
@@ -82,7 +90,7 @@ public class GlobalExceptionHandler {
 
         if (isAsync(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("success", false, "message", "세션이 만료되었습니다. 다시 로그인해주세요."));
+                    .body(Map.of("success", false, "message", messages.get("error.sessionExpired")));
         }
         return "redirect:/login?sessionExpired=true";
     }
@@ -115,7 +123,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
     public Object handleNotFound(Exception e, HttpServletRequest request) {
         log.warn("존재하지 않는 주소: {}", request.getRequestURI());
-        return respond(request, HttpStatus.NOT_FOUND, "요청하신 페이지를 찾을 수 없습니다.");
+        return respond(request, HttpStatus.NOT_FOUND, "error.pageNotFound");
     }
 
     // 필수 파라미터 누락 / 타입 불일치 / 잘못된 JSON 본문
@@ -127,21 +135,21 @@ public class GlobalExceptionHandler {
     })
     public Object handleBadRequest(Exception e, HttpServletRequest request) {
         log.warn("요청 형식 오류: {} - {}", request.getRequestURI(), e.getMessage());
-        return respond(request, HttpStatus.BAD_REQUEST, "요청 형식이 올바르지 않습니다.");
+        return respond(request, HttpStatus.BAD_REQUEST, "error.badRequest");
     }
 
     // GET으로 열어야 할 주소를 POST로 부르는 등
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public Object handleMethodNotAllowed(HttpRequestMethodNotSupportedException e, HttpServletRequest request) {
         log.warn("지원하지 않는 요청 방식: {} {}", request.getMethod(), request.getRequestURI());
-        return respond(request, HttpStatus.METHOD_NOT_ALLOWED, "잘못된 방식의 요청입니다.");
+        return respond(request, HttpStatus.METHOD_NOT_ALLOWED, "error.methodNotAllowed");
     }
 
     // 첨부파일 용량 초과
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Object handleUploadTooLarge(MaxUploadSizeExceededException e, HttpServletRequest request) {
         log.warn("업로드 용량 초과: {}", request.getRequestURI());
-        return respond(request, HttpStatus.CONTENT_TOO_LARGE, "첨부파일 용량이 너무 큽니다.");
+        return respond(request, HttpStatus.CONTENT_TOO_LARGE, "error.uploadTooLarge");
     }
 
     /**
@@ -152,7 +160,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public Object handleUnexpected(Exception e, HttpServletRequest request) {
         log.error("예상치 못한 오류: {} {}", request.getMethod(), request.getRequestURI(), e);
-        return respond(request, HttpStatus.INTERNAL_SERVER_ERROR,
-                "일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        return respond(request, HttpStatus.INTERNAL_SERVER_ERROR, "error.unexpected");
     }
 }

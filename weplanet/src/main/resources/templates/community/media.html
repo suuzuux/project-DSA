@@ -28,22 +28,22 @@
         <div class="chip-row" style="margin:0;" id="mediaFilterChips">
           <button type="button" class="chip is-active" data-media-filter="all">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="M21 15l-5-5L5 21"></path></svg>
-            전체
+            <span th:text="#{community.media.filterAll}">전체</span>
           </button>
-          <button type="button" class="chip" data-media-filter="membership">멤버십</button>
-          <button type="button" class="chip" data-media-filter="popular">인기</button>
+          <button type="button" class="chip" data-media-filter="membership" th:text="#{community.media.membershipTag}">멤버십</button>
+          <button type="button" class="chip" data-media-filter="popular" th:text="#{community.media.filterPopular}">인기</button>
         </div>
         <div class="board-toolbar__actions">
           <label class="board-select">
             <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5h10"></path><path d="M11 12h10"></path><path d="M11 19h10"></path><path d="M3 5l2 2 4-4"></path><path d="M3 12h4"></path><path d="M3 19h4"></path></svg>
-            <select id="mediaSort" class="form-select" aria-label="미디어 정렬">
-              <option value="latest">최신순</option>
-              <option value="oldest">등록순</option>
+            <select id="mediaSort" class="form-select" th:aria-label="#{community.media.sortAria}">
+              <option value="latest" th:text="#{community.board.sortLatest}">최신순</option>
+              <option value="oldest" th:text="#{community.media.sortOldest}">등록순</option>
             </select>
           </label>
           <button type="button" class="btn btn--primary btn--sm"
                   th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
-                  data-modal-open="writeMediaModal">미디어 등록</button>
+                  data-modal-open="writeMediaModal" th:text="#{community.media.upload}">미디어 등록</button>
         </div>
       </div>
 
@@ -60,10 +60,10 @@
               <div class="avatar" th:text="${#strings.substring(artist.nickname(),0,1)}">M</div>
               <div class="post-card__meta">
                 <div class="post-card__name">
-                  <span th:text="${post.title}">제목</span>
-                  <span class="tag tag--member" th:if="${post.membershipOnly}">멤버십</span>
+                  <span th:text="${post.title != null and #strings.startsWith(post.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(post.title, 11)})} : ${post.title}">제목</span>
+                  <span class="tag tag--member" th:if="${post.membershipOnly}" th:text="#{community.media.membershipTag}">멤버십</span>
                   <span class="tag tag--live"
-                        th:if="${post.title != null and #strings.startsWith(post.title, '라이브 다시보기')}">다시보기</span>
+                        th:if="${post.title != null and #strings.startsWith(post.title, '라이브 다시보기')}" th:text="#{community.media.replayTag}">다시보기</span>
                 </div>
                 <div class="post-card__time"
                      th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
@@ -72,7 +72,7 @@
             </div>
 
             <p class="post-card__body" th:if="${post.content != null and !#strings.isEmpty(post.content)}"
-               th:text="${post.content}"></p>
+               th:text="${post.content == '라이브 방송 다시보기'} ? #{community.media.replayDescription} : ${post.content}"></p>
           </a>
 
           <div class="post-card__media" th:if="${not #lists.isEmpty(post.files)}">
@@ -95,25 +95,26 @@
             <button type="button" class="post-like"
                     th:classappend="${likedMediaIds != null and likedMediaIds.contains(post.id)} ? ' is-liked'"
                     th:attr="data-media-like=${post.id}"
-                    aria-label="좋아요">
+                    th:aria-label="#{community.post.likeAria}">
               <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
               <span data-like-count th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
             </button>
-            <span class="text-xs text-muted" th:text="'첨부 ' + ${post.fileCount} + '개'"></span>
+            <span class="text-xs text-muted" th:text="#{community.media.fileCount(${post.fileCount})}"></span>
             <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
                   th:action="@{/board/media/{id}/delete(id=${post.id})}"
                   method="post"
-                  onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
+                  th:attr="data-confirm=#{community.media.deleteConfirm}"
+                  onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
               <input type="hidden" name="groupId" th:value="${groupId}" />
               <input type="hidden" name="artistId" th:value="${artist.id()}" />
-              <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+              <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
             </form>
           </div>
         </article>
       </div>
 
-      <p th:if="${#lists.isEmpty(mediaList)}" class="list-empty">표시할 미디어가 없습니다.</p>
-      <p class="list-empty" id="mediaEmptyFilter" hidden>조건에 맞는 미디어가 없습니다.</p>
+      <p th:if="${#lists.isEmpty(mediaList)}" class="list-empty" th:text="#{community.media.empty}">표시할 미디어가 없습니다.</p>
+      <p class="list-empty" id="mediaEmptyFilter" hidden th:text="#{community.media.emptyFilter}">조건에 맞는 미디어가 없습니다.</p>
     </div>
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
@@ -123,23 +124,23 @@
        th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
-        <h2 class="modal__title">미디어 등록</h2>
+        <h2 class="modal__title" th:text="#{community.media.upload}">미디어 등록</h2>
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
       <form th:action="@{/board/media/upload}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="groupId" th:value="${groupId}" />
         <input type="hidden" name="artistId" th:value="${artist.id()}" />
-        <label class="form-label">제목</label>
-        <input class="form-input" type="text" name="title" required maxlength="200" placeholder="제목을 입력하세요" />
-        <label class="form-label mt-12">설명</label>
-        <textarea class="form-textarea" name="content" maxlength="2000" placeholder="설명을 입력하세요 (선택)"></textarea>
-        <label class="form-label mt-12">파일 (이미지/영상, 1개 이상)</label>
+        <label class="form-label" th:text="#{community.media.titleLabel}">제목</label>
+        <input class="form-input" type="text" name="title" required maxlength="200" placeholder="제목을 입력하세요" th:placeholder="#{community.media.titlePlaceholder}" />
+        <label class="form-label mt-12" th:text="#{community.media.contentLabel}">설명</label>
+        <textarea class="form-textarea" name="content" maxlength="2000" placeholder="설명을 입력하세요 (선택)" th:placeholder="#{community.media.contentPlaceholder}"></textarea>
+        <label class="form-label mt-12" th:text="#{community.media.filesLabel}">파일 (이미지/영상, 1개 이상)</label>
         <input class="form-input" type="file" name="files" accept="image/*,video/*" multiple required />
         <label class="form-label mt-12">
           <input type="checkbox" name="membershipOnly" value="true" />
-          멤버십 전용 (해당 커뮤니티 멤버십 가입 팬만 볼 수 있음)
+          <th:block th:text="#{community.media.membershipOnlyLabel}">멤버십 전용 (해당 커뮤니티 멤버십 가입 팬만 볼 수 있음)</th:block>
         </label>
-        <button type="submit" class="btn btn--primary btn--block mt-16">등록하기</button>
+        <button type="submit" class="btn btn--primary btn--block mt-16" th:text="#{community.post.submit}">등록하기</button>
       </form>
     </div>
   </div>

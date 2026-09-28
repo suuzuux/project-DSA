@@ -12,7 +12,7 @@
         <span class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get('' + user.id),0,1)}">?</span>
         <span th:text="${authorNicknames.get('' + user.id)}">닉네임</span>
     </a>
-    <p th:if="${#lists.isEmpty(users)}" class="list-empty text-sm">아직 아무도 없습니다.</p>
+    <p th:if="${#lists.isEmpty(users)}" class="list-empty text-sm" th:text="#{community.userList.empty}">아직 아무도 없습니다.</p>
 </div>
 </body>
 </html>
