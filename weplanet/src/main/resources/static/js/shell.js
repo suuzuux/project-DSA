@@ -183,7 +183,6 @@
   <div class="dm-list-view is-active" id="dmListView">
     <div class="dm-header">
       <strong class="dm-header__title">WePlaNet DM</strong>
-      <button type="button" class="icon-btn" data-shell-alert="더보기" aria-label="더보기">⋯</button>
       <button type="button" class="icon-btn" data-shell-alert="친구 추가" aria-label="친구">＋</button>
       <button type="button" class="icon-btn" data-shell-close="dm" aria-label="닫기">∨</button>
     </div>

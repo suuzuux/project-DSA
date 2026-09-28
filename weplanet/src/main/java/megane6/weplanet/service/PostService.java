@@ -276,6 +276,8 @@ public class PostService {
         commentReportRepository.deleteByComment_Post(post);
         likeRepository.deleteByPost(post);
         bookmarkRepository.deleteByPost(post);
+        // [대댓글] 답글이 부모 댓글을 외래키로 참조하므로 답글부터 먼저 지워야 함
+        commentRepository.deleteByPostAndParentIsNotNull(post);
         commentRepository.deleteByPost(post);
         reportRepository.deleteByPost(post);
         postAttachmentRepository.deleteByPost(post);

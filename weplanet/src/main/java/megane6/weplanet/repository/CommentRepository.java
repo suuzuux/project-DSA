@@ -23,6 +23,13 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     // 게시글 삭제 시 그 게시글에 달린 댓글을 먼저 지우기 위함 (외래키 제약 때문에 순서가 중요함)
     void deleteByPost(Post post);
 
+    // [대댓글] 원댓글을 지울 때 "답글이 남아 있는지" 판단용
+    long countByParent(Comment parent);
+
+    // [대댓글] 게시글을 통째로 지울 때는 답글부터 먼저 지워야 함.
+    // comment.parent_id가 comment.id를 참조하는 자기참조 외래키라, 부모가 먼저 지워지면 제약 위반이 남
+    void deleteByPostAndParentIsNotNull(Post post);
+
     // 하이라이트 "Comments by 아티스트" 위젯용 - 특정 유저(아티스트)가 작성한 댓글 중 최신 4개
     List<Comment> findTop4ByAuthorOrderByCreatedAtDesc(User author);
 

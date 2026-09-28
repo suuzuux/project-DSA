@@ -107,8 +107,10 @@
 }
 
 /* ---------- Hero Header Image ---------- */
+/* 커뮤니티 히어로 배너 비율 (3:1, 실제 위버스 배너 비율과 동일).
+   에이전시 헤더 이미지도 같은 3:1로 미리 크롭되어 표시된다 (HeaderImage 크롭 설정). */
 .community-hero {
-  height: 180px;
+  aspect-ratio: 3 / 1;
   background:
     linear-gradient(180deg, transparent 30%, rgba(20, 24, 31, 0.55)),
     linear-gradient(120deg, #1e4d4d, #2a5a6a 50%, #8b4513);
@@ -669,6 +671,27 @@
 .comment-item__body {
   flex: 1;
   min-width: 0;
+}
+
+/* [대댓글] 답글은 원댓글 아래에 한 단 들여써서 구분한다 */
+.comment-replies {
+  margin-top: 10px;
+}
+
+.comment-replies .comment-item {
+  padding: 10px 0 0;
+  border-bottom: 0;
+}
+
+.comment-item--reply {
+  padding-left: 14px;
+  border-left: 2px solid var(--wp-hairline);
+}
+
+/* 답글이 남아 있어서 자리만 남겨둔 원댓글 */
+.comment-item--deleted .comment-item__text {
+  font-style: italic;
+  color: var(--wp-muted);
 }
 
 .comment-item__meta {
