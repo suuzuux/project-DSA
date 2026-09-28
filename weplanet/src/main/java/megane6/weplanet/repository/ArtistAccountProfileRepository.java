@@ -3,6 +3,7 @@ package megane6.weplanet.repository;
 import megane6.weplanet.domain.entity.Agency;
 import megane6.weplanet.domain.entity.ArtistAccountProfile;
 import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,9 @@ public interface ArtistAccountProfileRepository
 	List<ArtistAccountProfile> findByAgency(Agency agency);
 	
 	List<ArtistAccountProfile> findByAgency_Id(Long agencyId);
+
+	// 멤버(ARTIST_MEMBER)도 artist_profiles 행을 가지므로, 그룹 계정 프로필만 셀 때 역할로 거른다
+	long countByUser_Role(Role role);
 
 	@Query("""
         select profile
