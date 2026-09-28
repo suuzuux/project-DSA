@@ -31,6 +31,18 @@ public class PreferredLocaleResolver implements LocaleResolver {
         request.getSession().setAttribute(SESSION_ATTR, locale != null ? locale : Locale.KOREAN);
     }
 
+    // toLocale 의 반대 방향. 신청서처럼 "지금 화면 언어"를 DB에 저장해 둘 때 쓴다 (모르는 언어는 KO)
+    public static Language toLanguage(Locale locale) {
+        if (locale == null) {
+            return Language.KO;
+        }
+        return switch (locale.getLanguage()) {
+            case "ja" -> Language.JA;
+            case "en" -> Language.EN;
+            default -> Language.KO;
+        };
+    }
+
     public static Locale toLocale(Language language) {
         if (language == null) {
             return Locale.KOREAN;

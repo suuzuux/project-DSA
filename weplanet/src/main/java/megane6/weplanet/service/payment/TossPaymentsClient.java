@@ -102,8 +102,8 @@ public class TossPaymentsClient {
 		// 사용자 화면에는 짧은 안내만 보여주고, 원문은 원인 확인용으로 로그에만 남긴다.
 		if (e.getStatusCode().is5xxServerError() || looksLikeInternalError(message)) {
 			log.warn("[토스] 결제사 내부 오류 원문: {}", message);
-			return new TossPaymentException(code,
-					"결제사(토스) 시스템에 일시적인 문제가 있어 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.");
+			// SETTINGS-03: 메시지 키로 던지고, 화면에 내보내는 쪽에서 Messages.resolve()로 번역
+			return new TossPaymentException(code, "error.toss.providerUnavailable");
 		}
 		return new TossPaymentException(code, message);
 	}

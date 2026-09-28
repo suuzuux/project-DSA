@@ -126,10 +126,10 @@ public class LiveApiController {
 		if (actor.isArtistSide()) {
 			Long ownCommunityId = communityArtistResolver.ownCommunityId(actor);
 			if (ownCommunityId == null) {
-				throw new IllegalStateException("소속된 커뮤니티가 없습니다.");
+				throw new IllegalStateException("error.live.noOwnCommunity");
 			}
 			return userRepository.findById(ownCommunityId)
-					.orElseThrow(() -> new IllegalStateException("커뮤니티를 찾을 수 없습니다."));
+					.orElseThrow(() -> new IllegalStateException("error.live.communityNotFound"));
 		}
 		Long agencyId = actor.agencyId();
 		List<User> artists = agencyId == null

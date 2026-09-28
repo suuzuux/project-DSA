@@ -64,7 +64,7 @@ public class ShopPaymentService {
 	public ProjectPaymentPrepareResponse prepareCart(User buyer, String idempotencyKey,
 													 ShopShippingRequest shipping) {
 		if (shipping == null) {
-			throw new IllegalArgumentException("배송지를 입력해주세요.");
+			throw new IllegalArgumentException(msg("shop.error.shippingRequired"));
 		}
 		shipping.requireComplete();
 		List<ShopCartItem> rows = shopCartItemRepository.findByUserOrderByCreatedAtAsc(buyer);

@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.PartnershipApplication;
 import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicantType;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.service.PartnershipApplicationService;
 import megane6.weplanet.service.email.PartnershipInquiryService;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,7 +83,7 @@ public class PartnershipInquiryController {
         } catch (IllegalArgumentException e) {
             model.addAttribute(
                     "errorMessage",
-                    messages.resolve(e.getMessage())
+                    messages.resolve(e)
             );
             return "partnership";
         }
@@ -103,12 +105,14 @@ public class PartnershipInquiryController {
                     contactName,
                     email,
                     phone,
-                    message
+                    message,
+                    // 지금 보고 있는 화면 언어를 같이 저장해 두고, 승인/반려 메일을 이 언어로 보낸다
+                    PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale())
             );
         } catch (IllegalArgumentException e) {
             model.addAttribute(
                     "errorMessage",
-                    messages.resolve(e.getMessage())
+                    messages.resolve(e)
             );
             return "partnership";
         } catch (Exception e) {

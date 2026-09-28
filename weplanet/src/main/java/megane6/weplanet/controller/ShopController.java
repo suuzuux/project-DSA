@@ -175,7 +175,7 @@ public class ShopController {
 			body.put("cart", toCartJson(cart));
 			return body;
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", messages.resolve(e.getMessage()));
+			return Map.of("ok", false, "message", messages.resolve(e));
 		}
 	}
 
@@ -201,7 +201,7 @@ public class ShopController {
 			shopCartService.addItem(me, checkoutId, quantity);
 			return Map.of("success", true, "redirect", "/shop/checkout");
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			return Map.of("success", false, "message", messages.resolve(e.getMessage()));
+			return Map.of("success", false, "message", messages.resolve(e));
 		}
 	}
 
@@ -225,7 +225,7 @@ public class ShopController {
 			shopCartService.addItem(me, checkoutId, quantity);
 			return "redirect:/shop/checkout";
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("message", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e));
 			return back;
 		}
 	}
@@ -243,7 +243,7 @@ public class ShopController {
 		try {
 			shopCartService.updateQuantity(me, itemId, quantity);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("message", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e));
 		}
 		return checkoutReturn(from);
 	}

@@ -44,10 +44,9 @@
             </tr>
             <tr th:each="media : ${mediaList}"
                 class="portal-media-row"
-                th:attr="data-media-id=${media.id}"
+                th:attr="data-media-id=${media.id}, aria-label=#{portal.media.preview}"
                 tabindex="0"
                 role="button"
-                th:attr="aria-label=#{portal.media.preview}"
                 aria-label="미디어 미리보기">
               <td>
                 <span class="tag tag--public"

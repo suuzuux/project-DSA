@@ -146,7 +146,7 @@ public class AccountRecoveryController {
 			result.put("message", msg("resetPassword.resetSuccess"));
 		} catch (IllegalArgumentException e) {
 			result.put("success", false);
-			result.put("message", messages.resolve(e.getMessage()));
+			result.put("message", messages.resolve(e));
 		}
 		return result;
 	}

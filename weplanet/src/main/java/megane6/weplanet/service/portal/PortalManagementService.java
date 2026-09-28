@@ -555,7 +555,7 @@ public class PortalManagementService {
                                              boolean removeAvatar,
                                              boolean removeBackground) {
         if (intro != null && intro.length() > 30) {
-            throw new IllegalArgumentException("소개글은 30자 이내로 입력해주세요.");
+            throw new IllegalArgumentException("error.community.bioTooLong");
         }
 
         ArtistProfile profile = getOrCreateProfile(account);

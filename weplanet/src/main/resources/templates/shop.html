@@ -116,7 +116,7 @@
     <section>
       <div class="section__head">
         <h2 class="section__title"
-            th:text="${communityMode && selectedArtist != null ? #messages.msg('shop.productsHeadingArtist', selectedArtist.nickname()) : (selectedArtist != null ? #messages.msg('shop.productsHeadingArtist', selectedArtist.nickname()) : #{shop.productsHeadingAll})}">
+            th:text="${communityMode && selectedArtist != null ? #messages.msg('shop.productsHeadingArtist', selectedArtist.nickname()) : (selectedArtist != null ? #messages.msg('shop.productsHeadingArtist', selectedArtist.nickname()) : #messages.msg('shop.productsHeadingAll'))}">
           상품
         </h2>
       </div>

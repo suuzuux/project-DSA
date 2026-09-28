@@ -23,33 +23,37 @@ public record ShopShippingRequest(
 		);
 	}
 
+	/**
+	 * SETTINGS-03: 예외 메시지는 메시지 키로 던지고, 화면으로 내보내는 쪽(GlobalExceptionHandler)에서
+	 * Messages.resolve()로 현재 로케일 문구로 바꾼다.
+	 */
 	public void requireComplete() {
 		if (isBlank(receiverName)) {
-			throw new IllegalArgumentException("받는 사람을 입력해주세요.");
+			throw new IllegalArgumentException("shop.error.receiverNameRequired");
 		}
 		if (receiverName.length() > 50) {
-			throw new IllegalArgumentException("받는 사람 이름이 너무 깁니다.");
+			throw new IllegalArgumentException("shop.error.receiverNameTooLong");
 		}
 		if (isBlank(receiverPhone)) {
-			throw new IllegalArgumentException("연락처를 입력해주세요.");
+			throw new IllegalArgumentException("shop.error.receiverPhoneRequired");
 		}
 		if (receiverPhone.length() > 30) {
-			throw new IllegalArgumentException("연락처가 너무 깁니다.");
+			throw new IllegalArgumentException("shop.error.receiverPhoneTooLong");
 		}
 		if (isBlank(zipcode) || isBlank(address1)) {
-			throw new IllegalArgumentException("주소를 검색해주세요.");
+			throw new IllegalArgumentException("shop.error.addressRequired");
 		}
 		if (zipcode.length() > 10) {
-			throw new IllegalArgumentException("우편번호가 올바르지 않습니다.");
+			throw new IllegalArgumentException("shop.error.zipcodeInvalid");
 		}
 		if (address1.length() > 255) {
-			throw new IllegalArgumentException("주소가 너무 깁니다.");
+			throw new IllegalArgumentException("shop.error.addressTooLong");
 		}
 		if (address2 != null && address2.length() > 200) {
-			throw new IllegalArgumentException("상세 주소가 너무 깁니다.");
+			throw new IllegalArgumentException("shop.error.address2TooLong");
 		}
 		if (deliveryMemo != null && deliveryMemo.length() > 200) {
-			throw new IllegalArgumentException("배송 메모가 너무 깁니다.");
+			throw new IllegalArgumentException("shop.error.deliveryMemoTooLong");
 		}
 	}
 

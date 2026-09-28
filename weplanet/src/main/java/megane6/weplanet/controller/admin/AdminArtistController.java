@@ -150,7 +150,7 @@ public class AdminArtistController {
 		) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					messages.resolve(e.getMessage())
+					messages.resolve(e)
 			);
 		}
 	}

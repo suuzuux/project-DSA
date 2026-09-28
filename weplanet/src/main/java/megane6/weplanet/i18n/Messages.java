@@ -1,6 +1,7 @@
 package megane6.weplanet.i18n;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.exception.LocalizedMessage;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,30 @@ public class Messages {
 			return codeOrText;
 		}
 		return resolve(codeOrText, LocaleContextHolder.getLocale());
+	}
+
+	/**
+	 * 예외를 현재 로케일 문구로 바꾼다. 값을 들고 다니는 예외(LocalizedMessage)는 키 + 값({0}...)으로 번역하고,
+	 * 그 밖의 예외는 resolve(e.getMessage()) 와 똑같이 처리한다(키면 번역, 아니면 원문).
+	 * 컨트롤러의 catch 블록에서는 resolve(e.getMessage()) 대신 이걸 쓴다 - 그래야 값이 빠지지 않는다.
+	 */
+	public String resolve(Throwable e) {
+		return resolve(e, LocaleContextHolder.getLocale());
+	}
+
+	public String resolve(Throwable e, Locale locale) {
+		if (e == null) {
+			return null;
+		}
+		if (e instanceof LocalizedMessage localized) {
+			return messageSource.getMessage(
+					localized.getMessageKey(),
+					localized.getMessageArgs(),
+					localized.getMessageKey(),
+					locale != null ? locale : Locale.KOREAN
+			);
+		}
+		return resolve(e.getMessage(), locale);
 	}
 
 	/**

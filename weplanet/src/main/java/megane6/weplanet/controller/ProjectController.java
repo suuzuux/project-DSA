@@ -183,7 +183,7 @@ public class ProjectController {
 			return "redirect:/community/" + artistId + "/project";
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			// 예외 메시지는 키(또는 아직 키로 안 바꾼 문장)라서 여기서 번역한 문구를 기본 메시지로 넘긴다
-			bindingResult.reject("projectCreateFailed", messages.resolve(e.getMessage()));
+			bindingResult.reject("projectCreateFailed", messages.resolve(e));
 			addPageModel(artistId, model, ProjectService.SORT_DEADLINE, principal);
 			return "community/project";
 		}

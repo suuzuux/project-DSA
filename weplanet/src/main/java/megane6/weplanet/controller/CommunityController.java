@@ -313,7 +313,7 @@ public class CommunityController {
 		try {
 			model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId, canSeeMembershipMedia(model)));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/community/" + artistId + "/media";
 		}
 		model.addAttribute("groupId", artistId);

@@ -956,6 +956,7 @@ CREATE TABLE IF NOT EXISTS `partnership_applications` (
   `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '회신 이메일',
   `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '연락처',
   `message` varchar(2000) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신청 내용',
+  `applicant_language` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'KO' COMMENT '신청할 때 화면 언어 (KO/JA/EN) - 승인/반려 메일을 이 언어로 보낸다',
   `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING_APPROVAL' COMMENT '처리 상태',
   `reviewed_by` bigint DEFAULT NULL COMMENT '검토 관리자(users.id)',
   `reviewed_at` datetime(6) DEFAULT NULL COMMENT '검토 시각',
@@ -970,6 +971,7 @@ CREATE TABLE IF NOT EXISTS `partnership_applications` (
   CONSTRAINT `fk_pa_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`),
   CONSTRAINT `ck_pa_applicant_type` CHECK (`applicant_type` IN (_utf8mb4'ARTIST', _utf8mb4'AGENCY')),
   CONSTRAINT `ck_pa_status` CHECK (`status` IN (_utf8mb4'PENDING_APPROVAL', _utf8mb4'APPROVED', _utf8mb4'REJECTED')),
+  CONSTRAINT `ck_pa_applicant_language` CHECK (`applicant_language` IN (_utf8mb4'KO', _utf8mb4'JA', _utf8mb4'EN')),
   CONSTRAINT `ck_pa_review_state` CHECK (
     (`status` = _utf8mb4'PENDING_APPROVAL' AND `reviewed_by` IS NULL AND `reviewed_at` IS NULL AND `rejection_reason` IS NULL)
     OR (`status` = _utf8mb4'APPROVED' AND `reviewed_by` IS NOT NULL AND `reviewed_at` IS NOT NULL AND `rejection_reason` IS NULL)
@@ -1568,6 +1570,9 @@ CALL `wp_sync_add_column`('notification_setting', 'user_id', 'bigint NOT NULL CO
 CALL `wp_sync_add_column`('notification_setting', 'type', 'varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT ''알림 유형''', 0);
 CALL `wp_sync_add_column`('notification_setting', 'enabled', 'tinyint(1) NOT NULL DEFAULT ''1'' COMMENT ''해당 유형 수신 on/off''', 0);
 
+-- partnership_applications: 신청 언어 (승인/반려 메일을 이 언어로 보낸다). 기존 신청은 한국어(KO)로 채운다
+CALL `wp_sync_add_column`('partnership_applications', 'applicant_language', 'varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT ''KO'' COMMENT ''신청할 때 화면 언어 (KO/JA/EN) - 승인/반려 메일을 이 언어로 보낸다''', 0);
+
 DROP PROCEDURE IF EXISTS `wp_sync_add_column`;
 
 -- ============================================================
@@ -1771,6 +1776,8 @@ BEGIN
         '`status` IN (_utf8mb4''ACTIVE'', _utf8mb4''DORMANT'', _utf8mb4''SUSPENDED'', _utf8mb4''WITHDRAWN'', _utf8mb4''PENDING_ACTIVATION'')');
     CALL `wp_sync_check`('users', 'ck_users_role', 'ARTIST_MEMBER',
         '`role` IN (_utf8mb4''FAN'', _utf8mb4''ARTIST'', _utf8mb4''AGENCY'', _utf8mb4''ADMIN'', _utf8mb4''ARTIST_MEMBER'')');
+    CALL `wp_sync_check`('partnership_applications', 'ck_pa_applicant_language', 'EN',
+        '`applicant_language` IN (_utf8mb4''KO'', _utf8mb4''JA'', _utf8mb4''EN'')');
     CALL `wp_sync_check`('email_verification', 'ck_email_verification_purpose', 'ARTIST_ACTIVATION',
         '`purpose` IN (_utf8mb4''SIGNUP'', _utf8mb4''FAN_PROJECT_CREATE'', _utf8mb4''ADMIN_LOGIN'', _utf8mb4''AGENCY_ACTIVATION'', _utf8mb4''ARTIST_ACTIVATION'')');
 
@@ -2255,6 +2262,7 @@ INSERT INTO `wp_expected_columns` VALUES
   ('partnership_applications', 'email', 'varchar'),
   ('partnership_applications', 'phone', 'varchar'),
   ('partnership_applications', 'message', 'varchar'),
+  ('partnership_applications', 'applicant_language', 'varchar'),
   ('partnership_applications', 'status', 'varchar'),
   ('partnership_applications', 'reviewed_by', 'bigint'),
   ('partnership_applications', 'reviewed_at', 'datetime'),

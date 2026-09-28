@@ -147,13 +147,12 @@ public class AdminPartnershipApplicationService {
 		PartnershipApplication application = requireApplication(applicationId);
 		
 		if (application.getStatus() != PartnershipApplicationStatus.APPROVED) {
-			throw new IllegalStateException("승인된 신청만 활성화 메일을 재발송할 수 있습니다.");
+			throw new IllegalStateException("admin.error.partnership.resendOnlyApproved");
 		}
 		
 		// 승인할 때 신청서 이메일을 그대로 로그인 아이디로 만들었으므로, 같은 값으로 찾는다.
 		User agencyUser = userRepository.findByUsername(application.getEmail())
-				.orElseThrow(() -> new IllegalStateException("이 신청으로 발급된 소속사 계정을 찾을 수 없습니다: "
-						+ application.getEmail()));
+				.orElseThrow(() -> new IllegalStateException("admin.error.partnership.agencyAccountNotFound"));
 		
 		AgencyActivationService.IssuedActivation issuedActivation
 				= activationService.reissueActivationToken(agencyUser);

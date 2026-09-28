@@ -255,6 +255,7 @@ CREATE TABLE `partnership_applications` (
  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '회신 이메일',
  `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '연락처',
  `message` varchar(2000) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신청 내용',
+ `applicant_language` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'KO' COMMENT '신청할 때 화면 언어 (KO/JA/EN) - 승인/반려 메일을 이 언어로 보낸다',
  `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING_APPROVAL' COMMENT '처리 상태',
  `reviewed_by` bigint DEFAULT NULL COMMENT '검토 관리자(users.id)',
  `reviewed_at` datetime(6) DEFAULT NULL COMMENT '검토 시각',
@@ -270,6 +271,8 @@ CONSTRAINT `fk_pa_reviewer`
 FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`),
 CONSTRAINT `ck_pa_applicant_type`
  CHECK (`applicant_type` IN (_utf8mb4'ARTIST', _utf8mb4'AGENCY')),
+CONSTRAINT `ck_pa_applicant_language`
+ CHECK (`applicant_language` IN (_utf8mb4'KO', _utf8mb4'JA', _utf8mb4'EN')),
 CONSTRAINT `ck_pa_status`
  CHECK (`status` IN (
  _utf8mb4'PENDING_APPROVAL',

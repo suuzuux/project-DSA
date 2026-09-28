@@ -69,7 +69,7 @@ public class AdminPartnershipApplicationController {
 			try {
 				model.addAttribute("selectedApplication", service.getApplication(applicationId));
 			} catch (IllegalArgumentException e) {
-				model.addAttribute("error", messages.resolve(e.getMessage()));
+				model.addAttribute("error", messages.resolve(e));
 			}
 		}
 		
@@ -147,7 +147,7 @@ public class AdminPartnershipApplicationController {
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					messages.resolve(e.getMessage())
+					messages.resolve(e)
 			);
 		} catch (DataAccessException e) {
 			// DB 제약 위반 같은 예상 못 한 저장 오류. 트랜잭션은 이미 롤백됐다
@@ -158,7 +158,7 @@ public class AdminPartnershipApplicationController {
 			
 			redirectAttributes.addFlashAttribute(
 					"error",
-					"계정 발급 중 오류가 발생해 승인을 취소했습니다. 관리자 로그를 확인해주세요."
+					messages.get("admin.applications.flash.approveDbError")
 			);
 		}
 		
@@ -204,7 +204,7 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"활성화 메일을 재발송했습니다. 이전에 보낸 링크는 더 이상 사용할 수 없습니다"
+						messages.get("admin.applications.flash.resendMailSent")
 				);
 			} catch (Exception mailException) {
 				log.warn("활성화 메일 재발송 실패: applicationId={}",
@@ -212,12 +212,12 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"error",
-						"새 링크는 발급했지만, 메일 발송에 실패했습니다. 잠시 후 다시 재발송해주세요."
+						messages.get("admin.applications.flash.resendMailFailed")
 				);
 			}
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute(
-					"error", e.getMessage()
+					"error", messages.resolve(e)
 			);
 		}
 		
@@ -285,7 +285,7 @@ public class AdminPartnershipApplicationController {
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					messages.resolve(e.getMessage())
+					messages.resolve(e)
 			);
 		}
 		

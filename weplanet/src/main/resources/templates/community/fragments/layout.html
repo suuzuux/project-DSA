@@ -15,9 +15,9 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
     </a>
     <!-- 아티스트 아이콘/이름을 누르면 이 커뮤니티 첫 화면(하이라이트, 영문 주소 /kiikii)으로 -->
-    <a class="avatar avatar--sm" th:href="@{${artist.homeUrl()}}" th:title="|${artist.nickname()} 하이라이트|"
+    <a class="avatar avatar--sm" th:href="@{${artist.homeUrl()}}" th:title="#{layout.header.artistHomeTitle(${artist.nickname()})}"
        th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</a>
-    <a class="avatar avatar--sm" th:href="@{${artist.homeUrl()}}" th:title="|${artist.nickname()} 하이라이트|"
+    <a class="avatar avatar--sm" th:href="@{${artist.homeUrl()}}" th:title="#{layout.header.artistHomeTitle(${artist.nickname()})}"
        th:if="${artist.profileImageUrl() != null}">
       <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
     </a>
@@ -28,11 +28,11 @@
   </div>
   <!-- 소속 에이전시 전용 최소 헤더 -->
   <div class="community-top__right" th:if="${isManagedAgency == true}">
-    <button type="button" class="icon-btn" data-theme-toggle aria-label="화면 테마 전환">
+    <button type="button" class="icon-btn" data-theme-toggle aria-label="화면 테마 전환" th:aria-label="#{main.header.themeToggle}">
       <svg class="icon" data-theme-icon="light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
       <svg class="icon" data-theme-icon="dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
     </button>
-    <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" data-admin-page-link="1">관리자 페이지로</a>
+    <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" data-admin-page-link="1" th:text="#{common.adminPageLink}">관리자 페이지로</a>
   </div>
   <div class="community-top__right" th:unless="${isManagedAgency == true}">
     <th:block sec:authorize="hasRole('AGENCY')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">

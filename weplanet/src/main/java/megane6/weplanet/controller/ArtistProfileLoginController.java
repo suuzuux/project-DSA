@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.i18n.Messages;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.security.ArtistProfileLoginSupport;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.portal.ArtistProfileLoginService;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /*
@@ -31,6 +34,8 @@ public class ArtistProfileLoginController {
 	
 	private final ArtistProfileLoginService profileLoginService;
 	private final SocialLoginSessionSupport sessionSupport;
+	private final LocaleResolver localeResolver;
+	private final Messages messages;
 	
 	@GetMapping
 	public String profiles(HttpSession session, Model model) {
@@ -74,7 +79,7 @@ public class ArtistProfileLoginController {
 			member = profileLoginService.authenticate(groupId, memberId, password, confirmPassword);
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			// 같은 프로필 모달을 에러 문구와 함께 다시 열어준다
-			redirectAttributes.addFlashAttribute("profileError", e.getMessage());
+			redirectAttributes.addFlashAttribute("profileError", messages.resolve(e));
 			redirectAttributes.addFlashAttribute("errorMemberId", memberId);
 			return "redirect:/portal/profiles";
 		}
@@ -84,6 +89,9 @@ public class ArtistProfileLoginController {
 		// 로그인 직전에 세션 id 를 바꾼다 (세션 고정 공격 방지 - 폼 로그인은 Spring Security 가 해주지만 여기선 직접)
 		request.changeSessionId();
 		sessionSupport.loginAs(member, request, response);
+		// SETTINGS-03 로케일 버그#2 유형 수정: 프로필 선택도 로그인을 새로 여는 지점이라,
+		// 다른 로그인 성공 처리와 똑같이 세션 로케일을 이 멤버의 선호 언어로 맞춘다.
+		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(member.getPreferredLanguage()));
 		
 		return "redirect:/community/" + groupId + "/highlight";
 	}

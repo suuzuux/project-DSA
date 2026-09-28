@@ -104,8 +104,9 @@ public class ShopCartService {
 		try {
 			goodsService.ensureVariantStock(variantId, quantity);
 		} catch (IllegalArgumentException e) {
-			if (e.getMessage() != null && e.getMessage().contains("재고")) {
-				throw new IllegalArgumentException("재고가 없습니다.");
+			// GoodsService가 이미 현재 로케일로 번역한 재고 부족 문구와 비교 (한국어 '재고' 포함 여부로 판단하면 다른 언어에서 안 맞음)
+			if (msg("shop.error.outOfStock").equals(e.getMessage())) {
+				throw new IllegalArgumentException(msg("shop.error.noStock"));
 			}
 			throw e;
 		}

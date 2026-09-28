@@ -84,7 +84,7 @@ public class ShopPaymentController {
 			return "payment/commerce-virtual-account";
 		} catch (TossPaymentException | IllegalArgumentException
 				 | IllegalStateException | AccessDeniedException e) {
-			model.addAttribute("message", messages.resolve(e.getMessage()));
+			model.addAttribute("message", messages.resolve(e));
 			return "payment/fail";
 		}
 	}

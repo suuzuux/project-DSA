@@ -4,7 +4,7 @@
   var ADD_URL = "/shop/cart/add";
   var isCartPage = document.querySelector("[data-shop-cart-page]");
   // SETTINGS-03: shop.html/shop-detail.html/shop-cart.html이 th:inline 스크립트로 넘겨주는
-  // 화면 언어 문구. 이 값을 안 넘겨주는 화면에서 로드될 가능성에 대비해 한국어 기본값을 항상 씀
+  // 화면 언어 문구(shop-checkout.html 포함). 이 값을 안 넘겨주는 화면에서 로드될 가능성에 대비해 한국어 기본값을 항상 씀
   var MSG = window.__SHOP_MSG__ || {};
 
   function showShopToast(message, durationMs) {
@@ -328,13 +328,13 @@
     var zipcode = form.querySelector('[name="zipcode"]');
     var address1 = form.querySelector('[name="address1"]');
     if (!receiverName || !receiverName.value.trim()) {
-      return "받는 사람을 입력해주세요.";
+      return MSG.receiverNameRequired || "받는 사람을 입력해주세요.";
     }
     if (!receiverPhone || !receiverPhone.value.trim()) {
-      return "연락처를 입력해주세요.";
+      return MSG.receiverPhoneRequired || "연락처를 입력해주세요.";
     }
     if (!zipcode || !zipcode.value.trim() || !address1 || !address1.value.trim()) {
-      return "주소를 검색해주세요.";
+      return MSG.addressRequired || "주소를 검색해주세요.";
     }
     return "";
   }
@@ -396,7 +396,7 @@
     var next = (parseInt(input.value, 10) || min) + delta;
     if (next < min) return;
     if (next > max) {
-      showShopToast("재고가 없습니다.", 1800);
+      showShopToast(MSG.outOfStock || "재고가 없습니다.", 1800);
       return;
     }
 

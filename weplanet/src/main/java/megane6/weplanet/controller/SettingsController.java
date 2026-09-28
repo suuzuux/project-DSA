@@ -79,7 +79,7 @@ public class SettingsController {
 			redirectAttributes.addFlashAttribute("profileMessage", msg("settings.profile.updateSuccess"));
 		} catch (IllegalArgumentException e) {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
-			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 		}
 		return "redirect:/settings";
 	}
@@ -144,7 +144,7 @@ public class SettingsController {
 			result.put("success", true);
 		} catch (IllegalArgumentException e) {
 			result.put("success", false);
-			result.put("message", messages.resolve(e.getMessage()));
+			result.put("message", messages.resolve(e));
 		}
 		return result;
 	}
@@ -186,7 +186,7 @@ public class SettingsController {
 		try {
 			userService.unlinkSocialProvider(user);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 			return "redirect:/settings";
 		}
 		socialLoginSessionSupport.clearSecurityContext(request, response);

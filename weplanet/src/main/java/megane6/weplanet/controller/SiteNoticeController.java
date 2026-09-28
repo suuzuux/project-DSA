@@ -122,7 +122,7 @@ public class SiteNoticeController {
 					request.getRemoteAddr());
 			redirectAttributes.addFlashAttribute("msg", messages.get("noticeForm.msg.created"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/notices/new";
 		}
 		return "redirect:/admin/notices";
@@ -167,7 +167,7 @@ public class SiteNoticeController {
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					messages.resolve(e.getMessage())
+					messages.resolve(e)
 			);
 			return "redirect:/admin/notices/" + noticeId + "/edit";
 		}
@@ -209,7 +209,7 @@ public class SiteNoticeController {
 			siteNoticeService.reorderPinned(ids);
 			return Map.of("ok", true);
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", messages.resolve(e.getMessage()));
+			return Map.of("ok", false, "message", messages.resolve(e));
 		}
 	}
 

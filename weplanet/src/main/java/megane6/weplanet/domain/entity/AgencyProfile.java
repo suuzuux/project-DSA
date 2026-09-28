@@ -59,7 +59,7 @@ public class AgencyProfile {
 		}
 		
 		if (admin == null || admin.getRole() != Role.ADMIN) {
-			throw new IllegalArgumentException("관리자만 소속사 권한을 부여할 수 있습니다.");
+			throw new IllegalArgumentException("admin.error.agency.adminOnlyGrant");
 		}
 		
 		return new AgencyProfile(user, agency, true, admin);

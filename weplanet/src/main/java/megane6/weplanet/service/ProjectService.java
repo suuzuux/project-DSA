@@ -194,11 +194,11 @@ public class ProjectService {
 		
 		// 솔로 아티스트 본인 또는 그 그룹 멤버는 자기 커뮤니티 팬 프로젝트를 이용할 수 없다
 		if (communityArtistResolver.isArtistOf(member, artist.getId())) {
-			throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트는 이용할 수 없습니다.");
+			throw new AccessDeniedException("error.project.ownCommunity");
 		}
 		
 		if (!member.canParticipateInCommunity()) {
-			throw new AccessDeniedException("팬 또는 아티스트 계정만 접근할 수 있습니다.");
+			throw new AccessDeniedException("error.project.fanOrArtistOnly");
 		}
 		
 		if (!fcr.existsByFanIdAndArtistId(member.getId(), artist.getId())) {

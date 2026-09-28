@@ -174,7 +174,7 @@ public class AdminReportController {
 			action.run();
 			redirectAttributes.addFlashAttribute("msg", successMessage);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 		}
 	}
 

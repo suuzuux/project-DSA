@@ -51,30 +51,30 @@ public class ArtistProfileLoginService {
 		// 폼의 memberId는 조작될 수 있으므로, "이 그룹의 활동 중인 멤버"인지 DB로 다시 확인
 		User member = gmr.findByGroupIdAndMember_IdAndLeftAtIsNull(groupId, memberId)
 				.map(GroupMember::getMember)
-				.orElseThrow(() -> new IllegalArgumentException("선택한 프로필을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.profileLogin.profileNotFound"));
 		
 		if (!member.isLoginable()) {
-			throw new IllegalStateException("사용할 수 없는 프로필입니다. 소속사에 문의해주세요.");
+			throw new IllegalStateException("error.profileLogin.profileUnavailable");
 		}
 		
 		if (password == null || password.isBlank()) {
-			throw new IllegalArgumentException("개인 비밀번호를 입력해주세요.");
+			throw new IllegalArgumentException("error.profileLogin.passwordRequired");
 		}
 		
 		if (!member.hasPassword()) {
 			// 처음 고른 프로필: 지금 입력한 값을 개인 비밀번호로 정한다.
 			if (!PASSWORD_PATTERN.matcher(password).matches()) {
-				throw new IllegalArgumentException("비밀번호는 영문/숫자 포함 8-20자로 입력해주세요.");
+				throw new IllegalArgumentException("signup.validation.passwordPattern");
 			}
 			
 			if (!password.equals(confirmPassword)) {
-				throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
+				throw new IllegalArgumentException("error.password.confirmMismatch");
 			}
 			
 			member.setInitialMemberPassword(pe.encode(password));
 			log.info("멤버 개인 비밀번호 최초 설정: groupId={}, memberId={}", groupId, memberId);
 		} else if (!pe.matches(password, member.getPassword())) {
-			throw new IllegalArgumentException("개인 비밀번호가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.profileLogin.passwordIncorrect");
 		}
 		
 		member.recordLogin();

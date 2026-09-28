@@ -51,7 +51,15 @@ public class GlobalExceptionHandler {
      * 어떤 예외든 결국 이 메서드를 거치므로, Whitelabel 페이지로 새어나가지 않음.
      */
     private Object respond(HttpServletRequest request, HttpStatus status, String messageOrKey) {
-        String message = messages.resolve(messageOrKey);
+        return respondMessage(request, status, messages.resolve(messageOrKey));
+    }
+
+    // 예외를 그대로 받는 버전 - 값을 들고 다니는 예외(LocalizedMessage)의 {0} 자리까지 채워서 번역한다
+    private Object respond(HttpServletRequest request, HttpStatus status, Throwable e) {
+        return respondMessage(request, status, messages.resolve(e));
+    }
+
+    private Object respondMessage(HttpServletRequest request, HttpStatus status, String message) {
         if (isAsync(request)) {
             return ResponseEntity.status(status).body(Map.of("success", false, "message", message));
         }
@@ -70,7 +78,7 @@ public class GlobalExceptionHandler {
 
         if (isAsync(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("success", false, "message", messages.resolve(e.getMessage())));
+                    .body(Map.of("success", false, "message", messages.resolve(e)));
         }
         return "redirect:/login";
     }
@@ -99,14 +107,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public Object handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
         log.warn("잘못된 요청: {}", e.getMessage());
-        return respond(request, HttpStatus.BAD_REQUEST, e.getMessage());
+        return respond(request, HttpStatus.BAD_REQUEST, e);
     }
 
     // 권한/상태 위반(본인 글이 아님, 이미 신고함, 관리자 아님 등)
     @ExceptionHandler(IllegalStateException.class)
     public Object handleIllegalState(IllegalStateException e, HttpServletRequest request) {
         log.warn("허용되지 않은 요청: {}", e.getMessage());
-        return respond(request, HttpStatus.FORBIDDEN, e.getMessage());
+        return respond(request, HttpStatus.FORBIDDEN, e);
     }
     
     // 권한 없는 사용자가 주소로 접근 (403)
@@ -116,7 +124,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         log.warn("접근 권한이 없는 요청: {} - {}", request.getRequestURI(), e.getMessage());
-        return respond(request, HttpStatus.FORBIDDEN, e.getMessage());
+        return respond(request, HttpStatus.FORBIDDEN, e);
     }
 
     // 없는 주소로 접근 (404) - 정적 리소스 포함

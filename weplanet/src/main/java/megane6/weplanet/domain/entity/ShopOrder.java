@@ -139,7 +139,7 @@ public class ShopOrder {
 	public void applyShipping(String receiverName, String receiverPhone, String zipcode,
 							  String address1, String address2, String deliveryMemo) {
 		if (paymentStatus != FanProjectPaymentStatus.READY) {
-			throw new IllegalStateException("결제 대기 중인 주문만 배송지를 저장할 수 있습니다.");
+			throw new IllegalStateException("error.order.onlyReadyCanSaveShipping");
 		}
 		this.receiverName = receiverName;
 		this.receiverPhone = receiverPhone;

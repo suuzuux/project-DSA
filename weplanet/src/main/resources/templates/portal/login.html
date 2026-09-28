@@ -49,7 +49,7 @@
           <button type="button" data-portal-role="AGENCY" aria-pressed="false" th:text="#{portalLogin.tabAgency}">에이전시</button>
         </div>
 
-        <p th:if="${param.activated}" class="text-sm" style="color:#63704a;margin-bottom:16px;">
+        <p th:if="${param.activated}" class="text-sm" style="color:#63704a;margin-bottom:16px;" th:text="#{portalLogin.activated}">
           계정이 활성화되었습니다. 설정한 비밀번호로 로그인해주세요.
         </p>
         <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;"

@@ -89,7 +89,7 @@ public class AuthController {
 			userService.signup(signupRequestDto);
 			emailVerificationService.clear(signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
-			model.addAttribute("errorMessage", messages.resolve(e.getMessage()));
+			model.addAttribute("errorMessage", messages.resolve(e));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}

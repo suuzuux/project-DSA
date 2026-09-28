@@ -64,7 +64,7 @@ public class BoardMediaController {
             boardMediaService.create(groupId, principal.getId(), title, content, files, membershipOnly);
             redirectAttributes.addFlashAttribute("msg", messages.get("community.media.uploaded"));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
+            redirectAttributes.addFlashAttribute("error", messages.resolve(e));
         }
         return redirectAfterMutation(artistId, groupId);
     }
@@ -85,7 +85,7 @@ public class BoardMediaController {
             boardMediaService.edit(id, communityId, title, content, files);
             redirectAttributes.addFlashAttribute("msg", messages.get("community.media.updated"));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
+            redirectAttributes.addFlashAttribute("error", messages.resolve(e));
         }
         return redirectAfterMutation(artistId, groupId);
     }
@@ -103,7 +103,7 @@ public class BoardMediaController {
             boardMediaService.softDelete(id, communityId);
             redirectAttributes.addFlashAttribute("msg", messages.get("community.media.deleted"));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
+            redirectAttributes.addFlashAttribute("error", messages.resolve(e));
         }
         return redirectAfterMutation(artistId, groupId);
     }

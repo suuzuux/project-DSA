@@ -10,6 +10,8 @@ import megane6.weplanet.domain.entity.community.ArtistGroupProfile;
 import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
+import megane6.weplanet.exception.LocalizedIllegalStateException;
 import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
 import megane6.weplanet.repository.ArtistGroupRepository;
@@ -55,7 +57,8 @@ public class ArtistRegistrationService {
 	public RegisteredArtist register(User agencyUser, RegisterCommand command) {
 		Agency agency = requireAgency(agencyUser);
 		
-		String groupName = requireText(command.groupName(), "아티스트(그룹)명을 입력해주세요.", NAME_MAX_LENGTH);
+		String groupName = requireText(command.groupName(), NAME_MAX_LENGTH,
+				"error.artistRegistration.groupNameRequired", "error.artistRegistration.groupNameTooLong");
 		String nameEn = requireNameEn(command.nameEn());
 		String email = requireEmail(command.email());
 
@@ -77,7 +80,7 @@ public class ArtistRegistrationService {
 				.agencyId(agency.getId())
 				.name(groupName)
 				.nameEn(nameEn)
-				.fandomName(optionalText(command.fandomName(), SHORT_TEXT_MAX_LENGTH, "팬덤명"))
+				.fandomName(optionalText(command.fandomName(), SHORT_TEXT_MAX_LENGTH, "error.artistRegistration.fandomNameTooLong"))
 				.debutDate(command.debutDate())
 				.status("ACTIVE")
 				.createdAt(now)
@@ -89,8 +92,8 @@ public class ArtistRegistrationService {
 				.artistId(artist.getId())
 				.gender(command.gender())
 				.memberCount(1)
-				.nationality(optionalText(command.nationality(), SHORT_TEXT_MAX_LENGTH, "국적"))
-				.category(optionalText(command.category(), SHORT_TEXT_MAX_LENGTH, "카테고리"))
+				.nationality(optionalText(command.nationality(), SHORT_TEXT_MAX_LENGTH, "error.artistRegistration.nationalityTooLong"))
+				.category(optionalText(command.category(), SHORT_TEXT_MAX_LENGTH, "error.artistRegistration.categoryTooLong"))
 				.debutDate(command.debutDate())
 				.build());
 		
@@ -111,10 +114,10 @@ public class ArtistRegistrationService {
 		User artist = ur.findOneById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.filter(user -> agency.getId().equals(user.agencyId()))
-				.orElseThrow(() -> new IllegalStateException("관리할 수 있는 아티스트가 아닙니다."));
+				.orElseThrow(() -> new IllegalStateException("error.portalArtist.notManaged"));
 		
 		if (artist.getStatus() != UserStatus.PENDING_ACTIVATION) {
-			throw new IllegalStateException("이미 활성화된 계정입니다.");
+			throw new IllegalStateException("error.artistRegistration.alreadyActivated");
 		}
 		
 		AgencyActivationService.IssuedActivation activation = aas.reissueActivationToken(artist);
@@ -126,70 +129,74 @@ public class ArtistRegistrationService {
 		Long agencyId = agencyUser == null ? null : agencyUser.agencyId();
 		
 		if (agencyId == null) {
-			throw new IllegalStateException("소속사 정보가 없는 계정입니다.");
+			throw new IllegalStateException("error.portalArtist.agencyMissing");
 		}
 		
 		return ar.findById(agencyId)
-				.orElseThrow(() -> new IllegalStateException("소속사 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.portalArtist.agencyNotFound"));
 	}
 	
 	// 이메일(로그인 아이디)은 모든 계정과 겹치면 안 된다.
 	// 그룹명(커뮤니티 이름)은 다른 커뮤니티와만 겹치지 않으면 된다 - 팬 닉네임과는 겹쳐도 됨(체크 표시로 구분)
 	private void assertAvailable(String groupName, String nameEn, String email) {
 		if (ur.existsByUsername(email) || ur.existsByEmail(email)) {
-			throw new IllegalStateException("이미 사용 중인 이메일입니다: " + email);
+			throw new LocalizedIllegalStateException("error.artistRegistration.emailTaken", email);
 		}
 
 		if (ur.existsByNicknameAndRole(groupName, Role.ARTIST) || agr.existsByName(groupName)) {
-			throw new IllegalStateException("이미 사용 중인 이름입니다: " + groupName + " (다른 이름으로 등록해주세요.)");
+			throw new LocalizedIllegalStateException("error.artistRegistration.nameTaken", groupName);
 		}
 
 		// 영문명 = 커뮤니티 주소(/kiikii). 대소문자만 다른 것도 같은 주소라 중복으로 본다(컬럼 콜레이션이 대소문자 무시)
 		if (agr.existsByNameEn(nameEn)) {
-			throw new IllegalStateException("이미 사용 중인 영문명입니다: " + nameEn + " (다른 영문명으로 등록해주세요.)");
+			throw new LocalizedIllegalStateException("error.artistRegistration.nameEnTaken", nameEn);
 		}
 	}
 
 	// 영문명은 커뮤니티 주소(localhost:9999/{영문명})로 쓰이므로 필수 + 주소로 쓸 수 있는 모양이어야 한다
 	private String requireNameEn(String value) {
-		String nameEn = requireText(value, "커뮤니티 주소로 쓸 영문명을 입력해주세요.", NAME_EN_MAX_LENGTH);
+		String nameEn = requireText(value, NAME_EN_MAX_LENGTH,
+				"error.artistRegistration.nameEnRequired", "error.artistRegistration.nameEnTooLong");
 
 		if (!CommunityUrls.SLUG_PATTERN.matcher(nameEn).matches()) {
-			throw new IllegalArgumentException("영문명은 영문/숫자로 시작하고 영문, 숫자, 하이픈(-)만 쓸 수 있어요. (공백 불가)");
+			throw new IllegalArgumentException("error.artistRegistration.nameEnInvalid");
 		}
 
 		if (!CommunityUrls.isUsableSlug(nameEn)) {
-			throw new IllegalArgumentException("사이트 주소와 겹쳐서 쓸 수 없는 영문명입니다: " + nameEn);
+			throw new LocalizedIllegalArgumentException("error.artistRegistration.nameEnReserved", nameEn);
 		}
 
 		return nameEn;
 	}
 	
 	private String requireEmail(String value) {
-		String email = requireText(value, "로그인에 사용할 그룹 이메일을 입력해주세요.", EMAIL_MAX_LENGTH);
+		String email = requireText(value, EMAIL_MAX_LENGTH,
+				"error.artistRegistration.emailRequired", "error.artistRegistration.emailTooLong");
 		
 		if (!EMAIL_PATTERN.matcher(email).matches()) {
-			throw new IllegalArgumentException("이메일 형식을 확인해주세요.");
+			throw new IllegalArgumentException("error.artistRegistration.emailInvalid");
 		}
 		
 		return email.toLowerCase();
 	}
 	
-	private String requireText(String value, String blankMessage, int maxLength) {
+	// 예외 메시지는 메시지 키로 던지고 화면(컨트롤러)에서 Messages.resolve(e)로 번역한다.
+	// 글자 수 제한은 *_MAX_LENGTH 상수를 {0}으로 넘기므로, 상수만 바꾸면 3개 언어 문구가 같이 바뀐다.
+	private String requireText(String value, int maxLength, String blankKey, String tooLongKey) {
 		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException(blankMessage);
+			throw new IllegalArgumentException(blankKey);
 		}
 		
 		String trimmed = value.trim();
 		
 		if (trimmed.length() > maxLength) {
-			throw new IllegalArgumentException(maxLength + "자 이내로 입력해주세요: " + trimmed);
+			throw new LocalizedIllegalArgumentException(tooLongKey, maxLength);
 		}
 		
 		return trimmed;
 	}
 	
-	private String optionalText(String value, int maxLength, String label) {
+	private String optionalText(String value, int maxLength, String tooLongKey) {
 		if (value == null || value.isBlank()) {
 			return null;
 		}
@@ -197,7 +204,7 @@ public class ArtistRegistrationService {
 		String trimmed = value.trim();
 		
 		if (trimmed.length() > maxLength) {
-			throw new IllegalArgumentException(label + "은(는) " + maxLength + "자 이내로 입력해주세요.");
+			throw new LocalizedIllegalArgumentException(tooLongKey, maxLength);
 		}
 		
 		return trimmed;

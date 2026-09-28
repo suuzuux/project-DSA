@@ -37,8 +37,9 @@
         <a class="btn btn--ghost btn--sm" th:href="${shopReturnUrl}" th:text="#{shopCart.continueShopping}">← 쇼핑 계속</a>
       </div>
 
+      <!--/* 재고 부족만 에러 스타일 - 한국어 '재고' 포함 여부 대신 현재 로케일의 shop.error.noStock 문구와 비교 */-->
       <p th:if="${message}" class="alert mb-16"
-         th:classappend="${#strings.contains(message, '재고')} ? ' alert--error' : ' alert--success'"
+         th:classappend="${message == #messages.msg('shop.error.noStock')} ? ' alert--error' : ' alert--success'"
          th:text="${message}">알림</p>
 
       <div th:if="${cart.empty()}" class="shop-cart-empty" id="shopCartEmpty">
@@ -161,7 +162,8 @@
       membershipBadge: /*[[#{shop.membershipBadge}]]*/ "멤버십",
       decreaseQtyAria: /*[[#{shopCart.decreaseQtyAria}]]*/ "수량 줄이기",
       increaseQtyAria: /*[[#{shopCart.increaseQtyAria}]]*/ "수량 늘리기",
-      deleteAria: /*[[#{shopCart.deleteAria}]]*/ "삭제"
+      deleteAria: /*[[#{shopCart.deleteAria}]]*/ "삭제",
+      outOfStock: /*[[#{shop.error.noStock}]]*/ "재고가 없습니다."
     };
   </script>
   <script src="https://js.tosspayments.com/v2/standard"></script>

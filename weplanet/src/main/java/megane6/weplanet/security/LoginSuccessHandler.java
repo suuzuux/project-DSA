@@ -81,6 +81,9 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				&& groupMemberRepository.existsByGroupIdAndLeftAtIsNull(principal.getId())) {
 			clearAuthentication(request);
 			ArtistProfileLoginSupport.begin(request.getSession(true), principal.getId());
+			// 세션을 새로 만들면서 로케일도 사라지므로, 프로필 선택 화면이 그룹 계정의 선호 언어로 나오게 다시 넣는다.
+			userRepository.findOneById(principal.getId()).ifPresent(group ->
+					localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(group.getPreferredLanguage())));
 			getRedirectStrategy().sendRedirect(request, response, "/portal/profiles");
 			return;
 		}
