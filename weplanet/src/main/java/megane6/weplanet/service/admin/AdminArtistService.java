@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.admin.AdminArtistResponse;
 import megane6.weplanet.domain.entity.Agency;
 import megane6.weplanet.domain.entity.ArtistAccountProfile;
+import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
+import megane6.weplanet.repository.GroupMemberRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.AdminUserService;
 import org.springframework.stereotype.Service;
@@ -27,6 +29,7 @@ public class AdminArtistService {
 	
 	private final ArtistAccountProfileRepository aapr;
 	private final UserRepository ur;
+	private final GroupMemberRepository gmr;
 	private final AdminUserService aus;
 	
 	public List<AdminArtistResponse> getArtists(
@@ -41,24 +44,22 @@ public class AdminArtistService {
 		);
 
 		Map<Long, ArtistAccountProfile> profilesByUserId = loadProfiles(artists);
+		Map<Long, List<AdminArtistResponse.Member>> membersByGroupId = loadMembers(artists);
 
 		return artists.stream()
-				.filter(user -> matchesKeyword(
-						user,
-						profilesByUserId.get(user.getId()),
-						normalizedKeyword
-				))
 				.map(user -> toResponse(
 						user,
-						profilesByUserId.get(user.getId())
+						profilesByUserId.get(user.getId()),
+						membersByGroupId.getOrDefault(user.getId(), List.of())
 				))
+				.filter(response -> matchesKeyword(response, normalizedKeyword))
 				.toList();
 	}
-	
+
 	public ArtistStats getStats() {
 		return new ArtistStats(
 				ur.countByRole(Role.ARTIST),
-				aapr.count(),
+				aapr.countByUser_Role(Role.ARTIST),
 				ur.countByRoleAndStatus(Role.ARTIST, UserStatus.ACTIVE),
 				ur.countByRoleAndStatus(Role.ARTIST, UserStatus.DORMANT),
 				ur.countByRoleAndStatus(Role.ARTIST, UserStatus.SUSPENDED),
@@ -95,9 +96,67 @@ public class AdminArtistService {
 				));
 	}
 
+	// 그룹 id(= 그룹 계정 users.id) -> 활동 중인 멤버 목록. 멤버 활동명·포지션은 멤버의 artist_profiles 에서 가져온다
+	private Map<Long, List<AdminArtistResponse.Member>> loadMembers(List<User> artists) {
+		if (artists.isEmpty()) {
+			return Map.of();
+		}
+
+		List<Long> groupIds = artists.stream()
+				.map(User::getId)
+				.toList();
+
+		List<GroupMember> groupMembers = gmr.findByGroupIdInAndLeftAtIsNullOrderByIdAsc(groupIds);
+
+		if (groupMembers.isEmpty()) {
+			return Map.of();
+		}
+
+		List<Long> memberIds = groupMembers.stream()
+				.map(groupMember -> groupMember.getMember().getId())
+				.toList();
+
+		Map<Long, ArtistAccountProfile> memberProfiles = aapr.findAllByUserIds(memberIds)
+				.stream()
+				.collect(Collectors.toMap(
+						ArtistAccountProfile::getUserId,
+						Function.identity()
+				));
+
+		// groupingBy + toList 는 들어온 순서(id 오름차순 = 등록 순)를 유지한다
+		return groupMembers.stream()
+				.collect(Collectors.groupingBy(
+						GroupMember::getGroupId,
+						Collectors.mapping(
+								groupMember -> toMember(
+										groupMember,
+										memberProfiles.get(groupMember.getMember().getId())
+								),
+								Collectors.toList()
+						)
+				));
+	}
+
+	private AdminArtistResponse.Member toMember(
+			GroupMember groupMember,
+			ArtistAccountProfile profile
+	) {
+		User member = groupMember.getMember();
+
+		return new AdminArtistResponse.Member(
+				member.getId(),
+				profile == null ? member.getNickname() : profile.getStageName(),
+				profile == null ? null : profile.getPosition(),
+				member.getStatus().name(),
+				userStatusLabel(member.getStatus()),
+				groupMember.getJoinedAt()
+		);
+	}
+
 	private AdminArtistResponse toResponse(
 			User user,
-			ArtistAccountProfile profile
+			ArtistAccountProfile profile,
+			List<AdminArtistResponse.Member> members
 	) {
 		Agency agency = profile == null
 				? user.getAgency()
@@ -127,7 +186,9 @@ public class AdminArtistService {
 				
 				user.getEmailVerifiedAt() != null,
 				user.getCreatedAt(),
-				user.getLastLoginAt()
+				user.getLastLoginAt(),
+
+				members
 		);
 	}
 	
@@ -142,26 +203,26 @@ public class AdminArtistService {
 		return user;
 	}
 
+	// 멤버 활동명·포지션으로 검색해도 그 멤버가 속한 그룹이 나온다
 	private boolean matchesKeyword(
-			User user,
-			ArtistAccountProfile profile,
+			AdminArtistResponse artist,
 			String keyword
 	) {
 		if (keyword == null) {
 			return true;
 		}
 
-		Agency agency = profile == null
-				? user.getAgency()
-				: profile.getAgency();
 		String lowerKeyword = keyword.toLowerCase(Locale.ROOT);
 
-		return contains(user.getUsername(), lowerKeyword)
-				|| contains(user.getNickname(), lowerKeyword)
-				|| contains(user.getEmail(), lowerKeyword)
-				|| contains(profile == null ? null : profile.getStageName(), lowerKeyword)
-				|| contains(profile == null ? null : profile.getPosition(), lowerKeyword)
-				|| contains(agency == null ? null : agency.getName(), lowerKeyword);
+		return contains(artist.username(), lowerKeyword)
+				|| contains(artist.nickname(), lowerKeyword)
+				|| contains(artist.email(), lowerKeyword)
+				|| contains(artist.stageName(), lowerKeyword)
+				|| contains(artist.position(), lowerKeyword)
+				|| contains(artist.agencyName(), lowerKeyword)
+				|| artist.members().stream().anyMatch(member ->
+						contains(member.stageName(), lowerKeyword)
+								|| contains(member.position(), lowerKeyword));
 	}
 
 	private boolean contains(String value, String lowerKeyword) {

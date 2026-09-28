@@ -25,7 +25,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 통합 대시보드 하위 메뉴 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
@@ -33,13 +33,25 @@
         </summary>
         <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
       </details>
-      <a th:href="@{/admin/applications}">📥 등록 신청</a>
-      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+      <details class="portal-sidebar__group">
+        <summary>
+          <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+        </summary>
+        <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+      </details>
       <a class="is-active" th:href="@{/admin/artists}">🎤 아티스트 관리</a>
       <a th:href="@{/admin/users}">👥 전체 회원</a>
       <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
       <a th:href="@{/admin/notices}">📢 전체 공지</a>
-      <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+      <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+      <details class="portal-sidebar__group">
+        <summary>
+          <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+        </summary>
+        <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+      </details>
       <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
     </nav>
 
@@ -237,8 +249,8 @@
           </h2>
 
           <p class="text-xs text-muted">
-            활동명, 계정, 소속사와 포지션으로
-            검색할 수 있습니다.
+            활동명, 계정, 소속사, 포지션과
+            멤버 이름으로 검색할 수 있습니다.
           </p>
         </div>
 
@@ -305,7 +317,7 @@
         <input type="text"
                name="keyword"
                th:value="${keyword}"
-               placeholder="활동명, 계정, 이메일, 소속사, 포지션 검색" />
+               placeholder="활동명, 계정, 이메일, 소속사, 포지션, 멤버 검색" />
 
         <button type="submit"
                 class="btn btn--primary btn--sm">
@@ -324,6 +336,7 @@
           <thead>
           <tr>
             <th>아티스트</th>
+            <th>멤버</th>
             <th>계정 정보</th>
             <th>소속사</th>
             <th>계정 상태</th>
@@ -339,7 +352,7 @@
           <tbody>
           <!-- 검색 결과 없음 -->
           <tr th:if="${#lists.isEmpty(artists)}">
-            <td colspan="10"
+            <td colspan="11"
                 class="text-sm text-muted">
               검색 조건에 해당하는 아티스트가 없습니다.
             </td>
@@ -404,6 +417,47 @@
                   </span>
                 </div>
               </div>
+            </td>
+
+            <!-- 그룹 멤버 - 인원수를 누르면 펼쳐진다 (details/summary, JS 없음) -->
+            <td style="min-width:170px;">
+              <span class="text-xs text-muted"
+                    th:if="${#lists.isEmpty(artist.members())}">
+                솔로 · 멤버 없음
+              </span>
+
+              <details class="admin-member-list"
+                       th:unless="${#lists.isEmpty(artist.members())}">
+                <summary th:text="${'👥 ' + #lists.size(artist.members()) + '명'}">
+                  👥 0명
+                </summary>
+
+                <ul>
+                  <li th:each="member : ${artist.members()}">
+                    <strong th:text="${member.stageName()}">멤버</strong>
+                    <span class="text-xs text-muted"
+                          th:if="${member.position() != null
+                              and not #strings.isEmpty(member.position())}"
+                          th:text="${' · ' + member.position()}">
+                      · 포지션
+                    </span>
+
+                    <span class="tag tag--danger"
+                          th:if="${member.userStatusName() == 'SUSPENDED'}"
+                          th:text="${member.userStatusLabel()}">
+                      정지
+                    </span>
+
+                    <br />
+
+                    <span class="text-xs text-muted"
+                          th:text="${'합류 ' + #temporals.format(
+                              member.joinedAt(), 'yyyy.MM.dd')}">
+                      합류 2026.09.28
+                    </span>
+                  </li>
+                </ul>
+              </details>
             </td>
 
             <!-- 계정 정보 -->

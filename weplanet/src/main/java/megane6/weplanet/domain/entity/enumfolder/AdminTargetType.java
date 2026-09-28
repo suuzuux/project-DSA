@@ -15,7 +15,8 @@ public enum AdminTargetType {
 	SETTLEMENT("정산"),
 	NOTICE("공지"),
 	
-	PARTNERSHIP_APPLICATION("등록 신청");
+	PARTNERSHIP_APPLICATION("등록 신청"),
+	HASHTAG_EVENT("해시태그 총공");
 	
 	private final String label;
 }
