@@ -64,14 +64,28 @@
   <th:block sec:authorize="isAnonymous()">
     <div class="banner mb-24" data-carousel aria-label="이벤트 및 광고 배너">
       <div class="banner__track">
-        <div class="banner__slide">
-          <p class="banner__kicker">WePlaNet</p>
-          <h2 class="banner__title">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
-        </div>
-        <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#8a5a66 60%,#f7c8d3);">
-          <p class="banner__kicker">Community</p>
-          <h2 class="banner__title">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
-        </div>
+        <!-- 최고관리자 [배너 영역 관리]에서 노출 중인 배너. 하나도 없으면 아래 기본 배너 -->
+        <a class="banner__slide banner__slide--promo" th:each="s : ${mainBanners}"
+           th:href="@{${s.linkUrl()}}" th:style="|background:${s.bgColor()};color:${s.textColor()};|">
+          <div class="banner-promo">
+            <div class="banner-promo__text">
+              <p class="banner-promo__label" th:text="${s.label()}">ARTIST</p>
+              <h2 class="banner-promo__title" th:text="${s.title()}">대제목</h2>
+              <p class="banner-promo__body" th:if="${s.body() != null}" th:text="${s.body()}">본문</p>
+            </div>
+            <div class="banner-promo__media"><img th:src="${s.imageUrl()}" alt="" /></div>
+          </div>
+        </a>
+        <th:block th:if="${#lists.isEmpty(mainBanners)}">
+          <div class="banner__slide">
+            <p class="banner__kicker">WePlaNet</p>
+            <h2 class="banner__title">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
+          </div>
+          <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#8a5a66 60%,#f7c8d3);">
+            <p class="banner__kicker">Community</p>
+            <h2 class="banner__title">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
+          </div>
+        </th:block>
       </div>
       <div class="banner__nav">
         <button type="button" class="icon-btn" data-carousel-prev aria-label="이전">&lt;</button>
@@ -99,7 +113,7 @@
       </div>
       <a class="btn btn--primary btn--sm"
          th:if="${!artists.isEmpty()}"
-         th:href="@{/community/{id}(id=${artists[0].id()})}">커뮤니티 가입하기</a>
+         th:href="@{${artists[0].homeUrl()}}">커뮤니티 가입하기</a>
       <a class="btn btn--primary btn--sm"
          th:if="${artists.isEmpty()}"
          th:href="@{/posts/fan}">커뮤니티 가입하기</a>
@@ -107,14 +121,28 @@
 
     <div class="banner mb-24" data-carousel>
       <div class="banner__track">
-        <div class="banner__slide">
-          <p class="banner__kicker">Event &amp; Schedule</p>
-          <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
-        </div>
-        <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#a85d67 70%,#f7c8d3);">
-          <p class="banner__kicker">Membership</p>
-          <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
-        </div>
+        <!-- 최고관리자 [배너 영역 관리]에서 노출 중인 배너. 하나도 없으면 아래 기본 배너 -->
+        <a class="banner__slide banner__slide--promo" th:each="s : ${mainBanners}"
+           th:href="@{${s.linkUrl()}}" th:style="|background:${s.bgColor()};color:${s.textColor()};|">
+          <div class="banner-promo">
+            <div class="banner-promo__text">
+              <p class="banner-promo__label" th:text="${s.label()}">ARTIST</p>
+              <h2 class="banner-promo__title" th:text="${s.title()}">대제목</h2>
+              <p class="banner-promo__body" th:if="${s.body() != null}" th:text="${s.body()}">본문</p>
+            </div>
+            <div class="banner-promo__media"><img th:src="${s.imageUrl()}" alt="" /></div>
+          </div>
+        </a>
+        <th:block th:if="${#lists.isEmpty(mainBanners)}">
+          <div class="banner__slide">
+            <p class="banner__kicker">Event &amp; Schedule</p>
+            <h2 class="banner__title">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
+          </div>
+          <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#a85d67 70%,#f7c8d3);">
+            <p class="banner__kicker">Membership</p>
+            <h2 class="banner__title">멤버십 전용 콘텐츠 · DM 구독권</h2>
+          </div>
+        </th:block>
       </div>
       <div class="banner__nav">
         <button type="button" class="icon-btn" data-carousel-prev>&lt;</button>
@@ -131,34 +159,6 @@
       </div>
       <p class="text-xs text-muted mb-8">내가 가입한 모든 아티스트 커뮤니티의 스케줄 · 일자별 최대 4개</p>
       <div class="week-grid"></div>
-    </section>
-
-    <section class="marquee-block mb-24">
-      <h2 class="marquee-block__title">지금 바로 만나보세요!</h2>
-      <div class="marquee" th:if="${!artists.isEmpty()}">
-        <div class="marquee__track">
-          <th:block th:each="artist : ${artists}">
-            <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}">
-              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</div>
-              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() != null}">
-                <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
-              </div>
-              <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
-            </a>
-          </th:block>
-          <!-- 무한 스크롤용 복제 -->
-          <th:block th:each="artist : ${artists}">
-            <a class="artist-chip" th:href="@{/community/{id}(id=${artist.id()})}" aria-hidden="true">
-              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</div>
-              <div class="artist-chip__logo" th:if="${artist.profileImageUrl() != null}">
-                <img th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
-              </div>
-              <div class="artist-chip__name" th:text="${artist.nickname()}">아티스트</div>
-            </a>
-          </th:block>
-        </div>
-      </div>
-      <p class="list-empty" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
     </section>
   </th:block>
 
@@ -204,7 +204,7 @@
       <h2 class="section__title">급상승 커뮤니티</h2>
     </div>
     <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
-      <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{/community/{id}(id=${artist.id()})}">
+      <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{${communityHomeUrls.get('' + artist.id())}}">
         <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
         <div class="rising-card__info">
           <strong th:text="${artist.nickname()}">아티스트</strong>
@@ -216,6 +216,27 @@
     </div>
     <p class="list-empty" th:if="${risingCommunities.isEmpty()}">아직 등록된 커뮤니티가 없습니다.</p>
   </section>
+
+  <!-- 지금 바로 만나보세요: 위버스처럼 한 줄에 아티스트 2명 (동그란 사진 + 오른쪽 이름). 로그인 후에만 노출 -->
+  <th:block sec:authorize="isAuthenticated()">
+    <section class="section mb-24">
+      <div class="section__head">
+        <h2 class="section__title">지금 바로 만나보세요!</h2>
+      </div>
+      <div class="artist-grid" th:if="${!artists.isEmpty()}">
+        <a class="artist-tile" th:each="artist : ${artists}"
+           th:href="@{${artist.homeUrl()}}">
+          <div class="artist-tile__thumb">
+            <img th:if="${artist.profileImageUrl() != null}"
+                 th:src="${artist.profileImageUrl()}" th:alt="${artist.nickname()}" />
+            <span th:unless="${artist.profileImageUrl() != null}" th:text="${artist.logo()}">AR</span>
+          </div>
+          <p class="artist-tile__name" th:text="${artist.nickname()}">아티스트</p>
+        </a>
+      </div>
+      <p class="list-empty" th:if="${artists.isEmpty()}">표시할 아티스트가 없습니다.</p>
+    </section>
+  </th:block>
 </main>
 
 <!-- ========== EXPLORE-02/05: 커뮤니티 검색 및 목록 모달 ========== -->
@@ -301,6 +322,5 @@
 <script th:src="@{/js/shell.js}"></script>
 <script th:src="@{/js/dm-realtime.js}"></script>
 <script th:src="@{/js/community-join.js}"></script>
-<script th:src="@{/js/community-explore.js}"></script>
-</body>
+<script th:src="@{/js/community-explore.js}"></script></body>
 </html>

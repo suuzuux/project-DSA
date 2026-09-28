@@ -28,8 +28,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 커뮤니티별 게시판 목록 - 인기순
     List<Post> findByBoardTypeAndArtistOrderByLikeCountDescCreatedAtDesc(BoardType boardType, User artist);
 
-    // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 종류 구분 없이 전체에서 인기순 상위 4개
-    List<Post> findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc();
+    // 메인 페이지 "최신 인기 포스트" 위젯용 - 아티스트 게시판 글만(팬 글 X), 숨김 글 제외, 인기순 상위 4개
+    List<Post> findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType boardType);
 
     // 커뮤니티 게시판 더보기: 처음부터 전체 글을 올리지 않고 10개 단위 Slice로 조회한다.
     @EntityGraph(attributePaths = {"author", "artist"})

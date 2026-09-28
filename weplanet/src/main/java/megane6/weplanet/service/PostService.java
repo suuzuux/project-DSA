@@ -87,7 +87,8 @@ public class PostService {
 
     // 메인 페이지 "최신 인기 포스트" 위젯용 - 게시판 구분 없이 전체 인기 게시글 상위 4개
     public List<Post> getPopularPosts() {
-        return postRepository.findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc();
+        // 메인에는 아티스트가 쓴 글만 노출한다 (팬 게시판 글, "아티스트에게 숨기기" 글은 제외)
+        return postRepository.findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType.ARTIST);
     }
 
     // 하이라이트 "Fan Posts" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 4개

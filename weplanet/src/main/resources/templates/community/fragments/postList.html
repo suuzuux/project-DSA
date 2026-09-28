@@ -72,7 +72,7 @@
     <div class="post-list-more" th:if="${hasMorePosts}">
       <button type="button" class="btn btn--soft post-list-more__button"
               data-view-more
-              th:attr="data-more-url=@{/community/{artistId}/{tab}(artistId=${artist.id()}, tab=${boardType.name() == 'ARTIST' ? 'artist' : 'fan'}, sort=${sort}, page=${postPage + 1})}">
+              th:attr="data-more-url=@{${artist.homeUrl() + (boardType.name() == 'ARTIST' ? '/artist' : '/fan')}(sort=${sort}, page=${postPage + 1})}">
         더보기 <span aria-hidden="true">∨</span>
       </button>
     </div>
