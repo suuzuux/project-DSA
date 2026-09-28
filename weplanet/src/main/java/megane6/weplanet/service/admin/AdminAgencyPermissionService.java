@@ -178,6 +178,7 @@ public class AdminAgencyPermissionService {
 			case DORMANT -> "admin.agencies.userStatus.DORMANT";
 			case SUSPENDED -> "admin.agencies.userStatus.SUSPENDED";
 			case WITHDRAWN -> "admin.agencies.userStatus.WITHDRAWN";
+			case PENDING_ACTIVATION -> "admin.agencies.userStatus.PENDING_ACTIVATION";
 		};
 	}
 	

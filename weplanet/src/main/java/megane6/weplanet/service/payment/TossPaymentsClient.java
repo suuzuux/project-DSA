@@ -95,8 +95,20 @@ public class TossPaymentsClient {
 		String message = (error != null && error.message() != null)
 				? error.message()
 				: "error.toss.generic";
-		
+
 		log.warn("[토스] API 오류 status={} code={}", e.getStatusCode().value(), code);
+
+		// 토스 서버 내부 장애(예: 테스트 서버 DB 연결 실패)면 에러 메시지에 내부 예외/SQL이 그대로 담겨 온다.
+		// 사용자 화면에는 짧은 안내만 보여주고, 원문은 원인 확인용으로 로그에만 남긴다.
+		if (e.getStatusCode().is5xxServerError() || looksLikeInternalError(message)) {
+			log.warn("[토스] 결제사 내부 오류 원문: {}", message);
+			return new TossPaymentException(code,
+					"결제사(토스) 시스템에 일시적인 문제가 있어 결제를 완료하지 못했어요. 잠시 후 다시 시도해 주세요.");
+		}
 		return new TossPaymentException(code, message);
+	}
+
+	private static boolean looksLikeInternalError(String message) {
+		return message.contains("Exception") || message.contains("###") || message.contains("SQL");
 	}
 }

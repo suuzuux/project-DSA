@@ -493,6 +493,7 @@ public class AdminCommunityService {
 			case DORMANT -> messages.get("admin.overview.status.DORMANT");
 			case SUSPENDED -> messages.get("admin.overview.status.SUSPENDED");
 			case WITHDRAWN -> messages.get("admin.overview.status.WITHDRAWN");
+			case PENDING_ACTIVATION -> messages.get("admin.overview.status.PENDING_ACTIVATION");
 		};
 	}
 	

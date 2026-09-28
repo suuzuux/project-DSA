@@ -7,6 +7,7 @@ import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.media.BoardMediaService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -31,6 +32,7 @@ public class BoardMediaController {
     private final AuthenticatedUserResolver userResolver;
     // SETTINGS-03 커밋3: 커뮤니티 미디어 탭의 flash 문구 번역용
     private final megane6.weplanet.i18n.Messages messages;
+    private final CommunityArtistResolver communityArtistResolver;
 
     // ── 목록 화면 : role=AGENCY 면 소속사 화면, 아니면 팬(읽기 전용) ──
     @GetMapping("/media")
@@ -147,7 +149,8 @@ public class BoardMediaController {
             throw new IllegalStateException("common.error.loginRequired");
         }
         boolean isAgency = "ROLE_AGENCY".equals(principal.getRoleName());
-        boolean isOwner = principal.getId().equals(communityArtistId);
+        // 솔로 아티스트 본인 또는 그 그룹의 멤버
+        boolean isOwner = communityArtistResolver.isArtistOf(userResolver.requireAuthenticated(principal), communityArtistId);
         if (!isAgency && !isOwner) {
             throw new IllegalStateException("error.media.ownerOnly");
         }

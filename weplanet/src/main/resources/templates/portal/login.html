@@ -34,7 +34,7 @@
       </p>
       <h1 th:utext="#{portalLogin.visualHeading}">아티스트와 에이전시가<br />팬과 더 가까이 연결합니다.</h1>
       <p th:text="#{portalLogin.visualDesc}">공식 콘텐츠, 커뮤니티, 일정, 미디어를 하나의 공간에서 관리하세요.</p>
-      <a th:href="@{/}" class="mt-24" style="color:#9fd;font-size:13px;" th:text="#{portalLogin.backToMain}">← 메인 사이트로 이동</a>
+      <a th:href="@{/}" class="mt-24" style="color:#d6cec7;font-size:13px;" th:text="#{portalLogin.backToMain}">← 메인 사이트로 이동</a>
     </aside>
 
     <div class="portal-login__form-wrap">
@@ -49,8 +49,15 @@
           <button type="button" data-portal-role="AGENCY" aria-pressed="false" th:text="#{portalLogin.tabAgency}">에이전시</button>
         </div>
 
+        <p th:if="${param.activated}" class="text-sm" style="color:#63704a;margin-bottom:16px;">
+          계정이 활성화되었습니다. 설정한 비밀번호로 로그인해주세요.
+        </p>
         <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;"
-           th:text="${param.error[0] == 'role'} ? #{portalLogin.errorRole} : #{portalLogin.errorCredentials}">
+           th:text="${param.error[0] == 'role'} ? #{portalLogin.errorRole}
+                    : (${param.error[0] == 'pending'} ? #{portalLogin.errorPending}
+                    : (${param.error[0] == 'profile'} ? #{portalLogin.errorProfile}
+                    : #{portalLogin.errorCredentials}))">
+
           아이디 또는 비밀번호가 올바르지 않습니다.
         </p>
         <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-bottom:16px;" th:text="#{portalLogin.expired}">

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.web.CommunitySlugForwardFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.DisabledException;
@@ -41,6 +42,9 @@ public class SecurityConfig {
             "/login/reactivate",
             "/login/reactivate/**",
             "/portal/login",
+            // 아티스트 2단계 로그인(프로필 선택) - 로그인 전 화면. 세션의 대기 그룹 id 로만 접근 가능
+            "/portal/profiles",
+            "/portal/profiles/**",
             "/admin/login",
             "/api/schedules",
             "/api/notifications",
@@ -66,6 +70,8 @@ public class SecurityConfig {
             "/payments/toss/webhook",
             "/membership",
             "/partnership",
+            // 입점 승인 메일의 계정 활성화 링크 - 아직 로그인할 수 없는 사용자가 들어온다
+            "/partner/activate",
             "/policy/**",
             "/css/**",
             "/js/**",
@@ -82,7 +88,8 @@ public class SecurityConfig {
     private final RoleAwareLogoutSuccessHandler roleAwareLogoutSuccessHandler;
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final UserRepository userRepository;
-    
+    private final CommunitySlugForwardFilter communitySlugForwardFilter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -102,7 +109,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 PUBLIC_URLS.toArray(String[]::new)
                         ).permitAll()
-                        
+
+                        // 커뮤니티 영문 주소(/kiikii, /kiikii/fan) - /community/** 와 같은 공개 범위.
+                        // 등록된 영문명일 때만 공개하고, 아니면 아래 anyRequest 규칙을 그대로 탄다
+                        .requestMatchers(request -> communitySlugForwardFilter.forwardTargetOf(request).isPresent())
+                        .permitAll()
+
                         .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin
@@ -147,6 +159,20 @@ public class SecurityConfig {
                 String roleQs = (portalRole != null && !portalRole.isBlank())
                         ? "&role=" + portalRole.trim().toUpperCase()
                         : "";
+                
+                // 입점 승인은 됐지만, 아직 메일 링크로 비밀번호를 설정하지 않은 소속사 계정
+                if (exception instanceof DisabledException) {
+                    String username = request.getParameter("username");
+                    boolean pendingActivation = username != null && userRepository.findByUsername(username)
+                            .map(u -> u.getStatus() == UserStatus.PENDING_ACTIVATION)
+                            .orElse(false);
+                    
+                    if (pendingActivation) {
+                        response.sendRedirect("/portal/login?error=pending" + roleQs);
+                        return;
+                    }
+                }
+                
                 response.sendRedirect("/portal/login?error" + roleQs);
                 return;
             }

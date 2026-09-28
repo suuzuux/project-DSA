@@ -10,6 +10,7 @@ import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.admin.AdminActionLogService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.email.MailSenderService;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,7 @@ public class ProjectService {
 	// SETTINGS-03 커밋3: 카드/상세의 상태·유형 라벨과 등록 자격 안내 문구를 현재 로케일로 만든다.
 	// (예외 메시지는 키로 던지고 GlobalExceptionHandler / ProjectController가 번역)
 	private final megane6.weplanet.i18n.Messages messages;
+	private final CommunityArtistResolver communityArtistResolver;
 	
 	public static final long MIN_BASIC_BADGE_COUNT = 5L;
 	public static final long MIN_SPECIAL_BADGE_COUNT = 1L;
@@ -185,19 +187,20 @@ public class ProjectService {
 			return;
 		}
 
-		if (hasRole(viewer, Role.ARTIST) && viewer.getId().equals(artist.getId())) {
-			throw new AccessDeniedException("error.project.ownCommunity");
-		}
-
-		if (!hasRole(viewer, Role.FAN) && !hasRole(viewer, Role.ARTIST)) {
-			throw new AccessDeniedException("error.project.fanOrArtistOnly");
-		}
-
 		User member = ur.findById(viewer.getId())
 				.orElseThrow(() ->
 						new AccessDeniedException("error.project.memberNotFound")
 				);
-
+		
+		// 솔로 아티스트 본인 또는 그 그룹 멤버는 자기 커뮤니티 팬 프로젝트를 이용할 수 없다
+		if (communityArtistResolver.isArtistOf(member, artist.getId())) {
+			throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트는 이용할 수 없습니다.");
+		}
+		
+		if (!member.canParticipateInCommunity()) {
+			throw new AccessDeniedException("팬 또는 아티스트 계정만 접근할 수 있습니다.");
+		}
+		
 		if (!fcr.existsByFanIdAndArtistId(member.getId(), artist.getId())) {
 			throw new AccessDeniedException("error.project.joinFirst");
 		}
@@ -268,7 +271,7 @@ public class ProjectService {
 		if (project.getStatus().isPubliclyVisible()) {
 			return true;
 		}
-		return (hasRole(viewer, Role.FAN) || hasRole(viewer, Role.ARTIST))
+		return (hasRole(viewer, Role.FAN) || hasRole(viewer, Role.ARTIST) || hasRole(viewer, Role.ARTIST_MEMBER))
 				&& project.getCreator().getId().equals(viewer.getId());
 	}
 
@@ -333,7 +336,7 @@ public class ProjectService {
 	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
 		// 1. 로그인 회원 조회
 		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("error.project.memberNotFound"));
-		if (creator.getRole() != Role.FAN && creator.getRole() != Role.ARTIST) {
+		if (!creator.canParticipateInCommunity()) {
 			throw new IllegalStateException("error.project.createFanOrArtistOnly");
 		}
 
@@ -341,7 +344,7 @@ public class ProjectService {
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 
-		if (creator.getRole() == Role.ARTIST && creator.getId().equals(artist.getId())) {
+		if (communityArtistResolver.isArtistOf(creator, artist.getId())) {
 			throw new AccessDeniedException("error.project.createOwnCommunity");
 		}
 		

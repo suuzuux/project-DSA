@@ -11,13 +11,16 @@
 --   2) 기존 테이블에 없는 컬럼만 ADD COLUMN
 --   3) 옛 구조 전환 (결제 가상계좌 전환 / 팔로우 통합)
 --   4) 배지 카탈로그(fan_badge) 중 없는 코드만 INSERT IGNORE
---   5) 마지막 [검증 1] [검증 2]가 모두 0행이면 적용 완료
+--   5) CHECK 제약 / 인덱스 / FK 갱신 (허용값이 늘어난 CHECK, 닉네임 UNIQUE 해제, 답글 FK)
+--   6) 마지막 [검증 1] [검증 2]가 모두 0행이면 적용 완료
 --
 -- - 기존 데이터는 삭제/수정하지 않으며, 여러 번 실행해도 안전합니다.
 -- - 기존 행에 NOT NULL 컬럼이 추가되면 MySQL 암묵 기본값('' / 0 / 0000-00-00)이 채워집니다.
--- - 기존 테이블에는 컬럼만 추가하고 인덱스/UNIQUE/CHECK/FK는 추가하지 않습니다.
---   (Hibernate validate는 컬럼 존재·타입만 검사하므로 앱 기동에는 영향 없음)
+-- - 기존 테이블에는 컬럼만 추가하고, 인덱스/UNIQUE/CHECK/FK는 [5]에 적은 것만 바꿉니다.
+--   (Hibernate validate는 컬럼 존재·타입만 검사하지만, CHECK 허용값이 모자라면 INSERT가 실패한다)
 -- - 빈 DB를 새로 만들 때는 weplanet_schema_full_reset.sql을 사용하세요.
+-- - 예전 증분 파일(workflow / partner_activation / artist_member / comment_reply /
+--   shop_membership_orders / 한혜선 증분)은 모두 이 파일에 합쳐져 삭제되었습니다.
 -- ============================================================
 
 USE `weplanet`;
@@ -111,15 +114,15 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_users_username` (`username`),
   UNIQUE KEY `uk_users_email` (`email`),
-  UNIQUE KEY `uk_users_nickname` (`nickname`),
+  KEY `idx_users_nickname` (`nickname`),
   UNIQUE KEY `uk_users_provider_provider_id` (`provider`, `provider_id`),
   KEY `idx_users_role_status` (`role`, `status`),
   KEY `idx_users_phone_hash` (`phone_hash`),
   KEY `idx_users_agency_role` (`agency_id`, `role`),
   CONSTRAINT `fk_users_agency` FOREIGN KEY (`agency_id`) REFERENCES `agencies` (`id`),
   CONSTRAINT `ck_users_gender` CHECK ((`gender` IS NULL) OR (`gender` IN (_utf8mb4'MALE', _utf8mb4'FEMALE', _utf8mb4'OTHER'))),
-  CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN')),
-  CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN')),
+  CONSTRAINT `ck_users_role` CHECK (`role` IN (_utf8mb4'FAN', _utf8mb4'ARTIST', _utf8mb4'AGENCY', _utf8mb4'ADMIN', _utf8mb4'ARTIST_MEMBER')),
+  CONSTRAINT `ck_users_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'DORMANT', _utf8mb4'SUSPENDED', _utf8mb4'WITHDRAWN', _utf8mb4'PENDING_ACTIVATION')),
   CONSTRAINT `ck_users_provider` CHECK ((`provider` IS NULL) OR (`provider` IN (_utf8mb4'GOOGLE', _utf8mb4'KAKAO', _utf8mb4'LINE'))),
   CONSTRAINT `ck_users_preferred_language` CHECK (`preferred_language` IN (_utf8mb4'KO', _utf8mb4'JA', _utf8mb4'EN'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='공통 회원 계정';
@@ -511,11 +514,15 @@ CREATE TABLE IF NOT EXISTS `comment` (
   `created_at` datetime(6) NOT NULL COMMENT '작성 시각',
   `author_id` bigint NOT NULL COMMENT '작성자(users.id)',
   `post_id` bigint NOT NULL COMMENT '원글(post.id)',
+  `parent_id` bigint DEFAULT NULL COMMENT '답글이면 부모 댓글(comment.id), 일반 댓글이면 NULL',
+  `deleted_at` datetime(6) DEFAULT NULL COMMENT '답글이 남아 있는 원댓글의 삭제 시각 (NULL이면 정상 댓글)',
   PRIMARY KEY (`id`),
   KEY `FKir20vhrx08eh4itgpbfxip0s1` (`author_id`),
   KEY `FKs1slvnkuemjsq2kj4h3vhx7i1` (`post_id`),
+  KEY `idx_comment_parent` (`parent_id`),
   CONSTRAINT `FKir20vhrx08eh4itgpbfxip0s1` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`),
-  CONSTRAINT `FKs1slvnkuemjsq2kj4h3vhx7i1` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`)
+  CONSTRAINT `FKs1slvnkuemjsq2kj4h3vhx7i1` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`),
+  CONSTRAINT `fk_comment_parent` FOREIGN KEY (`parent_id`) REFERENCES `comment` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='게시글 댓글';
 
 CREATE TABLE IF NOT EXISTS `comment_report` (
@@ -736,7 +743,7 @@ CREATE TABLE IF NOT EXISTS `email_verification` (
   CONSTRAINT `ck_email_verification_attempt_count` CHECK (`attempt_count` BETWEEN 0 AND 5),
   CONSTRAINT `ck_email_verification_consumed` CHECK ((`consumed_at` IS NULL) OR (`verified_at` IS NOT NULL)),
   CONSTRAINT `ck_email_verification_expiration` CHECK (`expires_at` > `created_at`),
-  CONSTRAINT `ck_email_verification_purpose` CHECK (`purpose` IN (_utf8mb4'SIGNUP', _utf8mb4'FAN_PROJECT_CREATE', _utf8mb4'ADMIN_LOGIN'))
+  CONSTRAINT `ck_email_verification_purpose` CHECK (`purpose` IN (_utf8mb4'SIGNUP', _utf8mb4'FAN_PROJECT_CREATE', _utf8mb4'ADMIN_LOGIN', _utf8mb4'AGENCY_ACTIVATION', _utf8mb4'ARTIST_ACTIVATION'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원가입, 팬 프로젝트 및 관리자 로그인 이메일 인증';
 
 CREATE TABLE IF NOT EXISTS `fan_project` (
@@ -940,6 +947,134 @@ CREATE TABLE IF NOT EXISTS `notification_setting` (
   PRIMARY KEY (`user_id`, `type`),
   CONSTRAINT `fk_ns_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='알림 유형별 수신 설정';
+
+CREATE TABLE IF NOT EXISTS `partnership_applications` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '입점 신청 PK',
+  `applicant_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신청 유형: ARTIST/AGENCY',
+  `applicant_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '아티스트명 또는 소속사명',
+  `contact_name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '담당자명',
+  `email` varchar(150) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '회신 이메일',
+  `phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '연락처',
+  `message` varchar(2000) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '신청 내용',
+  `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING_APPROVAL' COMMENT '처리 상태',
+  `reviewed_by` bigint DEFAULT NULL COMMENT '검토 관리자(users.id)',
+  `reviewed_at` datetime(6) DEFAULT NULL COMMENT '검토 시각',
+  `rejection_reason` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '반려 사유',
+  `created_at` datetime(6) NOT NULL COMMENT '신청 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_pa_status_created` (`status`, `created_at`),
+  KEY `idx_pa_type_status` (`applicant_type`, `status`),
+  KEY `idx_pa_email` (`email`),
+  KEY `idx_pa_reviewer` (`reviewed_by`, `reviewed_at`),
+  CONSTRAINT `fk_pa_reviewer` FOREIGN KEY (`reviewed_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_pa_applicant_type` CHECK (`applicant_type` IN (_utf8mb4'ARTIST', _utf8mb4'AGENCY')),
+  CONSTRAINT `ck_pa_status` CHECK (`status` IN (_utf8mb4'PENDING_APPROVAL', _utf8mb4'APPROVED', _utf8mb4'REJECTED')),
+  CONSTRAINT `ck_pa_review_state` CHECK (
+    (`status` = _utf8mb4'PENDING_APPROVAL' AND `reviewed_by` IS NULL AND `reviewed_at` IS NULL AND `rejection_reason` IS NULL)
+    OR (`status` = _utf8mb4'APPROVED' AND `reviewed_by` IS NOT NULL AND `reviewed_at` IS NOT NULL AND `rejection_reason` IS NULL)
+    OR (`status` = _utf8mb4'REJECTED' AND `reviewed_by` IS NOT NULL AND `reviewed_at` IS NOT NULL AND `rejection_reason` IS NOT NULL)
+  )
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트·소속사 등록 신청';
+
+CREATE TABLE IF NOT EXISTS `shop_order` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `buyer_id` bigint NOT NULL,
+  `order_no` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TOSS',
+  `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` bigint NOT NULL,
+  `source` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `virtual_account_number` varbinary(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
+  `paid_at` datetime(6) DEFAULT NULL,
+  `cancelled_at` datetime(6) DEFAULT NULL,
+  `receiver_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '받는 사람',
+  `receiver_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배송 연락처',
+  `zipcode` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '우편번호',
+  `address1` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '기본 주소',
+  `address2` varbinary(512) DEFAULT NULL COMMENT '상세주소(암호화 저장)',
+  `delivery_memo` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배송 메모',
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_shop_order_no` (`order_no`),
+  UNIQUE KEY `uk_shop_order_idempotency` (`idempotency_key`),
+  KEY `idx_shop_order_buyer` (`buyer_id`, `created_at`),
+  KEY `idx_shop_order_status` (`payment_status`),
+  CONSTRAINT `fk_shop_order_buyer` FOREIGN KEY (`buyer_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 토스 결제 주문';
+
+CREATE TABLE IF NOT EXISTS `shop_order_item` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `order_id` bigint NOT NULL,
+  `goods_id` bigint NOT NULL,
+  `variant_id` bigint NOT NULL,
+  `product_id` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `product_name` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `quantity` int NOT NULL,
+  `unit_price` int NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_shop_order_item_order` (`order_id`),
+  CONSTRAINT `fk_shop_order_item_order` FOREIGN KEY (`order_id`) REFERENCES `shop_order` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='굿즈샵 주문 라인';
+
+CREATE TABLE IF NOT EXISTS `membership_order` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `fan_id` bigint NOT NULL,
+  `artist_id` bigint NOT NULL,
+  `order_no` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payment_provider` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'TOSS',
+  `provider_transaction_id` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` bigint NOT NULL,
+  `virtual_bank_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `virtual_account_number` varbinary(255) DEFAULT NULL,
+  `due_date` datetime(6) DEFAULT NULL,
+  `deposit_secret` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
+  `paid_at` datetime(6) DEFAULT NULL,
+  `cancelled_at` datetime(6) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_membership_order_no` (`order_no`),
+  UNIQUE KEY `uk_membership_order_idempotency` (`idempotency_key`),
+  KEY `idx_membership_order_fan` (`fan_id`, `created_at`),
+  KEY `idx_membership_order_status` (`payment_status`),
+  CONSTRAINT `fk_membership_order_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_membership_order_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='멤버십 토스 결제 주문';
+
+-- main_banner: 메인 페이지 상단 배너 (최고관리자 > 통합 대시보드 > 배너 영역 관리)
+CREATE TABLE IF NOT EXISTS `main_banner` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '배너 PK',
+  `banner_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배너 종류: COMMUNITY(커뮤니티 홍보)/PRODUCT(상품 홍보)',
+  `artist_id` bigint NOT NULL COMMENT '홍보할 아티스트 커뮤니티(users.id)',
+  `goods_id` bigint DEFAULT NULL COMMENT '상품 홍보일 때 연결할 굿즈(shop_goods.id)',
+  `title` varchar(60) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '대제목',
+  `body` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '본문',
+  `image_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배너 이미지 저장 파일명(uploads/)',
+  `bg_color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '배경색(#rrggbb) - 이미지 대표색 자동',
+  `text_color` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '글자색(#rrggbb) - 배경 밝기에 맞춰 흰색/차콜',
+  `active` tinyint(1) NOT NULL DEFAULT '1' COMMENT '메인 노출 여부',
+  `sort_order` int NOT NULL DEFAULT '0' COMMENT '노출 순서(작을수록 앞)',
+  `created_by` bigint NOT NULL COMMENT '등록한 관리자(users.id)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_main_banner_active_sort` (`active`, `sort_order`, `id`),
+  KEY `idx_main_banner_artist` (`artist_id`),
+  KEY `idx_main_banner_goods` (`goods_id`),
+  CONSTRAINT `fk_main_banner_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `fk_main_banner_goods` FOREIGN KEY (`goods_id`) REFERENCES `shop_goods` (`id`),
+  CONSTRAINT `fk_main_banner_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_main_banner_type` CHECK (`banner_type` IN (_utf8mb4'COMMUNITY', _utf8mb4'PRODUCT'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='메인 페이지 상단 배너';
 
 -- ============================================================
 -- [2] 기존 테이블에 없는 컬럼 추가
@@ -1195,6 +1330,8 @@ CALL `wp_sync_add_column`('comment', 'content', 'varchar(500) COLLATE utf8mb4_un
 CALL `wp_sync_add_column`('comment', 'created_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''작성 시각''', 1);
 CALL `wp_sync_add_column`('comment', 'author_id', 'bigint NOT NULL COMMENT ''작성자(users.id)''', 0);
 CALL `wp_sync_add_column`('comment', 'post_id', 'bigint NOT NULL COMMENT ''원글(post.id)''', 0);
+CALL `wp_sync_add_column`('comment', 'parent_id', 'bigint DEFAULT NULL COMMENT ''답글이면 부모 댓글(comment.id), 일반 댓글이면 NULL'' AFTER `post_id`', 0);
+CALL `wp_sync_add_column`('comment', 'deleted_at', 'datetime(6) DEFAULT NULL COMMENT ''답글이 남아 있는 원댓글의 삭제 시각 (NULL이면 정상 댓글)'' AFTER `parent_id`', 0);
 
 -- comment_report
 CALL `wp_sync_add_column`('comment_report', 'created_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''신고 시각''', 1);
@@ -1276,6 +1413,14 @@ CALL `wp_sync_add_column`('shop_cart_item', 'quantity', 'int NOT NULL DEFAULT ''
 CALL `wp_sync_add_column`('shop_cart_item', 'unit_price', 'int NOT NULL COMMENT ''담을 당시 단가(원)''', 0);
 CALL `wp_sync_add_column`('shop_cart_item', 'created_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''담은 시각''', 1);
 CALL `wp_sync_add_column`('shop_cart_item', 'updated_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''수정 시각''', 1);
+
+-- shop_order 배송지: 기존 주문 데이터는 그대로 두고, 없는 컬럼만 NULL 허용으로 추가
+CALL `wp_sync_add_column`('shop_order', 'receiver_name', 'varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''받는 사람''', 0);
+CALL `wp_sync_add_column`('shop_order', 'receiver_phone', 'varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''배송 연락처''', 0);
+CALL `wp_sync_add_column`('shop_order', 'zipcode', 'varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''우편번호''', 0);
+CALL `wp_sync_add_column`('shop_order', 'address1', 'varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''기본 주소''', 0);
+CALL `wp_sync_add_column`('shop_order', 'address2', 'varbinary(512) DEFAULT NULL COMMENT ''상세주소(암호화 저장)''', 0);
+CALL `wp_sync_add_column`('shop_order', 'delivery_memo', 'varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''배송 메모''', 0);
 
 -- chat_message
 CALL `wp_sync_add_column`('chat_message', 'content', 'text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT ''메시지 본문''', 0);
@@ -1573,6 +1718,99 @@ VALUES
   ('SPECIAL_MEMBERSHIP_5',  '멤버십 연속 5년',      'SPECIAL', '👑', 'membership-5-years.svg',   '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
   ('SPECIAL_PROJECT_CREATE','프로젝트 참여',        'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트에 참여(결제 완료)하면 획득',    10, NOW(6));
 
+-- ============================================================
+-- [5] CHECK 제약 / 인덱스 / FK 갱신
+--   CHECK 허용값이 모자라면 앱은 뜨지만 해당 값 INSERT/UPDATE가 실패하므로 여기서 맞춘다.
+--   - users.status               + PENDING_ACTIVATION (입점 승인 → 소속사 계정 활성화 대기)
+--   - users.role                 + ARTIST_MEMBER      (그룹 소속 멤버 계정)
+--   - email_verification.purpose + AGENCY_ACTIVATION / ARTIST_ACTIVATION (계정 활성화 링크)
+--   - users.nickname             UNIQUE 해제 → 일반 인덱스 (팬/아티스트 닉네임 중복 검사는 코드에서)
+--   - comment.parent_id          인덱스 + FK (대댓글)
+-- ============================================================
+DROP PROCEDURE IF EXISTS `wp_sync_exec`;
+DROP PROCEDURE IF EXISTS `wp_sync_check`;
+DROP PROCEDURE IF EXISTS `wp_sync_constraints`;
+
+DELIMITER $$
+
+CREATE PROCEDURE `wp_sync_exec`(IN p_sql TEXT)
+BEGIN
+    SET @wp_sql = p_sql;
+    PREPARE wp_stmt FROM @wp_sql;
+    EXECUTE wp_stmt;
+    DEALLOCATE PREPARE wp_stmt;
+END$$
+
+-- p_name CHECK 제약에 p_required 값이 없으면 p_clause로 다시 만든다(이미 있으면 건너뜀)
+CREATE PROCEDURE `wp_sync_check`(
+    IN p_table VARCHAR(64),
+    IN p_name VARCHAR(64),
+    IN p_required VARCHAR(64),
+    IN p_clause TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.CHECK_CONSTRAINTS
+        WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_NAME = p_name
+          AND CHECK_CLAUSE LIKE CONCAT('%', p_required, '%')
+    ) THEN
+        IF EXISTS (
+            SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = p_table
+              AND CONSTRAINT_NAME = p_name AND CONSTRAINT_TYPE = 'CHECK'
+        ) THEN
+            CALL `wp_sync_exec`(CONCAT('ALTER TABLE `', p_table, '` DROP CHECK `', p_name, '`'));
+        END IF;
+        CALL `wp_sync_exec`(CONCAT('ALTER TABLE `', p_table, '` ADD CONSTRAINT `', p_name, '` CHECK (', p_clause, ')'));
+    END IF;
+END$$
+
+CREATE PROCEDURE `wp_sync_constraints`()
+BEGIN
+    CALL `wp_sync_check`('users', 'ck_users_status', 'PENDING_ACTIVATION',
+        '`status` IN (_utf8mb4''ACTIVE'', _utf8mb4''DORMANT'', _utf8mb4''SUSPENDED'', _utf8mb4''WITHDRAWN'', _utf8mb4''PENDING_ACTIVATION'')');
+    CALL `wp_sync_check`('users', 'ck_users_role', 'ARTIST_MEMBER',
+        '`role` IN (_utf8mb4''FAN'', _utf8mb4''ARTIST'', _utf8mb4''AGENCY'', _utf8mb4''ADMIN'', _utf8mb4''ARTIST_MEMBER'')');
+    CALL `wp_sync_check`('email_verification', 'ck_email_verification_purpose', 'ARTIST_ACTIVATION',
+        '`purpose` IN (_utf8mb4''SIGNUP'', _utf8mb4''FAN_PROJECT_CREATE'', _utf8mb4''ADMIN_LOGIN'', _utf8mb4''AGENCY_ACTIVATION'', _utf8mb4''ARTIST_ACTIVATION'')');
+
+    -- 닉네임 UNIQUE 해제 → 일반 인덱스
+    IF EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'uk_users_nickname'
+    ) THEN
+        ALTER TABLE `users` DROP INDEX `uk_users_nickname`;
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND INDEX_NAME = 'idx_users_nickname'
+    ) THEN
+        ALTER TABLE `users` ADD KEY `idx_users_nickname` (`nickname`);
+    END IF;
+
+    -- 대댓글: comment.parent_id 인덱스 + FK
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comment' AND INDEX_NAME = 'idx_comment_parent'
+    ) THEN
+        ALTER TABLE `comment` ADD KEY `idx_comment_parent` (`parent_id`);
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+        WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'comment' AND CONSTRAINT_NAME = 'fk_comment_parent'
+    ) THEN
+        ALTER TABLE `comment`
+            ADD CONSTRAINT `fk_comment_parent` FOREIGN KEY (`parent_id`) REFERENCES `comment` (`id`);
+    END IF;
+END$$
+
+DELIMITER ;
+
+CALL `wp_sync_constraints`();
+DROP PROCEDURE IF EXISTS `wp_sync_constraints`;
+DROP PROCEDURE IF EXISTS `wp_sync_check`;
+DROP PROCEDURE IF EXISTS `wp_sync_exec`;
+
 SET FOREIGN_KEY_CHECKS = 1;
 SET SESSION sql_mode = @wp_old_sql_mode;
 
@@ -1804,6 +2042,8 @@ INSERT INTO `wp_expected_columns` VALUES
   ('comment', 'created_at', 'datetime'),
   ('comment', 'author_id', 'bigint'),
   ('comment', 'post_id', 'bigint'),
+  ('comment', 'parent_id', 'bigint'),
+  ('comment', 'deleted_at', 'datetime'),
   ('comment_report', 'id', 'bigint'),
   ('comment_report', 'created_at', 'datetime'),
   ('comment_report', 'reason', 'enum'),
@@ -2007,7 +2247,82 @@ INSERT INTO `wp_expected_columns` VALUES
   ('notification', 'created_at', 'datetime'),
   ('notification_setting', 'user_id', 'bigint'),
   ('notification_setting', 'type', 'varchar'),
-  ('notification_setting', 'enabled', 'tinyint');
+  ('notification_setting', 'enabled', 'tinyint'),
+  ('partnership_applications', 'id', 'bigint'),
+  ('partnership_applications', 'applicant_type', 'varchar'),
+  ('partnership_applications', 'applicant_name', 'varchar'),
+  ('partnership_applications', 'contact_name', 'varchar'),
+  ('partnership_applications', 'email', 'varchar'),
+  ('partnership_applications', 'phone', 'varchar'),
+  ('partnership_applications', 'message', 'varchar'),
+  ('partnership_applications', 'status', 'varchar'),
+  ('partnership_applications', 'reviewed_by', 'bigint'),
+  ('partnership_applications', 'reviewed_at', 'datetime'),
+  ('partnership_applications', 'rejection_reason', 'varchar'),
+  ('partnership_applications', 'created_at', 'datetime'),
+  ('partnership_applications', 'updated_at', 'datetime'),
+  ('shop_order', 'id', 'bigint'),
+  ('shop_order', 'buyer_id', 'bigint'),
+  ('shop_order', 'order_no', 'varchar'),
+  ('shop_order', 'idempotency_key', 'varchar'),
+  ('shop_order', 'payment_provider', 'varchar'),
+  ('shop_order', 'provider_transaction_id', 'varchar'),
+  ('shop_order', 'amount', 'bigint'),
+  ('shop_order', 'source', 'varchar'),
+  ('shop_order', 'virtual_bank_code', 'varchar'),
+  ('shop_order', 'virtual_account_number', 'varbinary'),
+  ('shop_order', 'due_date', 'datetime'),
+  ('shop_order', 'deposit_secret', 'varchar'),
+  ('shop_order', 'payment_status', 'varchar'),
+  ('shop_order', 'paid_at', 'datetime'),
+  ('shop_order', 'cancelled_at', 'datetime'),
+  ('shop_order', 'receiver_name', 'varchar'),
+  ('shop_order', 'receiver_phone', 'varchar'),
+  ('shop_order', 'zipcode', 'varchar'),
+  ('shop_order', 'address1', 'varchar'),
+  ('shop_order', 'address2', 'varbinary'),
+  ('shop_order', 'delivery_memo', 'varchar'),
+  ('shop_order', 'created_at', 'datetime'),
+  ('shop_order', 'updated_at', 'datetime'),
+  ('shop_order_item', 'id', 'bigint'),
+  ('shop_order_item', 'order_id', 'bigint'),
+  ('shop_order_item', 'goods_id', 'bigint'),
+  ('shop_order_item', 'variant_id', 'bigint'),
+  ('shop_order_item', 'product_id', 'varchar'),
+  ('shop_order_item', 'product_name', 'varchar'),
+  ('shop_order_item', 'quantity', 'int'),
+  ('shop_order_item', 'unit_price', 'int'),
+  ('membership_order', 'id', 'bigint'),
+  ('membership_order', 'fan_id', 'bigint'),
+  ('membership_order', 'artist_id', 'bigint'),
+  ('membership_order', 'order_no', 'varchar'),
+  ('membership_order', 'idempotency_key', 'varchar'),
+  ('membership_order', 'payment_provider', 'varchar'),
+  ('membership_order', 'provider_transaction_id', 'varchar'),
+  ('membership_order', 'amount', 'bigint'),
+  ('membership_order', 'virtual_bank_code', 'varchar'),
+  ('membership_order', 'virtual_account_number', 'varbinary'),
+  ('membership_order', 'due_date', 'datetime'),
+  ('membership_order', 'deposit_secret', 'varchar'),
+  ('membership_order', 'payment_status', 'varchar'),
+  ('membership_order', 'paid_at', 'datetime'),
+  ('membership_order', 'cancelled_at', 'datetime'),
+  ('membership_order', 'created_at', 'datetime'),
+  ('membership_order', 'updated_at', 'datetime'),
+  ('main_banner', 'id', 'bigint'),
+  ('main_banner', 'banner_type', 'varchar'),
+  ('main_banner', 'artist_id', 'bigint'),
+  ('main_banner', 'goods_id', 'bigint'),
+  ('main_banner', 'title', 'varchar'),
+  ('main_banner', 'body', 'varchar'),
+  ('main_banner', 'image_stored_name', 'varchar'),
+  ('main_banner', 'bg_color', 'varchar'),
+  ('main_banner', 'text_color', 'varchar'),
+  ('main_banner', 'active', 'tinyint'),
+  ('main_banner', 'sort_order', 'int'),
+  ('main_banner', 'created_by', 'bigint'),
+  ('main_banner', 'created_at', 'datetime'),
+  ('main_banner', 'updated_at', 'datetime');
 
 SELECT e.`table_name`, e.`column_name`, e.`data_type` AS expected_type, c.DATA_TYPE AS actual_type,
        CASE

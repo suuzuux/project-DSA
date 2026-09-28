@@ -101,7 +101,14 @@ public class ShopCartService {
 		}
 		ShopCartItem item = getOwnedItem(user, itemId);
 		Long variantId = shopCheckoutService.parseVariantId(item.getProductId());
-		goodsService.ensureVariantStock(variantId, quantity);
+		try {
+			goodsService.ensureVariantStock(variantId, quantity);
+		} catch (IllegalArgumentException e) {
+			if (e.getMessage() != null && e.getMessage().contains("재고")) {
+				throw new IllegalArgumentException("재고가 없습니다.");
+			}
+			throw e;
+		}
 		item.setQuantity(quantity);
 		shopCartItemRepository.save(item);
 	}

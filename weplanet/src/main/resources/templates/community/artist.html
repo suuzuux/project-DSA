@@ -26,7 +26,7 @@
 
   <div class="community-body">
     <div class="community-main" id="communityPostBoard"
-         th:attr="data-artist-id=${artist.id()}, data-board-tab='artist'">
+         th:attr="data-artist-id=${artist.id()}, data-board-tab='artist', data-list-base=@{${artist.homeUrl() + '/artist'}}">
       <nav th:replace="~{community/fragments/layout :: tabs('artist')}"></nav>
 
       <div class="board-toolbar">
@@ -36,13 +36,13 @@
             <select id="artistSort"
                     class="form-select"
                     th:aria-label="#{community.board.artistSortAria}"
-                    th:attr="data-base-url=@{/community/{id}/artist(id=${artist.id()})}">
+                    th:attr="data-base-url=@{${artist.homeUrl() + '/artist'}}">
               <option value="latest" th:selected="${sort != 'popular'}" th:text="#{community.board.sortLatest}">최신순</option>
               <option value="popular" th:selected="${sort == 'popular'}" th:text="#{community.board.sortPopular}">인기순</option>
             </select>
           </label>
           <button type="button" class="btn btn--primary btn--sm" data-modal-open="writePostModal"
-                  th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+                  th:if="${isOwnCommunity}"
                   th:text="#{community.post.writeButton}">포스트 작성하기</button>
         </div>
       </div>
@@ -59,7 +59,7 @@
 
   <!-- 아티스트 포스트 작성 모달 (해당 커뮤니티 아티스트만) -->
   <div class="modal-backdrop" id="writePostModal"
-       th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">
+       th:if="${isOwnCommunity}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title" th:text="#{community.post.writeButton}">포스트 작성하기</h2>

@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
+import megane6.weplanet.repository.GroupMemberRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	private final UserRepository userRepository;
 	private final AgencyEnrollmentService agencyEnrollmentService;
 	private final LocaleResolver localeResolver;
+	private final GroupMemberRepository groupMemberRepository;
 
 	@PostConstruct
 	public void init() {
@@ -64,11 +66,23 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 			// 일반 팬 로그인(/login, /login/id): 아티스트·에이전시 계정 차단
 			// 역할 정보는 노출하지 않고, 일반 로그인 실패와 동일한 화면으로 보낸다.
 			String roleName = principal.getRoleName();
-			if ("ROLE_ARTIST".equals(roleName) || "ROLE_AGENCY".equals(roleName)) {
+			if ("ROLE_ARTIST".equals(roleName) || "ROLE_AGENCY".equals(roleName)
+					|| "ROLE_ARTIST_MEMBER".equals(roleName)) {
 				clearAuthentication(request);
 				getRedirectStrategy().sendRedirect(request, response, "/login/id?error");
 				return;
 			}
+		}
+		
+		// 멤버가 있는 그룹 계정: 여기서는 로그인시키지 않고 프로필 선택(2단계)으로 보낸다.
+		// clearAuthentication 이 세션을 통째로 버리고 새 세션을 만들기 때문에,
+		// 방금 저장된 그룹 로그인 정보는 사라지고 "대기 그룹 id" 만 새 세션에 남는다.
+		if (portalLogin && "ROLE_ARTIST".equals(principal.getRoleName())
+				&& groupMemberRepository.existsByGroupIdAndLeftAtIsNull(principal.getId())) {
+			clearAuthentication(request);
+			ArtistProfileLoginSupport.begin(request.getSession(true), principal.getId());
+			getRedirectStrategy().sendRedirect(request, response, "/portal/profiles");
+			return;
 		}
 
 		userRepository.findOneById(principal.getId()).ifPresent(user -> {

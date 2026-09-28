@@ -9,9 +9,13 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface ArtistGroupProfileRepository extends JpaRepository<ArtistGroupProfile, Long> {
-	
+
+	// artist_id는 UNIQUE(uk_agp_artist) 라서 그룹당 최대 1행
+	Optional<ArtistGroupProfile> findByArtistId(Long artistId);
+
 	// 필터는 전부 선택사항 - null로 넘기면 그 조건은 무시됨 (검색창 처음 열었을 때 = 전체 목록)
 	@Query("""
 			SELECT new megane6.weplanet.domain.dto.community.ArtistSearchRow(

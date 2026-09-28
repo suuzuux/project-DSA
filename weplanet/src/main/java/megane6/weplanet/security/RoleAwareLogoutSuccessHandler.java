@@ -28,7 +28,7 @@ public class RoleAwareLogoutSuccessHandler implements LogoutSuccessHandler {
 					target = "/admin/login?logout";
 					break;
 				}
-				if ("ROLE_ARTIST".equals(role)) {
+				if ("ROLE_ARTIST".equals(role) || "ROLE_ARTIST_MEMBER".equals(role)) {
 					target = "/portal/login?role=ARTIST";
 					break;
 				}

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="|#{admin.nav.banners} | WePlaNet ADMIN|">배너 영역 관리 | WePlaNet ADMIN</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+  <div class="portal-shell">
+    <aside class="portal-sidebar portal-sidebar--admin">
+      <div class="portal-sidebar__org">
+        <div class="agency">WEPLANET</div>
+        <div class="artist">ADMIN</div>
+      </div>
+
+      <nav class="portal-sidebar__nav">
+        <!-- 통합 대시보드 하위 메뉴 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+        <details class="portal-sidebar__group" open>
+          <summary>
+            <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          </summary>
+          <a class="portal-sidebar__sub is-active" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
+        </details>
+        <a th:href="@{/admin/applications}">📥 등록 신청</a>
+        <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+        <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+        <a th:href="@{/admin/users}">👥 전체 회원</a>
+        <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+        <a th:href="@{/admin/notices}">📢 전체 공지</a>
+        <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
+        <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+      </nav>
+
+      <div class="portal-sidebar__footer">
+        <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+          <button type="submit" class="btn">🚪 로그아웃</button>
+        </form>
+      </div>
+    </aside>
+
+    <main class="portal-main">
+      <div class="portal-main__head">
+        <h1 th:text="#{admin.nav.banners}">배너 영역 관리</h1>
+        <a class="btn btn--primary btn--sm" th:href="@{/admin/banners/new}">배너 등록</a>
+      </div>
+
+      <p class="text-sm text-muted" style="margin-bottom:16px;">
+        메인 페이지 상단 배너입니다. 노출 중인 배너가 순서대로 넘어가고, 하나도 없으면 기본 배너가 보입니다.
+        판매가 끝났거나 삭제된 상품의 배너는 메인에서 자동으로 빠집니다.
+      </p>
+
+      <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
+      <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+      <div class="banner-admin-list" th:if="${!#lists.isEmpty(banners)}">
+        <article class="banner-admin-item" th:each="b : ${banners}"
+                 th:classappend="${!b.active()} ? ' is-off'">
+          <!-- 미니 미리보기 - 메인 배너와 같은 구성(배경색 + 영문명/대제목/본문 + 이미지) -->
+          <div class="banner-mini" th:style="|background:${b.bgColor()};color:${b.textColor()};|">
+            <div class="banner-mini__text">
+              <span class="banner-mini__label" th:text="${b.label()}">ARTIST</span>
+              <strong class="banner-mini__title" th:text="${b.title()}">대제목</strong>
+              <span class="banner-mini__body" th:if="${b.body() != null}" th:text="${b.body()}">본문</span>
+            </div>
+            <img class="banner-mini__img" th:src="${b.imageUrl()}" alt="" />
+          </div>
+
+          <div class="banner-admin-item__meta">
+            <div class="banner-admin-item__tags">
+              <span class="banner-tag" th:text="${b.typeLabel()}">커뮤니티 홍보</span>
+              <span class="banner-tag" th:classappend="${b.active()} ? ' banner-tag--on' : ''"
+                    th:text="${b.active()} ? '노출 중' : '숨김'">노출 중</span>
+              <span class="text-xs text-muted" th:text="|순서 ${b.sortOrder()}|">순서 0</span>
+            </div>
+            <p class="text-sm">
+              <strong th:text="${b.artistName()}">아티스트</strong>
+              <span th:if="${b.goodsName() != null}" th:text="| · ${b.goodsName()}|"></span>
+            </p>
+            <p class="text-xs text-muted">
+              연결 페이지:
+              <a th:if="${b.linkUrl() != null}" th:href="@{${b.linkUrl()}}" target="_blank" th:text="${b.linkUrl()}">/kiikii</a>
+              <span th:if="${b.linkUrl() == null}" style="color:#c45c26;">판매 중이 아닌 상품 - 메인에 표시되지 않음</span>
+            </p>
+            <div class="banner-admin-item__actions">
+              <a class="btn btn--ghost btn--sm" th:href="@{/admin/banners/{id}/edit(id=${b.id()})}">수정</a>
+              <form th:action="@{/admin/banners/{id}/toggle(id=${b.id()})}" method="post">
+                <button type="submit" class="btn btn--ghost btn--sm"
+                        th:text="${b.active()} ? '숨기기' : '노출하기'">숨기기</button>
+              </form>
+              <form th:action="@{/admin/banners/{id}/delete(id=${b.id()})}" method="post"
+                    onsubmit="return confirm('이 배너를 삭제할까요?');">
+                <button type="submit" class="btn btn--ghost btn--sm" style="color:var(--wp-danger);">삭제</button>
+              </form>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div class="empty-state list-empty" th:if="${#lists.isEmpty(banners)}">
+        <strong>등록된 배너가 없습니다</strong>
+        지금은 메인 페이지에 기본 배너가 보이고 있어요.
+      </div>
+    </main>
+  </div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

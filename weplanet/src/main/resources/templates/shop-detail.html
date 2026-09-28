@@ -62,7 +62,7 @@
         <div class="membership-notice" th:if="${product.membershipOnly()}">
           <strong th:text="#{shopDetail.membershipOnlyTitle}">멤버십 전용 상품</strong><br />
           <span th:text="#{shopDetail.membershipOnlyDesc(${product.artistName()})}">멤버십 안내</span>
-          <a th:href="@{/community/{id}(id=${product.artistId()})}" th:text="#{shopDetail.joinMembershipLink}">커뮤니티에서 멤버십 가입하기 ›</a>
+          <a th:href="@{${productCommunityUrl}}" th:text="#{shopDetail.joinMembershipLink}">커뮤니티에서 멤버십 가입하기 ›</a>
         </div>
 
         <p class="product-detail__desc"
@@ -117,7 +117,7 @@
              th:href="${product.officialUrl()}"
              target="_blank" rel="noopener noreferrer" th:text="#{shopDetail.officialSite}">공식 판매처</a>
           <a class="btn btn--ghost btn--block"
-             th:href="@{/community/{id}/highlight(id=${product.artistId()})}"
+             th:href="@{${productCommunityUrl}}"
              th:text="#{shopDetail.communityLink(${product.artistName()})}">커뮤니티로</a>
         </div>
       </div>

@@ -14,10 +14,12 @@ import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.CommentService;
-import megane6.weplanet.service.UserFollowService;
 import megane6.weplanet.service.MembershipService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.UserFollowService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
+import megane6.weplanet.service.community.CommunityUrls;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
@@ -60,6 +62,10 @@ public class CommunityController {
 	// SETTINGS-03 커밋3: flash로 내보내는 예외 메시지(키 또는 문장)를 현재 로케일 문구로 바꾸는 데 사용
 	private final megane6.weplanet.i18n.Messages messages;
 	
+	private final CommunityArtistResolver communityArtistResolver;
+
+	private final CommunityUrls communityUrls; // 탭/메뉴 링크를 영문 주소(/kiikii/fan)로
+
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		User artist = populateArtistModel(artistId, principal, model);
@@ -391,9 +397,18 @@ public class CommunityController {
 		boolean isOwnProfile = me.getId().equals(userId);
 		model.addAttribute("isOwnProfile", isOwnProfile);
 		model.addAttribute("profileUserId", userId);
-		// 이 프로필의 주인이 이 커뮤니티의 아티스트 본인인지 - 맞다면 팔로우 버튼/콘텐츠 잠금 문구가
+		// 이 프로필의 주인이 이 커뮤니티의 아티스트 본인인지 - 맞다면 팔로우 버튼이
 		// "아티스트 팔로우" 기준으로 동작한다 (UserFollowService.toggle이 알아서 가입 요건 없이 처리).
 		model.addAttribute("isCommunityOwnerProfile", userId.equals(artistId));
+		// 이 프로필의 주인이 이 커뮤니티의 아티스트 쪽 계정(솔로 본인/그룹 멤버)인지.
+		// 맞다면 프로필 카드와 편집 패널은 가입 프로필 대신 그 계정의 포털 프로필(소개/사진/배경)로 그린다.
+		boolean targetIsArtistHere = communityArtistResolver.isArtistOf(targetUser, artistId);
+		model.addAttribute("isTargetArtistSide", targetIsArtistHere);
+		if (targetIsArtistHere) {
+			model.addAttribute("targetArtistAvatarUrl", portalManagementService.findLogoImageUrl(targetUser));
+			model.addAttribute("targetArtistBackgroundUrl", portalManagementService.findHeaderImageUrl(targetUser));
+			model.addAttribute("targetArtistIntro", portalManagementService.findIntro(targetUser));
+		}
 
 		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
 		// 아티스트 본인이나 관리자는 가입 절차 없이 접근할 수 있으므로 joinedAt이 null일 수 있다.
@@ -603,7 +618,7 @@ public class CommunityController {
 		// 커뮤니티 주인(그 아티스트 본인)은 가입 절차 없이 항상 열람 가능해야 함.
 		// 아티스트는 팬 전용 가입 절차를 밟을 수 없어서, 가입 여부만 보면
 		// 정작 본인이 자기 게시판에서 차단당하는 문제가 있었음
-		if (currentUser.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(currentUser, artistId)) {
 			return true;
 		}
 		// 관리자는 신고 처리 등을 위해 전체 열람이 필요함
@@ -623,10 +638,10 @@ public class CommunityController {
 	// 멤버십 가입/해지: 팬 + 타 커뮤니티 방문 아티스트. 본인 커뮤니티는 불가.
 	private User requireMembershipEligible(AuthenticatedUser principal, Long artistId) {
 		User user = userResolver.resolve(principal, 1L);
-		if (user.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(user, artistId)) {
 			throw new IllegalStateException("error.membership.ownCommunity");
 		}
-		if (user.getRole() != Role.FAN && user.getRole() != Role.ARTIST) {
+		if (!user.canParticipateInCommunity()) {
 			throw new IllegalStateException("error.community.fanOrArtistOnly");
 		}
 		return user;
@@ -647,29 +662,28 @@ public class CommunityController {
 		Map<Long, String> logoUrls = portalManagementService.logoImageUrlsByArtistIds(
 				artistUsers.stream().map(User::getId).toList());
 
-		List<ArtistCardView> artists = artistUsers.stream()
+		List<ArtistCardView> artists = communityUrls.withHomeUrls(artistUsers.stream()
 				.map(user -> ArtistCardView.from(user, logoUrls.get(user.getId())))
-				.toList();
+				.toList());
 
-		model.addAttribute("artist", ArtistCardView.from(artist, logoUrls.get(artist.getId())));
+		// artist.homeUrl() = 이 커뮤니티 첫 화면 주소. 탭 링크는 이 뒤에 /fan, /artist ... 를 붙인다
+		model.addAttribute("artist", communityUrls.withHomeUrl(ArtistCardView.from(artist, logoUrls.get(artist.getId()))));
 		model.addAttribute("artists", artists);
 		// 포털 프로필 관리의 소개글(artist_profile.intro) → 커뮤니티 About 소개란
 		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));
 		model.addAttribute("artistHeaderImageUrl", portalManagementService.findHeaderImageUrl(artist));
 		
 		User currentUser = principal != null ? userResolver.resolve(principal, 1L) : null;
-		boolean isOwnCommunity = currentUser != null && currentUser.getId().equals(artist.getId());
-		model.addAttribute("isOwnCommunity", isOwnCommunity);
+		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artist.getId());		model.addAttribute("isOwnCommunity", isOwnCommunity);
 		boolean isManagedAgency = currentUser != null
 				&& currentUser.getRole() == Role.AGENCY
 				&& currentUser.agencyId() != null
 				&& currentUser.agencyId().equals(artist.agencyId());
 		model.addAttribute("isManagedAgency", isManagedAgency);
-
-		if (currentUser != null
-				&& currentUser.getRole() == Role.ARTIST
-				&& isOwnCommunity) {
-			artistAttendanceService.recordVisitIfArtist(currentUser);
+		
+		// 커뮤니티 주인(솔로 본인 또는 그 그룹의 멤버)이 들어오면 그 커뮤니티(아티스트)의 출석을 찍는다
+		if (isOwnCommunity) {
+			artistAttendanceService.recordVisitIfArtist(artist);
 		}
 		model.addAttribute("artistAttendance", artistAttendanceService.getAllPawColors(artist));
 		Set<Long> followedIds = userFollowService.getFollowedArtistIds(currentUser);
@@ -684,13 +698,24 @@ public class CommunityController {
 		model.addAttribute("otherCommunities",
 				communityDrawerHelper.otherCommunities(currentUser, artists));
 		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artistId));
-		model.addAttribute("myCommunityProfile", joinedProfiles.get(artistId));
+		CommunityProfile myCommunityProfile = joinedProfiles.get(artistId);
+		model.addAttribute("myCommunityProfile", myCommunityProfile);
 		// 아티스트 본인 '나' 프로필: 에이전시/포털에서 등록한 배경·사진·소개 반영
 		if (isOwnCommunity) {
 			model.addAttribute("artistPortalAvatarUrl", portalManagementService.findLogoImageUrl(artist));
 			model.addAttribute("artistPortalBackgroundUrl", portalManagementService.findHeaderImageUrl(artist));
 			model.addAttribute("artistPortalIntro", portalManagementService.findIntro(artist));
 		}
+		// 헤더 오른쪽 '나' 아이콘에 보여줄 내 프로필 사진.
+		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 내 계정의 포털 프로필 사진, 팬은 이 커뮤니티 가입 프로필 사진.
+		String myAvatarUrl = null;
+		if (isOwnCommunity) {
+			myAvatarUrl = portalManagementService.findLogoImageUrl(currentUser);
+		} else if (myCommunityProfile != null && myCommunityProfile.getAvatarStoredName() != null
+				&& !myCommunityProfile.getAvatarStoredName().isBlank()) {
+			myAvatarUrl = "/uploads/" + myCommunityProfile.getAvatarStoredName();
+		}
+		model.addAttribute("myAvatarUrl", myAvatarUrl);
 		
 		if (principal != null) {
 			membershipService.getMembership(currentUser, artist).ifPresent(membership -> {

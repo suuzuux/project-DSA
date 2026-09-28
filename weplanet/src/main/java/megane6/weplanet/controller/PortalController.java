@@ -2,7 +2,9 @@ package megane6.weplanet.controller;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.CommentReport;
+import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
@@ -18,13 +20,17 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.RoleHomeRedirects;
+import megane6.weplanet.service.ArtistMemberService;
 import megane6.weplanet.service.CommentService;
 import megane6.weplanet.service.PostService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.email.ArtistInvitationMailService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import megane6.weplanet.service.portal.ArtistBlockService;
+import megane6.weplanet.service.portal.ArtistRegistrationService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import megane6.weplanet.service.shop.GoodsCategoryOptionsPayload;
 import megane6.weplanet.service.shop.GoodsService;
@@ -48,6 +54,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Controller
 @RequestMapping("/portal")
 @RequiredArgsConstructor
@@ -72,6 +79,10 @@ public class PortalController {
 	private final MessageSource messageSource;
 	// SETTINGS-03 커밋3: 서비스 예외가 메시지 키로 바뀌어서, 화면에 내보낼 때 현재 로케일 문구로 해석한다
 	private final megane6.weplanet.i18n.Messages messages;
+	private final ArtistRegistrationService artistRegistrationService;
+	private final ArtistInvitationMailService artistInvitationMailService;
+	private final ArtistMemberService artistMemberService;
+	private final CommunityArtistResolver communityArtistResolver;
 
 	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
 	private String msg(String code) {
@@ -113,6 +124,7 @@ public class PortalController {
 			case "live" -> "redirect:/portal/live";
 			case "profile" -> "redirect:/portal/profile";
 			case "reports" -> "redirect:/portal/reports";
+			case "members" -> "redirect:/portal/members";
 			default -> "redirect:/portal/dashboard";
 		};
 	}
@@ -136,21 +148,185 @@ public class PortalController {
 		model.addAttribute("upcomingSchedules", portalManagementService.getSchedules(artist).stream().limit(5).toList());
 		return "portal/dashboard";
 	}
+	
+	// 아티스트(그룹/솔로) 등록 화면. 특정 아티스트가 아니라 소속사 단위 메뉴라서 선택 여부와 상관없이 폼을 보여준다.
+	@GetMapping("/artists/new")
+	public String artistRegisterForm(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		String redirect = prepareArtistPage(principal, model, "artistNew");
+		if (redirect != null) {
+			return redirect;
+		}
+		return "portal/artist-form";
+	}
+	
+	@PostMapping("/artists")
+	public String registerArtist(@AuthenticationPrincipal AuthenticatedUser principal,
+								 @ModelAttribute ArtistRegistrationService.RegisterCommand command,
+								 HttpSession session,
+								 RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		if (actor == null) {
+			return artistRedirect(principal);
+		}
+		
+		ArtistRegistrationService.RegisteredArtist registered;
+		try {
+			registered = artistRegistrationService.register(actor, command);
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			// 입력값을 돌려줘서 다시 처음부터 치지 않게 한다
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("form", command);
+			return "redirect:/portal/artists/new";
+		}
+		
+		// 메일은 등록 트랜잭션이 커밋된 뒤에 보낸다. 실패해도 계정은 남아 있어 재발송(7단계)으로 복구 가능
+		try {
+			artistInvitationMailService.sendActivationMail(
+					registered.username(),
+					registered.groupName(),
+					registered.agencyName(),
+					registered.activation()
+			);
+			redirectAttributes.addFlashAttribute("msg",
+					registered.groupName() + " 등록을 완료하고 " + registered.username() + " 으로 활성화 메일을 보냈습니다.");
+		} catch (Exception mailException) {
+			log.warn("아티스트 활성화 메일 발송 실패: artistId={}", registered.artistId(), mailException);
+			redirectAttributes.addFlashAttribute("msg",
+					registered.groupName() + " 등록은 완료됐지만 활성화 메일 발송에 실패했습니다.");
+		}
+		
+		// 방금 만든 아티스트를 선택된 상태로 대시보드에 보낸다
+		resolveManagedArtist(actor, registered.artistId(), session);
+		return "redirect:/portal/dashboard";
+	}
+	
+	// 선택한 아티스트(그룹)의 멤버 관리 화면
+	@GetMapping("/members")
+	public String members(@AuthenticationPrincipal AuthenticatedUser principal,
+						  Model model) {
+		String redirect = prepareArtistPage(principal, model, "members");
+		if (redirect != null) {
+			return redirect;
+		}
+		
+		User artist = artistFromModel(model);
+		if (artist != null) {
+			model.addAttribute("members", artistMemberService.activeMembers(artist.getId()));
+		}
+		
+		return "portal/members";
+	}
+	
+	@PostMapping("/members")
+	public String addMember(@AuthenticationPrincipal AuthenticatedUser principal,
+							@RequestParam String memberName,
+							RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		
+		try {
+			GroupMember added = artistMemberService.addMember(actor, artist.getId(), memberName);
+			redirectAttributes.addFlashAttribute("msg", added.getMember().getNickname()
+			+ " 멤버를 추가했습니다. 첫 로그인 시 본인이 개인 비밀번호를 정합니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		
+		return "redirect:/portal/members";
+	}
+	
+	@PostMapping("/members/{memberId}/leave")
+	public String removeMember(@AuthenticationPrincipal AuthenticatedUser principal,
+							   @PathVariable Long memberId,
+							   RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			String name = artistMemberService.removeMember(actor, artist.getId(), memberId);
+			redirectAttributes.addFlashAttribute("msg", name + " 멤버를 탈퇴 처리했습니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/portal/members";
+	}
+	
+	@PostMapping("/members/{memberId}/reset-password")
+	public String resetMemberPassword(@AuthenticationPrincipal AuthenticatedUser principal,
+									  @PathVariable Long memberId,
+									  RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		try {
+			String name = artistMemberService.resetMemberPassword(actor, artist.getId(), memberId);
+			redirectAttributes.addFlashAttribute("msg",
+					name + " 멤버의 개인 비밀번호를 초기화했습니다. 다음 로그인 때 새로 정합니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		return "redirect:/portal/members";
+	}
+	
+	// 선택된 아티스트(그룹)의 계정 활성화 메일 재발송
+	@PostMapping("/artists/resend-activation")
+	public String resendArtistActivation(@AuthenticationPrincipal AuthenticatedUser principal,
+										 RedirectAttributes redirectAttributes) {
+		User actor = currentPortalUser(principal);
+		User artist = currentArtist(principal);
+		if (actor == null || artist == null) {
+			return artistRedirect(principal);
+		}
+		
+		ArtistRegistrationService.RegisteredArtist reissued;
+		try {
+			reissued = artistRegistrationService.reissueActivation(actor, artist.getId());
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/portal/members";
+		}
+		
+		// 토큰 재발급 트랜잭션이 커밋된 뒤에 메일을 보낸다 (등록 때와 같은 이유)
+		try {
+			artistInvitationMailService.sendActivationMail(
+					reissued.username(),
+					reissued.groupName(),
+					reissued.agencyName(),
+					reissued.activation()
+			);
+			redirectAttributes.addFlashAttribute("msg",
+					reissued.username() + " 으로 활성화 메일을 다시 보냈습니다. 이전 링크는 더 이상 사용할 수 없습니다.");
+		} catch (Exception mailException) {
+			log.warn("아티스트 활성화 메일 재발송 실패: artistId={}", reissued.artistId(), mailException);
+			redirectAttributes.addFlashAttribute("error", "활성화 메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+		}
+		return "redirect:/portal/members";
+	}
 
 	@GetMapping("/live")
 	public String live(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		if (principal == null) {
 			return "redirect:/portal/login";
 		}
-		// 아티스트는 본인 방송 페이지만 진입 가능 (커뮤니티 Live 탭의 '방송하기'에서 이동)
-		if ("ROLE_ARTIST".equals(principal.getRoleName())) {
-			User artist = userRepository.findById(principal.getId())
+		// 아티스트(솔로 본인/그룹 멤버)는 "내 커뮤니티" 방송 페이지만 진입 가능 (커뮤니티 Live 탭의 '방송하기'에서 이동)
+		if ("ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_ARTIST_MEMBER".equals(principal.getRoleName())) {
+			User me = userRepository.findById(principal.getId()).orElse(null);
+			Long ownCommunityId = communityArtistResolver.ownCommunityId(me);
+			User artist = ownCommunityId == null ? null : userRepository.findById(ownCommunityId)
 					.filter(user -> user.getRole() == Role.ARTIST)
 					.orElse(null);
 			if (artist == null) {
 				return "redirect:/portal/login";
 			}
-			populateCommon(model, artist, artist, "live");
+			populateCommon(model, me, artist, "live");
 			model.addAttribute("isAgency", false);
 			model.addAttribute("managedArtists", List.of());
 			model.addAttribute("liveStatus", liveBroadcastService.status(artist.getId()));

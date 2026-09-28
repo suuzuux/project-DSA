@@ -119,10 +119,10 @@ public class AdminDashboardService {
 						.map(this::toSeverePendingReport)
 						.toList();
 		
-		// 최근 관리자 활동 5건
+		// 최근 관리자 활동 3건 (전체는 "전체 보기" → /admin/logs)
 		List<RecentAdminAction> recentAdminActions =
 				adminActionLogRepository
-						.findTop5ByOrderByCreatedAtDescIdDesc()
+						.findTop3ByOrderByCreatedAtDescIdDesc()
 						.stream()
 						.map(this::toRecentAdminAction)
 						.toList();

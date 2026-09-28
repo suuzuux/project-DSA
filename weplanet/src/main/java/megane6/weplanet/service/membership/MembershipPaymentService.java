@@ -15,6 +15,7 @@ import megane6.weplanet.exception.TossPaymentException;
 import megane6.weplanet.repository.MembershipOrderRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.MembershipService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.payment.TossPaymentsClient;
 import megane6.weplanet.service.payment.TossVirtualAccountSupport;
@@ -39,6 +40,7 @@ public class MembershipPaymentService {
 	private final TossPaymentsClient tossClient;
 	// SETTINGS-03 커밋5: 결제창 주문명/구매자명, 결과 화면 문구를 요청 로케일로 만든다
 	private final megane6.weplanet.i18n.Messages messages;
+	private final CommunityArtistResolver communityArtistResolver;
 
 	@Transactional
 	public ProjectPaymentPrepareResponse prepare(User fan, Long artistId, String idempotencyKey) {
@@ -216,11 +218,12 @@ public class MembershipPaymentService {
 				.orElseThrow(() -> new IllegalArgumentException("shop.error.artistNotFound"));
 	}
 
-	private static void validateEligible(User fan, User artist) {
-		if (fan.getId().equals(artist.getId())) {
+	// static 을 뺐다 - 소속 그룹 판정에 주입받은 communityArtistResolver(인스턴스 필드)를 써야 하기 때문
+	private void validateEligible(User fan, User artist) {
+		if (communityArtistResolver.isArtistOf(fan, artist.getId())) {
 			throw new IllegalStateException("error.membership.ownCommunity");
 		}
-		if (fan.getRole() != Role.FAN && fan.getRole() != Role.ARTIST) {
+		if (!fan.canParticipateInCommunity()) {
 			throw new IllegalStateException("error.community.fanOrArtistOnly");
 		}
 	}

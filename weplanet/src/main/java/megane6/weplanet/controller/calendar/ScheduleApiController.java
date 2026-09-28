@@ -3,11 +3,7 @@ package megane6.weplanet.controller.calendar;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.controller.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.ArtistCardView;
-import megane6.weplanet.domain.entity.BoardType;
-import megane6.weplanet.domain.entity.Comment;
-import megane6.weplanet.domain.entity.Post;
-import megane6.weplanet.domain.entity.SiteNotice;
-import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.enumfolder.LiveSessionStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.live.LiveSession;
@@ -20,6 +16,7 @@ import megane6.weplanet.repository.live.LiveSessionRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.context.MessageSource;
@@ -31,13 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
@@ -66,6 +57,7 @@ public class ScheduleApiController {
 	private final CommunityJoinService communityJoinService;
 	private final ArtistAttendanceService artistAttendanceService;
 	private final MessageSource messageSource;
+	private final CommunityArtistResolver communityArtistResolver;
 
 	@GetMapping("/schedules")
 	public Map<String, Object> schedules(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -81,13 +73,15 @@ public class ScheduleApiController {
 
 		List<User> artists = userRepository.findByRole(Role.ARTIST);
 		User me = userResolver.requireAuthenticated(principal);
+		// 아티스트 쪽 계정이면 "내 커뮤니티" 하나만, 팬이면 가입한 커뮤니티들
+		Long ownCommunityId = communityArtistResolver.ownCommunityId(me);
 		Set<Long> joined = artistId != null
 				? Set.of(artistId)
-				: me.getRole() == Role.ARTIST
-				? Set.of(me.getId())
+				: ownCommunityId != null
+				? Set.of(ownCommunityId)
 				: communityJoinService.joinedArtistIds(me);
-
-		Map<Long, LocalDateTime> joinedAtByArtist = me.getRole() == Role.ARTIST
+		
+		Map<Long, LocalDateTime> joinedAtByArtist = ownCommunityId != null
 				? Map.of()
 				: communityJoinService.joinedAtByArtistId(me);
 		DateTimeFormatter joinFmt = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
@@ -187,8 +181,9 @@ public class ScheduleApiController {
 	}
 
 	private Map<Long, LocalDateTime> resolveJoinedAtByArtist(User me, Long artistId) {
-		if (me.getRole() == Role.ARTIST) {
-			return Map.of(me.getId(), LocalDateTime.MIN);
+		Long ownCommunityId = communityArtistResolver.ownCommunityId(me);
+		if (ownCommunityId != null) {
+			return Map.of(ownCommunityId, LocalDateTime.MIN);
 		}
 		Map<Long, LocalDateTime> all = communityJoinService.joinedAtByArtistId(me);
 		if (artistId == null) {
@@ -250,7 +245,7 @@ public class ScheduleApiController {
 	private Map<String, Object> toCommentNotification(Comment comment, DateTimeFormatter dateTime) {
 		Post post = comment.getPost();
 		User commenter = comment.getAuthor();
-		boolean artistComment = commenter.getRole() == Role.ARTIST;
+		boolean artistComment = commenter.isArtistSide();
 		String type = artistComment ? "artist_comment" : "comment";
 		String idPrefix = artistComment ? "artist-comment-" : "comment-";
 

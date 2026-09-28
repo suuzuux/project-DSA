@@ -54,12 +54,12 @@ class PostServiceTest {
 		PostRepository postRepository = mock(PostRepository.class);
 		PostService service = serviceWith(postRepository);
 		List<Post> visiblePosts = List.of(Post.builder().id(1L).build());
-		when(postRepository.findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc())
+		when(postRepository.findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType.ARTIST))
 				.thenReturn(visiblePosts);
 
 		assertEquals(visiblePosts, service.getPopularPosts());
 		verify(postRepository)
-				.findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc();
+				.findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType.ARTIST);
 	}
 
 	private PostService serviceWith(PostRepository postRepository) {

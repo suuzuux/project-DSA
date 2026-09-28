@@ -76,7 +76,7 @@ public class ShopService {
 	public Optional<ArtistCardView> findArtist(Long artistId) {
 		return userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.map(user -> ArtistCardView.from(user, portalManagementService.findLogoImageUrl(user)));
+				.map(portalManagementService::toArtistCard);	// 로고 + 커뮤니티 영문 주소(homeUrl)
 	}
 
 	public List<ShopProductView> getProducts(Long artistId) {

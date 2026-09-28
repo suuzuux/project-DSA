@@ -23,8 +23,8 @@
   <div class="community-body">
     <div class="community-main">
       <a class="section__link mb-16" style="display:inline-block;"
-         th:href="${mediaPost.liveReplay} ? @{/community/{id}/live(id=${artist.id()})} : @{/community/{id}/media(id=${artist.id()})}"
-         th:text="${mediaPost.liveReplay} ? '← Live' : #{community.media.back}">← Media 게시판</a>
+         th:href="${mediaPost.liveReplay} ? @{${artist.homeUrl() + '/live'}} : @{${artist.homeUrl() + '/media'}}"
+         th:text="${mediaPost.liveReplay} ? #{community.media.backLive} : #{community.media.back}">← Media 게시판</a>
 
       <article class="post-card">
         <div class="post-card__head">
@@ -69,7 +69,7 @@
             <span id="likeCount" data-like-count th:text="${mediaPost.likeCount > 0 ? mediaPost.likeCount : ''}"></span>
           </button>
           <span class="text-xs text-muted" th:text="#{community.media.fileCount(${mediaPost.fileCount})}"></span>
-          <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+          <form th:if="${isOwnCommunity}"
                 th:action="@{/board/media/{id}/delete(id=${mediaPost.id})}"
                 method="post"
                 th:attr="data-confirm=#{community.media.deleteConfirm}"

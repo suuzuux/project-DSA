@@ -27,7 +27,7 @@
 
       <div class="board-toolbar">
         <div class="chip-row" style="margin:0;">
-          <a class="chip" th:href="@{/community/{id}/fan(id=${artist.id()})}">
+          <a class="chip" th:href="@{${artist.homeUrl() + '/fan'}}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
             <span th:text="#{community.board.postsChip}">포스트</span>
           </a>
@@ -322,7 +322,7 @@
   <!-- 프로젝트 등록 모달 -->
   <div class="modal-backdrop" id="projectCreateModal"
        th:if="${!isOwnCommunity}"
-       sec:authorize="hasAnyRole('FAN','ARTIST')">
+       sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title" th:text="#{community.project.createButton}">프로젝트 등록하기</h2>

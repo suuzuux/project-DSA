@@ -1,6 +1,7 @@
 package megane6.weplanet.util;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,8 @@ public class NicknameGenerator {
 	public String generate() {
 		for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			String candidate = randomCandidate();
-			if (!userRepository.existsByNickname(candidate)) {
+			// 팬 닉네임 자동 생성: 팬 쪽 계정끼리만 겹치지 않으면 된다
+			if (!userRepository.existsByNicknameAndRoleNotIn(candidate, Role.ARTIST_SIDE)) {
 				return candidate;
 			}
 		}

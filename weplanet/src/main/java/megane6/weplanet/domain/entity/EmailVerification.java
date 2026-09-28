@@ -146,6 +146,48 @@ public class EmailVerification {
 		);
 	}
 	
+	// 입점 승인 후 발급하는 소속사 계정 활성화 토큰.
+	// 다른 용도와 달리 6자리 숫자가 아니라 긴 랜덤 문자열을 쓰고,
+	// 메일 링크에 담아서 보내브로 codeHash에는 그 토큰의 해시만 저장한다.
+	public static EmailVerification createForAgencyActivation(
+			User agencyUser,
+			String tokenHash,
+			LocalDateTime expiresAt
+	) {
+		if (agencyUser == null) {
+			throw new IllegalArgumentException("이메일 인증 회원이 필요합니다.");
+		}
+		
+		return new EmailVerification(
+				agencyUser,
+				agencyUser.getEmail(),
+				EmailVerificationPurpose.AGENCY_ACTIVATION,
+				tokenHash,
+				expiresAt
+		);
+	}
+	
+	// 소속사가 포털에서 등록한 아티스트 그룹 계정의 활성화 링크
+	// 소속사 활성화와 구조는 같고, purpose만 다르다
+	// purpose를 나눠야 소속사용 링크로 아티스트 계정을, 아티스트용 링크로 소속사 계정을 여는 일이 없다
+	public static EmailVerification createForArtistActivation(
+			User artistUser,
+			String tokenHash,
+			LocalDateTime expiresAt
+	) {
+		if (artistUser == null) {
+			throw new IllegalArgumentException("이메일 인증 회원이 필요합니다.");
+		}
+		
+		return new EmailVerification(
+				artistUser,
+				artistUser.getEmail(),
+				EmailVerificationPurpose.ARTIST_ACTIVATION,
+				tokenHash,
+				expiresAt
+		);
+	}
+	
 	public boolean isExpired(LocalDateTime now) {
 		return !now.isBefore(expiresAt);
 	}
@@ -204,6 +246,16 @@ public class EmailVerification {
 		}
 		
 		this.consumedAt = now;
+	}
+	
+	// 활성화 메일을 재발송할 때 이전에 보낸 링크가 더 이상 못 쓰게 만든다.
+	// 만료 시각을 지금으로 당겨서 isExpired()가 true가 되게 한다.
+	public void invalidate(LocalDateTime now) {
+		if (isConsumed() || isExpired(now)) {
+			return;
+		}
+		
+		this.expiresAt = now;
 	}
 	
 	private static void validate(

@@ -103,7 +103,7 @@ public class ProjectContributionService {
         User contributor = userRepository.findById(contributorId)
                 .orElseThrow(() -> new AccessDeniedException("error.project.memberNotFound"));
         
-        if (contributor.getRole() != Role.FAN && contributor.getRole() != Role.ARTIST) {
+        if (!contributor.canParticipateInCommunity()) {
             throw new AccessDeniedException("error.contribution.historyFanOrArtistOnly");
         }
         

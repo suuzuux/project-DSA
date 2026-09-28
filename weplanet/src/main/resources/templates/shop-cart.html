@@ -37,7 +37,9 @@
         <a class="btn btn--ghost btn--sm" th:href="${shopReturnUrl}" th:text="#{shopCart.continueShopping}">← 쇼핑 계속</a>
       </div>
 
-      <p th:if="${message}" class="alert alert--success mb-16" th:text="${message}">알림</p>
+      <p th:if="${message}" class="alert mb-16"
+         th:classappend="${#strings.contains(message, '재고')} ? ' alert--error' : ' alert--success'"
+         th:text="${message}">알림</p>
 
       <div th:if="${cart.empty()}" class="shop-cart-empty" id="shopCartEmpty">
         <p class="text-muted" th:text="#{shopCart.emptyMessage}">장바구니에 담긴 상품이 없습니다.</p>
@@ -115,14 +117,12 @@
             <span th:text="#{shopCart.summaryTotal}">결제 예정</span>
             <span id="shopCartTotal" th:text="${cart.formattedTotal()}">₩ 0</span>
           </div>
-          <form th:action="@{/shop/cart/checkout}" method="post">
-            <button type="submit" class="btn btn--accent btn--block btn--lg mt-16" th:text="#{shopCart.checkoutButton}">
-              가상계좌로 결제
+          <form th:action="@{/shop/checkout}" method="get">
+            <button type="submit" class="btn btn--accent btn--block btn--lg mt-16"
+                    th:disabled="${cart.empty()}" th:text="#{shopCart.orderButton}">
+              주문하기
             </button>
           </form>
-          <p class="text-xs text-muted mt-12" style="text-align:center;" th:text="#{shopCart.checkoutHint}">
-            결제 완료 시 재고가 차감됩니다. 재고가 부족하면 주문이 취소됩니다.
-          </p>
         </aside>
       </div>
     </div>

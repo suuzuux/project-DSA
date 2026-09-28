@@ -9,7 +9,8 @@
 
   const artistId = boardRoot.dataset.artistId;
   const boardTab = boardRoot.dataset.boardTab;
-  const listBase = "/community/" + artistId + "/" + boardTab;
+  // 목록 주소는 서버가 내려준 영문 주소(/kiikii/fan)를 우선 쓴다 - 정렬/새로고침 후에도 주소창이 영문 주소로 유지됨
+  const listBase = boardRoot.dataset.listBase || ("/community/" + artistId + "/" + boardTab);
 
   // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
   const t = function (key, fallback, args) {

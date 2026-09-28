@@ -59,7 +59,7 @@
       if (!form) return;
       var min = parseInt(stepper.getAttribute("data-qty-min"), 10) || 1;
       var max = parseInt(stepper.getAttribute("data-qty-max"), 10);
-      if (!max || max < 1) max = 999999;
+      if (!Number.isFinite(max) || max < 0) max = 999999;
       var input = form.querySelector('input[name="quantity"]');
       if (!input) return;
       var current = parseInt(input.value, 10) || min;
@@ -232,7 +232,7 @@
     );
   }
 
-  /** 바로 구매 — 토스 가상계좌 결제창 */
+  /** 바로 구매 — 주문서 페이지로 이동 */
   function buyNowProduct(form, triggerBtn) {
     if (!form) {
       return Promise.resolve(false);
@@ -263,9 +263,8 @@
           showShopToast(data.message || MSG.buyNowFailed || "구매에 실패했습니다.", 1800);
           return false;
         }
-        return openShopPayment(data).then(function () {
-          return true;
-        });
+        window.location.href = data.redirect || "/shop/checkout";
+        return true;
       })
       .catch(function (error) {
         if (error && error.code === "USER_CANCEL") {
@@ -283,7 +282,13 @@
   function checkoutCart(form, triggerBtn) {
     if (!form) return;
     if (triggerBtn) triggerBtn.disabled = true;
-    var fields = { idempotencyKey: window.WePlaNetToss ? WePlaNetToss.createIdempotencyKey() : "" };
+    var fields = collectCheckoutFields(form);
+    fields.idempotencyKey = window.WePlaNetToss ? WePlaNetToss.createIdempotencyKey() : "";
+    var hint = document.getElementById("checkoutPayHint");
+    if (hint) {
+      hint.hidden = true;
+      hint.textContent = "";
+    }
     var request = window.WePlaNetToss
       ? WePlaNetToss.postForm("/shop/payments/prepare-cart", fields)
       : Promise.reject(new Error(MSG.paymentModuleLoadError || "결제 모듈을 불러오지 못했습니다."));
@@ -292,15 +297,63 @@
         return openShopPayment(prepared);
       })
       .catch(function (error) {
-        if (error && error.code === "USER_CANCEL") {
-          showShopToast(MSG.paymentCancelled || "결제를 취소했어요.", 1800);
+        var message = (error && error.code === "USER_CANCEL")
+          ? (MSG.paymentCancelled || "결제를 취소했어요.")
+          : ((error && error.message) || MSG.checkoutPrepareFailed || "결제 준비에 실패했습니다.");
+        if (hint) {
+          hint.textContent = message;
+          hint.hidden = false;
         } else {
-          showShopToast((error && error.message) || MSG.checkoutPrepareFailed || "결제 준비에 실패했습니다.", 1800);
+          showShopToast(message, 1800);
         }
       })
       .finally(function () {
         if (triggerBtn) triggerBtn.disabled = false;
       });
+  }
+
+  function collectCheckoutFields(form) {
+    var fields = {};
+    if (!form) return fields;
+    ["receiverName", "receiverPhone", "zipcode", "address1", "address2", "deliveryMemo"].forEach(function (name) {
+      var input = form.querySelector('[name="' + name + '"]');
+      fields[name] = input ? input.value : "";
+    });
+    return fields;
+  }
+
+  function requireCheckoutFields(form) {
+    var receiverName = form.querySelector('[name="receiverName"]');
+    var receiverPhone = form.querySelector('[name="receiverPhone"]');
+    var zipcode = form.querySelector('[name="zipcode"]');
+    var address1 = form.querySelector('[name="address1"]');
+    if (!receiverName || !receiverName.value.trim()) {
+      return "받는 사람을 입력해주세요.";
+    }
+    if (!receiverPhone || !receiverPhone.value.trim()) {
+      return "연락처를 입력해주세요.";
+    }
+    if (!zipcode || !zipcode.value.trim() || !address1 || !address1.value.trim()) {
+      return "주소를 검색해주세요.";
+    }
+    return "";
+  }
+
+  function initPostcodeSearch() {
+    var button = document.getElementById("searchPostcodeButton");
+    if (!button || !window.daum || !daum.Postcode) return;
+    button.addEventListener("click", function () {
+      new daum.Postcode({
+        oncomplete: function (data) {
+          var zipcode = document.getElementById("zipcode");
+          var address1 = document.getElementById("address1");
+          var address2 = document.getElementById("address2");
+          if (zipcode) zipcode.value = data.zonecode || "";
+          if (address1) address1.value = data.roadAddress || data.jibunAddress || "";
+          if (address2) address2.focus();
+        }
+      }).open();
+    });
   }
 
   var form = document.getElementById("addToCartForm");
@@ -334,14 +387,18 @@
 
     var min = parseInt(stepper.getAttribute("data-qty-min"), 10) || 1;
     var max = parseInt(stepper.getAttribute("data-qty-max"), 10);
-    if (!max || max < 1) max = 999999;
+    if (!Number.isFinite(max) || max < 0) max = 999999;
     var delta = parseInt(stepBtn.getAttribute("data-qty-delta"), 10) || 0;
     var input = form.querySelector('input[name="quantity"]');
     var output = stepper.querySelector(".cart-qty-stepper__value");
     if (!input) return;
 
     var next = (parseInt(input.value, 10) || min) + delta;
-    if (next < min || next > max) return;
+    if (next < min) return;
+    if (next > max) {
+      showShopToast("재고가 없습니다.", 1800);
+      return;
+    }
 
     input.value = String(next);
     if (output) output.textContent = String(next);
@@ -349,12 +406,24 @@
   });
 
   initCartQtySteppers();
+  initPostcodeSearch();
 
-  var checkoutForm = document.querySelector('form[action="/shop/cart/checkout"], form[action$="/shop/cart/checkout"]');
-  if (checkoutForm) {
-    checkoutForm.addEventListener("submit", function (e) {
+  var checkoutPayForm = document.getElementById("shopCheckoutPayForm");
+  if (checkoutPayForm) {
+    checkoutPayForm.addEventListener("submit", function (e) {
       e.preventDefault();
-      checkoutCart(checkoutForm, checkoutForm.querySelector('button[type="submit"]'));
+      var missing = requireCheckoutFields(checkoutPayForm);
+      if (missing) {
+        var hint = document.getElementById("checkoutPayHint");
+        if (hint) {
+          hint.textContent = missing;
+          hint.hidden = false;
+        } else {
+          showShopToast(missing, 1800);
+        }
+        return;
+      }
+      checkoutCart(checkoutPayForm, checkoutPayForm.querySelector('button[type="submit"]'));
     });
   }
 

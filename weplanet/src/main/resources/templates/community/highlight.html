@@ -77,7 +77,7 @@
           </article>
         </div>
         <p class="list-empty" th:if="${artistPosts.isEmpty()}" th:text="#{community.highlight.emptyArtistPosts}">표시할 아티스트 게시글이 없습니다.</p>
-        <a class="btn btn--ghost btn--block mt-8" th:href="@{/community/{id}/artist(id=${artist.id()})}" th:text="#{community.common.more}">더보기</a>
+        <a class="btn btn--ghost btn--block mt-8" th:href="@{${artist.homeUrl() + '/artist'}}" th:text="#{community.common.more}">더보기</a>
       </section>
 
       <!-- Artist comments -->
@@ -118,7 +118,7 @@
       <section class="mb-16">
         <div class="section__head">
           <h2 class="section__title">Fan Posts</h2>
-          <a class="section__link" th:href="@{/community/{id}/fan(id=${artist.id()})}" th:text="#{community.common.more}">더보기</a>
+          <a class="section__link" th:href="@{${artist.homeUrl() + '/fan'}}" th:text="#{community.common.more}">더보기</a>
         </div>
         <div class="feed feed--grid" th:if="${!fanPosts.isEmpty()}">
           <article class="post-card" th:each="post : ${fanPosts}">
@@ -135,7 +135,7 @@
                      style="color:inherit;text-decoration:none;"
                      th:text="${fanPostAuthorNicknames.get('' + post.author.id)}">닉네임</a>
                   <span th:unless="${post.author != null}" th:text="#{community.post.unknownAuthor}">(알 수 없음)</span>
-                  <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
+                  <span th:if="${post.author != null and post.author.artistSide}" class="badge-verified">✓</span>
                 </div>
                 <div class="post-card__time"
                      th:with="y=${#temporals.year(post.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
@@ -172,7 +172,7 @@
       <section>
         <div class="section__head">
           <h2 class="section__title">Lives</h2>
-          <a class="section__link" th:href="@{/community/{id}/live(id=${artist.id()})}" th:text="#{community.common.more}">더보기</a>
+          <a class="section__link" th:href="@{${artist.homeUrl() + '/live'}}" th:text="#{community.common.more}">더보기</a>
         </div>
         <p class="list-empty" th:text="#{community.highlight.emptyLives}">표시할 라이브가 없습니다.</p>
       </section>

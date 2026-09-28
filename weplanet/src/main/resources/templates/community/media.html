@@ -42,7 +42,7 @@
             </select>
           </label>
           <button type="button" class="btn btn--primary btn--sm"
-                  th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+                  th:if="${isOwnCommunity}"
                   data-modal-open="writeMediaModal" th:text="#{community.media.upload}">미디어 등록</button>
         </div>
       </div>
@@ -100,7 +100,7 @@
               <span data-like-count th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
             </button>
             <span class="text-xs text-muted" th:text="#{community.media.fileCount(${post.fileCount})}"></span>
-            <form th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}"
+            <form th:if="${isOwnCommunity}"
                   th:action="@{/board/media/{id}/delete(id=${post.id})}"
                   method="post"
                   th:attr="data-confirm=#{community.media.deleteConfirm}"
@@ -121,7 +121,7 @@
 
   <!-- 미디어 등록 모달 (해당 커뮤니티 아티스트만) -->
   <div class="modal-backdrop" id="writeMediaModal"
-       th:if="${#authentication.name != 'anonymousUser' and #authentication.principal.id == artist.id()}">
+       th:if="${isOwnCommunity}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
         <h2 class="modal__title" th:text="#{community.media.upload}">미디어 등록</h2>

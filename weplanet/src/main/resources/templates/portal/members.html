@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="|#{portal.menu.members} | Artist Portal|">멤버 관리 | Artist Portal</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+<div class="portal-shell"
+     th:classappend="${isAgency} ? (${artistSelected} ? ' portal-shell--agency' : ' portal-shell--agency-pick') : ''">
+    <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
+
+    <main class="portal-main">
+        <th:block th:replace="~{portal/fragments/sidebars :: pickHint(${#messages.msg('portal.menu.members')})}"></th:block>
+        <th:block th:if="${artistSelected}">
+            <div class="portal-main__head">
+                <h1 th:text="#{portal.menu.members}">멤버 관리</h1>
+            </div>
+
+            <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
+            <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+            <!-- 그룹 계정(1단계 로그인) 상태 -->
+            <div class="settings-block" style="max-width:800px;margin-bottom:16px;">
+                <div class="text-sm text-muted">그룹 로그인 계정</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px;">
+                    <strong th:text="${artist.username}">artist@domain.com</strong>
+                    <th:block th:if="${artist.status.name() == 'PENDING_ACTIVATION'}">
+                        <span class="tag">활성화 대기</span>
+                        <form th:action="@{/portal/artists/resend-activation}" method="post" style="margin:0;"
+                              onsubmit="return confirm('활성화 메일을 다시 보낼까요? 이전 링크는 사용할 수 없게 됩니다.');">
+                            <button type="submit" class="btn btn--ghost btn--sm">활성화 메일 재발송</button>
+                        </form>
+                    </th:block>
+                    <span class="tag" th:unless="${artist.status.name() == 'PENDING_ACTIVATION'}">활성</span>
+                </div>
+            </div>
+
+            <!-- 멤버 목록 -->
+            <div class="settings-block" style="max-width:800px;margin-bottom:16px;">
+                <h2 style="font-size:16px;margin-bottom:12px;">
+                    멤버 <span th:text="${#lists.size(members)}">0</span>명
+                </h2>
+                <p class="text-sm text-muted" th:if="${#lists.isEmpty(members)}">
+                    아직 멤버가 없습니다. 멤버가 없으면 그룹 로그인 후 바로 커뮤니티로 이동합니다(솔로).
+                </p>
+                <table style="width:100%;font-size:14px;" th:unless="${#lists.isEmpty(members)}">
+                    <thead>
+                    <tr style="text-align:left;">
+                        <th style="padding:6px 0;">이름</th>
+                        <th>개인 비밀번호</th>
+                        <th>합류일</th>
+                        <th style="text-align:right;">관리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="gm : ${members}">
+                        <td style="padding:6px 0;" th:text="${gm.member.nickname}">휘원</td>
+                        <td th:text="${gm.member.hasPassword()} ? '설정됨' : '첫 로그인 때 설정'">첫 로그인 때 설정</td>
+                        <td th:text="${gm.joinedAt}">2026-09-27</td>
+                        <td style="text-align:right;white-space:nowrap;">
+                            <form th:if="${gm.member.hasPassword()}"
+                                  th:action="@{/portal/members/{id}/reset-password(id=${gm.member.id})}" method="post"
+                                  style="display:inline;"
+                                  th:attr="onsubmit=|return confirm('${gm.member.nickname} 멤버의 개인 비밀번호를 초기화할까요?');|">
+                                <button type="submit" class="btn btn--ghost btn--sm">비밀번호 초기화</button>
+                            </form>
+                            <form th:action="@{/portal/members/{id}/leave(id=${gm.member.id})}" method="post"
+                                  style="display:inline;"
+                                  th:attr="onsubmit=|return confirm('${gm.member.nickname} 멤버를 탈퇴 처리할까요? 작성한 글은 남습니다.');|">
+                                <button type="submit" class="btn btn--ghost btn--sm">탈퇴</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 멤버 추가 -->
+            <form class="settings-block" style="max-width:800px;" th:action="@{/portal/members}" method="post">
+                <div class="form-group">
+                    <label class="form-label" for="memberName">멤버 추가</label>
+                    <input class="form-input" id="memberName" name="memberName" maxlength="20" required
+                           placeholder="커뮤니티에 작성자로 보일 이름 (20자 이내)" />
+                </div>
+                <div class="flex-center" style="justify-content:flex-end;">
+                    <button type="submit" class="btn btn--primary">멤버 추가</button>
+                </div>
+            </form>
+        </th:block>
+    </main>
+</div>
+</body>
+</html>

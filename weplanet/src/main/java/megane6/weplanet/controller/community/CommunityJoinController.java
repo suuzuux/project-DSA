@@ -3,12 +3,16 @@ package megane6.weplanet.controller.community;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.controller.AuthenticatedUserResolver;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 @Controller
@@ -17,7 +21,9 @@ public class CommunityJoinController {
 	
 	private final CommunityJoinService communityJoinService;
 	private final AuthenticatedUserResolver userResolver;
-	
+	private final CommunityArtistResolver communityArtistResolver;
+	private final PortalManagementService portalManagementService;
+
 	@PostMapping("/community/{artistId}/join")
 	public String join(@PathVariable Long artistId,
 					   @RequestParam String nickname,
@@ -27,10 +33,10 @@ public class CommunityJoinController {
 					   @AuthenticationPrincipal AuthenticatedUser principal,
 					   @RequestHeader(value = "Referer", required = false) String referer) {
 		User me = userResolver.requireAuthenticated(principal);
-		if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
+		if (!me.canParticipateInCommunity()) {
 			throw new IllegalStateException("error.community.joinFanOrArtistOnly");
 		}
-		if (me.getId().equals(artistId)) {
+		if (communityArtistResolver.isArtistOf(me, artistId)) {
 			throw new IllegalStateException("error.community.joinOwnCommunity");
 		}
 		communityJoinService.join(me, artistId, nickname, bio, avatar, background);
@@ -51,9 +57,16 @@ public class CommunityJoinController {
 							  @RequestParam(defaultValue = "false") boolean contentHidden,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
 							  @RequestHeader(value = "Referer", required = false) String referer) {
-		User fan = userResolver.requireAuthenticated(principal);
-		communityJoinService.editProfile(fan, artistId, nickname, bio, avatar, background,
-				removeAvatar, removeBackground, contentHidden);
+		User me = userResolver.requireAuthenticated(principal);
+		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 가입 프로필(community_profiles)이 없으므로
+		// 계정별 포털 프로필(소개/사진/배경)을 고친다. 이름과 콘텐츠 숨김은 아티스트에게 해당 없음.
+		if (communityArtistResolver.isArtistOf(me, artistId)) {
+			portalManagementService.updateArtistCommunityProfile(me, bio, avatar, background,
+					removeAvatar, removeBackground);
+		} else {
+			communityJoinService.editProfile(me, artistId, nickname, bio, avatar, background,
+					removeAvatar, removeBackground, contentHidden);
+		}
 		return "redirect:" + (referer != null ? referer : "/");
 	}
 	

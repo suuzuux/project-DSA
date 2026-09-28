@@ -7,6 +7,7 @@ import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.community.CommunityProfileRepository;
+import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.service.FileStorageService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -29,6 +30,7 @@ class CommunityJoinServiceTest {
 		CommunityJoinService service = new CommunityJoinService(
 				mock(CommunityMemberRepository.class),
 				profileRepository,
+				mock(ArtistProfileRepository.class),
 				mock(UserRepository.class),
 				mock(FileStorageService.class),
 				mock(ApplicationEventPublisher.class),

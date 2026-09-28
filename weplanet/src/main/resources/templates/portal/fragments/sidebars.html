@@ -13,6 +13,18 @@
     </nav>
     <p class="portal-artists__empty" th:if="${#lists.isEmpty(managedArtists)}" th:text="#{portal.sidebar.noArtists}">소속 아티스트가 없습니다.</p>
     <div class="portal-artists__footer">
+      <!-- 아티스트 등록 - 웜그레이 채움 버튼 + 사람(user-plus) 아이콘 -->
+      <a class="portal-artists__add" th:href="@{/portal/artists/new}"
+         th:classappend="${activeMenu == 'artistNew'} ? ' is-active'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <line x1="19" y1="8" x2="19" y2="14"></line>
+          <line x1="22" y1="11" x2="16" y2="11"></line>
+        </svg>
+        <span>아티스트 등록</span>
+      </a>
       <form th:action="@{/logout}" method="post" style="display:inline;">
         <button type="submit" class="portal-logout-link" th:text="#{common.logout}">로그아웃</button>
       </form>
@@ -35,6 +47,7 @@
       <a th:href="@{/portal/live}" th:classappend="${activeMenu == 'live'} ? ' is-active'" th:text="|📡 #{portal.menu.live}|">📡 방송</a>
       <th:block th:if="${isAgency}">
         <a th:href="@{/portal/profile}" th:classappend="${activeMenu == 'profile'} ? ' is-active'" th:text="|👤 #{portalProfile.heading}|">👤 프로필 관리</a>
+        <a th:href="@{/portal/members}" th:classappend="${activeMenu == 'members'} ? ' is-active'" th:text="|👥 #{portal.menu.members}|">👥 멤버 관리</a>
         <a th:href="@{/portal/reports}" th:classappend="${activeMenu == 'reports'} ? ' is-active'" th:text="|⚙ #{portal.menu.reports}|">⚙ 신고함 / 차단</a>
       </th:block>
     </nav>

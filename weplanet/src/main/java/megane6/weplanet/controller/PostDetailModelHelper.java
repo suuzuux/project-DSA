@@ -5,7 +5,6 @@ import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.entity.Comment;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.CommentReportRepository;
 import megane6.weplanet.repository.LikeRepository;
 import megane6.weplanet.service.CommentService;
@@ -56,10 +55,10 @@ public class PostDetailModelHelper {
 				.filter(c -> c.getParent() == null)
 				.toList();
 		List<Comment> artistComments = rootComments.stream()
-				.filter(c -> c.getAuthor().getRole() == Role.ARTIST)
+				.filter(c -> c.getAuthor().isArtistSide())
 				.toList();
 		List<Comment> otherComments = rootComments.stream()
-				.filter(c -> c.getAuthor().getRole() != Role.ARTIST)
+				.filter(c -> !c.getAuthor().isArtistSide())
 				.toList();
 
 		List<User> authors = new ArrayList<>();

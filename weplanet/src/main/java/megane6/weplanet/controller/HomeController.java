@@ -41,6 +41,7 @@ public class HomeController {
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final ArtistAttendanceService artistAttendanceService;
 	private final PortalManagementService portalManagementService;
+	private final megane6.weplanet.service.MainBannerService mainBannerService;
 	
 	@GetMapping({"", "/"})
 	public String home(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -51,6 +52,8 @@ public class HomeController {
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
 		List<ArtistCardView> artists = portalManagementService.toArtistCards(artistUsers);
 		model.addAttribute("artists", artists);
+		// 상단 배너 - 최고관리자가 [배너 영역 관리]에서 노출 중으로 둔 배너. 비어 있으면 화면이 기본 배너를 보여준다
+		model.addAttribute("mainBanners", mainBannerService.activeSlides());
 		
 		Map<Long, CommunityProfile> joinedProfiles;
 		Set<Long> joinedArtistIds;
@@ -82,6 +85,10 @@ public class HomeController {
 				})
 				.toList();
 		model.addAttribute("risingCommunities", risingCommunities);
+		// 급상승 카드 링크용 커뮤니티 주소(영문 주소 우선). Thymeleaf에서 Long 키 조회가 어긋나지 않게 문자열 키로 둔다
+		Map<String, String> communityHomeUrls = new HashMap<>();
+		artists.forEach(card -> communityHomeUrls.put(String.valueOf(card.id()), card.homeUrl()));
+		model.addAttribute("communityHomeUrls", communityHomeUrls);
 		
 		// 메인 페이지 "최신 인기 포스트" 위젯 - 게시판 구분 없이 인기순 상위 4개 + 각 게시글 대표 이미지(있으면)
 		// 작성자 표시는 해당 커뮤니티 가입 닉네임 기준

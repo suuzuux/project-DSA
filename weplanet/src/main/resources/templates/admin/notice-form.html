@@ -21,7 +21,15 @@
       </div>
 
       <nav class="portal-sidebar__nav">
-        <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+        <!-- 통합 대시보드 하위 메뉴 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+        <details class="portal-sidebar__group">
+          <summary>
+            <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          </summary>
+          <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
+        </details>
+        <a th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
         <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
         <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
         <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>

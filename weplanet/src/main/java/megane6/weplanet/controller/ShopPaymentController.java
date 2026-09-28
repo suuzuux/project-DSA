@@ -3,6 +3,7 @@ package megane6.weplanet.controller;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.CommercePaymentStatusView;
 import megane6.weplanet.domain.dto.ProjectPaymentPrepareResponse;
+import megane6.weplanet.domain.dto.ShopShippingRequest;
 import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.exception.TossPaymentException;
 import megane6.weplanet.security.AuthenticatedUser;
@@ -36,11 +37,20 @@ public class ShopPaymentController {
 	@PostMapping("/shop/payments/prepare-cart")
 	@ResponseBody
 	public ProjectPaymentPrepareResponse prepareCart(@RequestParam(required = false) String idempotencyKey,
+													 @RequestParam(required = false) String receiverName,
+													 @RequestParam(required = false) String receiverPhone,
+													 @RequestParam(required = false) String zipcode,
+													 @RequestParam(required = false) String address1,
+													 @RequestParam(required = false) String address2,
+													 @RequestParam(required = false) String deliveryMemo,
 													 @AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) {
 			throw new AuthenticationRequiredException();
 		}
-		return shopPaymentService.prepareCart(userResolver.requireAuthenticated(principal), idempotencyKey);
+		return shopPaymentService.prepareCart(
+				userResolver.requireAuthenticated(principal),
+				idempotencyKey,
+				ShopShippingRequest.of(receiverName, receiverPhone, zipcode, address1, address2, deliveryMemo));
 	}
 
 	@PostMapping("/shop/payments/prepare-buy")

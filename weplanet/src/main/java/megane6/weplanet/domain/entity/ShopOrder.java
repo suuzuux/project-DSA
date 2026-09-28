@@ -83,6 +83,25 @@ public class ShopOrder {
 	@Column(name = "cancelled_at")
 	private LocalDateTime cancelledAt;
 
+	@Column(name = "receiver_name", length = 50)
+	private String receiverName;
+
+	@Column(name = "receiver_phone", length = 30)
+	private String receiverPhone;
+
+	@Column(length = 10)
+	private String zipcode;
+
+	@Column(length = 255)
+	private String address1;
+
+	@Convert(converter = PlaintextBytesConverter.class)
+	@Column(name = "address2", columnDefinition = "VARBINARY(512)")
+	private String address2;
+
+	@Column(name = "delivery_memo", length = 200)
+	private String deliveryMemo;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -115,6 +134,19 @@ public class ShopOrder {
 
 	public void addItem(ShopOrderItem item) {
 		this.items.add(item);
+	}
+
+	public void applyShipping(String receiverName, String receiverPhone, String zipcode,
+							  String address1, String address2, String deliveryMemo) {
+		if (paymentStatus != FanProjectPaymentStatus.READY) {
+			throw new IllegalStateException("결제 대기 중인 주문만 배송지를 저장할 수 있습니다.");
+		}
+		this.receiverName = receiverName;
+		this.receiverPhone = receiverPhone;
+		this.zipcode = zipcode;
+		this.address1 = address1;
+		this.address2 = address2;
+		this.deliveryMemo = deliveryMemo;
 	}
 
 	public void markWaitingForDeposit(String paymentKey, String bankCode, String accountNumber,

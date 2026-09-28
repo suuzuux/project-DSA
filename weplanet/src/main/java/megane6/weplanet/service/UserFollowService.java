@@ -50,7 +50,7 @@ public class UserFollowService {
         if (me.getId().equals(targetUserId)) {
             throw new IllegalStateException("error.follow.self");
         }
-        if (me.getRole() != Role.FAN && me.getRole() != Role.ARTIST) {
+        if (!me.canParticipateInCommunity()) {
             throw new IllegalStateException("error.follow.fanOrArtistOnly");
         }
 

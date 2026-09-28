@@ -1,8 +1,8 @@
 package megane6.weplanet.service.community;
 
+import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.enumfolder.Role;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -17,7 +17,10 @@ import java.util.Set;
  * </ul>
  */
 @Component
+@RequiredArgsConstructor
 public class CommunityDrawerHelper {
+	
+	private final CommunityArtistResolver communityArtistResolver;
 
 	/**
 	 * 드로어 상단.
@@ -29,9 +32,11 @@ public class CommunityDrawerHelper {
 		if (viewer == null || allArtists == null || allArtists.isEmpty()) {
 			return List.of();
 		}
-		if (viewer.getRole() == Role.ARTIST) {
+		// 아티스트 쪽 계정: "가입한 커뮤니티" 칸에는 본인이 아티스트로 있는 커뮤니티 하나만 보여준다
+		if (viewer.isArtistSide()) {
+			Long ownCommunityId = communityArtistResolver.ownCommunityId(viewer);
 			return allArtists.stream()
-					.filter(a -> a.id().equals(viewer.getId()))
+					.filter(a -> a.id().equals(ownCommunityId))
 					.toList();
 		}
 		if (joinedArtistIds == null || joinedArtistIds.isEmpty()) {

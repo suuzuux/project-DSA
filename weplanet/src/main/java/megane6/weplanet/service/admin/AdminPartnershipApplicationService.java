@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.PartnershipApplicationRepository;
 import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.service.AgencyActivationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,10 @@ public class AdminPartnershipApplicationService {
 	private final PartnershipApplicationRepository applicationRepository;
 	private final UserRepository userRepository;
 	private final AdminActionLogService actionLogService;
+	
+	private final AdminActionLogService aas;
+	private final AgencyAccountProvisioningService provisioningService;
+	private final AgencyActivationService activationService;
 	
 	public Page<AdminPartnershipApplicationResponse> getApplications(
 			PartnershipApplicationStatus status,
@@ -79,27 +84,33 @@ public class AdminPartnershipApplicationService {
 	}
 	
 	@Transactional
-	public PartnershipApplication approveApplication(
+	public ApprovalResult approveApplication(
 			Long applicationId,
 			Long adminId,
+			String agencyName,
 			String ipAddress
 	) {
 		User admin = requireAdmin(adminId);
-		PartnershipApplication application =
-				requireApplication(applicationId);
+		PartnershipApplication application = requireApplication(applicationId);
 		
 		application.approve(admin);
 		
-		actionLogService.recordAction(
+		// 계정 발급이 실패하면 승인 자체가 롤백됨
+		// "승인은 됐는데 계정이 없는" 상태를 만들기 않기 위해서
+		AgencyAccountProvisioningService.ProvisionedAccount account
+				= provisioningService.provision(application, admin, agencyName);
+		
+		aas.recordAction(
 				adminId,
 				AdminActionType.PARTNERSHIP_APPLICATION_APPROVE,
 				AdminTargetType.PARTNERSHIP_APPLICATION,
 				applicationId,
-				application.getApplicantName() + " 등록 신청 승인",
+				application.getApplicantName() + " 등록 신청 승인 (소속사 계정 발급: "
+				+ account.username() + ")",
 				ipAddress
 		);
 		
-		return application;
+		return new ApprovalResult(application, account);
 	}
 	
 	@Transactional
@@ -127,6 +138,43 @@ public class AdminPartnershipApplicationService {
 		);
 		
 		return application;
+	}
+	
+	@Transactional
+	public ResendResult resendActivation(
+			Long applicationId, Long adminId, String ipAddress) {
+		requireAdmin(adminId);
+		PartnershipApplication application = requireApplication(applicationId);
+		
+		if (application.getStatus() != PartnershipApplicationStatus.APPROVED) {
+			throw new IllegalStateException("승인된 신청만 활성화 메일을 재발송할 수 있습니다.");
+		}
+		
+		// 승인할 때 신청서 이메일을 그대로 로그인 아이디로 만들었으므로, 같은 값으로 찾는다.
+		User agencyUser = userRepository.findByUsername(application.getEmail())
+				.orElseThrow(() -> new IllegalStateException("이 신청으로 발급된 소속사 계정을 찾을 수 없습니다: "
+						+ application.getEmail()));
+		
+		AgencyActivationService.IssuedActivation issuedActivation
+				= activationService.reissueActivationToken(agencyUser);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PARTNERSHIP_ACTIVATION_RESEND,
+				AdminTargetType.PARTNERSHIP_APPLICATION,
+				applicationId,
+				application.getApplicantName()
+						+ " 소속사 계정 활성화 메일 재발송 ("
+						+ agencyUser.getUsername()
+						+ ")",
+				ipAddress
+		);
+		
+		return new ResendResult(
+				application,
+				agencyUser.getUsername(),
+				issuedActivation
+		);
 	}
 	
 	private PartnershipApplication requireApplication(
@@ -211,6 +259,19 @@ public class AdminPartnershipApplicationService {
 		
 		return keyword.trim();
 	}
+	
+	// 승인 결과. 컨트롤러가 이 정보로 초대 메일을 보낸다.
+	public record ApprovalResult(
+			PartnershipApplication application,
+			AgencyAccountProvisioningService.ProvisionedAccount account
+	) {}
+	
+	// 재발송 결과. 컨트롤러가 이 정보로 새 링크를 메일로 보낸다.
+	public record ResendResult(
+			PartnershipApplication application,
+			String username,
+			AgencyActivationService.IssuedActivation activation
+	) {}
 	
 	public record ApplicationStats(
 			long totalCount,
