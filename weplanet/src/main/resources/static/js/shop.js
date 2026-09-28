@@ -229,7 +229,7 @@
     );
   }
 
-  /** 바로 구매 — 토스 가상계좌 결제창 */
+  /** 바로 구매 — 주문서 페이지로 이동 */
   function buyNowProduct(form, triggerBtn) {
     if (!form) {
       return Promise.resolve(false);
@@ -260,16 +260,11 @@
           showShopToast(data.message || "구매에 실패했습니다.", 1800);
           return false;
         }
-        return openShopPayment(data).then(function () {
-          return true;
-        });
+        window.location.href = data.redirect || "/shop/checkout";
+        return true;
       })
       .catch(function (error) {
-        if (error && error.code === "USER_CANCEL") {
-          showShopToast("결제를 취소했어요.", 1800);
-        } else {
-          showShopToast((error && error.message) || "구매에 실패했습니다.", 1800);
-        }
+        showShopToast((error && error.message) || "구매에 실패했습니다.", 1800);
         return false;
       })
       .finally(function () {
