@@ -7,6 +7,7 @@ import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.ShopCartItemView;
 import megane6.weplanet.domain.dto.ShopCartSummaryView;
 import megane6.weplanet.domain.dto.ShopProductView;
+import megane6.weplanet.domain.dto.ShopShippingRequest;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.UserRepository;
@@ -120,6 +121,30 @@ public class ShopController {
 		return "shop-cart";
 	}
 
+	@GetMapping("/shop/checkout")
+	public String checkout(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		User me = userResolver.requireAuthenticated(principal);
+		ShopCartSummaryView cart = shopCartService.getCartSummary(me);
+		if (cart.empty()) {
+			return "redirect:/shop/cart";
+		}
+		populateShellMenu(principal, model);
+		model.addAttribute("cart", cart);
+		model.addAttribute("cartItemCount", cart.items().size());
+		model.addAttribute("shipping", ShopShippingRequest.of(
+				firstNonBlank(me.getRealName(), me.getNickname()),
+				me.getPhone(),
+				me.getZipcode(),
+				me.getAddress1(),
+				me.getAddress2(),
+				null
+		));
+		return "shop-checkout";
+	}
+
 	@PostMapping("/shop/cart/add")
 	@ResponseBody
 	public Map<String, Object> addToCart(@RequestParam String productId,
@@ -145,23 +170,8 @@ public class ShopController {
 	}
 
 	@PostMapping("/shop/cart/checkout")
-	public String checkoutCart(@AuthenticationPrincipal AuthenticatedUser principal,
-	                           RedirectAttributes redirectAttributes,
-	                           Model model) {
-		if (principal == null) {
-			return "redirect:/login";
-		}
-		User me = userResolver.requireAuthenticated(principal);
-		try {
-			ProjectPaymentPrepareResponse prepared = shopPaymentService.prepareCart(me, null);
-			model.addAttribute("prepared", prepared);
-			model.addAttribute("successUrl", "/payments/shop/success");
-			model.addAttribute("failUrl", "/payments/shop/fail");
-			return "payment/commerce-start";
-		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
-			return "redirect:/shop/cart";
-		}
+	public String checkoutCart() {
+		return "redirect:/shop/checkout";
 	}
 
 	@PostMapping(value = "/shop/products/{productId}/buy", headers = "X-Requested-With=XMLHttpRequest")
@@ -228,6 +238,7 @@ public class ShopController {
 	@PostMapping("/shop/cart/{itemId}/update")
 	public String updateCartQuantity(@PathVariable Long itemId,
 	                                 @RequestParam int quantity,
+	                                 @RequestParam(required = false) String from,
 	                                 @AuthenticationPrincipal AuthenticatedUser principal,
 	                                 RedirectAttributes redirectAttributes) {
 		if (principal == null) {
@@ -239,11 +250,12 @@ public class ShopController {
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("message", e.getMessage());
 		}
-		return "redirect:/shop/cart";
+		return checkoutReturn(from);
 	}
 
 	@PostMapping("/shop/cart/{itemId}/remove")
 	public String removeFromCart(@PathVariable Long itemId,
+	                             @RequestParam(required = false) String from,
 	                             @AuthenticationPrincipal AuthenticatedUser principal,
 	                             RedirectAttributes redirectAttributes) {
 		if (principal == null) {
@@ -252,12 +264,13 @@ public class ShopController {
 		User me = userResolver.requireAuthenticated(principal);
 		shopCartService.removeItem(me, itemId);
 		redirectAttributes.addFlashAttribute("message", "장바구니에서 삭제했습니다.");
-		return "redirect:/shop/cart";
+		return checkoutReturn(from);
 	}
 
 	private void rememberShopPage(HttpServletRequest request) {
 		String path = request.getRequestURI();
-		if (!path.startsWith("/shop") || path.equals("/shop/cart") || path.startsWith("/shop/cart/")) {
+		if (!path.startsWith("/shop") || path.equals("/shop/cart") || path.startsWith("/shop/cart/")
+				|| path.equals("/shop/checkout") || path.startsWith("/shop/payments")) {
 			return;
 		}
 		String query = request.getQueryString();
@@ -267,10 +280,25 @@ public class ShopController {
 
 	private String resolveShopReturnUrl(HttpSession session) {
 		Object stored = session.getAttribute(SESSION_SHOP_RETURN);
-		if (stored instanceof String url && !url.isBlank() && !url.startsWith("/shop/cart")) {
+		if (stored instanceof String url && !url.isBlank() && !url.startsWith("/shop/cart")
+				&& !url.startsWith("/shop/checkout")) {
 			return url;
 		}
 		return "/shop";
+	}
+
+	private static String checkoutReturn(String from) {
+		return "checkout".equals(from) ? "redirect:/shop/checkout" : "redirect:/shop/cart";
+	}
+
+	private static String firstNonBlank(String first, String second) {
+		if (first != null && !first.isBlank()) {
+			return first;
+		}
+		if (second != null && !second.isBlank()) {
+			return second;
+		}
+		return null;
 	}
 
 	private void populateShellMenu(AuthenticatedUser principal, Model model) {

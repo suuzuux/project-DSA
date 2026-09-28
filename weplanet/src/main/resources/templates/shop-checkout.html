@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>주문서 | WePlaNet Shop</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" th:href="@{/css/shop.css}" />
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+  <header class="site-header">
+    <div class="header-left">
+      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <a class="brand" th:href="@{/shop}">
+        <span class="brand__mark">W</span>
+        <span class="brand__text">We<span>Pla</span>Net Shop</span>
+      </a>
+    </div>
+    <div class="header-actions">
+      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니">🛒</a>
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="section shop-checkout-page" data-shop-checkout-page>
+    <div class="container shop-checkout">
+      <div class="flex-between mb-24">
+        <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;">주문서</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/shop/cart}">← 장바구니</a>
+      </div>
+
+      <p th:if="${message}" class="alert mb-16"
+         th:classappend="${#strings.contains(message, '재고')} ? ' alert--error' : ' alert--success'"
+         th:text="${message}">알림</p>
+
+      <section class="shop-checkout__section">
+        <h2 class="shop-checkout__title">주문 상품</h2>
+        <div class="shop-cart-list shop-checkout__list">
+          <table class="cart-table">
+            <thead>
+              <tr>
+                <th class="cart-table__product">상품</th>
+                <th class="cart-table__qty">수량</th>
+                <th class="cart-table__price">가격</th>
+                <th class="cart-table__action"><span class="sr-only">삭제</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="item : ${cart.items()}">
+                <td class="cart-table__product">
+                  <div class="cart-product">
+                    <div class="cart-product__thumb"></div>
+                    <div class="cart-product__info">
+                      <a class="cart-product__title"
+                         th:href="@{/shop/products/{id}(id=${item.product().id()})}"
+                         th:text="${item.product().title()}">상품명</a>
+                      <p class="text-xs text-muted cart-product__meta">
+                        <span th:if="${item.product().membershipOnly()}" class="tag tag--member">멤버십</span>
+                        <span th:text="${item.product().artistName()}">아티스트</span>
+                        · <span th:text="${item.product().categoryLabel()}">카테고리</span>
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td class="cart-table__qty">
+                  <form th:action="@{/shop/cart/{id}/update(id=${item.itemId()})}" method="post" class="cart-qty-form">
+                    <input type="hidden" name="from" value="checkout" />
+                    <div class="cart-qty-stepper" data-qty-min="1"
+                         th:attr="data-qty-max=${item.product().stockQuantity()}">
+                      <button type="button" class="cart-qty-stepper__btn" data-qty-delta="-1" aria-label="수량 줄이기">−</button>
+                      <output class="cart-qty-stepper__value" th:text="${item.quantity()}">1</output>
+                      <input type="hidden" name="quantity" th:value="${item.quantity()}" />
+                      <button type="button" class="cart-qty-stepper__btn" data-qty-delta="1" aria-label="수량 늘리기">+</button>
+                    </div>
+                  </form>
+                </td>
+                <td class="cart-table__price"><strong th:text="${item.formattedLineTotal()}">₩ 0</strong></td>
+                <td class="cart-table__action">
+                  <form th:action="@{/shop/cart/{id}/remove(id=${item.itemId()})}" method="post" class="cart-remove-form">
+                    <input type="hidden" name="from" value="checkout" />
+                    <button type="submit" class="cart-remove-btn" aria-label="삭제" title="삭제">
+                      <span class="cart-remove-btn__icon" aria-hidden="true">🗑</span>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <form id="shopCheckoutPayForm" class="shop-checkout__form" novalidate>
+        <section class="shop-checkout__section">
+          <h2 class="shop-checkout__title">배송지</h2>
+          <div class="shop-checkout__fields">
+            <div class="form-group">
+              <label class="form-label" for="receiverName">받는 사람</label>
+              <input class="form-input" id="receiverName" name="receiverName" type="text"
+                     maxlength="50" required autocomplete="name"
+                     th:value="${shipping.receiverName()}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="receiverPhone">연락처</label>
+              <input class="form-input" id="receiverPhone" name="receiverPhone" type="tel"
+                     maxlength="30" required autocomplete="tel"
+                     th:value="${shipping.receiverPhone()}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="zipcode">우편번호</label>
+              <div class="shop-checkout__postcode">
+                <input class="form-input" id="zipcode" name="zipcode" type="text"
+                       maxlength="10" required readonly autocomplete="postal-code"
+                       th:value="${shipping.zipcode()}" />
+                <button type="button" id="searchPostcodeButton" class="btn btn--soft">주소 검색</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="address1">주소</label>
+              <input class="form-input" id="address1" name="address1" type="text"
+                     maxlength="255" required readonly autocomplete="street-address"
+                     th:value="${shipping.address1()}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="address2">상세 주소</label>
+              <input class="form-input" id="address2" name="address2" type="text"
+                     maxlength="200" autocomplete="address-line2"
+                     th:value="${shipping.address2()}" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="deliveryMemo">배송 메모 (선택)</label>
+              <input class="form-input" id="deliveryMemo" name="deliveryMemo" type="text"
+                     maxlength="200"
+                     th:value="${shipping.deliveryMemo()}" />
+            </div>
+          </div>
+        </section>
+
+        <section class="shop-checkout__section shop-checkout__pay">
+          <div class="cart-summary">
+            <div class="cart-summary__row">
+              <span>상품 금액</span>
+              <span th:text="${cart.formattedSubtotal()}">₩ 0</span>
+            </div>
+            <div class="cart-summary__row">
+              <span>배송비</span>
+              <span th:text="${cart.formattedShippingFee()}">₩ 0</span>
+            </div>
+            <div class="cart-summary__row cart-summary__total">
+              <span>결제 예정</span>
+              <span th:text="${cart.formattedTotal()}">₩ 0</span>
+            </div>
+            <p id="checkoutPayHint" class="text-xs text-muted shop-checkout__hint" hidden></p>
+            <button type="submit" class="btn btn--accent btn--block btn--lg mt-16">
+              가상계좌로 결제
+            </button>
+          </div>
+        </section>
+      </form>
+    </div>
+  </main>
+
+  <script th:inline="javascript">
+    window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
+    window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
+    window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
+  </script>
+  <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <script src="https://js.tosspayments.com/v2/standard"></script>
+  <script th:src="@{/js/main.js}"></script>
+  <script th:src="@{/js/shell.js}"></script>
+  <script th:src="@{/js/commerce-toss.js}"></script>
+  <script th:src="@{/js/shop.js}"></script>
+</body>
+</html>

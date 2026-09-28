@@ -993,6 +993,12 @@ CREATE TABLE IF NOT EXISTS `shop_order` (
   `payment_status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'READY',
   `paid_at` datetime(6) DEFAULT NULL,
   `cancelled_at` datetime(6) DEFAULT NULL,
+  `receiver_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '받는 사람',
+  `receiver_phone` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배송 연락처',
+  `zipcode` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '우편번호',
+  `address1` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '기본 주소',
+  `address2` varbinary(512) DEFAULT NULL COMMENT '상세주소(암호화 저장)',
+  `delivery_memo` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '배송 메모',
   `created_at` datetime(6) NOT NULL,
   `updated_at` datetime(6) NOT NULL,
   PRIMARY KEY (`id`),
@@ -1381,6 +1387,14 @@ CALL `wp_sync_add_column`('shop_cart_item', 'quantity', 'int NOT NULL DEFAULT ''
 CALL `wp_sync_add_column`('shop_cart_item', 'unit_price', 'int NOT NULL COMMENT ''담을 당시 단가(원)''', 0);
 CALL `wp_sync_add_column`('shop_cart_item', 'created_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''담은 시각''', 1);
 CALL `wp_sync_add_column`('shop_cart_item', 'updated_at', 'datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT ''수정 시각''', 1);
+
+-- shop_order 배송지: 기존 주문 데이터는 그대로 두고, 없는 컬럼만 NULL 허용으로 추가
+CALL `wp_sync_add_column`('shop_order', 'receiver_name', 'varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''받는 사람''', 0);
+CALL `wp_sync_add_column`('shop_order', 'receiver_phone', 'varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''배송 연락처''', 0);
+CALL `wp_sync_add_column`('shop_order', 'zipcode', 'varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''우편번호''', 0);
+CALL `wp_sync_add_column`('shop_order', 'address1', 'varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''기본 주소''', 0);
+CALL `wp_sync_add_column`('shop_order', 'address2', 'varbinary(512) DEFAULT NULL COMMENT ''상세주소(암호화 저장)''', 0);
+CALL `wp_sync_add_column`('shop_order', 'delivery_memo', 'varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT ''배송 메모''', 0);
 
 -- chat_message
 CALL `wp_sync_add_column`('chat_message', 'content', 'text COLLATE utf8mb4_unicode_ci NOT NULL COMMENT ''메시지 본문''', 0);
@@ -2236,6 +2250,12 @@ INSERT INTO `wp_expected_columns` VALUES
   ('shop_order', 'payment_status', 'varchar'),
   ('shop_order', 'paid_at', 'datetime'),
   ('shop_order', 'cancelled_at', 'datetime'),
+  ('shop_order', 'receiver_name', 'varchar'),
+  ('shop_order', 'receiver_phone', 'varchar'),
+  ('shop_order', 'zipcode', 'varchar'),
+  ('shop_order', 'address1', 'varchar'),
+  ('shop_order', 'address2', 'varbinary'),
+  ('shop_order', 'delivery_memo', 'varchar'),
   ('shop_order', 'created_at', 'datetime'),
   ('shop_order', 'updated_at', 'datetime'),
   ('shop_order_item', 'id', 'bigint'),
