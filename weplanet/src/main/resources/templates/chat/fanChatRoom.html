@@ -2,7 +2,7 @@
 <html lang="ko" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>팬 채팅방</title>
+    <title th:text="#{fanChat.pageTitle}">팬 채팅방</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
     <!-- SockJS/Stomp : 웹소켓 연결과 실시간 메시지 송수신을 도와주는 외부 자바스크립트 라이브러리 -->
@@ -19,8 +19,8 @@
 </header>
 
 <div class="container container--narrow section">
-    <h1 class="section__title">아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
-    <p class="text-muted" style="margin:8px 0 16px;">오늘 남은 메시지 수: <b id="remainingCount" th:text="${remaining}"></b></p>
+    <h1 class="section__title" th:text="#{fanChat.heading(${artistId})}">아티스트 <span th:text="${artistId}"></span>번과의 채팅 (팬 화면)</h1>
+    <p class="text-muted" style="margin:8px 0 16px;"><span th:text="#{fanChat.remainingLabel}">오늘 남은 메시지 수:</span> <b id="remainingCount" th:text="${remaining}"></b></p>
 
     <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
          background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;"></div>
@@ -32,8 +32,8 @@
     <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
 
     <div style="display:flex;gap:8px;">
-        <input type="text" id="messageInput" class="form-input" placeholder="메시지를 입력하세요">
-        <button id="sendButton" class="btn btn--primary">보내기</button>
+        <input type="text" id="messageInput" class="form-input" th:placeholder="#{fanChat.messagePlaceholder}" placeholder="메시지를 입력하세요">
+        <button id="sendButton" class="btn btn--primary" th:text="#{fanChat.sendButton}">보내기</button>
     </div>
 </div>
 
@@ -53,6 +53,11 @@
     // Thymeleaf가 서버에서 넘겨준 실제 값(아티스트/팬 번호)을 자바스크립트 변수로 바꿔치기해줌
     const artistId = /*[[${artistId}]]*/ 0;
     const fanId = /*[[${fanId}]]*/ 0;
+
+    // 화면 언어에 맞춘 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    const MSG = {
+        warningPrefix: /*[[#{fanChat.warningPrefix}]]*/ "[경고] {0}"
+    };
 
     // 웹소켓 연결 시작 (SockJS는 흉내내기용 안전장치, Stomp는 그 위에서 채널 규칙을 관리해주는 도구)
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -89,7 +94,7 @@
 
     function showWarning(message) {
         const banner = document.getElementById('warningBanner');
-        banner.textContent = '[경고] ' + message;
+        banner.textContent = MSG.warningPrefix.replace('{0}', message);
         banner.hidden = false;
 
         clearTimeout(warningTimer); // 이전에 걸어둔 "숨기기 예약"이 있으면 취소함

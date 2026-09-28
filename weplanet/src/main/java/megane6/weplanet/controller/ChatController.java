@@ -9,12 +9,14 @@ import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.exception.AuthenticationRequiredException;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.AiFanChatService;
 import megane6.weplanet.service.ChatFilterService;
 import megane6.weplanet.service.ChatMessageService;
 import megane6.weplanet.service.ChatQuotaService;
+import org.springframework.context.MessageSource;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
@@ -26,6 +28,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -50,6 +53,14 @@ public class ChatController {
     private final ChatFilterService chatFilterService;
     private final ChatQuotaService chatQuotaService;
     private final AiFanChatService aiFanChatService;
+    private final MessageSource messageSource;
+
+    // CHAT-03/CHAT-05/DM 웹소켓 경고 문구는 HTTP 요청이 아니라서 LocaleContextHolder(세션 로케일)를
+    // 못 쓴다 - 보낸 사람 본인의 User.preferredLanguage로 직접 로케일을 정한다.
+    private String chatMsg(String code, User forUser) {
+        Locale locale = PreferredLocaleResolver.toLocale(forUser.getPreferredLanguage());
+        return messageSource.getMessage(code, null, locale);
+    }
 
     // 유저 조회 공통 헬퍼 - label은 에러 메시지에 쓸 대상 이름 ("아티스트", "팬" 등)
     private User getUserOrThrow(Long userId, String label) {
@@ -204,11 +215,15 @@ public class ChatController {
             return;
         }
 
+        // 경고 문구 로케일 기준 = 보낸 사람 본인의 서비스 언어. 금칙어 검사가 artist/fan 조회보다
+        // 먼저 실행되므로, sender만 여기서 먼저 조회해둔다(기존에는 이 아래에서 다시 조회했음).
+        User sender = getUserOrThrow(request.getSenderId(), "보낸 사람");
+
         // CHAT-03 : 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람 본인에게만 경고를 돌려줌
         if (chatFilterService.containsBannedWord(request.getContent())) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
-            warning.put("message", "부적절한 언어가 포함되어 전송이 제한되었습니다.");
+            warning.put("message", chatMsg("chat.warning.bannedWord", sender));
 
             // "/topic/chat.error.보낸사람ID" 채널은 그 사람만 구독하고 있으므로, 본인에게만 경고가 도착함
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
@@ -217,7 +232,6 @@ public class ChatController {
         }
 
         User artist = getUserOrThrow(request.getArtistId(), "아티스트");
-        User sender = getUserOrThrow(request.getSenderId(), "보낸 사람");
         User fan = request.getFanId() != null
                 ? getUserOrThrow(request.getFanId(), "팬")
                 : null;
@@ -234,7 +248,7 @@ public class ChatController {
         if (sentByFan && chatMessageService.isMembershipExpired(fan, artist)) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
-            warning.put("message", "멤버십에 가입해야 DM을 보낼 수 있습니다.");
+            warning.put("message", chatMsg("chat.warning.membershipRequired", sender));
 
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
 
@@ -245,7 +259,7 @@ public class ChatController {
         if (sentByFan && !chatQuotaService.tryConsume(fan, artist)) {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
-            warning.put("message", "오늘 보낼 수 있는 메시지 횟수를 다 사용했습니다. 내일 다시 채워집니다.");
+            warning.put("message", chatMsg("chat.warning.dailyLimitExceeded", sender));
 
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
 

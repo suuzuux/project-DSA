@@ -11,6 +11,8 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.GoodsRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.portal.PortalManagementService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,21 +27,27 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class ShopService {
 
-	public static final String MEMBERSHIP_ONLY_MESSAGE = "멤버십 전용 굿즈입니다.";
-
 	private final UserRepository userRepository;
 	private final GoodsRepository goodsRepository;
 	private final PortalManagementService portalManagementService;
 	private final MembershipService membershipService;
+	private final MessageSource messageSource;
 
 	public ShopService(UserRepository userRepository,
 					   GoodsRepository goodsRepository,
 					   PortalManagementService portalManagementService,
-					   MembershipService membershipService) {
+					   MembershipService membershipService,
+					   MessageSource messageSource) {
 		this.userRepository = userRepository;
 		this.goodsRepository = goodsRepository;
 		this.portalManagementService = portalManagementService;
 		this.membershipService = membershipService;
+		this.messageSource = messageSource;
+	}
+
+	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
 
 	/**
@@ -50,9 +58,9 @@ public class ShopService {
 			return;
 		}
 		User artist = userRepository.findById(product.artistId())
-				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.productNotFound")));
 		if (!membershipService.isActiveMember(buyer, artist)) {
-			throw new IllegalArgumentException(MEMBERSHIP_ONLY_MESSAGE);
+			throw new IllegalArgumentException(msg("shop.error.membershipOnly"));
 		}
 	}
 
@@ -82,7 +90,7 @@ public class ShopService {
 		}
 		Map<Long, String> logos = portalManagementService.logoImageUrlsByArtistIds(
 				goods.stream().map(g -> g.getArtist().getId()).distinct().toList());
-		return goods.stream().map(g -> toView(g, logos.get(g.getArtist().getId()))).toList();
+		return goods.stream().map(g -> this.toView(g, logos.get(g.getArtist().getId()))).toList();
 	}
 
 	public Optional<ShopProductView> findProduct(String productId) {
@@ -95,7 +103,7 @@ public class ShopService {
 				.map(g -> {
 					g.getVariants().size();
 					g.getCategoryLinks().size();
-					return toView(g, portalManagementService.findLogoImageUrl(g.getArtist()));
+					return this.toView(g, portalManagementService.findLogoImageUrl(g.getArtist()));
 				});
 	}
 
@@ -117,7 +125,7 @@ public class ShopService {
 		return candidates.stream().limit(limit).toList();
 	}
 
-	private static ShopProductView toView(Goods goods, String logoUrl) {
+	private ShopProductView toView(Goods goods, String logoUrl) {
 		ArtistCardView card = ArtistCardView.from(goods.getArtist(), logoUrl);
 		List<ShopVariantView> variants = goods.getVariants().stream()
 				.map(v -> new ShopVariantView(
@@ -127,8 +135,10 @@ public class ShopService {
 						v.displayLabel(),
 						v.getStockQuantity()))
 				.toList();
+		// SETTINGS-03: GoodsCategoryType.getLabel()은 하드코딩된 한국어라서, 화면 로케일에 맞는
+		// 문구는 messageKey로 MessageSource에서 조회한다.
 		List<String> labels = goods.getCategories().stream()
-				.map(c -> c.getLabel())
+				.map(c -> msg(c.getMessageKey()))
 				.toList();
 		List<String> typeKeys = goods.getCategories().stream()
 				.map(c -> c.name().toLowerCase())
@@ -142,7 +152,7 @@ public class ShopService {
 				goods.getName(),
 				goods.getPrice(),
 				shopCategory.getFilterKey(),
-				shopCategory.getLabel(),
+				msg(shopCategory.getMessageKey()),
 				goods.isMembershipOnly() || shopCategory.isMembershipOnly(),
 				null,
 				goods.getThumbnailUrl(),

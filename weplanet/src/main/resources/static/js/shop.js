@@ -3,6 +3,9 @@
 
   var ADD_URL = "/shop/cart/add";
   var isCartPage = document.querySelector("[data-shop-cart-page]");
+  // SETTINGS-03: shop.html/shop-detail.html/shop-cart.html이 th:inline 스크립트로 넘겨주는
+  // 화면 언어 문구. 이 값을 안 넘겨주는 화면에서 로드될 가능성에 대비해 한국어 기본값을 항상 씀
+  var MSG = window.__SHOP_MSG__ || {};
 
   function showShopToast(message, durationMs) {
     var duration = durationMs || 1000;
@@ -70,7 +73,7 @@
   function buildCartRowHtml(item) {
     var product = item.product || {};
     var membershipTag = product.membershipOnly
-      ? '<span class="tag tag--member">멤버십</span> '
+      ? '<span class="tag tag--member">' + escapeHtml(MSG.membershipBadge || "멤버십") + '</span> '
       : "";
     var productUrl = "/shop/products/" + encodeURIComponent(product.id || "");
 
@@ -101,14 +104,14 @@
       '<div class="cart-qty-stepper" data-qty-min="1" data-qty-max="' +
       (product.stockQuantity > 0 ? product.stockQuantity : 999999) +
       '">' +
-      '<button type="button" class="cart-qty-stepper__btn" data-qty-delta="-1" aria-label="수량 줄이기">−</button>' +
+      '<button type="button" class="cart-qty-stepper__btn" data-qty-delta="-1" aria-label="' + escapeHtml(MSG.decreaseQtyAria || "수량 줄이기") + '">−</button>' +
       '<output class="cart-qty-stepper__value">' +
       item.quantity +
       "</output>" +
       '<input type="hidden" name="quantity" value="' +
       item.quantity +
       '" />' +
-      '<button type="button" class="cart-qty-stepper__btn" data-qty-delta="1" aria-label="수량 늘리기">+</button>' +
+      '<button type="button" class="cart-qty-stepper__btn" data-qty-delta="1" aria-label="' + escapeHtml(MSG.increaseQtyAria || "수량 늘리기") + '">+</button>' +
       "</div></form></td>" +
       '<td class="cart-table__price"><strong>' +
       escapeHtml(item.formattedLineTotal || "") +
@@ -117,7 +120,7 @@
       '<form action="/shop/cart/' +
       item.itemId +
       '/remove" method="post" class="cart-remove-form">' +
-      '<button type="submit" class="cart-remove-btn" aria-label="삭제" title="삭제">' +
+      '<button type="submit" class="cart-remove-btn" aria-label="' + escapeHtml(MSG.deleteAria || "삭제") + '" title="' + escapeHtml(MSG.deleteAria || "삭제") + '">' +
       '<span class="cart-remove-btn__icon" aria-hidden="true">🗑</span>' +
       "</button></form></td></tr>"
     );
@@ -201,16 +204,16 @@
       })
       .then(function (data) {
         if (data && data.ok) {
-          showShopToast(data.message || "장바구니에 담았습니다.", 1000);
+          showShopToast(data.message || MSG.addedToCart || "장바구니에 담았습니다.", 1000);
           if (typeof data.cartCount === "number") updateCartBadge(data.cartCount);
           if (data.cart) updateCartPage(data.cart, data.addedProductId || productId);
           return true;
         }
-        showShopToast((data && data.message) || "담기에 실패했습니다.", 1800);
+        showShopToast((data && data.message) || MSG.addToCartFailed || "담기에 실패했습니다.", 1800);
         return false;
       })
       .catch(function () {
-        showShopToast("장바구니에 담지 못했습니다.", 1000);
+        showShopToast(MSG.addToCartError || "장바구니에 담지 못했습니다.", 1000);
         return false;
       })
       .finally(function () {
@@ -220,7 +223,7 @@
 
   function openShopPayment(prepared) {
     if (!window.WePlaNetToss) {
-      return Promise.reject(new Error("결제 모듈을 불러오지 못했습니다."));
+      return Promise.reject(new Error(MSG.paymentModuleLoadError || "결제 모듈을 불러오지 못했습니다."));
     }
     return WePlaNetToss.openVirtualAccount(
       prepared,
@@ -257,7 +260,7 @@
           return false;
         }
         if (!data.success) {
-          showShopToast(data.message || "구매에 실패했습니다.", 1800);
+          showShopToast(data.message || MSG.buyNowFailed || "구매에 실패했습니다.", 1800);
           return false;
         }
         return openShopPayment(data).then(function () {
@@ -266,9 +269,9 @@
       })
       .catch(function (error) {
         if (error && error.code === "USER_CANCEL") {
-          showShopToast("결제를 취소했어요.", 1800);
+          showShopToast(MSG.paymentCancelled || "결제를 취소했어요.", 1800);
         } else {
-          showShopToast((error && error.message) || "구매에 실패했습니다.", 1800);
+          showShopToast((error && error.message) || MSG.buyNowFailed || "구매에 실패했습니다.", 1800);
         }
         return false;
       })
@@ -283,16 +286,16 @@
     var fields = { idempotencyKey: window.WePlaNetToss ? WePlaNetToss.createIdempotencyKey() : "" };
     var request = window.WePlaNetToss
       ? WePlaNetToss.postForm("/shop/payments/prepare-cart", fields)
-      : Promise.reject(new Error("결제 모듈을 불러오지 못했습니다."));
+      : Promise.reject(new Error(MSG.paymentModuleLoadError || "결제 모듈을 불러오지 못했습니다."));
     request
       .then(function (prepared) {
         return openShopPayment(prepared);
       })
       .catch(function (error) {
         if (error && error.code === "USER_CANCEL") {
-          showShopToast("결제를 취소했어요.", 1800);
+          showShopToast(MSG.paymentCancelled || "결제를 취소했어요.", 1800);
         } else {
-          showShopToast((error && error.message) || "결제 준비에 실패했습니다.", 1800);
+          showShopToast((error && error.message) || MSG.checkoutPrepareFailed || "결제 준비에 실패했습니다.", 1800);
         }
       })
       .finally(function () {

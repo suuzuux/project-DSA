@@ -11,6 +11,8 @@ import megane6.weplanet.domain.entity.media.BoardMediaLike;
 import megane6.weplanet.repository.media.BoardMediaFileRepository;
 import megane6.weplanet.repository.media.BoardMediaLikeRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,12 @@ public class BoardMediaService {
     private final BoardMediaFileRepository boardMediaFileRepository;
     private final BoardMediaLikeRepository boardMediaLikeRepository;
     private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
+    private final MessageSource messageSource;
+
+    // SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+    private String msg(String code, Object... args) {
+        return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
+    }
 
     // 허용하는 파일 형식(MIME)
     private static final List<String> ALLOWED_TYPES = Arrays.asList(
@@ -75,7 +83,7 @@ public class BoardMediaService {
                 }
                 String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
-                    throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
+                    throw new IllegalArgumentException(msg("mediaForm.error.fileTypeNotAllowed", contentType));
                 }
 
                 String storedName = fileStorageService.store(file); // 디스크에 저장
@@ -96,7 +104,7 @@ public class BoardMediaService {
         }
 
         if (post.getFiles().isEmpty()) {
-            throw new IllegalArgumentException("파일을 최소 1개 첨부해 주세요.");
+            throw new IllegalArgumentException(msg("mediaForm.error.fileRequired"));
         }
 
         boardMediaRepository.save(post); // cascade 로 파일도 함께 저장

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${goods} != null ? '굿즈 수정 | Artist Portal' : '굿즈 등록 | Artist Portal'">굿즈 등록 | Artist Portal</title>
+  <title th:text="${goods} != null ? #{goodsForm.pageTitleEdit} : #{goodsForm.pageTitleNew}">굿즈 등록 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
@@ -15,11 +15,11 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('굿즈 등록')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(${#messages.msg('goodsForm.pickHint')})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1 th:text="${goods} != null ? '굿즈 수정' : '굿즈 등록'">굿즈 등록</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/portal/goods}">← 뒤로 가기</a>
+        <h1 th:text="${goods} != null ? #{goodsForm.headingEdit} : #{goodsForm.headingNew}">굿즈 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/goods}" th:text="#{goodsForm.back}">← 뒤로 가기</a>
       </div>
 
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
@@ -32,62 +32,62 @@
                th:value="${categoryOptionsJson}" />
 
         <div class="form-group">
-          <label class="form-label" for="name">상품명</label>
+          <label class="form-label" for="name" th:text="#{goodsForm.nameLabel}">상품명</label>
           <input class="form-input" id="name" name="name" required maxlength="200"
                  th:value="${goods != null ? goods.name : ''}"
-                 placeholder="상품명을 입력해주세요." />
+                 th:placeholder="#{goodsForm.namePlaceholder}" placeholder="상품명을 입력해주세요." />
         </div>
 
         <div class="form-group">
-          <label class="form-label">샵 카테고리 <span class="text-xs text-muted">(필수 · 1개)</span></label>
-          <div class="chip-row" role="radiogroup" aria-label="샵 카테고리">
+          <label class="form-label" th:text="#{goodsForm.shopCategoryLabel}">샵 카테고리 <span class="text-xs text-muted" th:text="#{goodsForm.requiredOne}">(필수 · 1개)</span></label>
+          <div class="chip-row" role="radiogroup" th:attr="aria-label=#{goodsForm.shopCategoryAria}">
             <label th:each="cat : ${goodsShopCategories}"
                    class="chip goods-shop-cat">
               <input type="radio" name="shopCategory"
                      th:value="${cat.name()}"
                      th:checked="${goods != null and goods.shopCategory != null ? goods.shopCategory == cat : cat.name() == 'MD'}"
                      required />
-              <span th:text="${cat.label}">MD · 굿즈</span>
+              <span th:text="#{${cat.messageKey}}">MD · 굿즈</span>
             </label>
           </div>
-          <p class="text-xs text-muted mt-8">방문자가 굿즈샵 필터(MD · 굿즈 / 디지털 / 멤버십전용)에서 보는 분류입니다. 멤버십전용은 해당 커뮤니티 멤버십 가입 팬만 구매할 수 있습니다.</p>
+          <p class="text-xs text-muted mt-8" th:text="#{goodsForm.shopCategoryHint}">방문자가 굿즈샵 필터(MD · 굿즈 / 디지털 / 멤버십전용)에서 보는 분류입니다. 멤버십전용은 해당 커뮤니티 멤버십 가입 팬만 구매할 수 있습니다.</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label">상품 유형 <span class="text-xs text-muted">(사이즈·재고 · 복수 선택)</span></label>
-          <div class="chip-row" id="goodsCategoryChips" role="group" aria-label="상품 유형">
+          <label class="form-label" th:text="#{goodsForm.categoryTypeLabel}">상품 유형 <span class="text-xs text-muted" th:text="#{goodsForm.categoryTypeHintCount}">(사이즈·재고 · 복수 선택)</span></label>
+          <div class="chip-row" id="goodsCategoryChips" role="group" th:attr="aria-label=#{goodsForm.categoryTypeAria}">
             <button type="button" th:each="cat : ${goodsCategoryTypes}"
                     class="chip"
                     th:attr="data-cat-chip=${cat.name()}"
-                    th:text="${cat.label}">의류</button>
+                    th:text="#{${cat.messageKey}}">의류</button>
           </div>
         </div>
 
         <div class="form-group" id="goodsCategoryOptionsWrap">
-          <label class="form-label">카테고리별 옵션 · 재고</label>
+          <label class="form-label" th:text="#{goodsForm.categoryOptionsLabel}">카테고리별 옵션 · 재고</label>
           <div id="goodsCategoryOptions" class="goods-category-options"></div>
-          <p class="text-xs text-muted mt-8">사이즈를 고르면 그 사이즈만 재고를 입력합니다. 가방 등은 아래 굿즈 단위 재고를 사용합니다.</p>
+          <p class="text-xs text-muted mt-8" th:text="#{goodsForm.categoryOptionsHint}">사이즈를 고르면 그 사이즈만 재고를 입력합니다. 가방 등은 아래 굿즈 단위 재고를 사용합니다.</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="goodsDescription">상세 설명</label>
+          <label class="form-label" for="goodsDescription" th:text="#{goodsForm.descriptionLabel}">상세 설명</label>
           <textarea id="goodsDescription" name="description" hidden maxlength="20000"
                     th:text="${goods != null ? goods.description : ''}"></textarea>
           <div id="goodsDescriptionEditor"></div>
-          <p class="text-xs text-muted mt-8">팬 게시글과 동일한 Toast UI 에디터 · 툴바에서 이미지 삽입 가능</p>
+          <p class="text-xs text-muted mt-8" th:text="#{goodsForm.descriptionHint}">팬 게시글과 동일한 Toast UI 에디터 · 툴바에서 이미지 삽입 가능</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="price">가격 (원)</label>
+          <label class="form-label" for="price" th:text="#{goodsForm.priceLabel}">가격 (원)</label>
           <input class="form-input" id="price" name="price" type="number" min="0" required
                  th:value="${goods != null ? goods.price : 0}" style="max-width:200px;" />
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="thumbnail">썸네일 이미지</label>
+          <label class="form-label" for="thumbnail" th:text="#{goodsForm.thumbnailLabel}">썸네일 이미지</label>
           <div th:if="${goods != null and goods.thumbnailUrl != null}" class="mb-8">
             <img th:src="@{'/uploads/' + ${goods.thumbnailUrl}}"
-                 alt="현재 썸네일"
+                 th:alt="#{goodsForm.thumbnailAlt}"
                  style="width:120px;height:120px;object-fit:cover;border-radius:8px;" />
           </div>
           <input class="form-input" id="thumbnail" name="thumbnail" type="file"
@@ -96,25 +96,25 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="officialUrl">공식 판매처 URL</label>
+          <label class="form-label" for="officialUrl" th:text="#{goodsForm.officialUrlLabel}">공식 판매처 URL</label>
           <input class="form-input" id="officialUrl" name="officialUrl" type="url" maxlength="500"
                  th:value="${goods != null ? goods.officialUrl : ''}"
                  placeholder="https://" />
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="status">상태</label>
+          <label class="form-label" for="status" th:text="#{goodsForm.statusLabel}">상태</label>
           <select class="form-select" id="status" name="status" style="max-width:200px;">
             <option th:each="s : ${goodsStatuses}"
                     th:value="${s.name()}"
-                    th:text="${s.label}"
+                    th:text="#{${s.messageKey}}"
                     th:selected="${goods != null ? goods.status == s : s.name() == 'ON_SALE'}">판매중</option>
           </select>
         </div>
 
         <div class="flex-center" style="justify-content:flex-end;">
           <button type="submit" class="btn btn--primary"
-                  th:text="${goods} != null ? '수정 저장' : '바로등록'">바로등록</button>
+                  th:text="${goods} != null ? #{goodsForm.submitEdit} : #{goodsForm.submitNew}">바로등록</button>
         </div>
       </form>
       </th:block>
@@ -122,6 +122,10 @@
   </div>
   <script th:inline="javascript">
     window.__GOODS_EDITOR_IMAGE_URL__ = /*[[@{/portal/goods/editor-image}]]*/ "/portal/goods/editor-image";
+    window.__GOODS_MSG__ = {
+      descriptionPlaceholder: /*[[#{goodsForm.descriptionEditorPlaceholder}]]*/ "상품 상세 설명을 입력하세요 …",
+      descriptionImageAlt: /*[[#{goodsForm.descriptionImageAlt}]]*/ "상품 설명 이미지"
+    };
   </script>
   <script th:src="@{/js/portal-goods-form.js}"></script>
   <script>
@@ -130,6 +134,7 @@
       var editorEl = document.getElementById("goodsDescriptionEditor");
       var form = document.getElementById("goodsForm");
       if (!contentEl || !editorEl || !window.toastui) return;
+      var msg = window.__GOODS_MSG__ || {};
 
       var editor = new toastui.Editor({
         el: editorEl,
@@ -137,7 +142,7 @@
         initialEditType: "wysiwyg",
         previewStyle: "vertical",
         initialValue: contentEl.value || "",
-        placeholder: "상품 상세 설명을 입력하세요 …",
+        placeholder: msg.descriptionPlaceholder || "상품 상세 설명을 입력하세요 …",
         toolbarItems: [
           ["heading", "bold", "italic", "strike"],
           ["hr", "quote"],
@@ -155,7 +160,7 @@
             })
               .then(function (r) { return r.json(); })
               .then(function (data) {
-                if (data && data.url) callback(data.url, "상품 설명 이미지");
+                if (data && data.url) callback(data.url, msg.descriptionImageAlt || "상품 설명 이미지");
               })
               .catch(function () {});
           }

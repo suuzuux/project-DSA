@@ -11,6 +11,8 @@ import megane6.weplanet.domain.entity.enumfolder.GoodsShopCategory;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.repository.GoodsRepository;
 import megane6.weplanet.repository.GoodsVariantRepository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +30,12 @@ public class GoodsService {
 	private final GoodsRepository goodsRepository;
 	private final GoodsVariantRepository goodsVariantRepository;
 	private final ShopImageStorage shopImageStorage;
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 
 	@Transactional(readOnly = true)
 	public List<Goods> listForArtist(User artist) {
@@ -42,7 +50,7 @@ public class GoodsService {
 	@Transactional(readOnly = true)
 	public Goods getOwned(User artist, Long goodsId) {
 		Goods goods = goodsRepository.findByIdAndArtistAndDeletedAtIsNull(goodsId, artist)
-				.orElseThrow(() -> new IllegalArgumentException("굿즈를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("goodsForm.error.goodsNotFound")));
 		goods.getCategoryLinks().size();
 		goods.getOptions().size();
 		goods.getVariants().size();
@@ -141,7 +149,7 @@ public class GoodsService {
 			ownedIds.add(g.getId());
 		}
 		if (orderedIds.size() != ownedIds.size() || !ownedIds.containsAll(orderedIds)) {
-			throw new IllegalArgumentException("순서를 저장할 수 없습니다. 목록을 새로고침 후 다시 시도해주세요.");
+			throw new IllegalArgumentException(msg("goodsForm.error.reorderFailed"));
 		}
 		int order = 0;
 		for (Long id : orderedIds) {
@@ -158,27 +166,27 @@ public class GoodsService {
 	@Transactional(readOnly = true)
 	public void ensureVariantStock(Long variantId, int quantity) {
 		if (quantity <= 0) {
-			throw new IllegalArgumentException("수량이 올바르지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.invalidQuantity"));
 		}
 		GoodsVariant variant = goodsVariantRepository.findById(variantId)
-				.orElseThrow(() -> new IllegalArgumentException("상품 옵션을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.variantNotFound")));
 		if (variant.getStockQuantity() < quantity) {
-			throw new IllegalArgumentException("재고 부족");
+			throw new IllegalArgumentException(msg("shop.error.outOfStock"));
 		}
 	}
 
 	public void decreaseVariantStock(Long variantId, int quantity) {
 		if (quantity <= 0) {
-			throw new IllegalArgumentException("수량이 올바르지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.invalidQuantity"));
 		}
 		GoodsVariant variant = goodsVariantRepository.findByIdForUpdate(variantId)
-				.orElseThrow(() -> new IllegalArgumentException("상품 옵션을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.variantNotFound")));
 		Goods goods = variant.getGoods();
 		if (goods.isDeleted() || goods.getStatus() != GoodsStatus.ON_SALE) {
-			throw new IllegalArgumentException("판매 중이 아닌 상품입니다.");
+			throw new IllegalArgumentException(msg("shop.error.notOnSale"));
 		}
 		if (variant.getStockQuantity() < quantity) {
-			throw new IllegalArgumentException("재고 부족");
+			throw new IllegalArgumentException(msg("shop.error.outOfStock"));
 		}
 		variant.setStockQuantity(variant.getStockQuantity() - quantity);
 		goodsVariantRepository.save(variant);
@@ -271,9 +279,9 @@ public class GoodsService {
 				.build());
 	}
 
-	private static void requireArtist(User artist) {
+	private void requireArtist(User artist) {
 		if (artist == null) {
-			throw new IllegalArgumentException("아티스트를 선택해주세요.");
+			throw new IllegalArgumentException(msg("goodsForm.error.artistRequired"));
 		}
 	}
 

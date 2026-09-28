@@ -22,6 +22,8 @@ import megane6.weplanet.service.ShopCartService;
 import megane6.weplanet.service.ShopService;
 import megane6.weplanet.service.payment.TossPaymentsClient;
 import megane6.weplanet.service.payment.TossVirtualAccountSupport;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,24 +43,35 @@ public class ShopPaymentService {
 	private final ShopCartService shopCartService;
 	private final ShopService shopService;
 	private final GoodsService goodsService;
+	private final ShopCheckoutService shopCheckoutService;
 	private final TossPaymentsProperties tossProperties;
 	private final TossPaymentsClient tossClient;
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
+	private String msg(String code, Object... args) {
+		return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
+	}
 
 	@Transactional
 	public ProjectPaymentPrepareResponse prepareCart(User buyer, String idempotencyKey) {
 		List<ShopCartItem> rows = shopCartItemRepository.findByUserOrderByCreatedAtAsc(buyer);
 		if (rows.isEmpty()) {
-			throw new IllegalArgumentException("장바구니가 비어 있습니다.");
+			throw new IllegalArgumentException(msg("shop.error.cartEmpty"));
 		}
 		ShopCartSummaryView cart = shopCartService.getCartSummary(buyer);
 		for (ShopCartItem row : rows) {
 			ShopProductView product = shopService.findProduct(row.getProductId())
-					.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+					.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.productNotFound")));
 			shopService.requirePurchasable(buyer, product);
 			if (product.soldOut()) {
-				throw new IllegalArgumentException("품절된 상품이 포함되어 있습니다.");
+				throw new IllegalArgumentException(msg("shop.error.soldOutInCart"));
 			}
-			goodsService.ensureVariantStock(ShopCheckoutService.parseVariantId(row.getProductId()), row.getQuantity());
+			goodsService.ensureVariantStock(shopCheckoutService.parseVariantId(row.getProductId()), row.getQuantity());
 		}
 		String key = normalizeKey(idempotencyKey);
 		ShopOrder order = shopOrderRepository.findByIdempotencyKey(key)
@@ -71,19 +84,19 @@ public class ShopPaymentService {
 	public ProjectPaymentPrepareResponse prepareBuyNow(User buyer, String productId, int quantity,
 													   String idempotencyKey) {
 		if (quantity <= 0) {
-			throw new IllegalArgumentException("수량이 올바르지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.invalidQuantity"));
 		}
 		ShopProductView product = shopService.findProduct(productId)
-				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.productNotFound")));
 		shopService.requirePurchasable(buyer, product);
 		if (product.soldOut()) {
-			throw new IllegalArgumentException("품절된 상품입니다.");
+			throw new IllegalArgumentException(msg("shop.error.soldOut"));
 		}
 		String cartKey = productId.contains(":")
 				? productId.trim()
 				: ShopCheckoutService.cartProductId(Long.parseLong(product.id()),
 				product.variants().getFirst().id());
-		Long variantId = ShopCheckoutService.parseVariantId(cartKey);
+		Long variantId = shopCheckoutService.parseVariantId(cartKey);
 		goodsService.ensureVariantStock(variantId, quantity);
 		long amount = (long) product.price() * quantity;
 		String key = normalizeKey(idempotencyKey);
@@ -97,7 +110,7 @@ public class ShopPaymentService {
 	public CommercePaymentResultView confirmVirtualAccount(Long buyerId, String paymentKey,
 														   String orderId, Long amount) {
 		if (paymentKey == null || paymentKey.isBlank() || orderId == null || amount == null) {
-			throw new IllegalArgumentException("결제 정보가 올바르지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.invalidPaymentInfo"));
 		}
 		ShopOrder order = findMyOrderForUpdate(buyerId, orderId);
 		if (order.getPaymentStatus() != FanProjectPaymentStatus.READY) {
@@ -105,10 +118,10 @@ public class ShopPaymentService {
 				order.getItems().size();
 				return CommercePaymentResultView.fromShop(order);
 			}
-			throw new IllegalStateException("이미 처리된 주문입니다.");
+			throw new IllegalStateException(msg("shop.error.alreadyProcessedOrder"));
 		}
 		if (!order.getAmount().equals(amount)) {
-			throw new IllegalArgumentException("결제 금액이 주문 금액과 일치하지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.amountMismatch"));
 		}
 		TossPaymentResponse response;
 		try {
@@ -158,9 +171,9 @@ public class ShopPaymentService {
 	@Transactional
 	public CommercePaymentStatusView refreshDepositStatus(Long buyerId, String orderNo) {
 		ShopOrder order = shopOrderRepository.findByOrderNo(orderNo)
-				.orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.orderNotFound")));
 		if (!order.getBuyer().getId().equals(buyerId)) {
-			throw new AccessDeniedException("본인 주문만 확인할 수 있습니다.");
+			throw new AccessDeniedException(msg("shop.error.orderAccessDeniedView"));
 		}
 		if (order.getPaymentStatus() != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
 			return CommercePaymentStatusView.from(order.getPaymentStatus());
@@ -230,11 +243,11 @@ public class ShopPaymentService {
 		);
 		for (ShopCartItem row : rows) {
 			ShopProductView product = shopService.findProduct(row.getProductId())
-					.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+					.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.productNotFound")));
 			order.addItem(ShopOrderItem.of(
 					order,
 					parseGoodsId(row.getProductId()),
-					ShopCheckoutService.parseVariantId(row.getProductId()),
+					shopCheckoutService.parseVariantId(row.getProductId()),
 					row.getProductId(),
 					product.title(),
 					row.getQuantity(),
@@ -270,7 +283,7 @@ public class ShopPaymentService {
 				&& existing.getAmount().equals(amount)
 				&& existing.getPaymentStatus() == FanProjectPaymentStatus.READY;
 		if (!same) {
-			throw new IllegalStateException("이미 사용된 결제 요청입니다. 다시 시도해주세요.");
+			throw new IllegalStateException(msg("shop.error.duplicatePaymentRequest"));
 		}
 		return existing;
 	}
@@ -278,7 +291,7 @@ public class ShopPaymentService {
 	private ProjectPaymentPrepareResponse toPrepare(ShopOrder order, String orderName) {
 		String customer = order.getBuyer().getNickname() != null
 				? order.getBuyer().getNickname()
-				: "WePlaNet 회원";
+				: msg("shop.defaultCustomerName");
 		return new ProjectPaymentPrepareResponse(
 				true,
 				tossProperties.clientKey(),
@@ -287,25 +300,27 @@ public class ShopPaymentService {
 				order.getAmount(),
 				customer,
 				TossVirtualAccountSupport.VALID_HOURS,
-				"결제창을 여는 중입니다."
+				msg("shop.msg.preparingPayment")
 		);
 	}
 
 	private ShopOrder findMyOrderForUpdate(Long buyerId, String orderId) {
 		ShopOrder order = shopOrderRepository.findByOrderNoForUpdate(orderId)
-				.orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.orderNotFound")));
 		if (!order.getBuyer().getId().equals(buyerId)) {
-			throw new AccessDeniedException("본인 주문만 결제할 수 있습니다.");
+			throw new AccessDeniedException(msg("shop.error.orderAccessDeniedPay"));
 		}
 		return order;
 	}
 
-	private static String orderName(ShopOrder order) {
+	private String orderName(ShopOrder order) {
 		if (order.getItems().isEmpty()) {
-			return "굿즈 주문";
+			return msg("shop.defaultOrderName");
 		}
 		String first = order.getItems().getFirst().getProductName();
-		return order.getItems().size() > 1 ? first + " 외 " + (order.getItems().size() - 1) + "건" : first;
+		return order.getItems().size() > 1
+				? msg("shop.orderNameMore", first, order.getItems().size() - 1)
+				: first;
 	}
 
 	private static String normalizeKey(String idempotencyKey) {
@@ -315,12 +330,12 @@ public class ShopPaymentService {
 		return idempotencyKey.trim();
 	}
 
-	private static Long parseGoodsId(String productId) {
+	private Long parseGoodsId(String productId) {
 		int sep = productId.indexOf(':');
 		try {
 			return Long.parseLong(sep > 0 ? productId.substring(0, sep) : productId);
 		} catch (NumberFormatException e) {
-			throw new IllegalArgumentException("상품을 찾을 수 없습니다.");
+			throw new IllegalArgumentException(msg("shop.error.productNotFound"));
 		}
 	}
 }

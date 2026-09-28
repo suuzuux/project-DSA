@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>프로필 관리 | Artist Portal</title>
+  <title th:text="#{portalProfile.pageTitle}">프로필 관리 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css" />
@@ -14,16 +14,16 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('프로필 관리')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(${#messages.msg('portalProfile.heading')})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1>프로필 관리</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/community/{artistId}(artistId=${artist.id})}">커뮤니티 열기</a>
+        <h1 th:text="#{portalProfile.heading}">프로필 관리</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/community/{artistId}(artistId=${artist.id})}" th:text="#{portalProfile.openCommunity}">커뮤니티 열기</a>
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
-      <p class="text-sm text-muted" style="margin-bottom:16px;">
+      <p class="text-sm text-muted" style="margin-bottom:16px;" th:text="#{portalProfile.desc}">
         팬 프로필 편집과 같은 방식으로 사진을 등록하면, 커뮤니티명 왼쪽 아바타에 표시됩니다.
       </p>
 
@@ -39,7 +39,7 @@
               <path d="M3 7h3l2-2h8l2 2h3v13H3z"></path>
               <circle cx="12" cy="13" r="4"></circle>
             </svg>
-            <span>배경 이미지를 추가해 주세요</span>
+            <span th:text="#{portalProfile.coverEmptyHint}">배경 이미지를 추가해 주세요</span>
           </div>
         </div>
 
@@ -59,9 +59,9 @@
         <div class="pe-field">
           <input type="text" id="profileEditNickname" name="nickname"
                  maxlength="50" autocomplete="off" required
-                 aria-label="표시 이름"
+                 th:attr="aria-label=#{portalProfile.nicknameAria}"
                  th:value="${artist.nickname}"/>
-          <button type="button" class="pe-clear" aria-label="표시 이름 지우기"
+          <button type="button" class="pe-clear" th:attr="aria-label=#{portalProfile.nicknameClearAria}"
                   data-clear-for="profileEditNickname">✕</button>
         </div>
         <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 50</p>
@@ -69,10 +69,11 @@
         <div class="pe-field">
           <input type="text" id="profileEditBio" name="intro"
                  maxlength="30" autocomplete="off"
-                 aria-label="소개글"
+                 th:attr="aria-label=#{portalProfile.introAria}"
+                 th:placeholder="#{portalProfile.introPlaceholder}"
                  placeholder="(선택) 커뮤니티 About에 노출될 소개글을 작성하세요"
                  th:value="${artistProfile.intro}"/>
-          <button type="button" class="pe-clear" aria-label="소개글 지우기"
+          <button type="button" class="pe-clear" th:attr="aria-label=#{portalProfile.introClearAria}"
                   data-clear-for="profileEditBio">✕</button>
         </div>
         <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
@@ -85,20 +86,20 @@
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;">
           <div class="pe-imgbtn">
             <button type="button" class="btn btn--ghost btn--sm"
-                    data-menu-toggle="peAvatarMenu">프로필 이미지 편집</button>
+                    data-menu-toggle="peAvatarMenu" th:text="#{portalProfile.editAvatarButton}">프로필 이미지 편집</button>
             <div class="pe-menu hidden" id="peAvatarMenu">
-              <button type="button" data-file-trigger="profileEditAvatar">사진첩에서 불러오기</button>
+              <button type="button" data-file-trigger="profileEditAvatar" th:text="#{portalProfile.loadFromGallery}">사진첩에서 불러오기</button>
               <button type="button" class="is-danger" data-image-remove="Avatar"
-                      th:attr="data-has-image=${hasAvatarImage}">이미지 삭제하기</button>
+                      th:attr="data-has-image=${hasAvatarImage}" th:text="#{portalProfile.deleteImage}">이미지 삭제하기</button>
             </div>
           </div>
           <div class="pe-imgbtn">
             <button type="button" class="btn btn--ghost btn--sm"
-                    data-menu-toggle="peBackgroundMenu">배경 이미지 편집</button>
+                    data-menu-toggle="peBackgroundMenu" th:text="#{portalProfile.editBackgroundButton}">배경 이미지 편집</button>
             <div class="pe-menu hidden" id="peBackgroundMenu">
-              <button type="button" data-file-trigger="profileEditBackground">사진첩에서 불러오기</button>
+              <button type="button" data-file-trigger="profileEditBackground" th:text="#{portalProfile.loadFromGallery}">사진첩에서 불러오기</button>
               <button type="button" class="is-danger" data-image-remove="Background"
-                      th:attr="data-has-image=${hasBackgroundImage}">이미지 삭제하기</button>
+                      th:attr="data-has-image=${hasBackgroundImage}" th:text="#{portalProfile.deleteImage}">이미지 삭제하기</button>
             </div>
           </div>
         </div>
@@ -107,42 +108,42 @@
 
         <div class="portal-profile-extra">
           <div class="form-group">
-            <label class="form-label" for="realName">본명 <span class="text-xs text-muted">(선택)</span></label>
+            <label class="form-label" for="realName" th:text="#{portalProfile.realNameLabel}">본명 <span class="text-xs text-muted" th:text="#{portalProfile.optionalHint}">(선택)</span></label>
             <input class="form-input" id="realName" name="realName" maxlength="50"
-                   placeholder="미입력 시 기존 값 유지"
+                   th:placeholder="#{portalProfile.realNamePlaceholder}" placeholder="미입력 시 기존 값 유지"
                    th:value="${artist.realName}" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="email">이메일</label>
+            <label class="form-label" for="email" th:text="#{portalProfile.emailLabel}">이메일</label>
             <input class="form-input" id="email" name="email" type="email" th:value="${artist.email}" required />
           </div>
           <div class="form-group">
-            <span class="form-label">성별</span>
+            <span class="form-label" th:text="#{portalProfile.genderLabel}">성별</span>
             <div class="portal-gender-options">
               <label class="portal-gender-option">
                 <input type="radio" name="gender" value="MALE"
-                       th:checked="${artist.gender != null and artist.gender.name() == 'MALE'}" /> 남
+                       th:checked="${artist.gender != null and artist.gender.name() == 'MALE'}" /> <span th:text="#{portalProfile.genderMale}">남</span>
               </label>
               <label class="portal-gender-option">
                 <input type="radio" name="gender" value="FEMALE"
-                       th:checked="${artist.gender != null and artist.gender.name() == 'FEMALE'}" /> 여
+                       th:checked="${artist.gender != null and artist.gender.name() == 'FEMALE'}" /> <span th:text="#{portalProfile.genderFemale}">여</span>
               </label>
               <label class="portal-gender-option">
                 <input type="radio" name="gender" value="OTHER"
-                       th:checked="${artist.gender == null or artist.gender.name() == 'OTHER'}" /> 미상
+                       th:checked="${artist.gender == null or artist.gender.name() == 'OTHER'}" /> <span th:text="#{portalProfile.genderOther}">미상</span>
               </label>
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="birthDate">생일</label>
+            <label class="form-label" for="birthDate" th:text="#{portalProfile.birthDateLabel}">생일</label>
             <input class="form-input" id="birthDate" name="birthDate" type="date"
                    th:value="${artist.birthDate}" />
-            <p class="text-xs text-muted mt-8">저장 시 캘린더에 생일 일정이 자동 등록·갱신됩니다.</p>
+            <p class="text-xs text-muted mt-8" th:text="#{portalProfile.birthDateHint}">저장 시 캘린더에 생일 일정이 자동 등록·갱신됩니다.</p>
           </div>
         </div>
 
         <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin:16px 0 0;padding:16px 0;">
-          <button type="submit" class="btn btn--primary btn--block">저장</button>
+          <button type="submit" class="btn btn--primary btn--block" th:text="#{portalProfile.saveButton}">저장</button>
         </div>
       </form>
       </th:block>
@@ -152,29 +153,50 @@
   <div class="modal-backdrop" id="imageCropModal">
     <div class="modal" style="width:min(100%, 460px);">
       <div class="modal__head">
-        <strong class="modal__title" id="imageCropModalTitle">이미지 편집</strong>
-        <button type="button" class="modal__close" data-crop-cancel aria-label="닫기">✕</button>
+        <strong class="modal__title" id="imageCropModalTitle" th:text="#{portalProfile.cropModalTitle}">이미지 편집</strong>
+        <button type="button" class="modal__close" data-crop-cancel th:attr="aria-label=#{portalProfile.close}">✕</button>
       </div>
       <div class="crop-stage" id="imageCropStage">
         <img id="imageCropTarget" alt=""/>
       </div>
       <div class="crop-zoom-row">
-        <span class="text-xs text-muted">축소</span>
-        <input type="range" id="imageCropZoom" min="0" max="1" step="0.01" value="0" aria-label="확대/축소"/>
-        <span class="text-xs text-muted">확대</span>
+        <span class="text-xs text-muted" th:text="#{portalProfile.zoomOut}">축소</span>
+        <input type="range" id="imageCropZoom" min="0" max="1" step="0.01" value="0" th:attr="aria-label=#{portalProfile.zoomAria}"/>
+        <span class="text-xs text-muted" th:text="#{portalProfile.zoomIn}">확대</span>
       </div>
       <div class="crop-actions">
-        <button type="button" class="btn btn--ghost btn--sm" data-crop-cancel>취소</button>
-        <button type="button" class="btn btn--primary btn--sm" id="imageCropApply">적용</button>
+        <button type="button" class="btn btn--ghost btn--sm" data-crop-cancel th:text="#{portalProfile.cancel}">취소</button>
+        <button type="button" class="btn btn--primary btn--sm" id="imageCropApply" th:text="#{portalProfile.apply}">적용</button>
       </div>
     </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+  <script th:inline="javascript">
+    // profile-image-crop.js는 portal/profile.html·community/profile.html 두 화면이 함께 쓰는 공용 스크립트라,
+    // 크롭 모달 제목만 이 화면에서 로케일에 맞게 덮어씀 (community/profile.html은 이 값이 없으면 기존 한국어 기본값을 그대로 씀)
+    window.WEPLANET_PROFILE_CROP_TITLES = {
+      Avatar: /*[[#{portalProfile.js.avatarEditTitle}]]*/ "프로필 이미지 편집",
+      Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집"
+    };
+  </script>
   <script th:src="@{/js/profile-image-crop.js(v=9)}"></script>
-  <script>
+  <script th:inline="javascript">
     (function () {
       "use strict";
+
+      var MSG = {
+        avatarLabel: /*[[#{portalProfile.js.avatarLabel}]]*/ "프로필 이미지",
+        backgroundLabel: /*[[#{portalProfile.js.backgroundLabel}]]*/ "배경 이미지",
+        noImageToDelete: /*[[#{portalProfile.js.noImageToDelete}]]*/ "삭제할 {0}가 없습니다.",
+        confirmDelete: /*[[#{portalProfile.js.confirmDelete}]]*/ "{0}를 삭제하시겠습니까?\n저장을 눌러야 실제로 적용됩니다.",
+        deletedPending: /*[[#{portalProfile.js.deletedPending}]]*/ "{0} 삭제 예정 · 저장을 눌러야 적용됩니다",
+        coverEmptyHint: /*[[#{portalProfile.coverEmptyHint}]]*/ "배경 이미지를 추가해 주세요"
+      };
+
+      function format(template, value) {
+        return template.replace("{0}", value);
+      }
 
       document.querySelectorAll("[data-count-for]").forEach(function (label) {
         var input = document.getElementById(label.getAttribute("data-count-for"));
@@ -228,19 +250,19 @@
       document.querySelectorAll("[data-image-remove]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var kind = btn.getAttribute("data-image-remove");
-          var label = kind === "Avatar" ? "프로필 이미지" : "배경 이미지";
+          var label = kind === "Avatar" ? MSG.avatarLabel : MSG.backgroundLabel;
           var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
           if (btn.getAttribute("data-has-image") !== "true") {
             closeAllMenus();
-            alert("삭제할 " + label + "가 없습니다.");
+            alert(format(MSG.noImageToDelete, label));
             return;
           }
-          if (!confirm(label + "를 삭제하시겠습니까?\n저장을 눌러야 실제로 적용됩니다.")) return;
+          if (!confirm(format(MSG.confirmDelete, label))) return;
           closeAllMenus();
           var fileInput = document.getElementById("profileEdit" + kind);
           if (fileInput) fileInput.value = "";
           document.getElementById("remove" + kind + "Flag").value = "true";
-          if (notice) notice.textContent = label + " 삭제 예정 · 저장을 눌러야 적용됩니다";
+          if (notice) notice.textContent = format(MSG.deletedPending, label);
           if (kind === "Avatar") {
             var preview = document.getElementById("profileEditAvatarPreview");
             if (preview) {
@@ -255,7 +277,7 @@
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
                 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
                 '<path d="M3 7h3l2-2h8l2 2h3v13H3z"></path><circle cx="12" cy="13" r="4"></circle></svg>' +
-                '<span>배경 이미지를 추가해 주세요</span></div>';
+                '<span>' + MSG.coverEmptyHint + '</span></div>';
             }
           }
         });

@@ -56,17 +56,17 @@
               </td>
               <td th:text="${item.name}">상품명</td>
               <td>
-                <span class="chip" th:text="${item.shopCategory.label}">MD · 굿즈</span>
+                <span class="chip" th:text="#{${item.shopCategory.messageKey}}">MD · 굿즈</span>
                 <span th:each="cat : ${item.categories}"
                       class="chip"
-                      th:text="${cat.label}">의류</span>
+                      th:text="#{${cat.messageKey}}">의류</span>
               </td>
               <td th:text="${#numbers.formatInteger(item.price, 1, 'COMMA') + '원'}">0원</td>
               <td>
                 <span th:text="${item.totalStock}">0</span>
                 <span th:if="${item.soldOut}" class="text-xs" style="color:#c45c26;">(품절)</span>
               </td>
-              <td th:text="${item.status.label}">판매중</td>
+              <td th:text="#{${item.status.messageKey}}">판매중</td>
               <td>
                 <div class="flex-center">
                   <a class="btn btn--ghost btn--sm"

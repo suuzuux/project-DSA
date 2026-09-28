@@ -10,6 +10,8 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.repository.ShopCartItemRepository;
 import megane6.weplanet.service.shop.GoodsService;
 import megane6.weplanet.service.shop.ShopCheckoutService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,13 @@ public class ShopCartService {
 	private final ShopCartItemRepository shopCartItemRepository;
 	private final ShopService shopService;
 	private final GoodsService goodsService;
+	private final ShopCheckoutService shopCheckoutService;
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 
 	@Transactional(readOnly = true)
 	public ShopCartSummaryView getCartSummary(User user) {
@@ -58,16 +67,16 @@ public class ShopCartService {
 	@Transactional
 	public void addItem(User user, String productId, int quantity) {
 		if (quantity <= 0) {
-			throw new IllegalArgumentException("수량이 올바르지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.invalidQuantity"));
 		}
 		ShopProductView product = shopService.findProduct(productId)
-				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.productNotFound")));
 		shopService.requirePurchasable(user, product);
 		if (product.soldOut()) {
-			throw new IllegalArgumentException("품절된 상품입니다.");
+			throw new IllegalArgumentException(msg("shop.error.soldOut"));
 		}
 		String cartKey = resolveCartProductId(productId, product);
-		Long variantId = ShopCheckoutService.parseVariantId(cartKey);
+		Long variantId = shopCheckoutService.parseVariantId(cartKey);
 		int nextQty;
 		ShopCartItem existing = shopCartItemRepository.findByUserAndProductId(user, cartKey).orElse(null);
 		nextQty = existing != null ? existing.getQuantity() + quantity : quantity;
@@ -88,10 +97,10 @@ public class ShopCartService {
 	@Transactional
 	public void updateQuantity(User user, Long itemId, int quantity) {
 		if (quantity <= 0) {
-			throw new IllegalArgumentException("수량이 올바르지 않습니다.");
+			throw new IllegalArgumentException(msg("shop.error.invalidQuantity"));
 		}
 		ShopCartItem item = getOwnedItem(user, itemId);
-		Long variantId = ShopCheckoutService.parseVariantId(item.getProductId());
+		Long variantId = shopCheckoutService.parseVariantId(item.getProductId());
 		goodsService.ensureVariantStock(variantId, quantity);
 		item.setQuantity(quantity);
 		shopCartItemRepository.save(item);
@@ -103,7 +112,7 @@ public class ShopCartService {
 		shopCartItemRepository.delete(item);
 	}
 
-	private static String resolveCartProductId(String productId, ShopProductView product) {
+	private String resolveCartProductId(String productId, ShopProductView product) {
 		if (productId != null && productId.contains(":")) {
 			return productId.trim();
 		}
@@ -111,11 +120,11 @@ public class ShopCartService {
 				.filter(v -> !v.soldOut())
 				.toList();
 		if (available.isEmpty()) {
-			throw new IllegalArgumentException("품절된 상품입니다.");
+			throw new IllegalArgumentException(msg("shop.error.soldOut"));
 		}
 		boolean hasSelectable = available.stream().anyMatch(ShopVariantView::selectable);
 		if (hasSelectable && available.stream().filter(ShopVariantView::selectable).count() > 1) {
-			throw new IllegalArgumentException("옵션을 선택해주세요.");
+			throw new IllegalArgumentException(msg("shop.error.optionRequired"));
 		}
 		ShopVariantView pick = hasSelectable
 				? available.stream().filter(ShopVariantView::selectable).findFirst().orElse(available.getFirst())
@@ -125,6 +134,6 @@ public class ShopCartService {
 
 	private ShopCartItem getOwnedItem(User user, Long itemId) {
 		return shopCartItemRepository.findByIdAndUser(itemId, user)
-				.orElseThrow(() -> new IllegalArgumentException("장바구니 항목을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.cartItemNotFound")));
 	}
 }

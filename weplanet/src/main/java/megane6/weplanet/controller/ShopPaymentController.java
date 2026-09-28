@@ -7,6 +7,8 @@ import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.exception.TossPaymentException;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.shop.ShopPaymentService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -23,6 +25,12 @@ public class ShopPaymentController {
 
 	private final ShopPaymentService shopPaymentService;
 	private final AuthenticatedUserResolver userResolver;
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 
 	@PostMapping("/shop/payments/prepare-cart")
 	@ResponseBody
@@ -59,8 +67,8 @@ public class ShopPaymentController {
 		try {
 			model.addAttribute("result", shopPaymentService.confirmVirtualAccount(
 					principal.getId(), paymentKey, orderId, amount));
-			model.addAttribute("paidMessage", "주문이 확정되었습니다.");
-			model.addAttribute("waitingMessage", "아래 계좌로 입금기한 안에 입금하면 주문이 확정돼요.");
+			model.addAttribute("paidMessage", msg("shop.msg.orderConfirmed"));
+			model.addAttribute("waitingMessage", msg("shop.msg.waitingDeposit"));
 			model.addAttribute("statusUrl", "/payments/shop/orders/" + orderId + "/status");
 			return "payment/commerce-virtual-account";
 		} catch (TossPaymentException | IllegalArgumentException
@@ -81,8 +89,8 @@ public class ShopPaymentController {
 		}
 		shopPaymentService.failOrder(principal.getId(), orderId);
 		model.addAttribute("message", "PAY_PROCESS_CANCELED".equals(code)
-				? "결제를 취소했어요."
-				: (message != null ? message : "결제에 실패했습니다."));
+				? msg("shop.error.paymentCancelled")
+				: (message != null ? message : msg("shop.error.paymentFailedGeneric")));
 		return "payment/fail";
 	}
 

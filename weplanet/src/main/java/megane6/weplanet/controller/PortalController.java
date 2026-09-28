@@ -28,6 +28,8 @@ import megane6.weplanet.service.portal.ArtistBlockService;
 import megane6.weplanet.service.portal.PortalManagementService;
 import megane6.weplanet.service.shop.GoodsCategoryOptionsPayload;
 import megane6.weplanet.service.shop.GoodsService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -67,6 +69,12 @@ public class PortalController {
 	private final CommentService commentService;
 	private final LiveBroadcastService liveBroadcastService;
 	private final GoodsService goodsService;
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 
 	@GetMapping("/login")
 	public String login(@AuthenticationPrincipal AuthenticatedUser principal) {
@@ -217,7 +225,7 @@ public class PortalController {
 		}
 		try {
 			portalManagementService.saveNotice(artist, null, title, content, published, pinned);
-			redirectAttributes.addFlashAttribute("msg", "공지가 등록되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", msg("noticeForm.msg.created"));
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 			return "redirect:/portal/notices/new";
@@ -255,7 +263,7 @@ public class PortalController {
 		}
 		try {
 			portalManagementService.saveNotice(artist, noticeId, title, content, published, pinned);
-			redirectAttributes.addFlashAttribute("msg", "공지가 수정되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", msg("noticeForm.msg.updated"));
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 			return "redirect:/portal/notices/" + noticeId + "/edit";
@@ -422,7 +430,7 @@ public class PortalController {
 		}
 		try {
 			boardMediaService.create(artist.getId(), artist.getId(), title, content, files, membershipOnly);
-			redirectAttributes.addFlashAttribute("msg", "미디어가 등록되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", msg("mediaForm.msg.created"));
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 			return "redirect:/portal/media/new";
@@ -515,12 +523,12 @@ public class PortalController {
 		}
 		try {
 			if (price < 0) {
-				throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+				throw new IllegalArgumentException(msg("goodsForm.error.invalidPrice"));
 			}
 			GoodsCategoryOptionsPayload categoryOptions = GoodsCategoryOptionsPayload.parse(categoryOptionsJson);
 			goodsService.create(artist, name, description, price, officialUrl, status,
 					shopCategory, thumbnail, categoryOptions);
-			redirectAttributes.addFlashAttribute("msg", "굿즈가 등록되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", msg("goodsForm.msg.created"));
 			return "redirect:/portal/goods";
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -546,12 +554,12 @@ public class PortalController {
 		}
 		try {
 			if (price < 0) {
-				throw new IllegalArgumentException("가격은 0 이상이어야 합니다.");
+				throw new IllegalArgumentException(msg("goodsForm.error.invalidPrice"));
 			}
 			GoodsCategoryOptionsPayload categoryOptions = GoodsCategoryOptionsPayload.parse(categoryOptionsJson);
 			goodsService.update(artist, goodsId, name, description, price, officialUrl, status,
 					shopCategory, thumbnail, categoryOptions);
-			redirectAttributes.addFlashAttribute("msg", "굿즈가 수정되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", msg("goodsForm.msg.updated"));
 			return "redirect:/portal/goods";
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
@@ -597,7 +605,7 @@ public class PortalController {
 	public Map<String, String> goodsEditorImage(@RequestParam("image") MultipartFile image,
 												@AuthenticationPrincipal AuthenticatedUser principal) {
 		if (currentArtist(principal) == null) {
-			return Map.of("message", "권한이 없습니다.");
+			return Map.of("message", msg("goodsForm.error.noPermission"));
 		}
 		String stored = goodsService.storeEditorImage(image);
 		return Map.of("url", "/uploads/" + stored);
@@ -633,7 +641,7 @@ public class PortalController {
 			portalManagementService.updateProfile(
 					artist, nickname, email, realName, gender, birthDate, intro,
 					avatar, background, removeAvatar, removeBackground);
-			redirectAttributes.addFlashAttribute("msg", "프로필이 저장되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", msg("portalProfile.msg.saved"));
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 		}
