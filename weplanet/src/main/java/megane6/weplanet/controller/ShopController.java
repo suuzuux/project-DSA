@@ -15,8 +15,6 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.ShopCartService;
 import megane6.weplanet.service.ShopService;
 import megane6.weplanet.service.community.CommunityJoinService;
-import megane6.weplanet.domain.dto.ProjectPaymentPrepareResponse;
-import megane6.weplanet.service.shop.ShopPaymentService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -43,7 +41,6 @@ public class ShopController {
 
 	private final ShopService shopService;
 	private final ShopCartService shopCartService;
-	private final ShopPaymentService shopPaymentService;
 	private final UserRepository userRepository;
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
@@ -191,18 +188,8 @@ public class ShopController {
 				? variantProductId
 				: productId;
 		try {
-			ProjectPaymentPrepareResponse prepared = shopPaymentService.prepareBuyNow(
-					me, checkoutId, quantity, null);
-			Map<String, Object> body = new LinkedHashMap<>();
-			body.put("success", prepared.success());
-			body.put("clientKey", prepared.clientKey());
-			body.put("orderId", prepared.orderId());
-			body.put("orderName", prepared.orderName());
-			body.put("amount", prepared.amount());
-			body.put("customerName", prepared.customerName());
-			body.put("validHours", prepared.validHours());
-			body.put("message", prepared.message());
-			return body;
+			shopCartService.addItem(me, checkoutId, quantity);
+			return Map.of("success", true, "redirect", "/shop/checkout");
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			return Map.of("success", false, "message", e.getMessage());
 		}
@@ -214,8 +201,7 @@ public class ShopController {
 	                     @RequestParam(defaultValue = "1") int quantity,
 	                     @RequestParam(required = false, defaultValue = "global") String from,
 	                     @AuthenticationPrincipal AuthenticatedUser principal,
-	                     RedirectAttributes redirectAttributes,
-	                     Model model) {
+	                     RedirectAttributes redirectAttributes) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
@@ -226,12 +212,8 @@ public class ShopController {
 				? variantProductId
 				: productId;
 		try {
-			ProjectPaymentPrepareResponse prepared = shopPaymentService.prepareBuyNow(
-					me, checkoutId, quantity, null);
-			model.addAttribute("prepared", prepared);
-			model.addAttribute("successUrl", "/payments/shop/success");
-			model.addAttribute("failUrl", "/payments/shop/fail");
-			return "payment/commerce-start";
+			shopCartService.addItem(me, checkoutId, quantity);
+			return "redirect:/shop/checkout";
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute("message", e.getMessage());
 			return back;
