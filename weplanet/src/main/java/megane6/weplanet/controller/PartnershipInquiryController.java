@@ -30,6 +30,7 @@ public class PartnershipInquiryController {
     private static final long COOLDOWN_SECONDS = 60;
     
     private final PartnershipApplicationService applicationService;
+    private final megane6.weplanet.i18n.Messages messages;
     private final PartnershipInquiryService inquiryEmailService;
     
     @GetMapping("/partnership")
@@ -80,7 +81,7 @@ public class PartnershipInquiryController {
         } catch (IllegalArgumentException e) {
             model.addAttribute(
                     "errorMessage",
-                    e.getMessage()
+                    messages.resolve(e.getMessage())
             );
             return "partnership";
         }
@@ -88,7 +89,7 @@ public class PartnershipInquiryController {
         if (isOnCooldown(session)) {
             model.addAttribute(
                     "errorMessage",
-                    "방금 신청이 접수되었습니다. 잠시 후 다시 시도해주세요."
+                    messages.get("partnership.error.cooldown")
             );
             return "partnership";
         }
@@ -107,7 +108,7 @@ public class PartnershipInquiryController {
         } catch (IllegalArgumentException e) {
             model.addAttribute(
                     "errorMessage",
-                    e.getMessage()
+                    messages.resolve(e.getMessage())
             );
             return "partnership";
         } catch (Exception e) {
@@ -119,7 +120,7 @@ public class PartnershipInquiryController {
             
             model.addAttribute(
                     "errorMessage",
-                    "지금은 신청을 접수할 수 없습니다. 잠시 후 다시 시도해주세요."
+                    messages.get("partnership.error.unavailable")
             );
             return "partnership";
         }
@@ -155,7 +156,7 @@ public class PartnershipInquiryController {
     ) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(
-                    "신청 유형을 선택해주세요."
+                    "partnership.error.typeRequired"
             );
         }
         
@@ -165,7 +166,7 @@ public class PartnershipInquiryController {
             );
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
-                    "올바른 신청 유형을 선택해주세요."
+                    "partnership.error.typeInvalid"
             );
         }
     }

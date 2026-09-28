@@ -62,16 +62,22 @@ public class ChatController {
         return messageSource.getMessage(code, null, locale);
     }
 
-    // 유저 조회 공통 헬퍼 - label은 에러 메시지에 쓸 대상 이름 ("아티스트", "팬" 등)
+    // SETTINGS-03 커밋5: 금칙어 관리 화면(HTTP 요청) 결과 문구 - 요청 로케일 기준
+    private String msg(String code) {
+        return messageSource.getMessage(code, null,
+                org.springframework.context.i18n.LocaleContextHolder.getLocale());
+    }
+
+    // 유저 조회 공통 헬퍼 - label은 로그/디버깅용 대상 이름 (화면 문구는 error.community.userNotFound 키로 번역)
     private User getUserOrThrow(Long userId, String label) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException(label + "를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
     }
 
     // 관리자 권한 체크 공통 헬퍼 - 관리자가 아니면 예외
     private void requireAdmin(User requester) {
         if (requester.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+            throw new IllegalStateException("error.admin.adminOnly");
         }
     }
 
@@ -368,7 +374,7 @@ public class ChatController {
                         principal.getId(),
                         request.getRemoteAddr()
                 ),
-                "금칙어를 등록했습니다.",
+                msg("chat.keyword.added"),
                 requestedWith,
                 model,
                 redirectAttributes
@@ -398,7 +404,7 @@ public class ChatController {
                         principal.getId(),
                         request.getRemoteAddr()
                 ),
-                "금칙어를 수정했습니다.",
+                msg("chat.keyword.updated"),
                 requestedWith,
                 model,
                 redirectAttributes
@@ -421,7 +427,7 @@ public class ChatController {
         return handleKeywordMutation(
                 () -> chatFilterService.deleteKeyword(
                         id, principal.getId(), request.getRemoteAddr()),
-                "금칙어를 삭제했습니다.",
+                msg("chat.keyword.deleted"),
                 requestedWith,
                 model,
                 redirectAttributes);
@@ -437,7 +443,8 @@ public class ChatController {
         try {
             action.run();
         } catch (IllegalArgumentException e) {
-            errorMessage = e.getMessage();
+            errorMessage = messageSource.getMessage(e.getMessage(), null, e.getMessage(),
+                    org.springframework.context.i18n.LocaleContextHolder.getLocale());
         }
         
         if ("fetch".equals(requestedWith)) {
@@ -483,7 +490,7 @@ public class ChatController {
         // 채팅방을 쓰는 아티스트 본인만 호출할 수 있도록 제한함
         User requester = requireLoginUser(principal);
         if (!requester.getId().equals(artistId)) {
-            throw new IllegalStateException("본인 채팅방에서만 사용할 수 있습니다.");
+            throw new IllegalStateException("error.chat.ownRoomOnly");
         }
 
         getUserOrThrow(artistId, "아티스트");

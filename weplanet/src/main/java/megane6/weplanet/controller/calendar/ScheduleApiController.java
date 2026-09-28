@@ -22,6 +22,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import org.springframework.context.MessageSource;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +43,17 @@ import java.util.Set;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class ScheduleApiController {
+
+	/**
+	 * SETTINGS-03 커밋5: 알림 문구는 코드에 6개 언어(ko/en/ja/zh/fr/es)를 직접 적어 두던 방식에서
+	 * MessageSource(messages*.properties) 기반으로 바꾸고, 서비스 지원 언어(ko/ja/en)만 남겼다.
+	 * global-icons.js의 tr(obj)가 obj[현재 언어] || obj.ko || obj.en 으로 꺼내 쓰므로 응답 모양(언어별 Map)은 그대로 둔다.
+	 */
+	private static final Map<String, Locale> NOTIFY_LOCALES = Map.of(
+			"ko", Locale.KOREAN,
+			"ja", Locale.JAPANESE,
+			"en", Locale.ENGLISH
+	);
 
 	private final PortalManagementService portalManagementService;
 	private final UserRepository userRepository;
@@ -52,6 +65,7 @@ public class ScheduleApiController {
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
 	private final ArtistAttendanceService artistAttendanceService;
+	private final MessageSource messageSource;
 
 	@GetMapping("/schedules")
 	public Map<String, Object> schedules(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -198,6 +212,21 @@ public class ScheduleApiController {
 		return !eventTime.isBefore(joinedAt);
 	}
 
+	/** 메시지 키 하나를 서비스 지원 언어(ko/ja/en)별 문구 Map으로 만든다. */
+	private Map<String, String> localized(String code, Object... args) {
+		Map<String, String> byLang = new LinkedHashMap<>();
+		NOTIFY_LOCALES.forEach((lang, locale) -> byLang.put(lang,
+				messageSource.getMessage(code, (args == null || args.length == 0) ? null : args, locale)));
+		return byLang;
+	}
+
+	/** 게시글 제목처럼 번역하지 않는 사용자 입력값을 언어별 Map 모양으로 감싼다. */
+	private Map<String, String> same(String value) {
+		Map<String, String> byLang = new LinkedHashMap<>();
+		NOTIFY_LOCALES.keySet().forEach(lang -> byLang.put(lang, value == null ? "" : value));
+		return byLang;
+	}
+
 	private Map<String, Object> toPostNotification(Post post, DateTimeFormatter dateTime) {
 		Map<String, Object> notification = new LinkedHashMap<>();
 		notification.put("id", "post-" + post.getId());
@@ -212,30 +241,9 @@ public class ScheduleApiController {
 		notification.put("artistName", post.getArtist().getNickname());
 		notification.put("artistLogo", ArtistCardView.from(post.getArtist()).logo());
 		notification.put("postUrl", "/community/" + post.getArtist().getId() + "/artist/" + post.getId());
-		notification.put("category", Map.of(
-				"ko", "아티스트 게시글",
-				"en", "Artist post",
-				"ja", "アーティスト投稿",
-				"zh", "艺人帖子",
-				"fr", "Post de l'artiste",
-				"es", "Publicación del artista"
-		));
-		notification.put("title", Map.of(
-				"ko", post.getTitle(),
-				"en", post.getTitle(),
-				"ja", post.getTitle(),
-				"zh", post.getTitle(),
-				"fr", post.getTitle(),
-				"es", post.getTitle()
-		));
-		notification.put("message", Map.of(
-				"ko", post.getArtist().getNickname() + "의 새 게시글: " + post.getTitle(),
-				"en", "New post from " + post.getArtist().getNickname() + ": " + post.getTitle(),
-				"ja", post.getArtist().getNickname() + "の新しい投稿: " + post.getTitle(),
-				"zh", post.getArtist().getNickname() + "的新帖子：" + post.getTitle(),
-				"fr", "Nouveau post de " + post.getArtist().getNickname() + " : " + post.getTitle(),
-				"es", "Nueva publicación de " + post.getArtist().getNickname() + ": " + post.getTitle()
-		));
+		notification.put("category", localized("notify.category.artistPost"));
+		notification.put("title", same(post.getTitle()));
+		notification.put("message", localized("notify.message.newPost", post.getArtist().getNickname(), post.getTitle()));
 		return notification;
 	}
 
@@ -268,49 +276,25 @@ public class ScheduleApiController {
 		notification.put("artistName", artistName);
 		notification.put("artistLogo", artistLogo);
 		notification.put("postUrl", postUrl);
-		notification.put("category", artistComment
-				? Map.of(
-						"ko", "아티스트 댓글",
-						"en", "Artist comment",
-						"ja", "アーティストコメント",
-						"zh", "艺人评论",
-						"fr", "Commentaire artiste",
-						"es", "Comentario del artista")
-				: Map.of(
-						"ko", "내 글 댓글",
-						"en", "Comment on your post",
-						"ja", "あなたの投稿へのコメント",
-						"zh", "我的帖子评论",
-						"fr", "Commentaire sur votre post",
-						"es", "Comentario en tu publicación"));
+		notification.put("category", localized(artistComment
+				? "notify.category.artistComment"
+				: "notify.category.myPostComment"));
 		String preview = comment.getContent() == null ? ""
 				: (comment.getContent().length() > 40
 				? comment.getContent().substring(0, 40) + "…"
 				: comment.getContent());
-		notification.put("title", Map.of(
-				"ko", preview,
-				"en", preview,
-				"ja", preview,
-				"zh", preview,
-				"fr", preview,
-				"es", preview
-		));
-		String who = commenter.getNickname() != null ? commenter.getNickname() : "Someone";
-		notification.put("message", artistComment
-				? Map.of(
-						"ko", who + "님이 내 글에 댓글을 남겼습니다: " + preview,
-						"en", who + " commented on your post: " + preview,
-						"ja", who + "さんがあなたの投稿にコメントしました: " + preview,
-						"zh", who + "评论了你的帖子：" + preview,
-						"fr", who + " a commenté votre post : " + preview,
-						"es", who + " comentó tu publicación: " + preview)
-				: Map.of(
-						"ko", who + "님이 내 글에 댓글을 남겼습니다: " + preview,
-						"en", who + " commented on your post: " + preview,
-						"ja", who + "さんがあなたの投稿にコメントしました: " + preview,
-						"zh", who + "评论了你的帖子：" + preview,
-						"fr", who + " a commenté votre post : " + preview,
-						"es", who + " comentó tu publicación: " + preview));
+		notification.put("title", same(preview));
+		if (commenter.getNickname() != null) {
+			notification.put("message", localized("notify.message.commented", commenter.getNickname(), preview));
+		} else {
+			// 닉네임이 없는 경우 "누군가"도 언어별로 번역해서 넣는다
+			Map<String, String> message = new LinkedHashMap<>();
+			NOTIFY_LOCALES.forEach((lang, locale) -> message.put(lang, messageSource.getMessage(
+					"notify.message.commented",
+					new Object[]{messageSource.getMessage("notify.someone", null, locale), preview},
+					locale)));
+			notification.put("message", message);
+		}
 		return notification;
 	}
 
@@ -329,30 +313,9 @@ public class ScheduleApiController {
 		notification.put("artistName", artist.getNickname());
 		notification.put("artistLogo", ArtistCardView.from(artist).logo());
 		notification.put("postUrl", "/community/" + artist.getId() + "/live");
-		notification.put("category", Map.of(
-				"ko", "라이브 시작",
-				"en", "Live started",
-				"ja", "ライブ開始",
-				"zh", "直播开始",
-				"fr", "Live commencé",
-				"es", "Live iniciado"
-		));
-		notification.put("title", Map.of(
-				"ko", artist.getNickname() + " 라이브 방송 중",
-				"en", artist.getNickname() + " is live",
-				"ja", artist.getNickname() + "がライブ中",
-				"zh", artist.getNickname() + "正在直播",
-				"fr", artist.getNickname() + " est en live",
-				"es", artist.getNickname() + " está en vivo"
-		));
-		notification.put("message", Map.of(
-				"ko", artist.getNickname() + "님의 라이브 방송이 시작되었습니다.",
-				"en", artist.getNickname() + "'s live broadcast has started.",
-				"ja", artist.getNickname() + "のライブが始まりました。",
-				"zh", artist.getNickname() + "的直播已开始。",
-				"fr", "Le live de " + artist.getNickname() + " a commencé.",
-				"es", "El live de " + artist.getNickname() + " ha comenzado."
-		));
+		notification.put("category", localized("notify.category.liveStart"));
+		notification.put("title", localized("notify.title.live", artist.getNickname()));
+		notification.put("message", localized("notify.message.liveStarted", artist.getNickname()));
 		return notification;
 	}
 
@@ -371,30 +334,9 @@ public class ScheduleApiController {
 		notification.put("artistName", artist.getNickname());
 		notification.put("artistLogo", ArtistCardView.from(artist).logo());
 		notification.put("postUrl", "/community/" + artist.getId() + "/notice/" + notice.getId());
-		notification.put("category", Map.of(
-				"ko", "커뮤니티 공지",
-				"en", "Community notice",
-				"ja", "コミュニティお知らせ",
-				"zh", "社区公告",
-				"fr", "Avis communauté",
-				"es", "Aviso de comunidad"
-		));
-		notification.put("title", Map.of(
-				"ko", notice.getTitle(),
-				"en", notice.getTitle(),
-				"ja", notice.getTitle(),
-				"zh", notice.getTitle(),
-				"fr", notice.getTitle(),
-				"es", notice.getTitle()
-		));
-		notification.put("message", Map.of(
-				"ko", artist.getNickname() + " 커뮤니티 공지: " + notice.getTitle(),
-				"en", "Community notice from " + artist.getNickname() + ": " + notice.getTitle(),
-				"ja", artist.getNickname() + "コミュニティお知らせ: " + notice.getTitle(),
-				"zh", artist.getNickname() + "社区公告：" + notice.getTitle(),
-				"fr", "Avis de " + artist.getNickname() + " : " + notice.getTitle(),
-				"es", "Aviso de " + artist.getNickname() + ": " + notice.getTitle()
-		));
+		notification.put("category", localized("notify.category.communityNotice"));
+		notification.put("title", same(notice.getTitle()));
+		notification.put("message", localized("notify.message.communityNotice", artist.getNickname(), notice.getTitle()));
 		return notification;
 	}
 
@@ -412,30 +354,9 @@ public class ScheduleApiController {
 		notification.put("artistName", "WePlaNet");
 		notification.put("artistLogo", "WP");
 		notification.put("postUrl", "/notices/" + notice.getId());
-		notification.put("category", Map.of(
-				"ko", "시스템 공지",
-				"en", "System notice",
-				"ja", "システムお知らせ",
-				"zh", "系统公告",
-				"fr", "Avis système",
-				"es", "Aviso del sistema"
-		));
-		notification.put("title", Map.of(
-				"ko", notice.getTitle(),
-				"en", notice.getTitle(),
-				"ja", notice.getTitle(),
-				"zh", notice.getTitle(),
-				"fr", notice.getTitle(),
-				"es", notice.getTitle()
-		));
-		notification.put("message", Map.of(
-				"ko", "시스템 공지: " + notice.getTitle(),
-				"en", "System notice: " + notice.getTitle(),
-				"ja", "システムお知らせ: " + notice.getTitle(),
-				"zh", "系统公告：" + notice.getTitle(),
-				"fr", "Avis système : " + notice.getTitle(),
-				"es", "Aviso del sistema: " + notice.getTitle()
-		));
+		notification.put("category", localized("notify.category.siteNotice"));
+		notification.put("title", same(notice.getTitle()));
+		notification.put("message", localized("notify.message.siteNotice", notice.getTitle()));
 		return notification;
 	}
 

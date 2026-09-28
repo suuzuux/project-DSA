@@ -90,7 +90,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"커뮤니티 회원 차단을 해제했습니다.",
+				messages.get("admin.communities.msg.unblocked"),
 				redirectAttributes
 		);
 		
@@ -114,7 +114,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"프로젝트를 승인했습니다.",
+				messages.get("admin.communities.msg.approved"),
 				redirectAttributes
 		);
 		return "redirect:/admin/communities";
@@ -135,7 +135,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						rejectionReason,
 						request.getRemoteAddr()
-				), "프로젝트를 반려했습니다.", redirectAttributes
+				), messages.get("admin.communities.msg.rejected"), redirectAttributes
 		);
 		return "redirect:/admin/communities";
 	}
@@ -155,7 +155,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"정산 계좌를 확인 완료 처리했습니다.",
+				messages.get("admin.communities.msg.accountVerified"),
 				redirectAttributes
 		);
 		
@@ -177,7 +177,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"정산 계좌 확인 실패 처리했습니다.",
+				messages.get("admin.communities.msg.accountFailed"),
 				redirectAttributes
 		);
 		
@@ -199,7 +199,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"프로젝트 정산을 완료했습니다.",
+				messages.get("admin.communities.msg.settlementCompleted"),
 				redirectAttributes
 		);
 		
@@ -218,7 +218,7 @@ public class AdminCommunityController {
 	
 	private void requireAdminLogin(AuthenticatedUser principal) {
 		if (principal == null) {
-			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
+			throw new IllegalStateException("error.project.adminLoginRequired");
 		}
 	}
 	

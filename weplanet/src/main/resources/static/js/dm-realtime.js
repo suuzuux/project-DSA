@@ -32,6 +32,11 @@
     // 관리자는 DM을 주고받을 일이 없는 계정이라(shell.js가 채팅 버튼 자체를 안 그림) 이 스크립트도 아예 동작 안 함
     if (roleName === "ROLE_ADMIN") return;
 
+    // SETTINGS-03 커밋5: main.js가 /api/i18n/client 로 받아둔 문구를 쓰고, 없으면 한국어 기본값
+    const t = (key, ko) => (window.WePlaNet && typeof window.WePlaNet.t === "function")
+        ? window.WePlaNet.t(key, ko)
+        : ko;
+
     let stompClient = null;
     let currentArtistId = null; // 팬 화면에서 지금 열려있는 방의 상대 아티스트 id
     let subscriptions = [];
@@ -131,14 +136,14 @@
 
         const msgLabel = document.createElement("p");
         msgLabel.className = "dm-section-label";
-        msgLabel.textContent = "메시지";
+        msgLabel.textContent = t("shell.dm.messages", "메시지");
         dmBody.appendChild(msgLabel);
 
         if (withHistory.length === 0) {
             const empty = document.createElement("p");
             empty.className = "text-xs text-muted";
             empty.style.padding = "0 16px";
-            empty.textContent = "아직 나눈 대화가 없어요.";
+            empty.textContent = t("client.dm.noConversation", "아직 나눈 대화가 없어요.");
             dmBody.appendChild(empty);
         } else {
             withHistory.forEach(function (item) {
@@ -148,7 +153,7 @@
 
         const recLabel = document.createElement("p");
         recLabel.className = "dm-section-label";
-        recLabel.textContent = "추천";
+        recLabel.textContent = t("shell.dm.recommend", "추천");
         dmBody.appendChild(recLabel);
         withoutHistory.forEach(function (item) {
             dmBody.appendChild(buildItem(item));
@@ -159,7 +164,8 @@
         if (!fanId) {
             const dmBody = document.querySelector("#dmListView .dm-body");
             if (dmBody) {
-                dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;">로그인 후 이용할 수 있어요.</p>';
+                dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;"></p>';
+                dmBody.firstChild.textContent = t("client.dm.loginRequired", "로그인 후 이용할 수 있어요.");
             }
             return;
         }
@@ -228,7 +234,7 @@
         const banner = document.getElementById("dmWarningBanner");
         if (!banner) return;
 
-        banner.textContent = "[경고] " + message;
+        banner.textContent = t("client.dm.warningPrefix", "[경고] ") + message;
         banner.classList.remove("hidden");
 
         clearTimeout(warningTimer);
@@ -329,7 +335,7 @@
     // 팬 개개인과의 1:1 방이 아니라 방 1개(artistId=자기 자신)뿐이라, openRealRoom과는 별도로 다룸.
     function openArtistBroadcastRoom() {
         const dmRoomName = document.getElementById("dmRoomName");
-        if (dmRoomName) dmRoomName.textContent = "팬 DM";
+        if (dmRoomName) dmRoomName.textContent = t("shell.dm.fanDm", "팬 DM");
 
         // "ARTIST · DM" 서브텍스트와 인증뱃지는 "팬이 특정 아티스트와 대화 중"일 때 의미가 있는 표시라
         // 아티스트 자신의 방송 채팅방에는 어울리지 않으므로 숨김

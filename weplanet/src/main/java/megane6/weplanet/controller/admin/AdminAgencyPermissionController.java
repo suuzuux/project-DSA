@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminAgencyPermissionController {
 	
 	private final AdminAgencyPermissionService service;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String permission(@RequestParam(required = false) String approval,
@@ -56,7 +57,7 @@ public class AdminAgencyPermissionController {
 						  RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> service.approvePermission(userId, principal.getId(), request.getRemoteAddr()),
-				"소속사 권한을 승인했습니다.", redirectAttributes);
+				messages.get("admin.agencies.flash.approved"), redirectAttributes);
 		addFilters(approval, userStatus, agencyStatus, keyword, redirectAttributes);
 		
 		return "redirect:/admin/agencies";
@@ -73,7 +74,7 @@ public class AdminAgencyPermissionController {
 						 RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> service.revokePermission(userId, principal.getId(), request.getRemoteAddr()),
-				"소속사 권한 승인을 취소했습니다.", redirectAttributes);
+				messages.get("admin.agencies.flash.revoked"), redirectAttributes);
 		addFilters(approval, userStatus, agencyStatus, keyword, redirectAttributes);
 		
 		return "redirect:/admin/agencies";
@@ -88,7 +89,7 @@ public class AdminAgencyPermissionController {
 			action.run();
 			redirectAttributes.addFlashAttribute("msg", successMessage);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 		}
 	}
 	
@@ -124,7 +125,7 @@ public class AdminAgencyPermissionController {
 	
 	private void requireAdmin(AuthenticatedUser principal) {
 		if (principal == null || !"ROLE_ADMIN".equals(principal.getRoleName())) {
-			throw new IllegalStateException("관리자 권한이 필요합니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 	}
 	

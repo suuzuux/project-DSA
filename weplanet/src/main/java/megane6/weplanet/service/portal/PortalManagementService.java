@@ -78,14 +78,14 @@ public class PortalManagementService {
     @Transactional(readOnly = true)
     public PortalNotice getNotice(User artist, Long noticeId) {
         return portalNoticeRepository.findByIdAndArtist(noticeId, artist)
-                .orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.notice.notFound"));
     }
 
     @Transactional(readOnly = true)
     public PortalNotice getPublishedNotice(User artist, Long noticeId) {
         PortalNotice notice = getNotice(artist, noticeId);
         if (!notice.isPublished()) {
-            throw new IllegalArgumentException("공지를 찾을 수 없습니다.");
+            throw new IllegalArgumentException("error.notice.notFound");
         }
         return notice;
     }
@@ -113,7 +113,7 @@ public class PortalManagementService {
     public void reorderPinned(User artist, List<Long> ids) {
         List<PortalNotice> pinned = portalNoticeRepository.findByArtistAndPinnedTrueOrderByPinOrderAsc(artist);
         if (ids == null || ids.isEmpty() || ids.size() != pinned.size()) {
-            throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+            throw new IllegalArgumentException("error.notice.pinnedOrderInvalid");
         }
         Map<Long, PortalNotice> byId = pinned.stream()
                 .collect(Collectors.toMap(PortalNotice::getId, item -> item));
@@ -122,13 +122,13 @@ public class PortalManagementService {
         for (Long id : ids) {
             PortalNotice notice = byId.remove(id);
             if (notice == null) {
-                throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+                throw new IllegalArgumentException("error.notice.pinnedOrderInvalid");
             }
             notice.applyPin(true, order++);
             reordered.add(notice);
         }
         if (!byId.isEmpty()) {
-            throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+            throw new IllegalArgumentException("error.notice.pinnedOrderInvalid");
         }
         portalNoticeRepository.saveAll(reordered);
     }
@@ -217,20 +217,20 @@ public class PortalManagementService {
         ScheduleCategory resolved = category == null ? ScheduleCategory.OTHER : category;
         if (scheduleAt == null) {
             throw new IllegalArgumentException(resolved == ScheduleCategory.BIRTHDAY
-                    ? "생일 날짜를 입력해주세요."
-                    : "일정 일시를 입력해주세요.");
+                    ? "error.schedule.birthdayRequired"
+                    : "error.schedule.dateTimeRequired");
         }
         if (resolved == ScheduleCategory.BIRTHDAY) {
             LocalDate birthDate = scheduleAt.toLocalDate();
             if (birthDate.isAfter(LocalDate.now())) {
-                throw new IllegalArgumentException("생일은 오늘 이전 날짜만 등록할 수 있습니다.");
+                throw new IllegalArgumentException("portalProfile.error.birthDateFuture");
             }
             scheduleAt = birthDate.atTime(LocalTime.MIDNIGHT);
             if (title == null || title.isBlank()) {
                 title = artist.getNickname() + " 생일";
             }
         }
-        validateText(title, "일정 제목을 입력해주세요.");
+        validateText(title, "error.schedule.titleRequired");
         artistScheduleRepository.save(ArtistSchedule.create(
                 artist,
                 resolved,
@@ -362,17 +362,17 @@ public class PortalManagementService {
     public void deleteSchedule(User artist, Long scheduleId) {
         ArtistSchedule schedule = artistScheduleRepository.findById(scheduleId)
                 .filter(item -> item.getArtist().getId().equals(artist.getId()))
-                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.schedule.notFound"));
         artistScheduleRepository.delete(schedule);
     }
 
     public void rescheduleSchedule(User artist, Long scheduleId, LocalDate targetDate) {
         if (targetDate == null) {
-            throw new IllegalArgumentException("옮길 날짜를 입력해주세요.");
+            throw new IllegalArgumentException("error.schedule.moveDateRequired");
         }
         ArtistSchedule schedule = artistScheduleRepository.findById(scheduleId)
                 .filter(item -> item.getArtist().getId().equals(artist.getId()))
-                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.schedule.notFound"));
 
         LocalDateTime current = schedule.getScheduleAt();
         LocalDate currentDate = current.toLocalDate();
@@ -390,7 +390,7 @@ public class PortalManagementService {
                 newDate = LocalDate.of(birthYear, 2, 28);
             }
             if (newDate.isAfter(LocalDate.now())) {
-                throw new IllegalArgumentException("생일은 오늘 이전 날짜만 등록할 수 있습니다.");
+                throw new IllegalArgumentException("portalProfile.error.birthDateFuture");
             }
         } else {
             newDate = targetDate;

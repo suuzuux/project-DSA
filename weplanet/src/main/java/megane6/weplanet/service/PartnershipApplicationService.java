@@ -38,11 +38,11 @@ public class PartnershipApplicationService {
 	
 	public PartnershipApplication getApplication(Long applicationId) {
 		if (applicationId == null) {
-			throw new IllegalArgumentException("신청 번호가 필요합니다.");
+			throw new IllegalArgumentException("partnership.error.idRequired");
 		}
 		
 		return par.findDetailById(applicationId)
-				.orElseThrow(() -> new IllegalArgumentException("입점 신청을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("partnership.error.notFound"));
 	}
 	
 	public long countPendingApplications() {

@@ -67,25 +67,25 @@ public class AdminUserService {
 		
 		if (target.getId().equals(admin.getId())) {
 			throw new IllegalStateException(
-					"현재 로그인한 관리자 자신의 계정은 정지할 수 없습니다."
+					"admin.error.user.cannotSuspendSelf"
 			);
 		}
 		
 		if (target.getRole() == Role.ADMIN) {
 			throw new IllegalStateException(
-					"관리자 계정은 정지할 수 없습니다."
+					"admin.error.user.cannotSuspendAdmin"
 			);
 		}
 		
 		if (target.getStatus() == UserStatus.WITHDRAWN) {
 			throw new IllegalStateException(
-					"탈퇴한 회원은 정지할 수 없습니다."
+					"admin.error.user.cannotSuspendWithdrawn"
 			);
 		}
 		
 		if (target.getStatus() == UserStatus.SUSPENDED) {
 			throw new IllegalStateException(
-					"이미 정지된 회원입니다."
+					"admin.error.user.alreadySuspended"
 			);
 		}
 		
@@ -124,19 +124,19 @@ public class AdminUserService {
 		
 		if (target.getId().equals(admin.getId())) {
 			throw new IllegalStateException(
-					"현재 로그인한 관리자 자신의 상태는 변경할 수 없습니다."
+					"admin.error.user.cannotChangeSelf"
 			);
 		}
 		
 		if (target.getRole() == Role.ADMIN) {
 			throw new IllegalStateException(
-					"관리자 계정의 상태는 변경할 수 없습니다."
+					"admin.error.user.cannotChangeAdmin"
 			);
 		}
 		
 		if (target.getStatus() != UserStatus.SUSPENDED) {
 			throw new IllegalStateException(
-					"정지 상태인 회원만 정지를 해제할 수 있습니다."
+					"admin.error.user.notSuspended"
 			);
 		}
 		
@@ -206,14 +206,14 @@ public class AdminUserService {
 	private User requireAdmin(Long adminId) {
 		User admin = requireUser(adminId);
 		if (admin.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자 권한이 필요합니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return admin;
 	}
 	
 	private User requireUser(Long userId) {
 		return ur.findById(userId).orElseThrow(() ->
-				new IllegalArgumentException("회원을 찾을 수 없습니다."));
+				new IllegalArgumentException("error.community.userNotFound"));
 	}
 	
 	private String normalizeKeyword(String keyword) {
@@ -223,33 +223,20 @@ public class AdminUserService {
 		return keyword.trim();
 	}
 	
+	// SETTINGS-03 커밋5: 라벨 필드에는 메시지 키를 담고 화면(admin/users.html)에서 #{${...}}로 번역한다
 	private String roleLabel(Role role) {
-		return switch (role) {
-			case FAN -> "팬";
-			case ARTIST -> "아티스트";
-			case AGENCY -> "소속사";
-			case ADMIN -> "관리자";
-		};
+		return "admin.users.role." + role.name();
 	}
 	
 	private String statusLabel(UserStatus status) {
-		return switch (status) {
-			case ACTIVE -> "활성";
-			case DORMANT -> "휴면";
-			case SUSPENDED -> "정지";
-			case WITHDRAWN -> "탈퇴";
-		};
+		return "admin.userStatus." + status.name();
 	}
 	
 	private String providerLabel(AuthProvider provider) {
 		if (provider == null) {
-			return "일반 가입";
+			return "admin.users.provider.LOCAL";
 		}
-		return switch (provider) {
-			case GOOGLE -> "Google";
-			case KAKAO -> "Kakao";
-			case LINE -> "LINE";
-		};
+		return "admin.users.provider." + provider.name();
 	}
 	
 	public record AdminUserStats(

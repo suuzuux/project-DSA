@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko"
+<html lang="ko" th:lang="${#locale.language}"
       xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
@@ -7,7 +7,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0" />
 
-    <title>채팅·금칙어 관리 | WePlaNet ADMIN</title>
+    <title th:text="#{admin.keyword.pageTitle}">채팅·금칙어 관리 | WePlaNet ADMIN</title>
 
     <link rel="stylesheet"
           th:href="@{/css/style.css}" />
@@ -26,36 +26,37 @@
         </div>
 
         <nav class="portal-sidebar__nav">
-            <a th:href="@{/admin/dashboard}">
+            <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">
                 📊 통합 대시보드
             </a>
 
-            <a th:href="@{/admin/agencies}">
+            <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">
                 🏢 소속사 관리
             </a>
 
-            <a th:href="@{/admin/artists}">
+            <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">
                 🎤 아티스트 관리
             </a>
 
-            <a th:href="@{/admin/users}">
+            <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">
                 👥 전체 회원
             </a>
 
-            <a th:href="@{/admin/reports}">
+            <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">
                 🚩 통합 신고 · 제재
             </a>
 
-            <a th:href="@{/admin/notices}">
+            <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">
                 📢 전체 공지
             </a>
 
             <a class="is-active"
-               th:href="@{/admin/communities}">
+               th:href="@{/admin/communities}"
+               th:text="|💬 #{admin.nav.communities}|">
                 💬 커뮤니티 운영
             </a>
 
-            <a th:href="@{/admin/logs}">
+            <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">
                 🧾 관리자 로그
             </a>
         </nav>
@@ -66,7 +67,8 @@
                   style="margin:0;">
 
                 <button type="submit"
-                        class="btn">
+                        class="btn"
+                        th:text="|🚪 #{common.logout}|">
                     🚪 로그아웃
                 </button>
             </form>
@@ -76,24 +78,25 @@
     <main class="portal-main">
         <div class="portal-main__head">
             <div>
-                <h1>채팅·금칙어 관리</h1>
+                <h1 th:text="#{admin.keyword.heading}">채팅·금칙어 관리</h1>
 
-                <p class="text-sm text-muted">
+                <p class="text-sm text-muted" th:text="#{admin.keyword.subtitle}">
                     채팅과 라이브 댓글에서 사용할 수 없는 단어를 관리합니다.
                 </p>
             </div>
 
             <a class="btn btn--ghost btn--sm"
-               th:href="@{/admin/communities}">
+               th:href="@{/admin/communities}"
+               th:text="|← #{admin.nav.communities}|">
                 ← 커뮤니티 운영
             </a>
         </div>
 
         <section class="panel">
             <div class="panel__head">
-                <h2 class="panel__title">새 금칙어 등록</h2>
+                <h2 class="panel__title" th:text="#{admin.keyword.addTitle}">새 금칙어 등록</h2>
 
-                <span class="text-xs text-muted">
+                <span class="text-xs text-muted" th:text="#{admin.keyword.maxLength}">
           최대 50자
         </span>
             </div>
@@ -108,7 +111,8 @@
                 <label class="form-label"
                        for="newKeyword"
                        style="margin:0;
-                      white-space:nowrap;">
+                      white-space:nowrap;"
+                       th:text="#{admin.keyword.label}">
                     금칙어
                 </label>
 
@@ -117,12 +121,14 @@
                        name="keyword"
                        class="form-input"
                        placeholder="등록할 금칙어 입력"
+                       th:placeholder="#{admin.keyword.placeholder}"
                        maxlength="50"
                        required
                        autocomplete="off" />
 
                 <button type="submit"
-                        class="btn btn--primary btn--sm">
+                        class="btn btn--primary btn--sm"
+                        th:text="#{admin.keyword.add}">
                     등록
                 </button>
             </form>
@@ -130,7 +136,7 @@
 
         <section class="panel mt-16">
             <div class="panel__head">
-                <h2 class="panel__title">등록된 금칙어</h2>
+                <h2 class="panel__title" th:text="#{admin.keyword.listTitle}">등록된 금칙어</h2>
             </div>
 
             <div id="keywordListArea"
@@ -158,9 +164,9 @@
                     <table class="data-table">
                         <thead>
                         <tr>
-                            <th>번호</th>
-                            <th>금칙어</th>
-                            <th>관리</th>
+                            <th th:text="#{admin.keyword.col.no}">번호</th>
+                            <th th:text="#{admin.keyword.label}">금칙어</th>
+                            <th th:text="#{admin.common.manage}">관리</th>
                         </tr>
                         </thead>
 
@@ -189,7 +195,8 @@
                                            autocomplete="off" />
 
                                     <button type="submit"
-                                            class="btn btn--ghost btn--sm">
+                                            class="btn btn--ghost btn--sm"
+                                            th:text="#{common.edit}">
                                         수정
                                     </button>
                                 </form>
@@ -203,7 +210,8 @@
                                       method="post">
 
                                     <button type="submit"
-                                            class="btn btn--ghost btn--sm">
+                                            class="btn btn--ghost btn--sm"
+                                            th:text="#{common.delete}">
                                         삭제
                                     </button>
                                 </form>
@@ -214,7 +222,8 @@
                 </div>
 
                 <p th:if="${#lists.isEmpty(keywords)}"
-                   class="text-sm text-muted">
+                   class="text-sm text-muted"
+                   th:text="#{admin.keyword.empty}">
                     등록된 금칙어가 없습니다.
                 </p>
             </div>
@@ -222,7 +231,13 @@
     </main>
 </div>
 
-<script>
+<script th:inline="javascript">
+    const keywordDeleteConfirmMessage =
+        /*[[#{admin.keyword.deleteConfirm}]]*/ '이 금칙어를 삭제할까요?';
+
+    const keywordRequestFailedMessage =
+        /*[[#{admin.keyword.requestFailed}]]*/ '요청 처리에 실패했습니다.';
+
     document.addEventListener('submit', function (event) {
       const form = event.target;
 
@@ -249,7 +264,7 @@
 
       if (isDeleteForm
           && !window.confirm(
-              '이 금칙어를 삭제할까요?'
+              keywordDeleteConfirmMessage
           )) {
         return;
       }
@@ -277,7 +292,7 @@
           .then(function (response) {
             if (!response.ok) {
               throw new Error(
-                  '요청 처리에 실패했습니다.'
+                  keywordRequestFailedMessage
               );
             }
 

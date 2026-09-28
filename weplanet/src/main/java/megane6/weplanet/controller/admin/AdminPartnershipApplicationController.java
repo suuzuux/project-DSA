@@ -24,6 +24,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminPartnershipApplicationController {
 	
 	private final AdminPartnershipApplicationService service;
+	private final megane6.weplanet.i18n.Messages messages;
 	private final PartnershipInquiryService inquiryEmailService;
 	
 	@GetMapping
@@ -59,14 +60,14 @@ public class AdminPartnershipApplicationController {
 		model.addAttribute("statusOptions", PartnershipApplicationStatus.values());
 		model.addAttribute("applicantTypeOptions",  PartnershipApplicantType.values());
 		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
-		model.addAttribute("selectedApplicationType", applicantTypeFilter == null ? "" : applicantTypeFilter.name());
+		model.addAttribute("selectedApplicantType", applicantTypeFilter == null ? "" : applicantTypeFilter.name());
 		model.addAttribute("keyword", keyword == null ? "" : keyword);
 		
 		if (applicationId != null) {
 			try {
 				model.addAttribute("selectedApplication", service.getApplication(applicationId));
 			} catch (IllegalArgumentException e) {
-				model.addAttribute("error", e.getMessage());
+				model.addAttribute("error", messages.resolve(e.getMessage()));
 			}
 		}
 		
@@ -110,7 +111,7 @@ public class AdminPartnershipApplicationController {
 				inquiryEmailService.sendApprovalNotice(application);
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"등록 신청을 승인하고 결과 이메일을 발송했습니다."
+						messages.get("admin.applications.flash.approvedMailSent")
 				);
 			} catch (Exception mailException) {
 				log.warn(
@@ -121,13 +122,13 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"등록 신청은 승인했지만 결과 이메일 발송에 실패했습니다."
+						messages.get("admin.applications.flash.approvedMailFailed")
 				);
 			}
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					e.getMessage()
+					messages.resolve(e.getMessage())
 			);
 		}
 		
@@ -183,7 +184,7 @@ public class AdminPartnershipApplicationController {
 				inquiryEmailService.sendRejectionNotice(application);
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"등록 신청을 반려하고 결과 이메일을 발송했습니다."
+						messages.get("admin.applications.flash.rejectedMailSent")
 				);
 			} catch (Exception mailException) {
 				log.warn(
@@ -194,13 +195,13 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						"등록 신청은 반려했지만 결과 이메일 발송에 실패했습니다."
+						messages.get("admin.applications.flash.rejectedMailFailed")
 				);
 			}
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					e.getMessage()
+					messages.resolve(e.getMessage())
 			);
 		}
 		
@@ -265,7 +266,7 @@ public class AdminPartnershipApplicationController {
 	
 	private void requireAdmin(AuthenticatedUser principal) {
 		if (principal == null || !"ROLE_ADMIN".equals(principal.getRoleName())) {
-			throw new IllegalStateException("관리자 권한이 필요합니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 	}
 	

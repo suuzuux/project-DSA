@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -29,7 +29,7 @@
     <div class="flex-between"><span class="text-muted" th:text="#{payment.orderNameLabel}">주문명</span><strong th:text="${result.title()}">상품</strong></div>
     <div class="flex-between"><span class="text-muted" th:text="#{payment.amountLabel}">결제 금액</span>
       <strong th:text="#{payment.amountValue(${#numbers.formatInteger(result.amount(), 1, 'COMMA')})}">30,000원</strong></div>
-    <div class="flex-between"><span class="text-muted" th:text="#{payment.bankLabel}">입금 은행</span><strong th:text="${result.bankName()}">은행</strong></div>
+    <div class="flex-between"><span class="text-muted" th:text="#{payment.bankLabel}">입금 은행</span><strong th:text="${result.bankMessageKey() != null} ? ${#messages.msg(result.bankMessageKey())} : ${result.bankName()}">은행</strong></div>
     <div class="flex-between"><span class="text-muted" th:text="#{payment.accountLabel}">계좌번호</span><strong th:text="${result.accountNumber()}">000-0000-0000</strong></div>
     <div class="flex-between"><span class="text-muted" th:text="#{payment.dueDateLabel}">입금 기한</span>
       <strong th:text="#{payment.dueDateValue(${#temporals.format(result.dueDate(), 'yyyy.MM.dd HH:mm')})}">기한</strong></div>

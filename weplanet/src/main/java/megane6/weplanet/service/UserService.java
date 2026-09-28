@@ -117,15 +117,15 @@ public class UserService {
 		String trimmedEmail = email == null ? "" : email.trim();
 
 		if (trimmedNickname.isBlank() || trimmedRealName.isBlank() || trimmedEmail.isBlank()) {
-			throw new IllegalArgumentException("닉네임/이름/이메일은 비워둘 수 없습니다.");
+			throw new IllegalArgumentException("error.user.requiredFields");
 		}
 
 		if (!trimmedNickname.equals(user.getNickname())) {
 			if (!NicknamePolicy.isAllowed(trimmedNickname)) {
-				throw new IllegalArgumentException("사용할 수 없는 닉네임 형식입니다.");
+				throw new IllegalArgumentException("signup.error.nicknameInvalid");
 			}
 			if (userRepository.existsByNickname(trimmedNickname)) {
-				throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+				throw new IllegalArgumentException("signup.error.nicknameTaken");
 			}
 		}
 		if (!trimmedEmail.equals(user.getEmail())) {
@@ -134,10 +134,10 @@ public class UserService {
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
 			if (!emailVerificationService.isVerified(trimmedEmail)) {
-				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
+				throw new IllegalArgumentException("signup.error.emailNotVerified");
 			}
 			if (userRepository.existsByEmail(trimmedEmail)) {
-				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+				throw new IllegalArgumentException("settings.email.alreadyInUse");
 			}
 			user.changePortalProfile(trimmedNickname, trimmedEmail);
 			emailVerificationService.clear(trimmedEmail);
@@ -156,16 +156,16 @@ public class UserService {
 			// 것이므로 확인할 현재 비밀번호 자체가 없다 - 이 분기를 건너뛴다.
 			if (user.hasPassword()
 					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
-				throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+				throw new IllegalArgumentException("error.user.currentPasswordMismatch");
 			}
 			if (!hasText(newPassword)) {
-				throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+				throw new IllegalArgumentException("error.user.newPasswordRequired");
 			}
 			if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
-				throw new IllegalArgumentException("비밀번호는 영문/숫자 포함 8~20자로 입력해주세요.");
+				throw new IllegalArgumentException("signup.validation.passwordPattern");
 			}
 			if (!newPassword.equals(confirmPassword)) {
-				throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
+				throw new IllegalArgumentException("settings.modal.passwordMismatch");
 			}
 			user.changePassword(passwordEncoder.encode(newPassword));
 		}
@@ -218,7 +218,7 @@ public class UserService {
 			}
 			case "email" -> user.changeCommunityActivityEmailEnabled(enabled);
 			case "night" -> user.changeNightNotificationAllowed(enabled);
-			default -> throw new IllegalArgumentException("알 수 없는 알림 종류입니다.");
+			default -> throw new IllegalArgumentException("error.user.unknownNotifyType");
 		}
 	}
 
@@ -236,7 +236,7 @@ public class UserService {
 	@Transactional
 	public void unlinkSocialProvider(User user) {
 		if (!user.hasPassword()) {
-			throw new IllegalArgumentException("비밀번호가 설정되어 있지 않아 연동을 해제할 수 없습니다. 먼저 비밀번호를 설정해주세요.");
+			throw new IllegalArgumentException("error.user.cannotUnlinkWithoutPassword");
 		}
 		user.unlinkSocialProvider();
 	}

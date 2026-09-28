@@ -18,4 +18,9 @@ public enum AdminTargetType {
 	PARTNERSHIP_APPLICATION("등록 신청");
 	
 	private final String label;
+	
+	// SETTINGS-03: 화면에는 label 대신 이 키로 번역된 문구를 보여준다.
+	public String getMessageKey() {
+		return "admin.targetType." + name();
+	}
 }

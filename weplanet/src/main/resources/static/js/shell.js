@@ -15,7 +15,7 @@
  * SETTINGS-03: 좌측 메뉴 드로어/헤더 보강 부분의 한국어 문구는 서버 렌더링이 아니라
  * 이 파일이 직접 DOM에 그려 넣는 거라 Thymeleaf #{...}를 쓸 수 없다. 그래서 페이지 로드 시
  * /api/i18n/shell 을 한 번 fetch해서 현재 로케일의 문구를 받아온 뒤 화면을 그린다.
- * (DM 패널 / 멤버십 모달은 이번 범위가 아니라 한국어 그대로 둠)
+ * SETTINGS-03 커밋5: DM 패널 / 멤버십 가입·상세 모달도 같은 방식(/api/i18n/shell)으로 번역한다.
  * SETTINGS-03 커밋3: 드로어에서 만들어 넣는 커뮤니티 검색·가입 모달도 같은 방식으로 번역한다
  * (index.html / layout.html :: joinModal 과 같은 키를 /api/i18n/shell 로 함께 받는다).
  * ============================================================
@@ -86,7 +86,48 @@
     "community.join.nicknameLabel": "닉네임",
     "community.join.nicknamePlaceholder": "최대 10자",
     "community.join.help": "커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.",
-    "community.join.submit": "가입하기"
+    "community.join.submit": "가입하기",
+    // SETTINGS-03 커밋5: DM 패널 / 멤버십 모달
+    "shell.artistFallback": "아티스트",
+    "shell.dm.panelLabel": "DM 채팅",
+    "shell.dm.addFriend": "친구 추가",
+    "shell.dm.friend": "친구",
+    "shell.dm.close": "닫기",
+    "shell.dm.promoTitle": "구독 혜택 안내",
+    "shell.dm.promoDesc": "아티스트 커뮤니티에서 멤버십 가입 시 이용할 수 있어요",
+    "shell.dm.messages": "메시지",
+    "shell.dm.noMessages": "아직 메시지가 없습니다.",
+    "shell.dm.recommend": "추천",
+    "shell.dm.noRecommend": "추천 아티스트가 없습니다.",
+    "shell.dm.backToList": "목록으로",
+    "shell.dm.search": "검색",
+    "shell.dm.more": "더보기",
+    "shell.dm.expiredTitle": "DM 구독 만료",
+    "shell.dm.expiredDesc": "아티스트 커뮤니티에서 멤버십을 갱신해주세요.",
+    "shell.dm.startConversation": "대화를 시작해보세요.",
+    "shell.dm.attach": "첨부",
+    "shell.dm.inputPlaceholder": "메시지 입력",
+    "shell.dm.send": "전송",
+    "shell.dm.quota": "오늘 남은 메시지 {0}회",
+    "shell.dm.fanDm": "팬 DM",
+    "shell.dm.justNow": "방금",
+    "shell.membership.heroTitle": "아티스트 팬클럽 공식 멤버십에 가입하고,<br />특별한 멤버십 혜택을 누려보세요.",
+    "shell.membership.benefit1": "멤버십 전용 아티스트 공식 상품 구매 기회",
+    "shell.membership.benefit2": "WePlaNet Shop 내 아티스트 콘텐츠 구매 관련 혜택",
+    "shell.membership.benefit3": "공연 시 선예매, 추첨제 참여 기회",
+    "shell.membership.benefit4": "WePlaNet 내 멤버십 전용 독점 콘텐츠",
+    "shell.membership.benefit5": "멤버와 DM(1:1 채팅) 구독권 혜택",
+    "shell.membership.price": "₩ 30,000 / 년",
+    "shell.membership.vatIncluded": "VAT 포함",
+    "shell.membership.join": "멤버십 가입하기",
+    "shell.membership.detailTitle": "멤버십 상세 보기",
+    "shell.membership.name": "이름",
+    "shell.membership.number": "멤버십 고유 번호",
+    "shell.membership.period": "기간",
+    "shell.membership.email": "이메일",
+    "shell.membership.phone": "전화번호",
+    "shell.membership.cancelConfirm": "멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.",
+    "shell.membership.cancel": "멤버십 해지"
   };
   let I18N = DEFAULT_I18N;
 
@@ -128,7 +169,7 @@
     function linksHtml(list) {
       return list
         .map((a) => {
-          const name = escapeHtml(a.nickname || "아티스트");
+          const name = escapeHtml(a.nickname || t("shell.artistFallback"));
           const logo = escapeHtml(a.logo || "?");
           const img = a.profileImageUrl
             ? `<img src="${escapeHtml(a.profileImageUrl)}" alt="">`
@@ -236,51 +277,51 @@
   ${chatFabHtml}
 </div>
 
-<!-- ========== 3. DM 패널 (SETTINGS-03 범위 아님 - 한국어 유지) ========== -->
-<div class="dm-panel" id="dmPanel" role="dialog" aria-label="DM 채팅" aria-hidden="true">
+<!-- ========== 3. DM 패널 ========== -->
+<div class="dm-panel" id="dmPanel" role="dialog" aria-label="${escapeHtml(t("shell.dm.panelLabel"))}" aria-hidden="true">
 
   <!-- 3-A. DM 목록 (P13) -->
   <div class="dm-list-view is-active" id="dmListView">
     <div class="dm-header">
       <strong class="dm-header__title">WePlaNet DM</strong>
-      <button type="button" class="icon-btn" data-shell-alert="친구 추가" aria-label="친구">＋</button>
-      <button type="button" class="icon-btn" data-shell-close="dm" aria-label="닫기">∨</button>
+      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.addFriend"))}" aria-label="${escapeHtml(t("shell.dm.friend"))}">＋</button>
+      <button type="button" class="icon-btn" data-shell-close="dm" aria-label="${escapeHtml(t("shell.dm.close"))}">∨</button>
     </div>
     <div class="dm-body">
       <div class="dm-promo">
-        <strong>구독 혜택 안내</strong>
-        <span class="text-xs text-muted">아티스트 커뮤니티에서 멤버십 가입 시 이용할 수 있어요</span>
+        <strong>${escapeHtml(t("shell.dm.promoTitle"))}</strong>
+        <span class="text-xs text-muted">${escapeHtml(t("shell.dm.promoDesc"))}</span>
       </div>
-      <p class="dm-section-label">메시지</p>
-      <p class="text-xs text-muted" style="padding:16px 4px;">아직 메시지가 없습니다.</p>
-      <p class="dm-section-label">추천</p>
-      <p class="text-xs text-muted" style="padding:16px 4px;">추천 아티스트가 없습니다.</p>
+      <p class="dm-section-label">${escapeHtml(t("shell.dm.messages"))}</p>
+      <p class="text-xs text-muted" style="padding:16px 4px;">${escapeHtml(t("shell.dm.noMessages"))}</p>
+      <p class="dm-section-label">${escapeHtml(t("shell.dm.recommend"))}</p>
+      <p class="text-xs text-muted" style="padding:16px 4px;">${escapeHtml(t("shell.dm.noRecommend"))}</p>
     </div>
   </div>
 
   <!-- 3-B. DM 채팅방 (P18 / P19) -->
   <div class="dm-room" id="dmRoomView">
     <div class="dm-header">
-      <button type="button" class="icon-btn" id="dmBackBtn" aria-label="목록으로">‹</button>
+      <button type="button" class="icon-btn" id="dmBackBtn" aria-label="${escapeHtml(t("shell.dm.backToList"))}">‹</button>
       <div class="dm-header__title">
         <span id="dmRoomName">DM</span> <span class="badge-verified">✓</span>
         <small>ARTIST · DM</small>
       </div>
-      <button type="button" class="icon-btn" data-shell-alert="검색" aria-label="검색">${ICONS.search}</button>
-      <button type="button" class="icon-btn" data-shell-alert="더보기" aria-label="더보기">⋮</button>
+      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.search"))}" aria-label="${escapeHtml(t("shell.dm.search"))}">${ICONS.search}</button>
+      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.more"))}" aria-label="${escapeHtml(t("shell.dm.more"))}">⋮</button>
     </div>
 
     <!-- 구독 만료 배너 (data-room에 따라 표시) -->
     <div class="dm-expired ${dmExpired ? "" : "hidden"}" id="dmExpiredBanner">
       <div class="dm-expired__icon">${ICONS.heart}</div>
       <div class="dm-expired__text">
-        <strong>DM 구독 만료</strong>
-        <span>아티스트 커뮤니티에서 멤버십을 갱신해주세요.</span>
+        <strong>${escapeHtml(t("shell.dm.expiredTitle"))}</strong>
+        <span>${escapeHtml(t("shell.dm.expiredDesc"))}</span>
       </div>
     </div>
 
     <div class="dm-messages" id="dmMessages">
-      <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">대화를 시작해보세요.</p>
+      <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">${escapeHtml(t("shell.dm.startConversation"))}</p>
     </div>
 
     <!-- 금칙어/전송 한도 초과 등 경고를 화면 안에서 보여주는 배너
@@ -288,17 +329,17 @@
     <div class="dm-warning hidden" id="dmWarningBanner" role="alert"></div>
 
     <form class="dm-composer" id="dmComposer">
-      <button type="button" class="icon-btn" data-shell-alert="첨부" aria-label="첨부">＋</button>
-      <input type="text" placeholder="메시지 입력" autocomplete="off" id="dmInput" />
-      <button type="submit" class="send-btn" aria-label="전송">${ICONS.send}</button>
+      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.attach"))}" aria-label="${escapeHtml(t("shell.dm.attach"))}">＋</button>
+      <input type="text" placeholder="${escapeHtml(t("shell.dm.inputPlaceholder"))}" autocomplete="off" id="dmInput" />
+      <button type="submit" class="send-btn" aria-label="${escapeHtml(t("shell.dm.send"))}">${ICONS.send}</button>
     </form>
 
     <!-- 오늘 남은 전송 횟수 (CHAT-05 하루 전송 한도) -->
-    <p class="dm-quota" id="dmQuota" hidden>오늘 남은 메시지 <strong id="dmQuotaCount">-</strong>회</p>
+    <p class="dm-quota" id="dmQuota" hidden>${escapeHtml(t("shell.dm.quota")).replace("{0}", '<strong id="dmQuotaCount">-</strong>')}</p>
   </div>
 </div>
 
-<!-- ========== 4. 멤버십 가입 모달 (P27) – 전역에서 data-modal-open 가능 (SETTINGS-03 범위 아님) ========== -->
+<!-- ========== 4. 멤버십 가입 모달 (P27) – 전역에서 data-modal-open 가능 ========== -->
 <div class="modal-backdrop" id="membershipJoinModal">
   <div class="modal">
     <div class="modal__head">
@@ -307,41 +348,42 @@
     </div>
     <div class="membership-hero" style="padding-top:8px;">
       <div class="membership-hero__badge">${ICONS.award}</div>
-      <h1 style="font-size:18px;">아티스트 팬클럽 공식 멤버십에 가입하고,<br />특별한 멤버십 혜택을 누려보세요.</h1>
+      <h1 style="font-size:18px;">${t("shell.membership.heroTitle")}</h1>
     </div>
     <ul class="membership-benefits">
-      <li>멤버십 전용 아티스트 공식 상품 구매 기회</li>
-      <li>WePlaNet Shop 내 아티스트 콘텐츠 구매 관련 혜택</li>
-      <li>공연 시 선예매, 추첨제 참여 기회</li>
-      <li>WePlaNet 내 멤버십 전용 독점 콘텐츠</li>
-      <li>멤버와 DM(1:1 채팅) 구독권 혜택</li>
+      <li>${escapeHtml(t("shell.membership.benefit1"))}</li>
+      <li>${escapeHtml(t("shell.membership.benefit2"))}</li>
+      <li>${escapeHtml(t("shell.membership.benefit3"))}</li>
+      <li>${escapeHtml(t("shell.membership.benefit4"))}</li>
+      <li>${escapeHtml(t("shell.membership.benefit5"))}</li>
     </ul>
-    <p class="membership-price">₩ 30,000 / 년<small>VAT 포함</small></p>
+    <p class="membership-price">${escapeHtml(t("shell.membership.price"))}<small>${escapeHtml(t("shell.membership.vatIncluded"))}</small></p>
     <form id="membershipJoinForm" method="post">
-      <button type="submit" class="btn btn--accent btn--block btn--lg">멤버십 가입하기</button>
+      <button type="submit" class="btn btn--accent btn--block btn--lg">${escapeHtml(t("shell.membership.join"))}</button>
     </form>
   </div>
 </div>
 
-<!-- ========== 5. 멤버십 상세 모달 (P33) - 실데이터는 클릭 시 fetch로 채움 (SETTINGS-03 범위 아님) ========== -->
+<!-- ========== 5. 멤버십 상세 모달 (P33) - 실데이터는 클릭 시 fetch로 채움 ========== -->
 <div class="modal-backdrop" id="membershipDetailModal">
   <div class="modal">
     <div class="modal__head">
-      <h2 class="modal__title">멤버십 상세 보기</h2>
+      <h2 class="modal__title">${escapeHtml(t("shell.membership.detailTitle"))}</h2>
       <button type="button" class="modal__close" data-modal-close>✕</button>
     </div>
     <div class="membership-card-detail">
-      <div class="membership-card-detail__row"><span>이름</span><strong id="membershipDetailName">-</strong></div>
-      <div class="membership-card-detail__row"><span>멤버십 고유 번호</span><strong id="membershipDetailNo">-</strong></div>
-      <div class="membership-card-detail__row"><span>기간</span><strong id="membershipDetailPeriod">-</strong></div>
+      <div class="membership-card-detail__row"><span>${escapeHtml(t("shell.membership.name"))}</span><strong id="membershipDetailName">-</strong></div>
+      <div class="membership-card-detail__row"><span>${escapeHtml(t("shell.membership.number"))}</span><strong id="membershipDetailNo">-</strong></div>
+      <div class="membership-card-detail__row"><span>${escapeHtml(t("shell.membership.period"))}</span><strong id="membershipDetailPeriod">-</strong></div>
     </div>
     <!-- [머지 충돌 해결] 이메일/전화번호는 양쪽 동일. 해지 폼은 HEAD에만 있고
          cancelMembership 엔드포인트가 유지되므로 HEAD 유지 -->
-    <div class="settings-row"><span>이메일</span><span id="membershipDetailEmail">-</span></div>
-    <div class="settings-row"><span>전화번호</span><span id="membershipDetailPhone">-</span></div>
+    <div class="settings-row"><span>${escapeHtml(t("shell.membership.email"))}</span><span id="membershipDetailEmail">-</span></div>
+    <div class="settings-row"><span>${escapeHtml(t("shell.membership.phone"))}</span><span id="membershipDetailPhone">-</span></div>
     <form id="membershipCancelForm" method="post" style="margin-top:16px;"
-          onsubmit="return WePlaNet.confirmSubmit(this, '멤버십을 해지할까요? DM 등 멤버십 전용 혜택을 더 이상 이용할 수 없습니다.');">
-      <button type="submit" class="btn btn--ghost btn--block" style="color:var(--wp-danger, #d33);">멤버십 해지</button>
+          data-confirm="${escapeHtml(t("shell.membership.cancelConfirm"))}"
+          onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
+      <button type="submit" class="btn btn--ghost btn--block" style="color:var(--wp-danger, #d33);">${escapeHtml(t("shell.membership.cancel"))}</button>
     </form>
   </div>
 </div>
@@ -535,7 +577,7 @@
       // 아티스트는 인박스 목록이 없고 자신의 팬 DM 방 하나뿐이라, 목록 화면 없이 바로 방을 보여줌
       // (실제 데이터 채우기는 dm-realtime.js의 openArtistBroadcastRoom이 #fabChat 클릭 시 처리함)
       if (isArtist) {
-        showRoom(nickname || "팬 DM", false);
+        showRoom(nickname || t("shell.dm.fanDm"), false);
       } else {
         showList();
       }
@@ -673,7 +715,7 @@
       const box = document.getElementById("dmMessages");
       const row = document.createElement("div");
       row.className = "dm-msg dm-msg--me";
-      row.innerHTML = `<div class="dm-msg__bubble"></div><span class="dm-msg__time">방금</span>`;
+      row.innerHTML = `<div class="dm-msg__bubble"></div><span class="dm-msg__time">${escapeHtml(t("shell.dm.justNow"))}</span>`;
       row.querySelector(".dm-msg__bubble").textContent = text;
       box.appendChild(row);
       input.value = "";

@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  // SETTINGS-03 커밋5: 페이지가 fragments/toss-i18n 으로 넣어준 문구(window.PAGE_I18N)를 쓰고, 없으면 한국어 기본값.
+  // (호출 시점에 읽어서, 스크립트 로드 순서와 무관하게 동작한다)
+  function t(key, ko) {
+    var m = window.PAGE_I18N || {};
+    return m[key] != null ? m[key] : ko;
+  }
+
   function createIdempotencyKey() {
     if (window.crypto && crypto.randomUUID) {
       return crypto.randomUUID();
@@ -10,10 +17,10 @@
 
   async function openVirtualAccount(prepared, successUrl, failUrl) {
     if (!prepared || !prepared.success || !prepared.clientKey) {
-      throw new Error((prepared && prepared.message) || "결제 정보를 받지 못했습니다.");
+      throw new Error((prepared && prepared.message) || t("payment.error.noPaymentInfo", "결제 정보를 받지 못했습니다."));
     }
     if (!window.TossPayments) {
-      throw new Error("결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+      throw new Error(t("payment.error.moduleLoadRetry", "결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해주세요."));
     }
     var tossPayments = TossPayments(prepared.clientKey);
     var payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
@@ -47,13 +54,13 @@
     });
     if (response.status === 401) {
       window.location.href = "/login";
-      throw new Error("로그인이 필요합니다.");
+      throw new Error(t("common.error.loginRequired", "로그인이 필요합니다."));
     }
     var data = await response.json().catch(function () {
       return null;
     });
     if (!response.ok || !data || data.success === false) {
-      throw new Error((data && data.message) || "결제 준비에 실패했습니다.");
+      throw new Error((data && data.message) || t("shop.js.checkoutPrepareFailed", "결제 준비에 실패했습니다."));
     }
     return data;
   }

@@ -26,6 +26,7 @@ public class ShopPaymentController {
 	private final ShopPaymentService shopPaymentService;
 	private final AuthenticatedUserResolver userResolver;
 	private final MessageSource messageSource;
+	private final megane6.weplanet.i18n.Messages messages;
 
 	// SETTINGS-03: 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
 	private String msg(String code) {
@@ -73,7 +74,7 @@ public class ShopPaymentController {
 			return "payment/commerce-virtual-account";
 		} catch (TossPaymentException | IllegalArgumentException
 				 | IllegalStateException | AccessDeniedException e) {
-			model.addAttribute("message", e.getMessage());
+			model.addAttribute("message", messages.resolve(e.getMessage()));
 			return "payment/fail";
 		}
 	}

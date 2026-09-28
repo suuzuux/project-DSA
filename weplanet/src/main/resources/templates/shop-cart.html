@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
@@ -167,6 +167,7 @@
   <script src="https://js.tosspayments.com/v2/standard"></script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
+  <script th:replace="~{fragments/toss-i18n :: tossI18n}"></script>
   <script th:src="@{/js/commerce-toss.js}"></script>
   <script th:src="@{/js/shop.js}"></script>
 </body>

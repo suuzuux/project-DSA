@@ -68,6 +68,47 @@ public class I18nController {
 			"community.join.nicknamePlaceholder",
 			"community.join.help",
 			"community.join.submit",
+			// SETTINGS-03 커밋5: DM 패널 / 멤버십 가입·상세 모달
+			"shell.artistFallback",
+			"shell.dm.panelLabel",
+			"shell.dm.addFriend",
+			"shell.dm.friend",
+			"shell.dm.close",
+			"shell.dm.promoTitle",
+			"shell.dm.promoDesc",
+			"shell.dm.messages",
+			"shell.dm.noMessages",
+			"shell.dm.recommend",
+			"shell.dm.noRecommend",
+			"shell.dm.backToList",
+			"shell.dm.search",
+			"shell.dm.more",
+			"shell.dm.expiredTitle",
+			"shell.dm.expiredDesc",
+			"shell.dm.startConversation",
+			"shell.dm.attach",
+			"shell.dm.inputPlaceholder",
+			"shell.dm.send",
+			"shell.dm.quota",
+			"shell.dm.fanDm",
+			"shell.dm.justNow",
+			"shell.membership.heroTitle",
+			"shell.membership.benefit1",
+			"shell.membership.benefit2",
+			"shell.membership.benefit3",
+			"shell.membership.benefit4",
+			"shell.membership.benefit5",
+			"shell.membership.price",
+			"shell.membership.vatIncluded",
+			"shell.membership.join",
+			"shell.membership.detailTitle",
+			"shell.membership.name",
+			"shell.membership.number",
+			"shell.membership.period",
+			"shell.membership.email",
+			"shell.membership.phone",
+			"shell.membership.cancelConfirm",
+			"shell.membership.cancel",
 	};
 
 	/**
@@ -135,6 +176,15 @@ public class I18nController {
 			"community.media.replayTag",
 			// community-board-select.js - select에 aria-label이 없을 때의 기본 문구
 			"client.board.sort",
+			// SETTINGS-03 커밋5: dm-realtime.js
+			"shell.dm.messages",
+			"shell.dm.recommend",
+			"shell.dm.fanDm",
+			"client.dm.noConversation",
+			"client.dm.loginRequired",
+			"client.dm.warningPrefix",
+			// SETTINGS-03 커밋5: collection.js
+			"client.collection.badgeLoadFailed",
 	};
 
 	@GetMapping(value = "/api/i18n/client", produces = "application/json;charset=UTF-8")
@@ -183,6 +233,8 @@ public class I18nController {
 		CALENDAR_UI_KEY_MAP.put("myCommunities", "calendar.ui.myCommunities");
 		CALENDAR_UI_KEY_MAP.put("noJoinedCommunities", "calendar.ui.noJoinedCommunities");
 		CALENDAR_UI_KEY_MAP.put("login", "calendar.ui.login");
+		// SETTINGS-03 커밋5: 헤더 테마 전환 버튼 aria-label (메인 헤더와 같은 키 재사용)
+		CALENDAR_UI_KEY_MAP.put("themeToggle", "main.header.themeToggle");
 		CALENDAR_UI_KEY_MAP.put("markAllRead", "calendar.ui.markAllRead");
 		CALENDAR_UI_KEY_MAP.put("weekHint", "calendar.ui.weekHint");
 		CALENDAR_UI_KEY_MAP.put("prevMonth", "calendar.ui.prevMonth");

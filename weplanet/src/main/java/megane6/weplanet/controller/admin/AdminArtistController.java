@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminArtistController {
 	
 	private final AdminArtistService service;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String artists(
@@ -86,7 +87,7 @@ public class AdminArtistController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"아티스트 계정을 정지했습니다.",
+				messages.get("admin.artists.flash.suspended"),
 				redirectAttributes
 		);
 		
@@ -118,7 +119,7 @@ public class AdminArtistController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"아티스트 계정의 정지를 해제했습니다.",
+				messages.get("admin.artists.flash.reinstated"),
 				redirectAttributes
 		);
 		
@@ -149,7 +150,7 @@ public class AdminArtistController {
 		) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					e.getMessage()
+					messages.resolve(e.getMessage())
 			);
 		}
 	}
@@ -202,7 +203,7 @@ public class AdminArtistController {
 				)
 		) {
 			throw new IllegalStateException(
-					"관리자 권한이 필요합니다."
+					"error.admin.adminOnly"
 			);
 		}
 	}

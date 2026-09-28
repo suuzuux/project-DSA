@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>커뮤니티 현황 | WePlaNet ADMIN</title>
+  <title th:text="#{admin.overview.pageTitle}">커뮤니티 현황 | WePlaNet ADMIN</title>
 
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
@@ -19,21 +19,21 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-      <a th:href="@{/admin/users}">👥 전체 회원</a>
-      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-      <a th:href="@{/admin/notices}">📢 전체 공지</a>
-      <a class="is-active" th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
-      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+      <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+      <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+      <a class="is-active" th:href="@{/admin/communities}" th:text="|💬 #{admin.nav.communities}|">💬 커뮤니티 운영</a>
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
     </nav>
 
     <div class="portal-sidebar__footer">
       <form th:action="@{/admin/logout}"
             method="post"
             style="margin:0;">
-        <button type="submit" class="btn">🚪 로그아웃</button>
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
       </form>
     </div>
   </aside>
@@ -42,15 +42,16 @@
 
     <div class="portal-main__head">
       <div>
-        <h1>커뮤니티 현황</h1>
-        <p class="text-sm text-muted">
+        <h1 th:text="#{admin.overview.heading}">커뮤니티 현황</h1>
+        <p class="text-sm text-muted" th:text="#{admin.overview.subtitle}">
           커뮤니티별 가입 팬과 활동·운영 지표를 확인합니다.
         </p>
       </div>
 
       <div class="admin-topbar">
         <a class="btn btn--ghost btn--sm"
-           th:href="@{/admin/communities}">
+           th:href="@{/admin/communities}"
+           th:text="#{admin.overview.backToMain}">
           ← 운영 메인
         </a>
 
@@ -67,7 +68,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">조회 커뮤니티</span>
+          <span class="admin-stat__label" th:text="#{admin.overview.stat.communities}">조회 커뮤니티</span>
           <strong class="admin-stat__value"
                   th:text="${overviewStats.communityCount()}">
             0
@@ -81,7 +82,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">가입 팬 합계</span>
+          <span class="admin-stat__label" th:text="#{admin.overview.stat.totalMembers}">가입 팬 합계</span>
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
                       overviewStats.totalMemberCount(),
@@ -99,7 +100,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">진행 프로젝트</span>
+          <span class="admin-stat__label" th:text="#{admin.overview.col.activeProjects}">진행 프로젝트</span>
           <strong class="admin-stat__value"
                   th:text="${overviewStats.activeProjectCount()}">
             0
@@ -113,7 +114,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">처리 대기 신고</span>
+          <span class="admin-stat__label" th:text="#{admin.overview.col.pendingReports}">처리 대기 신고</span>
           <strong class="admin-stat__value"
                   th:text="${overviewStats.pendingReportCount()}">
             0
@@ -127,16 +128,14 @@
     <section class="panel">
       <div class="panel__head">
         <div>
-          <h2 class="panel__title">커뮤니티별 운영 현황</h2>
-          <p class="text-xs text-muted">
+          <h2 class="panel__title" th:text="#{admin.overview.list.title}">커뮤니티별 운영 현황</h2>
+          <p class="text-xs text-muted" th:text="#{admin.overview.list.desc}">
             가입자, 게시글, 프로젝트, 차단 및 신고 현황을 보여줍니다.
           </p>
         </div>
 
         <span class="tag tag--member"
-              th:text="${'차단 회원 '
-                  + overviewStats.blockedMemberCount()
-                  + '명'}">
+              th:text="#{admin.overview.blockedTotal(${overviewStats.blockedMemberCount()})}">
           차단 회원 0명
         </span>
       </div>
@@ -146,53 +145,62 @@
             th:action="@{/admin/communities/overview}">
 
         <select name="status">
-          <option value="">
+          <option value="" th:text="#{admin.overview.filter.allStatuses}">
             전체 상태
           </option>
 
           <option value="ACTIVE"
-                  th:selected="${selectedStatus == 'ACTIVE'}">
+                  th:selected="${selectedStatus == 'ACTIVE'}"
+                  th:text="#{admin.overview.status.ACTIVE}">
             운영 중
           </option>
 
           <option value="DORMANT"
-                  th:selected="${selectedStatus == 'DORMANT'}">
+                  th:selected="${selectedStatus == 'DORMANT'}"
+                  th:text="#{admin.overview.status.DORMANT}">
             휴면
           </option>
 
           <option value="SUSPENDED"
-                  th:selected="${selectedStatus == 'SUSPENDED'}">
+                  th:selected="${selectedStatus == 'SUSPENDED'}"
+                  th:text="#{admin.overview.status.SUSPENDED}">
             운영 정지
           </option>
 
           <option value="WITHDRAWN"
-                  th:selected="${selectedStatus == 'WITHDRAWN'}">
+                  th:selected="${selectedStatus == 'WITHDRAWN'}"
+                  th:text="#{admin.overview.status.WITHDRAWN}">
             탈퇴
           </option>
         </select>
         <select name="sort">
           <option value="NAME_ASC"
-                  th:selected="${selectedSort == 'NAME_ASC'}">
+                  th:selected="${selectedSort == 'NAME_ASC'}"
+                  th:text="#{admin.overview.sort.NAME_ASC}">
             이름순
           </option>
 
           <option value="MEMBERS_DESC"
-                  th:selected="${selectedSort == 'MEMBERS_DESC'}">
+                  th:selected="${selectedSort == 'MEMBERS_DESC'}"
+                  th:text="#{admin.overview.sort.MEMBERS_DESC}">
             가입 팬 많은 순
           </option>
 
           <option value="POSTS_DESC"
-                  th:selected="${selectedSort == 'POSTS_DESC'}">
+                  th:selected="${selectedSort == 'POSTS_DESC'}"
+                  th:text="#{admin.overview.sort.POSTS_DESC}">
             게시글 많은 순
           </option>
 
           <option value="BLOCKS_DESC"
-                  th:selected="${selectedSort == 'BLOCKS_DESC'}">
+                  th:selected="${selectedSort == 'BLOCKS_DESC'}"
+                  th:text="#{admin.overview.sort.BLOCKS_DESC}">
             차단 회원 많은 순
           </option>
 
           <option value="REPORTS_DESC"
-                  th:selected="${selectedSort == 'REPORTS_DESC'}">
+                  th:selected="${selectedSort == 'REPORTS_DESC'}"
+                  th:text="#{admin.overview.sort.REPORTS_DESC}">
             신고 많은 순
           </option>
         </select>
@@ -200,21 +208,24 @@
         <input type="text"
                name="keyword"
                th:value="${keyword}"
-               placeholder="아티스트명 또는 아이디 검색" />
+               placeholder="아티스트명 또는 아이디 검색"
+               th:placeholder="#{admin.overview.searchPlaceholder}" />
 
         <button type="submit"
-                class="btn btn--primary btn--sm">
+                class="btn btn--primary btn--sm"
+                th:text="#{admin.common.search}">
           검색
         </button>
 
         <a class="btn btn--ghost btn--sm"
-           th:href="@{/admin/communities/overview}">
+           th:href="@{/admin/communities/overview}"
+           th:text="#{admin.common.reset}">
           초기화
         </a>
 
         <span class="text-xs text-muted"
               style="margin-left:auto;"
-              th:text="${#lists.size(communities) + '개 커뮤니티'}">
+              th:text="#{admin.overview.communityCount(${#lists.size(communities)})}">
           0개 커뮤니티
         </span>
       </form>
@@ -223,21 +234,22 @@
         <table class="data-table">
           <thead>
           <tr>
-            <th>커뮤니티</th>
-            <th>상태</th>
-            <th>가입 팬</th>
-            <th>게시글</th>
-            <th>진행 프로젝트</th>
-            <th>차단 회원</th>
-            <th>처리 대기 신고</th>
-            <th>관리</th>
+            <th th:text="#{admin.overview.col.community}">커뮤니티</th>
+            <th th:text="#{admin.common.status}">상태</th>
+            <th th:text="#{admin.overview.col.members}">가입 팬</th>
+            <th th:text="#{admin.overview.col.posts}">게시글</th>
+            <th th:text="#{admin.overview.col.activeProjects}">진행 프로젝트</th>
+            <th th:text="#{admin.overview.col.blocked}">차단 회원</th>
+            <th th:text="#{admin.overview.col.pendingReports}">처리 대기 신고</th>
+            <th th:text="#{admin.common.manage}">관리</th>
           </tr>
           </thead>
 
           <tbody>
           <tr th:if="${#lists.isEmpty(communities)}">
             <td colspan="8"
-                class="text-sm text-muted">
+                class="text-sm text-muted"
+                th:text="#{admin.overview.empty}">
               검색 조건에 해당하는 커뮤니티가 없습니다.
             </td>
           </tr>
@@ -282,51 +294,53 @@
             </td>
 
             <td>
-              <strong th:text="${#numbers.formatInteger(
+              <strong th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                   community.memberCount(),
                   0,
                   'COMMA'
-              )}">
-                0
-              </strong>명
+              )})}">
+                0명
+              </strong>
             </td>
 
             <td>
-              <strong th:text="${#numbers.formatInteger(
+              <strong th:text="#{admin.communities.itemCount(${#numbers.formatInteger(
                   community.postCount(),
                   0,
                   'COMMA'
-              )}">
-                0
-              </strong>개
+              )})}">
+                0개
+              </strong>
             </td>
 
             <td>
               <span class="tag tag--public"
                     th:if="${community.activeProjectCount() > 0}"
-                    th:text="${community.activeProjectCount() + '건'}">
+                    th:text="#{admin.common.caseCount(${community.activeProjectCount()})}">
                 0건
               </span>
 
               <span class="text-muted"
-                    th:if="${community.activeProjectCount() == 0}">
+                    th:if="${community.activeProjectCount() == 0}"
+                    th:text="#{admin.common.caseCount(0)}">
                 0건
               </span>
             </td>
 
-            <td th:text="${community.blockedMemberCount() + '명'}">
+            <td th:text="#{admin.common.peopleCount(${community.blockedMemberCount()})}">
               0명
             </td>
 
             <td>
               <span class="tag tag--danger"
                     th:if="${community.pendingReportCount() > 0}"
-                    th:text="${community.pendingReportCount() + '건'}">
+                    th:text="#{admin.common.caseCount(${community.pendingReportCount()})}">
                 0건
               </span>
 
               <span class="text-muted"
-                    th:if="${community.pendingReportCount() == 0}">
+                    th:if="${community.pendingReportCount() == 0}"
+                    th:text="#{admin.common.caseCount(0)}">
                 0건
               </span>
             </td>
@@ -334,7 +348,8 @@
             <td>
               <a class="btn btn--ghost btn--sm"
                  th:href="@{/admin/communities/overview/{artistId}(
-                    artistId=${community.artistId()})}">
+                    artistId=${community.artistId()})}"
+                 th:text="#{admin.overview.viewDetail}">
                 상세 보기
               </a>
             </td>

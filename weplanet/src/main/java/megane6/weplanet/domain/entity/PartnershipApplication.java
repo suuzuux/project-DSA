@@ -83,14 +83,14 @@ public class PartnershipApplication {
 			String message
 	) {
 		if (applicantType == null) {
-			throw new IllegalArgumentException("신청 유형을 선택해주세요.");
+			throw new IllegalArgumentException("partnership.error.typeRequired");
 		}
 		this.applicantType = applicantType;
-		this.applicantName = requireText(applicantName, 100, "아티스트명 또는 소속사명을 입력해주세요.");
-		this.contactName = requireText(contactName, 50, "담당자명을 입력해주세요.");
+		this.applicantName = requireText(applicantName, 100, "partnership.error.applicantNameRequired");
+		this.contactName = requireText(contactName, 50, "partnership.error.contactNameRequired");
 		this.email = normalizeEmail(email);
-		this.phone = optionalText(phone, 30, "연락처는 30자 이하로 입력해주세요.");
-		this.message = requireText(message, 2000, "신청 내용을 입력해주세요.");
+		this.phone = optionalText(phone, 30, "partnership.error.phoneTooLong");
+		this.message = requireText(message, 2000, "partnership.error.messageRequired");
 		this.status = PartnershipApplicationStatus.PENDING_APPROVAL;
 	}
 	
@@ -124,7 +124,7 @@ public class PartnershipApplication {
 	public void reject(User admin, String reason) {
 		validatePendingReview(admin);
 		
-		this.rejectionReason = requireText(reason, 500, "반려 사유를 입력해주세요.");
+		this.rejectionReason = requireText(reason, 500, "error.project.rejectionReasonRequired");
 		this.status = PartnershipApplicationStatus.REJECTED;
 		this.reviewedBy = admin;
 		this.reviewedAt = LocalDateTime.now();
@@ -132,19 +132,19 @@ public class PartnershipApplication {
 	
 	private void validatePendingReview(User admin) {
 		if (admin == null || admin.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자만 입점 신청을 처리할 수 있습니다.");
+			throw new IllegalStateException("partnership.error.adminOnly");
 		}
 		
 		if (status != PartnershipApplicationStatus.PENDING_APPROVAL) {
-			throw new IllegalStateException("검토 대기 중인 신청만 처리할 수 있습니다.");
+			throw new IllegalStateException("partnership.error.onlyPending");
 		}
 	}
 	
 	private String normalizeEmail(String value) {
-		String normalized = requireText(value, 150, "이메일을 입력해주세요.").toLowerCase(Locale.ROOT);
+		String normalized = requireText(value, 150, "signup.validation.emailRequired").toLowerCase(Locale.ROOT);
 		
 		if (!EMAIL_PATTERN.matcher(normalized).matches()) {
-			throw new IllegalArgumentException("이메일 주소 형식을 확인해주세요.");
+			throw new IllegalArgumentException("signup.validation.emailFormat");
 		}
 		
 		return normalized;

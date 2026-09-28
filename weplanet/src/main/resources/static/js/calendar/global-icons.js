@@ -59,6 +59,7 @@
       next: "다음",
       languageLabel: "언어",
       notificationsLabel: "알림",
+      themeToggle: "화면 테마 전환",
     },
     en: {
       notificationsTitle: "Notifications",
@@ -86,6 +87,7 @@
       next: "Next",
       languageLabel: "Language",
       notificationsLabel: "Notifications",
+      themeToggle: "Toggle theme",
     },
     ja: {
       notificationsTitle: "通知",
@@ -113,6 +115,7 @@
       next: "次へ",
       languageLabel: "言語",
       notificationsLabel: "通知",
+      themeToggle: "画面テーマの切り替え",
     },
   };
   var UI = DEFAULT_UI;
@@ -911,7 +914,7 @@
       themeBtn.type = "button";
       themeBtn.className = "icon-btn";
       themeBtn.setAttribute("data-theme-toggle", "");
-      themeBtn.setAttribute("aria-label", "화면 테마 전환");
+      themeBtn.setAttribute("aria-label", t().themeToggle || "화면 테마 전환");
       themeBtn.innerHTML = HEADER_ICONS.theme;
       insert(themeBtn);
     }

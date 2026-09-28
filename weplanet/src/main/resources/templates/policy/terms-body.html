@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<!--
+  이용약관 본문 조각 - terms.html에서 ${#locale.language}에 따라 ko / ja / en 중 하나를 끼워 넣는다.
+  한국어(ko)가 원문이며, ja / en은 번역본(상단에 policy.translationNotice 안내 표시).
+-->
+<body>
+
+<!-- ===================== 한국어 (원문) ===================== -->
+<th:block th:fragment="ko">
+    <ul class="policy-toc">
+        <li><a href="#art1">제1조 목적</a></li>
+        <li><a href="#art2">제2조 용어의 정의</a></li>
+        <li><a href="#art3">제3조 약관의 효력 및 변경</a></li>
+        <li><a href="#art4">제4조 회원가입</a></li>
+        <li><a href="#art5">제5조 회원 탈퇴 및 자격 상실</a></li>
+        <li><a href="#art6">제6조 회원의 의무</a></li>
+        <li><a href="#art7">제7조 서비스의 제공 및 변경·중단</a></li>
+        <li><a href="#art8">제8조 게시물의 관리 및 저작권</a></li>
+        <li><a href="#art9">제9조 유료 서비스 및 환불</a></li>
+        <li><a href="#art10">제10조 회사의 의무 및 면책</a></li>
+        <li><a href="#art11">제11조 손해배상</a></li>
+        <li><a href="#art12">제12조 준거법 및 관할법원</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>제1조(목적)</h2>
+        <p>본 약관은 WePlaNet(이하 "회사")이 제공하는 웹사이트 및 관련 제반 서비스(이하 "서비스")의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>제2조(용어의 정의)</h2>
+        <ol>
+            <li>"서비스"란 회사가 제공하는 아티스트 커뮤니티, 다이렉트 메시지(DM), 멤버십, 샵, 팬 프로젝트(크라우드펀딩) 등 회사가 운영하는 일체의 서비스를 의미합니다.</li>
+            <li>"회원"이란 본 약관에 동의하고 회사와 이용계약을 체결하여 서비스를 이용하는 자를 말합니다.</li>
+            <li>"아이디"란 회원 식별과 서비스 이용을 위하여 회원이 정하고 회사가 승인한 문자와 숫자의 조합을 의미합니다.</li>
+            <li>"게시물"이란 회원이 서비스를 이용함에 있어 게시한 글, 사진, 댓글, 메시지 등 일체의 정보를 의미합니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>제3조(약관의 효력 및 변경)</h2>
+        <ol>
+            <li>본 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력이 발생합니다.</li>
+            <li>회사는 관계 법령을 위반하지 않는 범위에서 본 약관을 개정할 수 있으며, 개정 시 적용일자 및 개정 사유를 명시하여 서비스 내 공지사항을 통해 사전에 공지합니다. 회원에게 불리한 개정의 경우 적용일 30일 전부터 공지합니다.</li>
+            <li>회원이 개정 약관의 적용에 동의하지 않는 경우 이용계약을 해지(탈퇴)할 수 있으며, 공지된 적용일 이후에도 서비스를 계속 이용하는 경우 개정 약관에 동의한 것으로 봅니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>제4조(회원가입)</h2>
+        <ol>
+            <li>회원가입은 이용자가 본 약관에 동의하고 아이디·비밀번호를 설정하거나 구글·카카오·라인 중 하나의 소셜 계정으로 인증을 완료함으로써 체결됩니다.</li>
+            <li>회사는 다음 각 호에 해당하는 가입 신청에 대해서는 승낙을 유보하거나 거부할 수 있습니다.
+                <ul>
+                    <li>타인의 정보를 도용한 경우</li>
+                    <li>이미 가입된 아이디 또는 이메일과 중복되는 경우</li>
+                    <li>관계 법령이 정하는 가입 제한 사유에 해당하는 경우</li>
+                </ul>
+            </li>
+            <li>회사는 아동(만 14세 미만)을 대상으로 서비스를 제공하지 않습니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>제5조(회원 탈퇴 및 자격 상실)</h2>
+        <ol>
+            <li>회원은 설정 화면의 "위플래닛 계정 탈퇴하기"를 통해 언제든지 이용계약을 해지할 수 있습니다.</li>
+            <li>탈퇴 시 회사는 개인정보처리방침 제4조에 따라 회원의 개인정보를 지체 없이 익명 처리하며, 탈퇴한 회원은 동일한 계정으로 다시 로그인할 수 없습니다.</li>
+            <li>회원이 본 약관 제6조를 위반한 경우, 회사는 사전 통지 후 서비스 이용을 제한하거나 이용계약을 해지할 수 있습니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>제6조(회원의 의무)</h2>
+        <p>회원은 다음 각 호의 행위를 하여서는 안 됩니다.</p>
+        <ol>
+            <li>회원가입 신청 또는 정보 변경 시 허위 내용을 등록하는 행위</li>
+            <li>타인의 계정 및 개인정보를 도용하는 행위</li>
+            <li>다른 회원의 개인정보를 본인 동의 없이 수집·저장·공개하는 행위</li>
+            <li>커뮤니티 게시글, 댓글, DM 등을 통해 타인을 비방하거나 명예를 훼손하는 행위</li>
+            <li>회사 또는 제3자의 저작권 등 지식재산권을 침해하는 행위</li>
+            <li>서비스의 안정적 운영을 방해하거나 서버·네트워크에 비정상적으로 접근하는 행위</li>
+            <li>관계 법령 및 본 약관에서 금지하는 기타 행위</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>제7조(서비스의 제공 및 변경·중단)</h2>
+        <ol>
+            <li>회사는 연중무휴, 1일 24시간 서비스를 제공함을 원칙으로 합니다. 다만 시스템 점검, 서버 장애 등 불가피한 사유가 있는 경우 서비스 제공을 일시적으로 중단할 수 있습니다.</li>
+            <li>회사는 서비스의 내용을 변경할 수 있으며, 이 경우 변경 내용 및 적용일자를 사전에 공지합니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>제8조(게시물의 관리 및 저작권)</h2>
+        <ol>
+            <li>회원이 서비스 내에 작성한 게시물의 저작권은 해당 게시물을 작성한 회원에게 귀속됩니다.</li>
+            <li>회원은 서비스 운영, 개선 및 홍보를 위해 필요한 범위 내에서 회사가 게시물을 사용하는 것에 동의합니다.</li>
+            <li>회사는 게시물이 관계 법령 또는 본 약관 제6조를 위반한다고 판단되는 경우 사전 통지 없이 게시물을 삭제하거나 게시 중단 조치를 할 수 있습니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>제9조(유료 서비스 및 환불)</h2>
+        <ol>
+            <li>회원은 서비스 내에서 멤버십 가입, 샵 상품 구매, 팬 프로젝트(크라우드펀딩) 후원 등 유료 서비스를 이용할 수 있습니다.</li>
+            <li>팬 프로젝트 후원의 환불은 각 프로젝트에 안내된 환불 정책에 따르며, 회원이 후원 시 해당 환불 정책에 동의한 것으로 봅니다.</li>
+            <li>결제 및 환불과 관련한 세부 절차는 관계 법령 및 서비스 내 별도 안내를 따릅니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>제10조(회사의 의무 및 면책)</h2>
+        <ol>
+            <li>회사는 안정적인 서비스 제공을 위해 노력하며, 회원의 개인정보를 보호하기 위해 개인정보처리방침을 수립하고 이를 준수합니다.</li>
+            <li>회사는 천재지변, 불가항력적 사유 또는 회원의 귀책 사유로 인한 서비스 이용 장애에 대해서는 책임을 지지 않습니다.</li>
+            <li>회사는 회원 간 또는 회원과 제3자 간에 게시물을 매개로 발생한 분쟁에 대해 개입할 의무가 없으며, 이로 인한 손해를 배상할 책임도 없습니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>제11조(손해배상)</h2>
+        <p>회사 또는 회원은 본 약관을 위반하여 상대방에게 손해를 끼친 경우, 그 손해에 대하여 배상할 책임이 있습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>제12조(준거법 및 관할법원)</h2>
+        <p>본 약관은 대한민국 법령에 따라 규율되고 해석되며, 서비스 이용과 관련하여 발생한 분쟁에 대해서는 민사소송법상의 관할법원에 소를 제기합니다.</p>
+        <p class="policy-meta" style="margin-top:16px;">부칙: 본 약관은 2026년 9월 16일부터 시행됩니다.</p>
+    </section>
+</th:block>
+
+<!-- ===================== 日本語 (翻訳) ===================== -->
+<th:block th:fragment="ja">
+    <p class="policy-meta" th:text="#{policy.translationNotice}">本規約は韓国語版を原文とし、翻訳版との間に相違がある場合は韓国語版が優先します。</p>
+
+    <ul class="policy-toc">
+        <li><a href="#art1">第1条 目的</a></li>
+        <li><a href="#art2">第2条 用語の定義</a></li>
+        <li><a href="#art3">第3条 規約の効力および変更</a></li>
+        <li><a href="#art4">第4条 会員登録</a></li>
+        <li><a href="#art5">第5条 会員の退会および資格喪失</a></li>
+        <li><a href="#art6">第6条 会員の義務</a></li>
+        <li><a href="#art7">第7条 サービスの提供および変更・中断</a></li>
+        <li><a href="#art8">第8条 投稿物の管理および著作権</a></li>
+        <li><a href="#art9">第9条 有料サービスおよび返金</a></li>
+        <li><a href="#art10">第10条 会社の義務および免責</a></li>
+        <li><a href="#art11">第11条 損害賠償</a></li>
+        <li><a href="#art12">第12条 準拠法および管轄裁判所</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>第1条（目的）</h2>
+        <p>本規約は、WePlaNet（以下「会社」といいます）が提供するウェブサイトおよび関連する一切のサービス（以下「サービス」といいます）の利用に関し、会社と会員との間の権利、義務および責任事項、その他必要な事項を定めることを目的とします。</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>第2条（用語の定義）</h2>
+        <ol>
+            <li>「サービス」とは、会社が提供するアーティストコミュニティ、ダイレクトメッセージ（DM）、メンバーシップ、ショップ、ファンプロジェクト（クラウドファンディング）など、会社が運営する一切のサービスを意味します。</li>
+            <li>「会員」とは、本規約に同意し、会社と利用契約を締結してサービスを利用する者をいいます。</li>
+            <li>「ID」とは、会員の識別およびサービス利用のために会員が定め、会社が承認した文字および数字の組み合わせを意味します。</li>
+            <li>「投稿物」とは、会員がサービスを利用するにあたり投稿した文章、写真、コメント、メッセージなど一切の情報を意味します。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>第3条（規約の効力および変更）</h2>
+        <ol>
+            <li>本規約は、サービス画面への掲示またはその他の方法により会員に告知することによって効力を生じます。</li>
+            <li>会社は、関係法令に違反しない範囲で本規約を改定することができ、改定する場合には、適用日および改定理由を明示のうえ、サービス内のお知らせを通じて事前に告知します。会員にとって不利な改定の場合は、適用日の30日前から告知します。</li>
+            <li>会員が改定後の規約の適用に同意しない場合は、利用契約を解約（退会）することができ、告知された適用日以降もサービスを継続して利用した場合は、改定後の規約に同意したものとみなします。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>第4条（会員登録）</h2>
+        <ol>
+            <li>会員登録は、利用者が本規約に同意し、ID・パスワードを設定するか、Google・Kakao・LINEのいずれかのソーシャルアカウントによる認証を完了することによって成立します。</li>
+            <li>会社は、次の各号のいずれかに該当する登録申請については、承諾を留保し、または拒否することができます。
+                <ul>
+                    <li>他人の情報を盗用した場合</li>
+                    <li>既に登録されているIDまたはメールアドレスと重複する場合</li>
+                    <li>関係法令が定める登録制限事由に該当する場合</li>
+                </ul>
+            </li>
+            <li>会社は、児童（満14歳未満）を対象としてサービスを提供しません。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>第5条（会員の退会および資格喪失）</h2>
+        <ol>
+            <li>会員は、設定画面の「WePlaNetアカウントを退会する」から、いつでも利用契約を解約することができます。</li>
+            <li>退会時、会社はプライバシーポリシー第4条に従い会員の個人情報を遅滞なく匿名化し、退会した会員は同一のアカウントで再度ログインすることはできません。</li>
+            <li>会員が本規約第6条に違反した場合、会社は事前に通知したうえで、サービスの利用を制限し、または利用契約を解約することができます。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>第6条（会員の義務）</h2>
+        <p>会員は、次の各号の行為をしてはなりません。</p>
+        <ol>
+            <li>会員登録の申請または情報変更の際に虚偽の内容を登録する行為</li>
+            <li>他人のアカウントおよび個人情報を盗用する行為</li>
+            <li>他の会員の個人情報を本人の同意なく収集・保存・公開する行為</li>
+            <li>コミュニティの投稿、コメント、DMなどを通じて他人を誹謗し、または名誉を毀損する行為</li>
+            <li>会社または第三者の著作権その他の知的財産権を侵害する行為</li>
+            <li>サービスの安定的な運営を妨害し、またはサーバー・ネットワークに不正にアクセスする行為</li>
+            <li>関係法令および本規約で禁止されるその他の行為</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>第7条（サービスの提供および変更・中断）</h2>
+        <ol>
+            <li>会社は、年中無休・1日24時間サービスを提供することを原則とします。ただし、システム点検、サーバー障害など、やむを得ない事由がある場合は、サービスの提供を一時的に中断することがあります。</li>
+            <li>会社はサービスの内容を変更することができ、この場合は変更内容および適用日を事前に告知します。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>第8条（投稿物の管理および著作権）</h2>
+        <ol>
+            <li>会員がサービス内で作成した投稿物の著作権は、当該投稿物を作成した会員に帰属します。</li>
+            <li>会員は、サービスの運営、改善および広報のために必要な範囲内で、会社が投稿物を使用することに同意します。</li>
+            <li>会社は、投稿物が関係法令または本規約第6条に違反すると判断した場合、事前の通知なく当該投稿物を削除し、または掲載を停止する措置をとることができます。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>第9条（有料サービスおよび返金）</h2>
+        <ol>
+            <li>会員は、サービス内において、メンバーシップへの加入、ショップ商品の購入、ファンプロジェクト（クラウドファンディング）への支援などの有料サービスを利用することができます。</li>
+            <li>ファンプロジェクトへの支援の返金は、各プロジェクトに案内された返金ポリシーに従うものとし、会員は支援の際に当該返金ポリシーに同意したものとみなします。</li>
+            <li>決済および返金に関する詳細な手続は、関係法令およびサービス内の別途の案内に従います。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>第10条（会社の義務および免責）</h2>
+        <ol>
+            <li>会社は、安定したサービスの提供に努め、会員の個人情報を保護するためにプライバシーポリシーを策定し、これを遵守します。</li>
+            <li>会社は、天災地変その他の不可抗力による事由、または会員の責めに帰すべき事由によるサービスの利用障害については、責任を負いません。</li>
+            <li>会社は、会員間または会員と第三者との間で投稿物を介して生じた紛争に介入する義務を負わず、これにより生じた損害を賠償する責任も負いません。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>第11条（損害賠償）</h2>
+        <p>会社または会員は、本規約に違反して相手方に損害を与えた場合、その損害を賠償する責任を負います。</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>第12条（準拠法および管轄裁判所）</h2>
+        <p>本規約は大韓民国の法令に準拠し、同法令に従って解釈されるものとし、サービスの利用に関して生じた紛争については、大韓民国民事訴訟法上の管轄裁判所に訴えを提起するものとします。</p>
+        <p class="policy-meta" style="margin-top:16px;">附則：本規約は2026年9月16日から施行します。</p>
+    </section>
+</th:block>
+
+<!-- ===================== English (translation) ===================== -->
+<th:block th:fragment="en">
+    <p class="policy-meta" th:text="#{policy.translationNotice}">This is a translation of the Korean original. In case of any discrepancy, the Korean version prevails.</p>
+
+    <ul class="policy-toc">
+        <li><a href="#art1">Article 1. Purpose</a></li>
+        <li><a href="#art2">Article 2. Definitions</a></li>
+        <li><a href="#art3">Article 3. Effect and Amendment of the Terms</a></li>
+        <li><a href="#art4">Article 4. Membership Registration</a></li>
+        <li><a href="#art5">Article 5. Withdrawal and Loss of Membership</a></li>
+        <li><a href="#art6">Article 6. Obligations of Members</a></li>
+        <li><a href="#art7">Article 7. Provision, Modification and Suspension of the Service</a></li>
+        <li><a href="#art8">Article 8. Management of Posts and Copyright</a></li>
+        <li><a href="#art9">Article 9. Paid Services and Refunds</a></li>
+        <li><a href="#art10">Article 10. Obligations and Disclaimers of the Company</a></li>
+        <li><a href="#art11">Article 11. Compensation for Damages</a></li>
+        <li><a href="#art12">Article 12. Governing Law and Jurisdiction</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>Article 1 (Purpose)</h2>
+        <p>These Terms of Service set forth the rights, obligations and responsibilities of WePlaNet (the "Company") and its members, and other necessary matters, in connection with the use of the website and all related services provided by the Company (the "Service").</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>Article 2 (Definitions)</h2>
+        <ol>
+            <li>"Service" means all services operated by the Company, including the artist communities, direct messages (DM), memberships, shop and fan projects (crowdfunding) provided by the Company.</li>
+            <li>"Member" means a person who has agreed to these Terms, entered into a service agreement with the Company and uses the Service.</li>
+            <li>"ID" means the combination of letters and numbers chosen by a Member and approved by the Company for identifying the Member and using the Service.</li>
+            <li>"Post" means any information, including text, photos, comments and messages, posted by a Member in the course of using the Service.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>Article 3 (Effect and Amendment of the Terms)</h2>
+        <ol>
+            <li>These Terms take effect when they are posted on the Service screen or otherwise notified to Members.</li>
+            <li>The Company may amend these Terms to the extent that such amendment does not violate applicable laws. In the event of an amendment, the Company will give prior notice through the notices within the Service, specifying the effective date and the reasons for the amendment. Amendments that are unfavorable to Members will be announced at least 30 days before their effective date.</li>
+            <li>A Member who does not agree to the amended Terms may terminate the service agreement (withdraw). A Member who continues to use the Service after the announced effective date will be deemed to have agreed to the amended Terms.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>Article 4 (Membership Registration)</h2>
+        <ol>
+            <li>Membership is established when a user agrees to these Terms and either sets an ID and password or completes authentication with one of the following social accounts: Google, Kakao or LINE.</li>
+            <li>The Company may withhold or refuse approval of an application for registration that falls under any of the following:
+                <ul>
+                    <li>The applicant has used another person's information without authorization;</li>
+                    <li>The ID or email address duplicates one that is already registered;</li>
+                    <li>The application falls under any ground for restriction of registration prescribed by applicable laws.</li>
+                </ul>
+            </li>
+            <li>The Company does not provide the Service to children (under 14 years of age).</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>Article 5 (Withdrawal and Loss of Membership)</h2>
+        <ol>
+            <li>A Member may terminate the service agreement at any time via "Delete WePlaNet account" on the Settings screen.</li>
+            <li>Upon withdrawal, the Company will anonymize the Member's personal information without delay in accordance with Article 4 of the Privacy Policy, and the withdrawn Member will no longer be able to log in with the same account.</li>
+            <li>If a Member violates Article 6 of these Terms, the Company may, after giving prior notice, restrict the Member's use of the Service or terminate the service agreement.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>Article 6 (Obligations of Members)</h2>
+        <p>Members shall not engage in any of the following acts:</p>
+        <ol>
+            <li>Registering false information when applying for membership or changing information;</li>
+            <li>Using another person's account or personal information without authorization;</li>
+            <li>Collecting, storing or disclosing other Members' personal information without their consent;</li>
+            <li>Slandering or defaming others through community posts, comments, DMs or the like;</li>
+            <li>Infringing the copyrights or other intellectual property rights of the Company or any third party;</li>
+            <li>Interfering with the stable operation of the Service or accessing servers or networks in an abnormal manner;</li>
+            <li>Any other acts prohibited by applicable laws or these Terms.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>Article 7 (Provision, Modification and Suspension of the Service)</h2>
+        <ol>
+            <li>In principle, the Company provides the Service 24 hours a day, 365 days a year. However, the Company may temporarily suspend the Service where unavoidable, such as for system maintenance or server failure.</li>
+            <li>The Company may modify the content of the Service, in which case it will give prior notice of the changes and their effective date.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>Article 8 (Management of Posts and Copyright)</h2>
+        <ol>
+            <li>The copyright in a Post created by a Member within the Service belongs to the Member who created it.</li>
+            <li>Members agree that the Company may use their Posts to the extent necessary for operating, improving and promoting the Service.</li>
+            <li>If the Company determines that a Post violates applicable laws or Article 6 of these Terms, it may delete the Post or suspend its display without prior notice.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>Article 9 (Paid Services and Refunds)</h2>
+        <ol>
+            <li>Members may use paid services within the Service, such as joining memberships, purchasing shop products and backing fan projects (crowdfunding).</li>
+            <li>Refunds for fan project contributions are subject to the refund policy stated for each project, and a Member is deemed to have agreed to that refund policy when making a contribution.</li>
+            <li>Detailed procedures for payments and refunds follow applicable laws and the separate guidance provided within the Service.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>Article 10 (Obligations and Disclaimers of the Company)</h2>
+        <ol>
+            <li>The Company endeavors to provide the Service stably, and establishes and complies with a Privacy Policy to protect Members' personal information.</li>
+            <li>The Company is not liable for any disruption in the use of the Service caused by natural disasters, force majeure or reasons attributable to the Member.</li>
+            <li>The Company has no obligation to intervene in disputes arising between Members, or between a Member and a third party, through Posts, and is not liable to compensate for any damages resulting therefrom.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>Article 11 (Compensation for Damages)</h2>
+        <p>If the Company or a Member causes damage to the other party by violating these Terms, it shall be liable to compensate for such damage.</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>Article 12 (Governing Law and Jurisdiction)</h2>
+        <p>These Terms are governed by and construed in accordance with the laws of the Republic of Korea, and any lawsuit concerning disputes arising in connection with the use of the Service shall be filed with the competent court under the Civil Procedure Act of the Republic of Korea.</p>
+        <p class="policy-meta" style="margin-top:16px;">Addendum: These Terms take effect on September 16, 2026.</p>
+    </section>
+</th:block>
+
+</body>
+</html>

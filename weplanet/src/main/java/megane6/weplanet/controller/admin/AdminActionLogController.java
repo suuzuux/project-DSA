@@ -23,6 +23,7 @@ import java.time.LocalDate;
 public class AdminActionLogController {
 	
 	private final AdminActionLogService service;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String logs(@RequestParam(required = false) String action,
@@ -54,7 +55,7 @@ public class AdminActionLogController {
 					page
 			);
 		} catch (IllegalArgumentException e) {
-			model.addAttribute("error", e.getMessage());
+			model.addAttribute("error", messages.resolve(e.getMessage()));
 			// 날짜 범위가 잘못되어도 페이지는 표시 (날짜 필터만 제외하고 다시 조회)
 			logs = service.getLogs(
 					actionFilter,
@@ -87,7 +88,7 @@ public class AdminActionLogController {
 	
 	private void requireAdmin(AuthenticatedUser principal) {
 		if (principal == null || !"ROLE_ADMIN".equals(principal.getRoleName())) {
-			throw new IllegalStateException("관리자 권한이 필요합니다.");
+			throw new IllegalStateException("admin.logs.error.adminRequired");
 		}
 	}
 	

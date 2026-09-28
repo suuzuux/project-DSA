@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>공지사항 | WePlaNet</title>
+  <title th:text="#{notices.pageTitle}">공지사항 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
 </head>
@@ -16,7 +16,7 @@
 
 <header class="site-header">
   <div class="header-left">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+    <button type="button" class="menu-toggle" data-shell-open="menu" th:aria-label="#{shell.menu.open}" aria-label="메뉴 열기">☰</button>
     <a class="brand" th:href="@{/}">
       <span class="brand__mark">W</span>
       <span class="brand__text">We<span>Pla</span>Net</span>
@@ -24,12 +24,12 @@
   </div>
   <div class="header-actions">
     <th:block sec:authorize="isAnonymous()">
-      <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
-      <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}" th:text="#{shell.guest.signup}">회원가입</a>
+      <a class="btn btn--primary btn--sm" th:href="@{/login}" th:text="#{common.login}">로그인</a>
     </th:block>
     <th:block sec:authorize="isAuthenticated()">
       <form th:action="@{/logout}" method="post" style="display:inline;">
-        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+        <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.logout}">로그아웃</button>
       </form>
     </th:block>
   </div>
@@ -37,30 +37,25 @@
 
 <main class="container section">
   <div class="flex-between mb-16">
-    <h1 class="section__title" style="font-size:var(--wp-fs-xl);">공지사항</h1>
-    <a class="btn btn--ghost btn--sm" th:href="@{/}">← 홈</a>
+    <h1 class="section__title" style="font-size:var(--wp-fs-xl);" th:text="#{notices.heading}">공지사항</h1>
+    <a class="btn btn--ghost btn--sm" th:href="@{/}" th:text="#{collection.home}">← 홈</a>
   </div>
 
   <!-- 분류 필터 - 제목 아래 줄에서 왼쪽 정렬 -->
   <div class="chip-row mb-24">
-    <a th:href="@{/notices}" class="chip" th:classappend="${selectedCategory == null} ? ' is-active'">전체</a>
-    <a th:href="@{/notices(category='GENERAL')}" class="chip" th:classappend="${selectedCategory == 'GENERAL'} ? ' is-active'">일반</a>
-    <a th:href="@{/notices(category='EVENT')}" class="chip" th:classappend="${selectedCategory == 'EVENT'} ? ' is-active'">이벤트</a>
-    <a th:href="@{/notices(category='MAINTENANCE')}" class="chip" th:classappend="${selectedCategory == 'MAINTENANCE'} ? ' is-active'">점검</a>
-    <a th:href="@{/notices(category='UPDATE')}" class="chip" th:classappend="${selectedCategory == 'UPDATE'} ? ' is-active'">업데이트</a>
+    <a th:href="@{/notices}" class="chip" th:classappend="${selectedCategory == null} ? ' is-active'" th:text="#{community.media.filterAll}">전체</a>
+    <a th:href="@{/notices(category='GENERAL')}" class="chip" th:classappend="${selectedCategory == 'GENERAL'} ? ' is-active'" th:text="#{siteNotice.category.GENERAL}">일반</a>
+    <a th:href="@{/notices(category='EVENT')}" class="chip" th:classappend="${selectedCategory == 'EVENT'} ? ' is-active'" th:text="#{siteNotice.category.EVENT}">이벤트</a>
+    <a th:href="@{/notices(category='MAINTENANCE')}" class="chip" th:classappend="${selectedCategory == 'MAINTENANCE'} ? ' is-active'" th:text="#{siteNotice.category.MAINTENANCE}">점검</a>
+    <a th:href="@{/notices(category='UPDATE')}" class="chip" th:classappend="${selectedCategory == 'UPDATE'} ? ' is-active'" th:text="#{siteNotice.category.UPDATE}">업데이트</a>
   </div>
 
-  <p th:if="${#lists.isEmpty(notices)}" class="list-empty">등록된 공지가 없습니다.</p>
+  <p th:if="${#lists.isEmpty(notices)}" class="list-empty" th:text="#{portal.notices.empty}">등록된 공지가 없습니다.</p>
   <article th:each="notice : ${notices}" class="post-card mb-16">
     <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
       <div class="post-card__head">
         <div class="post-card__meta">
-          <span class="tag tag--member" th:switch="${notice.category.name()}">
-            <th:block th:case="'GENERAL'">일반</th:block>
-            <th:block th:case="'EVENT'">이벤트</th:block>
-            <th:block th:case="'MAINTENANCE'">점검</th:block>
-            <th:block th:case="'UPDATE'">업데이트</th:block>
-          </span>
+          <span class="tag tag--member" th:text="#{${'siteNotice.category.' + notice.category.name()}}">일반</span>
           <strong class="post-card__title" th:text="${notice.title}">공지 제목</strong>
           <span class="text-xs text-muted"
                 th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2026.08.31</span>

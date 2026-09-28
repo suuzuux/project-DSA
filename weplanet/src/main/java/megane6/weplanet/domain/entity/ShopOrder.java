@@ -105,10 +105,10 @@ public class ShopOrder {
 	public static ShopOrder createReady(User buyer, String orderNo, String idempotencyKey,
 										Long amount, ShopOrderSource source) {
 		if (buyer == null || orderNo == null || idempotencyKey == null || source == null) {
-			throw new IllegalArgumentException("주문 정보가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.order.invalid");
 		}
 		if (amount == null || amount < 1) {
-			throw new IllegalArgumentException("결제 금액이 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.order.invalidAmount");
 		}
 		return new ShopOrder(buyer, orderNo, idempotencyKey, amount, source);
 	}
@@ -120,11 +120,11 @@ public class ShopOrder {
 	public void markWaitingForDeposit(String paymentKey, String bankCode, String accountNumber,
 									  LocalDateTime dueDate, String secret) {
 		if (paymentStatus != FanProjectPaymentStatus.READY) {
-			throw new IllegalStateException("결제 대기 중인 주문만 가상계좌를 발급할 수 있습니다.");
+			throw new IllegalStateException("error.order.onlyReadyCanIssue");
 		}
 		if (paymentKey == null || bankCode == null || accountNumber == null
 				|| dueDate == null || secret == null) {
-			throw new IllegalArgumentException("가상계좌 발급 정보가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.order.invalidVirtualAccount");
 		}
 		this.providerTransactionId = paymentKey;
 		this.virtualBankCode = bankCode;
@@ -139,7 +139,7 @@ public class ShopOrder {
 			return false;
 		}
 		if (paymentStatus != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-			throw new IllegalStateException("입금 대기 중인 주문만 결제 완료 처리할 수 있습니다.");
+			throw new IllegalStateException("error.order.onlyWaitingCanPay");
 		}
 		this.paymentStatus = FanProjectPaymentStatus.PAID;
 		this.paidAt = paidAt;
@@ -148,14 +148,14 @@ public class ShopOrder {
 
 	public void markFailed() {
 		if (paymentStatus != FanProjectPaymentStatus.READY) {
-			throw new IllegalStateException("결제 대기 중인 주문만 실패 처리할 수 있습니다.");
+			throw new IllegalStateException("error.order.onlyReadyCanFail");
 		}
 		this.paymentStatus = FanProjectPaymentStatus.FAILED;
 	}
 
 	public void expire(LocalDateTime now) {
 		if (paymentStatus != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-			throw new IllegalStateException("입금 대기 중인 주문만 만료 처리할 수 있습니다.");
+			throw new IllegalStateException("error.order.onlyWaitingCanExpire");
 		}
 		this.paymentStatus = FanProjectPaymentStatus.EXPIRED;
 		this.cancelledAt = now;

@@ -49,7 +49,7 @@ public class AccountRecoveryService {
 	public String findUsernameByEmail(String email) {
 		return userRepository.findByEmail(email)
 				.map(User::getUsername)
-				.orElseThrow(() -> new IllegalArgumentException("일치하는 계정을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.user.accountNotFound"));
 	}
 	
 	// 비밀번호 재설정 1단계: 아이디+이메일이 같이 등록된 계정인지 확인

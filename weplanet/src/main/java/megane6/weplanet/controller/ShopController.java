@@ -50,6 +50,8 @@ public class ShopController {
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final MessageSource messageSource;
+	// SETTINGS-03 커밋5: 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
+	private final megane6.weplanet.i18n.Messages messages;
 
 	// SETTINGS-03: 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
 	private String msg(String code) {
@@ -148,7 +150,7 @@ public class ShopController {
 			body.put("cart", toCartJson(cart));
 			return body;
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", e.getMessage());
+			return Map.of("ok", false, "message", messages.resolve(e.getMessage()));
 		}
 	}
 
@@ -167,7 +169,7 @@ public class ShopController {
 			model.addAttribute("failUrl", "/payments/shop/fail");
 			return "payment/commerce-start";
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e.getMessage()));
 			return "redirect:/shop/cart";
 		}
 	}
@@ -199,7 +201,7 @@ public class ShopController {
 			body.put("message", prepared.message());
 			return body;
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			return Map.of("success", false, "message", e.getMessage());
+			return Map.of("success", false, "message", messages.resolve(e.getMessage()));
 		}
 	}
 
@@ -228,7 +230,7 @@ public class ShopController {
 			model.addAttribute("failUrl", "/payments/shop/fail");
 			return "payment/commerce-start";
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e.getMessage()));
 			return back;
 		}
 	}
@@ -245,7 +247,7 @@ public class ShopController {
 		try {
 			shopCartService.updateQuantity(me, itemId, quantity);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e.getMessage()));
 		}
 		return "redirect:/shop/cart";
 	}

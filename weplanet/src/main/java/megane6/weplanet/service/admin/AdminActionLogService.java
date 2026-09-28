@@ -28,6 +28,7 @@ public class AdminActionLogService {
 	
 	private final AdminActionLogRepository logRepository;
 	private final UserRepository ur;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	// 관리자 조치 로그 저장
 	@Transactional
@@ -124,10 +125,10 @@ public class AdminActionLogService {
 				actor.getNickname(),
 				
 				adminLog.getAction().name(),
-				adminLog.getAction().getLabel(),
+				messages.get(adminLog.getAction().getMessageKey()),
 				
 				adminLog.getTargetType().name(),
-				adminLog.getTargetType().getLabel(),
+				messages.get(adminLog.getTargetType().getMessageKey()),
 				adminLog.getTargetId(),
 				
 				adminLog.getReason(),
@@ -139,16 +140,16 @@ public class AdminActionLogService {
 	
 	private User requireAdmin(Long actorId) {
 		User actor = ur.findById(actorId).orElseThrow(() ->
-				new IllegalArgumentException("관리자 계정을 찾을 수 없습니다."));
+				new IllegalArgumentException("admin.logs.error.adminNotFound"));
 		if (actor.getRole() != Role.ADMIN) {
-			throw new IllegalArgumentException("관리자 계정만 조치 로그를 생성할 수 있습니다.");
+			throw new IllegalArgumentException("admin.logs.error.adminOnly");
 		}
 		return actor;
 	}
 	
 	private void validateDateRange(LocalDate fromDate, LocalDate toDate) {
 		if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
-			throw new IllegalArgumentException("시작일은 종료일보다 늦을 수 없습니다.");
+			throw new IllegalArgumentException("admin.logs.error.invalidDateRange");
 		}
 	}
 	

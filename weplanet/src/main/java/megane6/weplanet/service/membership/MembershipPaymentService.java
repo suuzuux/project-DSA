@@ -37,16 +37,18 @@ public class MembershipPaymentService {
 	private final CommunityJoinService communityJoinService;
 	private final TossPaymentsProperties tossProperties;
 	private final TossPaymentsClient tossClient;
+	// SETTINGS-03 커밋5: 결제창 주문명/구매자명, 결과 화면 문구를 요청 로케일로 만든다
+	private final megane6.weplanet.i18n.Messages messages;
 
 	@Transactional
 	public ProjectPaymentPrepareResponse prepare(User fan, Long artistId, String idempotencyKey) {
 		User artist = requireArtist(artistId);
 		validateEligible(fan, artist);
 		if (membershipService.isActiveMember(fan, artist)) {
-			throw new IllegalStateException("이미 멤버십에 가입되어 있습니다.");
+			throw new IllegalStateException("error.membership.alreadyJoined");
 		}
 		if (!communityJoinService.isJoined(fan, artistId)) {
-			throw new IllegalStateException("먼저 커뮤니티에 가입해주세요.");
+			throw new IllegalStateException("error.project.joinFirst");
 		}
 		String key = (idempotencyKey == null || idempotencyKey.isBlank())
 				? UUID.randomUUID().toString()
@@ -54,17 +56,17 @@ public class MembershipPaymentService {
 		MembershipOrder order = membershipOrderRepository.findByIdempotencyKey(key)
 				.map(existing -> reuseReady(existing, fan, artistId))
 				.orElseGet(() -> createReady(fan, artist, key));
-		String artistName = artist.getNickname() != null ? artist.getNickname() : "아티스트";
-		String customer = fan.getNickname() != null ? fan.getNickname() : "WePlaNet 회원";
+		String artistName = artist.getNickname() != null ? artist.getNickname() : messages.get("shell.artistFallback");
+		String customer = fan.getNickname() != null ? fan.getNickname() : messages.get("community.project.customerFallback");
 		return new ProjectPaymentPrepareResponse(
 				true,
 				tossProperties.clientKey(),
 				order.getOrderNo(),
-				artistName + " 멤버십 (1년)",
+				messages.get("membershipCheckout.orderName", artistName),
 				order.getAmount(),
 				customer,
 				TossVirtualAccountSupport.VALID_HOURS,
-				"결제창을 여는 중입니다."
+				messages.get("community.project.js.openingPayment")
 		);
 	}
 
@@ -72,17 +74,17 @@ public class MembershipPaymentService {
 	public CommercePaymentResultView confirmVirtualAccount(Long fanId, String paymentKey,
 														   String orderId, Long amount) {
 		if (paymentKey == null || paymentKey.isBlank() || orderId == null || amount == null) {
-			throw new IllegalArgumentException("결제 정보가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.contribution.invalidPayment");
 		}
 		MembershipOrder order = findMyOrderForUpdate(fanId, orderId);
 		if (order.getPaymentStatus() != FanProjectPaymentStatus.READY) {
 			if (paymentKey.equals(order.getProviderTransactionId())) {
-				return CommercePaymentResultView.fromMembership(order);
+				return CommercePaymentResultView.fromMembership(order, messages);
 			}
-			throw new IllegalStateException("이미 처리된 주문입니다.");
+			throw new IllegalStateException("shop.error.alreadyProcessedOrder");
 		}
 		if (!order.getAmount().equals(amount)) {
-			throw new IllegalArgumentException("결제 금액이 주문 금액과 일치하지 않습니다.");
+			throw new IllegalArgumentException("error.contribution.amountMismatch");
 		}
 		TossPaymentResponse response;
 		try {
@@ -105,7 +107,7 @@ public class MembershipPaymentService {
 				TossVirtualAccountSupport.toKoreaTime(account.dueDate()),
 				response.secret()
 		);
-		return CommercePaymentResultView.fromMembership(order);
+		return CommercePaymentResultView.fromMembership(order, messages);
 	}
 
 	@Transactional
@@ -131,9 +133,9 @@ public class MembershipPaymentService {
 	@Transactional
 	public CommercePaymentStatusView refreshDepositStatus(Long fanId, String orderNo) {
 		MembershipOrder order = membershipOrderRepository.findByOrderNo(orderNo)
-				.orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("shop.error.orderNotFound"));
 		if (!order.getFan().getId().equals(fanId)) {
-			throw new AccessDeniedException("본인 주문만 확인할 수 있습니다.");
+			throw new AccessDeniedException("error.contribution.ownOrderOnlyView");
 		}
 		if (order.getPaymentStatus() != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
 			return CommercePaymentStatusView.from(order.getPaymentStatus());
@@ -194,16 +196,16 @@ public class MembershipPaymentService {
 				&& existing.getPaymentStatus() == FanProjectPaymentStatus.READY
 				&& existing.getAmount().equals(MembershipOrder.YEARLY_PRICE);
 		if (!same) {
-			throw new IllegalStateException("이미 사용된 결제 요청입니다. 다시 시도해주세요.");
+			throw new IllegalStateException("error.contribution.requestKeyUsed");
 		}
 		return existing;
 	}
 
 	private MembershipOrder findMyOrderForUpdate(Long fanId, String orderId) {
 		MembershipOrder order = membershipOrderRepository.findByOrderNoForUpdate(orderId)
-				.orElseThrow(() -> new IllegalArgumentException("주문을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("shop.error.orderNotFound"));
 		if (!order.getFan().getId().equals(fanId)) {
-			throw new AccessDeniedException("본인 주문만 결제할 수 있습니다.");
+			throw new AccessDeniedException("error.contribution.ownOrderOnlyPay");
 		}
 		return order;
 	}
@@ -211,15 +213,15 @@ public class MembershipPaymentService {
 	private User requireArtist(Long artistId) {
 		return userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("shop.error.artistNotFound"));
 	}
 
 	private static void validateEligible(User fan, User artist) {
 		if (fan.getId().equals(artist.getId())) {
-			throw new IllegalStateException("본인 커뮤니티 멤버십에는 가입할 수 없습니다.");
+			throw new IllegalStateException("error.membership.ownCommunity");
 		}
 		if (fan.getRole() != Role.FAN && fan.getRole() != Role.ARTIST) {
-			throw new IllegalStateException("팬 또는 아티스트 계정만 이용할 수 있는 기능입니다.");
+			throw new IllegalStateException("error.community.fanOrArtistOnly");
 		}
 	}
 }

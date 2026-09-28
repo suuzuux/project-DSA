@@ -23,6 +23,8 @@ import java.util.Map;
 public class SiteNoticeController {
 
 	private final SiteNoticeService siteNoticeService;
+	// SETTINGS-03 커밋5: 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
+	private final megane6.weplanet.i18n.Messages messages;
 	private final AuthenticatedUserResolver userResolver;
 
 	@GetMapping("/notices")
@@ -118,9 +120,9 @@ public class SiteNoticeController {
 					publishAtValue,
 					pinned,
 					request.getRemoteAddr());
-			redirectAttributes.addFlashAttribute("msg", "공지가 등록되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", messages.get("noticeForm.msg.created"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e.getMessage()));
 			return "redirect:/admin/notices/new";
 		}
 		return "redirect:/admin/notices";
@@ -160,12 +162,12 @@ public class SiteNoticeController {
 			
 			redirectAttributes.addFlashAttribute(
 					"msg",
-					"공지가 수정되었습니다."
+					messages.get("noticeForm.msg.updated")
 			);
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute(
 					"error",
-					e.getMessage()
+					messages.resolve(e.getMessage())
 			);
 			return "redirect:/admin/notices/" + noticeId + "/edit";
 		}
@@ -190,7 +192,7 @@ public class SiteNoticeController {
 		
 		redirectAttributes.addFlashAttribute(
 				"msg",
-				"공지가 삭제되었습니다."
+				messages.get("portal.msg.noticeDeleted")
 		);
 		
 		return "redirect:/admin/notices";
@@ -207,14 +209,14 @@ public class SiteNoticeController {
 			siteNoticeService.reorderPinned(ids);
 			return Map.of("ok", true);
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", e.getMessage());
+			return Map.of("ok", false, "message", messages.resolve(e.getMessage()));
 		}
 	}
 
 	private User requireAdmin(AuthenticatedUser principal) {
 		User user = userResolver.requireAuthenticated(principal);
 		if (user.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return user;
 	}

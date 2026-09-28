@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -126,6 +126,24 @@
       descriptionPlaceholder: /*[[#{goodsForm.descriptionEditorPlaceholder}]]*/ "상품 상세 설명을 입력하세요 …",
       descriptionImageAlt: /*[[#{goodsForm.descriptionImageAlt}]]*/ "상품 설명 이미지"
     };
+  </script>
+  <!--/* SETTINGS-03 커밋5: portal-goods-form.js 가 쓰는 문구 (포털은 main.js를 안 불러서 여기서 넘긴다) */-->
+  <script th:inline="javascript">
+    window.PORTAL_I18N = Object.assign(window.PORTAL_I18N || {}, {
+      "portal.goods.optionHint": /*[[#{portal.goods.optionHint}]]*/ "취급할 항목만 선택하면 재고 입력란이 생깁니다. 선택하지 않은 항목은 구매 화면에도 안 나옵니다.",
+      "portal.goods.stock": /*[[#{portal.goods.stock}]]*/ "재고",
+      "portal.goods.defaultStockTitle": /*[[#{portal.goods.defaultStockTitle}]]*/ "굿즈 단위 재고",
+      "portal.goods.defaultStockHint": /*[[#{portal.goods.defaultStockHint}]]*/ "사이즈가 없는 카테고리(가방/악세서리/기타) 또는 카테고리 미선택 시 사용합니다.",
+      "portal.goods.bagDimensionsTitle": /*[[#{portal.goods.bagDimensionsTitle}]]*/ "가방 치수 (cm)",
+      "portal.goods.dim.width": /*[[#{portal.goods.dim.width}]]*/ "가로",
+      "portal.goods.dim.height": /*[[#{portal.goods.dim.height}]]*/ "높이",
+      "portal.goods.dim.depth": /*[[#{portal.goods.dim.depth}]]*/ "세로",
+      "portal.goods.notePlaceholder": /*[[#{portal.goods.notePlaceholder}]]*/ "예: 색상, 재질 등 (선택)",
+      "portal.goods.clothingPanelTitle": /*[[#{portal.goods.clothingPanelTitle}]]*/ "의류 사이즈 · 옵션별 재고",
+      "portal.goods.shoesPanelTitle": /*[[#{portal.goods.shoesPanelTitle}]]*/ "신발 치수(mm) · 옵션별 재고",
+      "portal.goods.accessoryNoteTitle": /*[[#{portal.goods.accessoryNoteTitle}]]*/ "악세서리 메모 (선택)",
+      "portal.goods.otherNoteTitle": /*[[#{portal.goods.otherNoteTitle}]]*/ "기타 메모 (선택)"
+    });
   </script>
   <script th:src="@{/js/portal-goods-form.js}"></script>
   <script>

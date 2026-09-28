@@ -73,7 +73,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"신고를 기각했습니다.",
+				messages.get("admin.reports.flash.dismissed"),
 				redirectAttributes
 		);
 		
@@ -95,7 +95,7 @@ public class AdminReportController {
 						admin,
 						request.getRemoteAddr()
 				),
-				"신고된 게시글을 삭제했습니다.",
+				messages.get("admin.reports.flash.postDeleted"),
 				redirectAttributes
 		);
 		
@@ -117,7 +117,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"신고를 기각했습니다.",
+				messages.get("admin.reports.flash.dismissed"),
 				redirectAttributes
 		);
 		
@@ -139,7 +139,7 @@ public class AdminReportController {
 						admin,
 						request.getRemoteAddr()
 				),
-				"신고된 댓글을 삭제했습니다.",
+				messages.get("admin.reports.flash.commentDeleted"),
 				redirectAttributes
 		);
 		
@@ -161,7 +161,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"해당 회원을 정지 처리했습니다.",
+				messages.get("admin.reports.flash.userSuspended"),
 				redirectAttributes
 		);
 		
@@ -181,7 +181,7 @@ public class AdminReportController {
 	private User requireAdmin(AuthenticatedUser principal) {
 		User user = userResolver.requireAuthenticated(principal);
 		if (user.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return user;
 	}
@@ -211,7 +211,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"정지를 해제했습니다.",
+				messages.get("admin.reports.flash.reinstated"),
 				redirectAttributes
 		);
 		

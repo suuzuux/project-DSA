@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>전체 회원 관리 | WePlaNet ADMIN</title>
+  <title th:text="#{admin.users.title} + ' | WePlaNet ADMIN'">전체 회원 관리 | WePlaNet ADMIN</title>
 
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
@@ -19,14 +19,14 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-      <a class="is-active" th:href="@{/admin/users}">👥 전체 회원</a>
-      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-      <a th:href="@{/admin/notices}">📢 전체 공지</a>
-      <a th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
-      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+      <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+      <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+      <a class="is-active" th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}" th:text="|💬 #{admin.nav.communities}|">💬 커뮤니티 운영</a>
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
     </nav>
 
     <div class="portal-sidebar__footer">
@@ -34,7 +34,7 @@
             method="post"
             style="margin:0;">
 
-        <button type="submit" class="btn">
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">
           🚪 로그아웃
         </button>
       </form>
@@ -45,9 +45,9 @@
 
     <div class="portal-main__head">
       <div>
-        <h1>전체 회원 관리</h1>
+        <h1 th:text="#{admin.users.title}">전체 회원 관리</h1>
 
-        <p class="text-sm text-muted">
+        <p class="text-sm text-muted" th:text="#{admin.users.subtitle}">
           전체 회원의 역할, 계정 상태, 가입 경로와 소속사를 확인합니다.
         </p>
       </div>
@@ -81,7 +81,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">전체 회원</span>
+          <span class="admin-stat__label" th:text="#{admin.users.stat.total}">전체 회원</span>
 
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
@@ -100,7 +100,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">활성 회원</span>
+          <span class="admin-stat__label" th:text="#{admin.users.stat.active}">활성 회원</span>
 
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
@@ -119,7 +119,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">휴면 회원</span>
+          <span class="admin-stat__label" th:text="#{admin.users.stat.dormant}">휴면 회원</span>
 
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
@@ -138,7 +138,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">정지 회원</span>
+          <span class="admin-stat__label" th:text="#{admin.users.stat.suspended}">정지 회원</span>
 
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
@@ -157,7 +157,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">탈퇴 회원</span>
+          <span class="admin-stat__label" th:text="#{admin.users.stat.withdrawn}">탈퇴 회원</span>
 
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
@@ -176,15 +176,15 @@
     <section class="panel">
       <div class="panel__head">
         <div>
-          <h2 class="panel__title">회원 목록</h2>
+          <h2 class="panel__title" th:text="#{admin.users.listTitle}">회원 목록</h2>
 
-          <p class="text-xs text-muted">
+          <p class="text-xs text-muted" th:text="#{admin.users.listDesc}">
             회원을 검색하거나 계정 상태를 관리할 수 있습니다.
           </p>
         </div>
 
         <span class="tag tag--member"
-              th:text="${#lists.size(users) + '명 조회'}">
+              th:text="#{admin.users.resultCount(${#numbers.formatInteger(#lists.size(users), 0, 'COMMA')})}">
           0명 조회
         </span>
       </div>
@@ -195,58 +195,67 @@
             th:action="@{/admin/users}">
 
         <select name="role">
-          <option value="">전체 역할</option>
+          <option value="" th:text="#{admin.users.filter.allRoles}">전체 역할</option>
 
           <option value="FAN"
-                  th:selected="${selectedRole == 'FAN'}">
+                  th:selected="${selectedRole == 'FAN'}"
+                  th:text="#{admin.users.role.FAN}">
             팬
           </option>
 
           <option value="ARTIST"
-                  th:selected="${selectedRole == 'ARTIST'}">
+                  th:selected="${selectedRole == 'ARTIST'}"
+                  th:text="#{admin.users.role.ARTIST}">
             아티스트
           </option>
 
           <option value="AGENCY"
-                  th:selected="${selectedRole == 'AGENCY'}">
+                  th:selected="${selectedRole == 'AGENCY'}"
+                  th:text="#{admin.users.role.AGENCY}">
             소속사
           </option>
 
           <option value="ADMIN"
-                  th:selected="${selectedRole == 'ADMIN'}">
+                  th:selected="${selectedRole == 'ADMIN'}"
+                  th:text="#{admin.users.role.ADMIN}">
             관리자
           </option>
         </select>
 
         <select name="status">
-          <option value="">전체 상태</option>
+          <option value="" th:text="#{admin.users.filter.allStatuses}">전체 상태</option>
 
           <option value="ACTIVE"
-                  th:selected="${selectedStatus == 'ACTIVE'}">
+                  th:selected="${selectedStatus == 'ACTIVE'}"
+                  th:text="#{admin.userStatus.ACTIVE}">
             활성
           </option>
 
           <option value="DORMANT"
-                  th:selected="${selectedStatus == 'DORMANT'}">
+                  th:selected="${selectedStatus == 'DORMANT'}"
+                  th:text="#{admin.userStatus.DORMANT}">
             휴면
           </option>
 
           <option value="SUSPENDED"
-                  th:selected="${selectedStatus == 'SUSPENDED'}">
+                  th:selected="${selectedStatus == 'SUSPENDED'}"
+                  th:text="#{admin.userStatus.SUSPENDED}">
             정지
           </option>
 
           <option value="WITHDRAWN"
-                  th:selected="${selectedStatus == 'WITHDRAWN'}">
+                  th:selected="${selectedStatus == 'WITHDRAWN'}"
+                  th:text="#{admin.userStatus.WITHDRAWN}">
             탈퇴
           </option>
         </select>
 
         <select name="provider">
-          <option value="">전체 가입 경로</option>
+          <option value="" th:text="#{admin.users.filter.allProviders}">전체 가입 경로</option>
 
           <option value="LOCAL"
-                  th:selected="${selectedProvider == 'LOCAL'}">
+                  th:selected="${selectedProvider == 'LOCAL'}"
+                  th:text="#{admin.users.provider.LOCAL}">
             일반 가입
           </option>
 
@@ -269,15 +278,18 @@
         <input type="text"
                name="keyword"
                th:value="${keyword}"
-               placeholder="아이디, 닉네임, 이메일, 소속사 검색" />
+               placeholder="아이디, 닉네임, 이메일, 소속사 검색"
+               th:placeholder="#{admin.users.searchPlaceholder}" />
 
         <button type="submit"
-                class="btn btn--primary btn--sm">
+                class="btn btn--primary btn--sm"
+                th:text="#{admin.common.search}">
           검색
         </button>
 
         <a class="btn btn--ghost btn--sm"
-           th:href="@{/admin/users}">
+           th:href="@{/admin/users}"
+           th:text="#{admin.common.reset}">
           초기화
         </a>
       </form>
@@ -286,23 +298,24 @@
         <table class="data-table">
           <thead>
           <tr>
-            <th>회원</th>
-            <th>역할</th>
-            <th>상태</th>
-            <th>가입 경로</th>
-            <th>소속사</th>
-            <th>이메일</th>
-            <th>이메일 인증</th>
-            <th>가입일</th>
-            <th>최근 로그인</th>
-            <th>관리</th>
+            <th th:text="#{admin.users.col.member}">회원</th>
+            <th th:text="#{admin.users.col.role}">역할</th>
+            <th th:text="#{admin.common.status}">상태</th>
+            <th th:text="#{admin.users.col.provider}">가입 경로</th>
+            <th th:text="#{admin.users.col.agency}">소속사</th>
+            <th th:text="#{admin.users.col.email}">이메일</th>
+            <th th:text="#{admin.users.col.emailVerified}">이메일 인증</th>
+            <th th:text="#{admin.users.col.joinedAt}">가입일</th>
+            <th th:text="#{admin.users.col.lastLogin}">최근 로그인</th>
+            <th th:text="#{admin.common.manage}">관리</th>
           </tr>
           </thead>
 
           <tbody>
           <tr th:if="${#lists.isEmpty(users)}">
             <td colspan="10"
-                class="text-sm text-muted">
+                class="text-sm text-muted"
+                th:text="#{admin.users.empty}">
               검색 조건에 해당하는 회원이 없습니다.
             </td>
           </tr>
@@ -314,7 +327,8 @@
               </strong>
 
               <span class="tag tag--member"
-                    th:if="${user.userId() == currentAdminId}">
+                    th:if="${user.userId() == currentAdminId}"
+                    th:text="#{admin.users.currentAccount}">
                 현재 계정
               </span>
 
@@ -326,28 +340,29 @@
               </span>
             </td>
 
+            <!-- roleLabel/statusLabel/providerLabel에는 메시지 키가 들어 있다 -->
             <td>
               <span class="tag tag--private"
                     th:if="${user.roleName() == 'FAN'}"
-                    th:text="${user.roleLabel()}">
+                    th:text="#{${user.roleLabel()}}">
                 팬
               </span>
 
               <span class="tag tag--public"
                     th:if="${user.roleName() == 'ARTIST'}"
-                    th:text="${user.roleLabel()}">
+                    th:text="#{${user.roleLabel()}}">
                 아티스트
               </span>
 
               <span class="tag tag--member"
                     th:if="${user.roleName() == 'AGENCY'}"
-                    th:text="${user.roleLabel()}">
+                    th:text="#{${user.roleLabel()}}">
                 소속사
               </span>
 
               <span class="tag tag--danger"
                     th:if="${user.roleName() == 'ADMIN'}"
-                    th:text="${user.roleLabel()}">
+                    th:text="#{${user.roleLabel()}}">
                 관리자
               </span>
             </td>
@@ -355,30 +370,30 @@
             <td>
               <span class="tag tag--public"
                     th:if="${user.statusName() == 'ACTIVE'}"
-                    th:text="${user.statusLabel()}">
+                    th:text="#{${user.statusLabel()}}">
                 활성
               </span>
 
               <span class="tag tag--member"
                     th:if="${user.statusName() == 'DORMANT'}"
-                    th:text="${user.statusLabel()}">
+                    th:text="#{${user.statusLabel()}}">
                 휴면
               </span>
 
               <span class="tag tag--danger"
                     th:if="${user.statusName() == 'SUSPENDED'}"
-                    th:text="${user.statusLabel()}">
+                    th:text="#{${user.statusLabel()}}">
                 정지
               </span>
 
               <span class="tag tag--private"
                     th:if="${user.statusName() == 'WITHDRAWN'}"
-                    th:text="${user.statusLabel()}">
+                    th:text="#{${user.statusLabel()}}">
                 탈퇴
               </span>
             </td>
 
-            <td th:text="${user.providerLabel()}">
+            <td th:text="#{${user.providerLabel()}}">
               일반 가입
             </td>
 
@@ -394,12 +409,14 @@
 
             <td>
               <span class="tag tag--public"
-                    th:if="${user.emailVerified()}">
+                    th:if="${user.emailVerified()}"
+                    th:text="#{admin.users.verified}">
                 완료
               </span>
 
               <span class="tag tag--private"
-                    th:unless="${user.emailVerified()}">
+                    th:unless="${user.emailVerified()}"
+                    th:text="#{admin.users.unverified}">
                 미인증
               </span>
             </td>
@@ -449,9 +466,9 @@
 
                 <button type="submit"
                         class="btn btn--ghost btn--sm"
-                        onclick="return confirm(
-                            '해당 회원의 계정을 정지할까요?'
-                        );">
+                        th:attr="data-confirm=#{admin.users.confirmSuspend}"
+                        onclick="return confirm(this.dataset.confirm);"
+                        th:text="#{admin.users.suspend}">
                   계정 정지
                 </button>
               </form>
@@ -481,16 +498,17 @@
 
                 <button type="submit"
                         class="btn btn--primary btn--sm"
-                        onclick="return confirm(
-                            '해당 회원의 계정 정지를 해제할까요?'
-                        );">
+                        th:attr="data-confirm=#{admin.users.confirmReinstate}"
+                        onclick="return confirm(this.dataset.confirm);"
+                        th:text="#{admin.users.reinstate}">
                   정지 해제
                 </button>
               </form>
 
               <span class="text-xs text-muted"
                     th:if="${user.roleName() == 'ADMIN'
-                        or user.statusName() == 'WITHDRAWN'}">
+                        or user.statusName() == 'WITHDRAWN'}"
+                    th:text="#{admin.users.locked}">
                 변경 불가
               </span>
             </td>

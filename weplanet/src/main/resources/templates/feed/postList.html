@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>게시판</title>
+    <title th:text="#{feed.pageTitle}">게시판</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
@@ -11,7 +11,7 @@
 <header class="community-top">
     <div class="community-top__left">
         <a class="home-link" th:href="@{/}">🏠</a>
-        <h1 class="community-top__name" th:text="${boardType} + ' 게시판'"></h1>
+        <h1 class="community-top__name" th:text="#{feed.boardTitle(${boardType})}"></h1>
     </div>
 </header>
 
@@ -27,7 +27,7 @@
 <div class="community-body" style="grid-template-columns:220px minmax(0,1fr);width:min(100% - 40px, 1120px);margin:16px auto 0;">
 
     <aside class="community-aside">
-        <button type="button" class="btn btn--primary btn--block" id="openWriteModalBtn">포스트 작성하기</button>
+        <button type="button" class="btn btn--primary btn--block" id="openWriteModalBtn" th:text="#{feed.write}">포스트 작성하기</button>
     </aside>
 
     <div class="community-main">
@@ -35,7 +35,7 @@
         <div class="modal-backdrop" id="writeModalBackdrop">
             <div class="modal modal--wide" onclick="event.stopPropagation()">
                 <div class="modal__head">
-                    <span class="modal__title">포스트 작성하기</span>
+                    <span class="modal__title" th:text="#{feed.write}">포스트 작성하기</span>
                     <button type="button" class="modal__close" id="closeWriteModalBtn">✕</button>
                 </div>
 
@@ -52,32 +52,32 @@
                     </select>
 
                     <textarea name="content" id="writeModalContent" class="form-textarea" maxlength="1000"
-                              placeholder="포스트를 남겨보세요…" style="min-height:220px;"></textarea>
+                              placeholder="포스트를 남겨보세요…" th:placeholder="#{feed.writePlaceholder}" style="min-height:220px;"></textarea>
                     <p class="text-xs text-muted" style="text-align:right;margin-top:4px;">
                         <span id="writeModalCharCount">0</span> / 1000
                     </p>
                     <p id="writeModalError" class="form-error" style="display:none;"></p>
 
                     <div class="flex-between" style="margin-top:10px;">
-                        <label style="cursor:pointer;font-size:20px;" title="이미지 첨부">
+                        <label style="cursor:pointer;font-size:20px;" title="이미지 첨부" th:title="#{feed.attachImage}">
                             🖼️
                             <input type="file" name="files" id="writeModalFiles" multiple accept="image/*,application/pdf,.txt,.zip" style="display:none;">
                         </label>
                         <span id="writeModalFileCount" class="text-xs text-muted"></span>
                     </div>
 
-                    <button type="submit" class="btn btn--primary btn--block" style="margin-top:14px;" id="writeModalSubmit" disabled>등록하기</button>
+                    <button type="submit" class="btn btn--primary btn--block" style="margin-top:14px;" id="writeModalSubmit" th:text="#{feed.submit}" disabled>등록하기</button>
                 </form>
             </div>
         </div>
 
         <div class="flex-between" style="margin-bottom:12px;">
-            <a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a>
+            <a class="section__link" th:href="@{/}" th:text="#{feed.backHome}">&lt;&lt; 홈으로</a>
             <div class="flex-center">
                 <a class="sort-link btn btn--ghost btn--sm" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='latest')}"
-                   th:classappend="${sort == 'latest'} ? ' btn--soft'">전체순</a>
+                   th:classappend="${sort == 'latest'} ? ' btn--soft'" th:text="#{feed.sort.latest}">전체순</a>
                 <a class="sort-link btn btn--ghost btn--sm" th:href="@{/posts/{boardType}(boardType=${boardType}, sort='popular')}"
-                   th:classappend="${sort == 'popular'} ? ' btn--soft'">인기순</a>
+                   th:classappend="${sort == 'popular'} ? ' btn--soft'" th:text="#{feed.sort.popular}">인기순</a>
             </div>
         </div>
 
@@ -93,7 +93,7 @@
                             <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
                             <div class="post-card__meta">
                                 <div class="post-card__name">
-                                    <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                                    <span th:text="${post.author != null} ? ${post.author.nickname} : #{feed.unknownAuthor}"></span>
                                     <span th:if="${post.author != null and post.author.role.name() == 'ARTIST'}" class="badge-verified">✓</span>
                                 </div>
                                 <div class="post-card__time"
@@ -118,11 +118,18 @@
                 </article>
             </div>
 
-            <p th:if="${#lists.isEmpty(posts)}" class="list-empty">등록된 게시글이 없습니다.</p>
+            <p th:if="${#lists.isEmpty(posts)}" class="list-empty" th:text="#{feed.empty}">등록된 게시글이 없습니다.</p>
         </div>
     </div>
 </div>
 
+<script th:inline="javascript">
+    const FEED_I18N = {
+        fileLimit: /*[[#{feed.fileLimit}]]*/ '이미지는 최대 10개까지 첨부할 수 있어요.',
+        filesSelected: /*[[#{feed.filesSelected}]]*/ '{0}개 선택됨',
+        submitFailed: /*[[#{feed.submitFailed}]]*/ '등록에 실패했어요.'
+    };
+</script>
 <script>
     // ===================================================================
     // 아래는 "비동기(fetch) 정렬 전환" 기능의 자바스크립트 코드.
@@ -219,13 +226,13 @@
     // 첨부파일 10개 제한
     writeModalFiles.addEventListener('change', function () {
         if (writeModalFiles.files.length > 10) {
-            writeModalError.textContent = '이미지는 최대 10개까지 첨부할 수 있어요.';
+            writeModalError.textContent = FEED_I18N.fileLimit;
             writeModalError.style.display = 'block';
             writeModalFiles.value = '';
             writeModalFileCount.textContent = '';
         } else {
             writeModalError.style.display = 'none';
-            writeModalFileCount.textContent = writeModalFiles.files.length > 0 ? writeModalFiles.files.length + '개 선택됨' : '';
+            writeModalFileCount.textContent = writeModalFiles.files.length > 0 ? FEED_I18N.filesSelected.replace('{0}', writeModalFiles.files.length) : '';
         }
     });
 
@@ -253,7 +260,7 @@
                 }
                 // 실패 시(글자수 초과, 서버 검증 실패 등) - GlobalExceptionHandler가 JSON으로 에러 메시지를 돌려줌
                 return response.json().then(function (data) {
-                    writeModalError.textContent = data.message || '등록에 실패했어요.';
+                    writeModalError.textContent = data.message || FEED_I18N.submitFailed;
                     writeModalError.style.display = 'block';
                     writeModalSubmit.disabled = false;
                 });

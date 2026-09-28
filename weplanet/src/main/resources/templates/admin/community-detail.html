@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title th:text="${detail.overview().artistNickname()
-      + ' 커뮤니티 상세 | WePlaNet ADMIN'}">
+  <title th:text="#{admin.communityDetail.pageTitle(${detail.overview().artistNickname()})}">
     커뮤니티 상세 | WePlaNet ADMIN
   </title>
 
@@ -23,14 +22,14 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-      <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-      <a th:href="@{/admin/users}">👥 전체 회원</a>
-      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-      <a th:href="@{/admin/notices}">📢 전체 공지</a>
-      <a class="is-active" th:href="@{/admin/communities}">💬 커뮤니티 운영</a>
-      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+      <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+      <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+      <a class="is-active" th:href="@{/admin/communities}" th:text="|💬 #{admin.nav.communities}|">💬 커뮤니티 운영</a>
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
     </nav>
 
     <div class="portal-sidebar__footer">
@@ -38,7 +37,7 @@
             method="post"
             style="margin:0;">
 
-        <button type="submit" class="btn">
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">
           🚪 로그아웃
         </button>
       </form>
@@ -54,19 +53,19 @@
           @artist
         </p>
 
-        <h1 th:text="${detail.overview().artistNickname()
-            + ' 커뮤니티'}">
+        <h1 th:text="#{admin.communityDetail.heading(${detail.overview().artistNickname()})}">
           아티스트 커뮤니티
         </h1>
 
-        <p class="text-sm text-muted">
+        <p class="text-sm text-muted" th:text="#{admin.communityDetail.subtitle}">
           커뮤니티의 최근 활동과 운영상 주의 항목을 확인합니다.
         </p>
       </div>
 
       <div class="admin-topbar">
         <a class="btn btn--ghost btn--sm"
-           th:href="@{/admin/communities/overview}">
+           th:href="@{/admin/communities/overview}"
+           th:text="#{admin.communityDetail.backToOverview}">
           ← 현황 목록
         </a>
 
@@ -105,7 +104,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">
+          <span class="admin-stat__label" th:text="#{admin.communityDetail.stat.members}">
             가입 팬
           </span>
 
@@ -126,7 +125,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">
+          <span class="admin-stat__label" th:text="#{admin.communityDetail.stat.posts}">
             전체 게시글
           </span>
 
@@ -147,7 +146,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">
+          <span class="admin-stat__label" th:text="#{admin.communityDetail.stat.activeProjects}">
             진행 프로젝트
           </span>
 
@@ -164,7 +163,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">
+          <span class="admin-stat__label" th:text="#{admin.communityDetail.stat.blocked}">
             차단 회원
           </span>
 
@@ -181,7 +180,7 @@
         </span>
 
         <span class="admin-stat__body">
-          <span class="admin-stat__label">
+          <span class="admin-stat__label" th:text="#{admin.communityDetail.stat.pendingReports}">
             처리 대기 신고
           </span>
 
@@ -201,14 +200,14 @@
       <section class="panel">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">최근 게시글</h2>
-            <p class="text-xs text-muted">
+            <h2 class="panel__title" th:text="#{admin.communityDetail.posts.title}">최근 게시글</h2>
+            <p class="text-xs text-muted" th:text="#{admin.communityDetail.posts.desc}">
               가장 최근에 등록된 게시글 10개입니다.
             </p>
           </div>
 
           <span class="tag tag--member"
-                th:text="${#lists.size(detail.recentPosts()) + '개'}">
+                th:text="#{admin.communities.itemCount(${#lists.size(detail.recentPosts())})}">
             0개
           </span>
         </div>
@@ -217,19 +216,20 @@
           <table class="data-table">
             <thead>
             <tr>
-              <th>게시판</th>
-              <th>제목</th>
-              <th>작성자</th>
-              <th>좋아요</th>
-              <th>작성일</th>
-              <th>보기</th>
+              <th th:text="#{admin.communityDetail.col.board}">게시판</th>
+              <th th:text="#{admin.communityDetail.col.title}">제목</th>
+              <th th:text="#{admin.communityDetail.col.author}">작성자</th>
+              <th th:text="#{admin.communityDetail.col.likes}">좋아요</th>
+              <th th:text="#{admin.communityDetail.col.createdAt}">작성일</th>
+              <th th:text="#{admin.communityDetail.view}">보기</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:if="${#lists.isEmpty(detail.recentPosts())}">
               <td colspan="6"
-                  class="text-sm text-muted">
+                  class="text-sm text-muted"
+                  th:text="#{admin.communityDetail.posts.empty}">
                 등록된 게시글이 없습니다.
               </td>
             </tr>
@@ -268,7 +268,8 @@
               <td>
                 <a class="btn btn--ghost btn--sm"
                    th:href="@{/posts/detail/{postId}(
-                      postId=${post.postId()})}">
+                      postId=${post.postId()})}"
+                   th:text="#{admin.communityDetail.view}">
                   보기
                 </a>
               </td>
@@ -282,14 +283,14 @@
       <section class="panel">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">최근 프로젝트</h2>
-            <p class="text-xs text-muted">
+            <h2 class="panel__title" th:text="#{admin.communityDetail.projects.title}">최근 프로젝트</h2>
+            <p class="text-xs text-muted" th:text="#{admin.communityDetail.projects.desc}">
               가장 최근에 등록된 프로젝트 10개입니다.
             </p>
           </div>
 
           <span class="tag tag--public"
-                th:text="${#lists.size(detail.recentProjects()) + '개'}">
+                th:text="#{admin.communities.itemCount(${#lists.size(detail.recentProjects())})}">
             0개
           </span>
         </div>
@@ -298,19 +299,20 @@
           <table class="data-table">
             <thead>
             <tr>
-              <th>프로젝트</th>
-              <th>유형</th>
-              <th>상태</th>
-              <th>목표 금액</th>
-              <th>모금 종료일</th>
-              <th>관리</th>
+              <th th:text="#{admin.communities.col.project}">프로젝트</th>
+              <th th:text="#{admin.communityDetail.col.type}">유형</th>
+              <th th:text="#{admin.common.status}">상태</th>
+              <th th:text="#{admin.communities.col.goalAmount}">목표 금액</th>
+              <th th:text="#{admin.communityDetail.col.fundingEnd}">모금 종료일</th>
+              <th th:text="#{admin.common.manage}">관리</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:if="${#lists.isEmpty(detail.recentProjects())}">
               <td colspan="6"
-                  class="text-sm text-muted">
+                  class="text-sm text-muted"
+                  th:text="#{admin.communityDetail.projects.empty}">
                 등록된 프로젝트가 없습니다.
               </td>
             </tr>
@@ -341,11 +343,11 @@
 
               <td th:text="${project.goalAmount() == null
                   ? '-'
-                  : #numbers.formatInteger(
+                  : #messages.msg('admin.communities.won', #numbers.formatInteger(
                       project.goalAmount(),
                       0,
                       'COMMA'
-                  ) + '원'}">
+                  ))}">
                 0원
               </td>
 
@@ -361,7 +363,8 @@
               <td>
                 <a class="btn btn--ghost btn--sm"
                    th:href="@{/admin/communities(
-                      projectId=${project.projectId()})}">
+                      projectId=${project.projectId()})}"
+                   th:text="#{admin.common.manage}">
                   관리
                 </a>
               </td>
@@ -380,14 +383,14 @@
       <section class="panel">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">차단 회원</h2>
-            <p class="text-xs text-muted">
+            <h2 class="panel__title" th:text="#{admin.communityDetail.stat.blocked}">차단 회원</h2>
+            <p class="text-xs text-muted" th:text="#{admin.communityDetail.blocked.desc}">
               해당 커뮤니티에서 최근 차단된 회원 10명입니다.
             </p>
           </div>
 
           <span class="tag tag--member"
-                th:text="${#lists.size(detail.blockedMembers()) + '명'}">
+                th:text="#{admin.common.peopleCount(${#lists.size(detail.blockedMembers())})}">
             0명
           </span>
         </div>
@@ -396,18 +399,19 @@
           <table class="data-table">
             <thead>
             <tr>
-              <th>회원</th>
-              <th>아이디</th>
-              <th>차단 사유</th>
-              <th>차단일</th>
-              <th>관리</th>
+              <th th:text="#{admin.communityDetail.col.member}">회원</th>
+              <th th:text="#{admin.communityDetail.col.username}">아이디</th>
+              <th th:text="#{admin.communityDetail.col.blockReason}">차단 사유</th>
+              <th th:text="#{admin.communityDetail.col.blockedAt}">차단일</th>
+              <th th:text="#{admin.common.manage}">관리</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:if="${#lists.isEmpty(detail.blockedMembers())}">
               <td colspan="5"
-                  class="text-sm text-muted">
+                  class="text-sm text-muted"
+                  th:text="#{admin.communityDetail.blocked.empty}">
                 차단된 회원이 없습니다.
               </td>
             </tr>
@@ -421,7 +425,7 @@
                 <br />
 
                 <span class="text-xs text-muted"
-                      th:text="${'회원 번호 #' + member.userId()}">
+                      th:text="#{admin.communityDetail.memberNo(${#strings.toString(member.userId())})}">
                   회원 번호 #1
                 </span>
               </td>
@@ -456,9 +460,9 @@
 
                   <button type="submit"
                           class="btn btn--ghost btn--sm"
-                          onclick="return confirm(
-                '이 회원의 커뮤니티 차단을 해제할까요?'
-            );">
+                          th:attr="data-confirm=#{admin.communityDetail.unblockConfirm}"
+                          onclick="return confirm(this.dataset.confirm);"
+                          th:text="#{admin.communityDetail.unblock}">
                     차단 해제
                   </button>
                 </form>
@@ -473,14 +477,15 @@
       <section class="panel">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">처리 대기 신고</h2>
-            <p class="text-xs text-muted">
+            <h2 class="panel__title" th:text="#{admin.communityDetail.stat.pendingReports}">처리 대기 신고</h2>
+            <p class="text-xs text-muted" th:text="#{admin.communityDetail.reports.desc}">
               해당 커뮤니티의 최근 미처리 신고 10건입니다.
             </p>
           </div>
 
           <a class="btn btn--ghost btn--sm"
-             th:href="@{/admin/reports(status='PENDING')}">
+             th:href="@{/admin/reports(status='PENDING')}"
+             th:text="|#{admin.communityDetail.shortcuts.reports} →|">
             신고 관리 →
           </a>
         </div>
@@ -489,19 +494,20 @@
           <table class="data-table">
             <thead>
             <tr>
-              <th>대상</th>
-              <th>신고 내용</th>
-              <th>신고자</th>
-              <th>신고 사유</th>
-              <th>신고일</th>
-              <th>관리</th>
+              <th th:text="#{admin.communityDetail.col.target}">대상</th>
+              <th th:text="#{admin.communityDetail.col.reportContent}">신고 내용</th>
+              <th th:text="#{admin.communityDetail.col.reporter}">신고자</th>
+              <th th:text="#{admin.communityDetail.col.reportReason}">신고 사유</th>
+              <th th:text="#{admin.communityDetail.col.reportedAt}">신고일</th>
+              <th th:text="#{admin.common.manage}">관리</th>
             </tr>
             </thead>
 
             <tbody>
             <tr th:if="${#lists.isEmpty(detail.pendingReports())}">
               <td colspan="6"
-                  class="text-sm text-muted">
+                  class="text-sm text-muted"
+                  th:text="#{admin.communityDetail.reports.empty}">
                 처리 대기 중인 신고가 없습니다.
               </td>
             </tr>
@@ -552,7 +558,8 @@
                    th:href="@{/admin/reports(
                       status='PENDING',
                       keyword=${report.targetSummary()}
-                   )}">
+                   )}"
+                   th:text="#{admin.communityDetail.process}">
                   처리
                 </a>
               </td>
@@ -568,25 +575,28 @@
     <section class="panel" style="margin-top:16px;">
       <div class="panel__head" style="margin-bottom:0;">
         <div>
-          <h2 class="panel__title">커뮤니티 운영 바로가기</h2>
-          <p class="text-xs text-muted">
+          <h2 class="panel__title" th:text="#{admin.communityDetail.shortcuts.title}">커뮤니티 운영 바로가기</h2>
+          <p class="text-xs text-muted" th:text="#{admin.communityDetail.shortcuts.desc}">
             프로젝트 승인·정산 또는 신고 처리 화면으로 이동합니다.
           </p>
         </div>
 
         <div class="flex-center" style="gap:8px;">
           <a class="btn btn--ghost btn--sm"
-             th:href="@{/admin/communities/overview}">
+             th:href="@{/admin/communities/overview}"
+             th:text="#{admin.communityDetail.shortcuts.overview}">
             커뮤니티 현황
           </a>
 
           <a class="btn btn--ghost btn--sm"
-             th:href="@{/admin/reports(status='PENDING')}">
+             th:href="@{/admin/reports(status='PENDING')}"
+             th:text="#{admin.communityDetail.shortcuts.reports}">
             신고 관리
           </a>
 
           <a class="btn btn--primary btn--sm"
-             th:href="@{/admin/communities}">
+             th:href="@{/admin/communities}"
+             th:text="#{admin.communityDetail.shortcuts.projects}">
             프로젝트·정산 관리
           </a>
         </div>

@@ -47,7 +47,7 @@ public class AdminPartnershipApplicationService {
 	) {
 		if (applicationId == null) {
 			throw new IllegalArgumentException(
-					"신청 번호가 필요합니다."
+					"partnership.error.idRequired"
 			);
 		}
 		
@@ -56,7 +56,7 @@ public class AdminPartnershipApplicationService {
 						.findDetailById(applicationId)
 						.orElseThrow(() ->
 								new IllegalArgumentException(
-										"입점 신청을 찾을 수 없습니다."
+										"partnership.error.notFound"
 								)
 						);
 		
@@ -134,14 +134,14 @@ public class AdminPartnershipApplicationService {
 	) {
 		if (applicationId == null) {
 			throw new IllegalArgumentException(
-					"신청 번호가 필요합니다."
+					"partnership.error.idRequired"
 			);
 		}
 		
 		return applicationRepository.findById(applicationId)
 				.orElseThrow(() ->
 						new IllegalArgumentException(
-								"입점 신청을 찾을 수 없습니다."
+								"partnership.error.notFound"
 						)
 				);
 	}
@@ -150,13 +150,13 @@ public class AdminPartnershipApplicationService {
 		User admin = userRepository.findById(adminId)
 				.orElseThrow(() ->
 						new IllegalArgumentException(
-								"관리자 계정을 찾을 수 없습니다."
+								"admin.error.partnership.adminNotFound"
 						)
 				);
 		
 		if (admin.getRole() != Role.ADMIN) {
 			throw new IllegalStateException(
-					"관리자 권한이 필요합니다."
+					"error.admin.adminOnly"
 			);
 		}
 		
@@ -174,7 +174,7 @@ public class AdminPartnershipApplicationService {
 				application.getApplicantType().name(),
 				application
 						.getApplicantType()
-						.getDisplayName(),
+						.getMessageKey(),
 				
 				application.getApplicantName(),
 				application.getContactName(),
@@ -185,7 +185,7 @@ public class AdminPartnershipApplicationService {
 				application.getStatus().name(),
 				application
 						.getStatus()
-						.getDisplayName(),
+						.getMessageKey(),
 				
 				reviewer == null
 						? null

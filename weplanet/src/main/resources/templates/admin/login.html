@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -17,13 +17,13 @@
       <p class="admin-login__eyebrow">AUTHORIZED PERSONNEL ONLY</p>
 
       <h1 class="admin-login__visual-title">
-        서비스 전체를<br />
-        안전하게 관리합니다.
+        <th:block th:text="#{admin.login.visual.title1}">서비스 전체를</th:block><br />
+        <th:block th:text="#{admin.login.visual.title2}">안전하게 관리합니다.</th:block>
       </h1>
 
       <p class="admin-login__visual-desc">
-        회원, 아티스트, 소속사, 커뮤니티와 신고 내역을 통합 관리하는<br />
-        최고관리자 전용 공간입니다.
+        <th:block th:text="#{admin.login.visual.desc1}">회원, 아티스트, 소속사, 커뮤니티와 신고 내역을 통합 관리하는</th:block><br />
+        <th:block th:text="#{admin.login.visual.desc2}">최고관리자 전용 공간입니다.</th:block>
       </p>
     </div>
 
@@ -75,25 +75,29 @@
 
       <p
               th:if="${param.error}"
-              class="admin-login__notice admin-login__notice--error">
+              class="admin-login__notice admin-login__notice--error"
+              th:text="#{admin.login.error.badCredentials}">
         아이디 또는 비밀번호가 올바르지 않습니다.
       </p>
 
       <p
               th:if="${param.expired}"
-              class="admin-login__notice admin-login__notice--error">
+              class="admin-login__notice admin-login__notice--error"
+              th:text="#{admin.login.error.expired}">
         세션이 만료되어 다시 로그인해주세요.
       </p>
 
       <p
               th:if="${param.duplicateLogin}"
-              class="admin-login__notice admin-login__notice--error">
+              class="admin-login__notice admin-login__notice--error"
+              th:text="#{admin.login.error.duplicateLogin}">
         다른 기기에서 로그인되어 로그아웃되었습니다.
       </p>
 
       <p
               th:if="${param.logout}"
-              class="admin-login__notice admin-login__notice--success">
+              class="admin-login__notice admin-login__notice--success"
+              th:text="#{admin.login.loggedOut}">
         로그아웃되었습니다.
       </p>
 
@@ -101,7 +105,7 @@
         <input type="hidden" name="adminLogin" value="true" />
 
         <div class="form-group">
-          <label class="form-label" for="adminId">
+          <label class="form-label" for="adminId" th:text="#{admin.login.username}">
             관리자 아이디
           </label>
 
@@ -111,12 +115,13 @@
                   name="username"
                   type="text"
                   placeholder="아이디 입력"
+                  th:placeholder="#{admin.login.username.placeholder}"
                   required
                   autocomplete="username" />
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="adminPw">
+          <label class="form-label" for="adminPw" th:text="#{admin.login.password}">
             비밀번호
           </label>
 
@@ -126,13 +131,15 @@
                   name="password"
                   type="password"
                   placeholder="비밀번호 입력"
+                  th:placeholder="#{admin.login.password.placeholder}"
                   required
                   autocomplete="current-password" />
         </div>
 
         <button
                 type="submit"
-                class="btn btn--primary btn--block btn--lg">
+                class="btn btn--primary btn--block btn--lg"
+                th:text="|#{admin.login.submit} →|">
           관리자 시스템 접속 →
         </button>
       </form>
@@ -141,7 +148,7 @@
               class="text-xs mt-24"
               style="color:#5a7a78;text-align:center;">
 
-        <a th:href="@{/}" style="color:#7a9593;">
+        <a th:href="@{/}" style="color:#7a9593;" th:text="|← #{admin.login.backToMain}|">
           ← 메인 사이트로
         </a>
       </p>

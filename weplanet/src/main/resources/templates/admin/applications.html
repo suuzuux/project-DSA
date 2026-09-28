@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
 
@@ -8,7 +8,7 @@
           content="width=device-width, initial-scale=1.0"
   />
 
-  <title>등록 신청 관리 | WePlaNet ADMIN</title>
+  <title th:text="#{admin.applications.pageTitle}">등록 신청 관리 | WePlaNet ADMIN</title>
 
   <link
           rel="stylesheet"
@@ -32,42 +32,43 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <a th:href="@{/admin/dashboard}">
+      <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">
         📊 통합 대시보드
       </a>
 
       <a
               class="is-active"
               th:href="@{/admin/applications}"
+              th:text="|📥 #{admin.nav.applications}|"
       >
         📥 등록 신청
       </a>
 
-      <a th:href="@{/admin/agencies}">
+      <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">
         🏢 소속사 관리
       </a>
 
-      <a th:href="@{/admin/artists}">
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">
         🎤 아티스트 관리
       </a>
 
-      <a th:href="@{/admin/users}">
+      <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">
         👥 전체 회원
       </a>
 
-      <a th:href="@{/admin/reports}">
+      <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">
         🚩 통합 신고 · 제재
       </a>
 
-      <a th:href="@{/admin/notices}">
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">
         📢 전체 공지
       </a>
 
-      <a th:href="@{/admin/communities}">
+      <a th:href="@{/admin/communities}" th:text="|💬 #{admin.nav.communities}|">
         💬 커뮤니티 운영
       </a>
 
-      <a th:href="@{/admin/logs}">
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">
         🧾 관리자 로그
       </a>
     </nav>
@@ -78,7 +79,7 @@
               method="post"
               style="margin: 0;"
       >
-        <button type="submit" class="btn">
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">
           🚪 로그아웃
         </button>
       </form>
@@ -90,9 +91,9 @@
 
     <div class="portal-main__head">
       <div>
-        <h1>아티스트·소속사 등록 신청</h1>
+        <h1 th:text="#{admin.applications.heading}">아티스트·소속사 등록 신청</h1>
 
-        <p class="text-sm text-muted">
+        <p class="text-sm text-muted" th:text="#{admin.applications.subtitle}">
           외부에서 접수된 등록 신청을 확인하고 처리합니다.
         </p>
       </div>
@@ -133,7 +134,7 @@
                 </span>
 
         <span class="admin-stat__body">
-                    <span class="admin-stat__label">
+                    <span class="admin-stat__label" th:text="#{admin.applications.stat.total}">
                         전체 신청
                     </span>
 
@@ -157,7 +158,7 @@
                 </span>
 
         <span class="admin-stat__body">
-                    <span class="admin-stat__label">
+                    <span class="admin-stat__label" th:text="#{partnership.status.PENDING_APPROVAL}">
                         검토 대기
                     </span>
 
@@ -181,7 +182,7 @@
                 </span>
 
         <span class="admin-stat__body">
-                    <span class="admin-stat__label">
+                    <span class="admin-stat__label" th:text="#{partnership.status.APPROVED}">
                         승인
                     </span>
 
@@ -205,7 +206,7 @@
                 </span>
 
         <span class="admin-stat__body">
-                    <span class="admin-stat__label">
+                    <span class="admin-stat__label" th:text="#{partnership.status.REJECTED}">
                         반려
                     </span>
 
@@ -231,22 +232,22 @@
       <section class="panel" style="min-width: 0;">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">
+            <h2 class="panel__title" th:text="#{admin.applications.list.title}">
               신청 목록
             </h2>
 
-            <p class="text-xs text-muted">
+            <p class="text-xs text-muted" th:text="#{admin.applications.list.desc}">
               신청 유형, 상태 또는 검색어로 조회할 수 있습니다.
             </p>
           </div>
 
           <span
                   class="tag tag--member"
-                  th:text="${#numbers.formatInteger(
+                  th:text="#{admin.applications.resultCount(${#numbers.formatInteger(
                                 applications.totalElements,
                                 0,
                                 'COMMA'
-                            ) + '건 조회'}"
+                            )})}"
           >
                         0건 조회
                     </span>
@@ -259,14 +260,14 @@
                 th:action="@{/admin/applications}"
         >
           <select name="status">
-            <option value="">
+            <option value="" th:text="#{admin.applications.filter.allStatus}">
               전체 처리 상태
             </option>
 
             <option
                     th:each="statusOption : ${statusOptions}"
                     th:value="${statusOption.name()}"
-                    th:text="${statusOption.getDisplayName()}"
+                    th:text="#{${statusOption.messageKey}}"
                     th:selected="${selectedStatus
                                     == statusOption.name()}"
             >
@@ -275,7 +276,7 @@
           </select>
 
           <select name="applicantType">
-            <option value="">
+            <option value="" th:text="#{admin.applications.filter.allType}">
               전체 신청 유형
             </option>
 
@@ -283,7 +284,7 @@
                     th:each="typeOption
                                     : ${applicantTypeOptions}"
                     th:value="${typeOption.name()}"
-                    th:text="${typeOption.getDisplayName()}"
+                    th:text="#{${typeOption.messageKey}}"
                     th:selected="${selectedApplicantType
                                     == typeOption.name()}"
             >
@@ -296,11 +297,13 @@
                   name="keyword"
                   th:value="${keyword}"
                   placeholder="신청자명, 담당자명, 이메일 검색"
+                  th:placeholder="#{admin.applications.filter.keywordPlaceholder}"
           />
 
           <button
                   type="submit"
                   class="btn btn--primary btn--sm"
+                  th:text="#{admin.common.search}"
           >
             검색
           </button>
@@ -308,6 +311,7 @@
           <a
                   class="btn btn--ghost btn--sm"
                   th:href="@{/admin/applications}"
+                  th:text="#{admin.common.reset}"
           >
             초기화
           </a>
@@ -318,12 +322,12 @@
           <table class="data-table">
             <thead>
             <tr>
-              <th>접수일</th>
-              <th>유형</th>
-              <th>신청자</th>
-              <th>담당자</th>
-              <th>상태</th>
-              <th>관리</th>
+              <th th:text="#{admin.applications.col.receivedAt}">접수일</th>
+              <th th:text="#{admin.applications.col.type}">유형</th>
+              <th th:text="#{admin.applications.col.applicant}">신청자</th>
+              <th th:text="#{admin.applications.col.contact}">담당자</th>
+              <th th:text="#{admin.common.status}">상태</th>
+              <th th:text="#{admin.common.manage}">관리</th>
             </tr>
             </thead>
 
@@ -332,6 +336,7 @@
               <td
                       colspan="6"
                       class="text-sm text-muted"
+                      th:text="#{admin.applications.empty}"
               >
                 검색 조건에 해당하는 신청이 없습니다.
               </td>
@@ -354,8 +359,8 @@
               <td>
                 <span
                         class="tag tag--member"
-                                        th:text="${applicationItem
-                                            .applicantTypeLabel()}"
+                                        th:text="#{${'partnership.applicantType.'
+                                            + applicationItem.applicantTypeName()}}"
                                 >
                                     아티스트
                                 </span>
@@ -391,7 +396,7 @@
                 <span
                         class="text-xs text-muted"
                         th:text="${applicationItem.phone() == null
-                                            ? '연락처 미입력'
+                                            ? #messages.msg('admin.applications.noPhone')
                                             : applicationItem.phone()}"
                 >
                                     연락처
@@ -403,7 +408,7 @@
                         class="tag tag--danger"
                                         th:if="${applicationItem.statusName()
                                             == 'PENDING_APPROVAL'}"
-                                        th:text="${applicationItem.statusLabel()}"
+                                        th:text="#{${'partnership.status.' + applicationItem.statusName()}}"
                                 >
                                     검토 대기
                                 </span>
@@ -412,7 +417,7 @@
                         class="tag tag--public"
                         th:if="${applicationItem.statusName()
                                             == 'APPROVED'}"
-                        th:text="${applicationItem.statusLabel()}"
+                        th:text="#{${'partnership.status.' + applicationItem.statusName()}}"
                 >
                                     승인
                                 </span>
@@ -421,7 +426,7 @@
                         class="tag tag--private"
                         th:if="${applicationItem.statusName()
                                             == 'REJECTED'}"
-                        th:text="${applicationItem.statusLabel()}"
+                        th:text="#{${'partnership.status.' + applicationItem.statusName()}}"
                 >
                                     반려
                                 </span>
@@ -440,6 +445,7 @@
                                             },
                                             keyword=${keyword}
                                         )}"
+                        th:text="#{admin.common.detail}"
                 >
                   상세
                 </a>
@@ -454,8 +460,9 @@
                 class="pagination"
                 th:if="${applications.totalPages > 1}"
                 aria-label="등록 신청 페이지 이동"
+                th:aria-label="#{admin.applications.paginationLabel}"
         >
-                    <span th:if="${applications.first}">
+                    <span th:if="${applications.first}" th:text="#{admin.common.prev}">
                         이전
                     </span>
 
@@ -467,6 +474,7 @@
                                 applicantType=${selectedApplicantType},
                                 keyword=${keyword}
                             )}"
+                  th:text="#{admin.common.prev}"
           >
             이전
           </a>
@@ -503,7 +511,7 @@
             </a>
           </th:block>
 
-          <span th:if="${applications.last}">
+          <span th:if="${applications.last}" th:text="#{admin.common.next}">
                         다음
                     </span>
 
@@ -515,6 +523,7 @@
                                 applicantType=${selectedApplicantType},
                                 keyword=${keyword}
                             )}"
+                  th:text="#{admin.common.next}"
           >
             다음
           </a>
@@ -525,13 +534,14 @@
       <aside class="panel">
         <div class="panel__head">
           <div>
-            <h2 class="panel__title">
+            <h2 class="panel__title" th:text="#{admin.applications.detail.title}">
               신청 상세
             </h2>
 
             <p
                     class="text-xs text-muted"
                     th:if="${selectedApplication == null}"
+                    th:text="#{admin.applications.detail.selectPrompt}"
             >
               목록에서 확인할 신청을 선택해주세요.
             </p>
@@ -539,8 +549,8 @@
             <p
                     class="text-xs text-muted"
                     th:if="${selectedApplication != null}"
-                    th:text="${'신청 번호 #'
-                                    + selectedApplication.applicationId()}"
+                    th:text="#{admin.applications.detail.number(${#strings.toString(
+                                    selectedApplication.applicationId())})}"
             >
               신청 번호
             </p>
@@ -564,13 +574,14 @@
             📥
           </div>
 
-          <strong>
+          <strong th:text="#{admin.applications.detail.emptyTitle}">
             선택된 신청이 없습니다.
           </strong>
 
           <p
                   class="text-sm text-muted"
                   style="margin-top: 8px;"
+                  th:text="#{admin.applications.detail.emptyDesc}"
           >
             목록에서 상세 버튼을 누르면 신청 내용과
             검토 상태를 확인할 수 있습니다.
@@ -585,7 +596,7 @@
                                 class="tag tag--danger"
                                 th:if="${selectedApplication.statusName()
                                     == 'PENDING_APPROVAL'}"
-                                th:text="${selectedApplication.statusLabel()}"
+                                th:text="#{${'partnership.status.' + selectedApplication.statusName()}}"
                         >
                             검토 대기
                         </span>
@@ -594,7 +605,7 @@
                     class="tag tag--public"
                     th:if="${selectedApplication.statusName()
                                     == 'APPROVED'}"
-                    th:text="${selectedApplication.statusLabel()}"
+                    th:text="#{${'partnership.status.' + selectedApplication.statusName()}}"
             >
                             승인
                         </span>
@@ -603,7 +614,7 @@
                     class="tag tag--private"
                     th:if="${selectedApplication.statusName()
                                     == 'REJECTED'}"
-                    th:text="${selectedApplication.statusLabel()}"
+                    th:text="#{${'partnership.status.' + selectedApplication.statusName()}}"
             >
                             반려
                         </span>
@@ -618,8 +629,8 @@
 
             <p class="text-xs text-muted">
                             <span
-                                    th:text="${selectedApplication
-                                        .applicantTypeLabel()}"
+                                    th:text="#{${'partnership.applicantType.'
+                                        + selectedApplication.applicantTypeName()}}"
                             >
                                 신청 유형
                             </span>
@@ -646,7 +657,7 @@
                             "
           >
             <div>
-                            <span class="text-xs text-muted">
+                            <span class="text-xs text-muted" th:text="#{admin.applications.col.contact}">
                                 담당자
                             </span>
 
@@ -661,7 +672,7 @@
             </div>
 
             <div>
-                            <span class="text-xs text-muted">
+                            <span class="text-xs text-muted" th:text="#{admin.applications.detail.phone}">
                                 연락처
                             </span>
 
@@ -679,7 +690,7 @@
           </div>
 
           <div style="margin-bottom: 16px;">
-                        <span class="text-xs text-muted">
+                        <span class="text-xs text-muted" th:text="#{admin.applications.detail.replyEmail}">
                             회신 이메일
                         </span>
 
@@ -695,7 +706,7 @@
           </div>
 
           <div style="margin-bottom: 20px;">
-                        <span class="text-xs text-muted">
+                        <span class="text-xs text-muted" th:text="#{admin.applications.detail.message}">
                             신청 내용
                         </span>
 
@@ -723,7 +734,7 @@
                             "
           >
             <div style="margin-bottom: 12px;">
-                            <span class="text-xs text-muted">
+                            <span class="text-xs text-muted" th:text="#{admin.applications.detail.reviewer}">
                                 처리 관리자
                             </span>
 
@@ -740,7 +751,7 @@
             </div>
 
             <div style="margin-bottom: 12px;">
-                            <span class="text-xs text-muted">
+                            <span class="text-xs text-muted" th:text="#{admin.applications.detail.reviewedAt}">
                                 처리 시각
                             </span>
 
@@ -762,7 +773,7 @@
                     th:if="${selectedApplication
                                     .rejectionReason() != null}"
             >
-                            <span class="text-xs text-muted">
+                            <span class="text-xs text-muted" th:text="#{admin.applications.detail.rejectionReason}">
                                 반려 사유
                             </span>
 
@@ -796,9 +807,8 @@
                 applicationId=${selectedApplication.applicationId()}
             )}"
                         method="post"
-                        onsubmit="return confirm(
-                '이 등록 신청을 승인하시겠습니까?'
-            );"
+                        th:attr="data-confirm=#{admin.applications.confirmApprove}"
+                        onsubmit="return confirm(this.dataset.confirm);"
                         style="margin-bottom: 20px;"
                 >
                     <input
@@ -828,6 +838,7 @@
                     <button
                             type="submit"
                             class="btn btn--primary btn--block"
+                            th:text="#{admin.applications.approveButton}"
                     >
                         등록 신청 승인
                     </button>
@@ -839,9 +850,8 @@
                 applicationId=${selectedApplication.applicationId()}
             )}"
                         method="post"
-                        onsubmit="return confirm(
-                '입력한 사유로 등록 신청을 반려하시겠습니까?'
-            );"
+                        th:attr="data-confirm=#{admin.applications.confirmReject}"
+                        onsubmit="return confirm(this.dataset.confirm);"
                 >
                     <input
                             type="hidden"
@@ -871,6 +881,7 @@
                         <label
                                 for="rejectionReason"
                                 class="form-label"
+                                th:text="#{admin.applications.detail.rejectionReason}"
                         >
                             반려 사유
                         </label>
@@ -882,12 +893,14 @@
                                 rows="5"
                                 maxlength="500"
                                 placeholder="신청자에게 안내할 반려 사유를 입력해주세요."
+                                th:placeholder="#{admin.applications.rejectionPlaceholder}"
                                 required
                         ></textarea>
 
                         <p
                                 class="text-xs text-muted"
                                 style="margin-top: 6px;"
+                                th:text="#{admin.applications.rejectionHint}"
                         >
                             입력한 사유가 신청자의 결과 이메일에 포함됩니다.
                             최대 500자까지 입력할 수 있습니다.
@@ -897,6 +910,7 @@
                     <button
                             type="submit"
                             class="btn btn--ghost btn--block"
+                            th:text="#{admin.applications.rejectButton}"
                     >
                         등록 신청 반려
                     </button>
