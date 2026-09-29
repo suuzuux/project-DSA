@@ -70,6 +70,24 @@ public class SignupEmailVerificationService {
 	}
 	
 	/**
+	 * 아이디·비밀번호 찾기처럼 "계정이 있는지"가 드러나면 안 되는 곳에서 쓴다.
+	 * 대상이면 실제로 보내고, 대상이 아니면 메일은 보내지 않지만 발송 제한(60초/하루 한도)은 똑같이 적용한다.
+	 * → 응답 문구와 제한 동작이 같아서, 화면만 보고는 입력한 정보와 일치하는 계정이 있는지 알 수 없다. (AUTH-11)
+	 *
+	 * @throws VerificationRateLimitException 발송 제한에 걸린 경우
+	 */
+	public void sendVerificationCodeIfEligible(HttpSession session, VerificationPurpose purpose, String email, boolean eligible) {
+		if (eligible) {
+			sendVerificationCode(session, purpose, email);
+			return;
+		}
+		String normalized = normalize(email);
+		reserveSend(normalized);
+		entries(session).remove(key(purpose, normalized));
+		log.debug("인증코드 발송 대상 아님(계정 불일치) - 메일은 보내지 않음: purpose={}", purpose);
+	}
+	
+	/**
 	 * 입력한 코드를 확인한다. 같은 세션·같은 용도로 발송된 코드만 비교하고, 5회 틀리면 코드를 폐기한다.
 	 */
 	public VerificationResult verifyCode(HttpSession session, VerificationPurpose purpose, String email, String inputCode) {

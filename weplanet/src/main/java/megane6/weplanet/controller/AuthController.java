@@ -10,6 +10,7 @@ import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.util.NicknameGenerator;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -85,6 +86,13 @@ public class AuthController {
 			emailVerificationService.clear(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
 			model.addAttribute("errorMessage", e.getMessage());
+			fillNicknameIfBlank(signupRequestDto);
+			return "signup-id";
+		} catch (DataIntegrityViolationException e) {
+			// AUTH-11: 중복 확인(existsBy...)과 저장 사이에 같은 아이디나 이메일로 다른 가입이 먼저 끝난 경우(동시 가입).
+			// DB 의 유니크 제약(uk_users_username / uk_users_email)이 두 번째 저장을 막는데, 예전에는 그 오류가
+			// 그대로 500 화면으로 나갔다.
+			model.addAttribute("errorMessage", "방금 같은 아이디 또는 이메일로 가입이 완료되었습니다. 다시 확인해주세요.");
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}

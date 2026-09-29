@@ -57,6 +57,7 @@ public class SettingsController {
 								@RequestParam(required = false) String currentPassword,
 								@RequestParam(required = false) String newPassword,
 								@RequestParam(required = false) String confirmPassword,
+								@RequestParam(required = false) String phone,
 								HttpSession session,
 								RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
@@ -64,7 +65,7 @@ public class SettingsController {
 			// AUTH-11: 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
 			boolean newEmailVerified = emailVerificationService.isVerified(session, VerificationPurpose.EMAIL_CHANGE, email);
 			AuthenticatedUser refreshed = userService.updatePortalAccount(
-					user, nickname, realName, email, newEmailVerified, currentPassword, newPassword, confirmPassword);
+					user, nickname, realName, email, newEmailVerified, phone, currentPassword, newPassword, confirmPassword);
 			// 저장까지 모두 성공한 뒤에 인증을 지운다 (비밀번호 검증 등에서 실패하면 인증을 다시 받지 않아도 되게)
 			emailVerificationService.clear(session, VerificationPurpose.EMAIL_CHANGE, email);
 			Authentication current = SecurityContextHolder.getContext().getAuthentication();
@@ -76,6 +77,11 @@ public class SettingsController {
 		} catch (IllegalArgumentException e) {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+		} catch (org.springframework.dao.DataIntegrityViolationException e) {
+			// AUTH-11: 중복 확인과 저장 사이에 다른 계정이 같은 이메일을 먼저 쓴 경우 - DB 유니크 제약(uk_users_email)이
+			// 막아 주고, 500 화면 대신 안내 문구를 보여준다
+			log.warn("회원정보 수정 실패(이메일 중복 저장 충돌): {}", e.getMostSpecificCause().getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", "이미 사용 중인 이메일입니다.");
 		}
 		return "redirect:/settings";
 	}

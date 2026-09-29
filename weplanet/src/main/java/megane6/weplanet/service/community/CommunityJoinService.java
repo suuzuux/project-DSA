@@ -16,6 +16,7 @@ import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.service.FileStorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -48,6 +49,10 @@ public class CommunityJoinService {
 				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 아티스트(id=" + artistId + ")입니다."));
 		if (artist.getRole() != Role.ARTIST) {
 			throw new IllegalArgumentException("아티스트 계정이 아닙니다(id=" + artistId + ").");
+		}
+		// AUTH-11: 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트의 커뮤니티에는 가입할 수 없다
+		if (!artist.isLoginable()) {
+			throw new IllegalStateException("지금은 가입할 수 없는 커뮤니티입니다.");
 		}
 		if (communityMemberRepository.existsByFanIdAndArtistId(fan.getId(), artistId)) {
 			throw new IllegalStateException("이미 가입한 커뮤니티입니다.");
@@ -89,12 +94,20 @@ public class CommunityJoinService {
 	 * 이미 가입돼 있으면 아무 것도 하지 않고, 없으면 최소 프로필로 가입 처리.
 	 * 에이전시 자동 가입 등 멱등성이 필요한 경로에서 사용.
 	 */
-	@Transactional
+	// AUTH-11: 별도 트랜잭션(REQUIRES_NEW)으로 실행 - 포털 탭 두 개를 동시에 열어서 같은 가입이 동시에 들어오면
+	// 한쪽이 유니크 제약 오류로 실패하는데, 같은 트랜잭션이면 그 오류가 포털 화면 전체를 500 으로 만들었다.
+	// 따로 떼어 두면 실패한 쪽만 롤백되고, 호출한 쪽(AgencyEnrollmentService)에서 "이미 가입됨"으로 넘길 수 있다.
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void ensureJoined(User user, Long artistId, String nickname) {
 		if (user == null || artistId == null) {
 			return;
 		}
 		if (communityMemberRepository.existsByFanIdAndArtistId(user.getId(), artistId)) {
+			return;
+		}
+		// AUTH-11: 아직 활성화 전인 아티스트는 자동 가입하지 않는다 (join 에서 막히므로 조용히 건너뜀)
+		boolean activeArtist = userRepository.findById(artistId).map(User::isLoginable).orElse(false);
+		if (!activeArtist) {
 			return;
 		}
 		String safeNickname = (nickname == null || nickname.isBlank()) ? "Member" : nickname.trim();
@@ -173,7 +186,9 @@ public class CommunityJoinService {
 		communityMemberRepository.delete(member);
 		// GroupFollow 통합: 팔로우는 특정 커뮤니티에 종속되므로, 이 커뮤니티를 탈퇴하면 다른 공유 커뮤니티가
 		// 남아있어도 상관없이 이 커뮤니티(artistId) 소속 팔로우 관계는 모두 함께 삭제한다.
-		userFollowRepository.deleteByCommunityIdAndFollowerId(artistId, fan.getId());
+		// AUTH-11: 단, 팬→아티스트 팔로우(following_id == community_id)는 가입 여부와 무관하게 할 수 있는 것이라 남긴다.
+		// 예전에는 이것까지 지워서, 가입 없이 아티스트를 팔로우하던 팬이 가입했다가 탈퇴하면 아티스트 팔로우가 사라졌다.
+		userFollowRepository.deleteByCommunityIdAndFollowerIdAndFollowingIdNot(artistId, fan.getId(), artistId);
 		userFollowRepository.deleteByCommunityIdAndFollowingId(artistId, fan.getId());
 	}
 	
@@ -315,12 +330,12 @@ public class CommunityJoinService {
 	}
 
 	// 화면에 프로필 카드(닉네임/소개글/아바타/배경) 그릴 때 씀
+	// AUTH-11: 가입한 커뮤니티 수만큼 프로필을 하나씩 조회하던 것(N+1)을 JOIN FETCH 쿼리 한 번으로 바꿨다
 	public Map<Long, CommunityProfile> joinedProfilesByArtistId(User fan) {
 		if (fan == null) return Map.of();
 		Map<Long, CommunityProfile> result = new HashMap<>();
-		for (CommunityMember member : communityMemberRepository.findByFanId(fan.getId())) {
-			communityProfileRepository.findByCommunityMember_Id(member.getId())
-					.ifPresent(profile -> result.put(member.getArtistId(), profile));
+		for (CommunityProfile profile : communityProfileRepository.findAllByFanIdWithMember(fan.getId())) {
+			result.put(profile.getCommunityMember().getArtistId(), profile);
 		}
 		return result;
 	}

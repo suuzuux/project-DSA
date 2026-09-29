@@ -74,11 +74,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 			user = existingUser.get();
 
 			if (user.getStatus() == UserStatus.WITHDRAWN || user.getStatus() == UserStatus.SUSPENDED) {
+				// AUTH-11: 예전엔 /login?error 로만 보내서 로그인 화면에 아무 안내도 뜨지 않았다
 				socialLoginSessionSupport.clearSecurityContext(request, response);
-				response.sendRedirect("/login?error");
+				response.sendRedirect("/login?accountUnavailable=true");
 				return;
 			}
-			if (user.getStatus() == UserStatus.DORMANT) {
+			if (user.getStatus() == UserStatus.DORMANT && user.hasPlaceholderEmail()) {
+				// AUTH-11: 카카오/LINE 가입자는 이메일이 받을 수 없는 시스템 주소(*.weplanet.local)라서 이메일 인증코드
+				// 방식으로는 휴면을 풀 수 없었다(아이디도 자동 생성이라 본인이 모름). 방금 소셜 인증을 통과한 것 자체가
+				// 본인 확인이므로, 이 경우는 코드 없이 바로 휴면을 해제하고 로그인시킨다.
+				user.reactivate();
+				log.info("[휴면계정] 소셜 재로그인으로 휴면 해제: userId={}, provider={}", user.getId(), provider);
+			} else if (user.getStatus() == UserStatus.DORMANT) {
 				// 소셜 인증은 됐지만, 로컬 로그인과 동일하게 이메일 코드 인증을 한 번 더 거치게 한다.
 				// AUTH-10: 로컬/소셜 진입 구분 없이 항상 같은 화면(아이디 입력 → 인증코드)으로 통일했으므로,
 				// 여기서 더 이상 세션에 대상 유저를 미리 심어두지 않는다 - DormantAccountReactivationController 참고.

@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
@@ -86,6 +87,7 @@ public class SecurityConfig {
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final UserRepository userRepository;
     private final CommunitySlugForwardFilter communitySlugForwardFilter;
+    private final SessionRegistry sessionRegistry; // AUTH-11: SessionRegistryConfig 참고
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -138,6 +140,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .invalidSessionUrl("/login?expired=true")
                         .maximumSessions(1)
+                        .sessionRegistry(sessionRegistry)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?duplicateLogin=true")
                 );

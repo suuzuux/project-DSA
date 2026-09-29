@@ -17,4 +17,7 @@ public interface BoardMediaRepository extends JpaRepository<BoardMediaEntity, Lo
     Optional<BoardMediaEntity> findByIdAndDeletedAtIsNull(Long id);
 
     long countByGroupIdAndDeletedAtIsNull(Long groupId);
+
+    // AUTH-11: 삭제(소프트 삭제)된 지 일정 기간이 지났는데 아직 파일이 남아 있는 게시물 (DeletedMediaFileCleanupScheduler)
+    List<BoardMediaEntity> findByDeletedAtBeforeAndFilesIsNotEmpty(java.time.LocalDateTime cutoff);
 }

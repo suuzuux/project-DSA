@@ -44,7 +44,8 @@ public class MarketingConsentEmailService {
 	public void sendCommunityInviteEmail(User user) {
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(user.getEmail());
-		message.setSubject("[WePlaNet] 좋아하는 아티스트의 커뮤니티에 가입해보세요");
+		// AUTH-11: 광고성 정보를 전송할 때는 제목 첫머리에 "(광고)"를 표시해야 한다 (정보통신망법 제50조)
+		message.setSubject("(광고) [WePlaNet] 좋아하는 아티스트의 커뮤니티에 가입해보세요");
 		message.setText(user.getNickname() + "님, 안녕하세요.\n\n"
 				+ "관심있는 아티스트의 커뮤니티에 가입하면 새 게시글 · 공지 · 라이브 소식을 가장 먼저 받아볼 수 있어요.\n\n"
 				+ "WePlaNet 사이트에서 커뮤니티를 둘러보고 지금 바로 가입해보세요.");

@@ -90,6 +90,8 @@ public class UserService {
 	
 	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
 	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
+	// AUTH-11: 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
+	private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-]{1,20}$");
 
 	// 회원가입 화면의 "중복 확인" 버튼용 - 실제로 DB를 조회해서 사용 가능 여부를 알려준다.
 	public boolean isUsernameAvailable(String username) {
@@ -103,7 +105,7 @@ public class UserService {
 	@Transactional
 	// newEmailVerified: 컨트롤러가 "이 세션에서 이메일 변경 용도로 인증을 마쳤는지" 확인해서 넘겨준다 (AUTH-11)
 	public AuthenticatedUser updatePortalAccount(User user, String nickname, String realName, String email,
-												  boolean newEmailVerified,
+												  boolean newEmailVerified, String phone,
 												  String currentPassword, String newPassword, String confirmPassword) {
 		String trimmedNickname = nickname == null ? "" : nickname.trim();
 		String trimmedRealName = realName == null ? "" : realName.trim();
@@ -148,7 +150,18 @@ public class UserService {
 		} else {
 			user.changePortalProfile(trimmedNickname, user.getEmail());
 		}
+		// AUTH-11: real_name 은 VARBINARY(255)(UTF-8 바이트) - 가입 화면과 같은 50자 제한
+		if (trimmedRealName.length() > 50) {
+			throw new IllegalArgumentException("이름은 50자 이내로 입력해주세요.");
+		}
 		user.changeRealName(trimmedRealName);
+
+		// AUTH-11: 전화번호(선택) - 예전에는 화면에 입력칸만 있고 저장하지 않았다
+		String trimmedPhone = phone == null ? "" : phone.trim();
+		if (!trimmedPhone.isEmpty() && !PHONE_PATTERN.matcher(trimmedPhone).matches()) {
+			throw new IllegalArgumentException("전화번호는 숫자와 - 만 사용해 20자 이내로 입력해주세요.");
+		}
+		user.changePhone(trimmedPhone.isEmpty() ? null : trimmedPhone);
 
 		// 비밀번호 변경/등록은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
 		// 화면(JS)에서는 현재 비밀번호를 입력해야 새 비밀번호 칸이 열리지만, 서버에서도 한 번 더 검증한다

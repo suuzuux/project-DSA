@@ -22,6 +22,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AccountRecoveryController {
 	
+	// AUTH-11: 입력한 정보와 일치하는 계정이 있든 없든 같은 문구를 보여준다. 예전에는 "일치하는 회원정보를 찾을 수 없습니다" /
+	// "비밀번호가 설정되어 있지 않아…" 처럼 경우마다 문구가 달라서, 이름+이메일(또는 아이디+이메일) 조합으로
+	// 계정이 있는지, 소셜 전용 계정인지까지 알아낼 수 있었다.
+	private static final String CODE_SENT_IF_MATCHED =
+			"입력하신 정보와 일치하는 회원이 있다면 인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요. "
+					+ "(소셜 로그인으로만 가입한 계정은 아이디/비밀번호 찾기를 이용할 수 없습니다.)";
+	
 	private final AccountRecoveryService accountRecoveryService;
 	private final SignupEmailVerificationService emailVerificationService;
 	
@@ -34,20 +41,12 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendFindIdCode(@RequestParam String realName, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		if (!accountRecoveryService.matchesRealNameAndEmail(realName, email)) {
-			result.put("success", false);
-			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
-			return result;
-		}
-		if (!accountRecoveryService.isEligibleForRecovery(email)) {
-			result.put("success", false);
-			result.put("message", "비밀번호가 설정되어 있지 않아 아이디를 찾을 수 없습니다.");
-			return result;
-		}
+		boolean eligible = accountRecoveryService.matchesRealNameAndEmail(realName, email)
+				&& accountRecoveryService.isEligibleForRecovery(email);
 		try {
-			emailVerificationService.sendVerificationCode(session, VerificationPurpose.FIND_ID, email);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, eligible);
 			result.put("success", true);
-			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+			result.put("message", CODE_SENT_IF_MATCHED);
 		} catch (VerificationRateLimitException e) {
 			result.put("success", false);
 			result.put("message", e.getMessage());
@@ -91,20 +90,12 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendResetCode(@RequestParam String username, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		if (!accountRecoveryService.matchesUsernameAndEmail(username, email)) {
-			result.put("success", false);
-			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
-			return result;
-		}
-		if (!accountRecoveryService.isEligibleForRecovery(email)) {
-			result.put("success", false);
-			result.put("message", "비밀번호가 설정되어 있지 않아 비밀번호를 찾을 수 없습니다.");
-			return result;
-		}
+		boolean eligible = accountRecoveryService.matchesUsernameAndEmail(username, email)
+				&& accountRecoveryService.isEligibleForRecovery(email);
 		try {
-			emailVerificationService.sendVerificationCode(session, VerificationPurpose.RESET_PASSWORD, email);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, eligible);
 			result.put("success", true);
-			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+			result.put("message", CODE_SENT_IF_MATCHED);
 		} catch (VerificationRateLimitException e) {
 			result.put("success", false);
 			result.put("message", e.getMessage());

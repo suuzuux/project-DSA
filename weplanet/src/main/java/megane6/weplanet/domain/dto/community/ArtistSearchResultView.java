@@ -15,15 +15,21 @@ public record ArtistSearchResultView(
 		boolean solo,
 		String nationality,
 		String category,
-		LocalDate debutDate
+		LocalDate debutDate,
+		boolean own		// AUTH-11: 로그인한 사람의 "본인 커뮤니티"인지 (아티스트/그룹 멤버) - 화면에서 가입 버튼을 숨기는 데 씀
 ) {
 	public static ArtistSearchResultView of(ArtistSearchRow row) {
 		boolean solo = row.memberCount() != null && row.memberCount() == 1;
 		return new ArtistSearchResultView(
 				row.artistId(), row.nickname(), logoOf(row.nickname()),
 				row.gender(), row.memberCount(), solo, row.nationality(), row.category(),
-				row.debutDate()
+				row.debutDate(), false
 		);
+	}
+	
+	public ArtistSearchResultView withOwn(boolean own) {
+		return new ArtistSearchResultView(artistId, nickname, logo, gender, memberCount, solo,
+				nationality, category, debutDate, own);
 	}
 	
 	private static String logoOf(String nickname) {
