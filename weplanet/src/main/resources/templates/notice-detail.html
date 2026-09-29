@@ -9,8 +9,13 @@
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <style>
-    /* 예전 공지는 평문이라, 한 줄 줄바꿈이 마크다운에서는 공백으로 합쳐진다 → 줄바꿈이 그대로 보이게 */
-    .notice-viewer .toastui-editor-contents p { white-space: pre-line; }
+    /* 줄바꿈은 Toast UI 뷰어가 이미 <br> 로 그려준다(예전 평문 공지의 한 줄 줄바꿈도 그대로 보임).
+       예전엔 여기에 white-space: pre-line 을 줬는데, 그러면 <br> 뒤의 \n 까지 줄바꿈이 돼서
+       줄마다 빈 줄이 하나씩 더 생겼다 → 기본값으로 두고, 빈 줄(문단 구분)은 딱 한 줄만큼만 띄운다.
+       (커뮤니티 게시글 상세의 .post-card__body 뷰어와 같은 규칙) */
+    .notice-viewer .toastui-editor-contents { white-space: normal; }
+    .notice-viewer .toastui-editor-contents p { margin: 0; }
+    .notice-viewer .toastui-editor-contents p + p { margin-top: 1.6em; }
     .notice-viewer .toastui-editor-contents img { max-width: 100%; border-radius: 8px; }
   </style>
 </head>
