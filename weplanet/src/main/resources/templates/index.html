@@ -118,12 +118,8 @@
         <p>커뮤니티에 가입하고, 스케줄을 한 눈에 확인해보세요!</p>
         <p class="text-sm text-muted mt-8">메뉴에서 커뮤니티 바로가기 · DM 버튼으로 채팅</p>
       </div>
-      <a class="btn btn--primary btn--sm"
-         th:if="${!artists.isEmpty()}"
-         th:href="@{${artists[0].homeUrl()}}">커뮤니티 가입하기</a>
-      <a class="btn btn--primary btn--sm"
-         th:if="${artists.isEmpty()}"
-         th:href="@{/posts/fan}">커뮤니티 가입하기</a>
+      <!-- 특정 커뮤니티로 보내지 않고, 아래 "지금 바로 만나보세요!" 목록으로 부드럽게 스크롤 (html { scroll-behavior: smooth }) -->
+      <a class="btn btn--primary btn--sm" href="#meetArtists">커뮤니티 가입하기</a>
     </div>
 
     <div class="banner mb-24" data-carousel>
@@ -233,7 +229,8 @@
 
   <!-- 지금 바로 만나보세요: 위버스처럼 한 줄에 아티스트 2명 (동그란 사진 + 오른쪽 이름). 로그인 후에만 노출 -->
   <th:block sec:authorize="isAuthenticated()">
-    <section class="section mb-24">
+    <!-- 상단 "커뮤니티 가입하기" 버튼이 여기로 스크롤한다 -->
+    <section class="section mb-24 meet-artists" id="meetArtists">
       <div class="section__head">
         <h2 class="section__title">지금 바로 만나보세요!</h2>
       </div>
