@@ -1,0 +1,196 @@
+/* 해시태그 총공 공개 페이지 (/events/hashtag) */
+
+.hashtag-event {
+  max-width: 880px;
+}
+
+.hashtag-event__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.hashtag-event__eyebrow {
+  font-size: var(--wp-fs-xs);
+  font-weight: 700;
+  color: var(--wp-brand);
+  margin-bottom: 4px;
+}
+
+.hashtag-event__title {
+  font-size: var(--wp-fs-2xl);
+  margin-bottom: 6px;
+}
+
+.hashtag-event__subtitle {
+  font-size: var(--wp-fs-lg);
+  margin-bottom: 8px;
+}
+
+.hashtag-event__timer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+}
+
+.hashtag-event__timer strong {
+  font-size: var(--wp-fs-lg);
+  color: var(--wp-ink);
+}
+
+.hashtag-event__mine {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand-dark);
+  font-size: var(--wp-fs-sm);
+}
+
+.hashtag-event__empty {
+  padding: 48px 0;
+  text-align: center;
+}
+
+/* 1~3위 카드 */
+.hashtag-top {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hashtag-top__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 14px;
+  text-align: center;
+  background: var(--wp-surface);
+  border: 1px solid var(--wp-hairline);
+  border-radius: var(--wp-radius);
+}
+
+.hashtag-top__card.is-first {
+  border: 2px solid var(--wp-brand);
+}
+
+.hashtag-top__rank {
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+  color: var(--wp-muted);
+}
+
+.hashtag-top__card.is-first .hashtag-top__rank {
+  color: var(--wp-brand);
+}
+
+.hashtag-top__rate {
+  font-size: var(--wp-fs-2xl);
+  font-weight: 800;
+}
+
+.hashtag-top__card .progress {
+  width: 100%;
+}
+
+/* 해시태그 복사 칩 */
+.hashtag-chip {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px dashed var(--wp-line);
+  border-radius: 999px;
+  background: var(--wp-paper);
+  color: var(--wp-ink);
+  font-size: var(--wp-fs-xs);
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hashtag-chip [data-copy-label] {
+  color: var(--wp-brand);
+  font-weight: 700;
+}
+
+.hashtag-mine-badge {
+  margin-left: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--wp-brand);
+}
+
+/* 전체 순위 */
+.hashtag-event__more {
+  display: flex;
+  justify-content: center;
+}
+
+.hashtag-rank-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.hashtag-rank-list > li {
+  display: grid;
+  grid-template-columns: 28px 40px minmax(0, 1fr) minmax(0, 1.2fr) 64px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 8px;
+  border-top: 1px solid var(--wp-hairline);
+}
+
+.hashtag-rank-list > li.is-mine {
+  background: var(--wp-brand-tint);
+}
+
+.hashtag-rank-list__bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hashtag-rank-list__rate {
+  text-align: right;
+}
+
+.hashtag-event__guide {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border-radius: var(--wp-radius-sm);
+  background: var(--wp-paper);
+  color: var(--wp-ink-soft);
+  font-size: var(--wp-fs-sm);
+  line-height: 1.7;
+}
+
+/* 휴대폰: 카드는 한 줄에 하나, 순위표는 막대 칸을 숨긴다 */
+@media (max-width: 640px) {
+  .hashtag-event__timer {
+    text-align: left;
+  }
+
+  .hashtag-top {
+    grid-template-columns: 1fr;
+  }
+
+  .hashtag-rank-list > li {
+    grid-template-columns: 24px 40px minmax(0, 1fr) 56px;
+  }
+
+  .hashtag-rank-list__bar {
+    display: none;
+  }
+}

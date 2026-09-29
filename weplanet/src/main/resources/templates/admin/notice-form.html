@@ -72,7 +72,7 @@
             method="post">
         <div class="form-group">
           <label class="form-label" for="title">제목</label>
-          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : ''}"
+          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : draftTitle}"
                  placeholder="제목을 입력해주세요." required />
         </div>
         <div class="form-group">
@@ -80,7 +80,7 @@
           <!-- 서버로 실제 전송되는 값은 이 숨긴 textarea.
                화면에는 아래 Toast UI 에디터가 보이고, 저장할 때 에디터 내용(마크다운)을 여기에 옮겨 담는다 -->
           <textarea id="content" name="content" hidden
-                    th:text="${notice != null ? notice.content : ''}"></textarea>
+                    th:text="${notice != null ? notice.content : draftContent}"></textarea>
           <div id="contentEditor"></div>
           <p class="text-sm text-muted" style="margin-top:6px;">
             툴바의 링크 버튼으로 하이퍼링크를, 이미지 버튼으로 사진을 넣을 수 있습니다. (jpg, png, webp, gif)
@@ -89,8 +89,8 @@
         <div class="form-group">
           <label class="form-label" for="category">분류</label>
           <select class="form-select" id="category" name="category" style="max-width:200px;">
-            <option value="GENERAL" th:selected="${notice == null || notice.category.name() == 'GENERAL'}">일반</option>
-            <option value="EVENT" th:selected="${notice != null && notice.category.name() == 'EVENT'}">이벤트</option>
+            <option value="GENERAL" th:selected="${notice == null ? draftCategory == null : notice.category.name() == 'GENERAL'}">일반</option>
+            <option value="EVENT" th:selected="${notice == null ? draftCategory == 'EVENT' : notice.category.name() == 'EVENT'}">이벤트</option>
             <option value="MAINTENANCE" th:selected="${notice != null && notice.category.name() == 'MAINTENANCE'}">점검</option>
             <option value="UPDATE" th:selected="${notice != null && notice.category.name() == 'UPDATE'}">업데이트</option>
           </select>

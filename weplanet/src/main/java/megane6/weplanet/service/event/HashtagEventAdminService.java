@@ -1,10 +1,7 @@
 package megane6.weplanet.service.event;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.domain.dto.event.HashtagArtistOption;
-import megane6.weplanet.domain.dto.event.HashtagEventForm;
-import megane6.weplanet.domain.dto.event.HashtagEventListItem;
-import megane6.weplanet.domain.dto.event.HashtagEventTargetRow;
+import megane6.weplanet.domain.dto.event.*;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AdminActionType;
 import megane6.weplanet.domain.entity.enumfolder.AdminTargetType;
@@ -21,12 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -45,6 +37,7 @@ public class HashtagEventAdminService {
 	private final HashtagEventTargetRepository hetr;
 	private final UserRepository ur;
 	private final AdminActionLogService als;
+	private final HashtagEventStatsService hess;
 	
 	public List<HashtagEventListItem> getEvents() {
 		LocalDateTime now = LocalDateTime.now();
@@ -164,6 +157,55 @@ public class HashtagEventAdminService {
 				title + " 삭제",
 				ipAddress
 		);
+	}
+	
+	public HashtagEventDashboard getDashboard(Long eventId) {
+		return hess.getDashboard(requireEvent(eventId));
+	}
+	
+	// 종료 후 "집계 확정": 지금 순위를 참여팀마다 final_* 컬럼에 고정한다.
+	// 확정 뒤엔 가입/탈퇴·글 삭제가 있어도 공지한 숫자와 페이지 숫자가 달라지지 않는다
+	@Transactional
+	public void finalizeEvent(Long eventId, User admin, String ipAddress) {
+		HashtagEvent event = requireEvent(eventId);
+		event.finalizeResult(LocalDateTime.now());
+		
+		List<HashtagRankingRow> ranking = hess.calculateLiveRanking(eventId);
+		Map<Long, HashtagEventTarget> targetsById = event.getTargets()
+				.stream()
+				.collect(Collectors.toMap(HashtagEventTarget::getId, Function.identity()));
+		
+		for (HashtagRankingRow row : ranking) {
+			targetsById.get(row.targetId()).recordFinalResult(
+					(int) row.memberCount(),
+					(int) row.participantCount(),
+					(int) row.postCount(),
+					row.rank()
+			);
+		}
+		
+		String winner = ranking.isEmpty()
+				? ""
+				: " / 1위 " + ranking.get(0).artistName() + " " + ranking.get(0).participationRate() + "%";
+		als.recordAction(
+				admin.getId(),
+				AdminActionType.HASHTAG_EVENT_FINALIZE,
+				AdminTargetType.HASHTAG_EVENT,
+				eventId,
+				event.getTitle() + " 집계 확정" + winner,
+				ipAddress
+		);
+	}
+	
+	// 결과 공지 초안 (모니터링 [결과 공지 작성] → 공지 글쓰기 폼에 미리 채움).
+	// 확정된 숫자로만 만든다
+	public HashtagResultNoticeDraft buildResultNotice(Long eventId) {
+		HashtagEvent event = requireEvent(eventId);
+		if (event.getFinalizedAt() == null) {
+			throw new IllegalStateException("집계를 확정한 뒤에 결과 공지를 작성할 수 있습니다.");
+		}
+		
+		return HashtagResultNoticeDraft.from(hess.getDashboard(event));
 	}
 	
 	public HashtagEvent requireEvent(Long eventId) {

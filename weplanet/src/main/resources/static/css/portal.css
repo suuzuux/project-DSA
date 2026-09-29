@@ -1807,3 +1807,33 @@ tr.is-dragging {
   height: 100%;
   object-fit: cover;
 }
+
+
+/* 최고관리자 > 해시태그 총공 모니터링 - 일자별 인정 글 수 막대 */
+.hashtag-daily {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 180px;
+  padding-top: 8px;
+}
+
+.hashtag-daily__day {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: var(--wp-fs-xs);
+  color: var(--wp-muted);
+}
+
+.hashtag-daily__bar {
+  width: 100%;
+  max-width: 48px;
+  min-height: 2px;
+  background: var(--wp-brand);
+  border-radius: 4px 4px 0 0;
+}

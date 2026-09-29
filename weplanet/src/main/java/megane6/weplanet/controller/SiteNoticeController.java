@@ -2,11 +2,13 @@ package megane6.weplanet.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.event.HashtagResultNoticeDraft;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.NoticeCategory;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.SiteNoticeService;
+import megane6.weplanet.service.event.HashtagEventAdminService;
 import megane6.weplanet.service.shop.ShopImageStorage;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -28,6 +30,8 @@ public class SiteNoticeController {
 	private final AuthenticatedUserResolver userResolver;
 	
 	private final ShopImageStorage shopImageStorage; // 에디터 이미지 저장 (굿즈 에디터와 같은 검사 규칙 재사용)
+	
+	private final HashtagEventAdminService hashtagEventAdminService; // [해시태그 총공] 결과 공지 초안
 
 	@GetMapping("/notices")
 	public String publicList(
@@ -70,15 +74,30 @@ public class SiteNoticeController {
 		
 		return "admin/notices";
 	}
-
+	
 	@GetMapping("/admin/notices/new")
 	public String newForm(
+			@RequestParam(required = false) Long hashtagEventId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
 		requireAdmin(principal);
 		model.addAttribute("pinnedCount", siteNoticeService.countPinned());
 		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
+		
+		// [해시태그 총공] 모니터링의 "결과 공지 작성" 버튼으로 오면 제목·본문·분류를 미리 채운다
+		// (notice 가 아니라 draft* 로 넘기는 이유: notice 가 있으면 폼이 "수정 모드"가 되기 때문)
+		if (hashtagEventId != null) {
+			try {
+				HashtagResultNoticeDraft draft = hashtagEventAdminService.buildResultNotice(hashtagEventId);
+				model.addAttribute("draftTitle", draft.title());
+				model.addAttribute("draftContent", draft.content());
+				model.addAttribute("draftCategory", NoticeCategory.EVENT.name());
+			} catch (IllegalArgumentException | IllegalStateException e) {
+				model.addAttribute("error", e.getMessage());
+			}
+		}
+		
 		return "admin/notice-form";
 	}
 

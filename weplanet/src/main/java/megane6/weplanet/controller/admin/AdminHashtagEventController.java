@@ -129,6 +129,46 @@ public class AdminHashtagEventController {
 		return "redirect:/admin/events/hashtag";
 	}
 	
+	// 모니터링 (진행 중이면 화면이 30초마다 새로고침된다)
+	@GetMapping("/{eventId}")
+	public String monitor(
+			@PathVariable Long eventId,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model,
+			RedirectAttributes redirectAttributes
+	) {
+		requireAdmin(principal);
+		
+		try {
+			model.addAttribute("dashboard", service.getDashboard(eventId));
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			return "redirect:/admin/events/hashtag";
+		}
+		
+		return "admin/hashtag-event-monitor";
+	}
+	
+	@PostMapping("/{eventId}/finalize")
+	public String finalizeEvent(
+			@PathVariable Long eventId,
+			HttpServletRequest request,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			RedirectAttributes redirectAttributes
+	) {
+		User admin = requireAdmin(principal);
+		
+		try {
+			service.finalizeEvent(eventId, admin, request.getRemoteAddr());
+			redirectAttributes.addFlashAttribute("msg", "집계를 확정했습니다. 이제 순위가 고정됩니다.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			redirectAttributes.addFlashAttribute("error", e.getMessage());
+		}
+		
+		return "redirect:/admin/events/hashtag/" + eventId;
+	}
+	
+	
 	// 이벤트 폼의 아티스트 검색창에서 fetch 로 부른다. @ResponseBody → record 목록이 JSON 배열로 나감
 	@GetMapping("/artists")
 	@ResponseBody

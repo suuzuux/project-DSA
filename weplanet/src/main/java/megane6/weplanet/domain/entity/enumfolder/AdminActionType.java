@@ -41,7 +41,8 @@ public enum AdminActionType {
 	
 	HASHTAG_EVENT_CREATE("해시태그 총공 등록"),
 	HASHTAG_EVENT_UPDATE("해시태그 총공 수정"),
-	HASHTAG_EVENT_DELETE("해시태그 총공 삭제");
+	HASHTAG_EVENT_DELETE("해시태그 총공 삭제"),
+	HASHTAG_EVENT_FINALIZE("해시태그 총공 집계 확정");
 	
 	private final String label;
 }
