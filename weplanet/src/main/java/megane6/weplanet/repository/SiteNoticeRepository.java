@@ -14,11 +14,12 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
 	
 	long countByPinnedTrue();
 	
+	// 정렬은 커뮤니티 공지(PortalNotice)와 동일: 상단 고정 → pinOrder → 최신
 	@Query("""
         SELECT n FROM SiteNotice n
         WHERE (:category IS NULL OR n.category = :category)
           AND (:keyword IS NULL OR n.title LIKE CONCAT('%', :keyword, '%'))
-        ORDER BY n.createdAt DESC
+        ORDER BY n.pinned DESC, n.pinOrder ASC, n.createdAt DESC
         """)
 	List<SiteNotice> search(@Param("category") NoticeCategory category,
 							@Param("keyword") String keyword);
@@ -28,7 +29,7 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
         WHERE n.published = true
           AND (n.publishAt IS NULL OR n.publishAt <= CURRENT_TIMESTAMP)
           AND (:category IS NULL OR n.category = :category)
-        ORDER BY n.createdAt DESC
+        ORDER BY n.pinned DESC, n.pinOrder ASC, n.createdAt DESC
         """)
 	List<SiteNotice> findVisible(@Param("category") NoticeCategory category);
 	
