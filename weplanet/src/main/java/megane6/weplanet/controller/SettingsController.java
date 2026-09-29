@@ -165,9 +165,17 @@ public class SettingsController {
 
 	// [회원탈퇴] 소프트 삭제 처리 후 즉시 로그아웃시킨다 (세션에 남은 만료 계정으로 계속 요청이 오는 걸 막기 위함).
 	@PostMapping("/settings/withdraw")
-	public String withdraw(@AuthenticationPrincipal AuthenticatedUser principal, HttpServletRequest request) {
+	public String withdraw(@AuthenticationPrincipal AuthenticatedUser principal,
+						   @RequestParam(required = false) String currentPassword,
+						   HttpServletRequest request,
+						   RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
-		userService.withdraw(user);
+		try {
+			userService.withdraw(user, currentPassword);
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+			return "redirect:/settings";
+		}
 		SecurityContextHolder.clearContext();
 		invalidateAndOpenFreshSession(request);
 		return "redirect:/login/id?withdrawn";

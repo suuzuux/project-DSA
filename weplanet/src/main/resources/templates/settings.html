@@ -163,13 +163,32 @@
     </a>
   </section>
 
-  <form th:action="@{/settings/withdraw}" method="post"
-        onsubmit="return WePlaNet.confirmSubmit(this, '정말로 위플래닛 계정을 탈퇴하시겠습니까? 탈퇴 후에는 로그인할 수 없습니다.');">
-    <button type="submit" class="btn btn--ghost btn--block text-danger">
-      위플래닛 계정 탈퇴하기
-    </button>
-  </form>
+  <!-- AUTH-11: 탈퇴는 모달에서 진행 - 비밀번호가 있는 계정은 현재 비밀번호를 다시 확인한다 -->
+  <button type="button" class="btn btn--ghost btn--block text-danger" data-modal-open="withdrawModal">
+    위플래닛 계정 탈퇴하기
+  </button>
 </main>
+
+<!-- 회원탈퇴 모달 (AUTH-11) -->
+<div class="modal-backdrop" id="withdrawModal">
+  <div class="modal">
+    <div class="modal__head">
+      <h2 class="modal__title">계정 탈퇴</h2>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <form th:action="@{/settings/withdraw}" method="post" id="withdrawForm"
+          onsubmit="return WePlaNet.confirmSubmit(this, '정말로 위플래닛 계정을 탈퇴하시겠습니까? 탈퇴 후에는 로그인할 수 없습니다.');">
+      <p class="text-sm mb-16">탈퇴하면 가입한 커뮤니티와 팔로우 정보가 모두 정리되고, 이 계정으로 다시 로그인할 수 없습니다.</p>
+      <!-- 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어서 확인창만 거친다 -->
+      <div class="form-group" th:if="${user.hasPassword()}">
+        <label class="form-label" for="withdrawPasswordInput">현재 비밀번호</label>
+        <input class="form-input" type="password" id="withdrawPasswordInput" name="currentPassword" required
+               placeholder="본인 확인을 위해 현재 비밀번호를 입력하세요" autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn--ghost btn--block text-danger">탈퇴하기</button>
+    </form>
+  </div>
+</div>
 
 <!-- 회원정보 수정 모달 -->
 <div class="modal-backdrop" id="editProfileModal">
@@ -215,7 +234,8 @@
         <div class="form-group">
           <label class="form-label">현재 비밀번호</label>
           <input class="form-input" type="password" id="currentPasswordInput" name="currentPassword"
-                 placeholder="비밀번호를 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
+                 placeholder="비밀번호나 이메일을 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
+          <p class="text-xs" id="emailNeedsPasswordMsg" style="display:none;color:#c45c26;margin-top:4px;">이메일을 변경하려면 현재 비밀번호를 입력해주세요.</p>
         </div>
         <div class="form-group">
           <label class="form-label">새 비밀번호</label>
@@ -265,6 +285,8 @@
         var confirmInput = document.getElementById("confirmPasswordInput");
         var mismatchMsg = document.getElementById("passwordMismatchMsg");
         var form = document.getElementById("editProfileForm");
+        var emailHiddenInput = document.getElementById("emailHidden");
+        var initialEmail = emailHiddenInput ? emailHiddenInput.value : "";
         if (currentInput) {
           function syncPasswordFields() {
             var hasCurrent = currentInput.value.length > 0;
@@ -281,6 +303,15 @@
           syncPasswordFields();
 
           form.addEventListener("submit", function (e) {
+            // AUTH-11: 이메일을 바꾸는 경우 현재 비밀번호가 필요하다 (서버에서도 다시 확인)
+            var emailNeedsPasswordMsg = document.getElementById("emailNeedsPasswordMsg");
+            if (emailHiddenInput && emailHiddenInput.value !== initialEmail && !currentInput.value) {
+              e.preventDefault();
+              emailNeedsPasswordMsg.style.display = "block";
+              currentInput.focus();
+              return;
+            }
+            emailNeedsPasswordMsg.style.display = "none";
             if (newInput.value && newInput.value !== confirmInput.value) {
               e.preventDefault();
               mismatchMsg.style.display = "block";

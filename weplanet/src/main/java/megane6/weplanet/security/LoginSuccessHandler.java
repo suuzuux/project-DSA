@@ -70,11 +70,12 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				return;
 			}
 		} else {
-			// 일반 팬 로그인(/login, /login/id): 아티스트·에이전시 계정 차단
+			// 일반 팬 로그인(/login, /login/id): 아티스트·에이전시·관리자 계정 차단
+			// (AUTH-11: 관리자도 관리자 로그인 화면(/admin/login)으로만 로그인하도록 ROLE_ADMIN 추가)
 			// 역할 정보는 노출하지 않고, 일반 로그인 실패와 동일한 화면으로 보낸다.
 			String roleName = principal.getRoleName();
 			if ("ROLE_ARTIST".equals(roleName) || "ROLE_AGENCY".equals(roleName)
-					|| "ROLE_ARTIST_MEMBER".equals(roleName)) {
+					|| "ROLE_ARTIST_MEMBER".equals(roleName) || "ROLE_ADMIN".equals(roleName)) {
 				clearAuthentication(request);
 				getRedirectStrategy().sendRedirect(request, response, "/login/id?error");
 				return;

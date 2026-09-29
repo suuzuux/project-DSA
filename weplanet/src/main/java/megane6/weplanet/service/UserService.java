@@ -122,13 +122,24 @@ public class UserService {
 				throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
 			}
 		}
-		if (!trimmedEmail.equals(user.getEmail())) {
+		boolean emailChanged = !trimmedEmail.equals(user.getEmail());
+		if (emailChanged) {
 			// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 이제 연동 여부와
 			// 등록 이메일은 서로 독립적인 값이라, 제공자와 무관하게 누구나 인증 절차만 거치면 바꿀 수 있다.
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
 			if (!newEmailVerified) {
 				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
+			}
+			// AUTH-11: 비밀번호가 있는 계정은 이메일을 바꿀 때 현재 비밀번호를 다시 확인한다.
+			// 이메일이 바뀌면 아이디/비밀번호 찾기가 새 이메일로 가기 때문에, 로그인된 브라우저를 잠깐 쓴 사람이
+			// 이메일을 바꿔 계정을 가져가는 것을 막기 위함. 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가
+			// 없으므로 기존처럼 새 이메일 인증만 거친다.
+			if (user.hasPassword()
+					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
+				throw new IllegalArgumentException(hasText(currentPassword)
+						? "현재 비밀번호가 일치하지 않습니다."
+						: "이메일을 변경하려면 현재 비밀번호를 입력해주세요.");
 			}
 			if (userRepository.existsByEmail(trimmedEmail)) {
 				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
@@ -142,7 +153,9 @@ public class UserService {
 		// 비밀번호 변경/등록은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
 		// 화면(JS)에서는 현재 비밀번호를 입력해야 새 비밀번호 칸이 열리지만, 서버에서도 한 번 더 검증한다
 		// (JS를 우회해서 직접 요청을 보내는 경우를 막기 위함).
-		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
+		// AUTH-11: 이메일 변경 확인용으로 현재 비밀번호만 입력한 경우는 비밀번호 변경 시도로 보지 않는다.
+		boolean wantsPasswordChange = hasText(newPassword) || hasText(confirmPassword)
+				|| (hasText(currentPassword) && !emailChanged);
 		if (wantsPasswordChange) {
 			// AUTH-10: provider가 아니라 "지금 비밀번호가 있는지"로 판단한다. 비밀번호가 이미 있는 계정만
 			// 현재 비밀번호 확인을 거치고, 비밀번호가 아직 없던 계정(소셜 전용 가입)은 새로 등록하는
@@ -175,8 +188,15 @@ public class UserService {
 
 	// [회원탈퇴] 상태 변경(WITHDRAWN)/개인정보 익명화는 User.withdraw() 참고.
 	// 거기서 못 지우는(다른 테이블 걸쳐있는) 것들 - 가입해둔 커뮤니티, 팔로우 관계 - 은 여기서 정리한다.
+	// AUTH-11: 비밀번호가 있는 계정은 현재 비밀번호가 맞아야 탈퇴된다 (소셜 전용 계정은 확인할 비밀번호가 없어 생략).
 	@Transactional
-	public void withdraw(User user) {
+	public void withdraw(User user, String currentPassword) {
+		if (user.hasPassword()
+				&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
+			throw new IllegalArgumentException(hasText(currentPassword)
+					? "현재 비밀번호가 일치하지 않아 탈퇴하지 않았습니다."
+					: "탈퇴하려면 현재 비밀번호를 입력해주세요.");
+		}
 		user.withdraw();
 
 		// 가입해둔 커뮤니티는 CommunityJoinService.leave()로 하나씩 탈퇴 처리 - 프로필/이미지 파일 정리와
