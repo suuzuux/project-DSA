@@ -76,6 +76,8 @@ public class SecurityConfig {
             "/css/**",
             "/js/**",
             "/img/**",
+            // 브라우저 탭 아이콘 - 로그인 전 화면에서도 브라우저가 자동으로 요청한다
+            "/favicon.ico",
             "/signup-wireframe",
             "/login-wireframe",
             "/oauth2/authorization/**",

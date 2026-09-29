@@ -1639,7 +1639,11 @@
   }
 
   function init() {
-    persistLang(getLang());
+    // 화면 언어의 기준은 서버 세션 로케일(<html lang> = th:lang). localStorage 에 예전 값이 남아 있으면
+    // 로그인 화면·설정·다른 기기에서 바꾼 언어와 어긋나서, 페이지는 일본어인데 캘린더·알림·헤더 아이콘만
+    // 한국어로 나오고 <html lang>까지 ko 로 덮어쓰던 문제가 있었다 → 서버가 내려준 언어로 맞춘다.
+    var serverLang = (document.documentElement.getAttribute("lang") || "").toLowerCase().slice(0, 2);
+    persistLang(LANGUAGES.some(function (l) { return l.code === serverLang; }) ? serverLang : getLang());
     injectRoot();
     ensureHeaderIcons();
     bindHeaderIcons();
