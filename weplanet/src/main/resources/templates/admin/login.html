@@ -6,28 +6,11 @@
   <title>ADMIN LOGIN | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
-  <style>
-    .lang-menu__item { display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; border-radius:8px; cursor:pointer; font-size:14px; color:#333; font-family:inherit; }
-    .lang-menu__item:hover { background:#f2f2f2; }
-  </style>
 </head>
 
 <body class="admin-login">
 
-<!-- 언어 전환: 로그인 전이라 헤더/사이드바가 없어서 화면 우상단에 고정 배치. 클릭하면 한국어/日本語/English 메뉴가 뜨고, 항목 선택 시 그 언어로 전환 -->
-<div style="position:fixed;top:20px;right:20px;z-index:50;">
-  <button type="button" class="icon-btn" id="langToggleBtn" data-icon="language"
-          th:aria-label="#{layout.header.languageLabel}" aria-haspopup="true" aria-expanded="false">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-  </button>
-  <div id="langMenu" hidden
-       style="position:absolute;top:48px;right:0;min-width:128px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;">
-    <button type="button" class="lang-menu__item" data-lang="ko">한국어</button>
-    <button type="button" class="lang-menu__item" data-lang="ja">日本語</button>
-    <button type="button" class="lang-menu__item" data-lang="en">English</button>
-  </div>
-</div>
-
+<!-- 관리자 화면은 한국어 고정이라 언어 전환 버튼을 두지 않는다 (PreferredLocaleResolver 참고) -->
 <div class="admin-login__split">
 
 
@@ -176,40 +159,5 @@
 
 </div>
 
-<script>
-  (function () {
-    var btn = document.getElementById("langToggleBtn");
-    var menu = document.getElementById("langMenu");
-    if (!btn || !menu) return;
-
-    function closeMenu() {
-      menu.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    }
-
-    btn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      var willOpen = menu.hidden;
-      menu.hidden = !willOpen;
-      btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
-    });
-
-    menu.querySelectorAll("[data-lang]").forEach(function (item) {
-      item.addEventListener("click", function () {
-        fetch("/language", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "language=" + encodeURIComponent(item.getAttribute("data-lang").toUpperCase())
-        }).finally(function () {
-          window.location.reload();
-        });
-      });
-    });
-
-    document.addEventListener("click", function (e) {
-      if (!menu.hidden && !menu.contains(e.target) && e.target !== btn) closeMenu();
-    });
-  })();
-</script>
 </body>
 </html>

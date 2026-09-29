@@ -9,6 +9,7 @@ import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.security.ArtistProfileLoginSupport;
 import megane6.weplanet.security.SocialLoginSessionSupport;
+import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.portal.ArtistProfileLoginService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Locale;
 
 /*
 	아티스트 2단계 로그인 - 프로필 선택 화면 (와이어프레임 51쪽)
@@ -35,6 +38,7 @@ public class ArtistProfileLoginController {
 	private final ArtistProfileLoginService profileLoginService;
 	private final SocialLoginSessionSupport sessionSupport;
 	private final LocaleResolver localeResolver;
+	private final UserService userService;
 	private final Messages messages;
 	
 	@GetMapping
@@ -89,9 +93,17 @@ public class ArtistProfileLoginController {
 		// 로그인 직전에 세션 id 를 바꾼다 (세션 고정 공격 방지 - 폼 로그인은 Spring Security 가 해주지만 여기선 직접)
 		request.changeSessionId();
 		sessionSupport.loginAs(member, request, response);
-		// SETTINGS-03 로케일 버그#2 유형 수정: 프로필 선택도 로그인을 새로 여는 지점이라,
-		// 다른 로그인 성공 처리와 똑같이 세션 로케일을 이 멤버의 선호 언어로 맞춘다.
-		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(member.getPreferredLanguage()));
+		// SETTINGS-03 로케일 버그#2 유형 수정: 프로필 선택도 로그인을 새로 여는 지점이라 세션 로케일을 다시 맞춘다.
+		// 포털 로그인 화면에서 언어를 골랐으면(LoginSuccessHandler 가 넘겨준 표시) 그 언어를 유지하고 멤버 계정에 저장,
+		// 아니면 이 멤버의 선호 언어로 보여준다.
+		if (PreferredLocaleResolver.hasExplicitChoice(request)) {
+			Locale chosen = localeResolver.resolveLocale(request);
+			userService.updateLanguage(member, PreferredLocaleResolver.toLanguage(chosen));
+			localeResolver.setLocale(request, response, chosen);
+			PreferredLocaleResolver.clearExplicitChoice(request);
+		} else {
+			localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(member.getPreferredLanguage()));
+		}
 		
 		return "redirect:/community/" + groupId + "/highlight";
 	}

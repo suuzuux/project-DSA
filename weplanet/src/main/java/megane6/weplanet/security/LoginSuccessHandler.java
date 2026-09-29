@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.LocaleResolver;
 
 import java.io.IOException;
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -42,6 +43,11 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
 		boolean portalLogin = "true".equals(request.getParameter("portalLogin"));
 		boolean adminLogin = "true".equals(request.getParameter("adminLogin"));
+		// 포털(아티스트/에이전시) 로그인 화면에서 직접 고른 언어. 아래 clearAuthentication 이 세션을 버리기 전에
+		// 미리 읽어 둔다. 팬 로그인은 지금처럼 계정에 저장된 선호 언어를 따르고, 관리자는 항상 한국어다.
+		Locale chosenLocale = portalLogin && PreferredLocaleResolver.hasExplicitChoice(request)
+				? localeResolver.resolveLocale(request)
+				: null;
 
 		// 포털 로그인: 아티스트/에이전시 전용. 선택 탭과 실제 역할이 일치해야 함.
 		if (portalLogin) {
@@ -81,9 +87,16 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				&& groupMemberRepository.existsByGroupIdAndLeftAtIsNull(principal.getId())) {
 			clearAuthentication(request);
 			ArtistProfileLoginSupport.begin(request.getSession(true), principal.getId());
-			// 세션을 새로 만들면서 로케일도 사라지므로, 프로필 선택 화면이 그룹 계정의 선호 언어로 나오게 다시 넣는다.
-			userRepository.findOneById(principal.getId()).ifPresent(group ->
-					localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(group.getPreferredLanguage())));
+			// 세션을 새로 만들면서 로케일도 사라지므로 다시 넣는다. 로그인 화면에서 고른 언어가 있으면 그 언어를
+			// 프로필 선택 단계까지 이어서 넘기고(멤버 계정에 저장은 ArtistProfileLoginController 가 한다),
+			// 없으면 그룹 계정의 선호 언어로 보여준다.
+			if (chosenLocale != null) {
+				localeResolver.setLocale(request, response, chosenLocale);
+				PreferredLocaleResolver.markExplicitChoice(request);
+			} else {
+				userRepository.findOneById(principal.getId()).ifPresent(group ->
+						localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(group.getPreferredLanguage())));
+			}
 			getRedirectStrategy().sendRedirect(request, response, "/portal/profiles");
 			return;
 		}
@@ -93,9 +106,21 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 			if (user.getRole() == Role.AGENCY) {
 				agencyEnrollmentService.enrollManagedArtists(user);
 			}
-			// SETTINGS-03 로케일 버그#2 수정: 세션 로케일은 기본값(한국어)로 시작해서, DB에 저장된
-			// 선호 언어를 골라도 재로그인 전까지는 화면이 계속 한국어로 나왔다.
-			localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
+			if (user.getRole() == Role.ADMIN) {
+				// 관리자는 한국어 고정
+				localeResolver.setLocale(request, response, Locale.KOREAN);
+			} else if (chosenLocale != null) {
+				// 아티스트/에이전시: 포털 로그인 화면에서 고른 언어를 유지하고 계정 선호 언어로 저장한다.
+				// (포털 화면에는 로그인 후 언어 메뉴가 없어서, 예전엔 아래 DB 값(대부분 KO)으로 덮어써져
+				//  로그인 화면에서만 언어가 바뀌고 로그인 후엔 계속 한국어로 나왔다)
+				user.changePreferredLanguage(PreferredLocaleResolver.toLanguage(chosenLocale));
+				localeResolver.setLocale(request, response, chosenLocale);
+				PreferredLocaleResolver.clearExplicitChoice(request);
+			} else {
+				// SETTINGS-03 로케일 버그#2 수정: 세션 로케일은 기본값(한국어)로 시작해서, DB에 저장된
+				// 선호 언어를 골라도 재로그인 전까지는 화면이 계속 한국어로 나왔다.
+				localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
+			}
 		});
 
 		getRedirectStrategy().sendRedirect(request, response, RoleHomeRedirects.pathFor(principal));
