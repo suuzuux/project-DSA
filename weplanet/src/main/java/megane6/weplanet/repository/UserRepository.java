@@ -156,11 +156,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // [휴면계정] 팬(FAN) 계정만 대상. 최근 로그인 기록(없으면 가입일) 기준으로
     // 휴면 전환 대상인 ACTIVE 유저 조회
+    // AUTH-11: 사전 안내 메일을 보낸 지 30일(noticeThreshold)이 지난 사람만 전환한다.
+    // 예전에는 안내 발송일을 보지 않아서, 첫 배포일이나 서버가 꺼져 있다 켜진 날에는 안내 메일과
+    // 휴면 전환이 같은 실행 안에서 한꺼번에 일어났다.
     @Query("""
         SELECT u FROM User u
         WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
           AND u.role = megane6.weplanet.domain.entity.enumfolder.Role.FAN
           AND COALESCE(u.lastLoginAt, u.createdAt) <= :threshold
+          AND u.dormantNoticeSentAt IS NOT NULL
+          AND u.dormantNoticeSentAt <= :noticeThreshold
     """)
-    List<User> findActiveUsersDueForDormantConversion(@Param("threshold") LocalDateTime threshold);
+    List<User> findActiveUsersDueForDormantConversion(@Param("threshold") LocalDateTime threshold,
+                                                      @Param("noticeThreshold") LocalDateTime noticeThreshold);
 }

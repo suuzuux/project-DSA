@@ -11,7 +11,6 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.email.MarketingConsentEmailService;
-import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,7 +29,6 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
-	private final SignupEmailVerificationService emailVerificationService;
 	private final MarketingConsentEmailService marketingConsentEmailService;
 	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
 	private final CommunityJoinService communityJoinService;
@@ -103,7 +101,9 @@ public class UserService {
 	// 반환하는 AuthenticatedUser는 호출한 컨트롤러가 SecurityContext를 즉시 갱신할 때 씀 -
 	// 안 그러면 세션에 남아있는 예전 닉네임 때문에 재로그인 전까지 헤더가 안 바뀜.
 	@Transactional
+	// newEmailVerified: 컨트롤러가 "이 세션에서 이메일 변경 용도로 인증을 마쳤는지" 확인해서 넘겨준다 (AUTH-11)
 	public AuthenticatedUser updatePortalAccount(User user, String nickname, String realName, String email,
+												  boolean newEmailVerified,
 												  String currentPassword, String newPassword, String confirmPassword) {
 		String trimmedNickname = nickname == null ? "" : nickname.trim();
 		String trimmedRealName = realName == null ? "" : realName.trim();
@@ -127,14 +127,13 @@ public class UserService {
 			// 등록 이메일은 서로 독립적인 값이라, 제공자와 무관하게 누구나 인증 절차만 거치면 바꿀 수 있다.
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
-			if (!emailVerificationService.isVerified(trimmedEmail)) {
+			if (!newEmailVerified) {
 				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
 			}
 			if (userRepository.existsByEmail(trimmedEmail)) {
 				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
 			}
 			user.changePortalProfile(trimmedNickname, trimmedEmail);
-			emailVerificationService.clear(trimmedEmail);
 		} else {
 			user.changePortalProfile(trimmedNickname, user.getEmail());
 		}

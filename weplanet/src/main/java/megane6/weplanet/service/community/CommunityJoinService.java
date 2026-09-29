@@ -67,8 +67,9 @@ public class CommunityJoinService {
 				.artistId(artistId)
 				.build());
 		
-		String avatarStoredName = (avatar != null && !avatar.isEmpty()) ? fileStorageService.store(avatar) : null;
-		String backgroundStoredName = (background != null && !background.isEmpty()) ? fileStorageService.store(background) : null;
+		// AUTH-11: 이미지 형식(jpg/png/gif/webp)·크기 검증 후 서버가 정한 확장자로 저장
+		String avatarStoredName = (avatar != null && !avatar.isEmpty()) ? fileStorageService.storeImage(avatar) : null;
+		String backgroundStoredName = (background != null && !background.isEmpty()) ? fileStorageService.storeImage(background) : null;
 		
 		communityProfileRepository.save(CommunityProfile.builder()
 				.communityMember(member)
@@ -135,10 +136,12 @@ public class CommunityJoinService {
 			}
 			profile.setAvatarStoredName(null);
 		} else if (avatar != null && !avatar.isEmpty()) {
+			// AUTH-11: 새 파일을 먼저 저장(검증)하고 나서 옛 파일을 지운다 - 검증에 실패하면 기존 사진이 그대로 남도록
+			String newAvatar = fileStorageService.storeImage(avatar);
 			if (profile.getAvatarStoredName() != null) {
 				fileStorageService.delete(profile.getAvatarStoredName());
 			}
-			profile.setAvatarStoredName(fileStorageService.store(avatar));
+			profile.setAvatarStoredName(newAvatar);
 		}
 		
 		if (removeBackground) {
@@ -147,10 +150,11 @@ public class CommunityJoinService {
 			}
 			profile.setBackgroundStoredName(null);
 		} else if (background != null && !background.isEmpty()) {
+			String newBackground = fileStorageService.storeImage(background);
 			if (profile.getBackgroundStoredName() != null) {
 				fileStorageService.delete(profile.getBackgroundStoredName());
 			}
-			profile.setBackgroundStoredName(fileStorageService.store(background));
+			profile.setBackgroundStoredName(newBackground);
 		}
 		
 		profile.setContentHidden(contentHidden);

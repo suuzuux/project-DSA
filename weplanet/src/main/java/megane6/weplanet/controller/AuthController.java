@@ -1,11 +1,13 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.RoleHomeRedirects;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.util.NicknameGenerator;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -66,20 +68,21 @@ public class AuthController {
 	@PostMapping("/signup")
 	public String signup(@Valid @ModelAttribute SignupRequestDto signupRequestDto,
 						 BindingResult bindingResult,
-						 Model model) {
+						 Model model,
+						 HttpSession session) {
 		if (bindingResult.hasErrors()) {
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
 		// 화면(JS)에서 인증코드 확인을 막아두지만, 직접 POST를 보내는 우회를 막기 위해 서버에서도 확인한다
-		if (!emailVerificationService.isVerified(signupRequestDto.getEmail())) {
+		if (!emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail())) {
 			model.addAttribute("errorMessage", "이메일 인증을 먼저 완료해주세요.");
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
 		try {
 			userService.signup(signupRequestDto);
-			emailVerificationService.clear(signupRequestDto.getEmail());
+			emailVerificationService.clear(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
 			model.addAttribute("errorMessage", e.getMessage());
 			fillNicknameIfBlank(signupRequestDto);

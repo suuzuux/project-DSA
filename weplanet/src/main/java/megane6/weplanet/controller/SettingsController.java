@@ -12,6 +12,9 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
+import megane6.weplanet.service.email.VerificationPurpose;
+import megane6.weplanet.service.email.VerificationRateLimitException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -54,11 +57,16 @@ public class SettingsController {
 								@RequestParam(required = false) String currentPassword,
 								@RequestParam(required = false) String newPassword,
 								@RequestParam(required = false) String confirmPassword,
+								HttpSession session,
 								RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
 		try {
+			// AUTH-11: 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
+			boolean newEmailVerified = emailVerificationService.isVerified(session, VerificationPurpose.EMAIL_CHANGE, email);
 			AuthenticatedUser refreshed = userService.updatePortalAccount(
-					user, nickname, realName, email, currentPassword, newPassword, confirmPassword);
+					user, nickname, realName, email, newEmailVerified, currentPassword, newPassword, confirmPassword);
+			// 저장까지 모두 성공한 뒤에 인증을 지운다 (비밀번호 검증 등에서 실패하면 인증을 다시 받지 않아도 되게)
+			emailVerificationService.clear(session, VerificationPurpose.EMAIL_CHANGE, email);
 			Authentication current = SecurityContextHolder.getContext().getAuthentication();
 			Authentication updated = new UsernamePasswordAuthenticationToken(
 					refreshed, current.getCredentials(), refreshed.getAuthorities());
@@ -75,7 +83,8 @@ public class SettingsController {
 	@PostMapping("/settings/email/code")
 	@ResponseBody
 	public Map<String, Object> sendEmailChangeCode(@AuthenticationPrincipal AuthenticatedUser principal,
-													@RequestParam String newEmail) {
+													@RequestParam String newEmail,
+													HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
 		String trimmed = newEmail == null ? "" : newEmail.trim();
@@ -98,9 +107,12 @@ public class SettingsController {
 			return result;
 		}
 		try {
-			emailVerificationService.sendVerificationCode(trimmed);
+			emailVerificationService.sendVerificationCode(session, VerificationPurpose.EMAIL_CHANGE, trimmed);
 			result.put("success", true);
 			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+		} catch (VerificationRateLimitException e) {
+			result.put("success", false);
+			result.put("message", e.getMessage());
 		} catch (Exception e) {
 			log.error("[회원정보 수정] 이메일 변경 인증코드 발송 실패 (to={})", trimmed, e);
 			result.put("success", false);
@@ -111,11 +123,12 @@ public class SettingsController {
 
 	@PostMapping("/settings/email/verify")
 	@ResponseBody
-	public Map<String, Object> verifyEmailChangeCode(@RequestParam String newEmail, @RequestParam String code) {
+	public Map<String, Object> verifyEmailChangeCode(@RequestParam String newEmail, @RequestParam String code,
+													  HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		boolean verified = emailVerificationService.verifyCode(newEmail, code);
-		result.put("success", verified);
-		result.put("message", verified ? "이메일 인증이 완료되었습니다." : "인증코드가 일치하지 않거나 만료되었습니다.");
+		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.EMAIL_CHANGE, newEmail, code);
+		result.put("success", verified.isSuccess());
+		result.put("message", verified.isSuccess() ? "이메일 인증이 완료되었습니다." : verified.failureMessage());
 		return result;
 	}
 
