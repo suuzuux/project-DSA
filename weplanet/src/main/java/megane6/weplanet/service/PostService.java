@@ -4,15 +4,16 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
+import megane6.weplanet.domain.event.FanPostCreatedEvent;
 import megane6.weplanet.repository.*;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -129,9 +130,13 @@ public class PostService {
         // [배지] 팬 게시판 글만 "첫 게시글" 배지 대상
         if (boardType == BoardType.FAN && artist != null) {
             eventPublisher.publishEvent(new BadgeActivityEvent(
-                    author.getId(), artist.getId(), BadgeActivityEvent.Activity.POST_CREATED
+                    author.getId(), artist.getId(),
+                    BadgeActivityEvent.Activity.POST_CREATED
             ));
+            // [해시태그 총공] 진행 중인 총공의 해시태그가 들어간 글인지는 HashtagEventPostListener가 판단
+            eventPublisher.publishEvent(new FanPostCreatedEvent(saved.getId()));
         }
+        
         return saved;
     }
 

@@ -13,20 +13,16 @@ import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.PostService;
-import megane6.weplanet.service.community.CommunityJoinService;
-import megane6.weplanet.service.portal.PortalManagementService;
 import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.event.HashtagEventPageService;
+import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Controller
@@ -42,6 +38,7 @@ public class HomeController {
 	private final ArtistAttendanceService artistAttendanceService;
 	private final PortalManagementService portalManagementService;
 	private final megane6.weplanet.service.MainBannerService mainBannerService;
+	private final HashtagEventPageService hashtagEventPageService; // [해시태그 총공] 홈 캐러셀 맨 앞 자동 슬라이드
 	
 	@GetMapping({"", "/"})
 	public String home(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -54,6 +51,8 @@ public class HomeController {
 		model.addAttribute("artists", artists);
 		// 상단 배너 - 최고관리자가 [배너 영역 관리]에서 노출 중으로 둔 배너. 비어 있으면 화면이 기본 배너를 보여준다
 		model.addAttribute("mainBanners", mainBannerService.activeSlides());
+		// [해시태그 총공] 진행 중(또는 예정·결과 발표) 총공이 있으면 캐러셀 맨 앞에 붙는 슬라이드. 없으면 null
+		model.addAttribute("hashtagBanner", hashtagEventPageService.getHomeBanner().orElse(null));
 		
 		Map<Long, CommunityProfile> joinedProfiles;
 		Set<Long> joinedArtistIds;

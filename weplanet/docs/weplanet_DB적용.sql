@@ -1076,6 +1076,55 @@ CREATE TABLE IF NOT EXISTS `main_banner` (
   CONSTRAINT `ck_main_banner_type` CHECK (`banner_type` IN (_utf8mb4'COMMUNITY', _utf8mb4'PRODUCT'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='메인 페이지 상단 배너';
 
+-- hashtag_event: 해시태그 총공 이벤트 (최고관리자 > 이벤트 > 해시태그 총공). 상태는 저장하지 않고 기간·finalized_at 으로 계산
+CREATE TABLE IF NOT EXISTS `hashtag_event` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '이벤트 PK',
+  `title` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '이벤트명',
+  `start_at` datetime(6) NOT NULL COMMENT '시작 시각(시작일 00:00:00)',
+  `end_at` datetime(6) NOT NULL COMMENT '종료 시각(종료일 23:59:59)',
+  `finalized_at` datetime(6) DEFAULT NULL COMMENT '집계 확정 시각(NULL=미확정)',
+  `created_by` bigint NOT NULL COMMENT '만든 관리자(users.id)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_hashtag_event_period` (`start_at`, `end_at`),
+  CONSTRAINT `fk_hashtag_event_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 이벤트';
+
+-- hashtag_event_target: 이벤트에 참여하는 아티스트와 집계할 해시태그 (+ 집계 확정 시 결과 고정)
+CREATE TABLE IF NOT EXISTS `hashtag_event_target` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '참여 아티스트 PK',
+  `event_id` bigint NOT NULL COMMENT 'hashtag_event.id',
+  `artist_id` bigint NOT NULL COMMENT '참여 아티스트 커뮤니티(users.id)',
+  `hashtag` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '집계할 해시태그(# 포함)',
+  `final_member_count` int DEFAULT NULL COMMENT '[확정] 가입자 수',
+  `final_participant_count` int DEFAULT NULL COMMENT '[확정] 참여 인원',
+  `final_post_count` int DEFAULT NULL COMMENT '[확정] 인정된 글 수',
+  `final_rank` int DEFAULT NULL COMMENT '[확정] 참여율 순위',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_hashtag_target_event_artist` (`event_id`, `artist_id`),
+  KEY `idx_hashtag_target_artist` (`artist_id`),
+  CONSTRAINT `fk_hashtag_target_event` FOREIGN KEY (`event_id`) REFERENCES `hashtag_event` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hashtag_target_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 참여 아티스트';
+
+-- hashtag_event_entry: 해시태그가 들어간 팬 게시글 기록 (인정/제외 사유 포함, 글 1개당 1행). 글이 삭제되면 같이 삭제
+CREATE TABLE IF NOT EXISTS `hashtag_event_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '집계 기록 PK',
+  `target_id` bigint NOT NULL COMMENT 'hashtag_event_target.id',
+  `post_id` bigint NOT NULL COMMENT '해시태그가 들어간 게시글(post.id)',
+  `fan_id` bigint NOT NULL COMMENT '작성 팬(users.id)',
+  `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'COUNTED/DAILY_LIMIT/HIDDEN_FROM_ARTIST/NOT_MEMBER',
+  `created_at` datetime(6) NOT NULL COMMENT '글 작성 시각(1인 1일 3건 판정 기준)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_hashtag_entry_post` (`post_id`),
+  KEY `idx_hashtag_entry_target_fan` (`target_id`, `fan_id`, `created_at`),
+  CONSTRAINT `fk_hashtag_entry_target` FOREIGN KEY (`target_id`) REFERENCES `hashtag_event_target` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hashtag_entry_post` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hashtag_entry_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_hashtag_entry_status` CHECK (`status` IN (_utf8mb4'COUNTED', _utf8mb4'DAILY_LIMIT', _utf8mb4'HIDDEN_FROM_ARTIST', _utf8mb4'NOT_MEMBER'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 게시글 집계 기록';
+
 -- ============================================================
 -- [2] 기존 테이블에 없는 컬럼 추가
 -- ============================================================
@@ -2322,7 +2371,29 @@ INSERT INTO `wp_expected_columns` VALUES
   ('main_banner', 'sort_order', 'int'),
   ('main_banner', 'created_by', 'bigint'),
   ('main_banner', 'created_at', 'datetime'),
-  ('main_banner', 'updated_at', 'datetime');
+  ('main_banner', 'updated_at', 'datetime'),
+  ('hashtag_event', 'id', 'bigint'),
+  ('hashtag_event', 'title', 'varchar'),
+  ('hashtag_event', 'start_at', 'datetime'),
+  ('hashtag_event', 'end_at', 'datetime'),
+  ('hashtag_event', 'finalized_at', 'datetime'),
+  ('hashtag_event', 'created_by', 'bigint'),
+  ('hashtag_event', 'created_at', 'datetime'),
+  ('hashtag_event', 'updated_at', 'datetime'),
+  ('hashtag_event_target', 'id', 'bigint'),
+  ('hashtag_event_target', 'event_id', 'bigint'),
+  ('hashtag_event_target', 'artist_id', 'bigint'),
+  ('hashtag_event_target', 'hashtag', 'varchar'),
+  ('hashtag_event_target', 'final_member_count', 'int'),
+  ('hashtag_event_target', 'final_participant_count', 'int'),
+  ('hashtag_event_target', 'final_post_count', 'int'),
+  ('hashtag_event_target', 'final_rank', 'int'),
+  ('hashtag_event_entry', 'id', 'bigint'),
+  ('hashtag_event_entry', 'target_id', 'bigint'),
+  ('hashtag_event_entry', 'post_id', 'bigint'),
+  ('hashtag_event_entry', 'fan_id', 'bigint'),
+  ('hashtag_event_entry', 'status', 'varchar'),
+  ('hashtag_event_entry', 'created_at', 'datetime');
 
 SELECT e.`table_name`, e.`column_name`, e.`data_type` AS expected_type, c.DATA_TYPE AS actual_type,
        CASE

@@ -61,6 +61,8 @@ public class SecurityConfig {
             "/board/**",
             "/notices",
             "/notices/**",
+            // 해시태그 총공 공개 페이지 - 홈 배너로 비로그인도 들어온다
+            "/events/**",
             "/shop",
             "/shop/**",
             // 토스 입금 웹훅 - 토스 서버가 호출하므로 로그인 없음 (secret 값으로 검증)

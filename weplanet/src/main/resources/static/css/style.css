@@ -2083,3 +2083,20 @@ span.chip {
   padding-top: 14px;
   border-top: 1px solid var(--wp-hairline, #e5e5e5);
 }
+
+
+/* [해시태그 총공] 홈 캐러셀 맨 앞 자동 슬라이드 (index.html) */
+.hashtag-home-slide {
+  color: #fff;
+  text-decoration: none;
+  background:
+    linear-gradient(180deg, transparent 20%, rgba(0, 0, 0, 0.45) 100%),
+    linear-gradient(120deg, #6b2d4a 0%, #b4577a 55%, #f7c8d3 140%);
+}
+
+.hashtag-home-slide__body {
+  margin-top: 8px;
+  font-size: var(--wp-fs-sm);
+  font-weight: 700;
+  opacity: 0.9;
+}

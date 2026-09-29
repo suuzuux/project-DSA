@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- 진행 중일 때만 30초마다 페이지 전체를 새로고침 (JS 없이 가장 간단한 "실시간") -->
+  <meta th:if="${dashboard.ongoing()}" http-equiv="refresh" content="30" />
+  <title th:text="${dashboard.title()} + ' 모니터링 | WePlaNet ADMIN'">해시태그 총공 모니터링 | WePlaNet ADMIN</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+<div class="portal-shell">
+
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <details class="portal-sidebar__group">
+        <summary>
+          <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+        </summary>
+        <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+      </details>
+      <details class="portal-sidebar__group">
+        <summary>
+          <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+        </summary>
+        <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+      </details>
+      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+      <details class="portal-sidebar__group" open>
+        <summary>
+          <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+        </summary>
+        <a class="portal-sidebar__sub is-active" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+      </details>
+      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+        <button type="submit" class="btn">🚪 로그아웃</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="portal-main" th:with="d=${dashboard}">
+    <div class="portal-main__head">
+      <div>
+        <p class="text-xs text-muted">
+          <a th:href="@{/admin/events/hashtag}">해시태그 총공</a> › 모니터링
+        </p>
+        <h1>
+          <span th:text="${d.title()}">9월 해시태그 총공</span>
+          <span class="tag" style="vertical-align:middle;"
+                th:classappend="${d.statusTagClass()}"
+                th:text="${d.status().displayName}">진행 중</span>
+        </h1>
+        <p class="text-sm text-muted">
+          <span th:text="${#temporals.format(d.startAt(), 'yyyy.MM.dd HH:mm')}">2026.09.22 00:00</span>
+          ~
+          <span th:text="${#temporals.format(d.endAt(), 'yyyy.MM.dd HH:mm')}">2026.09.28 23:59</span>
+          <th:block th:if="${d.ongoing()}"> · 30초마다 자동 새로고침</th:block>
+          <th:block th:if="${d.finalized()}"
+                    th:text="' · ' + ${#temporals.format(d.finalizedAt(), 'yyyy.MM.dd HH:mm')} + ' 집계 확정 (아래 숫자는 확정 시점 기준으로 고정)'"></th:block>
+        </p>
+      </div>
+
+      <div class="flex-center">
+        <!-- 공개 이벤트 페이지 (5단계에서 만든다) -->
+        <a class="btn btn--ghost btn--sm" th:href="@{/events/hashtag}" target="_blank">공개 페이지 ↗</a>
+
+        <!-- 종료 후, 확정 전에만 -->
+        <form th:if="${d.finalizable()}" method="post" style="margin:0;"
+              th:action="@{/admin/events/hashtag/{id}/finalize(id=${d.eventId()})}"
+              onsubmit="return confirm('지금 순위로 집계를 확정할까요? 확정하면 숫자가 고정되고 되돌릴 수 없습니다.');">
+          <button type="submit" class="btn btn--primary btn--sm">집계 확정</button>
+        </form>
+
+        <!-- 확정 후: 결과 공지 작성 (7단계에서 자동 채우기를 붙인다) -->
+        <a th:if="${d.finalized()}" class="btn btn--primary btn--sm"
+           th:href="@{/admin/notices/new(hashtagEventId=${d.eventId()})}">결과 공지 작성</a>
+      </div>
+    </div>
+
+    <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
+    <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+    <!-- 요약 숫자 -->
+    <div class="admin-stat-grid">
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--violet">🎤</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">참여 커뮤니티</span>
+          <strong class="admin-stat__value" th:text="${#lists.size(d.ranking())} + '팀'">5팀</strong>
+        </span>
+      </article>
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--green">#</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">인정된 해시태그 글</span>
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(d.totalPostCount(), 0, 'COMMA')}">3,412</strong>
+        </span>
+      </article>
+      <article class="admin-stat">
+        <span class="admin-stat__icon admin-stat__icon--blue">👥</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">총 참여 인원 (커뮤니티별 합)</span>
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(d.totalParticipantCount(), 0, 'COMMA')}">1,208</strong>
+        </span>
+      </article>
+      <article class="admin-stat admin-stat--alert">
+        <span class="admin-stat__icon admin-stat__icon--orange">🚫</span>
+        <span class="admin-stat__body">
+          <span class="admin-stat__label">제외된 글</span>
+          <strong class="admin-stat__value"
+                  th:text="${#numbers.formatInteger(d.excludedTotal(), 0, 'COMMA')}">287</strong>
+          <span class="text-xs text-muted" th:each="excluded : ${d.excludedCounts()}"
+                th:text="${excluded.key.displayName} + ' ' + ${excluded.value} + '건 '">1인 1일 3건 초과 12건</span>
+        </span>
+      </article>
+    </div>
+
+    <!-- 순위표 -->
+    <section class="panel">
+      <div class="panel__head">
+        <div>
+          <h2 class="panel__title">참여율 순위</h2>
+          <p class="text-xs text-muted">
+            참여율 = 인정된 글을 1건 이상 쓴 가입자 ÷ 가입자. 같으면 참여 인원 → 글 수 순.
+          </p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+          <tr>
+            <th>순위</th>
+            <th>아티스트</th>
+            <th>해시태그</th>
+            <th>가입자</th>
+            <th>참여 인원</th>
+            <th>참여율</th>
+            <th>인정 글 수</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:if="${#lists.isEmpty(d.ranking())}">
+            <td colspan="7" class="text-sm text-muted">참여 아티스트가 없습니다.</td>
+          </tr>
+          <tr th:each="row : ${d.ranking()}">
+            <td><strong th:text="${row.rank()}">1</strong></td>
+            <td th:text="${row.artistName()}">STELLA</td>
+            <td class="text-xs text-muted" th:text="${row.hashtag()}">#가을총공_STELLA</td>
+            <td th:text="${#numbers.formatInteger(row.memberCount(), 0, 'COMMA')}">820</td>
+            <td th:text="${#numbers.formatInteger(row.participantCount(), 0, 'COMMA')}">312</td>
+            <td style="min-width:160px;">
+              <!-- .progress 는 프로젝트 운영 화면의 모금 진행 막대와 같은 스타일 -->
+              <div class="progress" style="margin-bottom:4px;">
+                <span th:style="'width:' + ${row.participationRate()} + '%'"></span>
+              </div>
+              <span class="text-xs" th:text="${row.participationRate()} + '%'">38.0%</span>
+            </td>
+            <td th:text="${#numbers.formatInteger(row.postCount(), 0, 'COMMA')}">921</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 일자별 추이 -->
+    <section class="panel mt-16">
+      <div class="panel__head">
+        <h2 class="panel__title">일자별 인정 글 수</h2>
+      </div>
+
+      <p th:if="${#lists.isEmpty(d.dailyCounts())}" class="text-sm text-muted">
+        아직 시작 전입니다.
+      </p>
+
+      <div class="hashtag-daily" th:unless="${#lists.isEmpty(d.dailyCounts())}">
+        <div class="hashtag-daily__day" th:each="day : ${d.dailyCounts()}">
+          <span class="hashtag-daily__count" th:text="${day.count()}">52</span>
+          <span class="hashtag-daily__bar" th:style="'height:' + ${day.barPercent() * 130 / 100} + 'px'"></span>
+          <span class="hashtag-daily__date" th:text="${#temporals.format(day.date(), 'MM.dd')}">09.22</span>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
