@@ -10,6 +10,7 @@ import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
+import megane6.weplanet.service.EmailChangeAuthService;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
@@ -41,6 +42,7 @@ public class SettingsController {
 	private final UserRepository userRepository;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
+	private final EmailChangeAuthService emailChangeAuthService;
 	
 	@GetMapping("/settings")
 	public String settings(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -64,10 +66,13 @@ public class SettingsController {
 		try {
 			// AUTH-11: 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
 			boolean newEmailVerified = emailVerificationService.isVerified(session, VerificationPurpose.EMAIL_CHANGE, email);
-			AuthenticatedUser refreshed = userService.updatePortalAccount(
-					user, nickname, realName, email, newEmailVerified, phone, currentPassword, newPassword, confirmPassword);
+			// 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService)
+			boolean emailChangeAuthorized = emailChangeAuthService.isAuthorized(session, user);
+			AuthenticatedUser refreshed = userService.updatePortalAccount(user, nickname, realName, email,
+					newEmailVerified, emailChangeAuthorized, phone, currentPassword, newPassword, confirmPassword);
 			// 저장까지 모두 성공한 뒤에 인증을 지운다 (비밀번호 검증 등에서 실패하면 인증을 다시 받지 않아도 되게)
 			emailVerificationService.clear(session, VerificationPurpose.EMAIL_CHANGE, email);
+			emailChangeAuthService.clear(session);
 			Authentication current = SecurityContextHolder.getContext().getAuthentication();
 			Authentication updated = new UsernamePasswordAuthenticationToken(
 					refreshed, current.getCredentials(), refreshed.getAuthorities());
@@ -86,6 +91,26 @@ public class SettingsController {
 		return "redirect:/settings";
 	}
 	
+	// 이메일 "수정하기"를 누르면 먼저 현재 비밀번호를 확인한다. 맞으면 이 세션에 10분 동안 본인 확인 완료가 남고,
+	// 화면은 잠긴 이메일 칸을 연다. (비밀번호가 없는 소셜 전용 계정은 화면에서 이 단계를 건너뛴다)
+	@PostMapping("/settings/email/password-check")
+	@ResponseBody
+	public Map<String, Object> checkPasswordForEmailChange(@AuthenticationPrincipal AuthenticatedUser principal,
+															@RequestParam(required = false) String currentPassword,
+															HttpSession session) {
+		Map<String, Object> result = new HashMap<>();
+		User user = userResolver.requireAuthenticated(principal);
+		try {
+			emailChangeAuthService.confirmPassword(session, user, currentPassword);
+			result.put("success", true);
+			result.put("message", "확인되었습니다. 새 이메일을 입력하고 인증코드를 받아주세요.");
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			result.put("success", false);
+			result.put("message", e.getMessage());
+		}
+		return result;
+	}
+
 	@PostMapping("/settings/email/code")
 	@ResponseBody
 	public Map<String, Object> sendEmailChangeCode(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -97,6 +122,13 @@ public class SettingsController {
 
 		// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 제공자와 무관하게 누구나
 		// 이메일을 바꿀 수 있다.
+		// 현재 비밀번호 확인을 먼저 마쳐야 인증코드를 보낸다 (로그인된 브라우저로 남의 이메일에 코드를 보내는 것도 막음)
+		if (!emailChangeAuthService.isAuthorized(session, user)) {
+			result.put("success", false);
+			result.put("needsPassword", true);
+			result.put("message", "이메일을 변경하려면 먼저 현재 비밀번호를 확인해주세요.");
+			return result;
+		}
 		if (trimmed.isBlank()) {
 			result.put("success", false);
 			result.put("message", "이메일을 입력해주세요.");

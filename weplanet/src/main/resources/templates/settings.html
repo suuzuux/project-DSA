@@ -216,10 +216,19 @@
         <!-- AUTH-10: 연동된 provider와 무관하게 누구나 이메일을 바꿀 수 있다 - 잠금 예외(구글 등) 없앴음. -->
         <div class="form-row">
           <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
-          <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit">수정하기</button>
+          <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit"
+                  th:attr="data-needs-password=${user.hasPassword()}">수정하기</button>
         </div>
         <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
         <p class="form-hint">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+
+        <!-- 이메일 변경 전 본인 확인: 비밀번호가 있는 계정은 "수정하기"를 누르면 먼저 현재 비밀번호를 확인하고,
+             맞으면 잠긴 이메일 칸이 열린다 (EmailChangeAuthService). 아래 "현재 비밀번호" 칸과는 별개 - 폼으로 제출하지 않는다 -->
+        <div class="form-row mt-8" id="emailPwRow" style="display:none;align-items:center;gap:8px;">
+          <input class="form-input" type="password" id="emailPwInput" placeholder="본인 확인을 위해 현재 비밀번호를 입력하세요"
+                 autocomplete="current-password" />
+          <button type="button" class="btn btn--ghost btn--sm" id="emailPwCheckBtn">확인</button>
+        </div>
 
         <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
           <input class="form-input" id="emailCode" type="text" maxlength="6" placeholder="인증번호 6자리" autocomplete="one-time-code" />
@@ -234,8 +243,7 @@
         <div class="form-group">
           <label class="form-label">현재 비밀번호</label>
           <input class="form-input" type="password" id="currentPasswordInput" name="currentPassword"
-                 placeholder="비밀번호나 이메일을 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
-          <p class="text-xs" id="emailNeedsPasswordMsg" style="display:none;color:#c45c26;margin-top:4px;">이메일을 변경하려면 현재 비밀번호를 입력해주세요.</p>
+                 placeholder="비밀번호를 변경하려면 현재 비밀번호를 입력하세요" autocomplete="current-password" />
         </div>
         <div class="form-group">
           <label class="form-label">새 비밀번호</label>
@@ -279,8 +287,6 @@
         var confirmInput = document.getElementById("confirmPasswordInput");
         var mismatchMsg = document.getElementById("passwordMismatchMsg");
         var form = document.getElementById("editProfileForm");
-        var emailHiddenInput = document.getElementById("emailHidden");
-        var initialEmail = emailHiddenInput ? emailHiddenInput.value : "";
         if (currentInput) {
           function syncPasswordFields() {
             var hasCurrent = currentInput.value.length > 0;
@@ -297,15 +303,6 @@
           syncPasswordFields();
 
           form.addEventListener("submit", function (e) {
-            // AUTH-11: 이메일을 바꾸는 경우 현재 비밀번호가 필요하다 (서버에서도 다시 확인)
-            var emailNeedsPasswordMsg = document.getElementById("emailNeedsPasswordMsg");
-            if (emailHiddenInput && emailHiddenInput.value !== initialEmail && !currentInput.value) {
-              e.preventDefault();
-              emailNeedsPasswordMsg.style.display = "block";
-              currentInput.focus();
-              return;
-            }
-            emailNeedsPasswordMsg.style.display = "none";
             if (newInput.value && newInput.value !== confirmInput.value) {
               e.preventDefault();
               mismatchMsg.style.display = "block";
@@ -370,17 +367,93 @@
           emailEditBtn.dataset.mode = "edit";
           emailCodeRow.style.display = "none";
           stopEmailTimer();
+          hideEmailPwRow();
         }
+
+        // 이메일 변경 전 현재 비밀번호 확인 (비밀번호가 있는 계정만). 맞으면 서버 세션에 10분 동안 확인 완료가 남는다
+        var emailNeedsPassword = emailEditBtn.dataset.needsPassword === "true";
+        var emailPwRow = document.getElementById("emailPwRow");
+        var emailPwInput = document.getElementById("emailPwInput");
+        var emailPwCheckBtn = document.getElementById("emailPwCheckBtn");
+
+        function unlockEmail() {
+          emailInput.disabled = false;
+          emailInput.focus();
+          emailEditBtn.textContent = "인증코드 받기";
+          emailEditBtn.dataset.mode = "send";
+        }
+
+        function showEmailPwRow() {
+          emailInput.disabled = true;
+          emailPwRow.style.display = "flex";
+          emailPwInput.value = "";
+          emailPwInput.focus();
+          emailEditBtn.textContent = "취소";
+          emailEditBtn.dataset.mode = "cancel";
+        }
+
+        function hideEmailPwRow() {
+          emailPwRow.style.display = "none";
+          emailPwInput.value = "";
+        }
+
+        function checkEmailPassword() {
+          var pw = emailPwInput.value;
+          if (!pw) {
+            setEmailMsg("현재 비밀번호를 입력해주세요.", false);
+            emailPwInput.focus();
+            return;
+          }
+          emailPwCheckBtn.disabled = true;
+          fetch("/settings/email/password-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "currentPassword=" + encodeURIComponent(pw)
+          })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              setEmailMsg(data.message, data.success);
+              if (data.success) {
+                hideEmailPwRow();
+                unlockEmail();
+              } else {
+                emailPwInput.value = "";
+                emailPwInput.focus();
+              }
+            })
+            .catch(function () {
+              setEmailMsg("비밀번호 확인 중 오류가 발생했습니다.", false);
+            })
+            .finally(function () {
+              emailPwCheckBtn.disabled = false;
+            });
+        }
+
+        emailPwCheckBtn.addEventListener("click", checkEmailPassword);
+        // 비밀번호 칸에서 Enter 를 누르면 회원정보 폼이 제출되지 않고 비밀번호 확인만 한다
+        emailPwInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            checkEmailPassword();
+          }
+        });
 
         emailEditBtn.addEventListener("click", function () {
           var mode = emailEditBtn.dataset.mode || "edit";
 
-          if (mode === "edit") {
-            emailInput.disabled = false;
-            emailInput.focus();
-            emailEditBtn.textContent = "인증코드 받기";
-            emailEditBtn.dataset.mode = "send";
+          if (mode === "cancel") {
+            lockEmail();
             setEmailMsg("", true);
+            return;
+          }
+
+          if (mode === "edit") {
+            setEmailMsg("", true);
+            if (emailNeedsPassword) {
+              showEmailPwRow();
+            } else {
+              unlockEmail();
+            }
             return;
           }
 
@@ -405,6 +478,11 @@
             .then(function (res) { return res.json(); })
             .then(function (data) {
               setEmailMsg(data.message, data.success);
+              if (data.needsPassword) {
+                // 확인한 지 10분이 지나 서버의 본인 확인이 만료된 경우 - 다시 비밀번호부터
+                showEmailPwRow();
+                return;
+              }
               if (data.success) {
                 pendingEmail = newEmail;
                 emailInput.disabled = true;
@@ -419,7 +497,8 @@
             })
             .finally(function () {
               emailEditBtn.disabled = false;
-              emailEditBtn.textContent = "인증코드 받기";
+              // 비밀번호 재확인으로 돌아간 경우("취소" 버튼)는 문구를 덮어쓰지 않는다
+              if (emailEditBtn.dataset.mode === "send") emailEditBtn.textContent = "인증코드 받기";
             });
         });
 

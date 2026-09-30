@@ -104,8 +104,9 @@ public class UserService {
 	// 안 그러면 세션에 남아있는 예전 닉네임 때문에 재로그인 전까지 헤더가 안 바뀜.
 	@Transactional
 	// newEmailVerified: 컨트롤러가 "이 세션에서 이메일 변경 용도로 인증을 마쳤는지" 확인해서 넘겨준다 (AUTH-11)
+	// emailChangeAuthorized: 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService, 소셜 전용 계정은 항상 true)
 	public AuthenticatedUser updatePortalAccount(User user, String nickname, String realName, String email,
-												  boolean newEmailVerified, String phone,
+												  boolean newEmailVerified, boolean emailChangeAuthorized, String phone,
 												  String currentPassword, String newPassword, String confirmPassword) {
 		String trimmedNickname = nickname == null ? "" : nickname.trim();
 		String trimmedRealName = realName == null ? "" : realName.trim();
@@ -133,15 +134,13 @@ public class UserService {
 			if (!newEmailVerified) {
 				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
 			}
-			// AUTH-11: 비밀번호가 있는 계정은 이메일을 바꿀 때 현재 비밀번호를 다시 확인한다.
+			// AUTH-11: 비밀번호가 있는 계정은 이메일을 바꾸기 전에 현재 비밀번호를 다시 확인한다.
 			// 이메일이 바뀌면 아이디/비밀번호 찾기가 새 이메일로 가기 때문에, 로그인된 브라우저를 잠깐 쓴 사람이
-			// 이메일을 바꿔 계정을 가져가는 것을 막기 위함. 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가
-			// 없으므로 기존처럼 새 이메일 인증만 거친다.
-			if (user.hasPassword()
-					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
-				throw new IllegalArgumentException(hasText(currentPassword)
-						? "현재 비밀번호가 일치하지 않습니다."
-						: "이메일을 변경하려면 현재 비밀번호를 입력해주세요.");
+			// 이메일을 바꿔 계정을 가져가는 것을 막기 위함. 확인은 이메일 "수정하기"를 누를 때 따로 받고
+			// (EmailChangeAuthService), 여기서는 그 확인이 이 세션에 남아 있는지만 본다.
+			// 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어 새 이메일 인증만 거친다(항상 true 로 넘어옴).
+			if (!emailChangeAuthorized) {
+				throw new IllegalArgumentException("이메일을 변경하려면 먼저 현재 비밀번호를 확인해주세요.");
 			}
 			if (userRepository.existsByEmail(trimmedEmail)) {
 				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
@@ -166,9 +165,8 @@ public class UserService {
 		// 비밀번호 변경/등록은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
 		// 화면(JS)에서는 현재 비밀번호를 입력해야 새 비밀번호 칸이 열리지만, 서버에서도 한 번 더 검증한다
 		// (JS를 우회해서 직접 요청을 보내는 경우를 막기 위함).
-		// AUTH-11: 이메일 변경 확인용으로 현재 비밀번호만 입력한 경우는 비밀번호 변경 시도로 보지 않는다.
-		boolean wantsPasswordChange = hasText(newPassword) || hasText(confirmPassword)
-				|| (hasText(currentPassword) && !emailChanged);
+		// (이메일 변경 확인은 이제 별도로 받으므로 이 "현재 비밀번호" 칸은 비밀번호 변경 전용이다)
+		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
 		if (wantsPasswordChange) {
 			// AUTH-10: provider가 아니라 "지금 비밀번호가 있는지"로 판단한다. 비밀번호가 이미 있는 계정만
 			// 현재 비밀번호 확인을 거치고, 비밀번호가 아직 없던 계정(소셜 전용 가입)은 새로 등록하는
