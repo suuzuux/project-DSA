@@ -28,6 +28,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 	
+	// 아이디 로그인에서 가입된 아이디가 없을 때, [회원가입하기]로 넘어가면 가입 화면에 채워줄 아이디 (SecurityConfig 로그인 실패 처리)
+	public static final String SESSION_KEY_LOGIN_NOT_FOUND_USERNAME = "LOGIN_NOT_FOUND_USERNAME";
+	// 가입된 아이디가 없어서 로그인에 실패한 횟수 - 5회째에 "회원가입하시겠습니까?" 확인창을 띄운다 (SecurityConfig)
+	public static final String SESSION_KEY_LOGIN_NOT_FOUND_COUNT = "LOGIN_NOT_FOUND_COUNT";
+	public static final int LOGIN_NOT_FOUND_ASK_AT = 5;
+
 	private final UserService userService;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final NicknameGenerator nicknameGenerator;
@@ -56,8 +62,16 @@ public class AuthController {
 	}
 	
 	@GetMapping("/signup/id")
-	public String signupForm(Model model) {
+	public String signupForm(Model model, HttpSession session) {
 		SignupRequestDto dto = new SignupRequestDto();
+		// 아이디 로그인에서 "가입된 아이디가 없습니다 → 회원가입하기"로 넘어온 경우, 입력했던 아이디를 채워준다 (한 번만)
+		Object notFoundUsername = session.getAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
+		if (notFoundUsername instanceof String username) {
+			session.removeAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
+			if (username.matches("^[a-zA-Z0-9]{4,20}$")) {
+				dto.setUsername(username);
+			}
+		}
 		// 닉네임 칸을 비워두면 화면에 보여준 것과 다른, 서버가 새로 뽑은 닉네임으로 가입되던 문제 수정.
 		// 처음부터 실제로 저장될 닉네임을 미리 뽑아서 입력값으로 채워두면, 사용자가 안 건드리고 그대로
 		// 제출해도(=resolveNickname에서 "직접 입력한 닉네임"으로 처리됨) 화면에서 본 것과 똑같이 저장된다.

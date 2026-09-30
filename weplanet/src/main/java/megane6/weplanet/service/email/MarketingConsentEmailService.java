@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 // [설정 - 광고성 정보 알림] 실제 운영 시나리오는 아니고, "기능이 살아있다"는 걸 보여주기 위한 데모용 발송기.
 // 가입 완료 메일은 아이디/비밀번호든 소셜 계정이든, "(선택) 광고 및 마케팅 활용 동의" 체크 여부와 무관하게
-// 가입할 때마다 무조건 1통 보낸다. (UserService.signup(), OAuth2LoginSuccessHandler.createNewSocialUser())
+// 가입할 때마다 무조건 1통 보낸다. (UserService.signup(), SocialSignupService.signup())
 // 시나리오 ① : 아이디/비밀번호로 가입할 때 그 체크박스까지 체크했으면, 가입 완료 메일에 동의 안내 문구가
 //   붙고, 곧바로 커뮤니티 가입 유도 메일이 1통 더 간다. (UserService.signup())
 // 시나리오 ② : 체크를 안 하고 가입했거나(아이디/비밀번호) 소셜 계정으로 가입한 사람이, 나중에
