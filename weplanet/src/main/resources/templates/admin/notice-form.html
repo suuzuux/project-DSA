@@ -7,6 +7,7 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
@@ -21,7 +22,7 @@
       </div>
 
       <nav class="portal-sidebar__nav">
-        <!-- 통합 대시보드 하위 메뉴 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+        <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
         <details class="portal-sidebar__group">
           <summary>
             <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -29,17 +30,30 @@
           </summary>
           <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
         </details>
-        <a th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
-        <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+        <details class="portal-sidebar__group">
+          <summary>
+            <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
+          </summary>
+          <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
+        </details>
         <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
         <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
         <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
         <a class="is-active" th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
-        <a th:href="@{/admin/communities}" th:text="|💬 #{admin.nav.communities}|">💬 커뮤니티 운영</a>
+        <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
+        <details class="portal-sidebar__group">
+          <summary>
+            <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
+          </summary>
+          <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
+        </details>
         <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
       </nav>
 
       <div class="portal-sidebar__footer">
+        <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
         <form th:action="@{/admin/logout}" method="post" style="margin:0;">
           <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
         </form>
@@ -54,25 +68,30 @@
 
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
-      <form class="settings-block" style="max-width:800px;"
+      <form id="noticeForm" class="settings-block" style="max-width:800px;"
             th:action="${notice} != null ? @{/admin/notices/{id}(id=${notice.id})} : @{/admin/notices}"
             method="post">
         <div class="form-group">
           <label class="form-label" for="title" th:text="#{noticeForm.titleLabel}">제목</label>
-          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : ''}"
+          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : draftTitle}"
                  placeholder="제목을 입력해주세요." th:placeholder="#{noticeForm.titlePlaceholder}" required />
         </div>
         <div class="form-group">
           <label class="form-label" for="content" th:text="#{noticeForm.contentLabel}">본문내용</label>
-          <textarea class="form-textarea" id="content" name="content" style="min-height:220px;"
-                    placeholder="본문을 입력해주세요." th:placeholder="#{noticeForm.contentPlaceholder}" required
-                    th:text="${notice != null ? notice.content : ''}"></textarea>
+          <!-- 서버로 실제 전송되는 값은 이 숨긴 textarea.
+               화면에는 아래 Toast UI 에디터가 보이고, 저장할 때 에디터 내용(마크다운)을 여기에 옮겨 담는다 -->
+          <textarea id="content" name="content" hidden
+                    th:text="${notice != null ? notice.content : draftContent}"></textarea>
+          <div id="contentEditor"></div>
+          <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{noticeForm.editorHint}">
+            툴바의 링크 버튼으로 하이퍼링크를, 이미지 버튼으로 사진을 넣을 수 있습니다. (jpg, png, webp, gif)
+          </p>
         </div>
         <div class="form-group">
           <label class="form-label" for="category" th:text="#{admin.noticeForm.categoryLabel}">분류</label>
           <select class="form-select" id="category" name="category" style="max-width:200px;">
-            <option value="GENERAL" th:selected="${notice == null || notice.category.name() == 'GENERAL'}" th:text="#{siteNotice.category.GENERAL}">일반</option>
-            <option value="EVENT" th:selected="${notice != null && notice.category.name() == 'EVENT'}" th:text="#{siteNotice.category.EVENT}">이벤트</option>
+            <option value="GENERAL" th:selected="${notice == null ? draftCategory == null : notice.category.name() == 'GENERAL'}" th:text="#{siteNotice.category.GENERAL}">일반</option>
+            <option value="EVENT" th:selected="${notice == null ? draftCategory == 'EVENT' : notice.category.name() == 'EVENT'}" th:text="#{siteNotice.category.EVENT}">이벤트</option>
             <option value="MAINTENANCE" th:selected="${notice != null && notice.category.name() == 'MAINTENANCE'}" th:text="#{siteNotice.category.MAINTENANCE}">점검</option>
             <option value="UPDATE" th:selected="${notice != null && notice.category.name() == 'UPDATE'}" th:text="#{siteNotice.category.UPDATE}">업데이트</option>
           </select>
@@ -114,6 +133,64 @@
   </div>
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
+  <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+  <script th:inline="javascript">
+    (function () {
+      var form = document.getElementById("noticeForm");
+      var contentEl = document.getElementById("content");
+      var editorEl = document.getElementById("contentEditor");
+      var imageUploadUrl = /*[[@{/admin/notices/editor-image}]]*/ "/admin/notices/editor-image";
+      var contentRequiredMessage = /*[[#{noticeForm.contentPlaceholder}]]*/ "본문을 입력해주세요.";
+      var imageAlt = /*[[#{noticeForm.imageAlt}]]*/ "공지 이미지";
+      var imageUploadFailedMessage = /*[[#{noticeForm.imageUploadFailed}]]*/ "이미지 업로드에 실패했습니다.";
+      if (!form || !contentEl || !editorEl || !window.toastui) return;
+
+      var editor = new toastui.Editor({
+        el: editorEl,
+        height: "360px",
+        initialEditType: "wysiwyg",
+        previewStyle: "vertical",
+        initialValue: contentEl.value || "",
+        placeholder: contentRequiredMessage,
+        toolbarItems: [
+          ["heading", "bold", "italic", "strike"],
+          ["hr", "quote"],
+          ["ul", "ol"],
+          ["table", "link", "image"]
+        ],
+        hooks: {
+          // 이미지 버튼·붙여넣기·드래그 모두 여기로 들어온다 → 서버에 올리고 돌려받은 URL만 본문에 넣음
+          addImageBlobHook: function (blob, callback) {
+            var formData = new FormData();
+            formData.append("image", blob);
+
+            fetch(imageUploadUrl, { method: "POST", body: formData })
+              .then(function (res) { return res.json(); })
+              .then(function (data) {
+                if (data.url) {
+                  callback(data.url, imageAlt);
+                } else {
+                  alert(data.message || imageUploadFailedMessage);
+                }
+              })
+              .catch(function () {
+                alert(imageUploadFailedMessage);
+              });
+          }
+        }
+      });
+
+      // 숨긴 textarea에는 required를 걸 수 없어서(브라우저가 포커스를 못 줌) 제출 직전에 직접 검사
+      form.addEventListener("submit", function (e) {
+        contentEl.value = editor.getMarkdown();
+        if (!contentEl.value.trim()) {
+          e.preventDefault();
+          alert(contentRequiredMessage);
+          editor.focus();
+        }
+      });
+    })();
+  </script>
 <script th:inline="javascript">
   (function () {
     var btn = document.getElementById("pinToggle");

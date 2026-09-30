@@ -1,15 +1,18 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.RoleHomeRedirects;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.util.NicknameGenerator;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,6 +30,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 	
+	// 아이디 로그인에서 가입된 아이디가 없을 때, [회원가입하기]로 넘어가면 가입 화면에 채워줄 아이디 (SecurityConfig 로그인 실패 처리)
+	public static final String SESSION_KEY_LOGIN_NOT_FOUND_USERNAME = "LOGIN_NOT_FOUND_USERNAME";
+	// 가입된 아이디가 없어서 로그인에 실패한 횟수 - 5회째에 "회원가입하시겠습니까?" 확인창을 띄운다 (SecurityConfig)
+	public static final String SESSION_KEY_LOGIN_NOT_FOUND_COUNT = "LOGIN_NOT_FOUND_COUNT";
+	public static final int LOGIN_NOT_FOUND_ASK_AT = 5;
+
 	private final UserService userService;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final NicknameGenerator nicknameGenerator;
@@ -61,8 +70,16 @@ public class AuthController {
 	}
 	
 	@GetMapping("/signup/id")
-	public String signupForm(Model model) {
+	public String signupForm(Model model, HttpSession session) {
 		SignupRequestDto dto = new SignupRequestDto();
+		// 아이디 로그인에서 "가입된 아이디가 없습니다 → 회원가입하기"로 넘어온 경우, 입력했던 아이디를 채워준다 (한 번만)
+		Object notFoundUsername = session.getAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
+		if (notFoundUsername instanceof String username) {
+			session.removeAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
+			if (username.matches("^[a-zA-Z0-9]{4,20}$")) {
+				dto.setUsername(username);
+			}
+		}
 		// 닉네임 칸을 비워두면 화면에 보여준 것과 다른, 서버가 새로 뽑은 닉네임으로 가입되던 문제 수정.
 		// 처음부터 실제로 저장될 닉네임을 미리 뽑아서 입력값으로 채워두면, 사용자가 안 건드리고 그대로
 		// 제출해도(=resolveNickname에서 "직접 입력한 닉네임"으로 처리됨) 화면에서 본 것과 똑같이 저장된다.
@@ -74,22 +91,30 @@ public class AuthController {
 	@PostMapping("/signup")
 	public String signup(@Valid @ModelAttribute SignupRequestDto signupRequestDto,
 						 BindingResult bindingResult,
-						 Model model) {
+						 Model model,
+						 HttpSession session) {
 		if (bindingResult.hasErrors()) {
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
 		// 화면(JS)에서 인증코드 확인을 막아두지만, 직접 POST를 보내는 우회를 막기 위해 서버에서도 확인한다
-		if (!emailVerificationService.isVerified(signupRequestDto.getEmail())) {
+		if (!emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail())) {
 			model.addAttribute("errorMessage", msg("signup.error.emailNotVerified"));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
 		try {
 			userService.signup(signupRequestDto);
-			emailVerificationService.clear(signupRequestDto.getEmail());
+			emailVerificationService.clear(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
 			model.addAttribute("errorMessage", messages.resolve(e));
+			fillNicknameIfBlank(signupRequestDto);
+			return "signup-id";
+		} catch (DataIntegrityViolationException e) {
+			// AUTH-11: 중복 확인(existsBy...)과 저장 사이에 같은 아이디나 이메일로 다른 가입이 먼저 끝난 경우(동시 가입).
+			// DB 의 유니크 제약(uk_users_username / uk_users_email)이 두 번째 저장을 막는데, 예전에는 그 오류가
+			// 그대로 500 화면으로 나갔다.
+			model.addAttribute("errorMessage", msg("signup.error.concurrentSignup"));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}

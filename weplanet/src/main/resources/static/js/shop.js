@@ -267,11 +267,7 @@
         return true;
       })
       .catch(function (error) {
-        if (error && error.code === "USER_CANCEL") {
-          showShopToast(MSG.paymentCancelled || "결제를 취소했어요.", 1800);
-        } else {
-          showShopToast((error && error.message) || MSG.buyNowFailed || "구매에 실패했습니다.", 1800);
-        }
+        showShopToast((error && error.message) || MSG.buyNowFailed || "구매에 실패했습니다.", 1800);
         return false;
       })
       .finally(function () {

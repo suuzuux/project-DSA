@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.portal.PortalNotice;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.UserFollow;
 import megane6.weplanet.domain.entity.live.LiveSession;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.UserFollowRepository;
@@ -82,15 +83,23 @@ public class CommunityActivityNotifier {
 		}
 		// GroupFollow/UserFollow 통합: 가입자 중에서도 이 아티스트를 팔로우(following_id == community_id
 		// == artist.getId())하는 사람만 후보로 남긴다.
+		// AUTH-11: 가입자 한 명마다 팔로우 여부를 따로 조회하던 것(N+1)을, 이 아티스트의 팔로워 목록을 한 번 가져와
+		// 가입자 목록과 겹치는 사람만 남기는 방식으로 바꿨다.
+		java.util.Set<Long> artistFollowerIds = userFollowRepository
+				.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(artist.getId(), artist.getId()).stream()
+				.map(UserFollow::getFollowerId)
+				.collect(Collectors.toSet());
 		java.util.Set<Long> followerIds = memberIds.stream()
-				.filter(fanId -> userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(
-						fanId, artist.getId(), artist.getId()))
+				.filter(artistFollowerIds::contains)
 				.collect(Collectors.toSet());
 		if (followerIds.isEmpty()) {
 			return List.of();
 		}
 		boolean night = isNightNow();
 		return userRepository.findAllById(followerIds).stream()
+				// AUTH-11: 휴면·정지·탈퇴 회원과, 받을 수 없는 시스템 주소(*.weplanet.local - 카카오/LINE 가입자 등)는 제외
+				.filter(User::isLoginable)
+				.filter(fan -> !fan.hasPlaceholderEmail())
 				.filter(User::isCommunityActivityEmailEnabled)
 				.filter(fan -> !night || fan.isNightNotificationAllowed())
 				.collect(Collectors.toList());

@@ -3,15 +3,18 @@ package megane6.weplanet.security;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.controller.AuthController;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.web.CommunitySlugForwardFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
@@ -64,6 +67,8 @@ public class SecurityConfig {
             "/board/**",
             "/notices",
             "/notices/**",
+            // 해시태그 총공 공개 페이지 - 홈 배너로 비로그인도 들어온다
+            "/events/**",
             "/shop",
             "/shop/**",
             // 토스 입금 웹훅 - 토스 서버가 호출하므로 로그인 없음 (secret 값으로 검증)
@@ -91,6 +96,7 @@ public class SecurityConfig {
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final UserRepository userRepository;
     private final CommunitySlugForwardFilter communitySlugForwardFilter;
+    private final SessionRegistry sessionRegistry; // AUTH-11: SessionRegistryConfig 참고
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -143,6 +149,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .invalidSessionUrl("/login?expired=true")
                         .maximumSessions(1)
+                        .sessionRegistry(sessionRegistry)
                         .maxSessionsPreventsLogin(false)
                         .expiredUrl("/login?duplicateLogin=true")
                 );
@@ -188,6 +195,30 @@ public class SecurityConfig {
                     return;
                 }
                 // WITHDRAWN/SUSPENDED는 구분 안 하고 일반 에러로 - 탈퇴 여부를 로그인 화면에서 노출 안 하려는 의도
+            }
+            // 입력한 아이디로 가입된 계정이 아예 없으면 회원가입을 권한다 (팬 로그인 화면만).
+            // 오타일 수도 있어서 바로 가입 화면으로 보내지 않는다. 1~4회째는 로그인 폼 아래에 "가입된 아이디가 없습니다.
+            // 회원가입하시겠습니까?" 안내만 보여주고, 5회째에 확인창(예/아니오)을 띄운 뒤 횟수를 다시 센다.
+            // 회원가입으로 넘어가면 입력한 아이디가 채워진 가입 화면이 열린다(AuthController.signupForm).
+            // 아이디는 URL 대신 세션에 잠깐 담는다.
+            // (아이디 존재 여부는 가입 화면의 "중복 확인"으로도 알 수 있는 정보라 여기서 알려줘도 새로 드러나는 것은 없다)
+            if (exception instanceof BadCredentialsException) {
+                String username = request.getParameter("username");
+                String trimmed = username == null ? "" : username.trim();
+                if (!trimmed.isEmpty() && !userRepository.existsByUsername(trimmed)) {
+                    jakarta.servlet.http.HttpSession session = request.getSession(true);
+                    session.setAttribute(AuthController.SESSION_KEY_LOGIN_NOT_FOUND_USERNAME, trimmed);
+                    Object prev = session.getAttribute(AuthController.SESSION_KEY_LOGIN_NOT_FOUND_COUNT);
+                    int count = (prev instanceof Integer n ? n : 0) + 1;
+                    if (count >= AuthController.LOGIN_NOT_FOUND_ASK_AT) {
+                        session.removeAttribute(AuthController.SESSION_KEY_LOGIN_NOT_FOUND_COUNT);
+                        response.sendRedirect("/login/id?notFound&ask");
+                    } else {
+                        session.setAttribute(AuthController.SESSION_KEY_LOGIN_NOT_FOUND_COUNT, count);
+                        response.sendRedirect("/login/id?notFound");
+                    }
+                    return;
+                }
             }
             // "/login"은 SNS/아이디 선택 화면(login-wireframe)이라 에러 문구가 없다.
             // 실제 아이디/비밀번호 폼과 에러 문구는 "/login/id"(login-id.html)에 있으므로 거기로 보내야 한다.

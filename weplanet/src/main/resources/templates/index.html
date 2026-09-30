@@ -65,6 +65,13 @@
   <th:block sec:authorize="isAnonymous()">
     <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}">
       <div class="banner__track">
+        <!-- [해시태그 총공] 진행 중·예정·결과 발표 총공이 있으면 맨 앞에 자동으로 붙는 슬라이드 -->
+        <a class="banner__slide hashtag-home-slide" th:if="${hashtagBanner != null}"
+           th:href="@{${hashtagBanner.linkUrl()}}">
+          <p class="banner__kicker" th:text="${hashtagBanner.kicker()}">지금 진행 중</p>
+          <h2 class="banner__title" th:text="${hashtagBanner.title()}">9월 해시태그 총공, 우리 아티스트는 몇 위?</h2>
+          <p class="hashtag-home-slide__body" th:text="${hashtagBanner.body()}">실시간 순위 보기 →</p>
+        </a>
         <!-- 최고관리자 [배너 영역 관리]에서 노출 중인 배너. 하나도 없으면 아래 기본 배너 -->
         <a class="banner__slide banner__slide--promo" th:each="s : ${mainBanners}"
            th:href="@{${s.linkUrl()}}" th:style="|background:${s.bgColor()};color:${s.textColor()};|">
@@ -122,6 +129,13 @@
 
     <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}">
       <div class="banner__track">
+        <!-- [해시태그 총공] 진행 중·예정·결과 발표 총공이 있으면 맨 앞에 자동으로 붙는 슬라이드 -->
+        <a class="banner__slide hashtag-home-slide" th:if="${hashtagBanner != null}"
+           th:href="@{${hashtagBanner.linkUrl()}}">
+          <p class="banner__kicker" th:text="${hashtagBanner.kicker()}">지금 진행 중</p>
+          <h2 class="banner__title" th:text="${hashtagBanner.title()}">9월 해시태그 총공, 우리 아티스트는 몇 위?</h2>
+          <p class="hashtag-home-slide__body" th:text="${hashtagBanner.body()}">실시간 순위 보기 →</p>
+        </a>
         <!-- 최고관리자 [배너 영역 관리]에서 노출 중인 배너. 하나도 없으면 아래 기본 배너 -->
         <a class="banner__slide banner__slide--promo" th:each="s : ${mainBanners}"
            th:href="@{${s.linkUrl()}}" th:style="|background:${s.bgColor()};color:${s.textColor()};|">

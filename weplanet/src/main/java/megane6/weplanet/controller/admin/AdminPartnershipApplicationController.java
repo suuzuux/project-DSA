@@ -130,7 +130,7 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						messages.get("admin.applications.flash.approvedMailSent")
+						messages.get("admin.applications.flash.approvedAccountMailSent", account.username())
 				);
 			} catch (Exception mailException) {
 				log.warn(
@@ -141,7 +141,7 @@ public class AdminPartnershipApplicationController {
 				
 				redirectAttributes.addFlashAttribute(
 						"msg",
-						messages.get("admin.applications.flash.approvedMailFailed")
+						messages.get("admin.applications.flash.approvedAccountMailFailed", account.username())
 				);
 			}
 		} catch (IllegalArgumentException | IllegalStateException e) {

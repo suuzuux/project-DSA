@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    소셜 계정 가입 확인 화면. 가입된 계정이 없는 구글/카카오/LINE 계정으로 로그인(또는 가입)을 시도하면
+    "가입된 계정이 없습니다" 안내 대신 이 화면으로 온다. 소셜 인증은 이미 끝난 상태라 [예]를 누르면
+    구글/카카오 화면을 다시 거치지 않고 바로 계정을 만들고 로그인한다. [아니오]면 아무것도 만들지 않는다.
+    약관 동의는 아이디 가입(signup-id.html)과 같은 항목 (문구도 같은 signup.* 키를 쓴다).
+    (SocialLoginEntryController#signupConfirmForm / confirmSignup / cancelSignup 참고)
+    SETTINGS-03 병합: 이메일/닉네임은 escapeXml 로 한 번 이스케이프한 뒤 굵게 감싸서 utext 로 출력 (어순이 언어마다 달라서)
+  -->
+  <title th:text="#{socialSignup.pageTitle}">WePlaNet – 소셜 계정으로 가입</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <a class="auth-card__back" th:href="@{/login}" th:text="#{socialSignup.backToLogin}">← 로그인으로</a>
+  <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
+
+  <h1 class="auth-card__title mt-16" th:text="#{socialSignup.heading(${providerLabel})}">
+    Google 계정으로 가입하시겠습니까?
+  </h1>
+
+  <p class="text-sm text-muted mt-16">
+    <span th:text="#{socialSignup.noAccount}">아직 위플래닛에 가입된 계정이 없어요.</span>
+    <span th:if="${socialEmail}"
+          th:with="emailHtml=${'<strong>' + #strings.escapeXml(socialEmail) + '</strong>'}"
+          th:utext="#{socialSignup.canSignupWithEmail(${emailHtml})}">
+      <strong>example@gmail.com</strong> 계정으로 바로 가입할 수 있어요.
+    </span>
+    <span th:if="${socialEmail == null and socialName != null}"
+          th:with="nameHtml=${'<strong>' + #strings.escapeXml(socialName) + '</strong>'}"
+          th:utext="#{socialSignup.canSignupWithAccountName(${providerLabel}, ${nameHtml})}">
+      카카오 계정(<strong>닉네임</strong>)으로 바로 가입할 수 있어요.
+    </span>
+    <span th:if="${socialEmail == null and socialName == null}"
+          th:text="#{socialSignup.canSignupWithAccount(${providerLabel})}">
+      카카오 계정으로 바로 가입할 수 있어요.
+    </span>
+  </p>
+
+  <p th:if="${errorMessage}" th:text="${errorMessage}" class="text-sm" style="color:#c45c26;margin-top:8px;"></p>
+
+  <form th:action="@{/social-login/signup-confirm/confirm}" method="post" class="mt-16" style="margin-bottom:0;">
+    <div class="form-group">
+      <p class="form-label" th:text="#{signup.termsHeading}">이용 약관 동의</p>
+      <div class="check-list">
+        <label class="check-item check-item--all">
+          <input type="checkbox" id="agreeAll" /> <span th:text="#{signup.agreeAll}">모두 동의</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" name="agreeAge" value="true" data-agree-item required />
+          <span th:text="#{signup.agreeAge}">(필수) 만 14세 이상입니다.</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" name="agreeTerms" value="true" data-agree-item required />
+          <span th:text="#{signup.agreeRequired}">(필수) 회원가입을 위한 동의</span>
+        </label>
+        <label class="check-item">
+          <input type="checkbox" name="marketingConsent" value="true" data-agree-item />
+          <span th:text="#{signup.agreeMarketing}">(선택) 광고 및 마케팅 활용 동의</span>
+        </label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn--primary btn--block btn--lg" th:text="#{socialSignup.confirmButton}">예, 가입할게요</button>
+  </form>
+  <form th:action="@{/social-login/signup-confirm/cancel}" method="post" style="margin:8px 0 0;">
+    <button type="submit" class="btn btn--ghost btn--block btn--lg" th:text="#{login.signupSuggest.no}">아니오</button>
+  </form>
+</div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

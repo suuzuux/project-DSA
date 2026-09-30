@@ -2,15 +2,19 @@ package megane6.weplanet.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.event.HashtagResultNoticeDraft;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.NoticeCategory;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.SiteNoticeService;
+import megane6.weplanet.service.event.HashtagEventAdminService;
+import megane6.weplanet.service.shop.ShopImageStorage;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
@@ -26,6 +30,10 @@ public class SiteNoticeController {
 	// SETTINGS-03 커밋5: 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
 	private final megane6.weplanet.i18n.Messages messages;
 	private final AuthenticatedUserResolver userResolver;
+	
+	private final ShopImageStorage shopImageStorage; // 에디터 이미지 저장 (굿즈 에디터와 같은 검사 규칙 재사용)
+	
+	private final HashtagEventAdminService hashtagEventAdminService; // [해시태그 총공] 결과 공지 초안
 
 	@GetMapping("/notices")
 	public String publicList(
@@ -68,15 +76,30 @@ public class SiteNoticeController {
 		
 		return "admin/notices";
 	}
-
+	
 	@GetMapping("/admin/notices/new")
 	public String newForm(
+			@RequestParam(required = false) Long hashtagEventId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
 		requireAdmin(principal);
 		model.addAttribute("pinnedCount", siteNoticeService.countPinned());
 		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
+		
+		// [해시태그 총공] 모니터링의 "결과 공지 작성" 버튼으로 오면 제목·본문·분류를 미리 채운다
+		// (notice 가 아니라 draft* 로 넘기는 이유: notice 가 있으면 폼이 "수정 모드"가 되기 때문)
+		if (hashtagEventId != null) {
+			try {
+				HashtagResultNoticeDraft draft = hashtagEventAdminService.buildResultNotice(hashtagEventId);
+				model.addAttribute("draftTitle", draft.title());
+				model.addAttribute("draftContent", draft.content());
+				model.addAttribute("draftCategory", NoticeCategory.EVENT.name());
+			} catch (IllegalArgumentException | IllegalStateException e) {
+				model.addAttribute("error", messages.resolve(e));
+			}
+		}
+		
 		return "admin/notice-form";
 	}
 
@@ -196,6 +219,22 @@ public class SiteNoticeController {
 		);
 		
 		return "redirect:/admin/notices";
+	}
+	
+	// 공지 에디트 (Toast UI) 이미지 업로드.
+	// 에디터 기본 동작은 이미지를 base64 글자로 본문에 통째로 넣어버려서, 대신 서버에 파일을 저장하고 ULR만 돌려준다.
+	@PostMapping("/admin/notices/editor-image")
+	@ResponseBody
+	public Map<String, String> editorImage(@RequestParam("image") MultipartFile image,
+										   @AuthenticationPrincipal AuthenticatedUser principal) {
+		requireAdmin(principal);
+		
+		try {
+			String storedName = shopImageStorage.storeImage(image);
+			return Map.of("url", "/uploads/" + storedName);
+		} catch (IllegalArgumentException e) {
+			return Map.of("message", messages.resolve(e));
+		}
 	}
 	
 	@PostMapping("/admin/notices/reorder")

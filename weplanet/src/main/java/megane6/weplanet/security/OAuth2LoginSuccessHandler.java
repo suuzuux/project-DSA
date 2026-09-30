@@ -14,9 +14,6 @@ import megane6.weplanet.domain.entity.enumfolder.SocialLoginIntent;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.service.email.MarketingConsentEmailService;
-import megane6.weplanet.util.NicknameGenerator;
-import megane6.weplanet.util.UsernameGenerator;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -35,10 +32,7 @@ import java.util.Optional;
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 	private final UserRepository userRepository;
-	private final UsernameGenerator usernameGenerator;
-	private final NicknameGenerator nicknameGenerator;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
-	private final MarketingConsentEmailService marketingConsentEmailService;
 	private final LocaleResolver localeResolver;
 	private record SocialProfile(String providerId, String email, String realName, String suggestedNickname) {}
 
@@ -77,11 +71,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 			user = existingUser.get();
 
 			if (user.getStatus() == UserStatus.WITHDRAWN || user.getStatus() == UserStatus.SUSPENDED) {
+				// AUTH-11: 예전엔 /login?error 로만 보내서 로그인 화면에 아무 안내도 뜨지 않았다
 				socialLoginSessionSupport.clearSecurityContext(request, response);
-				response.sendRedirect("/login?error");
+				response.sendRedirect("/login?accountUnavailable=true");
 				return;
 			}
-			if (user.getStatus() == UserStatus.DORMANT) {
+			if (user.getStatus() == UserStatus.DORMANT && user.hasPlaceholderEmail()) {
+				// AUTH-11: 카카오/LINE 가입자는 이메일이 받을 수 없는 시스템 주소(*.weplanet.local)라서 이메일 인증코드
+				// 방식으로는 휴면을 풀 수 없었다(아이디도 자동 생성이라 본인이 모름). 방금 소셜 인증을 통과한 것 자체가
+				// 본인 확인이므로, 이 경우는 코드 없이 바로 휴면을 해제하고 로그인시킨다.
+				user.reactivate();
+				log.info("[휴면계정] 소셜 재로그인으로 휴면 해제: userId={}, provider={}", user.getId(), provider);
+			} else if (user.getStatus() == UserStatus.DORMANT) {
 				// 소셜 인증은 됐지만, 로컬 로그인과 동일하게 이메일 코드 인증을 한 번 더 거치게 한다.
 				// AUTH-10: 로컬/소셜 진입 구분 없이 항상 같은 화면(아이디 입력 → 인증코드)으로 통일했으므로,
 				// 여기서 더 이상 세션에 대상 유저를 미리 심어두지 않는다 - DormantAccountReactivationController 참고.
@@ -90,22 +91,25 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				return;
 			}
 		} else {
-			if (intent != SocialLoginIntent.SIGNUP) {
-				socialLoginSessionSupport.clearSecurityContext(request, response);
-				response.sendRedirect("/login?socialNotFound=true");
+			// 가입된 계정이 없는 소셜 계정. 예전에는 로그인 화면에서 온 경우 "가입된 계정이 없습니다" 안내만 띄우고,
+			// 회원가입 화면에서 온 경우 바로 계정을 만들었다. 이제 어느 쪽에서 왔든 "이 계정으로 가입하시겠습니까?"
+			// 확인 화면(약관 동의 포함)으로 보내고, [예]를 누르면 그때 계정을 만든다 (SocialLoginEntryController).
+			// 소셜 인증은 이미 끝났으므로 받은 소셜 정보를 세션에 잠깐 담아두고, 구글/카카오 화면을 다시 거치지 않는다.
+			socialLoginSessionSupport.clearSecurityContext(request, response);
+			boolean fromSignup = intent == SocialLoginIntent.SIGNUP;
+			if (userRepository.existsByEmail(profile.email())) {
+				// AUTH-10: 이메일이 겹치면 자동으로 연동하지 않는다. 이미 가입된 이메일이라는 것만 안내하고,
+				// 연동 자체는 로그인 후 설정 화면에서 능동적으로 하게 한다.
+				response.sendRedirect(fromSignup ? "/signup?socialEmailTaken=true" : "/login?socialEmailTaken=true");
 				return;
 			}
-
-			Optional<User> sameEmailUser = userRepository.findByEmail(profile.email());
-			if (sameEmailUser.isPresent()) {
-				// AUTH-10: 이메일이 겹치면 더 이상 자동으로 "연동하시겠습니까?" 확인 화면을 띄우지 않는다.
-				// 이미 가입된 이메일이라는 것만 안내하고, 연동 자체는 로그인 후 설정 화면에서 능동적으로 하게 한다.
-				socialLoginSessionSupport.clearSecurityContext(request, response);
-				response.sendRedirect("/signup?socialEmailTaken=true");
-				return;
-			}
-
-			user = createNewSocialUser(provider, profile);
+			HttpSession pendingSession = request.getSession(true);
+			pendingSession.removeAttribute(SocialLoginEntryController.SESSION_KEY_SOCIAL_LOGIN_INTENT);
+			pendingSession.setAttribute(SocialLoginEntryController.SESSION_KEY_PENDING_SIGNUP,
+					PendingSocialSignup.of(provider, profile.providerId(), profile.email(),
+							profile.realName(), profile.suggestedNickname()));
+			response.sendRedirect("/social-login/signup-confirm");
+			return;
 		}
 
 		if (session != null) {
@@ -220,33 +224,4 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 		return new SocialProfile(providerId, email, realName, displayName);
 	}
 
-	// AUTH-10: 신규 소셜 가입은 비밀번호를 만들지 않는다(null). 가입 직후 실명/이메일을 따로 입력받던 절차도
-	// 없앴으므로 프로필이 이 시점에 바로 확정된다 - 필요하면 나중에 설정 화면에서 이름/이메일/비밀번호를 고치면 된다.
-	private User createNewSocialUser(AuthProvider provider, SocialProfile profile) {
-		String username = usernameGenerator.generate(provider);
-		String nickname = resolveNickname(profile.suggestedNickname());
-
-		User newUser = User.createSocialFan(username, null, profile.realName(), nickname, profile.email(), provider, profile.providerId());
-		User saved = userRepository.save(newUser);
-		
-		// [광고성 정보 알림] 데모용 - 소셜 계정은 "(선택) 광고 및 마케팅 활용 동의" 체크박스 자체가 없어서
-		// 항상 marketingConsentGiven=false로 보낸다. 가입 완료 메일은 아이디/비밀번호 가입과 동일하게
-		// 동의 여부와 무관하게 무조건 1통 보낸다 (UserService.signup() 참고).
-		try {
-			marketingConsentEmailService.sendSignupWelcomeEmail(saved, false);
-		} catch (Exception e) {
-			log.error("[광고성 정보 알림] 소셜 회원가입 환영 메일 발송 실패: user={}", saved.getId(), e);
-		}
-		
-		return saved;
-	}
-	
-	private String resolveNickname(String suggestedNickname) {
-		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
-		if (suggestedNickname != null && !suggestedNickname.isBlank()
-				&& !userRepository.existsByNicknameAndRoleNotIn(suggestedNickname, Role.ARTIST_SIDE)) {
-			return suggestedNickname;
-		}
-		return nicknameGenerator.generate();
-	}
 }

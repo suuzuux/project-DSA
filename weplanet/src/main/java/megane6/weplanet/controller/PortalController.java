@@ -220,6 +220,7 @@ public class PortalController {
 	@PostMapping("/members")
 	public String addMember(@AuthenticationPrincipal AuthenticatedUser principal,
 							@RequestParam String memberName,
+							@RequestParam(required = false) Long artistId,
 							RedirectAttributes redirectAttributes) {
 		User actor = currentPortalUser(principal);
 		User artist = currentArtist(principal);
@@ -228,8 +229,13 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		
+		// AUTH-11: 폼이 보내 준 그룹(artistId)에 추가한다. 예전에는 세션의 "현재 선택 아티스트"를 썼기 때문에,
+		// 탭 A 에서 그룹 X 화면을 띄워 둔 채 탭 B 에서 그룹 Y 를 고르면 탭 A 에서 추가한 멤버가 그룹 Y 에 생겼다.
+		// 이 그룹을 실제로 관리하는지는 ArtistMemberService.addMember(requireManagedGroup)가 다시 확인한다.
+		Long targetGroupId = artistId != null ? artistId : artist.getId();
+		
 		try {
-			GroupMember added = artistMemberService.addMember(actor, artist.getId(), memberName);
+			GroupMember added = artistMemberService.addMember(actor, targetGroupId, memberName);
 			redirectAttributes.addFlashAttribute("msg",
 					messages.get("portalMembers.flash.added", added.getMember().getNickname()));
 		} catch (IllegalArgumentException | IllegalStateException e) {

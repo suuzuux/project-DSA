@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="(${eventId == null} ? #{adminHashtag.form.headingNew} : #{adminHashtag.form.headingEdit}) + ' | WePlaNet ADMIN'">해시태그 총공 만들기 | WePlaNet ADMIN</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/portal.css}" />
+</head>
+<body>
+<div class="portal-shell">
+
+  <aside class="portal-sidebar portal-sidebar--admin">
+    <div class="portal-sidebar__org">
+      <div class="agency">WEPLANET</div>
+      <div class="artist">ADMIN</div>
+    </div>
+
+    <nav class="portal-sidebar__nav">
+      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <details class="portal-sidebar__group">
+        <summary>
+          <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
+        </summary>
+        <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
+      </details>
+      <details class="portal-sidebar__group">
+        <summary>
+          <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
+        </summary>
+        <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
+      </details>
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
+      <details class="portal-sidebar__group" open>
+        <summary>
+          <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
+        </summary>
+        <a class="portal-sidebar__sub is-active" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
+      </details>
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
+    </nav>
+
+    <div class="portal-sidebar__footer">
+      <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
+      <form th:action="@{/admin/logout}" method="post" style="margin:0;">
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
+      </form>
+    </div>
+  </aside>
+
+  <main class="portal-main">
+    <div class="portal-main__head">
+      <div>
+        <h1 th:text="${eventId == null} ? #{adminHashtag.form.headingNew} : #{adminHashtag.form.headingEdit}">해시태그 총공 만들기</h1>
+        <p class="text-sm text-muted" th:text="#{adminHashtag.form.subtitle(${minDays}, ${maxDays})}">
+          기간은 시작일 00:00 ~ 종료일 23:59, 3~7일입니다. 다른 이벤트와 기간이 겹칠 수 없습니다.
+        </p>
+      </div>
+      <a class="btn btn--ghost btn--sm" th:href="@{/admin/events/hashtag}" th:text="#{adminBanner.form.backToList}">← 목록</a>
+    </div>
+
+    <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
+
+    <form id="hashtagEventForm" class="settings-block" style="max-width:860px;" method="post"
+          th:action="${eventId == null} ? @{/admin/events/hashtag} : @{/admin/events/hashtag/{id}(id=${eventId})}"
+          th:attr="data-min-days=${minDays}, data-max-days=${maxDays}">
+
+      <div class="form-group">
+        <label class="form-label" for="title" th:text="#{adminHashtag.form.title}">이벤트명</label>
+        <input class="form-input" id="title" name="title" maxlength="100" required
+               placeholder="10월 해시태그 총공" th:placeholder="#{adminHashtag.form.titlePlaceholder}" th:value="${form.title}" />
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group">
+          <label class="form-label" for="startDate" th:text="#{adminHashtag.form.startDate}">시작일</label>
+          <input class="form-input" type="date" id="startDate" name="startDate" required
+                 th:value="${form.startDate}" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="endDate" th:text="#{adminHashtag.form.endDate}">종료일</label>
+          <input class="form-input" type="date" id="endDate" name="endDate" required
+                 th:value="${form.endDate}" />
+        </div>
+      </div>
+      <p id="periodHint" class="text-sm text-muted" style="margin:-8px 0 16px;"></p>
+
+      <!-- 아티스트 검색: 입력하면 JS가 /admin/events/hashtag/artists?keyword= 로 검색해 아래 목록을 채운다 -->
+      <div class="form-group">
+        <label class="form-label" for="artistSearch" th:text="#{adminHashtag.form.artistSearch}">참여 아티스트 검색</label>
+        <input class="form-input" id="artistSearch" type="search" autocomplete="off"
+               placeholder="아티스트 이름, 영문명, 소속사로 검색" th:placeholder="#{adminHashtag.form.artistSearchPlaceholder}" />
+        <ul id="artistResults" class="hashtag-search-results" hidden></ul>
+      </div>
+
+      <!-- 참여 아티스트 목록: 줄마다 hidden artistIds + hashtags 입력칸 → 서버가 List 로 받는다 -->
+      <div class="form-group">
+        <div class="form-label">
+          <span th:text="#{adminHashtag.form.targets}">참여 아티스트</span> <span id="targetCount" th:text="#{adminHashtag.teams(${#lists.size(targetRows)})}">0팀</span>
+          <span class="text-xs text-muted" th:text="|· #{adminHashtag.form.minTeams}|">· 2팀 이상</span>
+        </div>
+        <p id="targetEmpty" class="text-sm text-muted" th:hidden="${not #lists.isEmpty(targetRows)}" th:text="#{adminHashtag.form.targetsEmpty}">
+          위에서 검색해 참여할 아티스트를 추가해주세요.
+        </p>
+
+        <ul id="targetList" class="hashtag-target-list">
+          <li class="hashtag-target-row" th:each="row : ${targetRows}">
+            <span class="hashtag-avatar">
+              <img th:if="${not #strings.isEmpty(row.artist().profileImg())}"
+                   th:src="${row.artist().profileImg()}" alt="" />
+              <th:block th:if="${#strings.isEmpty(row.artist().profileImg())}"
+                        th:text="${#strings.substring(row.artist().name(), 0, 1)}">S</th:block>
+            </span>
+            <span class="hashtag-target-row__name">
+              <strong th:text="${row.artist().name()}">STELLA</strong>
+              <span class="text-xs text-muted"
+                    th:text="${row.artist().agencyName() ?: #messages.msg('admin.artists.noAgency')}">소속사</span>
+            </span>
+            <input type="hidden" name="artistIds" th:value="${row.artist().artistId()}" />
+            <input class="form-input" name="hashtags" maxlength="100"
+                   th:value="${row.hashtag()}"
+                   th:placeholder="${'#' + #messages.msg('adminHashtag.form.hashtagPrefix') + '_' + (row.artist().nameEn() ?: row.artist().name())}" />
+            <button type="button" class="btn btn--ghost btn--sm" data-remove-target th:text="#{adminHashtag.form.remove}">빼기</button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- JS 가 "추가"할 때 복사해서 쓰는 한 줄 틀 (화면에는 안 보임) -->
+      <template id="targetRowTemplate">
+        <li class="hashtag-target-row">
+          <span class="hashtag-avatar"></span>
+          <span class="hashtag-target-row__name">
+            <strong></strong>
+            <span class="text-xs text-muted"></span>
+          </span>
+          <input type="hidden" name="artistIds" />
+          <input class="form-input" name="hashtags" maxlength="100" />
+          <button type="button" class="btn btn--ghost btn--sm" data-remove-target th:text="#{adminHashtag.form.remove}">빼기</button>
+        </li>
+      </template>
+
+      <div class="flex-center" style="justify-content:flex-end;">
+        <button type="submit" class="btn btn--primary"
+                th:text="${eventId == null} ? #{adminBanner.form.submitNew} : #{adminBanner.form.submitEdit}">등록</button>
+      </div>
+    </form>
+  </main>
+</div>
+
+<script th:inline="javascript">
+  window.__HASHTAG_ARTIST_SEARCH_URL__ = /*[[@{/admin/events/hashtag/artists}]]*/ "/admin/events/hashtag/artists";
+  // hashtag-event-form.js 가 쓰는 화면 언어 문구 (없으면 JS 안의 한국어 기본값)
+  window.__HASHTAG_FORM_MSG__ = {
+    teams: /*[[#{adminHashtag.teams}]]*/ "{0}팀",
+    noAgency: /*[[#{admin.artists.noAgency}]]*/ "소속사 미등록",
+    hashtagPrefix: /*[[#{adminHashtag.form.hashtagPrefix}]]*/ "문구",
+    noResults: /*[[#{adminHashtag.form.noResults}]]*/ "검색 결과가 없습니다.",
+    added: /*[[#{adminHashtag.form.added}]]*/ "추가됨",
+    add: /*[[#{adminHashtag.form.add}]]*/ "추가",
+    periodOk: /*[[#{adminHashtag.form.periodOk}]]*/ "총 {0}일 동안 진행돼요.",
+    periodInvalid: /*[[#{adminHashtag.form.periodInvalid}]]*/ "기간은 {0}~{1}일이어야 해요. (현재 {2}일)"
+  };
+</script>
+<script th:src="@{/js/admin/hashtag-event-form.js}"></script>
+</body>
+</html>

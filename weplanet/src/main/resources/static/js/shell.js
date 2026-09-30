@@ -67,7 +67,7 @@
     "shell.fab.chatFan": "팬 채팅방",
     "shell.fab.chatDm": "채팅 (DM)",
     "shell.fab.chatOpen": "채팅 열기",
-    "shell.admin.pageLink": "관리자 페이지로",
+    "shell.admin.pageLink": "관리자 페이지로 이동",
     // SETTINGS-03 커밋3: 커뮤니티 검색·가입 모달 (ensureExploreUi)
     "layout.header.searchTitle": "커뮤니티 검색",
     "main.search.placeholder": "아티스트/그룹명 검색",
@@ -617,24 +617,29 @@
     }
 
     function ensureAdminPageLink() {
-      // 에이전시 계정만 상단바에서 운영 대시보드(포털)로 바로 이동
-      if (!isAgency) return;
+      // 에이전시는 운영 대시보드(포털)로, 관리자는 관리자 화면으로 상단바에서 바로 돌아간다
+      // (관리자는 관리자 화면 사이드바의 "메인 페이지 이동"으로 로그인 상태 그대로 메인에 들어올 수 있다)
+      if (!isAgency && !isAdmin) return;
       if (document.querySelector("[data-admin-page-link]")) return;
 
       const actions = document.querySelector(".header-actions, .community-top__right");
       if (!actions) return;
 
       const link = document.createElement("a");
-      link.href = "/portal/dashboard";
+      link.href = isAdmin ? root + "admin" : "/portal/dashboard";
       link.className = "btn btn--ghost btn--sm";
       link.setAttribute("data-admin-page-link", "1");
       link.textContent = t("shell.admin.pageLink");
-      actions.insertBefore(link, actions.firstChild);
+      // 로그아웃 버튼 바로 왼쪽에 둔다. 로그아웃이 없는 커뮤니티 상단은 global-icons.js 가 아이콘들을 앞으로 모아서 "내 프로필" 바로 왼쪽이 된다
+      const logoutForm = actions.querySelector('form[action$="/logout"]');
+      actions.insertBefore(link, logoutForm || actions.firstChild);
     }
 
     function ensureMenuToggle() {
       // 이미 data-shell-open="menu" 버튼이 있으면 스킵
       if (document.querySelector('[data-shell-open="menu"]')) return;
+      // 소속 에이전시용 최소 헤더(community/fragments/layout.html)에는 햄버거를 넣지 않는다
+      if (document.querySelector("[data-header-minimal]")) return;
 
       const header = document.querySelector(".site-header, .community-top");
       if (!header) return;

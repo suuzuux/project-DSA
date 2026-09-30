@@ -51,12 +51,16 @@
   </div>
 
   <p th:if="${#lists.isEmpty(notices)}" class="list-empty" th:text="#{portal.notices.empty}">등록된 공지가 없습니다.</p>
-  <article th:each="notice : ${notices}" class="post-card mb-16">
+  <article th:each="notice : ${notices}" class="post-card mb-16"
+           th:classappend="${notice.pinned} ? ' is-pinned'">
     <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
       <div class="post-card__head">
         <div class="post-card__meta">
           <span class="tag tag--member" th:text="#{${'siteNotice.category.' + notice.category.name()}}">일반</span>
-          <strong class="post-card__title" th:text="${notice.title}">공지 제목</strong>
+          <strong class="post-card__title"
+                  th:classappend="${notice.pinned} ? ' is-pinned'"
+                  th:style="${notice.pinned} ? 'font-weight:700;' : 'font-weight:400;'"
+                  th:text="${notice.title}">공지 제목</strong>
           <span class="text-xs text-muted"
                 th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2026.08.31</span>
         </div>

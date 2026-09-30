@@ -290,7 +290,7 @@
         </nav>
         <!-- FOLLOW-01: 상대가 콘텐츠를 숨긴 경우, 탭 자리에 이 안내만 뜬다 -->
         <div class="profile-hidden-notice" th:unless="${contentVisible}"
-             th:text="${isTargetArtist} ? #{community.profile.followToSee} : #{community.profile.privateProfile}">비공개로 설정한 프로필입니다.</div>
+             th:text="#{community.profile.privateProfile}">비공개로 설정한 프로필입니다.</div>
 
         <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
         <aside class="profile-side profile-card">
@@ -678,7 +678,7 @@
       Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집"
     };
 </script>
-<script th:src="@{/js/profile-image-crop.js(v=9)}"></script>
+<script th:src="@{/js/profile-image-crop.js(v=10)}"></script>
 <script th:inline="javascript">
     (function () {
       "use strict";

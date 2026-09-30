@@ -3,6 +3,7 @@ package megane6.weplanet.domain.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,6 +27,8 @@ public class SignupRequestDto {
 	private String nickname; // 선택 입력 - 비어있으면 자동 생성
 	
 	@NotBlank(message = "{signup.validation.realNameRequired}")
+	// AUTH-11: real_name 컬럼은 VARBINARY(255)(UTF-8 바이트)라 한글 약 86자를 넘으면 DB 오류(500)가 났다
+	@Size(max = 50, message = "{signup.validation.realNameTooLong}")
 	private String realName;
 	
 	@NotBlank(message = "{signup.validation.emailRequired}")

@@ -151,7 +151,7 @@ public class PartnershipApplication {
 	}
 	
 	private String normalizeEmail(String value) {
-		String normalized = requireText(value, 150, "signup.validation.emailRequired").toLowerCase(Locale.ROOT);
+		String normalized = requireText(value, 50, "signup.validation.emailRequired").toLowerCase(Locale.ROOT);
 		
 		if (!EMAIL_PATTERN.matcher(normalized).matches()) {
 			throw new IllegalArgumentException("signup.validation.emailFormat");

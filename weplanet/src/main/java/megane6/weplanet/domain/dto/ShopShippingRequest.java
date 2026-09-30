@@ -49,7 +49,10 @@ public record ShopShippingRequest(
 		if (address1.length() > 255) {
 			throw new IllegalArgumentException("shop.error.addressTooLong");
 		}
-		if (address2 != null && address2.length() > 200) {
+		// AUTH-11: 상세 주소 컬럼은 VARBINARY(512)(UTF-8 바이트)라 "200자" 기준으로는 한글 171자부터 DB 오류(500)가 났다.
+		// 글자 수와 실제 저장 크기(바이트)를 둘 다 확인한다.
+		if (address2 != null && (address2.length() > 200
+				|| address2.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 512)) {
 			throw new IllegalArgumentException("shop.error.address2TooLong");
 		}
 		if (deliveryMemo != null && deliveryMemo.length() > 200) {

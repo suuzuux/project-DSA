@@ -2,6 +2,7 @@ package megane6.weplanet.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
@@ -12,6 +13,9 @@ import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
+import megane6.weplanet.service.email.VerificationPurpose;
+import megane6.weplanet.service.email.VerificationRateLimitException;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -36,6 +40,7 @@ public class DormantAccountReactivationController {
     private final SignupEmailVerificationService emailVerificationService;
     private final SocialLoginSessionSupport socialLoginSessionSupport;
     private final MessageSource messageSource;
+    private final megane6.weplanet.i18n.Messages messages;
     private final LocaleResolver localeResolver;
 
     private String msg(String code) {
@@ -49,7 +54,7 @@ public class DormantAccountReactivationController {
 
     @PostMapping("/code")
     @ResponseBody
-    public Map<String, Object> sendCode(@RequestParam String username) {
+    public Map<String, Object> sendCode(@RequestParam String username, HttpSession session) {
         Map<String, Object> result = new HashMap<>();
         Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
@@ -58,9 +63,12 @@ public class DormantAccountReactivationController {
             return result;
         }
         try {
-            emailVerificationService.sendVerificationCode(target.get().getEmail());
+            emailVerificationService.sendVerificationCode(session, VerificationPurpose.REACTIVATE, target.get().getEmail());
             result.put("success", true);
             result.put("message", msg("reactivate.codeSent"));
+        } catch (VerificationRateLimitException e) {
+            result.put("success", false);
+            result.put("message", messages.resolve(e));
         } catch (Exception e) {
             log.error("[휴면계정 해제] 인증코드 발송 실패", e);
             result.put("success", false);
@@ -82,11 +90,14 @@ public class DormantAccountReactivationController {
             return "login/reactivate";
         }
         User user = target.get();
-        if (!emailVerificationService.verifyCode(user.getEmail(), code)) {
-            model.addAttribute("errorMessage", msg("reactivate.codeInvalid"));
+        // 코드를 보낸 것과 같은 세션에서만 확인된다 - 휴면 해제는 성공하면 바로 로그인되므로 특히 중요
+        VerificationResult verified = emailVerificationService.verifyCode(
+                request.getSession(false), VerificationPurpose.REACTIVATE, user.getEmail(), code);
+        if (!verified.isSuccess()) {
+            model.addAttribute("errorMessage", messages.resolve(verified.failureMessage()));
             return "login/reactivate";
         }
-        emailVerificationService.clear(user.getEmail());
+        emailVerificationService.clear(request.getSession(false), VerificationPurpose.REACTIVATE, user.getEmail());
         user.reactivate();
         socialLoginSessionSupport.loginAs(user, request, response);
         // SETTINGS-03 로케일 버그#2 유형 수정: 휴면계정 해제도 로그인을 새로 여는 지점이라, 다른

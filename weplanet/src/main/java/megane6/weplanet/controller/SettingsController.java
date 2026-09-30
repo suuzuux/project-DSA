@@ -11,10 +11,14 @@ import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
+import megane6.weplanet.service.EmailChangeAuthService;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
+import megane6.weplanet.service.email.VerificationPurpose;
+import megane6.weplanet.service.email.VerificationRateLimitException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,6 +50,7 @@ public class SettingsController {
 	// SETTINGS-03 커밋3: 이메일 인증 서비스 예외가 메시지 키로 바뀌어서 화면에 내보낼 때 해석한다
 	private final megane6.weplanet.i18n.Messages messages;
 	private final LocaleResolver localeResolver;
+	private final EmailChangeAuthService emailChangeAuthService;
 
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
@@ -66,11 +71,20 @@ public class SettingsController {
 								@RequestParam(required = false) String currentPassword,
 								@RequestParam(required = false) String newPassword,
 								@RequestParam(required = false) String confirmPassword,
+								@RequestParam(required = false) String phone,
+								HttpSession session,
 								RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
 		try {
-			AuthenticatedUser refreshed = userService.updatePortalAccount(
-					user, nickname, realName, email, currentPassword, newPassword, confirmPassword);
+			// AUTH-11: 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
+			boolean newEmailVerified = emailVerificationService.isVerified(session, VerificationPurpose.EMAIL_CHANGE, email);
+			// 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService)
+			boolean emailChangeAuthorized = emailChangeAuthService.isAuthorized(session, user);
+			AuthenticatedUser refreshed = userService.updatePortalAccount(user, nickname, realName, email,
+					newEmailVerified, emailChangeAuthorized, phone, currentPassword, newPassword, confirmPassword);
+			// 저장까지 모두 성공한 뒤에 인증을 지운다 (비밀번호 검증 등에서 실패하면 인증을 다시 받지 않아도 되게)
+			emailVerificationService.clear(session, VerificationPurpose.EMAIL_CHANGE, email);
+			emailChangeAuthService.clear(session);
 			Authentication current = SecurityContextHolder.getContext().getAuthentication();
 			Authentication updated = new UsernamePasswordAuthenticationToken(
 					refreshed, current.getCredentials(), refreshed.getAuthorities());
@@ -80,20 +94,53 @@ public class SettingsController {
 		} catch (IllegalArgumentException e) {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
+		} catch (org.springframework.dao.DataIntegrityViolationException e) {
+			// AUTH-11: 중복 확인과 저장 사이에 다른 계정이 같은 이메일을 먼저 쓴 경우 - DB 유니크 제약(uk_users_email)이
+			// 막아 주고, 500 화면 대신 안내 문구를 보여준다
+			log.warn("회원정보 수정 실패(이메일 중복 저장 충돌): {}", e.getMostSpecificCause().getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", msg("settings.email.alreadyInUse"));
 		}
 		return "redirect:/settings";
 	}
 	
+	// 이메일 "수정하기"를 누르면 먼저 현재 비밀번호를 확인한다. 맞으면 이 세션에 10분 동안 본인 확인 완료가 남고,
+	// 화면은 잠긴 이메일 칸을 연다. (비밀번호가 없는 소셜 전용 계정은 화면에서 이 단계를 건너뛴다)
+	@PostMapping("/settings/email/password-check")
+	@ResponseBody
+	public Map<String, Object> checkPasswordForEmailChange(@AuthenticationPrincipal AuthenticatedUser principal,
+															@RequestParam(required = false) String currentPassword,
+															HttpSession session) {
+		Map<String, Object> result = new HashMap<>();
+		User user = userResolver.requireAuthenticated(principal);
+		try {
+			emailChangeAuthService.confirmPassword(session, user, currentPassword);
+			result.put("success", true);
+			result.put("message", msg("settings.email.passwordConfirmed"));
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			result.put("success", false);
+			result.put("message", messages.resolve(e));
+		}
+		return result;
+	}
+
 	@PostMapping("/settings/email/code")
 	@ResponseBody
 	public Map<String, Object> sendEmailChangeCode(@AuthenticationPrincipal AuthenticatedUser principal,
-													@RequestParam String newEmail) {
+													@RequestParam String newEmail,
+													HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
 		String trimmed = newEmail == null ? "" : newEmail.trim();
 
 		// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 제공자와 무관하게 누구나
 		// 이메일을 바꿀 수 있다.
+		// 현재 비밀번호 확인을 먼저 마쳐야 인증코드를 보낸다 (로그인된 브라우저로 남의 이메일에 코드를 보내는 것도 막음)
+		if (!emailChangeAuthService.isAuthorized(session, user)) {
+			result.put("success", false);
+			result.put("needsPassword", true);
+			result.put("message", msg("settings.email.passwordCheckRequired"));
+			return result;
+		}
 		if (trimmed.isBlank()) {
 			result.put("success", false);
 			result.put("message", msg("settings.modal.emailRequired"));
@@ -110,9 +157,12 @@ public class SettingsController {
 			return result;
 		}
 		try {
-			emailVerificationService.sendVerificationCode(trimmed);
+			emailVerificationService.sendVerificationCode(session, VerificationPurpose.EMAIL_CHANGE, trimmed);
 			result.put("success", true);
 			result.put("message", msg("settings.email.codeSent"));
+		} catch (VerificationRateLimitException e) {
+			result.put("success", false);
+			result.put("message", messages.resolve(e));
 		} catch (Exception e) {
 			log.error("[회원정보 수정] 이메일 변경 인증코드 발송 실패 (to={})", trimmed, e);
 			result.put("success", false);
@@ -123,11 +173,12 @@ public class SettingsController {
 
 	@PostMapping("/settings/email/verify")
 	@ResponseBody
-	public Map<String, Object> verifyEmailChangeCode(@RequestParam String newEmail, @RequestParam String code) {
+	public Map<String, Object> verifyEmailChangeCode(@RequestParam String newEmail, @RequestParam String code,
+													  HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		boolean verified = emailVerificationService.verifyCode(newEmail, code);
-		result.put("success", verified);
-		result.put("message", verified ? msg("settings.email.verifySuccess") : msg("settings.email.verifyFailed"));
+		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.EMAIL_CHANGE, newEmail, code);
+		result.put("success", verified.isSuccess());
+		result.put("message", verified.isSuccess() ? msg("settings.email.verifySuccess") : messages.resolve(verified.failureMessage()));
 		return result;
 	}
 
@@ -168,9 +219,17 @@ public class SettingsController {
 
 	// [회원탈퇴] 소프트 삭제 처리 후 즉시 로그아웃시킨다 (세션에 남은 만료 계정으로 계속 요청이 오는 걸 막기 위함).
 	@PostMapping("/settings/withdraw")
-	public String withdraw(@AuthenticationPrincipal AuthenticatedUser principal, HttpServletRequest request) {
+	public String withdraw(@AuthenticationPrincipal AuthenticatedUser principal,
+						   @RequestParam(required = false) String currentPassword,
+						   HttpServletRequest request,
+						   RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
-		userService.withdraw(user);
+		try {
+			userService.withdraw(user, currentPassword);
+		} catch (IllegalArgumentException e) {
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
+			return "redirect:/settings";
+		}
 		SecurityContextHolder.clearContext();
 		invalidateAndOpenFreshSession(request);
 		return "redirect:/login/id?withdrawn";

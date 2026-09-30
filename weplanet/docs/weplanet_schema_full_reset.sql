@@ -33,6 +33,11 @@
 --   - users.preferred_language : "기본 서비스 언어" (KO/JA/EN, 기본값 KO). 게시글/댓글 AI 번역
 --     (TranslateService)의 대상 언어로도 그대로 재사용됨 - UI 언어랑 번역 언어를 따로 두지 않음
 -- ------------------------------------------------------------
+-- 수정: 2026-09-29 (EVENT-HASHTAG, 해시태그 총공 이벤트)
+--   - hashtag_event : 총공 1회분(기간, 집계 확정 시각). 예정/진행 중/종료 상태는 컬럼 없이 시각으로 계산
+--   - hashtag_event_target : 참여 아티스트별 해시태그 + 집계 확정 시 고정되는 final_* 결과
+--   - hashtag_event_entry : 해시태그가 들어간 팬 게시글 기록(인정/제외 사유). post 삭제 시 CASCADE
+-- ------------------------------------------------------------
 -- !! 주의 !!
 --   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
 --   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
@@ -69,6 +74,9 @@ SET UNIQUE_CHECKS = 0;
 -- ------------------------------------------------------------
 -- DROP (자식 -> 부모 역순, users.agency_id 추가로 인해 agencies 도 맨 마지막)
 -- ------------------------------------------------------------
+DROP TABLE IF EXISTS `hashtag_event_entry`;
+DROP TABLE IF EXISTS `hashtag_event_target`;
+DROP TABLE IF EXISTS `hashtag_event`;
 DROP TABLE IF EXISTS `main_banner`;
 DROP TABLE IF EXISTS `notification_setting`;
 DROP TABLE IF EXISTS `notification`;
@@ -1230,6 +1238,55 @@ CREATE TABLE `notification_setting` (
   CONSTRAINT `fk_ns_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='알림 유형별 수신 설정';
 
+-- hashtag_event: 해시태그 총공 이벤트 (최고관리자 > 이벤트 > 해시태그 총공). 상태는 저장하지 않고 기간·finalized_at 으로 계산
+CREATE TABLE `hashtag_event` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '이벤트 PK',
+  `title` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '이벤트명',
+  `start_at` datetime(6) NOT NULL COMMENT '시작 시각(시작일 00:00:00)',
+  `end_at` datetime(6) NOT NULL COMMENT '종료 시각(종료일 23:59:59)',
+  `finalized_at` datetime(6) DEFAULT NULL COMMENT '집계 확정 시각(NULL=미확정)',
+  `created_by` bigint NOT NULL COMMENT '만든 관리자(users.id)',
+  `created_at` datetime(6) NOT NULL COMMENT '등록 시각',
+  `updated_at` datetime(6) NOT NULL COMMENT '수정 시각',
+  PRIMARY KEY (`id`),
+  KEY `idx_hashtag_event_period` (`start_at`, `end_at`),
+  CONSTRAINT `fk_hashtag_event_creator` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 이벤트';
+
+-- hashtag_event_target: 이벤트에 참여하는 아티스트와 집계할 해시태그 (+ 집계 확정 시 결과 고정)
+CREATE TABLE `hashtag_event_target` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '참여 아티스트 PK',
+  `event_id` bigint NOT NULL COMMENT 'hashtag_event.id',
+  `artist_id` bigint NOT NULL COMMENT '참여 아티스트 커뮤니티(users.id)',
+  `hashtag` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '집계할 해시태그(# 포함)',
+  `final_member_count` int DEFAULT NULL COMMENT '[확정] 가입자 수',
+  `final_participant_count` int DEFAULT NULL COMMENT '[확정] 참여 인원',
+  `final_post_count` int DEFAULT NULL COMMENT '[확정] 인정된 글 수',
+  `final_rank` int DEFAULT NULL COMMENT '[확정] 참여율 순위',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_hashtag_target_event_artist` (`event_id`, `artist_id`),
+  KEY `idx_hashtag_target_artist` (`artist_id`),
+  CONSTRAINT `fk_hashtag_target_event` FOREIGN KEY (`event_id`) REFERENCES `hashtag_event` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hashtag_target_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 참여 아티스트';
+
+-- hashtag_event_entry: 해시태그가 들어간 팬 게시글 기록 (인정/제외 사유 포함, 글 1개당 1행). 글이 삭제되면 같이 삭제
+CREATE TABLE `hashtag_event_entry` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '집계 기록 PK',
+  `target_id` bigint NOT NULL COMMENT 'hashtag_event_target.id',
+  `post_id` bigint NOT NULL COMMENT '해시태그가 들어간 게시글(post.id)',
+  `fan_id` bigint NOT NULL COMMENT '작성 팬(users.id)',
+  `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'COUNTED/DAILY_LIMIT/HIDDEN_FROM_ARTIST/NOT_MEMBER',
+  `created_at` datetime(6) NOT NULL COMMENT '글 작성 시각(1인 1일 3건 판정 기준)',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_hashtag_entry_post` (`post_id`),
+  KEY `idx_hashtag_entry_target_fan` (`target_id`, `fan_id`, `created_at`),
+  CONSTRAINT `fk_hashtag_entry_target` FOREIGN KEY (`target_id`) REFERENCES `hashtag_event_target` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hashtag_entry_post` FOREIGN KEY (`post_id`) REFERENCES `post` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_hashtag_entry_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `ck_hashtag_entry_status` CHECK (`status` IN (_utf8mb4'COUNTED', _utf8mb4'DAILY_LIMIT', _utf8mb4'HIDDEN_FROM_ARTIST', _utf8mb4'NOT_MEMBER'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 게시글 집계 기록';
+
 SET FOREIGN_KEY_CHECKS = 1;
 SET UNIQUE_CHECKS = 1;
 
@@ -1338,6 +1395,6 @@ JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
 
 -- ------------------------------------------------------------
--- [확인] 52이 나오면 테이블은 모두 준비된 것입니다.
+-- [확인] 60이 나오면 테이블은 모두 준비된 것입니다.
 -- ------------------------------------------------------------
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();

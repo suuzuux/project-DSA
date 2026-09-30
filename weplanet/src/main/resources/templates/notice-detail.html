@@ -7,6 +7,12 @@
   <title th:text="${notice.title} + ' | WePlaNet'">공지 상세 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
+  <style>
+    /* 예전 공지는 평문이라, 한 줄 줄바꿈이 마크다운에서는 공백으로 합쳐진다 → 줄바꿈이 그대로 보이게 */
+    .notice-viewer .toastui-editor-contents p { white-space: pre-line; }
+    .notice-viewer .toastui-editor-contents img { max-width: 100%; border-radius: 8px; }
+  </style>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
@@ -41,11 +47,20 @@
     <h1 class="section__title" style="font-size:var(--wp-fs-xl);margin-bottom:8px;" th:text="${notice.title}">공지 제목</h1>
     <p class="text-xs text-muted mb-24"
        th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31</p>
-    <p style="white-space:pre-wrap;line-height:1.7;" th:text="${notice.content}">공지 내용</p>
+    <!-- 본문은 마크다운. Toast UI Viewer가 링크·이미지를 그려준다 (위험한 HTML 태그는 Viewer가 걸러냄) -->
+    <div id="noticeViewer" class="notice-viewer"></div>
   </article>
 </main>
 
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script th:inline="javascript">
+  toastui.Editor.factory({
+    el: document.getElementById("noticeViewer"),
+    viewer: true,
+    initialValue: /*[[${notice.content}]]*/ ""
+  });
+</script>
 </body>
 </html>

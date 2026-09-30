@@ -933,8 +933,7 @@
     Array.prototype.forEach.call(actions.children, function (child) {
       if (firstExtra) return;
       if (ordered.indexOf(child) !== -1) return;
-      if (child.getAttribute && child.getAttribute("data-admin-page-link")) return;
-      if (child.querySelector && child.querySelector("[data-admin-page-link]")) return;
+      // "관리자 페이지로 이동" 버튼도 아이콘 뒤(로그아웃 바로 왼쪽)에 오도록 건너뛰지 않는다
       firstExtra = child;
     });
     ordered.forEach(function (node) {

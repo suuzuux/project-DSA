@@ -45,7 +45,11 @@
     const joined = joinedArtistIds.has(String(a.artistId));
 
     // 가입한 커뮤니티는 data-join-btn 을 붙이지 않는다 -> 닉네임 모달이 열리지 않음
-    const actionHtml = joined
+    // AUTH-11: 본인 커뮤니티(a.own - 아티스트/그룹 멤버)도 가입 대상이 아니므로 버튼 대신 표시만 한다
+    const actionHtml = a.own
+      ? `<button type="button" class="btn btn--ghost btn--sm" disabled
+                 style="opacity:.7;cursor:default;">내 커뮤니티</button>`
+      : joined
       ? `<button type="button" class="btn btn--ghost btn--sm" disabled
                  style="opacity:.7;cursor:default;">${escapeHtml(t("client.explore.joined", "✓ 가입중"))}</button>`
       : `<button type="button" class="btn btn--primary btn--sm" data-join-btn

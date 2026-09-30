@@ -179,10 +179,11 @@
     // 크롭 모달 제목만 이 화면에서 로케일에 맞게 덮어씀 (community/profile.html은 이 값이 없으면 기존 한국어 기본값을 그대로 씀)
     window.WEPLANET_PROFILE_CROP_TITLES = {
       Avatar: /*[[#{portalProfile.js.avatarEditTitle}]]*/ "프로필 이미지 편집",
-      Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집"
+      Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집",
+      HeaderImage: /*[[#{portalProfile.js.headerEditTitle}]]*/ "헤더 이미지 편집"
     };
   </script>
-  <script th:src="@{/js/profile-image-crop.js(v=9)}"></script>
+  <script th:src="@{/js/profile-image-crop.js(v=10)}"></script>
   <script th:inline="javascript">
     (function () {
       "use strict";

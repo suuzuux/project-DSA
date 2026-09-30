@@ -186,7 +186,7 @@ public class ProjectService {
 		if (hasRole(viewer, Role.ADMIN)) {
 			return;
 		}
-
+		
 		User member = ur.findById(viewer.getId())
 				.orElseThrow(() ->
 						new AccessDeniedException("error.project.memberNotFound")

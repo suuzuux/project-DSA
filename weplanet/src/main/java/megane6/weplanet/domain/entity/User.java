@@ -52,7 +52,9 @@ public class User {
 	@Column(nullable = false, length = 50)
 	private String nickname;	// 가입자 닉네임
 	
-	@Column(nullable = false, length = 255)
+	// AUTH-11: DB 에는 처음부터 UNIQUE KEY uk_users_email 이 있다(docs/weplanet_schema_full_reset.sql).
+	// 엔티티에도 같은 사실을 적어 둔다 - ddl-auto=validate 라 스키마를 바꾸지는 않는다.
+	@Column(nullable = false, length = 255, unique = true)
 	private String email;		// 가입자 이메일
 	
 	@Convert(converter = PlaintextBytesConverter.class)
@@ -240,6 +242,12 @@ public class User {
 		return this.password != null;
 	}
 
+	// AUTH-11: 실제로 메일을 받을 수 없는 시스템용 이메일인지 (카카오/LINE 가입자, 그룹 멤버, 탈퇴 익명화 주소 -
+	// 모두 *.weplanet.local 로 만든다). 이 주소로는 인증코드·안내 메일을 보내도 받을 수 없다.
+	public boolean hasPlaceholderEmail() {
+		return this.email != null && this.email.toLowerCase().endsWith(".weplanet.local");
+	}
+
 	public void changePortalProfile(String nickname, String email) {
 		this.nickname = nickname;
 		this.email = email;
@@ -255,6 +263,11 @@ public class User {
 	
 	public void changeRealName(String realName) {
 		this.realName = realName;
+	}
+
+	// AUTH-11: 설정 화면의 "전화번호 (선택)" - 비우면 null 로 지운다. 굿즈 주문서 연락처 기본값으로도 쓰인다.
+	public void changePhone(String phone) {
+		this.phone = phone;
 	}
 	
 	public void changePassword(String encodedPassword) {
@@ -339,6 +352,13 @@ public class User {
 		this.realName = "탈퇴한 회원";
 		this.phone = null;
 		this.address2 = null;
+		// AUTH-11: 개인정보처리방침("탈퇴 시 개인정보 익명 처리, 선택 항목 삭제")과 맞추기 위해 나머지 개인 정보도 지운다.
+		// 예전에는 전화번호·상세주소만 지우고 기본 주소·우편번호·생년월일·성별은 그대로 남았다.
+		this.phoneHash = null;
+		this.zipcode = null;
+		this.address1 = null;
+		this.birthDate = null;
+		this.gender = null;
 	}
 
 	// [관리자 제재] 신고 누적 등으로 관리자가 계정을 정지시킬 때 씀.

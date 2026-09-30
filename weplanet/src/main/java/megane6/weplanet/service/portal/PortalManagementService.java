@@ -574,16 +574,19 @@ public class PortalManagementService {
             deleteUploadedIfPresent(profile.getLogoImageUrl());
             profile.clearLogoImage();
         } else if (avatar != null && !avatar.isEmpty()) {
+            // AUTH-11: 이미지 형식·크기 검증 후 저장하고, 새 파일 저장이 끝난 뒤에 옛 파일을 지운다
+            String newLogo = fileStorageService.storeImage(avatar);
             deleteUploadedIfPresent(profile.getLogoImageUrl());
-            profile.replaceLogoImage(fileStorageService.store(avatar));
+            profile.replaceLogoImage(newLogo);
         }
 
         if (removeBackground) {
             deleteUploadedIfPresent(profile.getHeaderImageUrl());
             profile.clearHeaderImage();
         } else if (background != null && !background.isEmpty()) {
+            String newHeader = fileStorageService.storeImage(background);
             deleteUploadedIfPresent(profile.getHeaderImageUrl());
-            profile.replaceHeaderImage(fileStorageService.store(background));
+            profile.replaceHeaderImage(newHeader);
         }
     }
 

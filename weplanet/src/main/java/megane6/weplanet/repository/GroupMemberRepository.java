@@ -4,6 +4,7 @@ import megane6.weplanet.domain.entity.GroupMember;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,6 +15,10 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 	@EntityGraph(attributePaths = "member")
 	List<GroupMember> findByGroupIdAndLeftAtIsNullOrderByIdAsc(Long groupId);
 	
+	// 관리자 아티스트 목록: 여러 그룹의 활동 중인 멤버를 한 번에 가져온다 (그룹마다 조회하면 N+1)
+	@EntityGraph(attributePaths = "member")
+	List<GroupMember> findByGroupIdInAndLeftAtIsNullOrderByIdAsc(Collection<Long> groupIds);
+
 	// 그룹 로그인 직후: 멤버가 있는 그룹이면 프로필 선택으로, 없으면(솔로) 바로 커뮤니티로
 	boolean existsByGroupIdAndLeftAtIsNull(Long groupId);
 	
