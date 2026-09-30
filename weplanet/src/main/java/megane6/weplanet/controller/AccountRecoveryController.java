@@ -1,9 +1,13 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.service.AccountRecoveryService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
+import megane6.weplanet.service.email.VerificationPurpose;
+import megane6.weplanet.service.email.VerificationRateLimitException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +22,13 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AccountRecoveryController {
 	
+	// AUTH-11: 입력한 정보와 일치하는 계정이 있든 없든 같은 문구를 보여준다. 예전에는 "일치하는 회원정보를 찾을 수 없습니다" /
+	// "비밀번호가 설정되어 있지 않아…" 처럼 경우마다 문구가 달라서, 이름+이메일(또는 아이디+이메일) 조합으로
+	// 계정이 있는지, 소셜 전용 계정인지까지 알아낼 수 있었다.
+	private static final String CODE_SENT_IF_MATCHED =
+			"입력하신 정보와 일치하는 회원이 있다면 인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요. "
+					+ "(소셜 로그인으로만 가입한 계정은 아이디/비밀번호 찾기를 이용할 수 없습니다.)";
+	
 	private final AccountRecoveryService accountRecoveryService;
 	private final SignupEmailVerificationService emailVerificationService;
 	
@@ -28,22 +39,17 @@ public class AccountRecoveryController {
 	
 	@PostMapping("/find-id/code")
 	@ResponseBody
-	public Map<String, Object> sendFindIdCode(@RequestParam String realName, @RequestParam String email) {
+	public Map<String, Object> sendFindIdCode(@RequestParam String realName, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		if (!accountRecoveryService.matchesRealNameAndEmail(realName, email)) {
-			result.put("success", false);
-			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
-			return result;
-		}
-		if (!accountRecoveryService.isEligibleForRecovery(email)) {
-			result.put("success", false);
-			result.put("message", "비밀번호가 설정되어 있지 않아 아이디를 찾을 수 없습니다.");
-			return result;
-		}
+		boolean eligible = accountRecoveryService.matchesRealNameAndEmail(realName, email)
+				&& accountRecoveryService.isEligibleForRecovery(email);
 		try {
-			emailVerificationService.sendVerificationCode(email);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, eligible);
 			result.put("success", true);
-			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+			result.put("message", CODE_SENT_IF_MATCHED);
+		} catch (VerificationRateLimitException e) {
+			result.put("success", false);
+			result.put("message", e.getMessage());
 		} catch (Exception e) {
 			log.error("[아이디 찾기] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
@@ -54,11 +60,13 @@ public class AccountRecoveryController {
 	
 	@PostMapping("/find-id/verify")
 	@ResponseBody
-	public Map<String, Object> verifyFindId(@RequestParam String realName, @RequestParam String email, @RequestParam String code) {
+	public Map<String, Object> verifyFindId(@RequestParam String realName, @RequestParam String email, @RequestParam String code,
+											HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		if (!emailVerificationService.verifyCode(email, code)) {
+		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.FIND_ID, email, code);
+		if (!verified.isSuccess()) {
 			result.put("success", false);
-			result.put("message", "인증코드가 일치하지 않거나 만료되었습니다.");
+			result.put("message", verified.failureMessage());
 			return result;
 		}
 		if (!accountRecoveryService.matchesRealNameAndEmail(realName, email)
@@ -69,7 +77,7 @@ public class AccountRecoveryController {
 		}
 		result.put("success", true);
 		result.put("username", accountRecoveryService.findUsernameByEmail(email));
-		emailVerificationService.clear(email);
+		emailVerificationService.clear(session, VerificationPurpose.FIND_ID, email);
 		return result;
 	}
 	
@@ -80,22 +88,17 @@ public class AccountRecoveryController {
 	
 	@PostMapping("/find-password/code")
 	@ResponseBody
-	public Map<String, Object> sendResetCode(@RequestParam String username, @RequestParam String email) {
+	public Map<String, Object> sendResetCode(@RequestParam String username, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		if (!accountRecoveryService.matchesUsernameAndEmail(username, email)) {
-			result.put("success", false);
-			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
-			return result;
-		}
-		if (!accountRecoveryService.isEligibleForRecovery(email)) {
-			result.put("success", false);
-			result.put("message", "비밀번호가 설정되어 있지 않아 비밀번호를 찾을 수 없습니다.");
-			return result;
-		}
+		boolean eligible = accountRecoveryService.matchesUsernameAndEmail(username, email)
+				&& accountRecoveryService.isEligibleForRecovery(email);
 		try {
-			emailVerificationService.sendVerificationCode(email);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, eligible);
 			result.put("success", true);
-			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+			result.put("message", CODE_SENT_IF_MATCHED);
+		} catch (VerificationRateLimitException e) {
+			result.put("success", false);
+			result.put("message", e.getMessage());
 		} catch (Exception e) {
 			log.error("[비밀번호 재설정] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
@@ -106,11 +109,13 @@ public class AccountRecoveryController {
 	
 	@PostMapping("/find-password/verify")
 	@ResponseBody
-	public Map<String, Object> verifyResetCode(@RequestParam String username, @RequestParam String email, @RequestParam String code) {
+	public Map<String, Object> verifyResetCode(@RequestParam String username, @RequestParam String email, @RequestParam String code,
+											   HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		if (!emailVerificationService.verifyCode(email, code)) {
+		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.RESET_PASSWORD, email, code);
+		if (!verified.isSuccess()) {
 			result.put("success", false);
-			result.put("message", "인증코드가 일치하지 않거나 만료되었습니다.");
+			result.put("message", verified.failureMessage());
 			return result;
 		}
 		result.put("success", true);
@@ -123,17 +128,19 @@ public class AccountRecoveryController {
 	public Map<String, Object> resetPassword(@RequestParam String username,
 											 @RequestParam String email,
 											 @RequestParam String newPassword,
-											 @RequestParam String confirmPassword) {
+											 @RequestParam String confirmPassword,
+											 HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
 		// 화면(JS)에서 인증 후에만 이 단계로 넘어가지만, 직접 POST를 우회하는 걸 막기 위해 서버에서도 확인한다
-		if (!emailVerificationService.isVerified(email) || !accountRecoveryService.matchesUsernameAndEmail(username, email)) {
+		if (!emailVerificationService.isVerified(session, VerificationPurpose.RESET_PASSWORD, email)
+				|| !accountRecoveryService.matchesUsernameAndEmail(username, email)) {
 			result.put("success", false);
 			result.put("message", "이메일 인증을 먼저 완료해주세요.");
 			return result;
 		}
 		try {
 			accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
-			emailVerificationService.clear(email);
+			emailVerificationService.clear(session, VerificationPurpose.RESET_PASSWORD, email);
 			result.put("success", true);
 			result.put("message", "비밀번호가 변경되었습니다. 다시 로그인해주세요.");
 		} catch (IllegalArgumentException e) {

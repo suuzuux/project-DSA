@@ -14,11 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 테스트용 최고관리자(ADMIN) 계정을 DB에 넣어둠.
  * <p>
- * 주의: 관리자 로그인은 아이디/비밀번호만으로 끝나지 않고, 로그인할 때마다
- * 이 계정의 email로 실제 인증번호 메일을 보낸다(AdminLoginService).
- * 그래서 email은 팀이 다 같이 확인할 수 있는 주소여야 의미가 있다 -
- * 기존에 로컬에 수동으로 만들어져 있던 admin_test 계정과 같은 주소를 그대로 씀.
- * 이 주소를 팀원 전체가 실제로 열어볼 수 없다면, 각자 자기 이메일로 바꿔서 써야 한다.
+ * 주의: 현재 관리자 로그인은 아이디/비밀번호만으로 끝난다(관리자 로그인 화면 /admin/login 에서만 가능).
+ * 이메일 인증번호 2단계 인증(AdminLoginService)은 만들어져 있지만 로그인 흐름에 연결하지 않기로 했다 (AUTH-11).
+ * email은 기존에 로컬에 수동으로 만들어져 있던 admin_test 계정과 같은 주소를 그대로 씀.
+ * 테스트 기간용 계정 - 최종 버전에서는 이 클래스를 빼고 관리자는 DB에서 직접 만든다.
  */
 @Slf4j
 @Component

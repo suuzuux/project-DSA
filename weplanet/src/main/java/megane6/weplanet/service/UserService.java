@@ -11,7 +11,6 @@ import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.email.MarketingConsentEmailService;
-import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,7 +29,6 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
-	private final SignupEmailVerificationService emailVerificationService;
 	private final MarketingConsentEmailService marketingConsentEmailService;
 	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
 	private final CommunityJoinService communityJoinService;
@@ -92,6 +90,8 @@ public class UserService {
 	
 	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
 	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
+	// AUTH-11: 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
+	private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-]{1,20}$");
 
 	// 회원가입 화면의 "중복 확인" 버튼용 - 실제로 DB를 조회해서 사용 가능 여부를 알려준다.
 	public boolean isUsernameAvailable(String username) {
@@ -103,7 +103,10 @@ public class UserService {
 	// 반환하는 AuthenticatedUser는 호출한 컨트롤러가 SecurityContext를 즉시 갱신할 때 씀 -
 	// 안 그러면 세션에 남아있는 예전 닉네임 때문에 재로그인 전까지 헤더가 안 바뀜.
 	@Transactional
+	// newEmailVerified: 컨트롤러가 "이 세션에서 이메일 변경 용도로 인증을 마쳤는지" 확인해서 넘겨준다 (AUTH-11)
+	// emailChangeAuthorized: 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService, 소셜 전용 계정은 항상 true)
 	public AuthenticatedUser updatePortalAccount(User user, String nickname, String realName, String email,
+												  boolean newEmailVerified, boolean emailChangeAuthorized, String phone,
 												  String currentPassword, String newPassword, String confirmPassword) {
 		String trimmedNickname = nickname == null ? "" : nickname.trim();
 		String trimmedRealName = realName == null ? "" : realName.trim();
@@ -122,27 +125,47 @@ public class UserService {
 				throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
 			}
 		}
-		if (!trimmedEmail.equals(user.getEmail())) {
+		boolean emailChanged = !trimmedEmail.equals(user.getEmail());
+		if (emailChanged) {
 			// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 이제 연동 여부와
 			// 등록 이메일은 서로 독립적인 값이라, 제공자와 무관하게 누구나 인증 절차만 거치면 바꿀 수 있다.
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
-			if (!emailVerificationService.isVerified(trimmedEmail)) {
+			if (!newEmailVerified) {
 				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
+			}
+			// AUTH-11: 비밀번호가 있는 계정은 이메일을 바꾸기 전에 현재 비밀번호를 다시 확인한다.
+			// 이메일이 바뀌면 아이디/비밀번호 찾기가 새 이메일로 가기 때문에, 로그인된 브라우저를 잠깐 쓴 사람이
+			// 이메일을 바꿔 계정을 가져가는 것을 막기 위함. 확인은 이메일 "수정하기"를 누를 때 따로 받고
+			// (EmailChangeAuthService), 여기서는 그 확인이 이 세션에 남아 있는지만 본다.
+			// 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어 새 이메일 인증만 거친다(항상 true 로 넘어옴).
+			if (!emailChangeAuthorized) {
+				throw new IllegalArgumentException("이메일을 변경하려면 먼저 현재 비밀번호를 확인해주세요.");
 			}
 			if (userRepository.existsByEmail(trimmedEmail)) {
 				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
 			}
 			user.changePortalProfile(trimmedNickname, trimmedEmail);
-			emailVerificationService.clear(trimmedEmail);
 		} else {
 			user.changePortalProfile(trimmedNickname, user.getEmail());
 		}
+		// AUTH-11: real_name 은 VARBINARY(255)(UTF-8 바이트) - 가입 화면과 같은 50자 제한
+		if (trimmedRealName.length() > 50) {
+			throw new IllegalArgumentException("이름은 50자 이내로 입력해주세요.");
+		}
 		user.changeRealName(trimmedRealName);
+
+		// AUTH-11: 전화번호(선택) - 예전에는 화면에 입력칸만 있고 저장하지 않았다
+		String trimmedPhone = phone == null ? "" : phone.trim();
+		if (!trimmedPhone.isEmpty() && !PHONE_PATTERN.matcher(trimmedPhone).matches()) {
+			throw new IllegalArgumentException("전화번호는 숫자와 - 만 사용해 20자 이내로 입력해주세요.");
+		}
+		user.changePhone(trimmedPhone.isEmpty() ? null : trimmedPhone);
 
 		// 비밀번호 변경/등록은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
 		// 화면(JS)에서는 현재 비밀번호를 입력해야 새 비밀번호 칸이 열리지만, 서버에서도 한 번 더 검증한다
 		// (JS를 우회해서 직접 요청을 보내는 경우를 막기 위함).
+		// (이메일 변경 확인은 이제 별도로 받으므로 이 "현재 비밀번호" 칸은 비밀번호 변경 전용이다)
 		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
 		if (wantsPasswordChange) {
 			// AUTH-10: provider가 아니라 "지금 비밀번호가 있는지"로 판단한다. 비밀번호가 이미 있는 계정만
@@ -176,8 +199,15 @@ public class UserService {
 
 	// [회원탈퇴] 상태 변경(WITHDRAWN)/개인정보 익명화는 User.withdraw() 참고.
 	// 거기서 못 지우는(다른 테이블 걸쳐있는) 것들 - 가입해둔 커뮤니티, 팔로우 관계 - 은 여기서 정리한다.
+	// AUTH-11: 비밀번호가 있는 계정은 현재 비밀번호가 맞아야 탈퇴된다 (소셜 전용 계정은 확인할 비밀번호가 없어 생략).
 	@Transactional
-	public void withdraw(User user) {
+	public void withdraw(User user, String currentPassword) {
+		if (user.hasPassword()
+				&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
+			throw new IllegalArgumentException(hasText(currentPassword)
+					? "현재 비밀번호가 일치하지 않아 탈퇴하지 않았습니다."
+					: "탈퇴하려면 현재 비밀번호를 입력해주세요.");
+		}
 		user.withdraw();
 
 		// 가입해둔 커뮤니티는 CommunityJoinService.leave()로 하나씩 탈퇴 처리 - 프로필/이미지 파일 정리와

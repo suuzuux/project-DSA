@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
  * 1) 아이디/비밀번호 확인 -> 관리자 계정 이메일로 인증번호 발송
  * 2) 인증번호 확인 -> 로그인 허용
  * 인증번호만으로는 로그인 X, 2단계에서도 아이디/비밀번호 다시 확인
+ * <p>
+ * AUTH-11: 현재 이 서비스는 로그인 흐름에 연결되어 있지 않다(관리자는 /admin/login 에서 아이디/비밀번호로만 로그인).
+ * 2단계 인증을 쓰기로 하면 LoginSuccessHandler 의 관리자 분기에서 이 서비스로 넘기도록 연결해야 한다.
  */
 @Service
 @RequiredArgsConstructor
