@@ -20,9 +20,6 @@
 
   <h1 class="auth-card__title mt-16">로그인</h1>
 
-  <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-top:8px;">
-    아이디 또는 비밀번호가 올바르지 않습니다.
-  </p>
   <p th:if="${param.withdrawn}" class="text-sm" style="color:#63704a;margin-top:8px;">
     탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.
   </p>
@@ -44,15 +41,43 @@
       <a th:href="@{/find-id}">아이디를 까먹었어요</a>
       <a th:href="@{/find-password}">비밀번호를 까먹었어요</a>
     </div>
+    <!-- 입력한 아이디로 가입된 계정이 없을 때 (1~4회째): 안내만 보여준다. 5회째에는 아래 확인창이 뜬다.
+         회원가입으로 넘어가면 입력했던 아이디가 채워진 가입 화면이 열린다 (SecurityConfig 로그인 실패 처리, AuthController) -->
+    <!-- 로그인 실패 안내는 모두 이 자리(찾기 링크 아래, 로그인 버튼 위)에 모은다 -->
+    <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;">
+      아이디 또는 비밀번호가 올바르지 않습니다.
+    </p>
+    <p th:if="${param.notFound}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;">
+      가입된 계정이 없습니다.
+      <a th:href="@{/signup/id}" style="color:var(--wp-brand);font-weight:600;text-decoration:underline;">회원가입하시겠습니까?</a>
+    </p>
 
     <button type="submit" class="btn btn--primary btn--block btn--lg">로그인하기</button>
   </form>
 
-  <p class="text-sm text-muted" style="margin-top:20px;text-align:center;">
-    아직 계정이 없으신가요?
-    <a th:href="@{/signup}" style="color:var(--wp-brand);font-weight:600;">회원가입</a>
-  </p>
+</div>
+<!-- 가입된 아이디가 없어서 5회 실패했을 때 뜨는 확인창. [예] → 회원가입 화면, [아니오] → 로그인 화면 그대로 -->
+<div class="modal-backdrop" id="signupSuggestModal" th:classappend="${param.ask} ? ' is-open'">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signupSuggestTitle">
+    <div class="modal__head">
+      <h2 class="modal__title" id="signupSuggestTitle">가입된 아이디가 없습니다</h2>
+      <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+    </div>
+    <p class="text-sm mb-16">회원가입하시겠습니까? 입력하신 아이디로 가입 화면이 열려요.</p>
+    <div class="stack">
+      <a th:href="@{/signup/id}" class="btn btn--primary btn--block">예</a>
+      <button type="button" class="btn btn--ghost btn--block" data-modal-close>아니오</button>
+    </div>
+  </div>
 </div>
 <script th:src="@{/js/main.js}"></script>
+<script>
+  // [아니오]로 확인창을 닫으면 주소의 ask 를 지워서, 새로고침해도 확인창이 다시 뜨지 않게 한다
+  document.querySelectorAll("#signupSuggestModal [data-modal-close]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      history.replaceState(null, "", location.pathname + "?notFound");
+    });
+  });
+</script>
 </body>
 </html>

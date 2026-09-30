@@ -17,12 +17,14 @@ public interface ArtistGroupProfileRepository extends JpaRepository<ArtistGroupP
 	Optional<ArtistGroupProfile> findByArtistId(Long artistId);
 
 	// 필터는 전부 선택사항 - null로 넘기면 그 조건은 무시됨 (검색창 처음 열었을 때 = 전체 목록)
+	// AUTH-11: 활동 중(ACTIVE)인 아티스트만 검색된다 - 아직 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트 제외
 	@Query("""
 			SELECT new megane6.weplanet.domain.dto.community.ArtistSearchRow(
 				u.id, u.nickname, agp.gender, agp.memberCount, agp.nationality, agp.category, agp.debutDate)
 			FROM ArtistGroupProfile agp
 			JOIN User u ON u.id = agp.artistId
-			WHERE (:keyword IS NULL OR u.nickname LIKE CONCAT('%', :keyword, '%'))
+			WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
+			  AND (:keyword IS NULL OR u.nickname LIKE CONCAT('%', :keyword, '%'))
 			  AND (:gender IS NULL OR agp.gender = :gender)
 			  AND (:nationality IS NULL OR agp.nationality = :nationality)
 			  AND (:category IS NULL OR agp.category = :category)
