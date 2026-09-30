@@ -2,6 +2,7 @@ package megane6.weplanet.service.email;
 
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.UserFollow;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -45,20 +46,21 @@ class CommunityActivityNotifierTest {
 				CommunityMember.builder().fanId(102L).artistId(artistId).build(),
 				CommunityMember.builder().fanId(103L).artistId(artistId).build()
 		));
-		when(userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(101L, artistId, artistId))
-				.thenReturn(true);
-		when(userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(102L, artistId, artistId))
-				.thenReturn(false);
-		when(userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(103L, artistId, artistId))
-				.thenReturn(true);
+		// AUTH-11: 팔로우 여부는 이 아티스트의 팔로워 목록을 한 번에 조회해서 가입자와 겹치는 사람만 남긴다
+		when(userFollowRepository.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(artistId, artistId)).thenReturn(List.of(
+				UserFollow.builder().followerId(101L).followingId(artistId).communityId(artistId).build(),
+				UserFollow.builder().followerId(103L).followingId(artistId).communityId(artistId).build()
+		));
 
 		User fan101 = mock(User.class);
 		when(fan101.getId()).thenReturn(101L);
+		when(fan101.isLoginable()).thenReturn(true);   // AUTH-11: 휴면·정지 회원은 제외되므로 활성 회원으로 둔다
 		when(fan101.isCommunityActivityEmailEnabled()).thenReturn(true);
 		when(fan101.isNightNotificationAllowed()).thenReturn(true); // 실행 시각과 무관하게 통과시키기 위함
 
 		User fan103 = mock(User.class);
 		when(fan103.getId()).thenReturn(103L);
+		when(fan103.isLoginable()).thenReturn(true);
 		when(fan103.isCommunityActivityEmailEnabled()).thenReturn(false);
 
 		when(userRepository.findAllById(Set.of(101L, 103L))).thenReturn(List.of(fan101, fan103));
@@ -79,8 +81,7 @@ class CommunityActivityNotifierTest {
 		when(communityMemberRepository.findByArtistId(artistId)).thenReturn(List.of(
 				CommunityMember.builder().fanId(201L).artistId(artistId).build()
 		));
-		when(userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(201L, artistId, artistId))
-				.thenReturn(false);
+		when(userFollowRepository.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(artistId, artistId)).thenReturn(List.of());
 
 		notifier.notifyNewPost(artist, post);
 
@@ -100,7 +101,7 @@ class CommunityActivityNotifierTest {
 		notifier.notifyNewPost(artist, post);
 
 		verify(userFollowRepository, never())
-				.existsByFollowerIdAndFollowingIdAndCommunityId(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+				.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
 		verify(emailService, never()).sendNewPostEmail(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
 	}
 }

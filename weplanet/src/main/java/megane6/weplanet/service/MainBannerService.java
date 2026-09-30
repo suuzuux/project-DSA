@@ -161,12 +161,6 @@ public class MainBannerService {
 		if (!hasNewImage && banner.getImageStoredName() == null) {
 			throw new IllegalArgumentException("배너 이미지를 올려주세요.");
 		}
-		if (hasNewImage) {
-			String contentType = image.getContentType();
-			if (contentType == null || !contentType.startsWith("image/")) {
-				throw new IllegalArgumentException("이미지 파일만 올릴 수 있습니다.");
-			}
-		}
 
 		boolean active = form.active() == null || form.active();
 		int sortOrder = form.sortOrder() == null ? 0 : Math.max(0, form.sortOrder());
@@ -174,7 +168,8 @@ public class MainBannerService {
 
 		String oldImage = banner.getImageStoredName();
 		if (hasNewImage) {
-			banner.changeImage(fileStorageService.store(image));
+			// AUTH-11: Content-Type 만 보던 검사를 형식(매직바이트)·크기 검증으로 바꾸고, 확장자는 서버가 정한다
+			banner.changeImage(fileStorageService.storeImage(image));
 		}
 
 		// 배경색: 관리자가 고른 값(화면에서 이미지로 자동 계산해 채워줌)이 있으면 그대로, 없으면 서버가 이미지에서 뽑는다

@@ -54,12 +54,13 @@ class PostServiceTest {
 		PostRepository postRepository = mock(PostRepository.class);
 		PostService service = serviceWith(postRepository);
 		List<Post> visiblePosts = List.of(Post.builder().id(1L).build());
-		when(postRepository.findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc())
+		// 메인 인기글은 아티스트 게시판(BoardType.ARTIST) 글만 대상으로 바뀌어 조회 메서드도 바뀌었다
+		when(postRepository.findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType.ARTIST))
 				.thenReturn(visiblePosts);
 
 		assertEquals(visiblePosts, service.getPopularPosts());
 		verify(postRepository)
-				.findTop4ByHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc();
+				.findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType.ARTIST);
 	}
 
 	private PostService serviceWith(PostRepository postRepository) {
