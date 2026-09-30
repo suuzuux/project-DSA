@@ -479,7 +479,11 @@ public class CommunityController {
 			return "redirect:/login";
 		}
 		User me = userResolver.resolve(principal, 1L);
-		userFollowService.toggle(me, userId, artistId);
+		try {
+			userFollowService.toggle(me, userId, artistId);
+		} catch (org.springframework.dao.DataIntegrityViolationException e) {
+			// AUTH-11: 팔로우 버튼을 빠르게 두 번 눌러 같은 팔로우가 동시에 저장된 경우 - 이미 팔로우된 상태이므로 그대로 둔다
+		}
 		return "redirect:" + (referer != null ? referer : "/community/" + artistId + "/profile/" + userId);
 	}
 
@@ -521,7 +525,13 @@ public class CommunityController {
 			return "redirect:/community/" + artistId + "/highlight";
 		}
 
-		List<User> users = followers
+		// AUTH-11: 상대가 이 커뮤니티에서 콘텐츠 숨김을 켰으면 본인이 아닌 사람에게는 목록을 보여주지 않는다.
+		// 예전에는 화면에서 숫자만 숨기고, 이 주소를 직접 부르면 팔로워/팔로잉 목록이 그대로 보였다.
+		CommunityProfile targetProfile = communityJoinService.profileOf(targetUser, artistId);
+		boolean hiddenFromMe = !targetUser.getId().equals(me.getId())
+				&& targetProfile != null && targetProfile.isContentHidden();
+		List<User> users = hiddenFromMe ? List.of()
+				: followers
 				? userFollowService.listFollowers(userId, artistId)
 				: userFollowService.listFollowing(userId, artistId);
 		model.addAttribute("artistId", artistId);

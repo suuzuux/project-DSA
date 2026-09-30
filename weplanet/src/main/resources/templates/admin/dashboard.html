@@ -48,6 +48,7 @@
         </nav>
 
         <div class="portal-sidebar__footer">
+            <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
             <!-- 로그아웃은 GET 링크가 아니라 POST 폼이어야 한다 (강제 로그아웃 방지) -->
             <form th:action="@{/admin/logout}" method="post" style="margin:0;">
                 <button type="submit" class="btn">🚪 로그아웃</button>

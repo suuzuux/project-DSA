@@ -80,11 +80,15 @@ public class GlobalExceptionHandler {
             session.invalidate();
         }
 
+        // AUTH-11: 정지·탈퇴 등으로 계정을 쓸 수 없게 된 경우는 "세션 만료" 대신 이용할 수 없는 계정이라고 안내한다
+        boolean inactive = e instanceof InactiveAccountSessionException;
         if (isAsync(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("success", false, "message", "세션이 만료되었습니다. 다시 로그인해주세요."));
+                    .body(Map.of("success", false, "message", inactive
+                            ? "이용할 수 없는 계정입니다. 다시 로그인해주세요."
+                            : "세션이 만료되었습니다. 다시 로그인해주세요."));
         }
-        return "redirect:/login?sessionExpired=true";
+        return inactive ? "redirect:/login?accountUnavailable=true" : "redirect:/login?sessionExpired=true";
     }
 
     // 잘못된 요청(존재하지 않는 게시글/유저 id 등)

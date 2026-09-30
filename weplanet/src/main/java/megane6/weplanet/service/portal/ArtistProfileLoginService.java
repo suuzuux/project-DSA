@@ -11,7 +11,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -29,9 +32,16 @@ public class ArtistProfileLoginService {
 	private static final Pattern PASSWORD_PATTERN
 			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
 	
+	// AUTH-11: 개인 비밀번호를 5회 틀리면 그 프로필은 10분 동안 로그인할 수 없다.
+	// 예전에는 횟수 제한이 없어서, 그룹 비밀번호를 아는 사람이 다른 멤버의 개인 비밀번호를 무한히 대입해 볼 수 있었다.
+	private static final int MAX_FAILED_ATTEMPTS = 5;
+	private static final long LOCK_MINUTES = 10;
+	
 	private final UserRepository ur;
 	private final GroupMemberRepository gmr;
 	private final PasswordEncoder pe;
+	// memberId → 틀린 횟수/잠금 해제 시각 (서버 메모리 - 재시작하면 초기화)
+	private final Map<Long, FailedAttempts> failedAttempts = new ConcurrentHashMap<>();
 	
 	public ProfileScreen loadScreen(Long groupId) {
 		User group = ur.findOneById(groupId)
@@ -61,6 +71,12 @@ public class ArtistProfileLoginService {
 			throw new IllegalArgumentException("개인 비밀번호를 입력해주세요.");
 		}
 		
+		FailedAttempts attempts = failedAttempts.get(memberId);
+		if (attempts != null && attempts.isLocked()) {
+			throw new IllegalStateException("개인 비밀번호를 " + MAX_FAILED_ATTEMPTS + "회 잘못 입력해서 "
+					+ LOCK_MINUTES + "분 동안 이 프로필로 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+		}
+		
 		if (!member.hasPassword()) {
 			// 처음 고른 프로필: 지금 입력한 값을 개인 비밀번호로 정한다.
 			if (!PASSWORD_PATTERN.matcher(password).matches()) {
@@ -74,12 +90,38 @@ public class ArtistProfileLoginService {
 			member.setInitialMemberPassword(pe.encode(password));
 			log.info("멤버 개인 비밀번호 최초 설정: groupId={}, memberId={}", groupId, memberId);
 		} else if (!pe.matches(password, member.getPassword())) {
-			throw new IllegalArgumentException("개인 비밀번호가 올바르지 않습니다.");
+			FailedAttempts updated = failedAttempts.compute(memberId, (id, current) ->
+					(current == null || current.isExpiredLock()) ? FailedAttempts.first() : current.failedOnce());
+			if (updated.isLocked()) {
+				log.warn("멤버 개인 비밀번호 {}회 오입력으로 잠금: groupId={}, memberId={}", MAX_FAILED_ATTEMPTS, groupId, memberId);
+				throw new IllegalStateException("개인 비밀번호를 " + MAX_FAILED_ATTEMPTS + "회 잘못 입력해서 "
+						+ LOCK_MINUTES + "분 동안 이 프로필로 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+			}
+			throw new IllegalArgumentException("개인 비밀번호가 올바르지 않습니다. (남은 시도 "
+					+ (MAX_FAILED_ATTEMPTS - updated.count()) + "회)");
 		}
 		
+		failedAttempts.remove(memberId);
 		member.recordLogin();
 		
 		return member;
+	}
+	
+	// 틀린 횟수와 잠금 해제 시각. 5회째에 잠금 시각이 정해지고, 그 시각이 지나면 처음부터 다시 센다.
+	private record FailedAttempts(int count, LocalDateTime lockedUntil) {
+		static FailedAttempts first() {
+			return new FailedAttempts(1, null);
+		}
+		FailedAttempts failedOnce() {
+			int next = count + 1;
+			return new FailedAttempts(next, next >= MAX_FAILED_ATTEMPTS ? LocalDateTime.now().plusMinutes(LOCK_MINUTES) : null);
+		}
+		boolean isLocked() {
+			return lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil);
+		}
+		boolean isExpiredLock() {
+			return lockedUntil != null && !LocalDateTime.now().isBefore(lockedUntil);
+		}
 	}
 	
 	// 프로필 원 하나에 필요한 정보

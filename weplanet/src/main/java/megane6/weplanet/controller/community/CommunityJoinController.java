@@ -39,7 +39,11 @@ public class CommunityJoinController {
 		if (communityArtistResolver.isArtistOf(me, artistId)) {
 			throw new IllegalStateException("본인 커뮤니티에는 가입할 수 없습니다.");
 		}
-		communityJoinService.join(me, artistId, nickname, bio, avatar, background);
+		try {
+			communityJoinService.join(me, artistId, nickname, bio, avatar, background);
+		} catch (org.springframework.dao.DataIntegrityViolationException e) {
+			// AUTH-11: 가입 버튼을 빠르게 두 번 눌러 같은 가입이 동시에 들어온 경우 - 먼저 끝난 가입이 있으므로 그대로 진행
+		}
 		return "redirect:" + (referer != null ? referer : "/");
 	}
 	
