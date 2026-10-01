@@ -115,10 +115,14 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 		}
 
 		userRepository.findOneById(principal.getId()).ifPresent(user -> {
-			user.recordLogin();
+			// 소속사 자동 가입을 로그인 기록(recordLogin)보다 먼저 한다.
+			// 커뮤니티 자동 가입(CommunityJoinService.ensureJoined)은 별도 트랜잭션(REQUIRES_NEW)이라,
+			// 이 트랜잭션이 먼저 users 행을 수정(recordLogin)해 두면 그 행 잠금 때문에 가입 INSERT(FK 확인)가
+			// 잠금이 풀리기를 기다리고, 이 트랜잭션은 가입이 끝나기를 기다려서 로그인이 멈췄다(약 50초 후 실패).
 			if (user.getRole() == Role.AGENCY) {
 				agencyEnrollmentService.enrollManagedArtists(user);
 			}
+			user.recordLogin();
 			if (user.getRole() == Role.ADMIN) {
 				// 관리자는 한국어 고정
 				localeResolver.setLocale(request, response, Locale.KOREAN);
