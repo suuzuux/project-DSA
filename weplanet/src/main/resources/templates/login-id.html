@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,51 +8,51 @@
     - 아이디 찾기: 이름+이메일 인증 후 아이디 표시 (/find-id)
     - 비밀번호 찾기: 아이디+이메일 인증 후 새 비밀번호 설정 (/find-password)
   -->
-  <title>WePlaNet – 아이디로 로그인</title>
+  <title th:text="#{login.pageTitle}">WePlaNet – 아이디로 로그인</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
 <body class="auth-page">
 <div class="auth-card">
-  <a class="auth-card__back" th:href="@{/login}">← 뒤로</a>
+  <a class="auth-card__back" th:href="@{/login}" th:text="#{login.back}">← 뒤로</a>
   <div class="flex-between">
     <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
   </div>
 
-  <h1 class="auth-card__title mt-16">로그인</h1>
+  <h1 class="auth-card__title mt-16" th:text="#{login.heading}">로그인</h1>
 
-  <p th:if="${param.withdrawn}" class="text-sm" style="color:#63704a;margin-top:8px;">
+  <p th:if="${param.withdrawn}" class="text-sm" style="color:#63704a;margin-top:8px;" th:text="#{login.withdrawnNotice}">
     탈퇴가 완료되었습니다. 그동안 이용해주셔서 감사합니다.
   </p>
-  <p th:if="${param.unlinked}" class="text-sm" style="color:#63704a;margin-top:8px;">
+  <p th:if="${param.unlinked}" class="text-sm" style="color:#63704a;margin-top:8px;" th:text="#{login.unlinkedNotice}">
     연동이 해제되어 로그아웃되었습니다. 다시 로그인해주세요.
   </p>
 
   <form th:action="@{/login}" method="post">
     <div class="form-group">
-      <label class="form-label" for="loginId">아이디</label>
-      <input class="form-input" id="loginId" name="username" type="text" placeholder="아이디 입력" required autocomplete="username" />
+      <label class="form-label" for="loginId" th:text="#{login.usernameLabel}">아이디</label>
+      <input class="form-input" id="loginId" name="username" type="text" th:placeholder="#{login.usernamePlaceholder}" placeholder="아이디 입력" required autocomplete="username" />
     </div>
     <div class="form-group">
-      <label class="form-label" for="loginPw">비밀번호</label>
-      <input class="form-input" id="loginPw" name="password" type="password" placeholder="비밀번호 입력" required autocomplete="current-password" />
+      <label class="form-label" for="loginPw" th:text="#{login.passwordLabel}">비밀번호</label>
+      <input class="form-input" id="loginPw" name="password" type="password" th:placeholder="#{login.passwordPlaceholder}" placeholder="비밀번호 입력" required autocomplete="current-password" />
     </div>
 
     <div class="auth-links">
-      <a th:href="@{/find-id}">아이디를 까먹었어요</a>
-      <a th:href="@{/find-password}">비밀번호를 까먹었어요</a>
+      <a th:href="@{/find-id}" th:text="#{login.forgotUsername}">아이디를 까먹었어요</a>
+      <a th:href="@{/find-password}" th:text="#{login.forgotPassword}">비밀번호를 까먹었어요</a>
     </div>
     <!-- 입력한 아이디로 가입된 계정이 없을 때 (1~4회째): 안내만 보여준다. 5회째에는 아래 확인창이 뜬다.
          회원가입으로 넘어가면 입력했던 아이디가 채워진 가입 화면이 열린다 (SecurityConfig 로그인 실패 처리, AuthController) -->
     <!-- 로그인 실패 안내는 모두 이 자리(찾기 링크 아래, 로그인 버튼 위)에 모은다 -->
-    <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;">
+    <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;" th:text="#{login.error}">
       아이디 또는 비밀번호가 올바르지 않습니다.
     </p>
     <p th:if="${param.notFound}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;">
-      가입된 계정이 없습니다.
-      <a th:href="@{/signup/id}" style="color:var(--wp-brand);font-weight:600;text-decoration:underline;">회원가입하시겠습니까?</a>
+      <span th:text="#{login.notFound}">가입된 계정이 없습니다.</span>
+      <a th:href="@{/signup/id}" style="color:var(--wp-brand);font-weight:600;text-decoration:underline;" th:text="#{login.notFoundSignupLink}">회원가입하시겠습니까?</a>
     </p>
 
-    <button type="submit" class="btn btn--primary btn--block btn--lg">로그인하기</button>
+    <button type="submit" class="btn btn--primary btn--block btn--lg" th:text="#{login.submitButton}">로그인하기</button>
   </form>
 
 </div>
@@ -60,13 +60,13 @@
 <div class="modal-backdrop" id="signupSuggestModal" th:classappend="${param.ask} ? ' is-open'">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signupSuggestTitle">
     <div class="modal__head">
-      <h2 class="modal__title" id="signupSuggestTitle">가입된 아이디가 없습니다</h2>
-      <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+      <h2 class="modal__title" id="signupSuggestTitle" th:text="#{login.signupSuggest.title}">가입된 아이디가 없습니다</h2>
+      <button type="button" class="modal__close" data-modal-close aria-label="닫기" th:aria-label="#{common.close}">✕</button>
     </div>
-    <p class="text-sm mb-16">회원가입하시겠습니까? 입력하신 아이디로 가입 화면이 열려요.</p>
+    <p class="text-sm mb-16" th:text="#{login.signupSuggest.body}">회원가입하시겠습니까? 입력하신 아이디로 가입 화면이 열려요.</p>
     <div class="stack">
-      <a th:href="@{/signup/id}" class="btn btn--primary btn--block">예</a>
-      <button type="button" class="btn btn--ghost btn--block" data-modal-close>아니오</button>
+      <a th:href="@{/signup/id}" class="btn btn--primary btn--block" th:text="#{login.signupSuggest.yes}">예</a>
+      <button type="button" class="btn btn--ghost btn--block" data-modal-close th:text="#{login.signupSuggest.no}">아니오</button>
     </div>
   </div>
 </div>

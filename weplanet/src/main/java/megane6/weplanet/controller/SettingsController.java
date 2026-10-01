@@ -7,12 +7,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.EmailChangeAuthService;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.email.VerificationRateLimitException;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
@@ -42,7 +46,15 @@ public class SettingsController {
 	private final UserRepository userRepository;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
+	private final MessageSource messageSource;
+	// SETTINGS-03 커밋3: 이메일 인증 서비스 예외가 메시지 키로 바뀌어서 화면에 내보낼 때 해석한다
+	private final megane6.weplanet.i18n.Messages messages;
+	private final LocaleResolver localeResolver;
 	private final EmailChangeAuthService emailChangeAuthService;
+
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 	
 	@GetMapping("/settings")
 	public String settings(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -78,15 +90,15 @@ public class SettingsController {
 					refreshed, current.getCredentials(), refreshed.getAuthorities());
 			SecurityContextHolder.getContext().setAuthentication(updated);
 			
-			redirectAttributes.addFlashAttribute("profileMessage", "회원정보가 수정되었습니다.");
+			redirectAttributes.addFlashAttribute("profileMessage", msg("settings.profile.updateSuccess"));
 		} catch (IllegalArgumentException e) {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
-			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
 			// AUTH-11: 중복 확인과 저장 사이에 다른 계정이 같은 이메일을 먼저 쓴 경우 - DB 유니크 제약(uk_users_email)이
 			// 막아 주고, 500 화면 대신 안내 문구를 보여준다
 			log.warn("회원정보 수정 실패(이메일 중복 저장 충돌): {}", e.getMostSpecificCause().getMessage());
-			redirectAttributes.addFlashAttribute("errorMessage", "이미 사용 중인 이메일입니다.");
+			redirectAttributes.addFlashAttribute("errorMessage", msg("settings.email.alreadyInUse"));
 		}
 		return "redirect:/settings";
 	}
@@ -103,10 +115,10 @@ public class SettingsController {
 		try {
 			emailChangeAuthService.confirmPassword(session, user, currentPassword);
 			result.put("success", true);
-			result.put("message", "확인되었습니다. 새 이메일을 입력하고 인증코드를 받아주세요.");
+			result.put("message", msg("settings.email.passwordConfirmed"));
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e));
 		}
 		return result;
 	}
@@ -126,35 +138,35 @@ public class SettingsController {
 		if (!emailChangeAuthService.isAuthorized(session, user)) {
 			result.put("success", false);
 			result.put("needsPassword", true);
-			result.put("message", "이메일을 변경하려면 먼저 현재 비밀번호를 확인해주세요.");
+			result.put("message", msg("settings.email.passwordCheckRequired"));
 			return result;
 		}
 		if (trimmed.isBlank()) {
 			result.put("success", false);
-			result.put("message", "이메일을 입력해주세요.");
+			result.put("message", msg("settings.modal.emailRequired"));
 			return result;
 		}
 		if (trimmed.equals(user.getEmail())) {
 			result.put("success", false);
-			result.put("message", "현재 이메일과 같습니다.");
+			result.put("message", msg("settings.modal.emailSameAsCurrent"));
 			return result;
 		}
 		if (userRepository.existsByEmail(trimmed)) {
 			result.put("success", false);
-			result.put("message", "이미 사용 중인 이메일입니다.");
+			result.put("message", msg("settings.email.alreadyInUse"));
 			return result;
 		}
 		try {
 			emailVerificationService.sendVerificationCode(session, VerificationPurpose.EMAIL_CHANGE, trimmed);
 			result.put("success", true);
-			result.put("message", "인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요.");
+			result.put("message", msg("settings.email.codeSent"));
 		} catch (VerificationRateLimitException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e));
 		} catch (Exception e) {
 			log.error("[회원정보 수정] 이메일 변경 인증코드 발송 실패 (to={})", trimmed, e);
 			result.put("success", false);
-			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+			result.put("message", msg("settings.email.codeSendFailed"));
 		}
 		return result;
 	}
@@ -166,7 +178,7 @@ public class SettingsController {
 		Map<String, Object> result = new HashMap<>();
 		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.EMAIL_CHANGE, newEmail, code);
 		result.put("success", verified.isSuccess());
-		result.put("message", verified.isSuccess() ? "이메일 인증이 완료되었습니다." : verified.failureMessage());
+		result.put("message", verified.isSuccess() ? msg("settings.email.verifySuccess") : messages.resolve(verified.failureMessage()));
 		return result;
 	}
 
@@ -183,7 +195,7 @@ public class SettingsController {
 			result.put("success", true);
 		} catch (IllegalArgumentException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e));
 		}
 		return result;
 	}
@@ -193,10 +205,20 @@ public class SettingsController {
 	@PostMapping("/settings/language")
 	@ResponseBody
 	public Map<String, Object> updateLanguage(@AuthenticationPrincipal AuthenticatedUser principal,
-											  @RequestParam Language language) {
+											  @RequestParam Language language,
+											  HttpServletRequest request, HttpServletResponse response) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
+		// 관리자는 한국어 고정 - 언어를 바꾸지 않는다 (LanguageController 와 같은 규칙.
+		// 화면은 PreferredLocaleResolver 가 어차피 한국어로 그리지만, 저장까지 막아야 메일·AI 번역 언어도 한국어로 유지된다)
+		if ("ROLE_ADMIN".equals(principal.getRoleName())) {
+			result.put("success", true);
+			return result;
+		}
 		userService.updateLanguage(user, language);
+		// SETTINGS-03 로케일 버그#1 수정: DB에만 저장하고 끝나면, 지금 이 세션의 실제 렌더링
+		// 로케일(PreferredLocaleResolver)은 안 바뀌어서 페이지를 새로고침해도 화면 언어가 그대로였다.
+		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(language));
 		result.put("success", true);
 		return result;
 	}
@@ -211,7 +233,7 @@ public class SettingsController {
 		try {
 			userService.withdraw(user, currentPassword);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 			return "redirect:/settings";
 		}
 		SecurityContextHolder.clearContext();
@@ -229,7 +251,7 @@ public class SettingsController {
 		try {
 			userService.unlinkSocialProvider(user);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 			return "redirect:/settings";
 		}
 		socialLoginSessionSupport.clearSecurityContext(request, response);
@@ -241,12 +263,9 @@ public class SettingsController {
 	// 그대로 다음 요청에 실려 오고 Spring Security의 invalidSessionUrl(SecurityConfig)이 이를 무효
 	// 세션으로 판단해서 원래 의도한 목적지 대신 "/login?expired=true"로 가로채 버린다.
 	// invalidate() 직후 새 세션을 열어 응답에 유효한 세션 쿠키를 실어 보내면 이 문제를 막을 수 있다
-	// (LoginSuccessHandler.clearAuthentication()과 동일한 패턴).
+	// (LoginSuccessHandler.clearAuthentication()과 동일한 패턴). 화면 언어도 새 세션에 이어 붙여서
+	// 탈퇴·연동 해제 직후의 로그인 화면이 한국어로 돌아가지 않게 한다.
 	private static void invalidateAndOpenFreshSession(HttpServletRequest request) {
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			session.invalidate();
-		}
-		request.getSession(true);
+		PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 	}
 }

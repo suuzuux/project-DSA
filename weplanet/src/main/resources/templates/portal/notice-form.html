@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${notice} != null ? '공지 수정 | Artist Portal' : '공지 등록 | Artist Portal'">공지 등록 | Artist Portal</title>
+  <title th:text="${notice} != null ? #{noticeForm.pageTitleEdit} : #{noticeForm.pageTitleNew}">공지 등록 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -13,11 +13,11 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('공지 등록')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(${#messages.msg('noticeForm.pickHint')})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1 th:text="${notice} != null ? '공지 수정' : '공지 등록'">공지 등록</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices}">← 뒤로 가기</a>
+        <h1 th:text="${notice} != null ? #{noticeForm.headingEdit} : #{noticeForm.headingNew}">공지 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices}" th:text="#{noticeForm.back}">← 뒤로 가기</a>
       </div>
 
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
@@ -26,44 +26,49 @@
             th:action="${notice} != null ? @{/portal/notices/{id}(id=${notice.id})} : @{/portal/notices}"
             method="post">
         <div class="form-group">
-          <label class="form-label" for="title">제목</label>
-          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : ''}" placeholder="제목을 입력해주세요." required />
+          <label class="form-label" for="title" th:text="#{noticeForm.titleLabel}">제목</label>
+          <input class="form-input" id="title" name="title" th:value="${notice != null ? notice.title : ''}"
+                 th:placeholder="#{noticeForm.titlePlaceholder}" placeholder="제목을 입력해주세요." required />
         </div>
         <div class="form-group">
-          <label class="form-label" for="content">본문내용</label>
+          <label class="form-label" for="content" th:text="#{noticeForm.contentLabel}">본문내용</label>
           <textarea class="form-textarea" id="content" name="content" style="min-height:220px;"
-                    placeholder="본문을 입력해주세요." required th:text="${notice != null ? notice.content : ''}"></textarea>
+                    th:placeholder="#{noticeForm.contentPlaceholder}" placeholder="본문을 입력해주세요." required th:text="${notice != null ? notice.content : ''}"></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label" for="published">공개여부</label>
+          <label class="form-label" for="published" th:text="#{noticeForm.publishedLabel}">공개여부</label>
           <select class="form-select" id="published" name="published" style="max-width:200px;">
-            <option value="true" th:selected="${notice == null || notice.published}">공개</option>
-            <option value="false" th:selected="${notice != null && !notice.published}">비공개</option>
+            <option value="true" th:selected="${notice == null || notice.published}" th:text="#{noticeForm.publishedTrue}">공개</option>
+            <option value="false" th:selected="${notice != null && !notice.published}" th:text="#{noticeForm.publishedFalse}">비공개</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">상단 노출</label>
+          <label class="form-label" th:text="#{noticeForm.pinnedLabel}">상단 노출</label>
           <input type="hidden" id="pinned" name="pinned" th:value="${notice != null && notice.pinned}">
           <button type="button" id="pinToggle" class="btn btn--ghost"
                   th:classappend="${notice != null && notice.pinned} ? ' is-pin-on'"
                   th:attr="data-pinned=${notice != null && notice.pinned},
                            data-at-limit=${(notice == null || !notice.pinned) && pinnedCount >= maxPinned}">
-            <span th:text="${notice != null && notice.pinned} ? '상단 노출 중' : '이 글을 목록 최상단에 띄우기'">이 글을 목록 최상단에 띄우기</span>
+            <span th:text="${notice != null && notice.pinned} ? #{noticeForm.pinnedOn} : #{noticeForm.pinnedOff}">이 글을 목록 최상단에 띄우기</span>
           </button>
-          <p class="text-sm text-muted" style="margin-top:8px;">
-            켜면 공지 목록 맨 위에 볼드 제목으로 표시됩니다. 상단 노출은 최대 <span th:text="${maxPinned}">5</span>개까지 가능합니다.
-            (<span th:text="${pinnedCount}">0</span>/<span th:text="${maxPinned}">5</span>)
+          <p class="text-sm text-muted" style="margin-top:8px;" th:text="#{noticeForm.pinnedHint(${maxPinned}, ${pinnedCount})}">
+            켜면 공지 목록 맨 위에 볼드 제목으로 표시됩니다. 상단 노출은 최대 5개까지 가능합니다. (0/5)
           </p>
         </div>
         <div class="flex-center" style="justify-content:flex-end;">
-          <button type="submit" class="btn btn--primary" th:text="${notice} != null ? '수정 저장' : '바로등록'">바로등록</button>
+          <button type="submit" class="btn btn--primary" th:text="${notice} != null ? #{noticeForm.submitEdit} : #{noticeForm.submitNew}">바로등록</button>
         </div>
       </form>
       </th:block>
     </main>
   </div>
-  <script>
+  <script th:inline="javascript">
     (function () {
+      var MSG = {
+        pinnedOn: /*[[#{noticeForm.pinnedOn}]]*/ "상단 노출 중",
+        pinnedOff: /*[[#{noticeForm.pinnedOff}]]*/ "이 글을 목록 최상단에 띄우기",
+        pinnedLimitAlert: /*[[#{noticeForm.pinnedLimitAlert}]]*/ "상단 노출은 최대 5개까지 가능합니다."
+      };
       var btn = document.getElementById("pinToggle");
       var input = document.getElementById("pinned");
       if (!btn || !input) return;
@@ -72,13 +77,13 @@
       function render(on) {
         input.value = on ? "true" : "false";
         btn.classList.toggle("is-pin-on", on);
-        if (label) label.textContent = on ? "상단 노출 중" : "이 글을 목록 최상단에 띄우기";
+        if (label) label.textContent = on ? MSG.pinnedOn : MSG.pinnedOff;
       }
       render(btn.getAttribute("data-pinned") === "true");
       btn.addEventListener("click", function () {
         var on = input.value === "true";
         if (!on && atLimit) {
-          alert("상단 노출은 최대 5개까지 가능합니다.");
+          alert(MSG.pinnedLimitAlert);
           return;
         }
         render(!on);

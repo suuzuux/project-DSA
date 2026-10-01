@@ -17,7 +17,8 @@
     trigger.className = "board-select__trigger";
     trigger.setAttribute("aria-haspopup", "listbox");
     trigger.setAttribute("aria-expanded", "false");
-    trigger.setAttribute("aria-label", select.getAttribute("aria-label") || "정렬");
+    trigger.setAttribute("aria-label", select.getAttribute("aria-label")
+      || (window.WePlaNet && typeof WePlaNet.t === "function" ? WePlaNet.t("client.board.sort", "정렬") : "정렬"));
 
     var valueEl = document.createElement("span");
     valueEl.className = "board-select__value";

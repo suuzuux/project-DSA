@@ -110,7 +110,7 @@ public class AdminActionLog {
 	
 	private void validateActor(User actor) {
 		if (actor == null || actor.getRole() != Role.ADMIN) {
-			throw new IllegalArgumentException("관리자 계정만 조치 로그를 생성할 수 있습니다.");
+			throw new IllegalArgumentException("admin.logs.error.adminOnly");
 		}
 	}
 	
@@ -120,13 +120,13 @@ public class AdminActionLog {
 			Long targetId
 	) {
 		if (action == null) {
-			throw new IllegalArgumentException("관리자 조치 종류가 필요합니다.");
+			throw new IllegalArgumentException("admin.logs.error.actionRequired");
 		}
 		if (targetType == null) {
-			throw new IllegalArgumentException("관리자 조치 대상 종류가 필요합니다.");
+			throw new IllegalArgumentException("admin.logs.error.targetTypeRequired");
 		}
 		if (targetId == null) {
-			throw new IllegalArgumentException("관리자 조치 대상 ID가 필요합니다.");
+			throw new IllegalArgumentException("admin.logs.error.targetIdRequired");
 		}
 	}
 	

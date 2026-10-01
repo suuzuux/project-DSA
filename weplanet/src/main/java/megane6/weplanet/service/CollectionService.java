@@ -69,7 +69,7 @@ public class CollectionService {
 	public BadgeCollectionView getBadgeCollection(Long fanId, Long artistId) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("shop.error.artistNotFound"));
 		
 		List<FanBadge> catalog = fanBadgeRepository.findAllByOrderByBadgeTypeAscSortOrderAsc();
 		Set<String> earnedCodes = findEarnedCodes(fanId, artistId);

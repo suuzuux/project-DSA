@@ -19,6 +19,8 @@ import java.util.Map;
 public class ProjectEmailVerificationController {
 	private final EmailVerificationService evs;
 	private final ProjectService ps;
+	// SETTINGS-03 커밋3: 프로젝트 등록 모달의 이메일 인증 안내 문구 번역용
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	// 프로젝트 등록용 인증번호 전송
 	@PostMapping
@@ -32,7 +34,7 @@ public class ProjectEmailVerificationController {
 		// 인증번호 자체는 브라우저 응답에 포함 X
 		return Map.of("success", true,
 					  "verificationKey", verificationKey,
-					  "message", "가입하신 이메일로 인증번호를 전송했습니다. 메일함을 확인해주세요.");
+					  "message", messages.get("community.project.emailSent"));
 	}
 	
 	// 사용자가 입력한 프로젝트 등록용 인증번호 확인
@@ -45,18 +47,18 @@ public class ProjectEmailVerificationController {
 		requireLogin(principal);
 		
 		if (code == null || !code.matches("^[0-9]{6}$")) {
-			throw new IllegalArgumentException("숫자 6자리 인증번호를 입력해주세요.");
+			throw new IllegalArgumentException("community.project.js.emailCodeInvalid");
 		}
 		EmailVerificationService.VerificationResult result =
 				evs.confirmProjectVerification(principal.getId(), verificationKey, code);
 		if (!result.verified()) {
 			return Map.of("success", false,
 						  "remainingAttempts", result.remainingAttempts(),
-					"message", "인증번호가 일치하지 않습니다.");
+					"message", messages.get("community.project.emailCodeMismatch"));
 		}
 		return Map.of("success", true,
 					  "remainingAttempts", result.remainingAttempts(),
-					  "message", "이메일 인증이 완료되었습니다.");
+					  "message", messages.get("community.project.emailVerified"));
 	}
 	
 	private void requireLogin(AuthenticatedUser principal) {

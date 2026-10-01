@@ -56,7 +56,7 @@ public class AccountProtectionService {
 		if (accountNumber == null
 				|| !accountNumber.matches("^[0-9]{6,30}$")) {
 			throw new IllegalArgumentException(
-					"계좌번호는 하이픈 없이 숫자만 입력해주세요."
+					"project.validation.accountNumberPattern"
 			);
 		}
 		

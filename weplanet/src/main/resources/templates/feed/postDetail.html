@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>게시글 상세</title>
+    <title th:text="#{feed.detail.pageTitle}">게시글 상세</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
     <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css"/>
@@ -24,7 +24,7 @@
         <div class="avatar" th:text="${post.author != null ? #strings.substring(post.author.nickname,0,1) : '?'}"></div>
         <div class="post-card__meta">
             <div class="post-card__name">
-                <span th:text="${post.author != null ? post.author.nickname : '(알 수 없음)'}"></span>
+                <span th:text="${post.author != null} ? ${post.author.nickname} : #{feed.unknownAuthor}"></span>
                 <span th:if="${post.author != null and post.author.artistSide}" class="badge-verified">✓</span>
             </div>
             <div class="post-card__time"
@@ -36,7 +36,7 @@
     <h1 style="font-size:var(--wp-fs-lg);margin:12px 0 6px;" th:text="${post.title}"></h1>
 
     <!-- 와이어프레임 기준: 본문 위에 번역보기 링크 (Gemini로 영어 번역) -->
-    <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" style="margin-top:0;">번역보기</a>
+    <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" style="margin-top:0;" th:text="#{community.translate.show}">번역보기</a>
     <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
 
     <!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
@@ -95,16 +95,16 @@
                 <option value="2">2번(아티스트)으로 신고</option>
             </select>
             <select name="reason" class="form-select" style="min-height:34px;padding:4px 8px;">
-                <option value="SPAM">스팸</option>
-                <option value="ABUSE">욕설/혐오</option>
-                <option value="SEXUAL">음란물</option>
-                <option value="ETC">기타</option>
+                <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
+                <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
+                <option value="SEXUAL" th:text="#{community.report.reason.SEXUAL}">음란물</option>
+                <option value="ETC" th:text="#{community.report.reason.ETC}">기타</option>
             </select>
             <button type="submit" class="btn btn--ghost btn--sm">게시글 신고</button>
         </form>
         <b id="postReportMsg" class="text-xs"></b>
 
-        <button id="summarizeButton" type="button" class="btn btn--soft btn--sm">AI 요약보기</button>
+        <button id="summarizeButton" type="button" class="btn btn--soft btn--sm" th:text="#{feed.summarize}">AI 요약보기</button>
     </div>
     <div id="summaryArea"></div>
 </div>
@@ -112,18 +112,18 @@
 
 <aside class="community-aside" id="commentSection" th:fragment="commentsFragment">
     <div class="post-card">
-        <p class="form-label" style="margin-bottom:8px;">댓글 작성</p>
+        <p class="form-label" style="margin-bottom:8px;" th:text="#{feed.commentWrite}">댓글 작성</p>
         <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
             <select name="testUserId" class="form-select" style="margin-bottom:8px;">
                 <option value="1">1번 - 팬 계정</option>
                 <option value="2">2번 - 아티스트 계정</option>
             </select>
             <input type="text" name="content" id="commentContentInput" class="form-input" maxlength="100"
-                   placeholder="댓글을 입력하세요.">
+                   placeholder="댓글을 입력하세요." th:placeholder="#{feed.commentPlaceholder}">
             <p class="text-xs text-muted" style="text-align:right;margin-top:4px;">
                 <span id="commentCharCount">0</span> / 100
             </p>
-            <button type="submit" class="btn btn--primary btn--block btn--sm" style="margin-top:6px;">등록</button>
+            <button type="submit" class="btn btn--primary btn--block btn--sm" style="margin-top:6px;" th:text="#{feed.commentSubmit}">등록</button>
         </form>
         <script>
             // 댓글 입력창 글자수 카운터 (댓글 목록이 fetch로 통째로 바뀔 때마다 이 script도 같이 다시 실행됨)
@@ -142,7 +142,7 @@
     <!-- 아티스트 댓글 - 와이어프레임: 항상 최상단 별도 박스, 화살표로 접기/펼치기 -->
     <div th:if="${not #lists.isEmpty(artistComments)}" class="post-card" style="margin-top:12px;">
         <div class="flex-between" style="cursor:pointer;" onclick="document.getElementById('artistCommentBox').classList.toggle('is-collapsed'); this.querySelector('.collapse-arrow').textContent = this.querySelector('.collapse-arrow').textContent === '▲' ? '▼' : '▲';">
-            <strong class="text-sm">아티스트 댓글 <span th:text="${#lists.size(artistComments)}"></span></strong>
+            <strong class="text-sm"><th:block th:text="#{feed.artistComments}">아티스트 댓글</th:block> <span th:text="${#lists.size(artistComments)}"></span></strong>
             <span class="collapse-arrow text-sm">▲</span>
         </div>
         <div id="artistCommentBox" class="stack" style="margin-top:8px;">
@@ -156,7 +156,7 @@
                                 th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
                     </div>
                     <p class="comment-item__text" th:text="${comment.content}"></p>
-                    <a href="javascript:void(0)" class="comment-translate-link translate-link" th:attr="data-comment-id=${comment.id}">번역보기</a>
+                    <a href="javascript:void(0)" class="comment-translate-link translate-link" th:attr="data-comment-id=${comment.id}" th:text="#{community.translate.show}">번역보기</a>
                     <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs" style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
                         <form class="comment-delete-form" style="display:flex;gap:4px;"
@@ -166,7 +166,7 @@
                                 <option value="1">1번(팬)</option>
                                 <option value="2">2번(아티스트)</option>
                             </select>
-                            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                            <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                         </form>
                         <form class="comment-report-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
@@ -176,12 +176,12 @@
                                 <option value="2">2번(아티스트)</option>
                             </select>
                             <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                                <option value="SPAM">스팸</option>
-                                <option value="ABUSE">욕설/혐오</option>
-                                <option value="SEXUAL">음란물</option>
-                                <option value="ETC">기타</option>
+                                <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
+                                <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
+                                <option value="SEXUAL" th:text="#{community.report.reason.SEXUAL}">음란물</option>
+                                <option value="ETC" th:text="#{community.report.reason.ETC}">기타</option>
                             </select>
-                            <button type="submit" class="btn btn--ghost btn--sm">신고</button>
+                            <button type="submit" class="btn btn--ghost btn--sm" th:text="#{feed.report}">신고</button>
                         </form>
                         <b class="comment-report-msg text-xs"></b>
                     </div>
@@ -192,7 +192,7 @@
 
     <!-- 전체 댓글 (아티스트 댓글 제외) -->
     <div class="post-card" style="margin-top:12px;">
-        <strong class="text-sm">전체 댓글 <span th:text="${#lists.size(otherComments)}"></span></strong>
+        <strong class="text-sm"><th:block th:text="#{feed.allComments}">전체 댓글</th:block> <span th:text="${#lists.size(otherComments)}"></span></strong>
         <div class="stack" style="margin-top:8px;" th:if="${not #lists.isEmpty(otherComments)}">
             <div class="comment-item" th:each="comment : ${otherComments}">
                 <div class="avatar avatar--sm" th:text="${#strings.substring(comment.author.nickname,0,1)}"></div>
@@ -203,7 +203,7 @@
                                 th:text="${y == curY} ? ${#temporals.format(comment.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}"></span>
                     </div>
                     <p class="comment-item__text" th:text="${comment.content}"></p>
-                    <a href="javascript:void(0)" class="comment-translate-link translate-link" th:attr="data-comment-id=${comment.id}">번역보기</a>
+                    <a href="javascript:void(0)" class="comment-translate-link translate-link" th:attr="data-comment-id=${comment.id}" th:text="#{community.translate.show}">번역보기</a>
                     <p th:id="'commentTranslated-' + ${comment.id}" class="text-xs" style="display:none;margin:4px 0 0;color:var(--wp-ink-soft);"></p>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
                         <form class="comment-delete-form" style="display:flex;gap:4px;"
@@ -213,7 +213,7 @@
                                 <option value="1">1번(팬)</option>
                                 <option value="2">2번(아티스트)</option>
                             </select>
-                            <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                            <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                         </form>
                         <form class="comment-report-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
@@ -223,19 +223,19 @@
                                 <option value="2">2번(아티스트)</option>
                             </select>
                             <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                                <option value="SPAM">스팸</option>
-                                <option value="ABUSE">욕설/혐오</option>
-                                <option value="SEXUAL">음란물</option>
-                                <option value="ETC">기타</option>
+                                <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
+                                <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
+                                <option value="SEXUAL" th:text="#{community.report.reason.SEXUAL}">음란물</option>
+                                <option value="ETC" th:text="#{community.report.reason.ETC}">기타</option>
                             </select>
-                            <button type="submit" class="btn btn--ghost btn--sm">신고</button>
+                            <button type="submit" class="btn btn--ghost btn--sm" th:text="#{feed.report}">신고</button>
                         </form>
                         <b class="comment-report-msg text-xs"></b>
                     </div>
                 </div>
             </div>
         </div>
-        <p th:if="${#lists.isEmpty(otherComments)}" class="list-empty"><i>등록된 댓글이 없습니다.</i></p>
+        <p th:if="${#lists.isEmpty(otherComments)}" class="list-empty"><i th:text="#{feed.noComments}">등록된 댓글이 없습니다.</i></p>
     </div>
 </aside>
 </div>
@@ -249,6 +249,15 @@
     // Thymeleaf가 이 부분(/*[[${post.id}]]*/)을 서버에서 실제 게시글 번호로 바꿔치기해줌.
     // 그래서 자바스크립트에서도 "지금 보고 있는 게시글이 몇 번인지" 알 수 있음
     const postId = /*[[${post.id}]]*/ 0;
+    const FEED_I18N = {
+        translate: /*[[#{community.translate.show}]]*/ '번역보기',
+        translating: /*[[#{client.translate.loading}]]*/ '번역 중...',
+        original: /*[[#{client.translate.original}]]*/ '원문보기',
+        ok: /*[[#{feed.result.ok}]]*/ '[성공]',
+        fail: /*[[#{feed.result.fail}]]*/ '[실패]',
+        summaryLoading: /*[[#{feed.summaryLoading}]]*/ 'AI가 요약을 만들고 있어요...',
+        summaryTitle: /*[[#{feed.summaryTitle}]]*/ 'AI 요약'
+    };
 
     // ----- 좋아요 버튼 -----
     document.getElementById('likeButton').addEventListener('click', function () {
@@ -286,11 +295,11 @@
         // 이미 번역문이 보이는 상태면, 다시 누를 때 원문만 보이게 접어줌 (토글)
         if (textArea.style.display !== 'none') {
             textArea.style.display = 'none';
-            link.textContent = '번역보기';
+            link.textContent = FEED_I18N.translate;
             return;
         }
 
-        link.textContent = '번역 중...';
+        link.textContent = FEED_I18N.translating;
 
         fetch(`/posts/detail/${postId}/translate`, {method: 'POST'})
             .then(function (response) {
@@ -299,7 +308,7 @@
             .then(function (data) {
                 textArea.textContent = data.translated;
                 textArea.style.display = 'block';
-                link.textContent = '원문보기';
+                link.textContent = FEED_I18N.original;
             });
     });
 
@@ -314,11 +323,11 @@
 
         if (textArea.style.display !== 'none') {
             textArea.style.display = 'none';
-            link.textContent = '번역보기';
+            link.textContent = FEED_I18N.translate;
             return;
         }
 
-        link.textContent = '번역 중...';
+        link.textContent = FEED_I18N.translating;
 
         fetch(`/posts/detail/${postId}/comment/${commentId}/translate`, {method: 'POST'})
             .then(function (response) {
@@ -327,7 +336,7 @@
             .then(function (data) {
                 textArea.textContent = data.translated;
                 textArea.style.display = 'block';
-                link.textContent = '원문보기';
+                link.textContent = FEED_I18N.original;
             });
     });
 
@@ -348,14 +357,15 @@
                 });
             })
             .then(function (result) {
-                msg.textContent = (result.ok ? '[성공] ' : '[실패] ') + result.data.message;
+                msg.textContent = (result.ok ? FEED_I18N.ok : FEED_I18N.fail) + ' ' + result.data.message;
             });
     });
 
     // ----- AI 요약 버튼 -----
     document.getElementById('summarizeButton').addEventListener('click', function () {
         const area = document.getElementById('summaryArea');
-        area.innerHTML = '<p>AI가 요약을 만들고 있어요...</p>';
+        area.innerHTML = '<p></p>';
+        area.firstChild.textContent = FEED_I18N.summaryLoading;
 
         fetch(`/posts/detail/${postId}/summarize`, {
             method: 'POST',
@@ -365,7 +375,8 @@
                 return response.json();
             })
             .then(function (data) {
-                area.innerHTML = '<hr><h4>AI 요약</h4><p id="summaryText"></p>';
+                area.innerHTML = '<hr><h4 id="summaryTitle"></h4><p id="summaryText"></p>';
+                document.getElementById('summaryTitle').textContent = FEED_I18N.summaryTitle;
                 document.getElementById('summaryText').textContent = data.summary;
             });
     });
@@ -407,13 +418,13 @@
                     });
                 })
                 .then(function (result) {
-                    msg.textContent = (result.ok ? '[성공] ' : '[실패] ') + result.data.message;
+                    msg.textContent = (result.ok ? FEED_I18N.ok : FEED_I18N.fail) + ' ' + result.data.message;
                 });
         }
     });
 </script>
 
-<p style="width:min(100% - 40px, 1160px);margin:16px auto;"><a class="section__link" th:href="@{/}">&lt;&lt; 홈으로</a></p>
+<p style="width:min(100% - 40px, 1160px);margin:16px auto;"><a class="section__link" th:href="@{/}" th:text="#{feed.backHome}">&lt;&lt; 홈으로</a></p>
 
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 <style>

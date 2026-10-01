@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.PendingSocialSignup;
 import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.UsernameGenerator;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +54,8 @@ public class SocialSignupService {
 				pending.provider(), pending.providerId());
 		// 확인 화면의 "(선택) 광고 및 마케팅 활용 동의" - 아이디 가입과 같은 값(설정 화면 "광고성 정보 알림 받기")
 		newUser.changeMarketingConsent(marketingConsent);
+		// 확인 화면에서 쓰던 언어를 계정 선호 언어로 저장 (아이디 가입 UserService.signup 과 같은 규칙)
+		newUser.changePreferredLanguage(PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale()));
 		User saved = userRepository.save(newUser);
 		saved.recordLogin(); // 가입 직후 바로 로그인시키므로 최종 로그인 시각도 함께 남긴다
 

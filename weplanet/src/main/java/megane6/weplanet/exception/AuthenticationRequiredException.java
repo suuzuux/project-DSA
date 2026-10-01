@@ -5,6 +5,6 @@ package megane6.weplanet.exception;
 // 그걸 로그인 없이도 그대로 쓸 수 있어서 남의 계정 명의로 글이 써지는 문제가 있었음 - 이제 이 동작들은 실제 로그인을 요구함
 public class AuthenticationRequiredException extends RuntimeException {
     public AuthenticationRequiredException() {
-        super("로그인이 필요합니다.");
+        super("common.error.loginRequired");
     }
 }

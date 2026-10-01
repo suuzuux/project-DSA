@@ -40,7 +40,7 @@ public class CommentService {
     // 댓글 단건 조회 (없으면 예외) - 댓글 신고 기능에서 사용
     public Comment getComment(Long commentId) {
         return commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+                .orElseThrow(() -> new IllegalArgumentException("error.comment.notFound"));
     }
 
     // 댓글 작성
@@ -53,14 +53,14 @@ public class CommentService {
         if (parent != null) {
             // 다른 게시글의 댓글 id를 폼에 끼워 넣어도 답글이 달리지 않도록 확인
             if (!parent.getPost().getId().equals(post.getId())) {
-                throw new IllegalArgumentException("이 게시글의 댓글에만 답글을 달 수 있습니다.");
+                throw new IllegalArgumentException("error.comment.replyWrongPost");
             }
             // 답글의 답글은 막음 (1단계까지만 허용)
             if (parent.getParent() != null) {
-                throw new IllegalStateException("답글에는 다시 답글을 달 수 없습니다.");
+                throw new IllegalStateException("error.comment.replyToReply");
             }
             if (parent.isDeleted()) {
-                throw new IllegalStateException("삭제된 댓글에는 답글을 달 수 없습니다.");
+                throw new IllegalStateException("error.comment.replyToDeleted");
             }
         }
 
@@ -86,13 +86,13 @@ public class CommentService {
     @Transactional
     public void deleteComment(Long commentId, User requester) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+                .orElseThrow(() -> new IllegalArgumentException("error.comment.notFound"));
 
         boolean isAuthor = comment.getAuthor().getId().equals(requester.getId());
         boolean isAdmin = requester.getRole() == Role.ADMIN;
 
         if (!isAuthor && !isAdmin) {
-            throw new IllegalStateException("본인이 작성한 댓글 또는 관리자만 삭제할 수 있습니다.");
+            throw new IllegalStateException("error.comment.deleteNoPermission");
         }
 
         removeComment(comment);
@@ -102,11 +102,11 @@ public class CommentService {
     @Transactional
     public void deleteCommentForArtistCommunity(Long commentId, User artist) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+                .orElseThrow(() -> new IllegalArgumentException("error.comment.notFound"));
         if (artist == null
                 || comment.getPost().getArtist() == null
                 || !comment.getPost().getArtist().getId().equals(artist.getId())) {
-            throw new IllegalStateException("이 커뮤니티의 댓글만 삭제할 수 있습니다.");
+            throw new IllegalStateException("error.comment.deleteOnlyThisCommunity");
         }
         removeComment(comment);
     }
@@ -152,14 +152,14 @@ public class CommentService {
     // 댓글 수정 - 작성자 본인만 가능. 삭제랑 똑같이 권한 체크만 하고 내용만 바꿔치기
     public Comment updateComment(Long commentId, User requester, String content) {
         Comment comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다. id=" + commentId));
+                .orElseThrow(() -> new IllegalArgumentException("error.comment.notFound"));
 
         if (!comment.getAuthor().getId().equals(requester.getId())) {
-            throw new IllegalStateException("본인이 작성한 댓글만 수정할 수 있습니다.");
+            throw new IllegalStateException("error.comment.editNoPermission");
         }
 
         if (comment.isDeleted()) {
-            throw new IllegalStateException("삭제된 댓글은 수정할 수 없습니다.");
+            throw new IllegalStateException("error.comment.editDeleted");
         }
 
         comment.setContent(content);

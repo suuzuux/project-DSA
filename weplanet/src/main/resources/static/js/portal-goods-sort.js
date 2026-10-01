@@ -7,6 +7,12 @@
   var statusEl = document.getElementById("goodsSortStatus");
   var dragRow = null;
 
+  // SETTINGS-03 커밋5: goods.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
+  var I18N = window.PORTAL_I18N || {};
+  function t(key, ko) {
+    return I18N[key] != null ? I18N[key] : ko;
+  }
+
   function setStatus(msg, isError) {
     if (!statusEl) return;
     statusEl.textContent = msg || "";
@@ -28,20 +34,20 @@
     orderedIds().forEach(function (id) {
       body.append("orderedIds", id);
     });
-    setStatus("순서 저장 중…", false);
+    setStatus(t("portal.goods.sortSaving", "순서 저장 중…"), false);
     fetch(reorderUrl, { method: "POST", body: body, headers: { Accept: "application/json" } })
       .then(function (res) {
         return res.json();
       })
       .then(function (data) {
         if (data && data.ok) {
-          setStatus("노출 순서가 저장되었습니다.", false);
+          setStatus(t("portal.goods.sortSaved", "노출 순서가 저장되었습니다."), false);
         } else {
-          setStatus((data && data.message) || "저장에 실패했습니다.", true);
+          setStatus((data && data.message) || t("common.error.saveFailed", "저장에 실패했습니다."), true);
         }
       })
       .catch(function () {
-        setStatus("저장에 실패했습니다.", true);
+        setStatus(t("common.error.saveFailed", "저장에 실패했습니다."), true);
       });
   }
 

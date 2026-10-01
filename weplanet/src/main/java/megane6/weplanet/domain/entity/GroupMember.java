@@ -66,7 +66,7 @@ public class GroupMember {
 	// 7단계 멤버 탈퇴 처리에서 사용. 행을 지우지 않고 탈퇴일만 남긴다(이력 보존).
 	public void leave(LocalDate date) {
 		if (!isActive()) {
-			throw new IllegalStateException("이미 탈퇴 처리된 멤버입니다.");
+			throw new IllegalStateException("error.groupMember.alreadyLeft");
 		}
 		
 		this.leftAt = date;

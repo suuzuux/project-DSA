@@ -24,7 +24,15 @@
     { code: "en", label: "English" },
   ];
 
-  var UI = {
+  /**
+   * SETTINGS-03 커밋4: 이 위젯이 따로 갖고 있던 ko/en/ja/zh/fr/es 6개 언어 자체 딕셔너리
+   * (localStorage "weplanet.lang" 기준)를 서버 MessageSource 기반 시스템으로 완전히 통합한다.
+   * zh/fr/es 는 이번에 지원 언어에서 제거(ko/ja/en 만 유지) — 사용자 결정("완전히 새 시스템으로 통합").
+   * 아래 DEFAULT_* 는 /api/i18n/calendar fetch가 실패했을 때를 위한 한국어 기본값 안전망이고,
+   * 실제 문구는 항상 messages*.properties(서버) 값이 우선이다(shell.js와 동일한 패턴).
+   * 언어 버튼을 누르면 새로고침 전에도 즉시 다시 그려야 해서 ko/ja/en 3개 언어를 한번에 들고 있는다.
+   */
+  var DEFAULT_UI = {
     ko: {
       notificationsTitle: "알림",
       noNotifications: "새로운 알림이 없습니다.",
@@ -34,13 +42,24 @@
       ticketCta: "티켓팅 홈페이지로 이동",
       ticketImagePlaceholder: "티켓 이미지 첨부 영역",
       back: "목록",
-      langChanged: function (label) { return "언어가 " + label + "(으)로 설정되었습니다"; },
-      shopMoveTo: function (name) { return "이동: " + name + " 굿즈샵"; },
+      langChanged: "언어가 {0}(으)로 설정되었습니다",
+      shopMoveTo: "이동: {0} 굿즈샵",
       myCommunities: "내 커뮤니티",
       noJoinedCommunities: "아직 가입한 커뮤니티가 없습니다.",
       login: "로그인하기",
       markAllRead: "모두 읽음",
       weekHint: "내가 가입한 모든 아티스트 커뮤니티의 스케줄 · 일자별 최대 4개",
+      prevMonth: "이전 달",
+      nextMonth: "다음 달",
+      attendanceStampHint: "🐾 아티스트 출석 도장",
+      attendanceTitle: "아티스트 출석",
+      communitySelectLabel: "커뮤니티 선택",
+      close: "닫기",
+      prev: "이전",
+      next: "다음",
+      languageLabel: "언어",
+      notificationsLabel: "알림",
+      themeToggle: "화면 테마 전환",
     },
     en: {
       notificationsTitle: "Notifications",
@@ -51,13 +70,24 @@
       ticketCta: "Go to ticketing site",
       ticketImagePlaceholder: "Ticket image area",
       back: "Back",
-      langChanged: function (label) { return "Language set to " + label; },
-      shopMoveTo: function (name) { return "Opening: " + name + " shop"; },
+      langChanged: "Language set to {0}",
+      shopMoveTo: "Opening: {0} shop",
       myCommunities: "My communities",
       noJoinedCommunities: "You have not joined any communities.",
       login: "Log in",
       markAllRead: "Mark all read",
       weekHint: "Schedules from every community you joined · up to 4 per day",
+      prevMonth: "Previous month",
+      nextMonth: "Next month",
+      attendanceStampHint: "🐾 Artist attendance stamp",
+      attendanceTitle: "Artist attendance",
+      communitySelectLabel: "Select community",
+      close: "Close",
+      prev: "Previous",
+      next: "Next",
+      languageLabel: "Language",
+      notificationsLabel: "Notifications",
+      themeToggle: "Toggle theme",
     },
     ja: {
       notificationsTitle: "通知",
@@ -68,135 +98,51 @@
       ticketCta: "チケットサイトへ移動",
       ticketImagePlaceholder: "チケット画像添付エリア",
       back: "一覧",
-      langChanged: function (label) { return "言語が " + label + " に設定されました"; },
-      shopMoveTo: function (name) { return "移動: " + name + " グッズショップ"; },
+      langChanged: "言語が {0} に設定されました",
+      shopMoveTo: "移動: {0} グッズショップ",
       myCommunities: "マイコミュニティ",
       noJoinedCommunities: "参加中のコミュニティはありません。",
       login: "ログイン",
       markAllRead: "すべて既読",
       weekHint: "参加中の全アーティストコミュニティのスケジュール · 1日最大4件",
-    },
-    zh: {
-      notificationsTitle: "通知",
-      noNotifications: "暂无新通知。",
-      calendarTitle: "Calendar",
-      all: "全部",
-      noEventsForDate: "当天没有安排的日程。",
-      ticketCta: "前往购票网站",
-      ticketImagePlaceholder: "门票图片区域",
-      back: "返回列表",
-      langChanged: function (label) { return "语言已设置为 " + label; },
-      shopMoveTo: function (name) { return "跳转至：" + name + " 官方商店"; },
-      myCommunities: "我的社区",
-      noJoinedCommunities: "暂无已加入的社区。",
-      login: "登录",
-      markAllRead: "全部已读",
-      weekHint: "已加入的所有艺人社区日程 · 每天最多 4 条",
-    },
-    fr: {
-      notificationsTitle: "Notifications",
-      noNotifications: "Aucune nouvelle notification.",
-      calendarTitle: "Calendar",
-      all: "Tous",
-      noEventsForDate: "Aucun événement ce jour-là.",
-      ticketCta: "Aller au site de billetterie",
-      back: "Retour",
-      ticketImagePlaceholder: "Zone image du billet",
-      langChanged: function (label) { return "Langue définie sur " + label; },
-      shopMoveTo: function (name) { return "Redirection : boutique " + name; },
-      myCommunities: "Mes communautés",
-      noJoinedCommunities: "Vous n'avez rejoint aucune communauté.",
-      login: "Se connecter",
-      markAllRead: "Tout lu",
-      weekHint: "Agendas de toutes vos communautés · 4 max. par jour",
-    },
-    es: {
-      notificationsTitle: "Notificaciones",
-      noNotifications: "No hay notificaciones nuevas.",
-      calendarTitle: "Calendar",
-      all: "Todas",
-      noEventsForDate: "No hay eventos en esta fecha.",
-      ticketCta: "Ir al sitio de venta de entradas",
-      ticketImagePlaceholder: "Área de imagen del ticket",
-      back: "Volver",
-      langChanged: function (label) { return "Idioma configurado en " + label; },
-      shopMoveTo: function (name) { return "Abriendo: tienda de " + name; },
-      myCommunities: "Mis comunidades",
-      noJoinedCommunities: "No te has unido a ninguna comunidad.",
-      login: "Iniciar sesión",
-      markAllRead: "Marcar leídas",
-      weekHint: "Agenda de todas tus comunidades · máx. 4 por día",
+      prevMonth: "前月",
+      nextMonth: "次月",
+      attendanceStampHint: "🐾 アーティスト出席スタンプ",
+      attendanceTitle: "アーティスト出席",
+      communitySelectLabel: "コミュニティ選択",
+      close: "閉じる",
+      prev: "前へ",
+      next: "次へ",
+      languageLabel: "言語",
+      notificationsLabel: "通知",
+      themeToggle: "画面テーマの切り替え",
     },
   };
+  var UI = DEFAULT_UI;
 
   var MY_COMMUNITIES = [];
 
-  var EVENT_TYPE_META = {
-    tv_broadcast: {
-      color: "#0f6b6b",
-      icon: "📺",
-      label: { ko: "TV/방송", en: "TV", ja: "TV/放送", zh: "电视/放送", fr: "TV", es: "TV" },
-    },
-    youtube: {
-      color: "#e11d48",
-      icon: "▶",
-      label: { ko: "유튜브", en: "YouTube", ja: "YouTube", zh: "YouTube", fr: "YouTube", es: "YouTube" },
-    },
-    concert: {
-      color: "#7c5cff",
-      icon: "🎤",
-      label: { ko: "콘서트", en: "Concert", ja: "コンサート", zh: "演唱会", fr: "Concert", es: "Concierto" },
-    },
-    radio: {
-      color: "#1d6fd8",
-      icon: "📻",
-      label: { ko: "라디오", en: "Radio", ja: "ラジオ", zh: "电台", fr: "Radio", es: "Radio" },
-    },
-    awards: {
-      color: "#c45c26",
-      icon: "🏆",
-      label: { ko: "시상식", en: "Awards", ja: "授賞式", zh: "颁奖", fr: "Cérémonie", es: "Premios" },
-    },
-    photo_magazine: {
-      color: "#7c3aed",
-      icon: "📷",
-      label: { ko: "촬영/잡지", en: "Photo/Magazine", ja: "撮影/雑誌", zh: "拍摄/杂志", fr: "Photo/Magazine", es: "Foto/Revista" },
-    },
-    birthday: {
-      color: "#9a6700",
-      icon: "🎂",
-      label: { ko: "생일", en: "Birthday", ja: "誕生日", zh: "生日", fr: "Anniversaire", es: "Cumpleaños" },
-    },
-    other: {
-      color: "#5b5c6b",
-      icon: "📌",
-      label: { ko: "기타", en: "Other", ja: "その他", zh: "其他", fr: "Autre", es: "Otro" },
-    },
-    broadcast: {
-      color: "#0f6b6b",
-      icon: "📻",
-      label: { ko: "방송", en: "Broadcast", ja: "放送", zh: "播出", fr: "Diffusion", es: "Emisión" },
-    },
-    live: {
-      color: "#e11d48",
-      icon: "🔴",
-      label: { ko: "라이브", en: "Live", ja: "ライブ", zh: "直播", fr: "Live", es: "Live" },
-    },
-    ticket_open: {
-      color: "#c45c26",
-      icon: "🎫",
-      label: { ko: "티켓오픈", en: "Ticket open", ja: "チケットオープン", zh: "开票", fr: "Billetterie", es: "Venta de entradas" },
-    },
+  var DEFAULT_EVENT_TYPE_META = {
+    tv_broadcast: { color: "#0f6b6b", icon: "📺", label: { ko: "TV/방송", en: "TV", ja: "TV/放送" } },
+    youtube: { color: "#e11d48", icon: "▶", label: { ko: "유튜브", en: "YouTube", ja: "YouTube" } },
+    concert: { color: "#7c5cff", icon: "🎤", label: { ko: "콘서트", en: "Concert", ja: "コンサート" } },
+    radio: { color: "#1d6fd8", icon: "📻", label: { ko: "라디오", en: "Radio", ja: "ラジオ" } },
+    awards: { color: "#c45c26", icon: "🏆", label: { ko: "시상식", en: "Awards", ja: "授賞式" } },
+    photo_magazine: { color: "#7c3aed", icon: "📷", label: { ko: "촬영/잡지", en: "Photo/Magazine", ja: "撮影/雑誌" } },
+    birthday: { color: "#9a6700", icon: "🎂", label: { ko: "생일", en: "Birthday", ja: "誕生日" } },
+    other: { color: "#5b5c6b", icon: "📌", label: { ko: "기타", en: "Other", ja: "その他" } },
+    broadcast: { color: "#0f6b6b", icon: "📻", label: { ko: "방송", en: "Broadcast", ja: "放送" } },
+    live: { color: "#e11d48", icon: "🔴", label: { ko: "라이브", en: "Live", ja: "ライブ" } },
+    ticket_open: { color: "#c45c26", icon: "🎫", label: { ko: "티켓오픈", en: "Ticket open", ja: "チケットオープン" } },
   };
+  var EVENT_TYPE_META = DEFAULT_EVENT_TYPE_META;
 
-  var WEEKDAYS = {
+  var DEFAULT_WEEKDAYS = {
     ko: ["일", "월", "화", "수", "목", "금", "토"],
     en: ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
     ja: ["日", "月", "火", "水", "木", "金", "土"],
-    zh: ["日", "一", "二", "三", "四", "五", "六"],
-    fr: ["DIM", "LUN", "MAR", "MER", "JEU", "VEN", "SAM"],
-    es: ["DOM", "LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB"],
   };
+  var WEEKDAYS = DEFAULT_WEEKDAYS;
 
   /* 스케줄 원본 — 에이전시 포털에서 등록한 일정을 /api/schedules 로 불러온다 */
   var EVENTS_BY_DATE = {};
@@ -215,12 +161,127 @@
     broadcast: "📻",
   };
 
-  var NOTI_TITLE = {
-    live_start: { ko: "라이브 시작", en: "Live started", ja: "ライブ開始", zh: "直播开始", fr: "Live commencé", es: "Live iniciado" },
-    ticket_d1: { ko: "티켓팅 하루 전 알림", en: "Ticketing tomorrow", ja: "チケッティング前日通知", zh: "开票前一天提醒", fr: "Billetterie demain", es: "Venta de entradas mañana" },
-    concert_day: { ko: "콘서트 당일 알림", en: "Concert day", ja: "コンサート当日通知", zh: "演出当天提醒", fr: "Jour du concert", es: "Día del concierto" },
-    broadcast: { ko: "방송 알림", en: "On air", ja: "放送通知", zh: "播出提醒", fr: "Diffusion", es: "En antena" },
+  var DEFAULT_NOTI_TITLE = {
+    live_start: { ko: "라이브 시작", en: "Live started", ja: "ライブ開始" },
+    ticket_d1: { ko: "티켓팅 하루 전 알림", en: "Ticketing tomorrow", ja: "チケッティング前日通知" },
+    concert_day: { ko: "콘서트 당일 알림", en: "Concert day", ja: "コンサート当日通知" },
+    broadcast: { ko: "방송 알림", en: "On air", ja: "放送通知" },
   };
+  var NOTI_TITLE = DEFAULT_NOTI_TITLE;
+
+  var DEFAULT_CATEGORY_FALLBACK = {
+    post: { ko: "게시글", en: "Post", ja: "投稿" },
+    community_notice: { ko: "커뮤니티 공지", en: "Community notice", ja: "コミュニティお知らせ" },
+    site_notice: { ko: "시스템 공지", en: "System notice", ja: "システムお知らせ" },
+    artist_comment: { ko: "아티스트 댓글", en: "Artist comment", ja: "アーティストコメント" },
+    comment: { ko: "내 글 댓글", en: "Comment on your post", ja: "あなたの投稿へのコメント" },
+    live_start: DEFAULT_NOTI_TITLE.live_start,
+    media: { ko: "미디어", en: "Media", ja: "メディア" },
+  };
+  var CATEGORY_FALLBACK = DEFAULT_CATEGORY_FALLBACK;
+
+  var DEFAULT_EVENT_MESSAGE = {
+    live_start: {
+      ko: "{0} 라이브가 시작됐어요. 지금 바로 참여해보세요! · {1}",
+      en: "{0} just started a live. Join now! · {1}",
+      ja: "{0}のライブが始まりました。今すぐ参加しましょう！ · {1}",
+    },
+    ticket_d1: {
+      ko: "{0} 티켓 오픈이 {1}에 진행됩니다. 알림을 켜두고 놓치지 마세요.",
+      en: "Ticket opening for {0} is at {1}. Keep notifications on so you don't miss it.",
+      ja: "{0} のチケットオープンは {1} です。通知をオンにしてお見逃しなく。",
+    },
+    concert_day: {
+      ko: "오늘은 {0} 공연일입니다. 입장 시간과 좌석을 미리 확인하세요.",
+      en: "Today is {0}. Check your entry time and seat in advance.",
+      ja: "本日は {0} の公演日です。入場時間と座席を事前にご確認ください。",
+    },
+    broadcast: {
+      ko: "{0} 방송 일정: {1} ({2})",
+      en: "{0} on air: {1} ({2})",
+      ja: "{0} 放送: {1} ({2})",
+    },
+  };
+  var EVENT_MESSAGE_TEMPLATE = DEFAULT_EVENT_MESSAGE;
+
+  var DEFAULT_RELATIVE_TIME = {
+    ko: { today: "오늘", yesterday: "어제", daysAgo: "{0}일 전", daysFuture: "{0}일 후" },
+    en: { today: "Today", yesterday: "Yesterday", daysAgo: "{0} days ago", daysFuture: "in {0} days" },
+    ja: { today: "今日", yesterday: "昨日", daysAgo: "{0}日前", daysFuture: "{0}日後" },
+  };
+  var RELATIVE_TIME_TABLE = DEFAULT_RELATIVE_TIME;
+
+  /** "{0}"/"{1}" 형태 템플릿의 자리표시자를 순서대로 치환한다 (shell.js의 greet 치환과 동일 패턴). */
+  function fmt(template, args) {
+    var result = String(template == null ? "" : template);
+    (args || []).forEach(function (arg, idx) {
+      result = result.split("{" + idx + "}").join(String(arg == null ? "" : arg));
+    });
+    return result;
+  }
+
+  /** /api/i18n/calendar 로 받아온 ko/ja/en 문구로 위 DEFAULT_* 를 교체한다. 실패하면 한국어 기본값 유지. */
+  function applyCalendarI18n(data) {
+    if (!data) return;
+    var codes = ["ko", "ja", "en"];
+    var mergedUi = {};
+    var mergedEventType = {};
+    var mergedWeekdays = {};
+    var mergedNotiTitle = {};
+    var mergedCategory = {};
+    var mergedEventMessage = {};
+    var mergedRelativeTime = {};
+
+    codes.forEach(function (code) {
+      var bundle = data[code];
+      mergedUi[code] = Object.assign({}, DEFAULT_UI[code], bundle && bundle.ui);
+      mergedWeekdays[code] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].map(function (d, idx) {
+        return (bundle && bundle.weekday && bundle.weekday[d]) || DEFAULT_WEEKDAYS[code][idx];
+      });
+      mergedRelativeTime[code] = Object.assign({}, DEFAULT_RELATIVE_TIME[code], bundle && bundle.relativeTime);
+
+      Object.keys(DEFAULT_EVENT_TYPE_META).forEach(function (type) {
+        mergedEventType[type] = mergedEventType[type] || {
+          color: DEFAULT_EVENT_TYPE_META[type].color,
+          icon: DEFAULT_EVENT_TYPE_META[type].icon,
+          label: {},
+        };
+        mergedEventType[type].label[code] =
+          (bundle && bundle.eventType && bundle.eventType[type]) || DEFAULT_EVENT_TYPE_META[type].label[code];
+      });
+      Object.keys(DEFAULT_NOTI_TITLE).forEach(function (type) {
+        mergedNotiTitle[type] = mergedNotiTitle[type] || {};
+        mergedNotiTitle[type][code] =
+          (bundle && bundle.notiTitle && bundle.notiTitle[type]) || DEFAULT_NOTI_TITLE[type][code];
+      });
+      Object.keys(DEFAULT_CATEGORY_FALLBACK).forEach(function (type) {
+        mergedCategory[type] = mergedCategory[type] || {};
+        var fromCategory = bundle && bundle.category && bundle.category[type];
+        var fromNotiTitle = bundle && bundle.notiTitle && bundle.notiTitle[type];
+        mergedCategory[type][code] = fromCategory || fromNotiTitle || DEFAULT_CATEGORY_FALLBACK[type][code];
+      });
+      Object.keys(DEFAULT_EVENT_MESSAGE).forEach(function (type) {
+        mergedEventMessage[type] = mergedEventMessage[type] || {};
+        mergedEventMessage[type][code] =
+          (bundle && bundle.eventMessage && bundle.eventMessage[type]) || DEFAULT_EVENT_MESSAGE[type][code];
+      });
+    });
+
+    UI = mergedUi;
+    EVENT_TYPE_META = mergedEventType;
+    WEEKDAYS = mergedWeekdays;
+    NOTI_TITLE = mergedNotiTitle;
+    CATEGORY_FALLBACK = mergedCategory;
+    EVENT_MESSAGE_TEMPLATE = mergedEventMessage;
+    RELATIVE_TIME_TABLE = mergedRelativeTime;
+  }
+
+  function loadCalendarI18n() {
+    return fetch("/api/i18n/calendar", { headers: { Accept: "application/json" } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(applyCalendarI18n)
+      .catch(function () { /* 네트워크 오류 시 한국어 기본값으로 진행 */ });
+  }
 
   /* ---------- helpers ---------- */
   function esc(s) {
@@ -290,7 +351,7 @@
   function persistLang(code) {
     localStorage.setItem(LANG_KEY, code);
     setCookie(code);
-    document.documentElement.setAttribute("lang", code === "zh" ? "zh-CN" : code);
+    document.documentElement.setAttribute("lang", code);
   }
 
   function loadReadIds() {
@@ -312,19 +373,11 @@
     var d = parseYmd(dateStr);
     d.setHours(0, 0, 0, 0);
     var diff = Math.round((today - d) / 86400000);
-    var table = {
-      ko: { 0: "오늘", 1: "어제", n: function (n) { return n + "일 전"; }, future: function (n) { return n + "일 후"; } },
-      en: { 0: "Today", 1: "Yesterday", n: function (n) { return n + " days ago"; }, future: function (n) { return "in " + n + " days"; } },
-      ja: { 0: "今日", 1: "昨日", n: function (n) { return n + "日前"; }, future: function (n) { return n + "日後"; } },
-      zh: { 0: "今天", 1: "昨天", n: function (n) { return n + "天前"; }, future: function (n) { return n + "天后"; } },
-      fr: { 0: "Aujourd'hui", 1: "Hier", n: function (n) { return "il y a " + n + " j"; }, future: function (n) { return "dans " + n + " j"; } },
-      es: { 0: "Hoy", 1: "Ayer", n: function (n) { return "hace " + n + " días"; }, future: function (n) { return "en " + n + " días"; } },
-    };
-    var pack = table[getLang()] || table.en;
-    if (diff === 0) return pack[0];
-    if (diff === 1) return pack[1];
-    if (diff > 1) return pack.n(diff);
-    return pack.future(-diff);
+    var pack = RELATIVE_TIME_TABLE[getLang()] || RELATIVE_TIME_TABLE.en;
+    if (diff === 0) return pack.today;
+    if (diff === 1) return pack.yesterday;
+    if (diff > 1) return fmt(pack.daysAgo, [diff]);
+    return fmt(pack.daysFuture, [-diff]);
   }
 
   function findEventById(eventId) {
@@ -341,41 +394,18 @@
   function eventMessage(type, ev) {
     var title = tr(ev.title);
     var artist = communityName(ev.artist);
-    var map = {
-      live_start: {
-        ko: artist + " 라이브가 시작됐어요. 지금 바로 참여해보세요! · " + title,
-        en: artist + " just started a live. Join now! · " + title,
-        ja: artist + "のライブが始まりました。今すぐ参加しましょう！ · " + title,
-        zh: artist + " 开启了直播，快来参与吧！ · " + title,
-        fr: artist + " vient de démarrer un live. Rejoignez maintenant ! · " + title,
-        es: artist + " acaba de iniciar un live. ¡Únete ahora! · " + title,
-      },
-      ticket_d1: {
-        ko: title + " 티켓 오픈이 " + ev.time + "에 진행됩니다. 알림을 켜두고 놓치지 마세요.",
-        en: "Ticket opening for " + title + " is at " + ev.time + ". Keep notifications on so you don't miss it.",
-        ja: title + " のチケットオープンは " + ev.time + " です。通知をオンにしてお見逃しなく。",
-        zh: title + " 将于 " + ev.time + " 开票，请打开通知不要错过。",
-        fr: "L'ouverture des billets pour " + title + " est à " + ev.time + ". Gardez les notifications activées.",
-        es: "La venta de entradas para " + title + " es a las " + ev.time + ". Mantén las notificaciones activadas.",
-      },
-      concert_day: {
-        ko: "오늘은 " + title + " 공연일입니다. 입장 시간과 좌석을 미리 확인하세요.",
-        en: "Today is " + title + ". Check your entry time and seat in advance.",
-        ja: "本日は " + title + " の公演日です。入場時間と座席を事前にご確認ください。",
-        zh: "今天是 " + title + " 演出日，请提前确认入场时间与座位。",
-        fr: "Aujourd'hui, c'est " + title + ". Vérifiez votre heure d'entrée et votre place.",
-        es: "Hoy es " + title + ". Revisa con anticipación tu hora de entrada y asiento.",
-      },
-      broadcast: {
-        ko: artist + " 방송 일정: " + title + " (" + ev.time + ")",
-        en: artist + " on air: " + title + " (" + ev.time + ")",
-        ja: artist + " 放送: " + title + " (" + ev.time + ")",
-        zh: artist + " 播出：" + title + "（" + ev.time + "）",
-        fr: artist + " à l'antenne : " + title + " (" + ev.time + ")",
-        es: artist + " al aire: " + title + " (" + ev.time + ")",
-      },
-    };
-    return map[type] || {};
+    var templates = EVENT_MESSAGE_TEMPLATE[type];
+    if (!templates) return {};
+    var args;
+    if (type === "concert_day") args = [title];
+    else if (type === "ticket_d1") args = [title, ev.time];
+    else if (type === "broadcast") args = [artist, title, ev.time];
+    else args = [artist, title]; // live_start
+    var result = {};
+    ["ko", "ja", "en"].forEach(function (code) {
+      result[code] = fmt(templates[code], args);
+    });
+    return result;
   }
 
   function notificationsFromSchedule() {
@@ -538,16 +568,7 @@
 
   function notificationCategory(notification) {
     if (notification.category) return tr(notification.category);
-    var fallback = {
-      post: { ko: "게시글", en: "Post", ja: "投稿", zh: "帖子", fr: "Post", es: "Publicación" },
-      community_notice: { ko: "커뮤니티 공지", en: "Community notice", ja: "コミュニティお知らせ", zh: "社区公告", fr: "Avis communauté", es: "Aviso de comunidad" },
-      site_notice: { ko: "시스템 공지", en: "System notice", ja: "システムお知らせ", zh: "系统公告", fr: "Avis système", es: "Aviso del sistema" },
-      artist_comment: { ko: "아티스트 댓글", en: "Artist comment", ja: "アーティストコメント", zh: "艺人评论", fr: "Commentaire artiste", es: "Comentario del artista" },
-      comment: { ko: "내 글 댓글", en: "Comment on your post", ja: "あなたの投稿へのコメント", zh: "我的帖子评论", fr: "Commentaire sur votre post", es: "Comentario en tu publicación" },
-      live_start: { ko: "라이브 시작", en: "Live started", ja: "ライブ開始", zh: "直播开始", fr: "Live commencé", es: "Live iniciado" },
-      media: { ko: "미디어", en: "Media", ja: "メディア", zh: "媒体", fr: "Média", es: "Medios" },
-    };
-    return tr(fallback[notification.type] || notification.type);
+    return tr(CATEGORY_FALLBACK[notification.type] || notification.type);
   }
 
   function apiUrlForPage(path) {
@@ -722,7 +743,7 @@
     persistLang(code);
     if (!(opts && opts.silent)) {
       var label = (LANGUAGES.filter(function (l) { return l.code === code; })[0] || {}).label || code;
-      showToast((UI[code] || UI.ko).langChanged(label));
+      showToast(fmt((UI[code] || UI.ko).langChanged, [label]));
     }
     closeMenus();
     renderLangMenu();
@@ -781,22 +802,31 @@
     return slot;
   }
 
+  // SETTINGS-03 커밋4: 커밋1에서 이 아이콘들의 aria-label이 #{...}로 로케일별로 번역되면서
+  // (예: "언어" → "Language"/"言語") 한국어 리터럴만 비교하던 기존 감지 로직이 non-KO 로케일에서
+  // 버튼을 못 찾는 회귀가 있었다. data-icon 속성(안정적인 식별자)을 우선 사용하고,
+  // 아직 data-icon이 없는 페이지(예: 메인 index.html, Commit 3 범위)를 위해 텍스트 매칭도 폴백으로 남긴다.
   function isLangBtn(btn) {
     if (!btn || btn.tagName === "A") return false;
+    if (btn.dataset && btn.dataset.icon === "language") return true;
     var label = (btn.getAttribute("aria-label") || "").trim();
     var text = (btn.textContent || "").trim();
-    return label === "언어" || text.indexOf("🌐") !== -1;
+    return label === "언어" || label === DEFAULT_UI.en.languageLabel || label === DEFAULT_UI.ja.languageLabel
+      || text.indexOf("🌐") !== -1;
   }
 
   function isNotiBtn(btn) {
     if (!btn || btn.tagName === "A") return false;
+    if (btn.dataset && btn.dataset.icon === "notification") return true;
     var label = (btn.getAttribute("aria-label") || "").trim();
     var text = (btn.textContent || "").trim();
-    return label === "알림" || text.indexOf("🔔") !== -1;
+    return label === "알림" || label === DEFAULT_UI.en.notificationsLabel || label === DEFAULT_UI.ja.notificationsLabel
+      || text.indexOf("🔔") !== -1;
   }
 
   function isSearchBtn(btn) {
     if (!btn) return false;
+    if (btn.dataset && btn.dataset.icon === "search") return true;
     var label = (btn.getAttribute("aria-label") || "").trim();
     var title = (btn.getAttribute("title") || "").trim();
     return label.indexOf("검색") !== -1 || title.indexOf("검색") !== -1;
@@ -872,7 +902,8 @@
       langBtn = document.createElement("button");
       langBtn.type = "button";
       langBtn.className = "icon-btn";
-      langBtn.setAttribute("aria-label", "언어");
+      langBtn.setAttribute("data-icon", "language");
+      langBtn.setAttribute("aria-label", t().languageLabel);
       langBtn.innerHTML = HEADER_ICONS.language;
       insert(langBtn);
     }
@@ -885,7 +916,7 @@
       themeBtn.type = "button";
       themeBtn.className = "icon-btn";
       themeBtn.setAttribute("data-theme-toggle", "");
-      themeBtn.setAttribute("aria-label", "화면 테마 전환");
+      themeBtn.setAttribute("aria-label", t().themeToggle || "화면 테마 전환");
       themeBtn.innerHTML = HEADER_ICONS.theme;
       insert(themeBtn);
     }
@@ -921,7 +952,9 @@
   function bindLangButton(btn) {
     if (btn.dataset.wpBound === "lang") return;
     btn.dataset.wpBound = "lang";
-    btn.setAttribute("aria-label", "언어");
+    // SETTINGS-03 커밋4: 예전엔 여기서 aria-label을 "언어"로 강제로 다시 써서, 커밋1이 Thymeleaf로
+    // 이미 로케일에 맞게 넣어준 번역(예: "Language"/"言語")을 매번 덮어썼다. 버튼이 이미 올바른
+    // aria-label을 갖고 있으므로 더 이상 덮어쓰지 않는다.
     btn.removeAttribute("onclick");
     var slot = wrapSlot(btn, "lang");
     if (!slot.querySelector(".wp-lang-menu")) {
@@ -947,7 +980,7 @@
   function bindNotiButton(btn) {
     if (btn.dataset.wpBound === "noti") return;
     btn.dataset.wpBound = "noti";
-    btn.setAttribute("aria-label", "알림");
+    // SETTINGS-03 커밋4: bindLangButton과 동일한 이유로 aria-label 강제 덮어쓰기를 제거했다.
     btn.classList.add("icon-btn--badge", "wp-noti-bound");
     btn.removeAttribute("onclick");
     btn.onclick = null;
@@ -997,7 +1030,7 @@
     var list = notificationsForPanel();
     var filters = guest || isCommunityPage()
       ? ""
-      : '<div class="wp-noti-filter" role="group" aria-label="커뮤니티 선택">' +
+      : '<div class="wp-noti-filter" role="group" aria-label="' + esc(ui.communitySelectLabel) + '">' +
           [{ id: "all", name: ui.all }].concat(MY_COMMUNITIES).map(function (community) {
             return '<button type="button" class="wp-noti-filter__chip' +
               (state.notificationCommunity === community.id ? " is-active" : "") +
@@ -1060,7 +1093,7 @@
       badge.textContent = unread > 9 ? "9+" : String(unread);
       badge.hidden = unread === 0;
     });
-    document.querySelectorAll(".wp-noti-bound, .icon-btn--badge[aria-label='알림']").forEach(function (btn) {
+    document.querySelectorAll(".wp-noti-bound, .icon-btn--badge[data-icon='notification']").forEach(function (btn) {
       btn.classList.toggle("has-unread", unread > 0);
       if (unread === 0) {
         btn.classList.remove("has-unread");
@@ -1204,14 +1237,14 @@
     modal.innerHTML =
       '<div class="wp-cal-head">' +
         '<strong id="wpCalTitle">' + esc(ui.calendarTitle) + "</strong>" +
-        '<button type="button" class="icon-btn" data-cal-close aria-label="close">✕</button>' +
+        '<button type="button" class="icon-btn" data-cal-close aria-label="' + esc(ui.close) + '">✕</button>' +
       "</div>" +
       '<div class="wp-cal-label">' + esc(ui.myCommunities) + "</div>" +
       '<div class="wp-cal-chips">' + chips + "</div>" +
       '<div class="wp-cal-nav">' +
-        '<button type="button" class="icon-btn" data-cal-prev aria-label="prev">◀</button>' +
+        '<button type="button" class="icon-btn" data-cal-prev aria-label="' + esc(ui.prev) + '">◀</button>' +
         "<span>" + y + " · " + String(m + 1).padStart(2, "0") + "</span>" +
-        '<button type="button" class="icon-btn" data-cal-next aria-label="next">▶</button>' +
+        '<button type="button" class="icon-btn" data-cal-next aria-label="' + esc(ui.next) + '">▶</button>' +
       "</div>" +
       '<div class="wp-cal-grid">' + gridDays + gridCells + "</div>" +
       '<div class="wp-cal-list">' +
@@ -1235,7 +1268,7 @@
     return (
       '<div class="wp-cal-head">' +
         '<button type="button" class="wp-cal-back" data-cal-back>◀ ' + esc(ui.back) + "</button>" +
-        '<button type="button" class="icon-btn" data-cal-close aria-label="close">✕</button>' +
+        '<button type="button" class="icon-btn" data-cal-close aria-label="' + esc(ui.close) + '">✕</button>' +
       "</div>" +
       '<span class="wp-cal-type" style="background:' + meta.color + "22;color:" + meta.color + '">' +
         esc(tr(meta.label)) +
@@ -1319,7 +1352,7 @@
         return '<span class="mini-cal-dot" style="background:' + miniCalDotColor(ev, idx) + '"></span>';
       }).join("");
       var pawHtml = attendance
-        ? '<span class="paw-stamp" style="color:' + esc(attendance) + '" title="아티스트 출석">🐾</span>'
+        ? '<span class="paw-stamp" style="color:' + esc(attendance) + '" title="' + esc(t().attendanceTitle) + '">🐾</span>'
         : "";
       html +=
         '<button type="button" class="' + cls + '" data-open-date="' + dateStr + '">' +
@@ -1605,7 +1638,11 @@
   }
 
   function init() {
-    persistLang(getLang());
+    // 화면 언어의 기준은 서버 세션 로케일(<html lang> = th:lang). localStorage 에 예전 값이 남아 있으면
+    // 로그인 화면·설정·다른 기기에서 바꾼 언어와 어긋나서, 페이지는 일본어인데 캘린더·알림·헤더 아이콘만
+    // 한국어로 나오고 <html lang>까지 ko 로 덮어쓰던 문제가 있었다 → 서버가 내려준 언어로 맞춘다.
+    var serverLang = (document.documentElement.getAttribute("lang") || "").toLowerCase().slice(0, 2);
+    persistLang(LANGUAGES.some(function (l) { return l.code === serverLang; }) ? serverLang : getLang());
     injectRoot();
     ensureHeaderIcons();
     bindHeaderIcons();
@@ -1644,9 +1681,15 @@
     getLang: getLang,
   };
 
+  // SETTINGS-03 커밋4: shell.js와 동일한 패턴 - 서버 문구(ko/ja/en)를 먼저 받아온 뒤에만
+  // 화면을 그린다. fetch가 실패해도 loadCalendarI18n()의 catch가 삼켜서 한국어 기본값으로 진행한다.
+  function boot() {
+    loadCalendarI18n().then(init);
+  }
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
+    document.addEventListener("DOMContentLoaded", boot);
   } else {
-    init();
+    boot();
   }
 })();

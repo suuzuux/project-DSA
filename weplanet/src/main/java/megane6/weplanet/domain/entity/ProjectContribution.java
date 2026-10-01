@@ -150,7 +150,7 @@ public class ProjectContribution {
             throw new IllegalArgumentException("프로젝트와 참여자 정보가 필요합니다.");
         }
         if (amount == null || amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
-            throw new IllegalArgumentException("참여 금액은 1,000원 이상 3,000,000원 이하여야 합니다.");
+            throw new IllegalArgumentException("community.project.js.amountRange");
         }
         
         return new ProjectContribution(
@@ -175,11 +175,11 @@ public class ProjectContribution {
             String secret
     ) {
         if (paymentStatus != FanProjectPaymentStatus.READY) {
-            throw new IllegalStateException("결제 대기 중인 주문만 가상계좌를 발급할 수 있습니다.");
+            throw new IllegalStateException("error.order.onlyReadyCanIssue");
         }
         if (paymentKey == null || bankCode == null || accountNumber == null
                 || dueDate == null || secret == null) {
-            throw new IllegalArgumentException("가상계좌 발급 정보가 올바르지 않습니다.");
+            throw new IllegalArgumentException("error.order.invalidVirtualAccount");
         }
         
         this.providerTransactionId = paymentKey;
@@ -201,7 +201,7 @@ public class ProjectContribution {
             return false;
         }
         if (paymentStatus != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-            throw new IllegalStateException("입금 대기 중인 주문만 결제 완료 처리할 수 있습니다.");
+            throw new IllegalStateException("error.order.onlyWaitingCanPay");
         }
         
         this.paymentStatus = FanProjectPaymentStatus.PAID;
@@ -214,7 +214,7 @@ public class ProjectContribution {
      */
     public void markFailed() {
         if (paymentStatus != FanProjectPaymentStatus.READY) {
-            throw new IllegalStateException("결제 대기 중인 주문만 실패 처리할 수 있습니다.");
+            throw new IllegalStateException("error.order.onlyReadyCanFail");
         }
         this.paymentStatus = FanProjectPaymentStatus.FAILED;
     }
@@ -224,7 +224,7 @@ public class ProjectContribution {
      */
     public void expire(LocalDateTime now) {
         if (paymentStatus != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-            throw new IllegalStateException("입금 대기 중인 주문만 만료 처리할 수 있습니다.");
+            throw new IllegalStateException("error.order.onlyWaitingCanExpire");
         }
         this.paymentStatus = FanProjectPaymentStatus.EXPIRED;
         this.cancelledAt = now;

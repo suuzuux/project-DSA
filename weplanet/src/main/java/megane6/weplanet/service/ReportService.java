@@ -29,7 +29,7 @@ public class ReportService {
         Optional<Report> existing = reportRepository.findByPostAndReporter(post, reporter);
 
         if (existing.isPresent()) {
-            throw new IllegalStateException("이미 신고한 게시글입니다.");
+            throw new IllegalStateException("error.report.postAlreadyReported");
         }
 
         Report report = Report.builder()
@@ -46,7 +46,7 @@ public class ReportService {
         Optional<CommentReport> existing = commentReportRepository.findByCommentAndReporter(comment, reporter);
 
         if (existing.isPresent()) {
-            throw new IllegalStateException("이미 신고한 댓글입니다.");
+            throw new IllegalStateException("error.report.commentAlreadyReported");
         }
 
         CommentReport commentReport = CommentReport.builder()
@@ -63,7 +63,7 @@ public class ReportService {
         Optional<LiveCommentReport> existing = liveCommentReportRepository.findByCommentAndReporter(comment, reporter);
 
         if (existing.isPresent()) {
-            throw new IllegalStateException("이미 신고한 채팅입니다.");
+            throw new IllegalStateException("error.report.chatAlreadyReported");
         }
 
         LiveCommentReport report = LiveCommentReport.builder()

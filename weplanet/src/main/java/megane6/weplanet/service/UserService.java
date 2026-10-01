@@ -6,6 +6,7 @@ import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
@@ -13,6 +14,8 @@ import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,17 +36,23 @@ public class UserService {
 	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
 	private final CommunityJoinService communityJoinService;
 	private final UserFollowRepository userFollowRepository;
-	
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 회원가입(signup-id.html) 화면에서만 쓰이는 예외 메시지를 현재 세션 로케일로 번역한다.
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
 	@Transactional
 	public User signup(SignupRequestDto dto) {
 		if (!dto.isPasswordConfirmed()) {
-			throw new IllegalArgumentException("비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+			throw new IllegalArgumentException(msg("signup.error.passwordMismatch"));
 		}
 		if (userRepository.existsByUsername(dto.getUsername())) {
-			throw new IllegalArgumentException("이미 사용 중인 아이디입니다.");
+			throw new IllegalArgumentException(msg("signup.error.usernameTaken"));
 		}
 		if (userRepository.existsByEmail(dto.getEmail())) {
-			throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+			throw new IllegalArgumentException(msg("signup.error.emailTaken"));
 		}
 		
 		String nickname = resolveNickname(dto.getNickname());
@@ -63,6 +72,10 @@ public class UserService {
 		// [설정 - 이벤트·혜택 알림] 가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스 값을 그대로 반영.
 		// 이후 설정 화면의 "광고성 정보 알림 받기" 토글과 같은 값을 공유한다.
 		user.changeMarketingConsent(dto.isMarketingConsent());
+		
+		// 가입 화면에서 쓰던 언어를 계정 선호 언어로 저장한다. 안 하면 기본값(KO)이 남아
+		// 환영 메일이 한국어로 가고, 다음 로그인부터 화면도 한국어로 바뀐다.
+		user.changePreferredLanguage(PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale()));
 		
 		User saved = userRepository.save(user);
 		
@@ -113,16 +126,16 @@ public class UserService {
 		String trimmedEmail = email == null ? "" : email.trim();
 
 		if (trimmedNickname.isBlank() || trimmedRealName.isBlank() || trimmedEmail.isBlank()) {
-			throw new IllegalArgumentException("닉네임/이름/이메일은 비워둘 수 없습니다.");
+			throw new IllegalArgumentException("error.user.requiredFields");
 		}
 
 		if (!trimmedNickname.equals(user.getNickname())) {
 			if (!NicknamePolicy.isAllowed(trimmedNickname)) {
-				throw new IllegalArgumentException("사용할 수 없는 닉네임 형식입니다.");
+				throw new IllegalArgumentException("signup.error.nicknameInvalid");
 			}
 			// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
 			if (userRepository.existsByNicknameAndRoleNotIn(trimmedNickname, Role.ARTIST_SIDE)) {
-				throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+				throw new IllegalArgumentException("signup.error.nicknameTaken");
 			}
 		}
 		boolean emailChanged = !trimmedEmail.equals(user.getEmail());
@@ -132,7 +145,7 @@ public class UserService {
 			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
 			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
 			if (!newEmailVerified) {
-				throw new IllegalArgumentException("이메일 인증을 먼저 완료해주세요.");
+				throw new IllegalArgumentException("signup.error.emailNotVerified");
 			}
 			// AUTH-11: 비밀번호가 있는 계정은 이메일을 바꾸기 전에 현재 비밀번호를 다시 확인한다.
 			// 이메일이 바뀌면 아이디/비밀번호 찾기가 새 이메일로 가기 때문에, 로그인된 브라우저를 잠깐 쓴 사람이
@@ -140,10 +153,10 @@ public class UserService {
 			// (EmailChangeAuthService), 여기서는 그 확인이 이 세션에 남아 있는지만 본다.
 			// 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어 새 이메일 인증만 거친다(항상 true 로 넘어옴).
 			if (!emailChangeAuthorized) {
-				throw new IllegalArgumentException("이메일을 변경하려면 먼저 현재 비밀번호를 확인해주세요.");
+				throw new IllegalArgumentException("settings.email.passwordCheckRequired");
 			}
 			if (userRepository.existsByEmail(trimmedEmail)) {
-				throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+				throw new IllegalArgumentException("settings.email.alreadyInUse");
 			}
 			user.changePortalProfile(trimmedNickname, trimmedEmail);
 		} else {
@@ -151,14 +164,14 @@ public class UserService {
 		}
 		// AUTH-11: real_name 은 VARBINARY(255)(UTF-8 바이트) - 가입 화면과 같은 50자 제한
 		if (trimmedRealName.length() > 50) {
-			throw new IllegalArgumentException("이름은 50자 이내로 입력해주세요.");
+			throw new IllegalArgumentException("signup.validation.realNameTooLong");
 		}
 		user.changeRealName(trimmedRealName);
 
 		// AUTH-11: 전화번호(선택) - 예전에는 화면에 입력칸만 있고 저장하지 않았다
 		String trimmedPhone = phone == null ? "" : phone.trim();
 		if (!trimmedPhone.isEmpty() && !PHONE_PATTERN.matcher(trimmedPhone).matches()) {
-			throw new IllegalArgumentException("전화번호는 숫자와 - 만 사용해 20자 이내로 입력해주세요.");
+			throw new IllegalArgumentException("settings.error.phoneInvalid");
 		}
 		user.changePhone(trimmedPhone.isEmpty() ? null : trimmedPhone);
 
@@ -173,16 +186,16 @@ public class UserService {
 			// 것이므로 확인할 현재 비밀번호 자체가 없다 - 이 분기를 건너뛴다.
 			if (user.hasPassword()
 					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
-				throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다.");
+				throw new IllegalArgumentException("error.user.currentPasswordMismatch");
 			}
 			if (!hasText(newPassword)) {
-				throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+				throw new IllegalArgumentException("error.user.newPasswordRequired");
 			}
 			if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
-				throw new IllegalArgumentException("비밀번호는 영문/숫자 포함 8~20자로 입력해주세요.");
+				throw new IllegalArgumentException("signup.validation.passwordPattern");
 			}
 			if (!newPassword.equals(confirmPassword)) {
-				throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
+				throw new IllegalArgumentException("settings.modal.passwordMismatch");
 			}
 			user.changePassword(passwordEncoder.encode(newPassword));
 		}
@@ -205,8 +218,8 @@ public class UserService {
 		if (user.hasPassword()
 				&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
 			throw new IllegalArgumentException(hasText(currentPassword)
-					? "현재 비밀번호가 일치하지 않아 탈퇴하지 않았습니다."
-					: "탈퇴하려면 현재 비밀번호를 입력해주세요.");
+					? "settings.withdraw.passwordMismatch"
+					: "settings.withdraw.passwordRequired");
 		}
 		user.withdraw();
 
@@ -242,7 +255,7 @@ public class UserService {
 			}
 			case "email" -> user.changeCommunityActivityEmailEnabled(enabled);
 			case "night" -> user.changeNightNotificationAllowed(enabled);
-			default -> throw new IllegalArgumentException("알 수 없는 알림 종류입니다.");
+			default -> throw new IllegalArgumentException("error.user.unknownNotifyType");
 		}
 	}
 
@@ -260,7 +273,7 @@ public class UserService {
 	@Transactional
 	public void unlinkSocialProvider(User user) {
 		if (!user.hasPassword()) {
-			throw new IllegalArgumentException("비밀번호가 설정되어 있지 않아 연동을 해제할 수 없습니다. 먼저 비밀번호를 설정해주세요.");
+			throw new IllegalArgumentException("error.user.cannotUnlinkWithoutPassword");
 		}
 		user.unlinkSocialProvider();
 	}
@@ -274,11 +287,11 @@ public class UserService {
 			return nicknameGenerator.generate();
 		}
 		if (!NicknamePolicy.isAllowed(requestedNickname)) {
-			throw new IllegalArgumentException("사용할 수 없는 닉네임 형식입니다.");
+			throw new IllegalArgumentException(msg("signup.error.nicknameInvalid"));
 		}
 		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
 		if (userRepository.existsByNicknameAndRoleNotIn(requestedNickname, Role.ARTIST_SIDE)) {
-			throw new IllegalArgumentException("이미 사용 중인 닉네임입니다.");
+			throw new IllegalArgumentException(msg("signup.error.nicknameTaken"));
 		}
 		return requestedNickname;
 	}

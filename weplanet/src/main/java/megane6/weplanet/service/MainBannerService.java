@@ -9,6 +9,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.BannerType;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
 import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.GoodsRepository;
 import megane6.weplanet.repository.MainBannerRepository;
@@ -86,7 +87,7 @@ public class MainBannerService {
 					String link = linkOf(banner);
 					return new BannerRow(
 							banner.getId(),
-							banner.getBannerType().getLabel(),
+							banner.getBannerType().getMessageKey(),
 							banner.getArtist().getNickname(),
 							labelOf(banner.getArtist(), nameEns),
 							banner.getGoods() != null ? banner.getGoods().getName() : null,
@@ -105,7 +106,7 @@ public class MainBannerService {
 	@Transactional(readOnly = true)
 	public MainBanner get(Long bannerId) {
 		return mainBannerRepository.findById(bannerId)
-				.orElseThrow(() -> new IllegalArgumentException("배너를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.banner.notFound"));
 	}
 
 	// 폼의 아티스트 선택지 - 모든 커뮤니티(그룹 계정). 영문명이 있으면 같이 보여준다
@@ -135,11 +136,11 @@ public class MainBannerService {
 
 		BannerType type = form.bannerType() == null ? BannerType.COMMUNITY : form.bannerType();
 		if (form.artistId() == null) {
-			throw new IllegalArgumentException("홍보할 아티스트(커뮤니티)를 선택해주세요.");
+			throw new IllegalArgumentException("error.banner.artistRequired");
 		}
 		User artist = userRepository.findOneById(form.artistId())
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("홍보할 아티스트(커뮤니티)를 선택해주세요."));
+				.orElseThrow(() -> new IllegalArgumentException("error.banner.artistRequired"));
 
 		Goods goods = null;
 		if (type == BannerType.PRODUCT) {
@@ -147,19 +148,22 @@ public class MainBannerService {
 					.filter(g -> g.getStatus() == GoodsStatus.ON_SALE)
 					.orElse(null);
 			if (goods == null) {
-				throw new IllegalArgumentException("홍보할 판매 중 상품을 선택해주세요.");
+				throw new IllegalArgumentException("error.banner.goodsRequired");
 			}
 			if (!goods.getArtist().getId().equals(artist.getId())) {
-				throw new IllegalArgumentException("선택한 상품이 선택한 아티스트의 상품이 아닙니다.");
+				throw new IllegalArgumentException("error.banner.goodsArtistMismatch");
 			}
 		}
 
-		String title = requireText(form.title(), "대제목을 입력해주세요.", TITLE_MAX, "대제목");
-		String body = optionalText(form.body(), BODY_MAX, "본문");
+		// 예외 메시지는 메시지 키 (컨트롤러에서 Messages.resolve(e)로 번역). 글자 수 한도는 TITLE_MAX/BODY_MAX 를 {0}으로 넘긴다
+		String title = requireText(form.title(), "error.banner.titleRequired", TITLE_MAX,
+				"error.banner.titleTooManyLines", "error.banner.titleTooLong");
+		String body = optionalText(form.body(), BODY_MAX,
+				"error.banner.bodyTooManyLines", "error.banner.bodyTooLong");
 
 		boolean hasNewImage = image != null && !image.isEmpty();
 		if (!hasNewImage && banner.getImageStoredName() == null) {
-			throw new IllegalArgumentException("배너 이미지를 올려주세요.");
+			throw new IllegalArgumentException("error.banner.imageRequired");
 		}
 
 		boolean active = form.active() == null || form.active();
@@ -268,33 +272,34 @@ public class MainBannerService {
 		return value != null && HEX_COLOR.matcher(value).matches();
 	}
 
-	private static String requireText(String value, String blankMessage, int max, String label) {
+	private static String requireText(String value, String blankKey, int max,
+									  String tooManyLinesKey, String tooLongKey) {
 		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException(blankMessage);
+			throw new IllegalArgumentException(blankKey);
 		}
-		return twoLines(value, max, label);
+		return twoLines(value, max, tooManyLinesKey, tooLongKey);
 	}
 
-	private static String optionalText(String value, int max, String label) {
+	private static String optionalText(String value, int max, String tooManyLinesKey, String tooLongKey) {
 		if (value == null || value.isBlank()) {
 			return null;
 		}
-		return twoLines(value, max, label);
+		return twoLines(value, max, tooManyLinesKey, tooLongKey);
 	}
 
 	// 대제목/본문은 배너에서 줄바꿈 그대로 보인다(white-space: pre-line).
 	// 브라우저가 보내는 \r\n 을 \n 으로 맞추고, 빈 줄은 지우고, 최대 두 줄까지만 허용한다
-	private static String twoLines(String value, int max, String label) {
+	private static String twoLines(String value, int max, String tooManyLinesKey, String tooLongKey) {
 		List<String> lines = value.replace("\r\n", "\n").replace('\r', '\n').lines()
 				.map(String::strip)
 				.filter(line -> !line.isEmpty())
 				.toList();
 		if (lines.size() > 2) {
-			throw new IllegalArgumentException(label + "은(는) 두 줄까지만 쓸 수 있어요.");
+			throw new IllegalArgumentException(tooManyLinesKey);
 		}
 		String joined = String.join("\n", lines);
 		if (joined.length() > max) {
-			throw new IllegalArgumentException(label + "은(는) " + max + "자 이내로 입력해주세요.");
+			throw new LocalizedIllegalArgumentException(tooLongKey, max);
 		}
 		return joined;
 	}
@@ -318,7 +323,8 @@ public class MainBannerService {
 						String bgColor, String textColor, String linkUrl) {}
 
 	// 관리 목록 한 줄. linkUrl == null 이면 판매 종료 등으로 메인에서 빠지는 배너
-	public record BannerRow(Long id, String typeLabel, String artistName, String label, String goodsName,
+	// typeMessageKey: 배너 종류 메시지 키 - 화면(admin/banners.html)에서 #{${...}}로 번역한다
+	public record BannerRow(Long id, String typeMessageKey, String artistName, String label, String goodsName,
 							String title, String body, String imageUrl, String bgColor, String textColor,
 							String linkUrl, boolean active, int sortOrder) {}
 

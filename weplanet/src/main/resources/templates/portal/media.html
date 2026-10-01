@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>미디어 관리 | Artist Portal</title>
+  <title th:text="#{portal.media.pageTitle}">미디어 관리 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -13,16 +13,16 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('미디어 관리')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(#{portal.media.heading})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1>미디어 관리</h1>
-        <a class="btn btn--primary btn--sm" th:href="@{/portal/media/new}">등록하기</a>
+        <h1 th:text="#{portal.media.heading}">미디어 관리</h1>
+        <a class="btn btn--primary btn--sm" th:href="@{/portal/media/new}" th:text="#{portal.common.register}">등록하기</a>
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
-      <p class="text-sm text-muted" style="margin-bottom:12px;">
+      <p class="text-sm text-muted" style="margin-bottom:12px;" th:text="#{portal.media.rowHint}">
         행을 선택하면 미디어 내용을 미리보고 삭제를 확인할 수 있습니다.
       </p>
 
@@ -30,21 +30,21 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>유형</th>
-              <th>제목</th>
-              <th>공개</th>
-              <th>업로드일자</th>
-              <th>파일 수</th>
-              <th>관리</th>
+              <th th:text="#{portal.media.type}">유형</th>
+              <th th:text="#{noticeForm.titleLabel}">제목</th>
+              <th th:text="#{portal.media.visibility}">공개</th>
+              <th th:text="#{portal.media.uploadedAt}">업로드일자</th>
+              <th th:text="#{portal.media.fileCount}">파일 수</th>
+              <th th:text="#{portal.common.manage}">관리</th>
             </tr>
           </thead>
           <tbody>
             <tr th:if="${#lists.isEmpty(mediaList)}">
-              <td colspan="6" class="text-sm text-muted">등록된 미디어가 없습니다.</td>
+              <td colspan="6" class="text-sm text-muted" th:text="#{portal.media.empty}">등록된 미디어가 없습니다.</td>
             </tr>
             <tr th:each="media : ${mediaList}"
                 class="portal-media-row"
-                th:attr="data-media-id=${media.id}"
+                th:attr="data-media-id=${media.id}, aria-label=#{portal.media.preview}"
                 tabindex="0"
                 role="button"
                 aria-label="미디어 미리보기">
@@ -52,10 +52,10 @@
                 <span class="tag tag--public"
                       th:text="${media.files != null && !media.files.isEmpty() ? media.files[0].mediaType : 'MEDIA'}">VIDEO</span>
               </td>
-              <td th:text="${media.title}">미디어 제목</td>
+              <td th:text="${media.title != null and #strings.startsWith(media.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(media.title, 11)})} : ${media.title}">미디어 제목</td>
               <td>
-                <span th:if="${media.membershipOnly}" class="tag tag--member">멤버십</span>
-                <span th:unless="${media.membershipOnly}" class="text-xs text-muted">전체</span>
+                <span th:if="${media.membershipOnly}" class="tag tag--member" th:text="#{community.media.membershipTag}">멤버십</span>
+                <span th:unless="${media.membershipOnly}" class="text-xs text-muted" th:text="#{community.media.filterAll}">전체</span>
               </td>
               <td th:text="${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
               <td th:text="${media.fileCount}">1</td>
@@ -64,12 +64,13 @@
                   <button type="button"
                           class="btn btn--ghost btn--sm"
                           data-media-preview
-                          th:attr="data-media-id=${media.id}">미리보기</button>
+                          th:attr="data-media-id=${media.id}" th:text="#{portal.media.previewButton}">미리보기</button>
                   <form th:action="@{/portal/media/{id}/delete(id=${media.id})}"
                         method="post"
                         class="portal-media-delete-form"
-                        onsubmit="return confirm('이 미디어를 삭제할까요?');">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        th:attr="data-confirm=#{portal.media.confirmDelete}"
+                        onsubmit="return confirm(this.dataset.confirm);">
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                   </form>
                 </div>
               </td>
@@ -83,15 +84,12 @@
                 th:attr="id=|portal-media-tpl-${media.id}|">
         <div class="portal-media-preview">
           <p class="text-xs text-muted"
-             th:text="${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')
-                       + ' · 첨부 '
-                       + media.fileCount
-                       + '개'}">2026.08.25 16:00 · 첨부 1개</p>
+             th:text="#{portal.media.previewMeta(${#temporals.format(media.createdAt, 'yyyy.MM.dd HH:mm')}, ${media.fileCount})}">2026.08.25 16:00 · 첨부 1개</p>
           <p class="portal-media-preview__content"
              th:if="${media.content != null and !#strings.isEmpty(media.content)}"
              th:text="${media.content}"></p>
           <p class="text-sm text-muted"
-             th:if="${media.content == null or #strings.isEmpty(media.content)}">본문 설명이 없습니다.</p>
+             th:if="${media.content == null or #strings.isEmpty(media.content)}" th:text="#{portal.media.noContent}">본문 설명이 없습니다.</p>
           <div class="portal-media-preview__files" th:if="${not #lists.isEmpty(media.files)}">
             <th:block th:each="file : ${media.files}">
               <img th:if="${file.mediaType == 'IMAGE'}"
@@ -103,22 +101,23 @@
                      preload="metadata"></video>
             </th:block>
           </div>
-          <p class="text-sm text-muted" th:if="${#lists.isEmpty(media.files)}">첨부 파일이 없습니다.</p>
+          <p class="text-sm text-muted" th:if="${#lists.isEmpty(media.files)}" th:text="#{portal.media.noFiles}">첨부 파일이 없습니다.</p>
         </div>
       </template>
 
       <div class="modal-backdrop" id="portalMediaPreviewModal">
         <div class="modal modal--wide" onclick="event.stopPropagation()">
           <div class="modal__head">
-            <h2 class="modal__title" id="portalMediaPreviewTitle">미디어 미리보기</h2>
-            <button type="button" class="modal__close" data-modal-close aria-label="닫기">✕</button>
+            <h2 class="modal__title" id="portalMediaPreviewTitle" th:text="#{portal.media.preview}">미디어 미리보기</h2>
+            <button type="button" class="modal__close" data-modal-close th:attr="aria-label=#{portalProfile.close}" aria-label="닫기">✕</button>
           </div>
           <div id="portalMediaPreviewBody"></div>
           <div class="portal-media-preview__actions">
-            <button type="button" class="btn btn--ghost" data-modal-close>닫기</button>
+            <button type="button" class="btn btn--ghost" data-modal-close th:text="#{portalProfile.close}">닫기</button>
             <form id="portalMediaPreviewDeleteForm" method="post"
-                  onsubmit="return confirm('이 미디어를 삭제할까요?');">
-              <button type="submit" class="btn btn--primary">삭제</button>
+                  th:attr="data-confirm=#{portal.media.confirmDelete}"
+                  onsubmit="return confirm(this.dataset.confirm);">
+              <button type="submit" class="btn btn--primary" th:text="#{common.delete}">삭제</button>
             </form>
           </div>
         </div>
@@ -128,8 +127,9 @@
   </div>
 
   <script th:src="@{/js/main.js}"></script>
-  <script>
+  <script th:inline="javascript">
     (function () {
+      var MSG_PREVIEW = /*[[#{portal.media.preview}]]*/ "미디어 미리보기";
       var modal = document.getElementById("portalMediaPreviewModal");
       if (!modal) return;
 
@@ -160,7 +160,7 @@
         bodyEl.appendChild(tpl.content.cloneNode(true));
 
         var titleCell = row.querySelector("td:nth-child(2)");
-        titleEl.textContent = titleCell ? titleCell.textContent.trim() : "미디어 미리보기";
+        titleEl.textContent = titleCell ? titleCell.textContent.trim() : MSG_PREVIEW;
         deleteForm.action = "/portal/media/" + mediaId + "/delete";
         modal.classList.add("is-open");
       }

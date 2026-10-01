@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>통합 운영 대시보드 | WePlaNet ADMIN</title>
+    <title th:text="#{admin.dashboard.title} + ' | WePlaNet ADMIN'">통합 운영 대시보드 | WePlaNet ADMIN</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <link rel="stylesheet" th:href="@{/css/portal.css}"/>
 </head>
@@ -20,50 +20,50 @@
             <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
             <details class="portal-sidebar__group">
                 <summary>
-                    <a class="is-active" th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+                    <a class="is-active" th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
                 </summary>
-                <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+                <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
             </details>
             <details class="portal-sidebar__group">
                 <summary>
-                    <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+                    <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
                 </summary>
-                <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+                <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
             </details>
-            <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-            <a th:href="@{/admin/users}">👥 전체 회원</a>
-            <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-            <a th:href="@{/admin/notices}">📢 전체 공지</a>
-            <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+            <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+            <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+            <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+            <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+            <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
             <details class="portal-sidebar__group">
                 <summary>
-                    <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
-                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+                    <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
                 </summary>
-                <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+                <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
             </details>
-            <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+            <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
         </nav>
 
         <div class="portal-sidebar__footer">
-            <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
+            <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
             <!-- 로그아웃은 GET 링크가 아니라 POST 폼이어야 한다 (강제 로그아웃 방지) -->
             <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-                <button type="submit" class="btn">🚪 로그아웃</button>
+                <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
             </form>
         </div>
     </aside>
 
     <main class="portal-main">
         <div class="portal-main__head">
-            <h1>통합 운영 대시보드</h1>
+            <h1 th:text="#{admin.dashboard.title}">통합 운영 대시보드</h1>
             <div class="admin-topbar">
                 <span class="admin-badge">🛡 SUPER ADMIN</span>
                 <span class="admin-profile">
           <span class="admin-profile__avatar" th:text="${#strings.substring(adminNickname, 0, 1)}">S</span>
-          <span th:text="${adminNickname} + ' 님'">슈퍼 관리자 님</span>
+          <span th:text="#{admin.common.honorific(${adminNickname})}">슈퍼 관리자 님</span>
         </span>
             </div>
         </div>
@@ -73,7 +73,7 @@
             <article class="admin-stat">
                 <span class="admin-stat__icon admin-stat__icon--violet">👥</span>
                 <span class="admin-stat__body">
-          <span class="admin-stat__label">총 가입자</span>
+          <span class="admin-stat__label" th:text="#{admin.dashboard.stat.totalUsers}">총 가입자</span>
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(stats.totalUsers(), 0, 'COMMA')}">0</strong>
         </span>
@@ -81,7 +81,7 @@
             <article class="admin-stat">
                 <span class="admin-stat__icon admin-stat__icon--green">✅</span>
                 <span class="admin-stat__body">
-        <span class="admin-stat__label">오늘 처리한 신고</span>
+        <span class="admin-stat__label" th:text="#{admin.dashboard.stat.resolvedToday}">오늘 처리한 신고</span>
         <strong class="admin-stat__value"
                 th:text="${#numbers.formatInteger(stats.resolvedTodayCount(), 0, 'COMMA')}">0</strong>
         </span>
@@ -89,7 +89,7 @@
             <article class="admin-stat">
                 <span class="admin-stat__icon admin-stat__icon--blue">💬</span>
                 <span class="admin-stat__body">
-        <span class="admin-stat__label">활성 커뮤니티</span>
+        <span class="admin-stat__label" th:text="#{admin.dashboard.stat.activeCommunities}">활성 커뮤니티</span>
 
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(
@@ -104,7 +104,7 @@
             <article class="admin-stat admin-stat--alert">
                 <span class="admin-stat__icon admin-stat__icon--orange">🔔</span>
                 <span class="admin-stat__body">
-          <span class="admin-stat__label">미처리 신고</span>
+          <span class="admin-stat__label" th:text="#{admin.dashboard.stat.pendingReports}">미처리 신고</span>
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(stats.pendingReportCount(), 0, 'COMMA')}">0</strong>
         </span>
@@ -112,7 +112,7 @@
             <article class="admin-stat">
                 <span class="admin-stat__icon admin-stat__icon--khaki">🚫</span>
                 <span class="admin-stat__body">
-        <span class="admin-stat__label">정지된 회원</span>
+        <span class="admin-stat__label" th:text="#{admin.dashboard.stat.suspendedUsers}">정지된 회원</span>
         <strong class="admin-stat__value"
                 th:text="${#numbers.formatInteger(stats.suspendedUserCount(), 0, 'COMMA')}">0</strong>
         </span>
@@ -122,16 +122,16 @@
         <div class="panel-grid panel-grid--3">
             <section class="panel">
                 <div class="panel__head">
-                    <h2 class="panel__title">
+                    <h2 class="panel__title" th:text="#{admin.dashboard.signupTrend.title}">
                         가입자 추이 (최근 30일)
                     </h2>
 
                     <span class="text-xs text-muted"
-                          th:text="|신규 ${#numbers.formatInteger(
+                          th:text="#{admin.dashboard.signupTrend.newCount(${#numbers.formatInteger(
               stats.signupTrend().totalCount(),
               0,
               'COMMA'
-          )}명|">
+          )})}">
       신규 0명
     </span>
                 </div>
@@ -141,7 +141,7 @@
                      preserveAspectRatio="none"
                      role="img">
 
-                    <title th:text="|최근 30일 신규 가입자 ${stats.signupTrend().totalCount()}명, 하루 최고 ${stats.signupTrend().peakCount()}명|">
+                    <title th:text="#{admin.dashboard.signupTrend.chartTitle(${stats.signupTrend().totalCount()}, ${stats.signupTrend().peakCount()})}">
                         최근 30일 가입자 추이
                     </title>
 
@@ -158,54 +158,54 @@
 
             <section class="panel">
                 <div class="panel__head">
-                    <h2 class="panel__title">회원 역할별 현황</h2>
+                    <h2 class="panel__title" th:text="#{admin.dashboard.roles.title}">회원 역할별 현황</h2>
                 </div>
                 <ul class="status-list">
                     <li>
                         <span class="status-dot status-dot--ok"></span>
-                        <span>팬</span>
+                        <span th:text="#{admin.dashboard.role.FAN}">팬</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.fanCount(),
                 0,
                 'COMMA'
-                ) + '명'}">
+                )})}">
                 0명
             </span>
                     </li>
                     <li>
                         <span class="status-dot status-dot--ok"></span>
-                        <span>아티스트</span>
+                        <span th:text="#{admin.dashboard.role.ARTIST}">아티스트</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.artistCount(),
                 0,
                 'COMMA'
-                 ) + '명'}">
+                 )})}">
                 0명
             </span>
                     </li>
                     <li>
                         <span class="status-dot status-dot--ok"></span>
-                        <span>소속사</span>
+                        <span th:text="#{admin.dashboard.role.AGENCY}">소속사</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.agencyCount(),
                 0,
                 'COMMA'
-                ) + '명'}">
+                )})}">
                 0명
             </span>
                     </li>
                     <li>
                         <span class="status-dot status-dot--ok"></span>
-                        <span>관리자</span>
+                        <span th:text="#{admin.dashboard.role.ADMIN}">관리자</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.adminCount(),
                 0,
                 'COMMA'
-                ) + '명'}">
+                )})}">
               0명
             </span>
                     </li>
@@ -214,27 +214,28 @@
 
             <section class="panel">
                 <div class="panel__head">
-                    <h2 class="panel__title">권한 승인 대기</h2>
+                    <h2 class="panel__title" th:text="#{admin.dashboard.pendingApproval.title}">권한 승인 대기</h2>
                     <a th:href="@{/admin/agencies(approval='PENDING')}"
-                       class="panel__more">
+                       class="panel__more"
+                       th:text="#{admin.common.viewAll}">
                         전체 보기 ›
                     </a>
                 </div>
                 <ul class="queue-list">
                     <li th:if="${stats.pendingAgencyApprovalCount() == 0}">
           <span>
-            <strong>승인 대기 없음</strong>
+            <strong th:text="#{admin.dashboard.pendingApproval.none}">승인 대기 없음</strong>
             <br/>
-            <span class="text-xs text-muted">현재 대기 중인 소속사 권한이 없습니다.</span>
+            <span class="text-xs text-muted" th:text="#{admin.dashboard.pendingApproval.noneDesc}">현재 대기 중인 소속사 권한이 없습니다.</span>
           </span>
                         <span class="queue-count">0</span>
                     </li>
 
                     <li th:unless="${stats.pendingAgencyApprovalCount() == 0}">
           <span>
-            <strong>소속사 권한 승인</strong>
+            <strong th:text="#{admin.dashboard.pendingApproval.agency}">소속사 권한 승인</strong>
             <br/>
-            <span class="text-xs text-muted">확인이 필요한 소속사 담당자 계정</span>
+            <span class="text-xs text-muted" th:text="#{admin.dashboard.pendingApproval.agencyDesc}">확인이 필요한 소속사 담당자 계정</span>
           </span>
 
                         <span class="queue-count"
@@ -247,10 +248,11 @@
         <div class="panel-grid panel-grid--3 mt-16 admin-dashboard-lower">
             <section class="panel">
                 <div class="panel__head">
-                    <h2 class="panel__title">심각 신고 대기</h2>
+                    <h2 class="panel__title" th:text="#{admin.dashboard.severe.title}">심각 신고 대기</h2>
 
                     <a th:href="@{/admin/reports(status='PENDING')}"
-                       class="panel__more">
+                       class="panel__more"
+                       th:text="#{admin.common.viewAll}">
                         전체 보기 ›
                     </a>
                 </div>
@@ -259,9 +261,9 @@
                     <table class="data-table">
                         <thead>
                         <tr>
-                            <th>사유</th>
-                            <th>대상</th>
-                            <th>신고 수</th>
+                            <th th:text="#{admin.dashboard.severe.col.reason}">사유</th>
+                            <th th:text="#{admin.dashboard.severe.col.target}">대상</th>
+                            <th th:text="#{admin.dashboard.severe.col.reportCount}">신고 수</th>
                         </tr>
                         </thead>
 
@@ -270,7 +272,8 @@
           stats.severePendingReports()
       )}">
                             <td colspan="3"
-                                class="text-sm text-muted">
+                                class="text-sm text-muted"
+                                th:text="#{admin.dashboard.severe.empty}">
                                 처리 대기 중인 심각 신고가 없습니다.
                             </td>
                         </tr>
@@ -298,12 +301,12 @@
                                 <br />
 
                                 <span class="text-xs text-muted"
-                                      th:text="${'작성자: ' + report.authorNickname()}">
+                                      th:text="#{admin.dashboard.severe.author(${report.authorNickname()})}">
             작성자: 사용자
           </span>
                             </td>
 
-                            <td th:text="${report.reportCount() + '건'}">
+                            <td th:text="#{admin.common.caseCount(${report.reportCount()})}">
                                 0건
                             </td>
                         </tr>
@@ -314,10 +317,11 @@
 
             <section class="panel">
                 <div class="panel__head">
-                    <h2 class="panel__title">회원 계정 상태</h2>
+                    <h2 class="panel__title" th:text="#{admin.dashboard.accountStatus.title}">회원 계정 상태</h2>
 
                     <a th:href="@{/admin/users}"
-                       class="panel__more">
+                       class="panel__more"
+                       th:text="#{admin.common.viewAll}">
                         전체 보기 ›
                     </a>
                 </div>
@@ -325,52 +329,52 @@
                 <ul class="status-list">
                     <li>
                         <span class="status-dot status-dot--ok"></span>
-                        <span>활성 회원</span>
+                        <span th:text="#{admin.dashboard.accountStatus.active}">활성 회원</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.activeUserCount(),
                 0,
                 'COMMA'
-            ) + '명'}">
+            )})}">
         0명
       </span>
                     </li>
 
                     <li>
                         <span class="status-dot"></span>
-                        <span>휴면 회원</span>
+                        <span th:text="#{admin.dashboard.accountStatus.dormant}">휴면 회원</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.dormantUserCount(),
                 0,
                 'COMMA'
-            ) + '명'}">
+            )})}">
         0명
       </span>
                     </li>
 
                     <li>
                         <span class="status-dot status-dot--down"></span>
-                        <span>정지 회원</span>
+                        <span th:text="#{admin.dashboard.accountStatus.suspended}">정지 회원</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.suspendedUserCount(),
                 0,
                 'COMMA'
-            ) + '명'}">
+            )})}">
         0명
       </span>
                     </li>
 
                     <li>
                         <span class="status-dot"></span>
-                        <span>탈퇴 회원</span>
+                        <span th:text="#{admin.dashboard.accountStatus.withdrawn}">탈퇴 회원</span>
                         <span class="status-list__value"
-                              th:text="${#numbers.formatInteger(
+                              th:text="#{admin.common.peopleCount(${#numbers.formatInteger(
                 stats.withdrawnUserCount(),
                 0,
                 'COMMA'
-            ) + '명'}">
+            )})}">
         0명
       </span>
                     </li>
@@ -379,10 +383,11 @@
 
             <section class="panel">
                 <div class="panel__head">
-                    <h2 class="panel__title">최근 관리자 주요 활동</h2>
+                    <h2 class="panel__title" th:text="#{admin.dashboard.recent.title}">최근 관리자 주요 활동</h2>
 
                     <a th:href="@{/admin/logs}"
-                       class="panel__more">
+                       class="panel__more"
+                       th:text="#{admin.common.viewAll}">
                         전체 보기 ›
                     </a>
                 </div>
@@ -391,16 +396,17 @@
                     <table class="data-table">
                         <thead>
                         <tr>
-                            <th>관리자</th>
-                            <th>작업</th>
-                            <th>대상</th>
+                            <th th:text="#{admin.dashboard.recent.col.admin}">관리자</th>
+                            <th th:text="#{admin.dashboard.recent.col.action}">작업</th>
+                            <th th:text="#{admin.dashboard.recent.col.target}">대상</th>
                         </tr>
                         </thead>
 
                         <tbody>
                         <tr th:if="${#lists.isEmpty(stats.recentAdminActions())}">
                             <td colspan="3"
-                                class="text-sm text-muted">
+                                class="text-sm text-muted"
+                                th:text="#{admin.dashboard.recent.empty}">
                                 아직 기록된 관리자 활동이 없습니다.
                             </td>
                         </tr>

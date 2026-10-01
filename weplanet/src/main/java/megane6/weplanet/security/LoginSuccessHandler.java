@@ -4,9 +4,9 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.GroupMemberRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
@@ -15,8 +15,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.LocaleResolver;
 
 import java.io.IOException;
+import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 
 	private final UserRepository userRepository;
 	private final AgencyEnrollmentService agencyEnrollmentService;
+	private final LocaleResolver localeResolver;
 	private final GroupMemberRepository groupMemberRepository;
 
 	@PostConstruct
@@ -39,6 +42,11 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
 		boolean portalLogin = "true".equals(request.getParameter("portalLogin"));
 		boolean adminLogin = "true".equals(request.getParameter("adminLogin"));
+		// 포털(아티스트/에이전시) 로그인 화면에서 직접 고른 언어. 아래 clearAuthentication 이 세션을 버리기 전에
+		// 미리 읽어 둔다. 팬 로그인은 지금처럼 계정에 저장된 선호 언어를 따르고, 관리자는 항상 한국어다.
+		Locale chosenLocale = portalLogin && PreferredLocaleResolver.hasExplicitChoice(request)
+				? localeResolver.resolveLocale(request)
+				: null;
 
 		// AUTH-11: 관리자 로그인 화면(adminLogin=true)은 ADMIN 계정만 통과시킨다.
 		// 예전에는 이 파라미터가 있으면 역할 검사를 아예 건너뛰어서, 아티스트 그룹 계정이 관리자 로그인 화면으로
@@ -91,28 +99,57 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				&& groupMemberRepository.existsByGroupIdAndLeftAtIsNull(principal.getId())) {
 			clearAuthentication(request);
 			ArtistProfileLoginSupport.begin(request.getSession(true), principal.getId());
+			// 세션을 새로 만들면서 로케일도 사라지므로 다시 넣는다. 로그인 화면에서 고른 언어가 있으면 그 언어를
+			// 프로필 선택 단계까지 이어서 넘기고(멤버 계정에 저장은 ArtistProfileLoginController 가 한다),
+			// 없으면 그룹 계정의 선호 언어로 보여준다.
+			if (chosenLocale != null) {
+				localeResolver.setLocale(request, response, chosenLocale);
+				PreferredLocaleResolver.markExplicitChoice(request);
+			} else {
+				PreferredLocaleResolver.clearExplicitChoice(request);
+				userRepository.findOneById(principal.getId()).ifPresent(group ->
+						localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(group.getPreferredLanguage())));
+			}
 			getRedirectStrategy().sendRedirect(request, response, "/portal/profiles");
 			return;
 		}
 
 		userRepository.findOneById(principal.getId()).ifPresent(user -> {
-			user.recordLogin();
+			// 소속사 자동 가입을 로그인 기록(recordLogin)보다 먼저 한다.
+			// 커뮤니티 자동 가입(CommunityJoinService.ensureJoined)은 별도 트랜잭션(REQUIRES_NEW)이라,
+			// 이 트랜잭션이 먼저 users 행을 수정(recordLogin)해 두면 그 행 잠금 때문에 가입 INSERT(FK 확인)가
+			// 잠금이 풀리기를 기다리고, 이 트랜잭션은 가입이 끝나기를 기다려서 로그인이 멈췄다(약 50초 후 실패).
 			if (user.getRole() == Role.AGENCY) {
 				agencyEnrollmentService.enrollManagedArtists(user);
+			}
+			user.recordLogin();
+			if (user.getRole() == Role.ADMIN) {
+				// 관리자는 한국어 고정
+				localeResolver.setLocale(request, response, Locale.KOREAN);
+			} else if (chosenLocale != null) {
+				// 아티스트/에이전시: 포털 로그인 화면에서 고른 언어를 유지하고 계정 선호 언어로 저장한다.
+				// (포털 화면에는 로그인 후 언어 메뉴가 없어서, 예전엔 아래 DB 값(대부분 KO)으로 덮어써져
+				//  로그인 화면에서만 언어가 바뀌고 로그인 후엔 계속 한국어로 나왔다)
+				user.changePreferredLanguage(PreferredLocaleResolver.toLanguage(chosenLocale));
+				localeResolver.setLocale(request, response, chosenLocale);
+				PreferredLocaleResolver.clearExplicitChoice(request);
+			} else {
+				// SETTINGS-03 로케일 버그#2 수정: 세션 로케일은 기본값(한국어)로 시작해서, DB에 저장된
+				// 선호 언어를 골라도 재로그인 전까지는 화면이 계속 한국어로 나왔다.
+				localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
 			}
 		});
 
 		getRedirectStrategy().sendRedirect(request, response, RoleHomeRedirects.pathFor(principal));
 	}
 
-	/** 인증 해제 후 새 세션을 열어 invalidSessionUrl(/login?expired)로 튕기지 않게 함 */
+	/**
+	 * 인증 해제 후 새 세션을 열어 invalidSessionUrl(/login?expired)로 튕기지 않게 함.
+	 * 화면 언어는 새 세션에도 이어진다 - 예) 포털 로그인 화면에서 日本語를 고르고 탭을 잘못 골라 거절돼도 일본어 화면으로 돌아간다.
+	 */
 	private static void clearAuthentication(HttpServletRequest request) {
 		SecurityContextHolder.clearContext();
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			session.invalidate();
-		}
-		request.getSession(true);
+		PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 	}
 
 	private static String expectedPortalRole(String portalRole) {

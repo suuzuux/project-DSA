@@ -34,6 +34,7 @@ public class AdminDashboardService {
 	private final AgencyProfileRepository agencyProfileRepository;
 	private final AdminActionLogRepository adminActionLogRepository;
 	private final AdminReportService adminReportService;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	public DashboardStatus getStatus() {
 		long totalUsers = userRepository.count();
@@ -286,16 +287,16 @@ public class AdminDashboardService {
 	) {
 		String reasonLabel =
 				switch (report.latestReason()) {
-					case ABUSE -> "욕설 · 혐오";
-					case SEXUAL -> "음란물";
+					case ABUSE -> messages.get("community.report.reason.ABUSE");
+					case SEXUAL -> messages.get("community.report.reason.SEXUAL");
 					default -> report.latestReason().name();
 				};
 		
 		String targetTypeLabel =
 				report.targetType()
 						== AdminReportService.TargetType.POST
-						? "게시글"
-						: "댓글";
+						? messages.get("admin.dashboard.reportTarget.POST")
+						: messages.get("admin.dashboard.reportTarget.COMMENT");
 		
 		String targetSummary =
 				report.targetTitle() == null
@@ -318,7 +319,7 @@ public class AdminDashboardService {
 		return new RecentAdminAction(
 				adminLog.getActor().getUsername(),
 				adminLog.getActor().getNickname(),
-				adminLog.getAction().getLabel(),
+				messages.get(adminLog.getAction().getMessageKey()),
 				targetSummary(adminLog),
 				adminLog.getCreatedAt()
 		);
@@ -333,7 +334,7 @@ public class AdminDashboardService {
 			return adminLog.getReason();
 		}
 		
-		return adminLog.getTargetType().getLabel()
+		return messages.get(adminLog.getTargetType().getMessageKey())
 				+ " #"
 				+ adminLog.getTargetId();
 	}

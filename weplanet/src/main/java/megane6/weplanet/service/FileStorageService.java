@@ -82,14 +82,14 @@ public class FileStorageService {
 
     public String storeImage(MultipartFile file) {
         if (file.getSize() > MAX_IMAGE_BYTES) {
-            throw new IllegalArgumentException("이미지는 10MB 이하만 올릴 수 있습니다.");
+            throw new IllegalArgumentException("error.upload.imageTooLarge");
         }
         String contentType = file.getContentType();
         String ext = contentType != null && contentType.toLowerCase(Locale.ROOT).startsWith("image/")
                 ? detectImageExtension(file)
                 : null;
         if (ext == null) {
-            throw new IllegalArgumentException("이미지 파일(jpg, png, gif, webp)만 올릴 수 있습니다.");
+            throw new IllegalArgumentException("error.upload.imageTypeInvalid");
         }
 
         String storedName = UUID.randomUUID() + ext;

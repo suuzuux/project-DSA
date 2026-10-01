@@ -34,10 +34,10 @@ public class CommunityJoinController {
 					   @RequestHeader(value = "Referer", required = false) String referer) {
 		User me = userResolver.requireAuthenticated(principal);
 		if (!me.canParticipateInCommunity()) {
-			throw new IllegalStateException("팬 또는 아티스트 계정만 커뮤니티에 가입할 수 있습니다.");
+			throw new IllegalStateException("error.community.joinFanOrArtistOnly");
 		}
 		if (communityArtistResolver.isArtistOf(me, artistId)) {
-			throw new IllegalStateException("본인 커뮤니티에는 가입할 수 없습니다.");
+			throw new IllegalStateException("error.community.joinOwnCommunity");
 		}
 		try {
 			communityJoinService.join(me, artistId, nickname, bio, avatar, background);

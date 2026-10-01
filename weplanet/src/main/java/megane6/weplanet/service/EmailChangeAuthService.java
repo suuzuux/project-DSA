@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
+import megane6.weplanet.exception.LocalizedIllegalStateException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +48,7 @@ public class EmailChangeAuthService {
 	/**
 	 * 현재 비밀번호를 확인하고, 맞으면 이 세션에 본인 확인 완료를 기록한다.
 	 *
-	 * @throws IllegalArgumentException 비밀번호가 비었거나 틀린 경우 (화면에 그대로 보여줄 문구)
+	 * @throws IllegalArgumentException 비밀번호가 비었거나 틀린 경우 (메시지 키 - 컨트롤러가 Messages.resolve(e)로 번역)
 	 * @throws IllegalStateException    5회 오입력으로 잠긴 경우
 	 */
 	public void confirmPassword(HttpSession session, User user, String password) {
@@ -56,20 +58,20 @@ public class EmailChangeAuthService {
 		}
 		FailedAttempts attempts = failedAttempts.get(user.getId());
 		if (attempts != null && attempts.isLocked()) {
-			throw new IllegalStateException(lockedMessage());
+			throw lockedException();
 		}
 		if (password == null || password.isBlank()) {
-			throw new IllegalArgumentException("현재 비밀번호를 입력해주세요.");
+			throw new IllegalArgumentException("settings.email.currentPasswordRequired");
 		}
 		if (!passwordEncoder.matches(password, user.getPassword())) {
 			FailedAttempts updated = failedAttempts.compute(user.getId(), (id, current) ->
 					(current == null || current.isExpiredLock()) ? FailedAttempts.first() : current.failedOnce());
 			if (updated.isLocked()) {
 				log.warn("[이메일 변경] 현재 비밀번호 {}회 오입력으로 잠금: userId={}", MAX_FAILED_ATTEMPTS, user.getId());
-				throw new IllegalStateException(lockedMessage());
+				throw lockedException();
 			}
-			throw new IllegalArgumentException("현재 비밀번호가 일치하지 않습니다. (남은 시도 "
-					+ (MAX_FAILED_ATTEMPTS - updated.count()) + "회)");
+			throw new LocalizedIllegalArgumentException("settings.email.passwordIncorrectRemaining",
+					MAX_FAILED_ATTEMPTS - updated.count());
 		}
 		failedAttempts.remove(user.getId());
 		authorize(session, user);
@@ -101,9 +103,8 @@ public class EmailChangeAuthService {
 				new Authorization(user.getId(), LocalDateTime.now().plusMinutes(AUTH_VALID_MINUTES)));
 	}
 
-	private static String lockedMessage() {
-		return "현재 비밀번호를 " + MAX_FAILED_ATTEMPTS + "회 잘못 입력해서 " + LOCK_MINUTES
-				+ "분 동안 이메일을 변경할 수 없습니다. 잠시 후 다시 시도해주세요.";
+	private static IllegalStateException lockedException() {
+		return new LocalizedIllegalStateException("settings.email.passwordLocked", MAX_FAILED_ATTEMPTS, LOCK_MINUTES);
 	}
 
 	private record Authorization(Long userId, LocalDateTime expiresAt) implements Serializable {

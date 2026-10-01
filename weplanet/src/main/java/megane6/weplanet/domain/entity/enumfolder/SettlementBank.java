@@ -42,6 +42,20 @@ public enum SettlementBank {
         return displayName;
     }
 
+    // SETTINGS-03 커밋3: 화면 표시용 은행 이름 메시지 키 (displayName은 레거시 폴백)
+    public String getMessageKey() {
+        return "project.bank." + name();
+    }
+
+    // 토스 은행 코드 -> 메시지 키. 목록에 없는 은행이면 null (호출부가 displayNameOfTossCode로 폴백)
+    public static String messageKeyOfTossCode(String tossCode) {
+        return Arrays.stream(values())
+                .filter(bank -> bank.tossPaymentsCode.equals(tossCode))
+                .map(SettlementBank::getMessageKey)
+                .findFirst()
+                .orElse(null);
+    }
+
     public boolean isTossVirtualAccountSupported() {
         return tossVirtualAccountSupported;
     }

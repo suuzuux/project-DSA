@@ -23,16 +23,16 @@
 </th:block>
 
 <th:block th:fragment="shopThumbInner(product, compact)">
-  <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member">멤버십</span>
+  <span th:if="${product.membershipOnly()}" class="product-card__badge tag tag--member" th:text="#{shop.membershipBadge}">멤버십</span>
   <span th:if="${product.soldOut()}"
         class="shop-sold-out-overlay"
         th:classappend="${compact} ? ' shop-sold-out-overlay--compact' : ''"
-        aria-hidden="true">SOLD OUT</span>
+        aria-hidden="true" th:text="#{shop.soldOut}">SOLD OUT</span>
   <img th:if="${product.thumbnailPublicUrl() != null}"
        class="shop-thumb__img"
        th:src="${product.thumbnailPublicUrl()}"
        th:alt="${product.title()}" />
-  <span th:unless="${product.thumbnailPublicUrl() != null}" class="shop-thumb__placeholder">상품 이미지</span>
+  <span th:unless="${product.thumbnailPublicUrl() != null}" class="shop-thumb__placeholder" th:text="#{shop.imagePlaceholder}">상품 이미지</span>
 </th:block>
 </body>
 </html>

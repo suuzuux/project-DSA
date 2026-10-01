@@ -3,13 +3,16 @@ package megane6.weplanet.service.email;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.PartnershipApplication;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Slf4j
 @Service
@@ -22,6 +25,7 @@ public class PartnershipInquiryService {
             );
     
     private final JavaMailSender mailSender;
+    private final MessageSource messageSource;
     
     @Value(
             "${weplanet.partnership.recipient:admin4.wp@gmail.com}"
@@ -75,15 +79,18 @@ public class PartnershipInquiryService {
         
         message.setTo(application.getEmail());
         message.setReplyTo(recipient);
+        // 신청할 때 화면 언어로 보낸다 (partnership_applications.applicant_language)
+        Locale locale = applicantLocale(application);
         message.setSubject(
-                "[WePlaNet] 등록 신청이 승인되었습니다 - 계정 활성화 안내"
+                messageSource.getMessage("mail.partnershipApproval.subject", null, locale)
         );
         message.setText(
                 buildApprovalBody(
                         application,
                         username,
                         buildActivationUrl(verificationKey, rawToken),
-                        expiresAt
+                        expiresAt,
+                        locale
                 )
         );
         mailSender.send(message);
@@ -114,11 +121,12 @@ public class PartnershipInquiryService {
         
         message.setTo(application.getEmail());
         message.setReplyTo(recipient);
+        Locale locale = applicantLocale(application);
         message.setSubject(
-                "[WePlaNet] 등록 신청 검토 결과 안내"
+                messageSource.getMessage("mail.partnershipRejection.subject", null, locale)
         );
         message.setText(
-                buildRejectionBody(application)
+                buildRejectionBody(application, locale)
         );
         
         mailSender.send(message);
@@ -170,76 +178,49 @@ public class PartnershipInquiryService {
             PartnershipApplication application,
             String username,
             String activationUrl,
-            LocalDateTime expiresAt
+            LocalDateTime expiresAt,
+            Locale locale
     ) {
-        return """
-                안녕하세요, %s님.
-
-                WePlaNet %s 등록 신청이 승인되었습니다.
-
-                ■ 신청 번호 : %d
-                ■ 처리 결과 : 승인
-                ■ 처리 시각 : %s
-
-                아래 링크에서 비밀번호를 설정하시면
-                소속사 페이지를 이용하실 수 있습니다.
-
-                ■ 로그인 아이디 : %s
-                ■ 활성화 링크   : %s
-                ■ 링크 유효기간 : %s 까지
-
-                보안을 위해 비밀번호는 관리자가 정하지 않습니다.
-                링크는 한 번만 사용할 수 있으며, 기간이 지나면
-                관리자에게 재발송을 요청해주세요.
-
-                감사합니다.
-                WePlaNet 드림
-                """
-                .formatted(
+        // 신청 번호는 String 으로 넘긴다 (숫자로 넘기면 MessageFormat 이 1,234 처럼 쉼표를 넣음)
+        return messageSource.getMessage(
+                "mail.partnershipApproval.body",
+                new Object[]{
                         application.getContactName(),
-                        application
-                                .getApplicantType()
-                                .getDisplayName(),
-                        application.getId(),
-                        formatTime(
-                                application.getReviewedAt()
-                        ),
+                        applicantTypeLabel(application, locale),
+                        String.valueOf(application.getId()),
+                        formatTime(application.getReviewedAt()),
                         username,
                         activationUrl,
                         formatTime(expiresAt)
-                );
+                },
+                locale
+        );
     }
     
     private String buildRejectionBody(
-            PartnershipApplication application
+            PartnershipApplication application,
+            Locale locale
     ) {
-        return """
-                안녕하세요, %s님.
-
-                WePlaNet %s 등록 신청 검토 결과를 안내드립니다.
-
-                ■ 신청 번호 : %d
-                ■ 처리 결과 : 반려
-                ■ 반려 사유 : %s
-                ■ 처리 시각 : %s
-
-                반려 사유를 확인하신 뒤 필요한 경우
-                내용을 보완하여 다시 신청해주세요.
-
-                감사합니다.
-                WePlaNet 드림
-                """
-                .formatted(
+        return messageSource.getMessage(
+                "mail.partnershipRejection.body",
+                new Object[]{
                         application.getContactName(),
-                        application
-                                .getApplicantType()
-                                .getDisplayName(),
-                        application.getId(),
+                        applicantTypeLabel(application, locale),
+                        String.valueOf(application.getId()),
                         application.getRejectionReason(),
-                        formatTime(
-                                application.getReviewedAt()
-                        )
-                );
+                        formatTime(application.getReviewedAt())
+                },
+                locale
+        );
+    }
+    
+    private Locale applicantLocale(PartnershipApplication application) {
+        return PreferredLocaleResolver.toLocale(application.getApplicantLanguage());
+    }
+    
+    // "아티스트"/"소속사" 도 받는 사람 언어로 (partnership.applicantType.ARTIST 등)
+    private String applicantTypeLabel(PartnershipApplication application, Locale locale) {
+        return messageSource.getMessage(application.getApplicantType().getMessageKey(), null, locale);
     }
     
     private String formatTime(LocalDateTime value) {

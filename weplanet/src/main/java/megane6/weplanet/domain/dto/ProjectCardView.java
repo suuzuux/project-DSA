@@ -38,6 +38,22 @@ public record ProjectCardView(
             long fundedAmount,
             long participantCount
     ) {
+        return from(project, coverStoredName, fundedAmount, participantCount,
+                project.getEventType().getDisplayName(), project.getStatus().getDisplayName());
+    }
+
+    /**
+     * SETTINGS-03 커밋3: 이벤트 유형/상태 라벨을 호출하는 쪽(ProjectService)이 현재 로케일로 번역해서 넘긴다.
+     * 레코드라 MessageSource를 직접 들 수 없어서 라벨을 인자로 받는 오버로드를 둔다.
+     */
+    public static ProjectCardView from(
+            Project project,
+            String coverStoredName,
+            long fundedAmount,
+            long participantCount,
+            String eventTypeLabel,
+            String statusLabel
+    ) {
         LocalDate startDate = project.getFundingStartAt().toLocalDate();
         LocalDate endDate = project.getFundingEndAt().toLocalDate();
         int progressPercent = project.getGoalAmount() <= 0
@@ -47,8 +63,8 @@ public record ProjectCardView(
         return new ProjectCardView(
                 project.getId(),
                 project.getTitle(),
-                project.getEventType().getDisplayName(),
-                project.getStatus().getDisplayName(),
+                eventTypeLabel,
+                statusLabel,
                 project.getStatus().getBadgeCode(),
                 project.getGoalAmount(),
                 startDate,

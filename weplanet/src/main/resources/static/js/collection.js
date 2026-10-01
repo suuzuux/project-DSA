@@ -58,7 +58,7 @@
     try {
       const response = await fetch("/collection/" + artistId);
       if (!response.ok) {
-        WePlaNet.alert("배지 정보를 불러오지 못했습니다.");
+        WePlaNet.alert(WePlaNet.t ? WePlaNet.t("client.collection.badgeLoadFailed", "배지 정보를 불러오지 못했습니다.") : "배지 정보를 불러오지 못했습니다.");
         return;
       }
       const data = await response.json();
@@ -73,7 +73,7 @@
 
       modal.classList.add("is-open");
     } catch (e) {
-      WePlaNet.alert("배지 정보를 불러오지 못했습니다.");
+      WePlaNet.alert(WePlaNet.t ? WePlaNet.t("client.collection.badgeLoadFailed", "배지 정보를 불러오지 못했습니다.") : "배지 정보를 불러오지 못했습니다.");
     }
   }
 

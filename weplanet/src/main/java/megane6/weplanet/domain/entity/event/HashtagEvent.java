@@ -1,5 +1,6 @@
 package megane6.weplanet.domain.entity.event;
 
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -64,7 +65,7 @@ public class HashtagEvent {
 	
 	public static HashtagEvent create(String title, LocalDate startDate, LocalDate endDate, User admin) {
 		if (admin == null) {
-			throw new IllegalArgumentException("관리자 정보가 필요합니다.");
+			throw new IllegalArgumentException("adminHashtag.error.adminRequired");
 		}
 		
 		HashtagEvent event = new HashtagEvent();
@@ -81,7 +82,7 @@ public class HashtagEvent {
 	
 	public void requireEditable(LocalDateTime now) {
 		if (!now.isBefore(startAt)) {
-			throw new IllegalStateException("이미 시작된 이벤트는 수정할 수 없습니다.");
+			throw new IllegalStateException("adminHashtag.error.alreadyStarted");
 		}
 	}
 	
@@ -124,10 +125,10 @@ public class HashtagEvent {
 	// 종료 후 "집계 확정" 버튼. 아티스트별 숫자 고정은 서비스에서 target.recordFinalResult(...)로 한다
 	public void finalizeResult(LocalDateTime now) {
 		if (finalizedAt != null) {
-			throw new IllegalStateException("이미 집계가 확정된 이벤트입니다.");
+			throw new IllegalStateException("adminHashtag.error.alreadyFinalized");
 		}
 		if (!now.isAfter(endAt)) {
-			throw new IllegalStateException("이벤트가 끝난 뒤에 집계를 확정할 수 있습니다.");
+			throw new IllegalStateException("adminHashtag.error.notEnded");
 		}
 		
 		this.finalizedAt = now;
@@ -139,23 +140,22 @@ public class HashtagEvent {
 	
 	private void changeInfo(String title, LocalDate startDate, LocalDate endDate) {
 		if (title == null || title.isBlank()) {
-			throw new IllegalArgumentException("이벤트명을 입력해주세요.");
+			throw new IllegalArgumentException("adminHashtag.error.titleRequired");
 		}
 		if (title.strip().length() > 100) {
-			throw new IllegalArgumentException("이벤트명은 100자까지 입력할 수 있습니다.");
+			throw new IllegalArgumentException("adminHashtag.error.titleTooLong");
 		}
 		if (startDate == null || endDate == null) {
-			throw new IllegalArgumentException("이벤트 기간을 입력해주세요.");
+			throw new IllegalArgumentException("adminHashtag.error.periodRequired");
 		}
 		if (endDate.isBefore(startDate)) {
-			throw new IllegalArgumentException("종료일은 시작일보다 빠를 수 없습니다.");
+			throw new IllegalArgumentException("adminHashtag.error.endBeforeStart");
 		}
 		
 		// 10.10 ~ 10.14 → 5일 (양 끝 날짜 포함)
 		long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
 		if (days < MIN_DAYS || days > MAX_DAYS) {
-			throw new IllegalArgumentException(
-					"이벤트 기간은 " + MIN_DAYS + "~" + MAX_DAYS + "일로 정해주세요. (현재 " + days + "일)");
+			throw new LocalizedIllegalArgumentException("adminHashtag.error.periodRange", MIN_DAYS, MAX_DAYS, days);
 		}
 		
 		this.title = title.strip();
@@ -175,4 +175,4 @@ public class HashtagEvent {
 	void preUpdate() {
 		this.updatedAt = LocalDateTime.now();
 	}
-}
+}

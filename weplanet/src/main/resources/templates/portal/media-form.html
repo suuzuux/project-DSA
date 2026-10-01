@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>미디어 등록 | Artist Portal</title>
+  <title th:text="#{mediaForm.pageTitle}">미디어 등록 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -13,36 +13,36 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('미디어 등록')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(${#messages.msg('mediaForm.pickHint')})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1>미디어 등록</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/portal/media}">← 뒤로 가기</a>
+        <h1 th:text="#{mediaForm.heading}">미디어 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/media}" th:text="#{mediaForm.back}">← 뒤로 가기</a>
       </div>
 
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
       <form class="settings-block" style="max-width:800px;" th:action="@{/portal/media}" method="post" enctype="multipart/form-data">
         <div class="form-group">
-          <label class="form-label" for="title">제목</label>
-          <input class="form-input" id="title" name="title" placeholder="제목을 입력해주세요." required />
+          <label class="form-label" for="title" th:text="#{mediaForm.titleLabel}">제목</label>
+          <input class="form-input" id="title" name="title" th:placeholder="#{mediaForm.titlePlaceholder}" placeholder="제목을 입력해주세요." required />
         </div>
         <div class="form-group">
-          <label class="form-label" for="content">본문내용</label>
-          <textarea class="form-textarea" id="content" name="content" placeholder="본문을 입력해주세요."></textarea>
+          <label class="form-label" for="content" th:text="#{mediaForm.contentLabel}">본문내용</label>
+          <textarea class="form-textarea" id="content" name="content" th:placeholder="#{mediaForm.contentPlaceholder}" placeholder="본문을 입력해주세요."></textarea>
         </div>
         <div class="form-group">
-          <label class="form-label" for="files">첨부파일</label>
+          <label class="form-label" for="files" th:text="#{mediaForm.filesLabel}">첨부파일</label>
           <input class="form-input" id="files" name="files" type="file" multiple accept="image/*,video/*" required />
         </div>
         <div class="form-group">
           <label class="form-label">
             <input type="checkbox" name="membershipOnly" value="true" />
-            멤버십 전용 (해당 커뮤니티 멤버십 가입 팬만 볼 수 있음)
+            <span th:text="#{mediaForm.membershipOnlyLabel}">멤버십 전용 (해당 커뮤니티 멤버십 가입 팬만 볼 수 있음)</span>
           </label>
         </div>
         <div class="flex-center" style="justify-content:flex-end;">
-          <button type="submit" class="btn btn--primary">바로등록</button>
+          <button type="submit" class="btn btn--primary" th:text="#{mediaForm.submit}">바로등록</button>
         </div>
       </form>
       </th:block>

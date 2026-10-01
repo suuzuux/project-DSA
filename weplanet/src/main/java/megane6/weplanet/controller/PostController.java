@@ -8,6 +8,7 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.*;
@@ -57,6 +58,8 @@ public class PostController {
     // "가입 안 해도 요약/번역은 된다"는 구멍이 될 뻔했다. CommunityJoinService.isJoined(가입 여부)로 바로잡음.
     private final CommunityJoinService communityJoinService;
     private final PortalManagementService portalManagementService;
+    // SETTINGS-03 커밋3: 예외 메시지는 키로 던지고(GlobalExceptionHandler가 번역), fetch 성공 JSON 문구만 여기서 번역
+    private final Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
     private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
@@ -77,7 +80,7 @@ public class PostController {
         if (artistId != null) {
             User artistUser = userRepository.findById(artistId)
                     .filter(user -> user.getRole() == Role.ARTIST)
-                    .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
             model.addAttribute("artist", portalManagementService.toArtistCard(artistUser));
 
             if ("fetch".equals(requestedWith)) {
@@ -98,10 +101,10 @@ public class PostController {
     // 프론트(JS)에서도 막지만, 서버에서도 한 번 더 검증해서 API를 직접 호출하는 우회를 막음
     private void validateContentLength(String content) {
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("내용을 입력해주세요.");
+            throw new IllegalArgumentException("error.post.contentRequired");
         }
         if (content.length() > 1000) {
-            throw new IllegalArgumentException("내용은 1,000자를 초과할 수 없습니다.");
+            throw new IllegalArgumentException("error.post.contentTooLong");
         }
     }
 
@@ -169,26 +172,26 @@ public class PostController {
 
         validateContentLength(content);
         if (files != null && files.size() > 10) {
-            throw new IllegalArgumentException("첨부파일은 최대 10개까지 등록할 수 있습니다.");
+            throw new IllegalArgumentException("error.post.tooManyAttachments");
         }
 
         // 로그인했으면 로그인한 사람이 작성자, 아니면 "테스트 작성자" 드롭다운으로 고른 사람이 작성자
         // (예전엔 testUserId로 비로그인 상태에서도 남의 계정 명의로 글을 쓸 수 있었음 - 이제 실제 로그인을 요구함)
         User tempAuthor = userResolver.requireAuthenticated(principal);
-        
+
         // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 해당 커뮤니티의 아티스트(솔로 본인/그룹 멤버)만 작성 가능
         if (type == BoardType.ARTIST && !tempAuthor.isArtistSide()) {
-            throw new IllegalStateException("아티스트 게시판은 아티스트만 작성할 수 있습니다.");
+            throw new IllegalStateException("error.post.artistBoardArtistOnly");
         }
         
         User communityArtist = null;
         if (artistId != null) {
             communityArtist = userRepository.findById(artistId)
                     .filter(user -> user.getRole() == Role.ARTIST)
-                    .orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
-            
+                    .orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
+
             if (type == BoardType.ARTIST && !communityArtistResolver.isArtistOf(tempAuthor, communityArtist.getId())) {
-                throw new IllegalStateException("이 커뮤니티의 아티스트만 글을 작성할 수 있습니다.");
+                throw new IllegalStateException("error.post.artistBoardOwnerOnly");
             }
         }
         
@@ -198,7 +201,7 @@ public class PostController {
                     && communityArtist != null
                     && !communityArtistResolver.isArtistOf(tempAuthor, communityArtist.getId());
             if (tempAuthor.getRole() != Role.FAN && !visitingArtistAsFan) {
-                throw new IllegalStateException("팬 게시판은 팬 회원만 작성할 수 있습니다.");
+                throw new IllegalStateException("error.post.fanBoardFanOnly");
             }
         }
 
@@ -279,10 +282,10 @@ public class PostController {
 
         // 와이어프레임 기준: 댓글은 최대 100자
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+            throw new IllegalArgumentException("error.comment.contentRequired");
         }
         if (content.length() > 100) {
-            throw new IllegalArgumentException("댓글은 100자를 초과할 수 없습니다.");
+            throw new IllegalArgumentException("error.comment.contentTooLong");
         }
 
         Comment parent = parentId != null ? commentService.getComment(parentId) : null;
@@ -325,10 +328,10 @@ public class PostController {
         User requester = userResolver.requireAuthenticated(principal);
 
         if (content == null || content.isBlank()) {
-            throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+            throw new IllegalArgumentException("error.comment.contentRequired");
         }
         if (content.length() > 100) {
-            throw new IllegalArgumentException("댓글은 100자를 초과할 수 없습니다.");
+            throw new IllegalArgumentException("error.comment.contentTooLong");
         }
 
         commentService.updateComment(commentId, requester, content);
@@ -361,7 +364,7 @@ public class PostController {
 
         if ("fetch".equals(requestedWith)) {
             // ResponseEntity.ok(...) : "성공(HTTP 200)" 상태와 함께 괄호 안의 내용을 JSON으로 돌려줌
-            return ResponseEntity.ok(Map.of("success", true, "message", "댓글 신고가 접수되었습니다."));
+            return ResponseEntity.ok(Map.of("success", true, "message", messages.get("community.report.commentReported")));
         }
 
         return "redirect:" + communityDetailPath(postService.getPost(id));
@@ -451,7 +454,7 @@ public class PostController {
         reportService.reportPost(post, reporter, reason);
 
         if ("fetch".equals(requestedWith)) {
-            return ResponseEntity.ok(Map.of("success", true, "message", "게시글 신고가 접수되었습니다."));
+            return ResponseEntity.ok(Map.of("success", true, "message", messages.get("community.report.postReported")));
         }
 
         return "redirect:" + communityDetailPath(post);
@@ -522,7 +525,7 @@ public class PostController {
             return user;
         }
         if (!communityJoinService.isJoined(user, artist.getId())) {
-            throw new IllegalStateException("커뮤니티에 가입해야 이용할 수 있습니다.");
+            throw new IllegalStateException("error.community.joinRequired");
         }
         return user;
     }
@@ -542,8 +545,9 @@ public class PostController {
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
-        requireAiAccess(post, principal);
-        String summary = summaryService.summarize(post.getContent());
+        User user = requireAiAccess(post, principal);
+        // SETTINGS-03 커밋3: 요약도 사용자의 기본 서비스 언어로 받는다 (예전엔 항상 한국어)
+        String summary = summaryService.summarize(post.getContent(), user.getPreferredLanguage());
 
         return Map.of("summary", summary);
     }

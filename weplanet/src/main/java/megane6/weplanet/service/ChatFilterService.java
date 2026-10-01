@@ -69,7 +69,7 @@ public class ChatFilterService {
                 .existsByKeywordIgnoreCase(normalizedKeyword)) {
             
             throw new IllegalArgumentException(
-                    "이미 등록된 금칙어입니다."
+                    "error.keyword.duplicate"
             );
         }
         
@@ -103,7 +103,7 @@ public class ChatFilterService {
                 filterKeywordRepository.findById(id)
                         .orElseThrow(() ->
                                 new IllegalArgumentException(
-                                        "금칙어 정보를 찾을 수 없습니다."
+                                        "error.keyword.notFound"
                                 )
                         );
         
@@ -117,7 +117,7 @@ public class ChatFilterService {
                 )) {
             
             throw new IllegalArgumentException(
-                    "이미 등록된 금칙어입니다."
+                    "error.keyword.duplicate"
             );
         }
         
@@ -150,7 +150,7 @@ public class ChatFilterService {
                 filterKeywordRepository.findById(id)
                         .orElseThrow(() ->
                                 new IllegalArgumentException(
-                                        "금칙어 정보를 찾을 수 없습니다."
+                                        "error.keyword.notFound"
                                 )
                         );
         
@@ -172,7 +172,7 @@ public class ChatFilterService {
     private String normalizeKeyword(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             throw new IllegalArgumentException(
-                    "금칙어를 입력해주세요."
+                    "error.keyword.required"
             );
         }
         
@@ -182,7 +182,7 @@ public class ChatFilterService {
                 > MAX_KEYWORD_LENGTH) {
             
             throw new IllegalArgumentException(
-                    "금칙어는 50자 이하로 입력해주세요."
+                    "error.keyword.tooLong"
             );
         }
         

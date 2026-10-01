@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>굿즈 관리 | Artist Portal</title>
+  <title th:text="#{portal.goods.pageTitle}">굿즈 관리 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -13,16 +13,16 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('굿즈 관리')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(#{portal.goods.heading})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1>굿즈 관리</h1>
-        <a class="btn btn--primary btn--sm" th:href="@{/portal/goods/new}">등록하기</a>
+        <h1 th:text="#{portal.goods.heading}">굿즈 관리</h1>
+        <a class="btn btn--primary btn--sm" th:href="@{/portal/goods/new}" th:text="#{portal.common.register}">등록하기</a>
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:#1f7a52;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
-      <p class="text-sm text-muted" style="margin-bottom:8px;">
+      <p class="text-sm text-muted" style="margin-bottom:8px;" th:text="#{portal.goods.dragHint}">
         행을 드래그해 노출 순서를 바꿀 수 있습니다. 저장되면 유저 굿즈샵에 바로 반영됩니다.
       </p>
       <p id="goodsSortStatus" class="text-xs text-muted" style="min-height:1.2em;margin-bottom:12px;"></p>
@@ -32,49 +32,50 @@
           <thead>
             <tr>
               <th style="width:40px;"></th>
-              <th>썸네일</th>
-              <th>상품명</th>
-              <th>카테고리</th>
-              <th>가격</th>
-              <th>재고</th>
-              <th>상태</th>
-              <th>관리</th>
+              <th th:text="#{portal.goods.thumbnail}">썸네일</th>
+              <th th:text="#{goodsForm.nameLabel}">상품명</th>
+              <th th:text="#{portal.goods.category}">카테고리</th>
+              <th th:text="#{portal.goods.price}">가격</th>
+              <th th:text="#{portal.goods.stock}">재고</th>
+              <th th:text="#{goodsForm.statusLabel}">상태</th>
+              <th th:text="#{portal.common.manage}">관리</th>
             </tr>
           </thead>
           <tbody id="goodsSortBody" th:attr="data-reorder-url=@{/portal/goods/reorder}">
             <tr th:if="${#lists.isEmpty(goodsList)}">
-              <td colspan="8" class="text-sm text-muted">등록된 굿즈가 없습니다.</td>
+              <td colspan="8" class="text-sm text-muted" th:text="#{portal.goods.empty}">등록된 굿즈가 없습니다.</td>
             </tr>
             <tr th:each="item : ${goodsList}" th:attr="data-goods-id=${item.id}">
-              <td class="goods-drag-handle" title="드래그하여 순서 변경">⠿</td>
+              <td class="goods-drag-handle" th:title="#{portal.common.dragToReorder}" title="드래그하여 순서 변경">⠿</td>
               <td>
                 <img th:if="${item.thumbnailUrl != null}"
                      th:src="@{'/uploads/' + ${item.thumbnailUrl}}"
                      alt=""
                      style="width:56px;height:56px;object-fit:cover;border-radius:8px;" />
-                <span th:unless="${item.thumbnailUrl != null}" class="text-xs text-muted">없음</span>
+                <span th:unless="${item.thumbnailUrl != null}" class="text-xs text-muted" th:text="#{portal.goods.noThumbnail}">없음</span>
               </td>
               <td th:text="${item.name}">상품명</td>
               <td>
-                <span class="chip" th:text="${item.shopCategory.label}">MD · 굿즈</span>
+                <span class="chip" th:text="#{${item.shopCategory.messageKey}}">MD · 굿즈</span>
                 <span th:each="cat : ${item.categories}"
                       class="chip"
-                      th:text="${cat.label}">의류</span>
+                      th:text="#{${cat.messageKey}}">의류</span>
               </td>
-              <td th:text="${#numbers.formatInteger(item.price, 1, 'COMMA') + '원'}">0원</td>
+              <td th:text="#{payment.amountValue(${#numbers.formatInteger(item.price, 1, 'COMMA')})}">0원</td>
               <td>
                 <span th:text="${item.totalStock}">0</span>
-                <span th:if="${item.soldOut}" class="text-xs" style="color:#c45c26;">(품절)</span>
+                <span th:if="${item.soldOut}" class="text-xs" style="color:#c45c26;" th:text="#{portal.goods.soldOutTag}">(품절)</span>
               </td>
-              <td th:text="${item.status.label}">판매중</td>
+              <td th:text="#{${item.status.messageKey}}">판매중</td>
               <td>
                 <div class="flex-center">
                   <a class="btn btn--ghost btn--sm"
-                     th:href="@{/portal/goods/{id}/edit(id=${item.id})}">수정</a>
+                     th:href="@{/portal/goods/{id}/edit(id=${item.id})}" th:text="#{common.edit}">수정</a>
                   <form th:action="@{/portal/goods/{id}/delete(id=${item.id})}"
                         method="post"
-                        onsubmit="return confirm('이 굿즈를 삭제할까요?');">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        th:attr="data-confirm=#{portal.goods.confirmDelete}"
+                        onsubmit="return confirm(this.dataset.confirm);">
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                   </form>
                 </div>
               </td>
@@ -85,6 +86,14 @@
       </th:block>
     </main>
   </div>
+  <!--/* SETTINGS-03 커밋5: portal-goods-sort.js 가 쓰는 문구 (포털은 main.js를 안 불러서 여기서 넘긴다) */-->
+  <script th:inline="javascript">
+    window.PORTAL_I18N = Object.assign(window.PORTAL_I18N || {}, {
+      "portal.goods.sortSaving": /*[[#{portal.goods.sortSaving}]]*/ "순서 저장 중…",
+      "portal.goods.sortSaved": /*[[#{portal.goods.sortSaved}]]*/ "노출 순서가 저장되었습니다.",
+      "common.error.saveFailed": /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다."
+    });
+  </script>
   <script th:src="@{/js/portal-goods-sort.js}"></script>
 </body>
 </html>

@@ -75,7 +75,7 @@ public class ArtistAccountProfile {
 		}
 		
 		if (stageName == null || stageName.isBlank()) {
-			throw new IllegalArgumentException("활동명을 입력해주세요.");
+			throw new IllegalArgumentException("error.artistAccount.stageNameRequired");
 		}
 		
 		return new ArtistAccountProfile(user, agency, stageName.trim(), debutDate);

@@ -181,7 +181,7 @@ public class AdminArtistService {
 				
 				agency == null ? null : agency.getStatus().name(),
 				agency == null
-						? "미등록"
+						? "admin.artists.unregistered"
 						: agencyStatusLabel(agency.getStatus()),
 				
 				user.getEmailVerifiedAt() != null,
@@ -194,10 +194,10 @@ public class AdminArtistService {
 	
 	private User requireArtistUser(Long userId) {
 		User user = ur.findById(userId).orElseThrow(() ->
-				new IllegalArgumentException("아티스트 계정을 찾을 수 없습니다."));
+				new IllegalArgumentException("admin.error.artist.notFound"));
 
 		if (user.getRole() != Role.ARTIST) {
-			throw new IllegalArgumentException("아티스트 계정만 관리할 수 있습니다.");
+			throw new IllegalArgumentException("admin.error.artist.artistOnly");
 		}
 
 		return user;
@@ -240,18 +240,18 @@ public class AdminArtistService {
 	
 	private String userStatusLabel(UserStatus status) {
 		return switch (status) {
-			case ACTIVE -> "활성";
-			case DORMANT -> "휴면";
-			case SUSPENDED -> "정지";
-			case WITHDRAWN -> "탈퇴";
-			case PENDING_ACTIVATION -> "활성화 대기";
+			case ACTIVE -> "admin.agencies.userStatus.ACTIVE";
+			case DORMANT -> "admin.agencies.userStatus.DORMANT";
+			case SUSPENDED -> "admin.agencies.userStatus.SUSPENDED";
+			case WITHDRAWN -> "admin.agencies.userStatus.WITHDRAWN";
+			case PENDING_ACTIVATION -> "admin.agencies.userStatus.PENDING_ACTIVATION";
 		};
 	}
 	
 	private String agencyStatusLabel(AgencyStatus status) {
 		return switch (status) {
-			case ACTIVE -> "운영 중";
-			case SUSPENDED -> "운영 정지";
+			case ACTIVE -> "admin.agencies.agencyStatus.ACTIVE";
+			case SUSPENDED -> "admin.agencies.agencyStatus.SUSPENDED";
 		};
 	}
 	

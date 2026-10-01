@@ -96,16 +96,16 @@ public class AdminAgencyPermissionService {
 	private void validateApprovalTarget(AgencyProfile profile) {
 		User user = profile.getUser();
 		if (user.getRole() != Role.AGENCY) {
-			throw new IllegalStateException("소속사 계정만 권한 승인을 받을 수 있습니다.");
+			throw new IllegalStateException("admin.error.agency.agencyRoleOnly");
 		}
 		if (user.getStatus() == UserStatus.SUSPENDED) {
-			throw new IllegalStateException("정지된 계정은 승인할 수 없습니다.");
+			throw new IllegalStateException("admin.error.agency.suspendedUser");
 		}
 		if (user.getStatus() == UserStatus.WITHDRAWN) {
-			throw new IllegalStateException("탈퇴한 계정은 승인할 수 없습니다.");
+			throw new IllegalStateException("admin.error.agency.withdrawnUser");
 		}
 		if (profile.getAgency().getStatus() == AgencyStatus.SUSPENDED) {
-			throw new IllegalStateException("운영 정지된 소속사의 계정은 승인할 수 없습니다.");
+			throw new IllegalStateException("admin.error.agency.suspendedAgency");
 		}
 	}
 	
@@ -153,16 +153,16 @@ public class AdminAgencyPermissionService {
 	
 	private User requireAdmin(Long adminId) {
 		User admin = ur.findById(adminId).orElseThrow(() ->
-				new IllegalArgumentException("관리자 계정을 찾을 수 없습니다."));
+				new IllegalArgumentException("admin.error.agency.adminNotFound"));
 		if (admin.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자 권한이 필요합니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return admin;
 	}
 	
 	private AgencyProfile requireProfile(Long userId) {
 		return apr.findByUser_Id(userId).orElseThrow(() ->
-				new IllegalArgumentException("소속사 권한 신청을 찾을 수 없습니다."));
+				new IllegalArgumentException("admin.error.agency.profileNotFound"));
 	}
 	
 	private String normalizeKeyword(String keyword) {
@@ -174,18 +174,18 @@ public class AdminAgencyPermissionService {
 	
 	private String userStatusLabel(UserStatus status) {
 		return switch (status) {
-			case ACTIVE -> "활성";
-			case DORMANT -> "휴면";
-			case SUSPENDED -> "정지";
-			case WITHDRAWN -> "탈퇴";
-			case PENDING_ACTIVATION -> "활성화 대기";
+			case ACTIVE -> "admin.agencies.userStatus.ACTIVE";
+			case DORMANT -> "admin.agencies.userStatus.DORMANT";
+			case SUSPENDED -> "admin.agencies.userStatus.SUSPENDED";
+			case WITHDRAWN -> "admin.agencies.userStatus.WITHDRAWN";
+			case PENDING_ACTIVATION -> "admin.agencies.userStatus.PENDING_ACTIVATION";
 		};
 	}
 	
 	private String agencyStatusLabel(AgencyStatus status) {
 		return switch (status) {
-			case ACTIVE -> "운영 중";
-			case SUSPENDED -> "운영 정지";
+			case ACTIVE -> "admin.agencies.agencyStatus.ACTIVE";
+			case SUSPENDED -> "admin.agencies.agencyStatus.SUSPENDED";
 		};
 	}
 	
