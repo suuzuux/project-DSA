@@ -7,6 +7,10 @@
 (function () {
   "use strict";
 
+  // 다국어 문구 - banner-form.html 이 window.ADMIN_I18N 에 넣어 준다. 없으면 한국어 기본값
+  const I18N = window.ADMIN_I18N || {};
+  function t(key, ko) { return I18N[key] != null ? I18N[key] : ko; }
+
   const form = document.querySelector("form[enctype='multipart/form-data']");
   if (!form) return;
 
@@ -53,7 +57,7 @@
       label = option.dataset.nameEn ? option.dataset.nameEn.toUpperCase() : option.textContent.trim();
     }
     previewLabel.textContent = label;
-    previewTitle.textContent = titleInput.value.trim() || "대제목을 입력하세요";
+    previewTitle.textContent = titleInput.value.trim() || t("adminBanner.form.previewTitlePlaceholder", "대제목을 입력하세요");
     previewBody.textContent = bodyInput.value.trim();
   }
 
@@ -74,10 +78,10 @@
       if (!match && opt.selected) goodsSelect.value = "";
     });
     goodsEmptyHint.textContent = !artistId
-      ? "먼저 아티스트를 선택하세요."
+      ? t("adminBanner.form.goodsHintSelectArtist", "먼저 아티스트를 선택하세요.")
       : visibleCount === 0
-        ? "이 아티스트는 판매 중인 상품이 없습니다."
-        : "선택한 아티스트의 판매 중 상품만 보입니다.";
+        ? t("adminBanner.form.goodsHintNone", "이 아티스트는 판매 중인 상품이 없습니다.")
+        : t("adminBanner.form.goodsHint", "선택한 아티스트의 판매 중 상품만 보입니다.");
   }
 
   // 이미지 평균색 (가로세로 60칸 정도로 듬성듬성, 투명 픽셀 제외)

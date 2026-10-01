@@ -27,4 +27,12 @@ public enum FanProjectStatus {
 
     // 비로그인 사용자와 다른 팬의 일반 목록에 공개할 수 있는 상태인지
     private final boolean publiclyVisible;
+
+    /**
+     * SETTINGS-03 커밋3: displayName(한국어)은 관리자 화면 등에서 쓰는 레거시 폴백으로 남기고,
+     * 사용자 화면은 이 키로 messages*.properties 문구를 찾는다(GoodsStatus 등과 같은 패턴).
+     */
+    public String getMessageKey() {
+        return "project.status." + name();
+    }
 }

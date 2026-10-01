@@ -24,6 +24,9 @@ public class AdminCommunityController {
 	
 	private final AdminCommunityService acs;
 	private final ProjectService ps;
+	// SETTINGS-03 커밋3: ProjectService/Project 예외가 메시지 키로 바뀌어서, flash로 내보낼 때 번역한다.
+	// (관리자 화면 자체의 번역은 커밋5 범위)
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String dashboard(@RequestParam(required = false) Long projectId,
@@ -87,7 +90,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"커뮤니티 회원 차단을 해제했습니다.",
+				messages.get("admin.communities.msg.unblocked"),
 				redirectAttributes
 		);
 		
@@ -111,7 +114,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"프로젝트를 승인했습니다.",
+				messages.get("admin.communities.msg.approved"),
 				redirectAttributes
 		);
 		return "redirect:/admin/communities";
@@ -132,7 +135,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						rejectionReason,
 						request.getRemoteAddr()
-				), "프로젝트를 반려했습니다.", redirectAttributes
+				), messages.get("admin.communities.msg.rejected"), redirectAttributes
 		);
 		return "redirect:/admin/communities";
 	}
@@ -152,7 +155,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"정산 계좌를 확인 완료 처리했습니다.",
+				messages.get("admin.communities.msg.accountVerified"),
 				redirectAttributes
 		);
 		
@@ -174,7 +177,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"정산 계좌 확인 실패 처리했습니다.",
+				messages.get("admin.communities.msg.accountFailed"),
 				redirectAttributes
 		);
 		
@@ -196,7 +199,7 @@ public class AdminCommunityController {
 						principal.getId(),
 						request.getRemoteAddr()
 				),
-				"프로젝트 정산을 완료했습니다.",
+				messages.get("admin.communities.msg.settlementCompleted"),
 				redirectAttributes
 		);
 		
@@ -209,13 +212,13 @@ public class AdminCommunityController {
 			action.run();
 			redirectAttributes.addFlashAttribute("msg", successMessage);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 		}
 	}
 	
 	private void requireAdminLogin(AuthenticatedUser principal) {
 		if (principal == null) {
-			throw new IllegalStateException("ADMIN 로그인이 필요합니다.");
+			throw new IllegalStateException("error.project.adminLoginRequired");
 		}
 	}
 	

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>아티스트 등록 | Artist Portal</title>
+  <title th:text="#{portal.menu.artistNew} + ' | Artist Portal'">아티스트 등록 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -14,69 +14,75 @@
 
   <main class="portal-main">
     <div class="portal-main__head">
-      <h1>아티스트 등록</h1>
-      <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}">← 대시보드</a>
+      <h1 th:text="#{portal.menu.artistNew}">아티스트 등록</h1>
+      <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" th:text="#{portal.reports.backToDashboard}">← 대시보드</a>
     </div>
 
     <p class="text-sm text-muted" style="margin-bottom:16px;">
-      등록하면 커뮤니티가 바로 만들어지고, 아래 그룹 이메일로 비밀번호 설정 링크가 발송됩니다.<br />
-      멤버(프로필)는 등록 후 멤버 관리에서 추가합니다. 멤버가 없으면 솔로 아티스트로 동작합니다.
+      <span th:text="#{portalArtistForm.intro1}">등록하면 커뮤니티가 바로 만들어지고, 아래 그룹 이메일로 비밀번호 설정 링크가 발송됩니다.</span><br />
+      <span th:text="#{portalArtistForm.intro2}">멤버(프로필)는 등록 후 멤버 관리에서 추가합니다. 멤버가 없으면 솔로 아티스트로 동작합니다.</span>
     </p>
 
     <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
     <form class="settings-block" style="max-width:800px;" th:action="@{/portal/artists}" method="post">
       <div class="form-group">
-        <label class="form-label" for="groupName">아티스트(그룹)명 *</label>
+        <label class="form-label" for="groupName" th:text="#{portalArtistForm.label.groupName}">아티스트(그룹)명 *</label>
         <input class="form-input" id="groupName" name="groupName" maxlength="50" required
-               th:value="${form != null ? form.groupName() : ''}" placeholder="커뮤니티 이름으로 표시됩니다." />
+               th:value="${form != null ? form.groupName() : ''}" placeholder="커뮤니티 이름으로 표시됩니다."
+               th:placeholder="#{portalArtistForm.placeholder.groupName}" />
       </div>
       <div class="form-group">
-        <label class="form-label" for="email">그룹 로그인 이메일 *</label>
+        <label class="form-label" for="email" th:text="#{portalArtistForm.label.email}">그룹 로그인 이메일 *</label>
         <input class="form-input" id="email" name="email" type="email" maxlength="50" required
                th:value="${form != null ? form.email() : ''}" placeholder="artist@domain.com" />
-        <p class="text-sm text-muted" style="margin-top:6px;">아티스트 포털 1단계 로그인 아이디가 됩니다.</p>
+        <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{portalArtistForm.hint.email}">아티스트 포털 1단계 로그인 아이디가 됩니다.</p>
       </div>
       <div class="form-group">
-        <label class="form-label" for="nameEn">영문명 (커뮤니티 주소) *</label>
+        <label class="form-label" for="nameEn" th:text="#{portalArtistForm.label.nameEn}">영문명 (커뮤니티 주소) *</label>
         <input class="form-input" id="nameEn" name="nameEn" maxlength="100" required
                pattern="[A-Za-z0-9][A-Za-z0-9\-]*" title="영문/숫자로 시작하고 영문, 숫자, 하이픈(-)만 쓸 수 있어요."
+               th:title="#{portalArtistForm.title.nameEn}"
                th:value="${form != null ? form.nameEn() : ''}" placeholder="kiikii" />
-        <p class="text-sm text-muted" style="margin-top:6px;">
+        <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{portalArtistForm.hint.nameEn}">
           커뮤니티 주소가 됩니다. 예) kiikii → localhost:9999/kiikii · 공백 없이 영문, 숫자, 하이픈(-)만
         </p>
       </div>
       <div class="form-group">
-        <label class="form-label" for="fandomName">팬덤명</label>
+        <label class="form-label" for="fandomName" th:text="#{portalArtistForm.label.fandomName}">팬덤명</label>
         <input class="form-input" id="fandomName" name="fandomName" maxlength="50"
                th:value="${form != null ? form.fandomName() : ''}" />
       </div>
       <div class="form-group">
-        <label class="form-label" for="debutDate">데뷔일</label>
+        <label class="form-label" for="debutDate" th:text="#{portalArtistForm.label.debutDate}">데뷔일</label>
         <input class="form-input" id="debutDate" name="debutDate" type="date" style="max-width:220px;"
                th:value="${form != null ? form.debutDate() : ''}" />
       </div>
       <div class="form-group">
-        <label class="form-label" for="gender">성별(탐색 필터)</label>
+        <label class="form-label" for="gender" th:text="#{portalArtistForm.label.gender}">성별(탐색 필터)</label>
         <select class="form-select" id="gender" name="gender" style="max-width:220px;">
-          <option value="">선택 안 함</option>
-          <option value="MALE" th:selected="${form != null and form.gender() != null and form.gender().name() == 'MALE'}">남성</option>
-          <option value="FEMALE" th:selected="${form != null and form.gender() != null and form.gender().name() == 'FEMALE'}">여성</option>
-          <option value="MIXED" th:selected="${form != null and form.gender() != null and form.gender().name() == 'MIXED'}">혼성</option>
+          <option value="" th:text="#{portalArtistForm.gender.none}">선택 안 함</option>
+          <option value="MALE" th:selected="${form != null and form.gender() != null and form.gender().name() == 'MALE'}" th:text="#{portalArtistForm.gender.male}">남성</option>
+          <option value="FEMALE" th:selected="${form != null and form.gender() != null and form.gender().name() == 'FEMALE'}" th:text="#{portalArtistForm.gender.female}">여성</option>
+          <option value="MIXED" th:selected="${form != null and form.gender() != null and form.gender().name() == 'MIXED'}" th:text="#{portalArtistForm.gender.mixed}">혼성</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" for="nationality">국적</label>
+        <label class="form-label" for="nationality" th:text="#{portalArtistForm.label.nationality}">국적</label>
         <input class="form-input" id="nationality" name="nationality" maxlength="50" style="max-width:220px;"
                th:value="${form != null ? form.nationality() : 'KR'}" />
       </div>
       <div class="form-group">
-        <label class="form-label" for="category">카테고리</label>
-        <input class="form-input" id="category" name="category" maxlength="50" style="max-width:220px;"
-               th:value="${form != null ? form.category() : '아이돌'}" />
+        <label class="form-label" for="category" th:text="#{portalArtistForm.label.category}">카테고리</label>
+        <!-- 메인 화면 커뮤니티 검색 필터(index.html)와 같은 선택지. option value 는 DB 저장값(한국어)이라 그대로 두고
+             표시 문구만 번역한다 - 직접 입력하면 "Idol"/"アイドル" 처럼 저장돼 검색 필터에 걸리지 않았다 -->
+        <select class="form-select" id="category" name="category" style="max-width:220px;">
+          <option value="아이돌" th:selected="${form == null or form.category() == null or form.category() == '아이돌'}" th:text="#{main.search.categoryIdol}">아이돌</option>
+          <option value="배우" th:selected="${form != null and form.category() == '배우'}" th:text="#{main.search.categoryActor}">배우</option>
+        </select>
       </div>
       <div class="flex-center" style="justify-content:flex-end;">
-        <button type="submit" class="btn btn--primary">등록하고 초대 메일 보내기</button>
+        <button type="submit" class="btn btn--primary" th:text="#{portalArtistForm.submit}">등록하고 초대 메일 보내기</button>
       </div>
     </form>
   </main>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${banner} != null ? '배너 수정 | WePlaNet ADMIN' : '배너 등록 | WePlaNet ADMIN'">배너 등록 | WePlaNet ADMIN</title>
+  <title th:text="(${banner} != null ? #{adminBanner.form.headingEdit} : #{adminBanner.form.headingNew}) + ' | WePlaNet ADMIN'">배너 등록 | WePlaNet ADMIN</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -19,59 +19,59 @@
         <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
         <details class="portal-sidebar__group" open>
           <summary>
-            <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+            <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
           </summary>
-          <a class="portal-sidebar__sub is-active" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+          <a class="portal-sidebar__sub is-active" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
         </details>
         <details class="portal-sidebar__group">
           <summary>
-            <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+            <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
           </summary>
-          <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+          <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
         </details>
-        <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-        <a th:href="@{/admin/users}">👥 전체 회원</a>
-        <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-        <a th:href="@{/admin/notices}">📢 전체 공지</a>
-        <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+        <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+        <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+        <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+        <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+        <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
         <details class="portal-sidebar__group">
           <summary>
-            <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
-            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+            <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
           </summary>
-          <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+          <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
         </details>
-        <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+        <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
       </nav>
 
       <div class="portal-sidebar__footer">
-        <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
+        <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
         <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-          <button type="submit" class="btn">🚪 로그아웃</button>
+          <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
         </form>
       </div>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
-        <h1 th:text="${banner} != null ? '배너 수정' : '배너 등록'">배너 등록</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/admin/banners}">← 목록</a>
+        <h1 th:text="${banner} != null ? #{adminBanner.form.headingEdit} : #{adminBanner.form.headingNew}">배너 등록</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/admin/banners}" th:text="#{adminBanner.form.backToList}">← 목록</a>
       </div>
 
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
       <!-- 미리보기 - 입력값을 바꾸면 바로 반영된다 (메인 배너와 같은 모양) -->
       <div class="banner-preview-wrap">
-        <p class="form-label">미리보기</p>
+        <p class="form-label" th:text="#{adminBanner.form.preview}">미리보기</p>
         <div class="banner banner--promo" id="bannerPreview"
              th:style="${banner != null} ? |background:${banner.bgColor};color:${banner.textColor};| : 'background:#4a4a4a;color:#ffffff;'">
           <div class="banner-promo">
             <div class="banner-promo__text">
               <p class="banner-promo__label" id="previewLabel">ARTIST</p>
               <h2 class="banner-promo__title" id="previewTitle"
-                  th:text="${banner != null} ? ${banner.title} : '대제목을 입력하세요'">대제목을 입력하세요</h2>
+                  th:text="${banner != null} ? ${banner.title} : #{adminBanner.form.previewTitlePlaceholder}">대제목을 입력하세요</h2>
               <p class="banner-promo__body" id="previewBody"
                  th:text="${banner != null and banner.body != null} ? ${banner.body} : ''"></p>
             </div>
@@ -89,100 +89,110 @@
             method="post">
 
         <div class="form-group">
-          <label class="form-label">배너 종류</label>
+          <label class="form-label" th:text="#{adminBanner.form.typeLabel}">배너 종류</label>
           <div class="flex-center" style="gap:16px;justify-content:flex-start;">
             <label th:each="t : ${bannerTypes}" style="display:flex;align-items:center;gap:6px;">
               <input type="radio" name="bannerType" th:value="${t.name()}"
                      th:checked="${banner != null ? banner.bannerType == t : t.name() == 'COMMUNITY'}" />
-              <span th:text="${t.label}">커뮤니티 홍보</span>
+              <span th:text="#{${t.messageKey}}">커뮤니티 홍보</span>
             </label>
           </div>
-          <p class="text-sm text-muted" style="margin-top:6px;">
+          <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{adminBanner.form.typeHint}">
             커뮤니티 홍보는 클릭하면 그 아티스트 커뮤니티로, 상품 홍보는 선택한 상품 페이지로 이동합니다.
           </p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="artistId">아티스트 (커뮤니티) *</label>
+          <label class="form-label" for="artistId" th:text="#{adminBanner.form.artistLabel}">아티스트 (커뮤니티) *</label>
           <select class="form-select" id="artistId" name="artistId" required style="max-width:360px;">
-            <option value="">선택하세요</option>
+            <option value="" th:text="#{adminBanner.form.selectPlaceholder}">선택하세요</option>
             <option th:each="a : ${artistOptions}" th:value="${a.id()}"
                     th:attr="data-name-en=${a.nameEn()}"
                     th:selected="${banner != null and banner.artist.id == a.id()}"
                     th:text="${a.nameEn() != null} ? |${a.name()} (${a.nameEn()})| : ${a.name()}">아티스트</option>
           </select>
-          <p class="text-sm text-muted" style="margin-top:6px;">배너 맨 위 작은 글씨로 아티스트 영문명이 표시됩니다. (영문명이 없으면 커뮤니티 이름)</p>
+          <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{adminBanner.form.artistHint}">배너 맨 위 작은 글씨로 아티스트 영문명이 표시됩니다. (영문명이 없으면 커뮤니티 이름)</p>
         </div>
 
         <div class="form-group" id="goodsGroup">
-          <label class="form-label" for="goodsId">홍보할 상품 (판매 중) *</label>
+          <label class="form-label" for="goodsId" th:text="#{adminBanner.form.goodsLabel}">홍보할 상품 (판매 중) *</label>
           <select class="form-select" id="goodsId" name="goodsId" style="max-width:360px;">
-            <option value="">선택하세요</option>
+            <option value="" th:text="#{adminBanner.form.selectPlaceholder}">선택하세요</option>
             <option th:each="g : ${goodsOptions}" th:value="${g.id()}"
                     th:attr="data-artist-id=${g.artistId()}"
                     th:selected="${banner != null and banner.goods != null and banner.goods.id == g.id()}"
                     th:text="${g.name()}">상품</option>
           </select>
-          <p class="text-sm text-muted" style="margin-top:6px;" id="goodsEmptyHint">선택한 아티스트의 판매 중 상품만 보입니다.</p>
+          <p class="text-sm text-muted" style="margin-top:6px;" id="goodsEmptyHint" th:text="#{adminBanner.form.goodsHint}">선택한 아티스트의 판매 중 상품만 보입니다.</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="title">대제목 * (두 줄까지)</label>
+          <label class="form-label" for="title" th:text="#{adminBanner.form.titleLabel}">대제목 * (두 줄까지)</label>
           <textarea class="form-textarea" id="title" name="title" rows="2" required th:maxlength="${titleMax}"
                     style="min-height:0;resize:none;"
                     placeholder="예) j-hope x HUMAN MADE&#10;콜라보레이션"
+                    th:placeholder="#{adminBanner.form.titlePlaceholder}"
                     th:text="${banner != null ? banner.title : ''}"></textarea>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="body">본문 (두 줄까지)</label>
+          <label class="form-label" for="body" th:text="#{adminBanner.form.bodyLabel}">본문 (두 줄까지)</label>
           <textarea class="form-textarea" id="body" name="body" rows="2" th:maxlength="${bodyMax}"
                     style="min-height:0;resize:none;"
                     placeholder="예) 'Human Hope' Season 2&#10;WePlaNet Shop에서 만나보세요!"
+                    th:placeholder="#{adminBanner.form.bodyPlaceholder}"
                     th:text="${banner != null ? banner.body : ''}"></textarea>
-          <p class="text-sm text-muted" style="margin-top:6px;">Enter로 줄을 바꾸면 배너에서도 그대로 두 줄로 보여요.</p>
+          <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{adminBanner.form.bodyHint}">Enter로 줄을 바꾸면 배너에서도 그대로 두 줄로 보여요.</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="image" th:text="${banner != null} ? '이미지 (바꿀 때만 선택)' : '이미지 *'">이미지 *</label>
+          <label class="form-label" for="image" th:text="${banner != null} ? #{adminBanner.form.imageLabelEdit} : #{adminBanner.form.imageLabelNew}">이미지 *</label>
           <input class="form-input" type="file" id="image" name="image" accept="image/*"
                  th:required="${banner == null}" />
-          <p class="text-sm text-muted" style="margin-top:6px;">배너 오른쪽에 보이는 사진입니다. 가로가 긴 이미지를 권장해요.</p>
+          <p class="text-sm text-muted" style="margin-top:6px;" th:text="#{adminBanner.form.imageHint}">배너 오른쪽에 보이는 사진입니다. 가로가 긴 이미지를 권장해요.</p>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="bgColor">배경 색상</label>
+          <label class="form-label" for="bgColor" th:text="#{adminBanner.form.bgColorLabel}">배경 색상</label>
           <div class="flex-center" style="gap:10px;justify-content:flex-start;">
             <input type="color" id="bgColor" name="bgColor"
                    th:value="${banner != null ? banner.bgColor : '#4a4a4a'}"
                    style="width:48px;height:36px;padding:0;border:1px solid var(--wp-line);border-radius:6px;background:none;" />
-            <span class="text-sm text-muted">이미지를 고르면 이미지의 대표 색으로 자동으로 채워집니다. 필요하면 직접 바꿔도 돼요.</span>
+            <span class="text-sm text-muted" th:text="#{adminBanner.form.bgColorHint}">이미지를 고르면 이미지의 대표 색으로 자동으로 채워집니다. 필요하면 직접 바꿔도 돼요.</span>
           </div>
         </div>
 
         <div class="form-group" style="display:flex;gap:16px;flex-wrap:wrap;">
           <div>
-            <label class="form-label" for="active">메인 노출</label>
+            <label class="form-label" for="active" th:text="#{adminBanner.form.activeLabel}">메인 노출</label>
             <select class="form-select" id="active" name="active" style="width:160px;">
-              <option value="true" th:selected="${banner == null or banner.active}">노출</option>
-              <option value="false" th:selected="${banner != null and !banner.active}">숨김</option>
+              <option value="true" th:selected="${banner == null or banner.active}" th:text="#{adminBanner.form.activeTrue}">노출</option>
+              <option value="false" th:selected="${banner != null and !banner.active}" th:text="#{adminBanner.list.statusHidden}">숨김</option>
             </select>
           </div>
           <div>
-            <label class="form-label" for="sortOrder">노출 순서</label>
+            <label class="form-label" for="sortOrder" th:text="#{adminBanner.form.sortOrderLabel}">노출 순서</label>
             <input class="form-input" type="number" id="sortOrder" name="sortOrder" min="0" style="width:160px;"
                    th:value="${banner != null ? banner.sortOrder : 0}" />
           </div>
         </div>
-        <p class="text-sm text-muted" style="margin:-8px 0 16px;">노출 순서는 숫자가 작을수록 앞에 나옵니다.</p>
+        <p class="text-sm text-muted" style="margin:-8px 0 16px;" th:text="#{adminBanner.form.sortOrderHint}">노출 순서는 숫자가 작을수록 앞에 나옵니다.</p>
 
         <div class="flex-center" style="justify-content:flex-end;">
-          <button type="submit" class="btn btn--primary" th:text="${banner} != null ? '수정 저장' : '등록'">등록</button>
+          <button type="submit" class="btn btn--primary" th:text="${banner} != null ? #{adminBanner.form.submitEdit} : #{adminBanner.form.submitNew}">등록</button>
         </div>
       </form>
     </main>
   </div>
 <script th:src="@{/js/main.js}"></script>
+<script th:inline="javascript">
+  window.ADMIN_I18N = Object.assign(window.ADMIN_I18N || {}, {
+    "adminBanner.form.previewTitlePlaceholder": /*[[#{adminBanner.form.previewTitlePlaceholder}]]*/ "대제목을 입력하세요",
+    "adminBanner.form.goodsHintSelectArtist": /*[[#{adminBanner.form.goodsHintSelectArtist}]]*/ "먼저 아티스트를 선택하세요.",
+    "adminBanner.form.goodsHintNone": /*[[#{adminBanner.form.goodsHintNone}]]*/ "이 아티스트는 판매 중인 상품이 없습니다.",
+    "adminBanner.form.goodsHint": /*[[#{adminBanner.form.goodsHint}]]*/ "선택한 아티스트의 판매 중 상품만 보입니다."
+  });
+</script>
 <script th:src="@{/js/admin-banner-form.js}"></script>
 </body>
 </html>

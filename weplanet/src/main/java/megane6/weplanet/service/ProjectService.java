@@ -48,6 +48,10 @@ public class ProjectService {
 	private final MailSenderService mss;
 
 	private final AdminActionLogService actionLogService;
+
+	// SETTINGS-03 커밋3: 카드/상세의 상태·유형 라벨과 등록 자격 안내 문구를 현재 로케일로 만든다.
+	// (예외 메시지는 키로 던지고 GlobalExceptionHandler / ProjectController가 번역)
+	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;
 	
 	public static final long MIN_BASIC_BADGE_COUNT = 5L;
@@ -120,7 +124,9 @@ public class ProjectService {
 							project,
 							coverNames.get(project.getId()),
 							summary.fundedAmount(),
-							summary.participantCount()
+							summary.participantCount(),
+							messages.get(project.getEventType().getMessageKey()),
+							messages.get(project.getStatus().getMessageKey())
 					);
 				})
 				.toList();
@@ -128,17 +134,17 @@ public class ProjectService {
 
 	public ProjectDetailView getProjectDetail(Long projectId, User artist, AuthenticatedUser viewer) {
 		assertProjectAreaAccessible(artist, viewer);
-		Project project = pr.findById(projectId).orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+		Project project = pr.findById(projectId).orElseThrow(() -> new IllegalArgumentException("error.project.notFound"));
 
 		// 소프트 삭제된 프로젝트는 없는 것으로 취급(목록 쿼리의 deletedAt IS NULL과 같은 기준)
 		if (project.getDeletedAt() != null) {
-			throw new IllegalArgumentException("삭제된 프로젝트입니다.");
+			throw new IllegalArgumentException("error.project.deleted");
 		}
 		if (!project.getArtist().getId().equals(artist.getId())) {
-			throw new IllegalArgumentException("이 커뮤니티의 프로젝트가 아닙니다.");
+			throw new IllegalArgumentException("error.project.notInCommunity");
 		}
 		if (!canView(project, viewer)) {
-			throw new IllegalStateException("이 프로젝트를 확인할 권한이 없습니다.");
+			throw new IllegalStateException("error.project.noPermission");
 		}
 
 		String coverStoredName = pir.findByProject_Id(projectId)
@@ -155,7 +161,9 @@ public class ProjectService {
 				project,
 				coverStoredName,
 				fundingSummary.fundedAmount(),
-				fundingSummary.participantCount()
+				fundingSummary.participantCount(),
+				messages.get(project.getEventType().getMessageKey()),
+				messages.get(project.getStatus().getMessageKey())
 		);
 	}
 
@@ -168,11 +176,11 @@ public class ProjectService {
 			AuthenticatedUser viewer
 	) {
 		if (viewer == null) {
-			throw new AccessDeniedException("로그인이 필요합니다.");
+			throw new AccessDeniedException("common.error.loginRequired");
 		}
 
 		if (hasRole(viewer, Role.AGENCY)) {
-			throw new AccessDeniedException("소속사 계정은 팬 프로젝트를 확인할 수 없습니다.");
+			throw new AccessDeniedException("error.project.agencyNotAllowed");
 		}
 
 		if (hasRole(viewer, Role.ADMIN)) {
@@ -181,20 +189,20 @@ public class ProjectService {
 		
 		User member = ur.findById(viewer.getId())
 				.orElseThrow(() ->
-						new AccessDeniedException("로그인 회원을 찾을 수 없습니다.")
+						new AccessDeniedException("error.project.memberNotFound")
 				);
 		
 		// 솔로 아티스트 본인 또는 그 그룹 멤버는 자기 커뮤니티 팬 프로젝트를 이용할 수 없다
 		if (communityArtistResolver.isArtistOf(member, artist.getId())) {
-			throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트는 이용할 수 없습니다.");
+			throw new AccessDeniedException("error.project.ownCommunity");
 		}
 		
 		if (!member.canParticipateInCommunity()) {
-			throw new AccessDeniedException("팬 또는 아티스트 계정만 접근할 수 있습니다.");
+			throw new AccessDeniedException("error.project.fanOrArtistOnly");
 		}
 		
 		if (!fcr.existsByFanIdAndArtistId(member.getId(), artist.getId())) {
-			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
+			throw new AccessDeniedException("error.project.joinFirst");
 		}
 	}
 	
@@ -280,9 +288,9 @@ public class ProjectService {
 
 	private Project getProjectInArtistCommunity(Long projectId, Long artistId) {
 		Project project = pr.findById(projectId)
-				.orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.project.notFound"));
 		if (project.getDeletedAt() != null || !project.getArtist().getId().equals(artistId)) {
-			throw new IllegalArgumentException("이 커뮤니티의 프로젝트를 찾을 수 없습니다.");
+			throw new IllegalArgumentException("error.project.notInCommunity");
 		}
 		return project;
 	}
@@ -290,7 +298,7 @@ public class ProjectService {
 	private User getAdmin(Long adminId) {
 		return ur.findById(adminId)
 				.filter(user -> user.getRole() == Role.ADMIN)
-				.orElseThrow(() -> new IllegalStateException("ADMIN만 프로젝트를 승인하거나 반려할 수 있습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.project.adminOnlyReview"));
 	}
 
 	private boolean hasRole(AuthenticatedUser viewer, Role role) {
@@ -310,8 +318,8 @@ public class ProjectService {
 				fanId, artistId, FanBadgeType.SPECIAL);
 		boolean eligible = basicBadgeCount >= MIN_BASIC_BADGE_COUNT
 				&& specialBadgeCount >= MIN_SPECIAL_BADGE_COUNT;
-		String message = eligible ? null : String.format(
-				"프로젝트 등록에는 일반 배지 %d개와 스페셜 배지 %d가 필요해요. %n현재 일반 %d개, 스페셜 %d개를 모았어요.",
+		String message = eligible ? null : messages.get(
+				"error.project.badgeShortage",
 				MIN_BASIC_BADGE_COUNT, MIN_SPECIAL_BADGE_COUNT, basicBadgeCount, specialBadgeCount);
 		
 		return new ProjectEligibilityView(
@@ -327,30 +335,30 @@ public class ProjectService {
 	@Transactional
 	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
 		// 1. 로그인 회원 조회
-		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("로그인 정보를 찾을 수 없습니다."));
+		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("error.project.memberNotFound"));
 		if (!creator.canParticipateInCommunity()) {
-			throw new IllegalStateException("팬 또는 아티스트 계정만 프로젝트를 등록할 수 있습니다.");
+			throw new IllegalStateException("error.project.createFanOrArtistOnly");
 		}
 
 		User artist = ur.findById(dto.getArtistId())
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트 정보를 찾을 수 없습니다."));
-		
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
+
 		if (communityArtistResolver.isArtistOf(creator, artist.getId())) {
-			throw new AccessDeniedException("본인 커뮤니티의 팬 프로젝트는 등록할 수 없습니다.");
+			throw new AccessDeniedException("error.project.createOwnCommunity");
 		}
 		
 		if (!fcr.existsByFanIdAndArtistId(
 				creator.getId(),
 				artist.getId()
 		)) {
-			throw new AccessDeniedException("먼저 커뮤니티에 가입해주세요.");
+			throw new AccessDeniedException("error.project.joinFirst");
 		}
 		
 		// 3. 뱃지 개수 확인 (화면의 등록 버튼에서 쓰는 것과 같은 메서드)
 		ProjectEligibilityView eligibility = checkEligibility(creator.getId(), artist.getId());
 		if (!eligibility.eligible()) {
-			throw new IllegalStateException("프로젝트 등록에는 기본 배지 5개 이상과 스페셜 배지 1개 이상이 필요합니다.");
+			throw new IllegalStateException("error.project.badgeRequirement");
 		}
 		
 		long basicBadgeCount = eligibility.basicCount();
@@ -388,11 +396,11 @@ public class ProjectService {
 		if (coverImage != null && !coverImage.isEmpty()) {
 			String contentType = coverImage.getContentType();
 			if (contentType == null || !contentType.startsWith("image/")) {
-				throw new IllegalArgumentException("대표 이미지에는 이미지 파일만 등록 가능합니다.");
+				throw new IllegalArgumentException("error.project.coverImageOnly");
 			}
 			String originalName = coverImage.getOriginalFilename();
 			if (originalName == null || originalName.isBlank()) {
-				throw new IllegalArgumentException("대표 이미지의 파일명을 확인할 수 없습니다.");
+				throw new IllegalArgumentException("error.project.coverFileName");
 			}
 			// 실제 파일을 프로젝트의 uploads 폴더에 저장
 			String storedName = fs.store(coverImage);

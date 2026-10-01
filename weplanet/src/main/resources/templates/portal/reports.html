@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>신고함 / 차단 | Artist Portal</title>
+  <title th:text="#{portal.reports.pageTitle}">신고함 / 차단 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -13,44 +13,45 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('신고함 / 차단 관리')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(#{portal.reports.heading})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1>신고함 / 차단 관리</h1>
-        <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}">← 대시보드</a>
+        <h1 th:text="#{portal.reports.heading}">신고함 / 차단 관리</h1>
+        <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" th:text="#{portal.reports.backToDashboard}">← 대시보드</a>
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
 
       <section class="panel mb-16">
-        <h2 class="panel__title">게시글 신고</h2>
+        <h2 class="panel__title" th:text="#{portal.reports.postReports}">게시글 신고</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>작성자</th>
-                <th>게시글</th>
-                <th>사유</th>
-                <th>접수일</th>
-                <th>조치</th>
+                <th th:text="#{portal.reports.author}">작성자</th>
+                <th th:text="#{portal.reports.post}">게시글</th>
+                <th th:text="#{portal.reports.reason}">사유</th>
+                <th th:text="#{portal.reports.reportedAt}">접수일</th>
+                <th th:text="#{portal.reports.action}">조치</th>
               </tr>
             </thead>
             <tbody>
               <tr th:if="${#lists.isEmpty(postReports)}">
-                <td colspan="5" class="text-sm text-muted">접수된 게시글 신고가 없습니다.</td>
+                <td colspan="5" class="text-sm text-muted" th:text="#{portal.reports.emptyPosts}">접수된 게시글 신고가 없습니다.</td>
               </tr>
               <tr th:each="report : ${postReports}">
                 <td th:text="${authorNicknames.get('' + report.post.author.id)}">팬닉네임</td>
                 <td th:text="${report.post.title}">게시글 제목</td>
-                <td th:text="${report.reason}">SPAM</td>
+                <td th:text="${report.reason != null} ? #{${'community.report.reason.' + report.reason}} : '-'">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
                 <td style="white-space:nowrap;">
                   <form th:action="@{/portal/reports/post/{id}/delete(id=${report.id})}" method="post" style="display:inline;"
-                        onsubmit="return confirm('신고된 게시글을 삭제할까요?');">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        th:attr="data-confirm=#{portal.reports.confirmDeletePost}"
+                        onsubmit="return confirm(this.dataset.confirm);">
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                   </form>
                   <form th:action="@{/portal/reports/post/{id}/block(id=${report.id})}" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn--ghost btn--sm">차단</button>
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{portal.reports.block}">차단</button>
                   </form>
                 </td>
               </tr>
@@ -60,34 +61,35 @@
       </section>
 
       <section class="panel mb-16">
-        <h2 class="panel__title">댓글 신고</h2>
+        <h2 class="panel__title" th:text="#{portal.reports.commentReports}">댓글 신고</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>작성자</th>
-                <th>댓글</th>
-                <th>사유</th>
-                <th>접수일</th>
-                <th>조치</th>
+                <th th:text="#{portal.reports.author}">작성자</th>
+                <th th:text="#{portal.reports.comment}">댓글</th>
+                <th th:text="#{portal.reports.reason}">사유</th>
+                <th th:text="#{portal.reports.reportedAt}">접수일</th>
+                <th th:text="#{portal.reports.action}">조치</th>
               </tr>
             </thead>
             <tbody>
               <tr th:if="${#lists.isEmpty(commentReports)}">
-                <td colspan="5" class="text-sm text-muted">접수된 댓글 신고가 없습니다.</td>
+                <td colspan="5" class="text-sm text-muted" th:text="#{portal.reports.emptyComments}">접수된 댓글 신고가 없습니다.</td>
               </tr>
               <tr th:each="report : ${commentReports}">
                 <td th:text="${authorNicknames.get('' + report.comment.author.id)}">팬닉네임</td>
                 <td th:text="${report.comment.content}">댓글 내용</td>
-                <td th:text="${report.reason}">SPAM</td>
+                <td th:text="${report.reason != null} ? #{${'community.report.reason.' + report.reason}} : '-'">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
                 <td style="white-space:nowrap;">
                   <form th:action="@{/portal/reports/comment/{id}/delete(id=${report.id})}" method="post" style="display:inline;"
-                        onsubmit="return confirm('신고된 댓글을 삭제할까요?');">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        th:attr="data-confirm=#{portal.reports.confirmDeleteComment}"
+                        onsubmit="return confirm(this.dataset.confirm);">
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                   </form>
                   <form th:action="@{/portal/reports/comment/{id}/block(id=${report.id})}" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn--ghost btn--sm">차단</button>
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{portal.reports.block}">차단</button>
                   </form>
                 </td>
               </tr>
@@ -97,34 +99,35 @@
       </section>
 
       <section class="panel mb-16">
-        <h2 class="panel__title">라이브 채팅 신고</h2>
+        <h2 class="panel__title" th:text="#{portal.reports.liveReports}">라이브 채팅 신고</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>작성자</th>
-                <th>채팅</th>
-                <th>사유</th>
-                <th>접수일</th>
-                <th>조치</th>
+                <th th:text="#{portal.reports.author}">작성자</th>
+                <th th:text="#{portal.reports.chat}">채팅</th>
+                <th th:text="#{portal.reports.reason}">사유</th>
+                <th th:text="#{portal.reports.reportedAt}">접수일</th>
+                <th th:text="#{portal.reports.action}">조치</th>
               </tr>
             </thead>
             <tbody>
               <tr th:if="${#lists.isEmpty(liveCommentReports)}">
-                <td colspan="5" class="text-sm text-muted">접수된 라이브 채팅 신고가 없습니다.</td>
+                <td colspan="5" class="text-sm text-muted" th:text="#{portal.reports.emptyLive}">접수된 라이브 채팅 신고가 없습니다.</td>
               </tr>
               <tr th:each="report : ${liveCommentReports}">
                 <td th:text="${authorNicknames.get(report.comment.author.id)}">팬닉네임</td>
                 <td th:text="${report.comment.content}">채팅 내용</td>
-                <td th:text="${report.reason}">SPAM</td>
+                <td th:text="${report.reason != null} ? #{${'community.report.reason.' + report.reason}} : '-'">SPAM</td>
                 <td th:text="${#temporals.format(report.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
                 <td style="white-space:nowrap;">
                   <form th:action="@{/portal/reports/live-comment/{id}/delete(id=${report.id})}" method="post" style="display:inline;"
-                        onsubmit="return confirm('신고된 채팅을 삭제할까요?');">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                        th:attr="data-confirm=#{portal.reports.confirmDeleteChat}"
+                        onsubmit="return confirm(this.dataset.confirm);">
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                   </form>
                   <form th:action="@{/portal/reports/live-comment/{id}/block(id=${report.id})}" method="post" style="display:inline;">
-                    <button type="submit" class="btn btn--ghost btn--sm">차단</button>
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{portal.reports.block}">차단</button>
                   </form>
                 </td>
               </tr>
@@ -134,20 +137,20 @@
       </section>
 
       <section class="panel">
-        <h2 class="panel__title">차단 목록</h2>
+        <h2 class="panel__title" th:text="#{portal.reports.blockList}">차단 목록</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>차단 계정</th>
-                <th>사유</th>
-                <th>차단일</th>
-                <th>관리</th>
+                <th th:text="#{portal.reports.blockedAccount}">차단 계정</th>
+                <th th:text="#{portal.reports.reason}">사유</th>
+                <th th:text="#{portal.reports.blockedAt}">차단일</th>
+                <th th:text="#{portal.common.manage}">관리</th>
               </tr>
             </thead>
             <tbody>
               <tr th:if="${#lists.isEmpty(blocks)}">
-                <td colspan="4" class="text-sm text-muted">차단된 계정이 없습니다.</td>
+                <td colspan="4" class="text-sm text-muted" th:text="#{portal.reports.emptyBlocks}">차단된 계정이 없습니다.</td>
               </tr>
               <tr th:each="block : ${blocks}">
                 <td th:text="${block.blockedUser.nickname}">팬닉네임</td>
@@ -155,7 +158,7 @@
                 <td th:text="${#temporals.format(block.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
                 <td>
                   <form th:action="@{/portal/blocks/{id}/delete(id=${block.id})}" method="post">
-                    <button type="submit" class="btn btn--ghost btn--sm">해제</button>
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{portal.reports.unblock}">해제</button>
                   </form>
                 </td>
               </tr>

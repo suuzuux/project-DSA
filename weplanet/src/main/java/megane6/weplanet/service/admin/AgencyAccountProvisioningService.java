@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.Agency;
 import megane6.weplanet.domain.entity.AgencyProfile;
 import megane6.weplanet.domain.entity.PartnershipApplication;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.exception.LocalizedIllegalStateException;
 import megane6.weplanet.repository.AgencyProfileRepository;
 import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -41,12 +42,13 @@ public class AgencyAccountProvisioningService {
 	) {
 		// 신청서 이메일이 그대로 로그인 아이디가 된다
 		String email = application.getEmail();
+		// 예외는 키 + 값으로 던진다 (컨트롤러가 Messages.resolve(e) 로 번역). 어떤 이메일/소속사명이 걸렸는지 문구에 같이 보여준다.
 		if (ur.existsByUsername(email)) {
-			throw new IllegalStateException("이미 사용 중인 로그인 아이디입니다: " + email);
+			throw new LocalizedIllegalStateException("admin.error.partnership.usernameTaken", email);
 		}
 		
 		if (ur.existsByEmail(email)) {
-			throw new IllegalStateException("이미 가입된 이메일입니다: " + email);
+			throw new LocalizedIllegalStateException("admin.error.partnership.emailRegistered", email);
 		}
 		
 		String agencyName = resolveAgencyName(application, agencyNameOverride);
@@ -54,8 +56,8 @@ public class AgencyAccountProvisioningService {
 		// Agency.name은 unique라서 동명이인 1인 소속사가 들어오면 여기서 막힘
 		// 관리자가 승인 화면에서 이름을 바꿔 다시 시도할 수 있도록 안내 문구를 담는다
 		if (ar.findByName(agencyName).isPresent()) {
-			throw new IllegalStateException("이미 등록된 소속사명입니다: " + agencyName +
-					" (승인 화면에서 다른 이름으로 수정해주세요.)");
+			log.info("입점 승인 중 소속사명 중복: applicationId={}, agencyName={}", application.getId(), agencyName);
+			throw new LocalizedIllegalStateException("admin.error.partnership.agencyNameTaken", agencyName);
 		}
 		
 		Agency agency = ar.save(

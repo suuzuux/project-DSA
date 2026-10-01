@@ -35,6 +35,7 @@ public class AdminHashtagEventController {
 	
 	private final HashtagEventAdminService service;
 	private final AuthenticatedUserResolver userResolver;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String list(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -63,11 +64,11 @@ public class AdminHashtagEventController {
 			service.create(admin, form, request.getRemoteAddr());
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			// redirect 하면 입력한 값이 전부 날아가므로, 오류 메시지와 함께 폼을 그대로 다시 보여준다
-			model.addAttribute("error", e.getMessage());
+			model.addAttribute("error", messages.resolve(e));
 			return showForm(model, null, form);
 		}
 		
-		redirectAttributes.addFlashAttribute("msg", "해시태그 총공 이벤트를 등록했습니다.");
+		redirectAttributes.addFlashAttribute("msg", messages.get("adminHashtag.flash.created"));
 		return "redirect:/admin/events/hashtag";
 	}
 	
@@ -83,7 +84,7 @@ public class AdminHashtagEventController {
 		try {
 			return showForm(model, eventId, service.getEditForm(eventId));
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/events/hashtag";
 		}
 	}
@@ -102,11 +103,11 @@ public class AdminHashtagEventController {
 		try {
 			service.update(eventId, admin, form, request.getRemoteAddr());
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			model.addAttribute("error", e.getMessage());
+			model.addAttribute("error", messages.resolve(e));
 			return showForm(model, eventId, form);
 		}
 		
-		redirectAttributes.addFlashAttribute("msg", "해시태그 총공 이벤트를 수정했습니다.");
+		redirectAttributes.addFlashAttribute("msg", messages.get("adminHashtag.flash.updated"));
 		return "redirect:/admin/events/hashtag";
 	}
 	
@@ -121,9 +122,9 @@ public class AdminHashtagEventController {
 		
 		try {
 			service.delete(eventId, admin, request.getRemoteAddr());
-			redirectAttributes.addFlashAttribute("msg", "해시태그 총공 이벤트를 삭제했습니다.");
+			redirectAttributes.addFlashAttribute("msg", messages.get("adminHashtag.flash.deleted"));
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 		}
 		
 		return "redirect:/admin/events/hashtag";
@@ -142,7 +143,7 @@ public class AdminHashtagEventController {
 		try {
 			model.addAttribute("dashboard", service.getDashboard(eventId));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/events/hashtag";
 		}
 		
@@ -160,9 +161,9 @@ public class AdminHashtagEventController {
 		
 		try {
 			service.finalizeEvent(eventId, admin, request.getRemoteAddr());
-			redirectAttributes.addFlashAttribute("msg", "집계를 확정했습니다. 이제 순위가 고정됩니다.");
+			redirectAttributes.addFlashAttribute("msg", messages.get("adminHashtag.flash.finalized"));
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 		}
 		
 		return "redirect:/admin/events/hashtag/" + eventId;
@@ -192,8 +193,8 @@ public class AdminHashtagEventController {
 	private User requireAdmin(AuthenticatedUser principal) {
 		User user = userResolver.requireAuthenticated(principal);
 		if (user.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return user;
 	}
-}
+}

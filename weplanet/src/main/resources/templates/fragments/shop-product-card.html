@@ -16,8 +16,8 @@
             data-shop-add-cart="1"
             th:attr="data-product-id=${product.id()}"
             th:disabled="${product.soldOut()}"
-            th:title="${product.soldOut()} ? '품절' : '장바구니 담기'"
-            aria-label="장바구니 담기">🛒</button>
+            th:title="${product.soldOut()} ? #{shop.addToCartTitleSoldOut} : #{shop.addToCartTitle}"
+            th:aria-label="#{shop.addToCartAria}" aria-label="장바구니 담기">🛒</button>
   </div>
   <a class="product-card__body"
      th:href="@{/shop/products/{id}(id=${product.id()},from=${fromCommunity ? 'community' : null})}">
@@ -29,8 +29,8 @@
     </p>
     <p th:if="${product.lowStock()}"
        class="product-card__stock product-card__stock--low"
-       th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</p>
-    <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
+       th:text="#{shop.stockLow(${product.stockQuantity()})}">재고 3개 남음</p>
+    <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold" th:text="#{shop.soldOut}">SOLD OUT</p>
   </a>
 </article>
 
@@ -48,15 +48,15 @@
             data-shop-add-cart="1"
             th:attr="data-product-id=${product.id()}"
             th:disabled="${product.soldOut()}"
-            th:title="${product.soldOut()} ? '품절' : '장바구니 담기'"
-            aria-label="장바구니 담기">🛒</button>
+            th:title="${product.soldOut()} ? #{shop.addToCartTitleSoldOut} : #{shop.addToCartTitle}"
+            th:aria-label="#{shop.addToCartAria}" aria-label="장바구니 담기">🛒</button>
   </div>
   <a class="shop-marquee-card__body" th:href="@{/shop/products/{id}(id=${product.id()})}">
     <strong th:text="${product.title()}">상품명</strong>
     <span th:text="${product.formattedPrice()}">₩ 0</span>
     <small th:if="${product.lowStock()}"
            class="product-card__stock product-card__stock--low"
-           th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</small>
+           th:text="#{shop.stockLow(${product.stockQuantity()})}">재고 3개 남음</small>
   </a>
 </article>
 </body>

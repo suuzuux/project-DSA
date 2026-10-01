@@ -10,6 +10,8 @@ import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.util.NicknameGenerator;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -37,7 +39,13 @@ public class AuthController {
 	private final UserService userService;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final NicknameGenerator nicknameGenerator;
-	
+	private final MessageSource messageSource;
+	private final megane6.weplanet.i18n.Messages messages;
+
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
 	// 회원가입 화면의 "중복 확인" 버튼 - 실제로 DB를 조회해서 사용 가능 여부를 JSON으로 알려준다.
 	@PostMapping("/signup/username/check")
 	@ResponseBody
@@ -46,12 +54,12 @@ public class AuthController {
 		String trimmed = username == null ? "" : username.trim();
 		if (!trimmed.matches("^[a-zA-Z0-9]{4,20}$")) {
 			result.put("available", false);
-			result.put("message", "아이디는 영문/숫자 4~20자로 입력해주세요.");
+			result.put("message", msg("signup.validation.usernamePattern"));
 			return result;
 		}
 		boolean available = userService.isUsernameAvailable(trimmed);
 		result.put("available", available);
-		result.put("message", available ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.");
+		result.put("message", available ? msg("signup.usernameCheck.available") : msg("signup.error.usernameTaken"));
 		return result;
 	}
 	
@@ -91,7 +99,7 @@ public class AuthController {
 		}
 		// 화면(JS)에서 인증코드 확인을 막아두지만, 직접 POST를 보내는 우회를 막기 위해 서버에서도 확인한다
 		if (!emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail())) {
-			model.addAttribute("errorMessage", "이메일 인증을 먼저 완료해주세요.");
+			model.addAttribute("errorMessage", msg("signup.error.emailNotVerified"));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
@@ -99,14 +107,14 @@ public class AuthController {
 			userService.signup(signupRequestDto);
 			emailVerificationService.clear(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
-			model.addAttribute("errorMessage", e.getMessage());
+			model.addAttribute("errorMessage", messages.resolve(e));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		} catch (DataIntegrityViolationException e) {
 			// AUTH-11: 중복 확인(existsBy...)과 저장 사이에 같은 아이디나 이메일로 다른 가입이 먼저 끝난 경우(동시 가입).
 			// DB 의 유니크 제약(uk_users_username / uk_users_email)이 두 번째 저장을 막는데, 예전에는 그 오류가
 			// 그대로 500 화면으로 나갔다.
-			model.addAttribute("errorMessage", "방금 같은 아이디 또는 이메일로 가입이 완료되었습니다. 다시 확인해주세요.");
+			model.addAttribute("errorMessage", msg("signup.error.concurrentSignup"));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}

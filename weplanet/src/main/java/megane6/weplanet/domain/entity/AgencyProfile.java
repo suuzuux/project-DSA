@@ -59,7 +59,7 @@ public class AgencyProfile {
 		}
 		
 		if (admin == null || admin.getRole() != Role.ADMIN) {
-			throw new IllegalArgumentException("관리자만 소속사 권한을 부여할 수 있습니다.");
+			throw new IllegalArgumentException("admin.error.agency.adminOnlyGrant");
 		}
 		
 		return new AgencyProfile(user, agency, true, admin);
@@ -73,7 +73,7 @@ public class AgencyProfile {
 		requireAdmin(admin);
 		
 		if (isApproved()) {
-			throw new IllegalStateException("이미 승인된 소속사입니다.");
+			throw new IllegalStateException("admin.error.agency.alreadyApproved");
 		}
 		this.approvedBy = admin;
 		this.approvedAt = LocalDateTime.now();
@@ -83,7 +83,7 @@ public class AgencyProfile {
 		requireAdmin(admin);
 		
 		if (!isApproved()) {
-			throw new IllegalStateException("승인되지 않은 소속사 권한입니다.");
+			throw new IllegalStateException("admin.error.agency.notApproved");
 		}
 		this.approvedBy = null;
 		this.approvedAt = null;
@@ -91,7 +91,7 @@ public class AgencyProfile {
 	
 	private void requireAdmin(User admin) {
 		if (admin == null || admin.getRole() != Role.ADMIN) {
-			throw new IllegalArgumentException("관리자만 소속사 권한을 변경할 수 있습니다.");
+			throw new IllegalArgumentException("admin.error.agency.adminOnlyChange");
 		}
 	}
 }

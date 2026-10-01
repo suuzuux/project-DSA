@@ -48,14 +48,14 @@ public class UserFollowService {
     @Transactional
     public boolean toggle(User me, Long targetUserId, Long communityId) {
         if (me.getId().equals(targetUserId)) {
-            throw new IllegalStateException("본인을 팔로우할 수 없습니다.");
+            throw new IllegalStateException("error.follow.self");
         }
         if (!me.canParticipateInCommunity()) {
-            throw new IllegalStateException("팬 또는 아티스트 계정만 팔로우할 수 있습니다.");
+            throw new IllegalStateException("error.follow.fanOrArtistOnly");
         }
 
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 
         // 대상이 이 커뮤니티의 주인(아티스트 본인)인지 - 그렇다면 "팬→아티스트" 팔로우로 취급한다.
         boolean targetIsArtistOfThisCommunity = target.getRole() == Role.ARTIST && targetUserId.equals(communityId);
@@ -63,15 +63,15 @@ public class UserFollowService {
         if (!targetIsArtistOfThisCommunity) {
             // 팬↔팬 팔로우: 나도, 상대도 이 커뮤니티에 가입돼 있어야 한다.
             if (!communityMemberRepository.existsByFanIdAndArtistId(me.getId(), communityId)) {
-                throw new IllegalStateException("이 커뮤니티에 가입해야 팔로우할 수 있습니다.");
+                throw new IllegalStateException("error.follow.joinRequired");
             }
             if (!communityMemberRepository.existsByFanIdAndArtistId(targetUserId, communityId)) {
-                throw new IllegalStateException("상대방이 이 커뮤니티에 가입되어 있지 않습니다.");
+                throw new IllegalStateException("error.follow.targetNotJoined");
             }
             // 상대가 이 커뮤니티에서 콘텐츠를 숨긴 상태면 팔로우 불가
             CommunityProfile targetProfile = communityJoinService.profileOf(target, communityId);
             if (targetProfile != null && targetProfile.isContentHidden()) {
-                throw new IllegalStateException("콘텐츠를 숨긴 사용자는 팔로우할 수 없습니다.");
+                throw new IllegalStateException("error.follow.targetHidden");
             }
         }
         // 팬→아티스트는 가입 여부와 무관하게 팔로우 가능 (기존 GroupFollow 방식)

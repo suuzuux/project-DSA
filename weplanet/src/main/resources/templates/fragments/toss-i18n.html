@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<!--/*
+  SETTINGS-03 커밋5: commerce-toss.js(굿즈·멤버십 결제 공용)가 쓰는 오류 문구.
+  commerce-toss.js 는 main.js 없이도 쓰이는 페이지(결제 시작/멤버십 결제)가 있어서
+  /api/i18n/client 대신 이 프래그먼트로 window.PAGE_I18N 에 현재 로케일 문구를 넣어 준다.
+*/-->
+<script th:fragment="tossI18n" th:inline="javascript">
+  window.PAGE_I18N = Object.assign(window.PAGE_I18N || {}, {
+    "payment.error.noPaymentInfo": /*[[#{payment.error.noPaymentInfo}]]*/ "결제 정보를 받지 못했습니다.",
+    "payment.error.moduleLoadRetry": /*[[#{payment.error.moduleLoadRetry}]]*/ "결제 모듈을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+    "common.error.loginRequired": /*[[#{common.error.loginRequired}]]*/ "로그인이 필요합니다.",
+    "shop.js.checkoutPrepareFailed": /*[[#{shop.js.checkoutPrepareFailed}]]*/ "결제 준비에 실패했습니다."
+  });
+</script>
+</html>

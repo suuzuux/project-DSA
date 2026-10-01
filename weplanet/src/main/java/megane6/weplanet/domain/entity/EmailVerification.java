@@ -206,7 +206,7 @@ public class EmailVerification {
 	
 	public void recordFailedAttempt() {
 		if (!hasAttemptsRemaining()) {
-			throw new IllegalStateException("인증번호 입력 가능 횟수를 초과했습니다.");
+			throw new IllegalStateException("error.email.tooManyAttempts");
 		}
 		
 		attemptCount++;
@@ -214,19 +214,19 @@ public class EmailVerification {
 	
 	public void markVerified(LocalDateTime now) {
 		if (isConsumed()) {
-			throw new IllegalStateException("이미 사용된 이메일 인증입니다.");
+			throw new IllegalStateException("error.email.alreadyUsed");
 		}
 		
 		if (isVerified()) {
-			throw new IllegalStateException("이미 완료된 이메일 인증입니다.");
+			throw new IllegalStateException("error.email.alreadyVerified");
 		}
 		
 		if (isExpired(now)) {
-			throw new IllegalStateException("이메일 인증번호가 만료되었습니다.");
+			throw new IllegalStateException("error.email.codeExpired");
 		}
 		
 		if (!hasAttemptsRemaining()) {
-			throw new IllegalStateException("인증번호 입력 가능 횟수를 초과했습니다.");
+			throw new IllegalStateException("error.email.tooManyAttempts");
 		}
 		
 		this.verifiedAt = now;
@@ -234,15 +234,15 @@ public class EmailVerification {
 	
 	public void consume(LocalDateTime now) {
 		if (!isVerified()) {
-			throw new IllegalStateException("이메일 인증을 완료해주세요.");
+			throw new IllegalStateException("error.email.verifyFirst");
 		}
 		
 		if (isConsumed()) {
-			throw new IllegalStateException("이미 사용된 이메일 인증입니다.");
+			throw new IllegalStateException("error.email.alreadyUsed");
 		}
 		
 		if (isExpired(now)) {
-			throw new IllegalStateException("이메일 인증이 만료되었습니다.");
+			throw new IllegalStateException("error.email.verificationExpired");
 		}
 		
 		this.consumedAt = now;
@@ -265,7 +265,7 @@ public class EmailVerification {
 			LocalDateTime expiresAt
 	) {
 		if (email == null || email.isBlank()) {
-			throw new IllegalArgumentException("인증할 이메일 주소가 필요합니다.");
+			throw new IllegalArgumentException("error.email.addressRequired");
 		}
 		
 		if (purpose == null) {

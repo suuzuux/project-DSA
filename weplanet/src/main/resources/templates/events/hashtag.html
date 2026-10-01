@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- 진행 중일 때만 30초마다 새로고침 (?all=true 도 주소에 남아 있어서 펼친 상태가 유지된다) -->
   <meta th:if="${view != null and view.dashboard().ongoing()}" http-equiv="refresh" content="30" />
-  <title th:text="${view != null} ? ${view.dashboard().title()} + ' | WePlaNet' : '해시태그 총공 | WePlaNet'">해시태그 총공 | WePlaNet</title>
+  <title th:text="${view != null} ? ${view.dashboard().title()} + ' | WePlaNet' : #{hashtagEvent.pageTitle}">해시태그 총공 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
   <link rel="stylesheet" th:href="@{/css/hashtag-event.css}" />
@@ -19,7 +19,7 @@
 
 <header class="site-header">
   <div class="header-left">
-    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기">☰</button>
+    <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴 열기" th:aria-label="#{shell.menu.open}">☰</button>
     <a class="brand" th:href="@{/}">
       <span class="brand__mark">W</span>
       <span class="brand__text">We<span>Pla</span>Net</span>
@@ -27,12 +27,12 @@
   </div>
   <div class="header-actions">
     <th:block sec:authorize="isAnonymous()">
-      <a class="btn btn--ghost btn--sm" th:href="@{/signup}">회원가입</a>
-      <a class="btn btn--primary btn--sm" th:href="@{/login}">로그인</a>
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}" th:text="#{shell.guest.signup}">회원가입</a>
+      <a class="btn btn--primary btn--sm" th:href="@{/login}" th:text="#{common.login}">로그인</a>
     </th:block>
     <th:block sec:authorize="isAuthenticated()">
       <form th:action="@{/logout}" method="post" style="display:inline;">
-        <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+        <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.logout}">로그아웃</button>
       </form>
     </th:block>
   </div>
@@ -42,9 +42,9 @@
 
   <!-- 이벤트가 하나도 없을 때 -->
   <section th:if="${view == null}" class="hashtag-event__empty">
-    <h1 class="hashtag-event__title">해시태그 총공</h1>
-    <p class="text-sm text-muted">지금은 진행 중인 해시태그 총공이 없어요. 다음 총공 소식은 공지사항에서 알려드릴게요.</p>
-    <a class="btn btn--ghost btn--sm" th:href="@{/notices(category='EVENT')}">이벤트 공지 보기</a>
+    <h1 class="hashtag-event__title" th:text="#{hashtagEvent.heading}">해시태그 총공</h1>
+    <p class="text-sm text-muted" th:text="#{hashtagEvent.empty}">지금은 진행 중인 해시태그 총공이 없어요. 다음 총공 소식은 공지사항에서 알려드릴게요.</p>
+    <a class="btn btn--ghost btn--sm" th:href="@{/notices(category='EVENT')}" th:text="#{hashtagEvent.eventNotices}">이벤트 공지 보기</a>
   </section>
 
   <th:block th:if="${view != null}" th:with="d=${view.dashboard()}, scheduled=${d.status().name() == 'SCHEDULED'}">
@@ -53,40 +53,40 @@
     <header class="hashtag-event__head">
       <div>
         <p class="hashtag-event__eyebrow">
-          WePlaNet 이벤트 · <span th:text="${d.status().displayName}">진행 중</span>
+          <span th:text="#{hashtagEvent.eyebrow}">WePlaNet 이벤트</span> · <span th:text="#{${d.status().messageKey}}">진행 중</span>
         </p>
         <h1 class="hashtag-event__title" th:text="${d.title()}">9월 해시태그 총공</h1>
         <p class="text-sm text-muted">
           <span th:text="${#temporals.format(d.startAt(), 'MM.dd')} + ' ~ ' + ${#temporals.format(d.endAt(), 'MM.dd')}">09.22 ~ 09.28</span>
-          · 가입한 커뮤니티 팬 게시판에 해시태그를 넣어 글을 써주세요
+          · <span th:text="#{hashtagEvent.howShort}">가입한 커뮤니티 팬 게시판에 해시태그를 넣어 글을 써주세요</span>
         </p>
       </div>
       <div class="hashtag-event__timer" th:if="${view.remainingText() != null}">
-        <span th:text="${scheduled} ? '시작까지' : '종료까지'">종료까지</span>
+        <span th:text="${scheduled} ? #{hashtagEvent.untilStart} : #{hashtagEvent.untilEnd}">종료까지</span>
         <strong th:text="${view.remainingText()}">1일 4시간 12분</strong>
-        <span th:if="${d.ongoing()}">30초마다 갱신</span>
+        <span th:if="${d.ongoing()}" th:text="#{hashtagEvent.autoRefresh}">30초마다 갱신</span>
       </div>
       <div class="hashtag-event__timer" th:if="${d.status().name() == 'ENDED'}">
-        <strong>집계 중</strong>
-        <span>최종 결과는 공지사항으로 안내돼요</span>
+        <strong th:text="#{hashtagEvent.counting}">집계 중</strong>
+        <span th:text="#{hashtagEvent.resultSoon}">최종 결과는 공지사항으로 안내돼요</span>
       </div>
       <div class="hashtag-event__timer" th:if="${d.finalized()}">
-        <strong>최종 결과</strong>
+        <strong th:text="#{hashtagEvent.finalResult}">최종 결과</strong>
       </div>
     </header>
 
     <!-- 내 커뮤니티 요약 (여러 커뮤니티에 가입했으면 전부) -->
     <p class="hashtag-event__mine" th:if="${not scheduled and not #lists.isEmpty(view.myRows())}">
-      내 커뮤니티 ·
+      <span th:text="#{hashtagEvent.myCommunity}">내 커뮤니티</span> ·
       <th:block th:each="row, stat : ${view.myRows()}">
-        <strong th:text="${row.artistName()} + ' ' + ${row.rank()} + '위'">ORBIT 4위</strong>
+        <strong th:text="#{hashtagEvent.artistRank(${row.artistName()}, ${row.rank()})}">ORBIT 4위</strong>
         <span th:text="'(' + ${row.participationRate()} + '%)'">(15.5%)</span><span th:unless="${stat.last}"> · </span>
       </th:block>
     </p>
 
     <!-- 시작 전: 순위 대신 참여 아티스트와 해시태그만 -->
     <section th:if="${scheduled}">
-      <h2 class="hashtag-event__subtitle">참여 아티스트와 해시태그</h2>
+      <h2 class="hashtag-event__subtitle" th:text="#{hashtagEvent.targetsHeading}">참여 아티스트와 해시태그</h2>
       <ol class="hashtag-rank-list">
         <li th:each="row : ${d.ranking()}" th:classappend="${view.isMine(row.artistId())} ? 'is-mine'">
           <span></span>
@@ -97,10 +97,10 @@
           </span>
           <strong>
             <span th:text="${row.artistName()}">STELLA</span>
-            <span class="hashtag-mine-badge" th:if="${view.isMine(row.artistId())}">내 커뮤니티</span>
+            <span class="hashtag-mine-badge" th:if="${view.isMine(row.artistId())}" th:text="#{hashtagEvent.myCommunity}">내 커뮤니티</span>
           </strong>
           <button type="button" class="hashtag-chip" th:attr="data-copy=${row.hashtag()}">
-            <span th:text="${row.hashtag()}">#가을총공_STELLA</span> <span data-copy-label>복사</span>
+            <span th:text="${row.hashtag()}">#가을총공_STELLA</span> <span data-copy-label th:text="#{hashtagEvent.copy}">복사</span>
           </button>
         </li>
       </ol>
@@ -110,7 +110,7 @@
     <section class="hashtag-top" th:unless="${scheduled}">
       <article class="hashtag-top__card" th:each="row : ${view.topRanking()}"
                th:classappend="${row.rank() == 1} ? 'is-first'">
-        <span class="hashtag-top__rank" th:text="${row.rank() == 1} ? '👑 1위' : ${row.rank()} + '위'">1위</span>
+        <span class="hashtag-top__rank" th:text="${row.rank() == 1} ? '👑 ' + #{hashtagEvent.rank(1)} : #{hashtagEvent.rank(${row.rank()})}">1위</span>
         <span class="avatar avatar--lg">
           <img th:if="${not #strings.isEmpty(row.profileImg())}" th:src="${row.profileImg()}" alt="" />
           <th:block th:if="${#strings.isEmpty(row.profileImg())}"
@@ -118,18 +118,19 @@
         </span>
         <strong>
           <span th:text="${row.artistName()}">STELLA</span>
-          <span class="hashtag-mine-badge" th:if="${view.isMine(row.artistId())}">내 커뮤니티</span>
+          <span class="hashtag-mine-badge" th:if="${view.isMine(row.artistId())}" th:text="#{hashtagEvent.myCommunity}">내 커뮤니티</span>
         </strong>
         <span class="hashtag-top__rate" th:text="${row.participationRate()} + '%'">38.0%</span>
         <div class="progress"><span th:style="'width:' + ${row.participationRate()} + '%'"></span></div>
         <span class="text-xs text-muted"
-              th:text="${row.participantCount()} + ' / ' + ${row.memberCount()} + '명 참여 · 글 ' + ${row.postCount()}">312 / 820명 참여 · 글 921</span>
+              th:text="#{hashtagEvent.participationSummary(${row.participantCount()}, ${row.memberCount()}, ${row.postCount()})}">312 / 820명 참여 · 글 921</span>
         <button type="button" class="hashtag-chip" th:attr="data-copy=${row.hashtag()}">
-          <span th:text="${row.hashtag()}">#가을총공_STELLA</span> <span data-copy-label>복사</span>
+          <span th:text="${row.hashtag()}">#가을총공_STELLA</span> <span data-copy-label th:text="#{hashtagEvent.copy}">복사</span>
         </button>
         <!-- X(트위터) 글쓰기 창을 해시태그가 채워진 채로 연다. API 가 아니라 링크라서 집계와는 무관 -->
         <a class="btn btn--ghost btn--sm" th:if="${d.ongoing()}" target="_blank" rel="noopener"
-           th:href="@{https://twitter.com/intent/tweet(text=${row.artistName() + ' 응원해요! ' + row.hashtag()})}">
+           th:href="@{https://twitter.com/intent/tweet(text=${#messages.msg('hashtagEvent.tweetText', row.artistName(), row.hashtag())})}"
+           th:text="#{hashtagEvent.tweetButton}">
           X에 총공하기 ↗
         </a>
       </article>
@@ -140,8 +141,8 @@
       <div class="hashtag-event__more">
         <a class="btn btn--ghost btn--sm" th:unless="${showAll}"
            th:href="@{${pagePath}(all=true)} + '#ranking'"
-           th:text="'전체 순위 보기 (' + ${#lists.size(d.ranking())} + '팀)'">전체 순위 보기 (5팀)</a>
-        <a class="btn btn--ghost btn--sm" th:if="${showAll}" th:href="@{${pagePath}}">접기</a>
+           th:text="#{hashtagEvent.showAll(${#lists.size(d.ranking())})}">전체 순위 보기 (5팀)</a>
+        <a class="btn btn--ghost btn--sm" th:if="${showAll}" th:href="@{${pagePath}}" th:text="#{hashtagEvent.collapse}">접기</a>
       </div>
 
       <ol class="hashtag-rank-list" th:if="${showAll}">
@@ -154,14 +155,14 @@
           </span>
           <span>
             <strong th:text="${row.artistName()}">STELLA</strong>
-            <span class="hashtag-mine-badge" th:if="${view.isMine(row.artistId())}">내 커뮤니티</span>
+            <span class="hashtag-mine-badge" th:if="${view.isMine(row.artistId())}" th:text="#{hashtagEvent.myCommunity}">내 커뮤니티</span>
             <br />
             <span class="text-xs text-muted" th:text="${row.hashtag()}">#가을총공_STELLA</span>
           </span>
           <span class="hashtag-rank-list__bar">
             <span class="progress"><span th:style="'width:' + ${row.participationRate()} + '%'"></span></span>
             <span class="text-xs text-muted"
-                  th:text="${row.participantCount()} + ' / ' + ${row.memberCount()} + '명 참여 · 글 ' + ${row.postCount()}">312 / 820명</span>
+                  th:text="#{hashtagEvent.participationSummary(${row.participantCount()}, ${row.memberCount()}, ${row.postCount()})}">312 / 820명</span>
           </span>
           <strong class="hashtag-rank-list__rate" th:text="${row.participationRate()} + '%'">38.0%</strong>
         </li>
@@ -170,28 +171,29 @@
 
     <!-- 참여 방법 -->
     <section class="hashtag-event__guide">
-      <strong>참여 방법</strong><br />
-      가입한 커뮤니티의 <b>팬 게시판</b>에 우리 아티스트의 해시태그를 넣어 글을 쓰면 집계돼요.
-      1인 1일 <span th:text="${T(megane6.weplanet.service.event.HashtagEventEntryService).DAILY_LIMIT}">3</span>건까지 인정되고,
-      Hide from Artists 글은 집계되지 않아요. 순위는 <b>참여율</b>(참여한 가입자 ÷ 전체 가입자)로 정해요.
-      X 공유는 응원용이라 집계에 포함되지 않아요.
+      <strong th:text="#{hashtagEvent.guideTitle}">참여 방법</strong><br />
+      <th:block th:utext="#{hashtagEvent.guideBody(${T(megane6.weplanet.service.event.HashtagEventEntryService).DAILY_LIMIT})}">
+        가입한 커뮤니티의 <b>팬 게시판</b>에 우리 아티스트의 해시태그를 넣어 글을 쓰면 집계돼요.
+      </th:block>
     </section>
   </th:block>
 </main>
 
 <script th:src="@{/js/main.js}"></script>
 <script th:src="@{/js/shell.js}"></script>
-<script>
+<script th:inline="javascript">
+  var COPY_LABEL = /*[[#{hashtagEvent.copy}]]*/ "복사";
+  var COPIED_LABEL = /*[[#{hashtagEvent.copied}]]*/ "복사됨!";
   // 해시태그 칩을 누르면 클립보드에 복사 → 팬 게시판이나 X 에 바로 붙여넣기
   document.querySelectorAll("[data-copy]").forEach(function (chip) {
     chip.addEventListener("click", function () {
       navigator.clipboard.writeText(chip.dataset.copy).then(function () {
         var label = chip.querySelector("[data-copy-label]");
-        label.textContent = "복사됨!";
-        setTimeout(function () { label.textContent = "복사"; }, 1500);
+        label.textContent = COPIED_LABEL;
+        setTimeout(function () { label.textContent = COPY_LABEL; }, 1500);
       });
     });
   });
 </script>
 </body>
-</html>
+</html>

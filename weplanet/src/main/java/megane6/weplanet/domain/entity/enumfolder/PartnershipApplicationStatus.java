@@ -11,4 +11,8 @@ public enum PartnershipApplicationStatus {
 	REJECTED("반려");
 	
 	private final String displayName;
+	
+	public String getMessageKey() {
+		return "partnership.status." + name();
+	}
 }

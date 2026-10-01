@@ -39,7 +39,7 @@ public class EmailVerificationService {
 		String normalizedEmail = normalizeEmail(email);
 		
 		if (ur.existsByEmail(normalizedEmail)) {
-			throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+			throw new IllegalArgumentException("error.email.alreadyRegistered");
 		}
 		
 		LocalDateTime now = LocalDateTime.now();
@@ -75,18 +75,18 @@ public class EmailVerificationService {
 	public IssuedVerification issueProjectVerification(Long userId) {
 		User user = ur.findById(userId)
 				.orElseThrow(() ->
-						new IllegalArgumentException("로그인 회원을 찾을 수 없습니다.")
+						new IllegalArgumentException("error.project.memberNotFound")
 				);
 		
 		if (user.getRole() != Role.FAN) {
 			throw new IllegalStateException(
-					"팬 회원만 프로젝트 등록 이메일 인증을 진행할 수 있습니다."
+					"error.email.projectFanOnly"
 			);
 		}
 		
 		if (user.getEmailVerifiedAt() == null) {
 			throw new IllegalStateException(
-					"회원가입 이메일 인증이 완료되지 않았습니다."
+					"error.email.signupNotVerified"
 			);
 		}
 		
@@ -123,10 +123,10 @@ public class EmailVerificationService {
 	@Transactional
 	public IssuedVerification issueAdminLoginVerification(Long adminId) {
 		User admin = ur.findById(adminId).orElseThrow(() ->
-				new IllegalArgumentException("관리자 계정을 찾을 수 없습니다."));
+				new IllegalArgumentException("error.email.adminNotFound"));
 		
 		if (admin.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("최고관리자만 사용할 수 있습니다.");
+			throw new IllegalStateException("error.email.superAdminOnly");
 		}
 		
 		LocalDateTime now = LocalDateTime.now();
@@ -256,11 +256,11 @@ public class EmailVerificationService {
 	
 	private EmailVerification findForUpdate(String verificationKey) {
 		if (verificationKey == null || verificationKey.isBlank()) {
-			throw new IllegalArgumentException("이메일 인증 정보가 필요합니다.");
+			throw new IllegalArgumentException("error.email.verificationRequired");
 		}
 		
 		return evr.findByVerificationKeyForUpdate(verificationKey).orElseThrow(() ->
-				new IllegalArgumentException("이메일 인증 정보를 찾을 수 없습니다."));
+				new IllegalArgumentException("error.email.verificationNotFound"));
 	}
 	
 	private VerificationResult verifyCode(
@@ -271,13 +271,13 @@ public class EmailVerificationService {
 		
 		if (verification.isConsumed()) {
 			throw new IllegalStateException(
-					"이미 사용된 이메일 인증입니다."
+					"error.email.alreadyUsed"
 			);
 		}
 		
 		if (verification.isExpired(now)) {
 			throw new IllegalStateException(
-					"이메일 인증번호가 만료되었습니다."
+					"error.email.codeExpired"
 			);
 		}
 		
@@ -292,7 +292,7 @@ public class EmailVerificationService {
 		
 		if (!verification.hasAttemptsRemaining()) {
 			throw new IllegalStateException(
-					"인증번호 입력 가능 횟수를 초과했습니다."
+					"error.email.tooManyAttempts"
 			);
 		}
 		
@@ -330,20 +330,20 @@ public class EmailVerificationService {
 	) {
 		if (verification.getPurpose() != expectedPurpose) {
 			throw new IllegalArgumentException(
-					"이메일 인증 목적이 일치하지 않습니다."
+					"error.email.purposeMismatch"
 			);
 		}
 		
 		if (expectedUserId == null) {
 			if (verification.getUser() != null) {
 				throw new IllegalArgumentException(
-						"회원가입 이메일 인증 정보가 아닙니다."
+						"error.email.notSignupVerification"
 				);
 			}
 			
 			if (!verification.getEmail().equals(expectedEmail)) {
 				throw new IllegalArgumentException(
-						"인증한 이메일 주소가 일치하지 않습니다."
+						"error.email.addressMismatch"
 				);
 			}
 			
@@ -353,7 +353,7 @@ public class EmailVerificationService {
 		if (verification.getUser() == null
 				|| !verification.getUser().getId().equals(expectedUserId)) {
 			throw new IllegalArgumentException(
-					"현재 회원의 이메일 인증 정보가 아닙니다."
+					"error.email.notOwnVerification"
 			);
 		}
 		
@@ -362,7 +362,7 @@ public class EmailVerificationService {
 		
 		if (!verification.getEmail().equals(currentEmail)) {
 			throw new IllegalStateException(
-					"회원 이메일이 변경되었습니다. 다시 인증해주세요."
+					"error.email.addressChanged"
 			);
 		}
 	}
@@ -377,7 +377,7 @@ public class EmailVerificationService {
 		
 		if (resendAvailableAt.isAfter(now)) {
 			throw new IllegalStateException(
-					"인증번호는 60초 후 다시 전송할 수 있습니다."
+					"error.email.resendCooldown"
 			);
 		}
 	}
@@ -390,7 +390,7 @@ public class EmailVerificationService {
 	private static String normalizeEmail(String email) {
 		if (email == null || email.isBlank()) {
 			throw new IllegalArgumentException(
-					"인증할 이메일 주소가 필요합니다."
+					"error.email.addressRequired"
 			);
 		}
 		

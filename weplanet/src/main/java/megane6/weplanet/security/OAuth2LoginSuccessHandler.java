@@ -9,8 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.controller.SocialLoginEntryController;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
+import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.SocialLoginIntent;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -18,6 +20,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.LocaleResolver;
 
 import java.io.IOException;
 import java.util.Map;
@@ -30,6 +33,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 	private final UserRepository userRepository;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
+	private final LocaleResolver localeResolver;
 	private record SocialProfile(String providerId, String email, String realName, String suggestedNickname) {}
 
 	@Override
@@ -114,6 +118,9 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 		user.recordLogin();
 		socialLoginSessionSupport.loginAs(user, request, response);
+		// SETTINGS-03 로케일 버그#2 수정: 소셜 로그인도 로컬 로그인과 동일하게, 세션 로케일을
+		// DB에 저장된 선호 언어로 맞춰준 뒤 리다이렉트한다.
+		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
 		response.sendRedirect("/");
 	}
 

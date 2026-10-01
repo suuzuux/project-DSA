@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
+import megane6.weplanet.exception.LocalizedIllegalStateException;
 import megane6.weplanet.repository.GroupMemberRepository;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -61,30 +63,29 @@ public class ArtistProfileLoginService {
 		// 폼의 memberId는 조작될 수 있으므로, "이 그룹의 활동 중인 멤버"인지 DB로 다시 확인
 		User member = gmr.findByGroupIdAndMember_IdAndLeftAtIsNull(groupId, memberId)
 				.map(GroupMember::getMember)
-				.orElseThrow(() -> new IllegalArgumentException("선택한 프로필을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.profileLogin.profileNotFound"));
 		
 		if (!member.isLoginable()) {
-			throw new IllegalStateException("사용할 수 없는 프로필입니다. 소속사에 문의해주세요.");
+			throw new IllegalStateException("error.profileLogin.profileUnavailable");
 		}
 		
 		if (password == null || password.isBlank()) {
-			throw new IllegalArgumentException("개인 비밀번호를 입력해주세요.");
+			throw new IllegalArgumentException("error.profileLogin.passwordRequired");
 		}
 		
 		FailedAttempts attempts = failedAttempts.get(memberId);
 		if (attempts != null && attempts.isLocked()) {
-			throw new IllegalStateException("개인 비밀번호를 " + MAX_FAILED_ATTEMPTS + "회 잘못 입력해서 "
-					+ LOCK_MINUTES + "분 동안 이 프로필로 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+			throw new LocalizedIllegalStateException("error.profileLogin.locked", MAX_FAILED_ATTEMPTS, LOCK_MINUTES);
 		}
 		
 		if (!member.hasPassword()) {
 			// 처음 고른 프로필: 지금 입력한 값을 개인 비밀번호로 정한다.
 			if (!PASSWORD_PATTERN.matcher(password).matches()) {
-				throw new IllegalArgumentException("비밀번호는 영문/숫자 포함 8-20자로 입력해주세요.");
+				throw new IllegalArgumentException("signup.validation.passwordPattern");
 			}
 			
 			if (!password.equals(confirmPassword)) {
-				throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
+				throw new IllegalArgumentException("error.password.confirmMismatch");
 			}
 			
 			member.setInitialMemberPassword(pe.encode(password));
@@ -94,11 +95,10 @@ public class ArtistProfileLoginService {
 					(current == null || current.isExpiredLock()) ? FailedAttempts.first() : current.failedOnce());
 			if (updated.isLocked()) {
 				log.warn("멤버 개인 비밀번호 {}회 오입력으로 잠금: groupId={}, memberId={}", MAX_FAILED_ATTEMPTS, groupId, memberId);
-				throw new IllegalStateException("개인 비밀번호를 " + MAX_FAILED_ATTEMPTS + "회 잘못 입력해서 "
-						+ LOCK_MINUTES + "분 동안 이 프로필로 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+				throw new LocalizedIllegalStateException("error.profileLogin.locked", MAX_FAILED_ATTEMPTS, LOCK_MINUTES);
 			}
-			throw new IllegalArgumentException("개인 비밀번호가 올바르지 않습니다. (남은 시도 "
-					+ (MAX_FAILED_ATTEMPTS - updated.count()) + "회)");
+			throw new LocalizedIllegalArgumentException("error.profileLogin.passwordIncorrectRemaining",
+					MAX_FAILED_ATTEMPTS - updated.count());
 		}
 		
 		failedAttempts.remove(memberId);

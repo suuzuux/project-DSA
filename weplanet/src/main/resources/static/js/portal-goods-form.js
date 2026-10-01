@@ -14,6 +14,12 @@
     initial = {};
   }
 
+  // SETTINGS-03 커밋5: goods-form.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
+  var I18N = window.PORTAL_I18N || {};
+  function t(key, ko) {
+    return I18N[key] != null ? I18N[key] : ko;
+  }
+
   var CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
   var SHOE_MM = [];
   for (var mm = 220; mm <= 300; mm += 5) {
@@ -80,7 +86,7 @@
     panel.appendChild(h);
     var hint = document.createElement("p");
     hint.className = "text-xs text-muted";
-    hint.textContent = "취급할 항목만 선택하면 재고 입력란이 생깁니다. 선택하지 않은 항목은 구매 화면에도 안 나옵니다.";
+    hint.textContent = t("portal.goods.optionHint", "취급할 항목만 선택하면 재고 입력란이 생깁니다. 선택하지 않은 항목은 구매 화면에도 안 나옵니다.");
     panel.appendChild(hint);
 
     var grid = document.createElement("div");
@@ -102,7 +108,7 @@
       var stock = document.createElement("input");
       stock.type = "number";
       stock.min = "0";
-      stock.placeholder = "재고";
+      stock.placeholder = t("portal.goods.stock", "재고");
       stock.className = "form-input goods-stock-input";
       stock.value = selected ? String(map[val]) : "";
       stock.disabled = !selected;
@@ -144,11 +150,11 @@
     panel.className = "goods-option-panel";
     var h = document.createElement("h3");
     h.className = "goods-option-panel__title";
-    h.textContent = "굿즈 단위 재고";
+    h.textContent = t("portal.goods.defaultStockTitle", "굿즈 단위 재고");
     panel.appendChild(h);
     var hint = document.createElement("p");
     hint.className = "text-xs text-muted";
-    hint.textContent = "사이즈가 없는 카테고리(가방/악세서리/기타) 또는 카테고리 미선택 시 사용합니다.";
+    hint.textContent = t("portal.goods.defaultStockHint", "사이즈가 없는 카테고리(가방/악세서리/기타) 또는 카테고리 미선택 시 사용합니다.");
     panel.appendChild(hint);
     var input = document.createElement("input");
     input.type = "number";
@@ -169,13 +175,13 @@
     panel.className = "goods-option-panel";
     var h = document.createElement("h3");
     h.className = "goods-option-panel__title";
-    h.textContent = "가방 치수 (cm)";
+    h.textContent = t("portal.goods.bagDimensionsTitle", "가방 치수 (cm)");
     panel.appendChild(h);
     var bag = state.attributes.BAG || {};
     ["width", "height", "depth"].forEach(function (dim) {
       var row = document.createElement("label");
       row.className = "goods-dim-row";
-      row.textContent = (dim === "width" ? "가로" : dim === "height" ? "높이" : "세로") + " ";
+      row.textContent = t("portal.goods.dim." + dim, dim === "width" ? "가로" : dim === "height" ? "높이" : "세로") + " ";
       var input = document.createElement("input");
       input.type = "number";
       input.min = "0";
@@ -203,7 +209,7 @@
     var note = document.createElement("textarea");
     note.className = "form-input";
     note.rows = 2;
-    note.placeholder = "예: 색상, 재질 등 (선택)";
+    note.placeholder = t("portal.goods.notePlaceholder", "예: 색상, 재질 등 (선택)");
     note.value = (state.attributes[code] && state.attributes[code].note) || "";
     note.addEventListener("input", function () {
       state.attributes[code] = state.attributes[code] || {};
@@ -217,19 +223,19 @@
   function renderOptionPanels() {
     optionsRoot.innerHTML = "";
     if (state.categories.indexOf("CLOTHING") >= 0) {
-      optionsRoot.appendChild(selectableStockPanel("CLOTHING", "의류 사이즈 · 옵션별 재고", CLOTHING_SIZES, ""));
+      optionsRoot.appendChild(selectableStockPanel("CLOTHING", t("portal.goods.clothingPanelTitle", "의류 사이즈 · 옵션별 재고"), CLOTHING_SIZES, ""));
     }
     if (state.categories.indexOf("SHOES") >= 0) {
-      optionsRoot.appendChild(selectableStockPanel("SHOES", "신발 치수(mm) · 옵션별 재고", SHOE_MM, "mm"));
+      optionsRoot.appendChild(selectableStockPanel("SHOES", t("portal.goods.shoesPanelTitle", "신발 치수(mm) · 옵션별 재고"), SHOE_MM, "mm"));
     }
     if (state.categories.indexOf("BAG") >= 0) {
       optionsRoot.appendChild(bagPanel());
     }
     if (state.categories.indexOf("ACCESSORY") >= 0) {
-      optionsRoot.appendChild(notePanel("ACCESSORY", "악세서리 메모 (선택)"));
+      optionsRoot.appendChild(notePanel("ACCESSORY", t("portal.goods.accessoryNoteTitle", "악세서리 메모 (선택)")));
     }
     if (state.categories.indexOf("OTHER") >= 0) {
-      optionsRoot.appendChild(notePanel("OTHER", "기타 메모 (선택)"));
+      optionsRoot.appendChild(notePanel("OTHER", t("portal.goods.otherNoteTitle", "기타 메모 (선택)")));
     }
     if (needsDefaultStock()) {
       optionsRoot.appendChild(defaultStockPanel());

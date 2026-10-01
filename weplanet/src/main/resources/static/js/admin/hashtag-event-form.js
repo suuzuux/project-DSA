@@ -24,6 +24,16 @@
   const minDays = Number(form.dataset.minDays || 3);
   const maxDays = Number(form.dataset.maxDays || 7);
 
+  // 화면 언어 문구 - hashtag-event-form.html 이 window.__HASHTAG_FORM_MSG__ 에 넣어 준다. 없으면 한국어 기본값
+  const MSG = window.__HASHTAG_FORM_MSG__ || {};
+  function t(key, ko, args) {
+    let text = MSG[key] != null ? MSG[key] : ko;
+    (args || []).forEach(function (value, i) {
+      text = text.split("{" + i + "}").join(String(value));
+    });
+    return text;
+  }
+
   let searchTimer = null;
   let lastResults = [];
 
@@ -36,7 +46,7 @@
 
   function refreshCount() {
     const count = targetList.children.length;
-    targetCount.textContent = count + "팀";
+    targetCount.textContent = t("teams", "{0}팀", [count]);
     targetEmpty.hidden = count > 0;
   }
 
@@ -60,11 +70,11 @@
     const row = rowTemplate.content.firstElementChild.cloneNode(true);
     fillAvatar(row.querySelector(".hashtag-avatar"), artist);
     row.querySelector("strong").textContent = artist.name;
-    row.querySelector(".text-muted").textContent = artist.agencyName || "소속사 미등록";
+    row.querySelector(".text-muted").textContent = artist.agencyName || t("noAgency", "소속사 미등록");
     row.querySelector("input[name='artistIds']").value = artist.artistId;
 
     const hashtagInput = row.querySelector("input[name='hashtags']");
-    hashtagInput.placeholder = "#문구_" + (artist.nameEn || artist.name).replace(/\s+/g, "");
+    hashtagInput.placeholder = "#" + t("hashtagPrefix", "문구") + "_" + (artist.nameEn || artist.name).replace(/\s+/g, "");
 
     targetList.appendChild(row);
     hashtagInput.focus();
@@ -85,7 +95,7 @@
     if (artists.length === 0) {
       const empty = document.createElement("li");
       empty.className = "hashtag-search-results__empty";
-      empty.textContent = "검색 결과가 없습니다.";
+      empty.textContent = t("noResults", "검색 결과가 없습니다.");
       resultList.appendChild(empty);
       resultList.hidden = false;
       return;
@@ -105,14 +115,14 @@
       name.textContent = artist.name + (artist.nameEn ? " (" + artist.nameEn + ")" : "");
       const agency = document.createElement("span");
       agency.className = "text-xs text-muted";
-      agency.textContent = artist.agencyName || "소속사 미등록";
+      agency.textContent = artist.agencyName || t("noAgency", "소속사 미등록");
       info.append(name, agency);
 
       const already = selected.includes(String(artist.artistId));
       const button = document.createElement("button");
       button.type = "button";
       button.className = "btn btn--ghost btn--sm";
-      button.textContent = already ? "추가됨" : "추가";
+      button.textContent = already ? t("added", "추가됨") : t("add", "추가");
       button.disabled = already;
       button.addEventListener("click", function () {
         addTarget(artist);
@@ -177,8 +187,8 @@
     const ok = days >= minDays && days <= maxDays;
 
     periodHint.textContent = ok
-      ? "총 " + days + "일 동안 진행돼요."
-      : "기간은 " + minDays + "~" + maxDays + "일이어야 해요. (현재 " + days + "일)";
+      ? t("periodOk", "총 {0}일 동안 진행돼요.", [days])
+      : t("periodInvalid", "기간은 {0}~{1}일이어야 해요. (현재 {2}일)", [minDays, maxDays, days]);
     periodHint.style.color = ok ? "" : "#c45c26";
   }
 
@@ -186,4 +196,4 @@
   endInput.addEventListener("change", refreshPeriodHint);
   refreshPeriodHint();
   refreshCount();
-})();
+})();

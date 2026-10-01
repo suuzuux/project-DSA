@@ -25,6 +25,8 @@ public class AdminReportController {
 
 	private final AdminReportService adminReportService;
 	private final AuthenticatedUserResolver userResolver;
+	// SETTINGS-03 커밋3: 게시글/댓글 서비스 예외가 메시지 키로 바뀌어서 화면에 내보낼 때 해석한다
+	private final megane6.weplanet.i18n.Messages messages;
 
 	@GetMapping
 	public String list(
@@ -71,7 +73,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"신고를 기각했습니다.",
+				messages.get("admin.reports.flash.dismissed"),
 				redirectAttributes
 		);
 		
@@ -93,7 +95,7 @@ public class AdminReportController {
 						admin,
 						request.getRemoteAddr()
 				),
-				"신고된 게시글을 삭제했습니다.",
+				messages.get("admin.reports.flash.postDeleted"),
 				redirectAttributes
 		);
 		
@@ -115,7 +117,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"신고를 기각했습니다.",
+				messages.get("admin.reports.flash.dismissed"),
 				redirectAttributes
 		);
 		
@@ -137,7 +139,7 @@ public class AdminReportController {
 						admin,
 						request.getRemoteAddr()
 				),
-				"신고된 댓글을 삭제했습니다.",
+				messages.get("admin.reports.flash.commentDeleted"),
 				redirectAttributes
 		);
 		
@@ -159,7 +161,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"해당 회원을 정지 처리했습니다.",
+				messages.get("admin.reports.flash.userSuspended"),
 				redirectAttributes
 		);
 		
@@ -172,14 +174,14 @@ public class AdminReportController {
 			action.run();
 			redirectAttributes.addFlashAttribute("msg", successMessage);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 		}
 	}
 
 	private User requireAdmin(AuthenticatedUser principal) {
 		User user = userResolver.requireAuthenticated(principal);
 		if (user.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return user;
 	}
@@ -209,7 +211,7 @@ public class AdminReportController {
 						admin.getId(),
 						request.getRemoteAddr()
 				),
-				"정지를 해제했습니다.",
+				messages.get("admin.reports.flash.reinstated"),
 				redirectAttributes
 		);
 		

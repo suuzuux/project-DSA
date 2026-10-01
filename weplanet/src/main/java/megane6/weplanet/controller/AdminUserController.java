@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequiredArgsConstructor
 public class AdminUserController {
 	private final AdminUserService aus;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
 	public String users(@RequestParam(required = false) String role,
@@ -62,7 +63,7 @@ public class AdminUserController {
 							  RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> aus.suspendUser(userId, principal.getId(), request.getRemoteAddr()),
-				"회원 계정을 정지했습니다.", redirectAttributes);
+				messages.get("admin.users.flash.suspended"), redirectAttributes);
 		addFilters(role, status, provider, keyword, redirectAttributes);
 		
 		return "redirect:/admin/users";
@@ -79,7 +80,7 @@ public class AdminUserController {
 								RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> aus.reinstateUser(userId, principal.getId(), request.getRemoteAddr()),
-				"회원 계정의 정지를 해제했습니다.", redirectAttributes);
+				messages.get("admin.users.flash.reinstated"), redirectAttributes);
 		addFilters(role, status, provider, keyword, redirectAttributes);
 		
 		return "redirect:/admin/users";
@@ -93,7 +94,7 @@ public class AdminUserController {
 			action.run();
 			redirectAttributes.addFlashAttribute("msg", successMessage);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 		}
 	}
 	
@@ -122,7 +123,7 @@ public class AdminUserController {
 	
 	private void requireAdmin(AuthenticatedUser principal) {
 		if (principal == null || !"ROLE_ADMIN".equals(principal.getRoleName())) {
-			throw new IllegalStateException("관리자 권한이 필요합니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 	}
 	

@@ -86,7 +86,7 @@ public class ProjectSettlementAccount {
     public void verify(User admin) {
         validateAdmin(admin);
         if (verificationStatus == SettlementVerificationStatus.VERIFIED) {
-            throw new IllegalStateException("이미 확인 완료된 정산 계좌입니다.");
+            throw new IllegalStateException("admin.error.settlement.alreadyVerified");
         }
         this.verificationStatus = SettlementVerificationStatus.VERIFIED;
         this.verifiedAt = LocalDateTime.now();
@@ -95,10 +95,10 @@ public class ProjectSettlementAccount {
     public void failVerification(User admin) {
         validateAdmin(admin);
         if (verificationStatus == SettlementVerificationStatus.VERIFIED) {
-            throw new IllegalStateException("이미 확인 완료된 계좌는 실패 처리할 수 없습니다.");
+            throw new IllegalStateException("admin.error.settlement.verifiedCannotFail");
         }
         if (verificationStatus == SettlementVerificationStatus.FAILED) {
-            throw new IllegalStateException("이미 확인 실패 처리된 정산 계좌입니다.");
+            throw new IllegalStateException("admin.error.settlement.alreadyFailed");
         }
         this.verificationStatus = SettlementVerificationStatus.FAILED;
         this.verifiedAt = null;
@@ -106,7 +106,7 @@ public class ProjectSettlementAccount {
     
     private void validateAdmin(User admin) {
         if (admin == null || admin.getRole() != Role.ADMIN) {
-            throw new IllegalStateException("ADMIN만 정산 계좌를 확인할 수 있습니다.");
+            throw new IllegalStateException("admin.error.settlement.accountAdminOnly");
         }
     }
 

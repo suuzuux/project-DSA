@@ -3,6 +3,8 @@ package megane6.weplanet.service.email;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 // [이메일 인증코드] 이메일로 6자리 코드를 보내고, 입력받은 코드가 맞는지 확인하는 서비스.
 // DB 테이블 없이 메모리(세션)에 5분짜리 코드로만 들고 있는 단순한 방식 - 서버 재시작하면 인증 상태가 초기화됨.
+// SETTINGS-03 커밋5: 가입 전(또는 로그인 전)이라 회원 선호 언어를 알 수 없으므로, 요청 시점의 로케일로 메일을 만든다.
 //
 // AUTH-11 보안 보완
 //  1) 코드 입력을 5회 틀리면 그 코드는 폐기 - 6자리(100만 가지)를 무작정 대입해 보는 공격 방지
@@ -43,6 +46,7 @@ public class SignupEmailVerificationService {
 	private static final String SESSION_ATTR = "weplanet.emailVerification";
 	
 	private final JavaMailSender mailSender;
+	private final MessageSource messageSource;
 	private final SecureRandom random = new SecureRandom();
 	// 발송 횟수 제한은 세션과 무관하게 "받는 이메일" 기준으로 센다 (세션을 새로 만들어 우회하지 못하게)
 	private final Map<String, SendHistory> sendHistory = new ConcurrentHashMap<>();
@@ -60,10 +64,11 @@ public class SignupEmailVerificationService {
 		entries(session).put(key(purpose, normalized),
 				new VerificationEntry(code, LocalDateTime.now().plusMinutes(EXPIRE_MINUTES), false, 0));
 		
+		Locale locale = LocaleContextHolder.getLocale();
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(email.trim());
-		message.setSubject("[WePlaNet] 이메일 인증코드");
-		message.setText("인증코드: " + code + "\n" + EXPIRE_MINUTES + "분 이내에 입력해주세요.");
+		message.setSubject(messageSource.getMessage("mail.signupCode.subject", null, locale));
+		message.setText(messageSource.getMessage("mail.signupCode.body", new Object[]{code, EXPIRE_MINUTES}, locale));
 		mailSender.send(message);
 		
 		log.debug("이메일 인증코드 발송: purpose={}, to={}", purpose, normalized);
@@ -152,11 +157,10 @@ public class SignupEmailVerificationService {
 			
 			if (lastSentAt != null && lastSentAt.plusSeconds(RESEND_COOLDOWN_SECONDS).isAfter(now)) {
 				long waitSeconds = Duration.between(now, lastSentAt.plusSeconds(RESEND_COOLDOWN_SECONDS)).getSeconds() + 1;
-				throw new VerificationRateLimitException(waitSeconds + "초 후에 인증코드를 다시 받을 수 있습니다.");
+				throw new VerificationRateLimitException("verification.error.resendCooldown", waitSeconds);
 			}
 			if (todayCount >= DAILY_SEND_LIMIT) {
-				throw new VerificationRateLimitException(
-						"오늘 인증코드 발송 횟수(" + DAILY_SEND_LIMIT + "회)를 모두 사용했습니다. 내일 다시 시도해주세요.");
+				throw new VerificationRateLimitException("verification.error.dailyLimit", DAILY_SEND_LIMIT);
 			}
 			return new SendHistory(today, todayCount + 1, now);
 		});
@@ -190,11 +194,12 @@ public class SignupEmailVerificationService {
 		return String.format("%0" + CODE_LENGTH + "d", random.nextInt(1_000_000));
 	}
 	
-	/** 코드 확인 결과. 실패 문구는 화면에 그대로 보여준다. */
+	/** 코드 확인 결과. 실패 문구는 메시지 키 - 컨트롤러가 Messages.resolve()로 현재 로케일 문구로 바꿔 보여준다. */
 	public enum VerificationResult {
 		SUCCESS(null),
-		INVALID("인증코드가 일치하지 않거나 만료되었습니다."),
-		TOO_MANY_ATTEMPTS("인증코드를 " + MAX_FAILED_ATTEMPTS + "회 잘못 입력했습니다. 인증코드를 다시 받아주세요.");
+		INVALID("verification.error.invalid"),
+		// 문구의 "5회"는 MAX_FAILED_ATTEMPTS 값과 맞춰 둔다
+		TOO_MANY_ATTEMPTS("verification.error.tooManyAttempts");
 		
 		private final String failureMessage;
 		
