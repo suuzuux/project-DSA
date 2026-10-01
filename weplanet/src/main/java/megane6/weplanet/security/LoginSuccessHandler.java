@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
@@ -107,6 +106,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				localeResolver.setLocale(request, response, chosenLocale);
 				PreferredLocaleResolver.markExplicitChoice(request);
 			} else {
+				PreferredLocaleResolver.clearExplicitChoice(request);
 				userRepository.findOneById(principal.getId()).ifPresent(group ->
 						localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(group.getPreferredLanguage())));
 			}
@@ -143,14 +143,13 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 		getRedirectStrategy().sendRedirect(request, response, RoleHomeRedirects.pathFor(principal));
 	}
 
-	/** 인증 해제 후 새 세션을 열어 invalidSessionUrl(/login?expired)로 튕기지 않게 함 */
+	/**
+	 * 인증 해제 후 새 세션을 열어 invalidSessionUrl(/login?expired)로 튕기지 않게 함.
+	 * 화면 언어는 새 세션에도 이어진다 - 예) 포털 로그인 화면에서 日本語를 고르고 탭을 잘못 골라 거절돼도 일본어 화면으로 돌아간다.
+	 */
 	private static void clearAuthentication(HttpServletRequest request) {
 		SecurityContextHolder.clearContext();
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			session.invalidate();
-		}
-		request.getSession(true);
+		PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 	}
 
 	private static String expectedPortalRole(String portalRole) {

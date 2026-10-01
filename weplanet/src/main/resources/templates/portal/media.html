@@ -52,7 +52,7 @@
                 <span class="tag tag--public"
                       th:text="${media.files != null && !media.files.isEmpty() ? media.files[0].mediaType : 'MEDIA'}">VIDEO</span>
               </td>
-              <td th:text="${media.title}">미디어 제목</td>
+              <td th:text="${media.title != null and #strings.startsWith(media.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(media.title, 11)})} : ${media.title}">미디어 제목</td>
               <td>
                 <span th:if="${media.membershipOnly}" class="tag tag--member" th:text="#{community.media.membershipTag}">멤버십</span>
                 <span th:unless="${media.membershipOnly}" class="text-xs text-muted" th:text="#{community.media.filterAll}">전체</span>

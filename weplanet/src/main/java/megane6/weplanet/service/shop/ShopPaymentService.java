@@ -184,13 +184,15 @@ public class ShopPaymentService {
 			throw new AccessDeniedException(msg("shop.error.orderAccessDeniedView"));
 		}
 		if (order.getPaymentStatus() != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-			return CommercePaymentStatusView.from(order.getPaymentStatus());
+			return CommercePaymentStatusView.from(order.getPaymentStatus(),
+					messages.get(order.getPaymentStatus().getMessageKey()));
 		}
 		ShopOrder locked = findMyOrderForUpdate(buyerId, orderNo);
 		if (locked.getPaymentStatus() == FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
 			syncWithToss(locked, LocalDateTime.now());
 		}
-		return CommercePaymentStatusView.from(locked.getPaymentStatus());
+		return CommercePaymentStatusView.from(locked.getPaymentStatus(),
+				messages.get(locked.getPaymentStatus().getMessageKey()));
 	}
 
 	@Transactional

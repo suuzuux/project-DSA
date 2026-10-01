@@ -209,6 +209,12 @@ public class SettingsController {
 											  HttpServletRequest request, HttpServletResponse response) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
+		// 관리자는 한국어 고정 - 언어를 바꾸지 않는다 (LanguageController 와 같은 규칙.
+		// 화면은 PreferredLocaleResolver 가 어차피 한국어로 그리지만, 저장까지 막아야 메일·AI 번역 언어도 한국어로 유지된다)
+		if ("ROLE_ADMIN".equals(principal.getRoleName())) {
+			result.put("success", true);
+			return result;
+		}
 		userService.updateLanguage(user, language);
 		// SETTINGS-03 로케일 버그#1 수정: DB에만 저장하고 끝나면, 지금 이 세션의 실제 렌더링
 		// 로케일(PreferredLocaleResolver)은 안 바뀌어서 페이지를 새로고침해도 화면 언어가 그대로였다.
@@ -257,12 +263,9 @@ public class SettingsController {
 	// 그대로 다음 요청에 실려 오고 Spring Security의 invalidSessionUrl(SecurityConfig)이 이를 무효
 	// 세션으로 판단해서 원래 의도한 목적지 대신 "/login?expired=true"로 가로채 버린다.
 	// invalidate() 직후 새 세션을 열어 응답에 유효한 세션 쿠키를 실어 보내면 이 문제를 막을 수 있다
-	// (LoginSuccessHandler.clearAuthentication()과 동일한 패턴).
+	// (LoginSuccessHandler.clearAuthentication()과 동일한 패턴). 화면 언어도 새 세션에 이어 붙여서
+	// 탈퇴·연동 해제 직후의 로그인 화면이 한국어로 돌아가지 않게 한다.
 	private static void invalidateAndOpenFreshSession(HttpServletRequest request) {
-		HttpSession session = request.getSession(false);
-		if (session != null) {
-			session.invalidate();
-		}
-		request.getSession(true);
+		PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 	}
 }

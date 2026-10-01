@@ -24,6 +24,7 @@ import org.springframework.stereotype.Controller;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 @Controller
@@ -44,10 +45,24 @@ public class LiveStompController {
 	// SETTINGS-03 커밋3: STOMP 처리 스레드에는 요청 로케일(LocaleContextHolder)이 없으므로, 오류를 받을 사람의
 	// preferredLanguage로 로케일을 정해 메시지 키(또는 아직 키가 아닌 문장)를 번역해서 보낸다.
 	private void sendError(Long userId, String codeOrText) {
-		Locale locale = userRepository.findById(userId)
+		liveRealtimePublisher.sendError(userId, messages.resolve(codeOrText, localeOf(userId)));
+	}
+
+	// catch 블록용: 예외를 통째로 번역한다(값을 들고 다니는 LocalizedMessage 예외도 {0}이 빠지지 않게).
+	// 메시지가 없거나 orElseThrow() 의 "No value present" 같은 내부 문구는 공통 오류 문구로 바꿔 보낸다.
+	private void sendError(Long userId, RuntimeException e) {
+		Locale locale = localeOf(userId);
+		String text = e instanceof NoSuchElementException ? null : messages.resolve(e, locale);
+		if (text == null || text.isBlank()) {
+			text = messages.resolve("error.unexpected", locale);
+		}
+		liveRealtimePublisher.sendError(userId, text);
+	}
+
+	private Locale localeOf(Long userId) {
+		return userRepository.findById(userId)
 				.map(user -> PreferredLocaleResolver.toLocale(user.getPreferredLanguage()))
 				.orElse(Locale.KOREAN);
-		liveRealtimePublisher.sendError(userId, messages.resolve(codeOrText, locale));
 	}
 
 	@MessageMapping("/live.host")
@@ -67,7 +82,7 @@ public class LiveStompController {
 			liveDisconnectListener.cancelHostEnd(request.getArtistId());
 		} catch (RuntimeException e) {
 			log.warn("live.host 실패: {}", e.getMessage());
-			sendError(me.getId(), e.getMessage());
+			sendError(me.getId(), e);
 		}
 	}
 
@@ -90,7 +105,7 @@ public class LiveStompController {
 					liveRealtimePublisher.joinPayload(viewer.getId(), nickname));
 		} catch (RuntimeException e) {
 			log.warn("live.join 실패: {}", e.getMessage());
-			sendError(me.getId(), e.getMessage());
+			sendError(me.getId(), e);
 		}
 	}
 
@@ -141,7 +156,7 @@ public class LiveStompController {
 			liveRealtimePublisher.sendToPeer(request.getArtistId(), request.getToUserId(), payload);
 		} catch (RuntimeException e) {
 			log.warn("live.signal 실패: {}", e.getMessage());
-			sendError(me.getId(), e.getMessage());
+			sendError(me.getId(), e);
 		}
 	}
 
@@ -157,7 +172,7 @@ public class LiveStompController {
 			liveRealtimePublisher.publishComment(request.getArtistId(), saved);
 		} catch (RuntimeException e) {
 			log.warn("live.comment 실패: {}", e.getMessage());
-			sendError(me.getId(), e.getMessage());
+			sendError(me.getId(), e);
 		}
 	}
 

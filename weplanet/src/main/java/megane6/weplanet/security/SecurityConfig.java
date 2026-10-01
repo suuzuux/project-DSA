@@ -142,6 +142,8 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
+                        // 세션을 버리기 전에 화면 언어를 읽어 두고, 로그아웃 후 새 세션에 다시 넣는다 (RoleAwareLogoutSuccessHandler)
+                        .addLogoutHandler(roleAwareLogoutSuccessHandler)
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessHandler(roleAwareLogoutSuccessHandler)

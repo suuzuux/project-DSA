@@ -140,13 +140,15 @@ public class MembershipPaymentService {
 			throw new AccessDeniedException("error.contribution.ownOrderOnlyView");
 		}
 		if (order.getPaymentStatus() != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
-			return CommercePaymentStatusView.from(order.getPaymentStatus());
+			return CommercePaymentStatusView.from(order.getPaymentStatus(),
+					messages.get(order.getPaymentStatus().getMessageKey()));
 		}
 		MembershipOrder locked = findMyOrderForUpdate(fanId, orderNo);
 		if (locked.getPaymentStatus() == FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
 			syncWithToss(locked, LocalDateTime.now());
 		}
-		return CommercePaymentStatusView.from(locked.getPaymentStatus());
+		return CommercePaymentStatusView.from(locked.getPaymentStatus(),
+				messages.get(locked.getPaymentStatus().getMessageKey()));
 	}
 
 	@Transactional

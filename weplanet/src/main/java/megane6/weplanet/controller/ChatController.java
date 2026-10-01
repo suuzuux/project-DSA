@@ -55,6 +55,7 @@ public class ChatController {
     private final ChatQuotaService chatQuotaService;
     private final AiFanChatService aiFanChatService;
     private final MessageSource messageSource;
+    private final megane6.weplanet.i18n.Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
     // CHAT-03/CHAT-05/DM 웹소켓 경고 문구는 HTTP 요청이 아니라서 LocaleContextHolder(세션 로케일)를
@@ -454,8 +455,8 @@ public class ChatController {
         try {
             action.run();
         } catch (IllegalArgumentException e) {
-            errorMessage = messageSource.getMessage(e.getMessage(), null, e.getMessage(),
-                    org.springframework.context.i18n.LocaleContextHolder.getLocale());
+            // 다른 컨트롤러와 같은 공통 번역 방식 (값을 들고 다니는 예외도 {0}이 빠지지 않는다)
+            errorMessage = messages.resolve(e);
         }
         
         if ("fetch".equals(requestedWith)) {

@@ -54,6 +54,42 @@ public class PreferredLocaleResolver implements LocaleResolver {
                 .anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
     }
 
+    /** 세션에 저장된 화면 언어. 관리자 한국어 고정을 적용하기 전의 원래 값이며, 저장된 게 없으면 null */
+    public static Locale storedLocale(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute(SESSION_ATTR) instanceof Locale locale) {
+            return locale;
+        }
+        return null;
+    }
+
+    /** storedLocale 로 읽어 둔 언어를 (새) 세션에 다시 넣는다. null 이면 아무것도 하지 않는다 */
+    public static void restoreLocale(HttpServletRequest request, Locale locale) {
+        if (locale != null) {
+            request.getSession(true).setAttribute(SESSION_ATTR, locale);
+        }
+    }
+
+    /**
+     * 세션을 버리고 새 세션을 연다(로그인 거절·회원탈퇴·연동 해제·세션 정리 등).
+     * 화면 언어는 세션에만 저장되므로 그냥 버리면 다음 화면이 한국어로 돌아간다 - 그래서 버리기 전에
+     * 언어와 "로그인 전에 직접 고른 언어" 표시를 읽어 두었다가 새 세션에 다시 넣는다.
+     * 새 세션은 항상 연다: 버리기만 하면 브라우저의 이전 세션 쿠키 때문에 invalidSessionUrl(/login?expired)로 튕긴다.
+     */
+    public static void invalidateSessionKeepingLocale(HttpServletRequest request) {
+        Locale kept = storedLocale(request);
+        boolean explicit = hasExplicitChoice(request);
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        request.getSession(true);
+        restoreLocale(request, kept);
+        if (explicit) {
+            markExplicitChoice(request);
+        }
+    }
+
     public static void markExplicitChoice(HttpServletRequest request) {
         request.getSession().setAttribute(EXPLICIT_CHOICE_ATTR, Boolean.TRUE);
     }

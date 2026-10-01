@@ -6,6 +6,7 @@ import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
@@ -71,6 +72,10 @@ public class UserService {
 		// [설정 - 이벤트·혜택 알림] 가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스 값을 그대로 반영.
 		// 이후 설정 화면의 "광고성 정보 알림 받기" 토글과 같은 값을 공유한다.
 		user.changeMarketingConsent(dto.isMarketingConsent());
+		
+		// 가입 화면에서 쓰던 언어를 계정 선호 언어로 저장한다. 안 하면 기본값(KO)이 남아
+		// 환영 메일이 한국어로 가고, 다음 로그인부터 화면도 한국어로 바뀐다.
+		user.changePreferredLanguage(PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale()));
 		
 		User saved = userRepository.save(user);
 		

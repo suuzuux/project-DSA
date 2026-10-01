@@ -59,7 +59,9 @@ public class GeminiClient {
         return generate(prompt, false);
     }
 
-    // AI 팬 5명의 답장을 한 번에 JSON으로 받을 때 사용
+    // AI 팬 5명의 답장을 한 번에 JSON으로 받을 때 사용.
+    // 실패하면 안내 문구 대신 null 을 돌려준다 - 호출부(AiFanChatService)가 언어와 상관없이 실패를 알아채고
+    // 자기 대체 문구(페르소나 fallback)를 쓰게 하기 위함 (예전엔 한국어 안내 문구를 글자로 비교해서 다른 언어에선 못 알아챘다)
     public String generateJson(String prompt) {
         return generate(prompt, true);
     }
@@ -90,12 +92,12 @@ public class GeminiClient {
         } catch (RestClientException e) {
             // Gemini API 하루 사용 한도 초과(HTTP 429), 네트워크 오류 등 - 서비스 전체가 죽지 않고 안내 문구로 대체
             log.warn("Gemini API 호출 실패: {}", e.getMessage());
-            return messages.get("error.ai.unavailable");
+            return jsonResponse ? null : messages.get("error.ai.unavailable");
         } catch (RuntimeException e) {
             // 안전성 필터로 candidates가 비어 오는 등 응답 구조가 예상과 다른 경우.
             // RestClientException으로는 안 잡혀서 그대로 두면 NPE가 500 에러로 터졌음
             log.warn("Gemini 응답 해석 실패: {}", e.toString());
-            return messages.get("error.ai.unavailable");
+            return jsonResponse ? null : messages.get("error.ai.unavailable");
         }
     }
 

@@ -109,7 +109,7 @@
 
         <div class="portal-profile-extra">
           <div class="form-group">
-            <label class="form-label" for="realName" th:text="#{portalProfile.realNameLabel}">본명 <span class="text-xs text-muted" th:text="#{portalProfile.optionalHint}">(선택)</span></label>
+            <label class="form-label" for="realName"><th:block th:text="#{portalProfile.realNameLabel}">본명</th:block> <span class="text-xs text-muted" th:text="#{portalProfile.optionalHint}">(선택)</span></label>
             <input class="form-input" id="realName" name="realName" maxlength="50"
                    th:placeholder="#{portalProfile.realNamePlaceholder}" placeholder="미입력 시 기존 값 유지"
                    th:value="${artist.realName}" />

@@ -1,10 +1,10 @@
 package megane6.weplanet.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.i18n.Messages;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -91,10 +91,8 @@ public class GlobalExceptionHandler {
     public Object handleStaleSession(StaleSessionException e, HttpServletRequest request) {
         log.warn("세션의 로그인 유저가 더 이상 존재하지 않아 세션을 정리함: {}", e.getMessage());
         SecurityContextHolder.clearContext();
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
+        // 세션을 버리되 화면 언어는 새 세션에 이어 붙인다 (안내 문구·로그인 화면이 한국어로 돌아가지 않게)
+        PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 
         // AUTH-11: 정지·탈퇴 등으로 계정을 쓸 수 없게 된 경우는 "세션 만료" 대신 이용할 수 없는 계정이라고 안내한다
         boolean inactive = e instanceof InactiveAccountSessionException;

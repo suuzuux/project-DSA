@@ -39,7 +39,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" th:text="#{goodsForm.shopCategoryLabel}">샵 카테고리 <span class="text-xs text-muted" th:text="#{goodsForm.requiredOne}">(필수 · 1개)</span></label>
+          <label class="form-label"><th:block th:text="#{goodsForm.shopCategoryLabel}">샵 카테고리</th:block> <span class="text-xs text-muted" th:text="#{goodsForm.requiredOne}">(필수 · 1개)</span></label>
           <div class="chip-row" role="radiogroup" th:attr="aria-label=#{goodsForm.shopCategoryAria}">
             <label th:each="cat : ${goodsShopCategories}"
                    class="chip goods-shop-cat">
@@ -54,7 +54,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label" th:text="#{goodsForm.categoryTypeLabel}">상품 유형 <span class="text-xs text-muted" th:text="#{goodsForm.categoryTypeHintCount}">(사이즈·재고 · 복수 선택)</span></label>
+          <label class="form-label"><th:block th:text="#{goodsForm.categoryTypeLabel}">상품 유형</th:block> <span class="text-xs text-muted" th:text="#{goodsForm.categoryTypeHintCount}">(사이즈·재고 · 복수 선택)</span></label>
           <div class="chip-row" id="goodsCategoryChips" role="group" th:attr="aria-label=#{goodsForm.categoryTypeAria}">
             <button type="button" th:each="cat : ${goodsCategoryTypes}"
                     class="chip"

@@ -84,8 +84,8 @@
             <button type="button" class="live-replay-card"
                     th:each="replay : ${liveReplays}"
                     th:if="${replay.firstVideoFileId != null}"
-                    th:attr="data-src=@{/board/media/file/{id}(id=${replay.firstVideoFileId})},
-                             data-title=${replay.title}">
+                    th:attr="data-src=@{/board/media/file/{id}(id=${replay.firstVideoFileId})}"
+                    th:data-title="${replay.title != null and #strings.startsWith(replay.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(replay.title, 11)})} : ${replay.title}">
               <div class="live-replay-card__thumb">
                 <video muted playsinline preload="metadata"
                        th:src="@{|/board/media/file/${replay.firstVideoFileId}#t=0.1|}"></video>
