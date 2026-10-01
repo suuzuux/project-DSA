@@ -179,6 +179,38 @@ public class PortalManagementService {
         }
     }
 
+    // ── 생일 일정 제목/설명 다국어 표시 ──
+    // 생일 일정은 저장할 때 제목 "OO 생일", 설명 "프로필에서 등록된 생일" 이 한국어로 DB에 들어간다.
+    // DB 값은 그대로 두고, 화면에 내보낼 때 그 기본값이면 현재 언어 문구로 바꿔서 보여준다.
+    // 소속사가 직접 다른 제목/설명을 입력했으면(기본값과 다르면) 입력한 그대로 보여준다.
+    static final String BIRTHDAY_DEFAULT_TITLE_SUFFIX = " 생일";
+    static final String BIRTHDAY_PROFILE_DESCRIPTION = "프로필에서 등록된 생일";
+
+    public String displayTitle(ArtistSchedule schedule) {
+        String title = schedule.getTitle();
+        if (schedule.getCategory() != ScheduleCategory.BIRTHDAY) {
+            return title;
+        }
+        String nickname = schedule.getArtist().getNickname();
+        if (title == null || title.isBlank() || title.equals(nickname + BIRTHDAY_DEFAULT_TITLE_SUFFIX)) {
+            return messageSource.getMessage("schedule.birthday.defaultTitle", new Object[]{nickname},
+                    LocaleContextHolder.getLocale());
+        }
+        return title;
+    }
+
+    public String displayDescription(ArtistSchedule schedule) {
+        String description = schedule.getDescription();
+        if (schedule.getCategory() == ScheduleCategory.BIRTHDAY && BIRTHDAY_PROFILE_DESCRIPTION.equals(description)) {
+            return msg("schedule.birthday.profileDescription");
+        }
+        return description;
+    }
+
+    private ScheduleEventView toEventView(ArtistSchedule schedule, LocalDateTime occurrenceAt) {
+        return ScheduleEventView.from(schedule, occurrenceAt, displayTitle(schedule), displayDescription(schedule));
+    }
+
     @Transactional(readOnly = true)
     public List<ArtistSchedule> getSchedules(User artist) {
         return artistScheduleRepository.findByArtistOrderByScheduleAtAsc(artist);
@@ -229,7 +261,7 @@ public class PortalManagementService {
             }
             scheduleAt = birthDate.atTime(LocalTime.MIDNIGHT);
             if (title == null || title.isBlank()) {
-                title = artist.getNickname() + " 생일";
+                title = artist.getNickname() + BIRTHDAY_DEFAULT_TITLE_SUFFIX;
             }
         }
         validateText(title, "error.schedule.titleRequired");
@@ -282,7 +314,7 @@ public class PortalManagementService {
         List<ScheduleEventView> events = new ArrayList<>();
         artistScheduleRepository.findByArtistAndScheduleAtBetweenOrderByScheduleAtAsc(artist, start, end).stream()
                 .filter(item -> item.getCategory() != ScheduleCategory.BIRTHDAY)
-                .map(ScheduleEventView::from)
+                .map(item -> toEventView(item, item.getScheduleAt()))
                 .forEach(events::add);
 
         appendBirthdayEventsInMonth(events, artist, month);
@@ -302,7 +334,7 @@ public class PortalManagementService {
                 }
                 continue;
             }
-            events.add(ScheduleEventView.from(schedule));
+            events.add(toEventView(schedule, schedule.getScheduleAt()));
         }
         events.sort(Comparator.comparing(ScheduleEventView::date).thenComparing(ScheduleEventView::time));
         return events;
@@ -321,7 +353,7 @@ public class PortalManagementService {
             if (!YearMonth.from(occurrence).equals(month)) {
                 continue;
             }
-            events.add(ScheduleEventView.from(
+            events.add(toEventView(
                     birthday,
                     occurrence.atTime(birthday.getScheduleAt().toLocalTime())
             ));
@@ -334,7 +366,7 @@ public class PortalManagementService {
         int startYear = Math.max(fromYear, birthDate.getYear());
         for (int year = startYear; year <= toYear; year++) {
             LocalDate occurrence = birthdayDateInYear(birthDate, year);
-            events.add(ScheduleEventView.from(birthday, occurrence.atTime(time)));
+            events.add(toEventView(birthday, occurrence.atTime(time)));
         }
     }
 
@@ -597,14 +629,14 @@ public class PortalManagementService {
         if (birthDate == null) {
             return;
         }
-        String title = artist.getNickname() + " 생일";
+        String title = artist.getNickname() + BIRTHDAY_DEFAULT_TITLE_SUFFIX;
         LocalDateTime at = birthDate.atTime(LocalTime.MIDNIGHT);
         if (birthdays.isEmpty()) {
             artistScheduleRepository.save(ArtistSchedule.create(
                     artist,
                     ScheduleCategory.BIRTHDAY,
                     title,
-                    "프로필에서 등록된 생일",
+                    BIRTHDAY_PROFILE_DESCRIPTION,
                     null,
                     null,
                     at
@@ -615,7 +647,7 @@ public class PortalManagementService {
         first.update(
                 ScheduleCategory.BIRTHDAY,
                 title,
-                first.getDescription() != null ? first.getDescription() : "프로필에서 등록된 생일",
+                first.getDescription() != null ? first.getDescription() : BIRTHDAY_PROFILE_DESCRIPTION,
                 first.getLocation(),
                 first.getTicketUrl(),
                 at

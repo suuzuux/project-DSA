@@ -72,7 +72,7 @@
           <ul class="queue-list" th:if="${!#lists.isEmpty(upcomingSchedules)}">
             <li th:each="schedule : ${upcomingSchedules}">
               <span>
-                <strong th:text="${schedule.title}">일정 제목</strong><br />
+                <strong th:text="${upcomingScheduleTitles[schedule.id] ?: schedule.title}">일정 제목</strong><br />
                 <span class="text-xs text-muted" th:text="${#temporals.format(schedule.scheduleAt, 'MM.dd HH:mm')}">08.26 19:00</span>
               </span>
               <span class="queue-count" th:text="${#temporals.format(schedule.scheduleAt, 'dd')}">26</span>

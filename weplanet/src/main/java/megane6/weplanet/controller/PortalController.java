@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.CommentReport;
 import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.Report;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.calendar.ArtistSchedule;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
 import megane6.weplanet.domain.entity.enumfolder.GoodsShopCategory;
 import megane6.weplanet.domain.entity.enumfolder.GoodsStatus;
@@ -145,7 +146,12 @@ public class PortalController {
 		model.addAttribute("mediaCount", portalManagementService.countMedia(artist));
 		model.addAttribute("reportCount", portalManagementService.countPendingReports(artist));
 		model.addAttribute("latestNotices", portalManagementService.getNotices(artist).stream().limit(5).toList());
-		model.addAttribute("upcomingSchedules", portalManagementService.getSchedules(artist).stream().limit(5).toList());
+		List<ArtistSchedule> upcomingSchedules = portalManagementService.getSchedules(artist).stream().limit(5).toList();
+		model.addAttribute("upcomingSchedules", upcomingSchedules);
+		// 생일 기본 제목("OO 생일")은 화면 언어로 바꿔서 보여준다 (PortalManagementService.displayTitle)
+		Map<Long, String> upcomingScheduleTitles = new java.util.HashMap<>();
+		upcomingSchedules.forEach(s -> upcomingScheduleTitles.put(s.getId(), portalManagementService.displayTitle(s)));
+		model.addAttribute("upcomingScheduleTitles", upcomingScheduleTitles);
 		return "portal/dashboard";
 	}
 	
