@@ -188,6 +188,16 @@
 .wp-noti-panel { width: min(92vw, 340px); overflow: hidden; }
 .wp-lang-menu[hidden],
 .wp-noti-panel[hidden] { display: none; }
+/* 모바일: 종 아이콘 기준(right: 0)으로 340px 을 펼치면 왼쪽이 화면 밖으로 잘린다 → 헤더 아래에 화면 폭으로 고정 */
+@media (max-width: 560px) {
+  .wp-noti-panel {
+    position: fixed;
+    top: calc(var(--wp-header-h) + 4px);
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+}
 .wp-noti-panel__head {
   display: flex;
   align-items: center;
