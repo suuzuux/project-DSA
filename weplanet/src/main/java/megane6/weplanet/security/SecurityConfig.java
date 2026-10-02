@@ -17,8 +17,6 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.util.List;
@@ -89,15 +87,7 @@ public class SecurityConfig {
             "/login-wireframe",
             "/oauth2/authorization/**",
             "/login/oauth2/code/**",
-            "/social-login/**",
-            // FIX-02: CSRF 토큰 검증 실패 안내 화면 - 로그인 전 폼(회원가입 등)에서도 보일 수 있다
-            "/csrf-expired"
-    );
-
-    // FIX-02: CSRF 검사에서 빼는 주소. 우리 화면이 아니라 외부 서버가 직접 호출해서 토큰을 붙일 수 없는 곳만 둔다.
-    // (여기 넣는 주소는 반드시 다른 방법으로 요청을 검증해야 한다 - 토스 웹훅은 secret 값으로 검증)
-    private static final List<String> CSRF_IGNORED_URLS = List.of(
-            "/payments/toss/webhook"
+            "/social-login/**"
     );
     
     private final LoginSuccessHandler loginSuccessHandler;
@@ -107,27 +97,11 @@ public class SecurityConfig {
     private final UserRepository userRepository;
     private final CommunitySlugForwardFilter communitySlugForwardFilter;
     private final SessionRegistry sessionRegistry; // AUTH-11: SessionRegistryConfig 참고
-    private final CsrfAccessDeniedHandler csrfAccessDeniedHandler; // FIX-02
-    private final CsrfTokenRepository csrfTokenRepository; // FIX-02: CsrfTokenRepositoryConfig 참고
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // FIX-02: CSRF 방어를 켠다. POST/PUT/PATCH/DELETE 요청은 우리 화면이 받은 토큰을 같이 보내야만 통과한다.
-                // 토큰은 XSRF-TOKEN 쿠키로 내려주고(JS 가 읽을 수 있게 HttpOnly 아님), 아래 방식 모두 받아준다.
-                //  - Thymeleaf 폼(th:action) : 숨은 _csrf 필드가 자동으로 들어간다
-                //  - fetch                  : /js/csrf.js 가 쿠키 값을 X-XSRF-TOKEN 헤더에 넣는다
-                //  - JS 가 만든 폼(shell.js) : /js/csrf.js 가 제출 직전에 _csrf 필드를 넣는다
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(csrfTokenRepository)
-                        .csrfTokenRequestHandler(new WeplanetCsrfTokenRequestHandler())
-                        .ignoringRequestMatchers(CSRF_IGNORED_URLS.toArray(String[]::new))
-                )
-                // 토큰 쿠키가 모든 페이지에서 내려가도록 (CsrfCookieFilter 주석 참고)
-                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
-                .exceptionHandling(exception -> exception
-                        .accessDeniedHandler(csrfAccessDeniedHandler)
-                )
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth

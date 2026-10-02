@@ -289,8 +289,6 @@
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
     window.__ARTIST_ATTENDANCE__ = /*[[${artistAttendance}]]*/ {};
   </script>
-  <!-- FIX-02: 아래 가입/좋아요 스크립트의 fetch(POST)에 CSRF 토큰을 붙인다. 이미 head 에서 불렀으면 두 번 감싸지 않는다 -->
-  <script th:src="@{/js/csrf.js}"></script>
   <script th:src="@{/js/community-join.js}"></script>
   <script th:src="@{/js/community-like.js}"></script>
   <script th:src="@{/js/community-board-select.js}"></script>

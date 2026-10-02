@@ -132,7 +132,7 @@ public class AuthController {
 		}
 		// 가입이 끝나면 로그인 화면을 거치지 않고 바로 로그인시켜서 메인으로 보낸다 (소셜 회원가입과 같은 흐름).
 		// 이메일 인증을 마쳤고 방금 본인이 정한 비밀번호로 만든 계정이라 다시 입력받을 이유가 없다.
-		// 세션 id 교체 · 동시 로그인 제한 · CSRF 토큰 교체는 loginAs 가 폼 로그인과 똑같이 처리한다.
+		// 세션 id 교체 · 동시 로그인 제한은 loginAs 가 폼 로그인과 똑같이 처리한다.
 		// 마지막 로그인 시각은 UserService.signup 에서, 화면 언어는 가입하던 언어 그대로 이어진다.
 		loginSessionSupport.loginAs(user, request, response);
 		redirectAttributes.addFlashAttribute(FLASH_SIGNUP_WELCOME, true);

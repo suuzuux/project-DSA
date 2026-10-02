@@ -42,19 +42,6 @@
   const nickname = body.getAttribute("data-nickname") || "";
   const artists = Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : [];
 
-  // FIX-02: 셸이 나중에 끼워 넣는 스크립트(global-icons.js, community-join.js)도 fetch 로 POST 를 보내므로
-  // CSRF 토큰을 붙여 주는 csrf.js 를 먼저 불러 둔다. 페이지 head 에서 이미 불렀으면 건너뛴다.
-  (function loadCsrfScript() {
-    if (document.querySelector('script[src*="csrf.js"]')) return;
-    var current = document.currentScript || document.querySelector('script[src*="shell.js"]');
-    var s = document.createElement("script");
-    s.src = current && current.src
-      ? current.src.replace(/shell\.js(\?.*)?$/, "csrf.js$1")
-      : (root + "js/csrf.js").replace("//js", "/js");
-    s.async = false; // 뒤이어 끼워 넣는 스크립트보다 먼저 실행되도록
-    document.head.appendChild(s);
-  })();
-
   // /api/i18n/shell 요청이 실패하거나 아직 안 끝났을 때를 대비한 한국어 기본값.
   // 실제 문구는 항상 messages*.properties(서버) 값이 우선이고, 이건 네트워크 오류 시의 안전망이다.
   const DEFAULT_I18N = {
