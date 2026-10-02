@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 // [이메일 인증코드] 이메일로 6자리 코드를 보내고, 입력받은 코드가 맞는지 확인하는 서비스.
 // DB 테이블 없이 메모리(세션)에 5분짜리 코드로만 들고 있는 단순한 방식 - 서버 재시작하면 인증 상태가 초기화됨.
+// (코드는 발송 후 5분 안에 입력해야 하고, 확인에 성공하면 그때부터 30분 동안 인증 상태가 유지된다)
 // SETTINGS-03 커밋5: 가입 전(또는 로그인 전)이라 회원 선호 언어를 알 수 없으므로, 요청 시점의 로케일로 메일을 만든다.
 //
 // AUTH-11 보안 보완
@@ -38,6 +39,10 @@ public class SignupEmailVerificationService {
 	
 	private static final int CODE_LENGTH = 6;
 	private static final long EXPIRE_MINUTES = 5;
+	// 코드 확인에 성공한 뒤 그 인증으로 가입·비밀번호 재설정·이메일 변경을 마칠 수 있는 시간.
+	// 예전에는 "코드 발송 후 5분"이 그대로 적용돼서, 인증을 마친 뒤 나머지 칸을 채우다 5분이 지나면
+	// 화면에는 "인증 완료"가 떠 있는데도 저장할 때 "이메일 인증이 필요합니다"로 거절됐다.
+	static final long VERIFIED_VALID_MINUTES = 30;
 	static final int MAX_FAILED_ATTEMPTS = 5;
 	static final long RESEND_COOLDOWN_SECONDS = 60;
 	static final int DAILY_SEND_LIMIT = 10;
@@ -221,8 +226,9 @@ public class SignupEmailVerificationService {
 		boolean isExpired() {
 			return LocalDateTime.now().isAfter(expiresAt);
 		}
+		// 인증에 성공하면 그 시점부터 VERIFIED_VALID_MINUTES 동안 인증 상태를 유지한다 (코드 입력 제한 5분과 별개)
 		VerificationEntry verified() {
-			return new VerificationEntry(code, expiresAt, true, failedAttempts);
+			return new VerificationEntry(code, LocalDateTime.now().plusMinutes(VERIFIED_VALID_MINUTES), true, failedAttempts);
 		}
 		VerificationEntry failedOnce() {
 			return new VerificationEntry(code, expiresAt, isVerified, failedAttempts + 1);
