@@ -307,6 +307,7 @@
 
 <!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통, 본인 커뮤니티 제외) -->
 <div th:fragment="membershipTeaser" th:if="${!communityJoined and !isOwnCommunity}"
+     class="community-teaser"
      style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #a85d67);
               color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:center;gap:16px;
               flex-wrap:wrap;">
