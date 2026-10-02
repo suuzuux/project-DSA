@@ -500,7 +500,9 @@
 
     window.addEventListener("beforeunload", function () {
         if (isLive) {
-            navigator.sendBeacon("/api/portal/live/end");
+            // FIX-02: sendBeacon 은 헤더를 붙일 수 없어 CSRF 검사에 막힌다.
+            // keepalive fetch 는 페이지를 닫는 중에도 끝까지 전송되고, csrf.js 가 토큰 헤더를 붙여 준다.
+            fetch("/api/portal/live/end", { method: "POST", keepalive: true });
         }
         closeAllPeers();
         if (localStream) {

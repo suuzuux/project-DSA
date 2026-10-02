@@ -16,6 +16,8 @@ import org.springframework.security.web.authentication.session.RegisterSessionAu
 import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfAuthenticationStrategy;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -24,12 +26,14 @@ import java.util.List;
 // 공통으로 필요로 하는 "세션의 SecurityContext를 우리 서비스 계정으로 채워넣기/비우기" 로직을 모아둔 헬퍼.
 // 예전엔 OAuth2LoginSuccessHandler 안에 private 메서드로만 있었는데, 이메일 중복 확인 화면에서
 // [예, 연동합니다]를 눌렀을 때도 같은 로그인 처리가 필요해져서 재사용 가능하도록 분리했다.
+// (지금은 휴면 해제, 아티스트 멤버 프로필 로그인, 아이디 회원가입 직후 자동 로그인도 이 헬퍼를 쓴다)
 @Component
 @RequiredArgsConstructor
 public class SocialLoginSessionSupport {
 
 	private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 	private final SessionRegistry sessionRegistry;
+	private final CsrfTokenRepository csrfTokenRepository; // FIX-02: CsrfTokenRepositoryConfig 참고
 
 	// 소셜 로그인을 거부/취소할 때, Spring Security가 이미 세션에 저장해버린
 	// 소셜 플랫폼 원본 인증(OAuth2User/OidcUser principal)을 빈 컨텍스트로 덮어써서 지운다.
@@ -58,6 +62,7 @@ public class SocialLoginSessionSupport {
 		//  - 세션 id 교체: 로그인 전에 심어 둔 세션 id 로 로그인 후 세션을 가로채는 공격(세션 고정) 방지
 		//  - 동시 로그인 제한(계정당 1개): 다른 기기의 기존 세션을 만료시키고, 이 세션을 목록에 등록
 		// 예전에는 SecurityContext 만 저장해서 휴면 해제·소셜 로그인·멤버 프로필 로그인에는 둘 다 적용되지 않았다.
+		//  - FIX-02 CSRF 토큰 교체: 로그인 전에 쓰던 토큰을 버리고 새로 발급한다 (폼 로그인과 같은 처리)
 		request.getSession(true);
 		sessionAuthenticationStrategy().onAuthentication(newAuth, request, response);
 
@@ -72,9 +77,12 @@ public class SocialLoginSessionSupport {
 				new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry);
 		concurrent.setMaximumSessions(1);   // SecurityConfig 의 maximumSessions(1) 과 같은 값
 		concurrent.setExceptionIfMaximumExceeded(false);
+		CsrfAuthenticationStrategy csrf = new CsrfAuthenticationStrategy(csrfTokenRepository);
+		csrf.setRequestHandler(new WeplanetCsrfTokenRequestHandler()); // SecurityConfig 의 csrf 설정과 같은 처리기
 		return new CompositeSessionAuthenticationStrategy(List.of(
 				concurrent,
 				new ChangeSessionIdAuthenticationStrategy(),
-				new RegisterSessionAuthenticationStrategy(sessionRegistry)));
+				new RegisterSessionAuthenticationStrategy(sessionRegistry),
+				csrf));
 	}
 }

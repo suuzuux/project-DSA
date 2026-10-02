@@ -117,6 +117,8 @@
             <form id="portalMediaPreviewDeleteForm" method="post"
                   th:attr="data-confirm=#{portal.media.confirmDelete}"
                   onsubmit="return confirm(this.dataset.confirm);">
+              <!-- FIX-02: action 을 JS 가 정하는 폼이라(th:action 없음) CSRF 토큰이 자동으로 안 들어가서 직접 넣는다 -->
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
               <button type="submit" class="btn btn--primary" th:text="#{common.delete}">삭제</button>
             </form>
           </div>

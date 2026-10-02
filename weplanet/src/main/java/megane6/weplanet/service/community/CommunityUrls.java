@@ -39,7 +39,7 @@ public class CommunityUrls {
 	// 컨트롤러에 새 최상위 주소(/xxx)를 만들면 여기에도 추가할 것.
 	private static final Set<String> RESERVED = Set.of(
 			"admin", "api", "artists", "blocks", "board", "chat", "code", "collection", "comments", "community",
-			"css", "dashboard", "dev", "error", "favicon", "fonts", "goods", "home", "images", "img", "index",
+			"css", "csrf-expired", "dashboard", "dev", "error", "favicon", "fonts", "goods", "home", "images", "img", "index",
 			"js", "language", "live", "login", "logout", "media", "members", "membership", "notices",
 			"notifications", "oauth2", "overview", "partner", "partnership", "payment", "payments", "policy",
 			"portal", "posts", "profile", "projects", "reports", "schedule", "schedules", "select-artist",
