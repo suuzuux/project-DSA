@@ -76,4 +76,10 @@ public class Post {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
     }
+
+    // 목록 카드용 미리보기 글 - 마크다운 기호만 걷어내고 줄바꿈은 유지 (템플릿: ${post.previewText})
+    // DB 컬럼이 아니라 content 에서 그때그때 만든다
+    public String getPreviewText() {
+        return megane6.weplanet.util.MarkdownPreview.of(content);
+    }
 }
