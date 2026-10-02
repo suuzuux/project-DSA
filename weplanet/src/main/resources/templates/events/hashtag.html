@@ -170,9 +170,11 @@
     </section>
 
     <!-- 참여 방법 -->
-    <section class="hashtag-event__guide">
+    <!-- th:utext 안에서는 T(...) 정적 접근이 금지(Thymeleaf 제한 모드)라 500 이 난다 → th:with 로 먼저 꺼내 둔다 -->
+    <section class="hashtag-event__guide"
+             th:with="dailyLimit=${T(megane6.weplanet.service.event.HashtagEventEntryService).DAILY_LIMIT}">
       <strong th:text="#{hashtagEvent.guideTitle}">참여 방법</strong><br />
-      <th:block th:utext="#{hashtagEvent.guideBody(${T(megane6.weplanet.service.event.HashtagEventEntryService).DAILY_LIMIT})}">
+      <th:block th:utext="#{hashtagEvent.guideBody(${dailyLimit})}">
         가입한 커뮤니티의 <b>팬 게시판</b>에 우리 아티스트의 해시태그를 넣어 글을 쓰면 집계돼요.
       </th:block>
     </section>
