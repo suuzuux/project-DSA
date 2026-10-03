@@ -50,6 +50,16 @@ public class UserFollowService {
         if (me.getId().equals(targetUserId)) {
             throw new IllegalStateException("error.follow.self");
         }
+
+        // 이미 팔로우 중이면 취소한다. 취소는 아래 조건(가입·숨김 등)과 상관없이 항상 허용한다 -
+        // 예전에는 조건 검사를 먼저 해서, 상대가 콘텐츠를 숨기거나 커뮤니티를 떠난 뒤(또는 내가 나간 뒤)에는
+        // 이미 걸려 있는 팔로우를 취소할 수 없었다.
+        if (userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId)) {
+            userFollowRepository.deleteByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId);
+            return false;
+        }
+
+        // 여기부터는 새로 팔로우하는 경우의 조건
         if (!me.canParticipateInCommunity()) {
             throw new IllegalStateException("error.follow.fanOrArtistOnly");
         }
@@ -75,13 +85,6 @@ public class UserFollowService {
             }
         }
         // 팬→아티스트는 가입 여부와 무관하게 팔로우 가능 (기존 GroupFollow 방식)
-
-        boolean following = userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(
-                me.getId(), targetUserId, communityId);
-        if (following) {
-            userFollowRepository.deleteByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId);
-            return false;
-        }
 
         userFollowRepository.save(UserFollow.builder()
                 .followerId(me.getId())
