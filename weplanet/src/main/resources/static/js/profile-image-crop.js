@@ -119,7 +119,11 @@
     activePreviewEl = previewEl || null;
     activeLabelEl = labelEl || null;
 
-    modalTitle.textContent = cfg.title;
+    // SETTINGS-03: portal/profile.html은 화면 언어에 맞춘 제목을 window.WEPLANET_PROFILE_CROP_TITLES로 넘겨줌.
+    // 그 값이 없으면 기존 한국어 기본값(cfg.title)을 그대로 씀.
+    // 크롭 설정(configKind, 예: 포털 배경 → HeaderImage)의 제목을 먼저 찾고, 없으면 kind 제목을 쓴다.
+    var overrideTitles = window.WEPLANET_PROFILE_CROP_TITLES;
+    modalTitle.textContent = (overrideTitles && (overrideTitles[activeConfigKind] || overrideTitles[kind])) || cfg.title;
     stage.classList.toggle("is-round", !!cfg.round);
 
     let reader = new FileReader();

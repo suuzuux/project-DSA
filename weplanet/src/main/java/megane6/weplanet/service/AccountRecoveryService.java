@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.repository.UserRepository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +28,14 @@ public class AccountRecoveryService {
 	
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
-	
+	private final MessageSource messageSource;
+
+	// SETTINGS-03: 비밀번호 재설정(reset-password.html) 화면에서 실제로 화면에 노출되는 예외 메시지만
+	// 현재 세션 로케일로 번역한다.
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
 	// 아이디 찾기 1단계: 이름+이메일이 실제로 같이 등록된 계정인지 확인 (아무 이메일에나 코드를 보내지 않기 위함).
 	// 신원 매칭 자체는 provider/비밀번호 여부와 무관하게 본다 - 계정 존재 여부를 흘리지 않기 위해 대상이
 	// 될 수 없는 계정도 일단 "일치"로 취급하고, 실제 코드 발송 가능 여부는 isEligibleForRecovery()에서 따로 본다.
@@ -40,7 +49,7 @@ public class AccountRecoveryService {
 	public String findUsernameByEmail(String email) {
 		return userRepository.findByEmail(email)
 				.map(User::getUsername)
-				.orElseThrow(() -> new IllegalArgumentException("일치하는 계정을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.user.accountNotFound"));
 	}
 	
 	// 비밀번호 재설정 1단계: 아이디+이메일이 같이 등록된 계정인지 확인
@@ -58,25 +67,27 @@ public class AccountRecoveryService {
 		return userRepository.findByEmail(email).map(this::isEligibleForRecovery).orElse(false);
 	}
 
-	// 비밀번호 재설정 2단계: 이메일 인증까지 끝난 뒤에만 호출됨
+	// 비밀번호 재설정 2단계: 이메일 인증까지 끝난 뒤에만 호출됨. 비밀번호를 바꾼 계정을 돌려준다
+	// (컨트롤러가 그 계정의 기존 로그인 세션을 끊는 데 쓴다)
 	@Transactional
-	public void resetPassword(String username, String email, String newPassword, String confirmPassword) {
+	public User resetPassword(String username, String email, String newPassword, String confirmPassword) {
 		User user = userRepository.findByUsername(username)
 				.filter(u -> u.getEmail().equals(email))
 				.filter(this::isEligibleForRecovery)
-				.orElseThrow(() -> new IllegalArgumentException("일치하는 계정을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("resetPassword.accountNotFound")));
 		
 		if (newPassword == null || newPassword.isBlank()) {
-			throw new IllegalArgumentException("새 비밀번호를 입력해주세요.");
+			throw new IllegalArgumentException(msg("resetPassword.newPasswordRequired"));
 		}
 		if (!PASSWORD_PATTERN.matcher(newPassword).matches()) {
-			throw new IllegalArgumentException("비밀번호는 영문/숫자 포함 8~20자로 입력해주세요.");
+			throw new IllegalArgumentException(msg("resetPassword.passwordFormatInvalid"));
 		}
 		if (!newPassword.equals(confirmPassword)) {
-			throw new IllegalArgumentException("새 비밀번호 확인이 일치하지 않습니다.");
+			throw new IllegalArgumentException(msg("resetPassword.confirmMismatch"));
 		}
 		
 		user.changePassword(passwordEncoder.encode(newPassword));
+		return user;
 	}
 
 	private boolean isEligibleForRecovery(User user) {

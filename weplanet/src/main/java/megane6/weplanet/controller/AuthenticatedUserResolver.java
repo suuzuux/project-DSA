@@ -56,6 +56,6 @@ public class AuthenticatedUserResolver {
 
 	private User getUserOrThrow(Long userId) {
 		return userRepository.findOneById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("유저(id=" + userId + ")를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 	}
 }

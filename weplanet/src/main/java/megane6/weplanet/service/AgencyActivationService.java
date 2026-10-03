@@ -48,7 +48,7 @@ public class AgencyActivationService {
 		}
 		
 		if (agencyUser.getStatus() != UserStatus.PENDING_ACTIVATION) {
-			throw new IllegalStateException("이미 활성화된 계정입니다.");
+			throw new IllegalStateException("error.activation.alreadyActivated");
 		}
 		
 		String rawToken = generateToken();
@@ -116,7 +116,7 @@ public class AgencyActivationService {
 		// 같은 링크로 동시에 두 번 들어오는 경우를 막기 위해 잠금 조회를 사용
 		EmailVerification verification
 				= evr.findByVerificationKeyForUpdate(verificationKey)
-				.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 활성화 링크입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.activation.invalidLink"));
 		
 		assertUsable(verification, rawToken, now);
 		assertPassword(newPassword, confirmPassword);
@@ -134,11 +134,11 @@ public class AgencyActivationService {
 	
 	private EmailVerification findByKey(String verificationKey) {
 		if (verificationKey == null || verificationKey.isBlank()) {
-			throw new IllegalArgumentException("유효하지 않은 활성화 링크입니다.");
+			throw new IllegalArgumentException("error.activation.invalidLink");
 		}
 		
 		return evr.findByVerificationKey(verificationKey)
-				.orElseThrow(() -> new IllegalArgumentException("유효하지 않은 활성화 링크입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.activation.invalidLink"));
 	}
 	
 	private void assertUsable(
@@ -148,33 +148,33 @@ public class AgencyActivationService {
 	) {
 		// 계정 역할과 링크 용도가 맞아야 한다 (소속사 링크로 아티스트 계정을 여는 것 방지)
 		if (verification.getPurpose() != purposeFor(verification.getUser())) {
-			throw new IllegalArgumentException("유효하지 않은 활성화 링크입니다.");
+			throw new IllegalArgumentException("error.activation.invalidLink");
 		}
 		
 		if (verification.isConsumed()) {
-			throw new IllegalStateException("이미 사용된 활성화 링크입니다. 로그인 화면에서 로그인해주세요.");
+			throw new IllegalStateException("error.activation.linkUsed");
 		}
 		
 		if (verification.isExpired(now)) {
-			throw new IllegalStateException("활성화 링크가 만료되었습니다. 관리자(아티스트는 소속사)에게 재발송을 요청해주세요.");
+			throw new IllegalStateException("error.activation.linkExpired");
 		}
 		
 		if (!verification.hasAttemptsRemaining()) {
-			throw new IllegalStateException("활성화 시도 횟수를 초과했습니다. 관리자(아티스트는 소속사)에게 재발송을 요청해주세요.");
+			throw new IllegalStateException("error.activation.tooManyAttempts");
 		}
 		
 		if (rawToken == null || !pe.matches(rawToken, verification.getCodeHash())) {
-			throw new IllegalArgumentException("유효하지 않은 활성화 링크입니다.");
+			throw new IllegalArgumentException("error.activation.invalidLink");
 		}
 	}
 	
 	private void assertPassword(String newPassword, String confirmPassword) {
 		if (newPassword == null || !PASSWORD_PATTERN.matcher(newPassword).matches()) {
-			throw new IllegalArgumentException("비밀번호는 영문/숫자 포함 8~20자로 입력해주세요.");
+			throw new IllegalArgumentException("signup.validation.passwordPattern");
 		}
 		
 		if (!newPassword.equals(confirmPassword)) {
-			throw new IllegalArgumentException("비밀번호 확인이 일치하지 않습니다.");
+			throw new IllegalArgumentException("error.password.confirmMismatch");
 		}
 	}
 	
@@ -189,7 +189,7 @@ public class AgencyActivationService {
 			return EmailVerificationPurpose.ARTIST_ACTIVATION;
 		}
 		
-		throw new IllegalArgumentException("유효하지 않은 활성화 링크입니다.");
+		throw new IllegalArgumentException("error.activation.invalidLink");
 	}
 	
 	private EmailVerification createVerification(User user, String tokenHash, LocalDateTime expiresAt) {

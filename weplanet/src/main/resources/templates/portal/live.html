@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>방송 | Artist Portal</title>
+  <title th:text="#{portal.live.pageTitle}">방송 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
@@ -15,12 +15,12 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('라이브 방송')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(#{portal.live.heading})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
         <div>
-          <h1>라이브 방송</h1>
-          <p class="text-sm text-muted mt-8">카메라를 미리 확인하고, 시작을 누르면 커뮤니티 Live 탭에 송출됩니다.</p>
+          <h1 th:text="#{portal.live.heading}">라이브 방송</h1>
+          <p class="text-sm text-muted mt-8" th:text="#{portal.live.desc}">카메라를 미리 확인하고, 시작을 누르면 커뮤니티 Live 탭에 송출됩니다.</p>
         </div>
       </div>
 
@@ -37,19 +37,19 @@
             <p id="live-camera-error" class="text-sm" style="color:#b42318;margin-top:8px;" hidden></p>
             <p id="live-save-status" class="text-sm text-muted" style="margin-top:8px;" hidden></p>
             <div class="live-studio__controls">
-              <button type="button" id="live-start-btn" class="btn btn--primary">방송 시작</button>
-              <button type="button" id="live-end-btn" class="btn btn--ghost" disabled>방송 종료</button>
-              <span id="live-viewer-count" class="text-sm text-muted">시청자 0명</span>
+              <button type="button" id="live-start-btn" class="btn btn--primary" th:text="#{portal.live.start}">방송 시작</button>
+              <button type="button" id="live-end-btn" class="btn btn--ghost" disabled th:text="#{portal.live.end}">방송 종료</button>
+              <span id="live-viewer-count" class="text-sm text-muted" th:text="#{portal.live.viewers(0)}">시청자 0명</span>
             </div>
           </section>
 
           <aside class="live-studio__chat">
-            <h2 class="live-studio__chat-title">실시간 댓글</h2>
+            <h2 class="live-studio__chat-title" th:text="#{community.live.chatTitle}">실시간 댓글</h2>
             <div id="live-comments" class="live-studio__comments" aria-live="polite"></div>
             <form id="live-comment-form" class="live-studio__composer">
               <input id="live-comment-input" class="form-input" type="text" maxlength="500"
-                     placeholder="댓글을 입력하세요" autocomplete="off" />
-              <button type="submit" class="btn btn--primary">보내기</button>
+                     th:placeholder="#{community.live.commentPlaceholder}" placeholder="댓글을 입력하세요" autocomplete="off" />
+              <button type="submit" class="btn btn--primary" th:text="#{portal.live.send}">보내기</button>
             </form>
           </aside>
         </div>
@@ -58,6 +58,24 @@
     </main>
   </div>
 
+  <!--/* SETTINGS-03 커밋5: portal-live.js 가 쓰는 문구 (포털은 main.js를 안 불러서 여기서 넘긴다) */-->
+  <script th:inline="javascript">
+    window.PORTAL_I18N = Object.assign(window.PORTAL_I18N || {}, {
+      "portal.live.viewers": /*[[#{portal.live.viewers}]]*/ "시청자 {0}명",
+      "portal.live.replayMissing": /*[[#{portal.live.replayMissing}]]*/ "다시보기 영상이 없어 저장하지 못했습니다.",
+      "portal.live.replaySaving": /*[[#{portal.live.replaySaving}]]*/ "다시보기를 Live 탭에 저장하는 중...",
+      "portal.live.replaySaved": /*[[#{portal.live.replaySaved}]]*/ "다시보기가 Live 탭에 저장되었습니다.",
+      "client.live.anonymous": /*[[#{client.live.anonymous}]]*/ "익명",
+      "portal.live.reportedComment": /*[[#{portal.live.reportedComment}]]*/ "신고접수된 댓글입니다",
+      "community.report.toggle": /*[[#{community.report.toggle}]]*/ "신고",
+      "client.live.reportPrompt": /*[[#{client.live.reportPrompt}]]*/ "신고 사유를 선택하세요.\nSPAM / ABUSE / SEXUAL / ETC",
+      "client.live.reportReasonInvalid": /*[[#{client.live.reportReasonInvalid}]]*/ "신고 사유는 SPAM, ABUSE, SEXUAL, ETC 중 하나여야 합니다.",
+      "client.live.reportFailed": /*[[#{client.live.reportFailed}]]*/ "신고에 실패했습니다.",
+      "client.request.failed": /*[[#{client.request.failed}]]*/ "요청에 실패했습니다.",
+      "portal.live.cameraUnavailable": /*[[#{portal.live.cameraUnavailable}]]*/ "카메라 또는 마이크를 사용할 수 없습니다. 브라우저 권한을 확인해주세요.",
+      "portal.live.cameraFirst": /*[[#{portal.live.cameraFirst}]]*/ "카메라를 먼저 켜주세요."
+    });
+  </script>
   <script th:src="@{/js/portal-live.js}"></script>
 </body>
 </html>

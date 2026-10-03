@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${product.title() + ' | WePlaNet Shop'}">상품 상세 | WePlaNet Shop</title>
+  <title th:text="#{shopDetail.pageTitle(${product.title()})}">상품 상세 | WePlaNet Shop</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
   <link rel="stylesheet" th:href="@{/css/shop.css}" />
@@ -16,14 +16,14 @@
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
   <header class="site-header">
     <div class="header-left">
-      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <button type="button" class="menu-toggle" data-shell-open="menu" th:aria-label="#{shop.menuAria}" aria-label="메뉴">☰</button>
       <a class="brand" th:href="@{/shop}">
         <span class="brand__mark">W</span>
         <span class="brand__text">We<span>Pla</span>Net Shop</span>
       </a>
     </div>
     <div class="header-actions">
-      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니">
+      <a class="icon-btn" th:href="@{/shop/cart}" th:aria-label="#{shop.cartAria}" aria-label="장바구니">
         🛒
         <span th:if="${cartItemCount != null && cartItemCount > 0}"
               class="shop-cart-badge"
@@ -35,7 +35,7 @@
   <main class="container section">
     <a class="section__link mb-16"
        style="display:inline-block;"
-       th:href="${fromCommunity} ? @{/shop/community/{id}(id=${product.artistId()})} : @{/shop(artistId=${product.artistId()})}">← Shop 목록</a>
+       th:href="${fromCommunity} ? @{/shop/community/{id}(id=${product.artistId()})} : @{/shop(artistId=${product.artistId()})}" th:text="#{shopDetail.backToList}">← Shop 목록</a>
 
     <p th:if="${message}" class="alert alert--success mb-16" th:text="${message}">알림</p>
 
@@ -49,20 +49,20 @@
           · <span th:text="${product.categoryLabel()}">MD</span>
         </p>
         <h1 th:text="${product.title()}">상품명</h1>
-        <p class="text-sm text-muted" th:text="${product.artistName() + ' 공식 굿즈'}">공식 굿즈</p>
+        <p class="text-sm text-muted" th:text="#{shopDetail.officialGoods(${product.artistName()})}">공식 굿즈</p>
         <p class="product-detail__price">
           <span th:text="${product.formattedPrice()}">₩ 0</span>
           <small th:if="${product.priceSuffix() != null}" th:text="${product.priceSuffix()}">다운로드</small>
         </p>
         <p th:if="${!product.soldOut() and product.lowStock()}"
            class="product-card__stock product-card__stock--low"
-           th:text="|재고 ${product.stockQuantity()}개 남음|">재고 3개 남음</p>
-        <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold">SOLD OUT</p>
+           th:text="#{shop.stockLow(${product.stockQuantity()})}">재고 3개 남음</p>
+        <p th:if="${product.soldOut()}" class="product-card__stock product-card__stock--sold" th:text="#{shop.soldOut}">SOLD OUT</p>
 
         <div class="membership-notice" th:if="${product.membershipOnly()}">
-          <strong>멤버십 전용 상품</strong><br />
-          <span th:text="${product.artistName() + ' Membership 가입 회원만 구매할 수 있습니다.'}">멤버십 안내</span>
-          <a th:href="@{${productCommunityUrl}}">커뮤니티에서 멤버십 가입하기 ›</a>
+          <strong th:text="#{shopDetail.membershipOnlyTitle}">멤버십 전용 상품</strong><br />
+          <span th:text="#{shopDetail.membershipOnlyDesc(${product.artistName()})}">멤버십 안내</span>
+          <a th:href="@{${productCommunityUrl}}" th:text="#{shopDetail.joinMembershipLink}">커뮤니티에서 멤버십 가입하기 ›</a>
         </div>
 
         <p class="product-detail__desc"
@@ -71,20 +71,20 @@
            th:text="${product.description()}">상품 설명</p>
         <p class="product-detail__desc"
            th:unless="${product.description() != null and !#strings.isEmpty(product.description())}"
-           th:text="${product.artistName() + ' 공식 굿즈입니다. WePlaNet Shop에서 안전하게 구매할 수 있습니다.'}">
+           th:text="#{shopDetail.defaultDesc(${product.artistName()})}">
           상품 설명
         </p>
 
         <div class="product-detail__options" th:unless="${product.soldOut()}">
           <th:block th:with="selectable=${product.variants().?[selectable()]}">
             <th:block th:if="${selectable != null and !#lists.isEmpty(selectable)}">
-              <label for="variantSelect">옵션</label>
+              <label for="variantSelect" th:text="#{shopDetail.optionLabel}">옵션</label>
               <select class="form-select" id="variantSelect" style="max-width:240px;margin-bottom:10px;">
                 <option th:each="v : ${selectable}"
                         th:value="${v.id()}"
                         th:disabled="${v.soldOut()}"
                         th:attr="data-stock=${v.stockQuantity()}"
-                        th:text="${v.label() + (v.soldOut() ? ' (품절)' : (v.showOptionStockHint() ? ' · 재고 ' + v.stockQuantity() + '개' : ''))}">
+                        th:text="${v.label() + (v.soldOut() ? #messages.msg('shopDetail.optionSoldOut') : (v.showOptionStockHint() ? #messages.msg('shopDetail.optionStockHint', v.stockQuantity()) : ''))}">
                   S
                 </option>
               </select>
@@ -93,32 +93,32 @@
                    type="hidden" id="variantSelect"
                    th:value="${!#lists.isEmpty(product.variants()) ? product.variants().get(0).id() : ''}" />
           </th:block>
-          <label for="qty">수량</label>
+          <label for="qty" th:text="#{shopDetail.quantityLabel}">수량</label>
           <input class="form-input" id="qty" name="quantity" type="number" min="1"
                  value="1" style="max-width:120px;" />
-          <p class="text-xs text-muted mt-8">선택한 옵션 재고 범위 내에서 주문할 수 있습니다.</p>
+          <p class="text-xs text-muted mt-8" th:text="#{shopDetail.quantityHint}">선택한 옵션 재고 범위 내에서 주문할 수 있습니다.</p>
         </div>
 
         <div class="stack">
           <button type="button" id="addToCartBtn" class="btn btn--primary btn--block btn--lg"
                   th:disabled="${product.soldOut()}"
-                  th:text="${product.soldOut()} ? 'SOLD OUT' : '장바구니 담기'">장바구니 담기</button>
+                  th:text="${product.soldOut()} ? #{shop.soldOut} : #{shopDetail.addToCart}">장바구니 담기</button>
           <form id="buyNowForm" th:action="@{/shop/products/{id}/buy(id=${product.id()})}" method="post"
                 th:unless="${product.soldOut()}">
             <input type="hidden" name="from" th:value="${fromCommunity} ? 'community' : 'global'" />
             <input type="hidden" name="variantProductId" id="buyVariantProductId" value="" />
             <input type="hidden" name="quantity" id="buyQty" value="1" />
-            <button type="submit" class="btn btn--accent btn--block">바로 구매</button>
+            <button type="submit" class="btn btn--accent btn--block" th:text="#{shopDetail.buyNow}">바로 구매</button>
           </form>
           <button type="button" class="btn btn--accent btn--block" disabled
-                  th:if="${product.soldOut()}">품절</button>
+                  th:if="${product.soldOut()}" th:text="#{shopDetail.soldOutButton}">품절</button>
           <a class="btn btn--ghost btn--block"
              th:if="${product.officialUrl() != null and !#strings.isEmpty(product.officialUrl())}"
              th:href="${product.officialUrl()}"
-             target="_blank" rel="noopener noreferrer">공식 판매처</a>
+             target="_blank" rel="noopener noreferrer" th:text="#{shopDetail.officialSite}">공식 판매처</a>
           <a class="btn btn--ghost btn--block"
              th:href="@{${productCommunityUrl}}"
-             th:text="${product.artistName() + ' 커뮤니티로'}">커뮤니티로</a>
+             th:text="#{shopDetail.communityLink(${product.artistName()})}">커뮤니티로</a>
         </div>
       </div>
     </article>
@@ -129,10 +129,25 @@
     window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
     window.__SHOP_GOODS_ID__ = /*[[${product.id()}]]*/ '';
+    // 샵 공용 스크립트(shop.js)가 쓰는 화면 언어 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    window.__SHOP_MSG__ = {
+      addedToCart: /*[[#{shop.js.addedToCart}]]*/ "장바구니에 담았습니다.",
+      addToCartFailed: /*[[#{shop.js.addToCartFailed}]]*/ "담기에 실패했습니다.",
+      addToCartError: /*[[#{shop.js.addToCartError}]]*/ "장바구니에 담지 못했습니다.",
+      paymentModuleLoadError: /*[[#{shop.js.paymentModuleLoadError}]]*/ "결제 모듈을 불러오지 못했습니다.",
+      buyNowFailed: /*[[#{shop.js.buyNowFailed}]]*/ "구매에 실패했습니다.",
+      paymentCancelled: /*[[#{shop.js.paymentCancelled}]]*/ "결제를 취소했어요.",
+      checkoutPrepareFailed: /*[[#{shop.js.checkoutPrepareFailed}]]*/ "결제 준비에 실패했습니다.",
+      membershipBadge: /*[[#{shop.membershipBadge}]]*/ "멤버십",
+      decreaseQtyAria: /*[[#{shopCart.decreaseQtyAria}]]*/ "수량 줄이기",
+      increaseQtyAria: /*[[#{shopCart.increaseQtyAria}]]*/ "수량 늘리기",
+      deleteAria: /*[[#{shopCart.deleteAria}]]*/ "삭제"
+    };
   </script>
   <script src="https://js.tosspayments.com/v2/standard"></script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
+  <script th:replace="~{fragments/toss-i18n :: tossI18n}"></script>
   <script th:src="@{/js/commerce-toss.js}"></script>
   <script th:src="@{/js/shop.js}"></script>
   <script>

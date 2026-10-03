@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>해시태그 총공 | WePlaNet ADMIN</title>
+    <title th:text="#{adminHashtag.list.pageTitle}">해시태그 총공 | WePlaNet ADMIN</title>
     <link rel="stylesheet" th:href="@{/css/style.css}" />
     <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -20,37 +20,37 @@
             <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
             <details class="portal-sidebar__group">
                 <summary>
-                    <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+                    <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
                 </summary>
-                <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+                <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
             </details>
             <details class="portal-sidebar__group">
                 <summary>
-                    <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+                    <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
                 </summary>
-                <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+                <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
             </details>
-            <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-            <a th:href="@{/admin/users}">👥 전체 회원</a>
-            <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-            <a th:href="@{/admin/notices}">📢 전체 공지</a>
-            <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+            <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+            <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+            <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+            <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+            <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
             <details class="portal-sidebar__group" open>
                 <summary>
-                    <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
-                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+                    <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+                    <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
                 </summary>
-                <a class="portal-sidebar__sub is-active" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+                <a class="portal-sidebar__sub is-active" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
             </details>
-            <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+            <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
         </nav>
 
         <div class="portal-sidebar__footer">
-            <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
+            <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
             <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-                <button type="submit" class="btn">🚪 로그아웃</button>
+                <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
             </form>
         </div>
     </aside>
@@ -58,12 +58,12 @@
     <main class="portal-main">
         <div class="portal-main__head">
             <div>
-                <h1>해시태그 총공</h1>
-                <p class="text-sm text-muted">
+                <h1 th:text="#{admin.nav.hashtagEvent}">해시태그 총공</h1>
+                <p class="text-sm text-muted" th:text="#{adminHashtag.list.subtitle}">
                     월 1회 · 동시에 1개만 진행 · 기간 3~7일. 시작 전까지만 수정·삭제할 수 있습니다.
                 </p>
             </div>
-            <a class="btn btn--primary btn--sm" th:href="@{/admin/events/hashtag/new}">＋ 새 이벤트</a>
+            <a class="btn btn--primary btn--sm" th:href="@{/admin/events/hashtag/new}" th:text="|＋ #{adminHashtag.list.new}|">＋ 새 이벤트</a>
         </div>
 
         <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
@@ -71,24 +71,24 @@
 
         <section class="panel">
             <div class="panel__head">
-                <h2 class="panel__title">이벤트 목록</h2>
-                <span class="tag tag--member" th:text="${#lists.size(events)} + '건'">0건</span>
+                <h2 class="panel__title" th:text="#{adminHashtag.list.title}">이벤트 목록</h2>
+                <span class="tag tag--member" th:text="#{adminHashtag.list.count(${#lists.size(events)})}">0건</span>
             </div>
 
             <div class="table-wrap">
                 <table class="data-table">
                     <thead>
                     <tr>
-                        <th>이벤트</th>
-                        <th>기간</th>
-                        <th>참여</th>
-                        <th>상태</th>
-                        <th>관리</th>
+                        <th th:text="#{adminHashtag.list.col.event}">이벤트</th>
+                        <th th:text="#{adminHashtag.list.col.period}">기간</th>
+                        <th th:text="#{adminHashtag.list.col.targets}">참여</th>
+                        <th th:text="#{adminHashtag.list.col.status}">상태</th>
+                        <th th:text="#{admin.common.manage}">관리</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:if="${#lists.isEmpty(events)}">
-                        <td colspan="5" class="text-sm text-muted">
+                        <td colspan="5" class="text-sm text-muted" th:text="#{adminHashtag.list.empty}">
                             아직 등록된 이벤트가 없습니다. 오른쪽 위 '새 이벤트'로 첫 총공을 만들어보세요.
                         </td>
                     </tr>
@@ -100,28 +100,29 @@
                             ~
                             <span th:text="${#temporals.format(event.endAt(), 'yyyy.MM.dd HH:mm')}">2026.09.28 23:59</span>
                             <br />
-                            <span class="text-muted" th:text="${event.periodDays()} + '일'">7일</span>
+                            <span class="text-muted" th:text="#{adminHashtag.days(${event.periodDays()})}">7일</span>
                         </td>
-                        <td th:text="${event.targetCount()} + '팀'">5팀</td>
+                        <td th:text="#{adminHashtag.teams(${event.targetCount()})}">5팀</td>
                         <td>
               <span class="tag"
                     th:classappend="${event.statusTagClass()}"
-                    th:text="${event.status().displayName}">예정</span>
+                    th:text="#{${event.status().messageKey}}">예정</span>
                         </td>
                         <td>
                             <!-- 시작 전: 수정 / 삭제 -->
                             <div class="flex-center" th:if="${event.editable()}">
                                 <a class="btn btn--ghost btn--sm"
-                                   th:href="@{/admin/events/hashtag/{id}/edit(id=${event.id()})}">수정</a>
+                                   th:href="@{/admin/events/hashtag/{id}/edit(id=${event.id()})}" th:text="#{common.edit}">수정</a>
                                 <form method="post" style="margin:0;"
                                       th:action="@{/admin/events/hashtag/{id}/delete(id=${event.id()})}"
-                                      onsubmit="return confirm('이 이벤트를 삭제할까요?');">
-                                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                                      th:attr="data-confirm=#{adminHashtag.list.confirmDelete}"
+                                      onsubmit="return confirm(this.dataset.confirm);">
+                                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                                 </form>
                             </div>
                             <!-- 시작 후: 모니터링 (4단계에서 페이지를 만든다) -->
                             <a class="btn btn--primary btn--sm" th:unless="${event.editable()}"
-                               th:href="@{/admin/events/hashtag/{id}(id=${event.id()})}">모니터링</a>
+                               th:href="@{/admin/events/hashtag/{id}(id=${event.id()})}" th:text="#{adminHashtag.monitor}">모니터링</a>
                         </td>
                     </tr>
                     </tbody>
@@ -131,4 +132,4 @@
     </main>
 </div>
 </body>
-</html>
+</html>

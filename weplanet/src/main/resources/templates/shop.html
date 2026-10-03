@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${communityMode && selectedArtist != null ? selectedArtist.nickname() + ' 굿즈샵' : 'WePlaNet Shop'}">WePlaNet Shop</title>
+  <title th:text="${communityMode && selectedArtist != null ? #messages.msg('shop.artistShopHeading', selectedArtist.nickname()) : 'WePlaNet Shop'}">WePlaNet Shop</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
   <link rel="stylesheet" th:href="@{/css/shop.css}" />
@@ -16,25 +16,25 @@
                data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
   <header class="site-header">
     <div class="header-left">
-      <button type="button" class="menu-toggle" data-shell-open="menu" aria-label="메뉴">☰</button>
+      <button type="button" class="menu-toggle" data-shell-open="menu" th:aria-label="#{shop.menuAria}" aria-label="메뉴">☰</button>
       <a class="brand" th:href="@{/}">
         <span class="brand__mark">W</span>
         <span class="brand__text">We<span>Pla</span>Net</span>
       </a>
     </div>
     <div class="header-actions">
-      <a class="icon-btn" th:href="@{/shop/cart}" aria-label="장바구니" title="장바구니">
+      <a class="icon-btn" th:href="@{/shop/cart}" th:aria-label="#{shop.cartAria}" aria-label="장바구니" th:title="#{shop.cartTitle}" title="장바구니">
         🛒
         <span th:if="${cartItemCount != null && cartItemCount > 0}"
               class="shop-cart-badge"
               th:text="${cartItemCount}">0</span>
       </a>
       <th:block sec:authorize="isAnonymous()">
-        <a class="btn btn--ghost btn--sm" th:href="@{/login}">로그인</a>
+        <a class="btn btn--ghost btn--sm" th:href="@{/login}" th:text="#{shop.login}">로그인</a>
       </th:block>
       <th:block sec:authorize="isAuthenticated()">
         <form th:action="@{/logout}" method="post" style="display:inline;">
-          <button type="submit" class="btn btn--ghost btn--sm">로그아웃</button>
+          <button type="submit" class="btn btn--ghost btn--sm" th:text="#{shop.logout}">로그아웃</button>
         </form>
       </th:block>
     </div>
@@ -44,38 +44,38 @@
     <header class="shop-header">
       <th:block th:if="${communityMode && selectedArtist != null}">
         <p class="text-xs text-muted mb-8">
-          <a th:href="@{${selectedArtist.homeUrl()}}" th:text="${selectedArtist.nickname() + ' 커뮤니티'}">커뮤니티</a>
-          · 굿즈샵
+          <a th:href="@{${selectedArtist.homeUrl()}}" th:text="#{shop.communityShopLink(${selectedArtist.nickname()})}">커뮤니티</a>
+          · <span th:text="#{shop.communityShopSeparator}">굿즈샵</span>
         </p>
-        <h1 th:text="${selectedArtist.nickname() + ' 굿즈샵'}">아티스트 굿즈샵</h1>
-        <p>이 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠만 표시됩니다.</p>
+        <h1 th:text="#{shop.artistShopHeading(${selectedArtist.nickname()})}">아티스트 굿즈샵</h1>
+        <p th:text="#{shop.artistShopDesc}">이 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠만 표시됩니다.</p>
       </th:block>
       <th:block th:unless="${communityMode}">
-        <h1>WePlaNet Shop</h1>
-        <p>여러 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠 · 멤버십 전용 상품</p>
+        <h1 th:text="#{shop.globalHeading}">WePlaNet Shop</h1>
+        <p th:text="#{shop.globalDesc}">여러 커뮤니티 아티스트의 공식 MD · 디지털 콘텐츠 · 멤버십 전용 상품</p>
       </th:block>
       <div class="shop-header__actions">
         <a class="btn btn--ghost btn--sm" th:href="@{/shop/cart}">
-          장바구니
+          <span th:text="#{shop.cartLink}">장바구니</span>
           <span th:if="${cartItemCount != null && cartItemCount > 0}"
                 th:text="'(' + ${cartItemCount} + ')'">(0)</span>
         </a>
-        <a th:if="${communityMode}" class="btn btn--ghost btn--sm" th:href="@{/shop}">전체 굿즈샵 보기</a>
+        <a th:if="${communityMode}" class="btn btn--ghost btn--sm" th:href="@{/shop}" th:text="#{shop.viewAllShops}">전체 굿즈샵 보기</a>
         <a th:if="${communityMode && selectedArtist != null}"
            class="btn btn--ghost btn--sm"
-           th:href="@{${selectedArtist.homeUrl()}}">← 커뮤니티</a>
+           th:href="@{${selectedArtist.homeUrl()}}" th:text="#{shop.backToCommunity}">← 커뮤니티</a>
       </div>
     </header>
 
     <!-- 전체 굿즈샵: 아티스트 선택 -->
-    <section th:if="${!communityMode}" aria-label="아티스트 Shop">
-      <p class="drawer-menu__section-title" style="margin-bottom:10px;">아티스트 Shop</p>
+    <section th:if="${!communityMode}" th:aria-label="#{shop.artistShopSectionTitle}" aria-label="아티스트 Shop">
+      <p class="drawer-menu__section-title" style="margin-bottom:10px;" th:text="#{shop.artistShopSectionTitle}">아티스트 Shop</p>
       <div class="shop-artist-row">
         <a class="shop-artist-chip"
            th:classappend="${selectedArtistId == null} ? ' is-active'"
            th:href="@{/shop}">
-          <div class="avatar">ALL</div>
-          전체
+          <div class="avatar" th:text="#{shop.allArtistsChip}">ALL</div>
+          <span th:text="#{shop.allArtistsChip}">전체</span>
         </a>
         <a class="shop-artist-chip"
            th:each="artist : ${artists}"
@@ -88,8 +88,8 @@
     </section>
 
     <!-- 커뮤니티 굿즈샵: 현재 아티스트 고정 -->
-    <section th:if="${communityMode && selectedArtist != null}" aria-label="아티스트 Shop">
-      <p class="drawer-menu__section-title" style="margin-bottom:10px;">아티스트</p>
+    <section th:if="${communityMode && selectedArtist != null}" th:aria-label="#{shop.artistShopSectionTitle}" aria-label="아티스트 Shop">
+      <p class="drawer-menu__section-title" style="margin-bottom:10px;" th:text="#{shop.artistSectionTitleLocked}">아티스트</p>
       <div class="shop-artist-row">
         <span class="shop-artist-chip is-active is-locked" aria-current="true">
           <div class="avatar" th:text="${selectedArtist.logo()}">AR</div>
@@ -100,23 +100,23 @@
 
     <div class="shop-filters">
       <div class="chip-row">
-        <button type="button" class="chip is-active" data-shop-filter="all">전체</button>
-        <button type="button" class="chip" data-shop-filter="md">MD · 굿즈</button>
-        <button type="button" class="chip" data-shop-filter="digital">디지털</button>
-        <button type="button" class="chip" data-shop-filter="membership">멤버십 전용</button>
-        <button type="button" class="chip" data-shop-filter="clothing">의류</button>
-        <button type="button" class="chip" data-shop-filter="shoes">신발</button>
-        <button type="button" class="chip" data-shop-filter="bag">가방</button>
-        <button type="button" class="chip" data-shop-filter="accessory">악세서리</button>
-        <button type="button" class="chip" data-shop-filter="other">기타</button>
+        <button type="button" class="chip is-active" data-shop-filter="all" th:text="#{shop.filterAll}">전체</button>
+        <button type="button" class="chip" data-shop-filter="md" th:text="#{shop.filterMd}">MD · 굿즈</button>
+        <button type="button" class="chip" data-shop-filter="digital" th:text="#{shop.filterDigital}">디지털</button>
+        <button type="button" class="chip" data-shop-filter="membership" th:text="#{shop.filterMembership}">멤버십 전용</button>
+        <button type="button" class="chip" data-shop-filter="clothing" th:text="#{shop.filterClothing}">의류</button>
+        <button type="button" class="chip" data-shop-filter="shoes" th:text="#{shop.filterShoes}">신발</button>
+        <button type="button" class="chip" data-shop-filter="bag" th:text="#{shop.filterBag}">가방</button>
+        <button type="button" class="chip" data-shop-filter="accessory" th:text="#{shop.filterAccessory}">악세서리</button>
+        <button type="button" class="chip" data-shop-filter="other" th:text="#{shop.filterOther}">기타</button>
       </div>
-      <input class="form-input shop-search" type="search" placeholder="상품명 검색" id="shopSearchInput" />
+      <input class="form-input shop-search" type="search" th:placeholder="#{shop.searchPlaceholder}" placeholder="상품명 검색" id="shopSearchInput" />
     </div>
 
     <section>
       <div class="section__head">
         <h2 class="section__title"
-            th:text="${communityMode && selectedArtist != null ? selectedArtist.nickname() + ' 상품' : (selectedArtist != null ? selectedArtist.nickname() + ' 상품' : '전체 상품')}">
+            th:text="${communityMode && selectedArtist != null ? #messages.msg('shop.productsHeadingArtist', selectedArtist.nickname()) : (selectedArtist != null ? #messages.msg('shop.productsHeadingArtist', selectedArtist.nickname()) : #messages.msg('shop.productsHeadingAll'))}">
           상품
         </h2>
       </div>
@@ -127,10 +127,10 @@
         </th:block>
       </div>
 
-      <p class="list-empty" th:if="${#lists.isEmpty(products)}">
+      <p class="list-empty" th:if="${#lists.isEmpty(products)}" th:text="#{shop.emptyProducts}">
         표시할 상품이 없습니다.
       </p>
-      <p class="list-empty" id="shopEmptyFilter" hidden>조건에 맞는 상품이 없습니다.</p>
+      <p class="list-empty" id="shopEmptyFilter" hidden th:text="#{shop.emptyFilter}">조건에 맞는 상품이 없습니다.</p>
     </section>
   </main>
 
@@ -138,6 +138,20 @@
     window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
     window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
+    // 샵 공용 스크립트(shop.js)가 쓰는 화면 언어 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    window.__SHOP_MSG__ = {
+      addedToCart: /*[[#{shop.js.addedToCart}]]*/ "장바구니에 담았습니다.",
+      addToCartFailed: /*[[#{shop.js.addToCartFailed}]]*/ "담기에 실패했습니다.",
+      addToCartError: /*[[#{shop.js.addToCartError}]]*/ "장바구니에 담지 못했습니다.",
+      paymentModuleLoadError: /*[[#{shop.js.paymentModuleLoadError}]]*/ "결제 모듈을 불러오지 못했습니다.",
+      buyNowFailed: /*[[#{shop.js.buyNowFailed}]]*/ "구매에 실패했습니다.",
+      paymentCancelled: /*[[#{shop.js.paymentCancelled}]]*/ "결제를 취소했어요.",
+      checkoutPrepareFailed: /*[[#{shop.js.checkoutPrepareFailed}]]*/ "결제 준비에 실패했습니다.",
+      membershipBadge: /*[[#{shop.membershipBadge}]]*/ "멤버십",
+      decreaseQtyAria: /*[[#{shopCart.decreaseQtyAria}]]*/ "수량 줄이기",
+      increaseQtyAria: /*[[#{shopCart.increaseQtyAria}]]*/ "수량 늘리기",
+      deleteAria: /*[[#{shopCart.deleteAria}]]*/ "삭제"
+    };
   </script>
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>

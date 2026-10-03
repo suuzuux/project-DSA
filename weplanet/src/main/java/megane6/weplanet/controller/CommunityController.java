@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
@@ -24,6 +25,7 @@ import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import megane6.weplanet.web.RefererRedirects;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -59,6 +61,8 @@ public class CommunityController {
 	private final LiveBroadcastService liveBroadcastService;
 	
 	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
+	// SETTINGS-03 커밋3: flash로 내보내는 예외 메시지(키 또는 문장)를 현재 로케일 문구로 바꾸는 데 사용
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	private final CommunityArtistResolver communityArtistResolver;
 
@@ -221,17 +225,17 @@ public class CommunityController {
 		
 		Post post = postService.getPost(postId);
 		if (post.getBoardType() != expectedType) {
-			throw new IllegalArgumentException("게시판 종류가 맞지 않습니다.");
+			throw new IllegalArgumentException("error.post.boardMismatch");
 		}
 		if (post.getArtist() == null || !post.getArtist().getId().equals(artistId)) {
-			throw new IllegalArgumentException("이 커뮤니티의 게시글이 아닙니다.");
+			throw new IllegalArgumentException("error.post.notInCommunity");
 		}
 		
 		// 36번(Hide from Artists) 필터가 목록에만 있고 상세엔 빠져 있어서,
 		// 아티스트가 주소창에 /community/1/fan/5 를 직접 치면 숨긴 글이 그대로 열렸음.
 		// 가입자 차단이 목록에만 있던 것과 똑같은 종류의 누락. 목록과 같은 기준을 상세에도 적용함
 		if (post.isHiddenFromArtist() && userResolver.isArtist(principal)) {
-			throw new IllegalArgumentException("작성자가 아티스트에게 공개하지 않은 게시글입니다.");
+			throw new IllegalArgumentException("error.post.hiddenFromArtist");
 		}
 		
 		User currentUser = userResolver.resolve(principal, 1L);
@@ -311,7 +315,7 @@ public class CommunityController {
 		try {
 			model.addAttribute("mediaPost", boardMediaService.getInCommunity(mediaId, artistId, canSeeMembershipMedia(model)));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/community/" + artistId + "/media";
 		}
 		model.addAttribute("groupId", artistId);
@@ -381,7 +385,7 @@ public class CommunityController {
 		populateArtistModel(artistId, principal, model);
 		User me = userResolver.resolve(principal, 1L);
 		User targetUser = userRepository.findOneById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 
 		// 프로필 열람 = 나도 이 커뮤니티 가입 + 상대도 이 커뮤니티 가입.
 		// hasCommunityAccess에 이미 "커뮤니티 주인(아티스트 본인)은 가입 없이 항상 접근 가능" 등의 예외가
@@ -416,26 +420,35 @@ public class CommunityController {
 		}
 		
 		boolean oldest = "oldest".equals(sort);
-		
-		List<Comment> myComments = oldest
+
+		// 활동 목록(댓글/포스트/좋아요/북마크)은 지금 보고 있는 커뮤니티(artistId)의 글에 대한 것만 보여준다.
+		// 예전에는 커뮤니티 구분 없이 전부 보여줘서, 내가 가입하지 않은 다른 커뮤니티의 글 제목과 댓글 내용까지 보였다.
+		List<Comment> myComments = (oldest
 				? commentRepository.findByAuthorOrderByCreatedAtAsc(targetUser)
-				: commentRepository.findByAuthorOrderByCreatedAtDesc(targetUser);
-		
-		List<Post> myPosts = oldest
-				? postService.getPostsByAuthor(targetUser, true)
-				: postService.getPostsByAuthor(targetUser, false);
+				: commentRepository.findByAuthorOrderByCreatedAtDesc(targetUser)).stream()
+				.filter(comment -> isPostOfCommunity(comment.getPost(), artistId))
+				.toList();
+
+		List<Post> myPosts = postService.getPostsByAuthor(targetUser, oldest).stream()
+				.filter(post -> isPostOfCommunity(post, artistId))
+				.toList();
 		Map<Long, Long> myPostCommentCounts = new HashMap<>();
 		for (Post post : myPosts) {
 			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
 		}
-		
+
 		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
 				.map(Like::getPost)
+				.filter(post -> isPostOfCommunity(post, artistId))
 				.toList();
-		
-		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
-				.map(Bookmark::getPost)
-				.toList();
+
+		// 북마크는 본인만 보는 정보라 내 프로필에서만 불러온다 (화면에서도 북마크 탭은 내 프로필에서만 보인다)
+		List<Post> bookmarkedPosts = isOwnProfile
+				? bookmarkRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
+						.map(Bookmark::getPost)
+						.filter(post -> isPostOfCommunity(post, artistId))
+						.toList()
+				: List.of();
 		
 		// [닉네임 관리] 프로필에서 댓글/좋아요/북마크한 "다른 사람들"의 글이 함께 보이는데,
 		// 그 작성자 닉네임도 이 커뮤니티에서 통용되는 닉네임(가입할 때 닉네임)으로 통일해서 보여준다.
@@ -473,7 +486,8 @@ public class CommunityController {
 			@PathVariable Long artistId,
 			@PathVariable Long userId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
-			@RequestHeader(value = "Referer", required = false) String referer
+			@RequestHeader(value = "Referer", required = false) String referer,
+			HttpServletRequest request
 	) {
 		if (principal == null) {
 			return "redirect:/login";
@@ -484,7 +498,8 @@ public class CommunityController {
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
 			// AUTH-11: 팔로우 버튼을 빠르게 두 번 눌러 같은 팔로우가 동시에 저장된 경우 - 이미 팔로우된 상태이므로 그대로 둔다
 		}
-		return "redirect:" + (referer != null ? referer : "/community/" + artistId + "/profile/" + userId);
+		// 우리 사이트 주소일 때만 누른 화면으로 돌아간다 (RefererRedirects - 오픈 리다이렉트 방지)
+		return RefererRedirects.back(referer, request, "/community/" + artistId + "/profile/" + userId);
 	}
 
 	// FOLLOW-01: 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트(닉네임+아바타) - 모달에서 fetch로 불러 씀
@@ -520,7 +535,7 @@ public class CommunityController {
 		}
 		User me = userResolver.resolve(principal, 1L);
 		User targetUser = userRepository.findOneById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 		if (!hasCommunityAccess(me, artistId) || !hasCommunityAccess(targetUser, artistId)) {
 			return "redirect:/community/" + artistId + "/highlight";
 		}
@@ -553,7 +568,7 @@ public class CommunityController {
 		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		User member = requireMembershipEligible(principal, artistId);
 		
 		membershipService.join(member, artist);
@@ -574,7 +589,7 @@ public class CommunityController {
 		
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		User member = requireMembershipEligible(principal, artistId);
 		
 		membershipService.cancel(member, artist);
@@ -622,6 +637,11 @@ public class CommunityController {
 	// 예전엔 Follow 기준이었는데, 검색/커뮤니티 페이지 어디서 가입하든 닉네임을 받도록 통일하면서
 	// 가입 여부의 기준도 CommunityMember로 옮겼음 (Follow는 About 위젯의 팔로우 버튼 전용으로 남김).
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
+	// 프로필 활동 목록용: 이 글이 지금 보고 있는 커뮤니티(artistId)의 글인지
+	private static boolean isPostOfCommunity(Post post, Long artistId) {
+		return post != null && post.getArtist() != null && post.getArtist().getId().equals(artistId);
+	}
+
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
 		// 커뮤니티 주인(그 아티스트 본인)은 가입 절차 없이 항상 열람 가능해야 함.
 		// 아티스트는 팬 전용 가입 절차를 밟을 수 없어서, 가입 여부만 보면
@@ -647,10 +667,10 @@ public class CommunityController {
 	private User requireMembershipEligible(AuthenticatedUser principal, Long artistId) {
 		User user = userResolver.resolve(principal, 1L);
 		if (communityArtistResolver.isArtistOf(user, artistId)) {
-			throw new IllegalStateException("본인 커뮤니티 멤버십에는 가입할 수 없습니다.");
+			throw new IllegalStateException("error.membership.ownCommunity");
 		}
 		if (!user.canParticipateInCommunity()) {
-			throw new IllegalStateException("팬 또는 아티스트 계정만 이용할 수 있는 기능입니다.");
+			throw new IllegalStateException("error.community.fanOrArtistOnly");
 		}
 		return user;
 	}
@@ -664,7 +684,7 @@ public class CommunityController {
 	private User populateArtistModel(Long artistId, AuthenticatedUser principal, Model model) {
 		User artist = userRepository.findOneById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
 		
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
 		Map<Long, String> logoUrls = portalManagementService.logoImageUrlsByArtistIds(

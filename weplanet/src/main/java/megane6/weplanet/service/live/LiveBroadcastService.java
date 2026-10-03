@@ -65,7 +65,7 @@ public class LiveBroadcastService {
 		if (existing.isPresent()) {
 			LiveSession session = existing.get();
 			if (!session.isHost(host)) {
-				throw new IllegalStateException("이미 다른 호스트가 방송 중입니다.");
+				throw new IllegalStateException("error.live.otherHostLive");
 			}
 			return LiveStatusView.from(session);
 		}
@@ -86,7 +86,7 @@ public class LiveBroadcastService {
 		}
 		if (!session.isHost(actor) && actor.getRole() != Role.AGENCY
 				&& !communityArtistResolver.isArtistOf(actor, artist.getId())) {
-			throw new IllegalStateException("방송을 종료할 권한이 없습니다.");
+			throw new IllegalStateException("error.live.endNoPermission");
 		}
 		session.end();
 		return LiveStatusView.offline();
@@ -107,7 +107,7 @@ public class LiveBroadcastService {
 	public Long saveReplay(User host, User artist, MultipartFile file) {
 		requirePortalHost(host, artist);
 		if (file == null || file.isEmpty()) {
-			throw new IllegalArgumentException("다시보기 영상이 없습니다.");
+			throw new IllegalArgumentException("error.live.replayFileMissing");
 		}
 		String title = BoardMediaService.LIVE_REPLAY_TITLE_PREFIX + " · "
 				+ LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"));
@@ -146,17 +146,17 @@ public class LiveBroadcastService {
 	public LiveCommentView addComment(User author, Long artistId, String content) {
 		requireCanWatch(author, artistId);
 		if (content == null || content.isBlank()) {
-			throw new IllegalArgumentException("댓글 내용을 입력해주세요.");
+			throw new IllegalArgumentException("error.comment.contentRequired");
 		}
 		String trimmed = content.trim();
 		if (trimmed.length() > 500) {
-			throw new IllegalArgumentException("댓글은 500자 이내로 입력해주세요.");
+			throw new IllegalArgumentException("error.live.commentTooLong");
 		}
 		if (chatFilterService.containsBannedWord(trimmed)) {
-			throw new IllegalArgumentException("부적절한 언어가 포함되어 전송이 제한되었습니다.");
+			throw new IllegalArgumentException("error.live.bannedWord");
 		}
 		LiveSession session = findLive(artistId)
-				.orElseThrow(() -> new IllegalStateException("진행 중인 라이브가 없습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.live.notLive"));
 		LiveComment saved = liveCommentRepository.save(LiveComment.create(session, author, trimmed));
 		return LiveCommentView.of(saved, communityJoinService.displayNickname(author, artistId), artistId);
 	}
@@ -164,11 +164,11 @@ public class LiveBroadcastService {
 	@Transactional
 	public void deleteCommentForArtistCommunity(Long commentId, User artist) {
 		LiveComment comment = liveCommentRepository.findById(commentId)
-				.orElseThrow(() -> new IllegalArgumentException("채팅을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.live.chatNotFound"));
 		if (artist == null
 				|| comment.getSession().getArtist() == null
 				|| !comment.getSession().getArtist().getId().equals(artist.getId())) {
-			throw new IllegalStateException("이 커뮤니티의 채팅만 삭제할 수 있습니다.");
+			throw new IllegalStateException("error.live.deleteOnlyThisCommunity");
 		}
 		liveCommentReportRepository.deleteByComment(comment);
 		liveCommentRepository.delete(comment);
@@ -177,10 +177,10 @@ public class LiveBroadcastService {
 	@Transactional(readOnly = true)
 	public LiveComment requireCommentForArtist(Long commentId, Long artistId) {
 		LiveComment comment = liveCommentRepository.findById(commentId)
-				.orElseThrow(() -> new IllegalArgumentException("채팅을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.live.chatNotFound"));
 		if (comment.getSession().getArtist() == null
 				|| !comment.getSession().getArtist().getId().equals(artistId)) {
-			throw new IllegalArgumentException("해당 아티스트 라이브 채팅이 아닙니다.");
+			throw new IllegalArgumentException("error.live.notThisArtistChat");
 		}
 		return comment;
 	}
@@ -188,13 +188,13 @@ public class LiveBroadcastService {
 	@Transactional(readOnly = true)
 	public LiveSession requireLive(Long artistId) {
 		return findLive(artistId)
-				.orElseThrow(() -> new IllegalStateException("진행 중인 라이브가 없습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.live.notLive"));
 	}
 
 	@Transactional(readOnly = true)
 	public void requireCanWatch(User user, Long artistId) {
 		if (user == null) {
-			throw new IllegalStateException("로그인이 필요합니다.");
+			throw new IllegalStateException("common.error.loginRequired");
 		}
 		LiveSession live = findLive(artistId).orElse(null);
 		if (live != null && live.isHost(user)) {
@@ -215,16 +215,16 @@ public class LiveBroadcastService {
 			}
 		}
 		if (!communityJoinService.isJoined(user, artistId)) {
-			throw new IllegalStateException("커뮤니티 가입자만 라이브를 이용할 수 있습니다.");
+			throw new IllegalStateException("error.live.membersOnly");
 		}
 	}
 
 	private void requirePortalHost(User host, User artist) {
 		if (host == null || artist == null) {
-			throw new IllegalStateException("포털 사용자만 방송을 시작할 수 있습니다.");
+			throw new IllegalStateException("error.live.portalOnly");
 		}
 		if (artist.getRole() != Role.ARTIST) {
-			throw new IllegalArgumentException("아티스트 계정이 아닙니다.");
+			throw new IllegalArgumentException("error.live.notArtistAccount");
 		}
 		if (communityArtistResolver.isArtistOf(host, artist.getId())) {
 			return;
@@ -232,6 +232,6 @@ public class LiveBroadcastService {
 		if (host.getRole() == Role.AGENCY) {
 			return;
 		}
-		throw new IllegalStateException("아티스트 또는 에이전시만 방송을 시작할 수 있습니다.");
+		throw new IllegalStateException("error.live.artistOrAgencyOnly");
 	}
 }

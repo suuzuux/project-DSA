@@ -31,6 +31,7 @@ public class AdminLoginService {
 	private final PasswordEncoder passwordEncoder;
 	private final EmailVerificationService evs;
 	private final MailSenderService mss;
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	/**
 	 * 1단계 - 아이디/비밀번호를 확인하고 인증번호를 보낸다.
@@ -72,7 +73,7 @@ public class AdminLoginService {
 
 		if (!result.verified()) {
 			throw new IllegalArgumentException(
-					"인증번호가 올바르지 않습니다. (남은 시도 " + result.remainingAttempts() + "회)"
+					messages.get("admin.login.error.invalidCode", result.remainingAttempts())
 			);
 		}
 	}
@@ -101,8 +102,8 @@ public class AdminLoginService {
 						code
 				);
 		if (!result.verified()) {
-			throw new IllegalArgumentException("인증번호가 올바르지 않습니다. (남은 시도 "
-					+ result.remainingAttempts() + "회)");
+			throw new IllegalArgumentException(messages.get("admin.login.error.invalidCode", result.remainingAttempts()
+					));
 		}
 		return admin;
 	}
@@ -110,19 +111,19 @@ public class AdminLoginService {
 	// 아이디, 비밀번호, 역할, 계정상태 한 번에 확인
 	private User authenticate(String username, String rawPassword) {
 		User admin = ur.findByUsername(username).orElseThrow(() ->
-				new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다."));
+				new IllegalArgumentException("admin.login.error.badCredentials"));
 		
 		// 아이디, 비밀번호 중 어느 곳이 틀렸는지 알려주지 X (보안강화)
 		if (!passwordEncoder.matches(rawPassword, admin.getPassword())) {
-			throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+			throw new IllegalArgumentException("admin.login.error.badCredentials");
 		}
 		
 		if (admin.getRole() != Role.ADMIN) {
-			throw new IllegalArgumentException("아이디 또는 비밀번호가 올바르지 않습니다.");
+			throw new IllegalArgumentException("admin.login.error.badCredentials");
 		}
 		
 		if (!admin.isLoginable()) {
-			throw new IllegalStateException("사용할 수 없는 계정입니다.");
+			throw new IllegalStateException("admin.login.error.unavailable");
 		}
 		
 		return admin;

@@ -23,6 +23,11 @@
     const replayTitle = document.getElementById("live-replay-title");
     const replayClose = document.getElementById("live-replay-close");
 
+    // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+    const t = function (key, fallback, args) {
+        return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
+    };
+
     const ICE = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
     const MAX_VISIBLE_COMMENTS = 100;
 
@@ -80,7 +85,7 @@
         }
         const reported = comment.reportedByMe === true || comment.reportedByMe === "true";
         const name = document.createElement("strong");
-        name.textContent = comment.authorNickname || "익명";
+        name.textContent = comment.authorNickname || t("client.live.anonymous", "익명");
         const isArtist = comment.fromArtist === true
             || comment.fromArtist === "true"
             || Number(comment.authorId) === artistId;
@@ -89,7 +94,7 @@
             name.style.color = randomArtistColor();
         }
         const body = document.createElement("span");
-        body.textContent = reported ? "신고접수된 댓글입니다" : (comment.content || "");
+        body.textContent = reported ? t("community.comment.reported", "신고접수된 댓글입니다") : (comment.content || "");
         row.appendChild(name);
         row.appendChild(body);
         const myId = root.dataset.userId ? Number(root.dataset.userId) : null;
@@ -97,7 +102,7 @@
             const reportBtn = document.createElement("button");
             reportBtn.type = "button";
             reportBtn.className = "live-comment__report";
-            reportBtn.textContent = "신고";
+            reportBtn.textContent = t("community.report.toggle", "신고");
             reportBtn.addEventListener("click", function () {
                 reportLiveComment(comment.id, row);
             });
@@ -118,7 +123,7 @@
         row.classList.add("live-comment--reported");
         const body = row.querySelector("span");
         if (body) {
-            body.textContent = "신고접수된 댓글입니다";
+            body.textContent = t("community.comment.reported", "신고접수된 댓글입니다");
         }
         const name = row.querySelector("strong");
         if (name) {
@@ -133,11 +138,11 @@
 
     async function reportLiveComment(commentId, row) {
         if (!commentId) return;
-        const reason = window.prompt("신고 사유를 선택하세요.\nSPAM / ABUSE / SEXUAL / ETC", "ABUSE");
+        const reason = window.prompt(t("client.live.reportPrompt", "신고 사유를 선택하세요.\nSPAM / ABUSE / SEXUAL / ETC"), "ABUSE");
         if (!reason) return;
         const normalized = String(reason).trim().toUpperCase();
         if (!["SPAM", "ABUSE", "SEXUAL", "ETC"].includes(normalized)) {
-            window.alert("신고 사유는 SPAM, ABUSE, SEXUAL, ETC 중 하나여야 합니다.");
+            window.alert(t("client.live.reportReasonInvalid", "신고 사유는 SPAM, ABUSE, SEXUAL, ETC 중 하나여야 합니다."));
             return;
         }
         try {
@@ -150,13 +155,13 @@
             );
             const data = await res.json().catch(function () { return {}; });
             if (!res.ok || data.success === false) {
-                window.alert((data && data.message) || "신고에 실패했습니다.");
+                window.alert((data && data.message) || t("client.live.reportFailed", "신고에 실패했습니다."));
                 return;
             }
             markLiveCommentReported(row);
         } catch (err) {
             console.warn("[LIVE] 채팅 신고 실패", err);
-            window.alert("신고에 실패했습니다.");
+            window.alert(t("client.live.reportFailed", "신고에 실패했습니다."));
         }
     }
 
@@ -399,7 +404,7 @@
 
     function openReplay(src, title) {
         if (!replayModal || !replayPlayer || !src) return;
-        replayTitle.textContent = title || "다시보기";
+        replayTitle.textContent = title || t("community.media.replayTag", "다시보기");
         replayPlayer.src = src;
         replayModal.hidden = false;
         replayPlayer.play().catch(function () {});

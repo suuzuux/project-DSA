@@ -42,14 +42,17 @@ public class LocalFileStorageService implements FileStorageService {
 			String storedName = UUID.randomUUID() + ext;
 			Path dest = root.resolve(storedName).normalize();
 			if (!dest.getParent().equals(root)) {
-				throw new IllegalArgumentException("잘못된 저장 경로입니다.");
+				log.warn("잘못된 저장 경로: {}", dest);
+				throw new IllegalArgumentException("common.error.saveFailed");
 			}
 			try (InputStream in = file.getInputStream()) {
 				Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
 			}
 			return storedName;
 		} catch (IOException e) {
-			throw new IllegalStateException("파일 저장에 실패했습니다.", e);
+			// 화면에는 메시지 키(번역된 "저장에 실패했습니다")만 보이고, 원인은 로그에 남긴다
+			log.warn("파일 저장 실패", e);
+			throw new IllegalStateException("common.error.saveFailed", e);
 		}
 	}
 
@@ -59,9 +62,12 @@ public class LocalFileStorageService implements FileStorageService {
 			Path file = root.resolve(storedName).normalize();
 			Resource resource = new UrlResource(file.toUri());
 			if (resource.exists() && resource.isReadable()) return resource;
-			throw new IllegalArgumentException("파일을 찾을 수 없습니다: " + storedName);
+			// 내부 저장 파일명은 화면에 보이지 않게 로그에만 남긴다
+			log.warn("파일을 찾을 수 없음: {}", storedName);
+			throw new IllegalArgumentException("error.media.fileNotFound");
 		} catch (MalformedURLException e) {
-			throw new IllegalArgumentException("파일 경로가 올바르지 않습니다: " + storedName, e);
+			log.warn("파일 경로가 올바르지 않음: {}", storedName, e);
+			throw new IllegalArgumentException("error.media.fileNotFound", e);
 		}
 	}
 

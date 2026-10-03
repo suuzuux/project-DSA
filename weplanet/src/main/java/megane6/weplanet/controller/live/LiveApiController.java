@@ -100,13 +100,13 @@ public class LiveApiController {
 		liveBroadcastService.requireCanWatch(me, artistId);
 		LiveComment comment = liveBroadcastService.requireCommentForArtist(commentId, artistId);
 		if (comment.getAuthor().getId().equals(me.getId())) {
-			throw new IllegalStateException("본인 채팅은 신고할 수 없습니다.");
+			throw new IllegalStateException("error.live.cannotReportOwn");
 		}
 		ReportReason reportReason;
 		try {
 			reportReason = ReportReason.valueOf(reason);
 		} catch (IllegalArgumentException | NullPointerException e) {
-			throw new IllegalArgumentException("신고 사유가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.live.invalidReportReason");
 		}
 		reportService.reportLiveComment(comment, me, reportReason);
 		return Map.of("success", true);
@@ -118,7 +118,7 @@ public class LiveApiController {
 		}
 		return userRepository.findById(principal.getId())
 				.filter(user -> user.isArtistSide() || user.getRole() == Role.AGENCY)
-				.orElseThrow(() -> new IllegalStateException("아티스트 또는 에이전시만 이용할 수 있습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.live.artistOrAgencyOnlyUse"));
 	}
 	
 	private User resolveManagedArtist(User actor, HttpSession session) {
@@ -126,17 +126,17 @@ public class LiveApiController {
 		if (actor.isArtistSide()) {
 			Long ownCommunityId = communityArtistResolver.ownCommunityId(actor);
 			if (ownCommunityId == null) {
-				throw new IllegalStateException("소속된 커뮤니티가 없습니다.");
+				throw new IllegalStateException("error.live.noOwnCommunity");
 			}
 			return userRepository.findById(ownCommunityId)
-					.orElseThrow(() -> new IllegalStateException("커뮤니티를 찾을 수 없습니다."));
+					.orElseThrow(() -> new IllegalStateException("error.live.communityNotFound"));
 		}
 		Long agencyId = actor.agencyId();
 		List<User> artists = agencyId == null
 				? List.of()
 				: userRepository.findByRoleAndAgency_Id(Role.ARTIST, agencyId);
 		if (artists.isEmpty()) {
-			throw new IllegalStateException("관리할 아티스트가 없습니다.");
+			throw new IllegalStateException("error.live.noManagedArtist");
 		}
 		Long selected = null;
 		if (session != null) {

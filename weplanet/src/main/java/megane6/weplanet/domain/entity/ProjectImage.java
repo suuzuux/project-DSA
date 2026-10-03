@@ -53,10 +53,10 @@ public class ProjectImage {
             Long fileSize
     ) {
         if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("대표 이미지에는 이미지 파일만 등록할 수 있습니다.");
+            throw new IllegalArgumentException("error.project.coverImageOnly");
         }
         if (fileSize == null || fileSize <= 0) {
-            throw new IllegalArgumentException("비어 있는 이미지 파일은 등록할 수 없습니다.");
+            throw new IllegalArgumentException("error.project.coverEmpty");
         }
 
         this.project = project;

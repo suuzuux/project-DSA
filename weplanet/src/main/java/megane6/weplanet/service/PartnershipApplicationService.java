@@ -2,6 +2,7 @@ package megane6.weplanet.service;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.PartnershipApplication;
+import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicantType;
 import megane6.weplanet.domain.entity.enumfolder.PartnershipApplicationStatus;
 import megane6.weplanet.repository.PartnershipApplicationRepository;
@@ -22,7 +23,8 @@ public class PartnershipApplicationService {
 			String contactName,
 			String email,
 			String phone,
-			String message
+			String message,
+			Language applicantLanguage
 	) {
 		PartnershipApplication application = PartnershipApplication.createPending(
 				applicantType,
@@ -30,7 +32,8 @@ public class PartnershipApplicationService {
 				contactName,
 				email,
 				phone,
-				message
+				message,
+				applicantLanguage
 		);
 		
 		return par.save(application);
@@ -38,11 +41,11 @@ public class PartnershipApplicationService {
 	
 	public PartnershipApplication getApplication(Long applicationId) {
 		if (applicationId == null) {
-			throw new IllegalArgumentException("신청 번호가 필요합니다.");
+			throw new IllegalArgumentException("partnership.error.idRequired");
 		}
 		
 		return par.findDetailById(applicationId)
-				.orElseThrow(() -> new IllegalArgumentException("입점 신청을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("partnership.error.notFound"));
 	}
 	
 	public long countPendingApplications() {

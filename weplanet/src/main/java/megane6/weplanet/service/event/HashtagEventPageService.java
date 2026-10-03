@@ -7,6 +7,7 @@ import megane6.weplanet.domain.dto.event.HashtagHomeBanner;
 import megane6.weplanet.domain.dto.event.HashtagRankingRow;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.event.HashtagEvent;
+import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.event.HashtagEventRepository;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ public class HashtagEventPageService {
 	private final HashtagEventRepository her;
 	private final HashtagEventStatsService hess;
 	private final CommunityMemberRepository cmr;
+	private final Messages messages;
 	
 	// 홈 배너로 들어왔을 때: 진행 중(또는 가장 최근에 끝난) 이벤트, 없으면 다음 예정 이벤트
 	public Optional<HashtagEventPageView> getFeatured(Long viewerId) {
@@ -52,13 +54,13 @@ public class HashtagEventPageService {
 		return getFeatured(null)
 				.filter(view -> view.dashboard().finalizedAt() == null
 						|| view.dashboard().finalizedAt().isAfter(weekAgo))
-				.map(HashtagHomeBanner::from);
+				.map(view -> HashtagHomeBanner.from(view, messages));
 	}
 	
 	// 결과 공지의 링크로 들어왔을 때: 그 회차 이벤트
 	public HashtagEventPageView getEvent(Long eventId, Long viewerId) {
 		HashtagEvent event = her.findById(eventId).orElseThrow(() ->
-				new IllegalArgumentException("해시태그 총공 이벤트를 찾을 수 없습니다."));
+				new IllegalArgumentException("hashtagEvent.error.notFound"));
 		return toView(event, viewerId, LocalDateTime.now());
 	}
 	
@@ -90,7 +92,7 @@ public class HashtagEventPageService {
 				.collect(Collectors.toSet());
 	}
 	
-	// 진행 중이면 종료까지, 예정이면 시작까지 남은 시간 → "1일 4시간 12분"
+	// 진행 중이면 종료까지, 예정이면 시작까지 남은 시간 → "1일 4시간 12분" (현재 언어 문구: hashtagEvent.remaining*)
 	private String remainingText(HashtagEvent event, LocalDateTime now) {
 		LocalDateTime until = switch (event.statusAt(now)) {
 			case SCHEDULED -> event.getStartAt();
@@ -103,6 +105,8 @@ public class HashtagEventPageService {
 		
 		Duration left = Duration.between(now, until);
 		long days = left.toDays();
-		return (days > 0 ? days + "일 " : "") + left.toHoursPart() + "시간 " + left.toMinutesPart() + "분";
+		return days > 0
+				? messages.get("hashtagEvent.remainingWithDays", days, left.toHoursPart(), left.toMinutesPart())
+				: messages.get("hashtagEvent.remaining", left.toHoursPart(), left.toMinutesPart());
 	}
-}
+}

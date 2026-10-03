@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>소속사 권한 승인 대기 | WePlaNet</title>
+  <title th:text="#{portal.approval.pageTitle}">소속사 권한 승인 대기 | WePlaNet</title>
 
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
@@ -22,19 +22,20 @@
       ARTIST / AGENCY PORTAL
     </p>
 
-    <h1>
+    <h1 th:utext="#{portal.approval.visualHeading}">
       안전한 포털 운영을 위해<br />
       소속사 권한을 확인합니다.
     </h1>
 
-    <p>
+    <p th:text="#{portal.approval.visualDesc}">
       관리자 승인이 완료된 소속사 담당자만
       아티스트 포털을 이용할 수 있습니다.
     </p>
 
     <a th:href="@{/}"
        class="mt-24"
-       style="color:#d6cec7;font-size:13px;">
+       style="color:#d6cec7;font-size:13px;"
+       th:text="#{portalLogin.backToMain}">
       ← 메인 사이트로 이동
     </a>
   </aside>
@@ -53,12 +54,13 @@
         AGENCY PERMISSION
       </p>
 
-      <h2 class="auth-card__title">
+      <h2 class="auth-card__title" th:text="#{portal.approval.title}">
         소속사 권한 승인 대기
       </h2>
 
       <p class="text-sm text-muted mt-16"
-         style="line-height:1.8;">
+         style="line-height:1.8;"
+         th:utext="#{portal.approval.desc}">
         계정 로그인은 완료되었지만 소속사 담당자 권한이
         아직 승인되지 않았습니다.
         <br />
@@ -69,14 +71,14 @@
       <div class="panel"
            style="margin-top:24px;text-align:left;">
         <p class="text-sm">
-          <strong>현재 상태</strong>
+          <strong th:text="#{portal.approval.statusLabel}">현재 상태</strong>
         </p>
 
-        <p class="text-sm text-muted mt-8">
+        <p class="text-sm text-muted mt-8" th:text="#{portal.approval.statusValue}">
           관리자 승인 대기 중
         </p>
 
-        <p class="text-xs text-muted mt-16">
+        <p class="text-xs text-muted mt-16" th:text="#{portal.approval.afterApproval}">
           권한 승인이 완료된 후 다시 로그인하면
           포털 대시보드로 이동합니다.
         </p>
@@ -87,12 +89,13 @@
             style="margin-top:24px;">
 
         <button type="submit"
-                class="btn btn--primary btn--block btn--lg">
+                class="btn btn--primary btn--block btn--lg"
+                th:text="#{common.logout}">
           로그아웃
         </button>
       </form>
 
-      <p class="text-xs text-muted mt-16">
+      <p class="text-xs text-muted mt-16" th:text="#{portal.approval.contact}">
         권한 문의는 최고관리자에게 요청해주세요.
       </p>
     </div>

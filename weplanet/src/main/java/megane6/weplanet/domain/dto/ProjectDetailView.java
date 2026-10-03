@@ -31,6 +31,19 @@ public record ProjectDetailView(
 			long fundedAmount,
 			long participantCount
 	) {
+		return from(project, coverStoredName, fundedAmount, participantCount,
+				project.getEventType().getDisplayName(), project.getStatus().getDisplayName());
+	}
+
+	/** SETTINGS-03 커밋3: ProjectCardView와 같은 이유로 번역된 라벨을 인자로 받는 오버로드 */
+	public static ProjectDetailView from(
+			Project project,
+			String coverStoredName,
+			long fundedAmount,
+			long participantCount,
+			String eventTypeLabel,
+			String statusLabel
+	) {
 		LocalDate endDate = project.getFundingEndAt().toLocalDate();
 		int progressPercent = project.getGoalAmount() <= 0
 				? 0
@@ -39,8 +52,8 @@ public record ProjectDetailView(
 				project.getId(),
 				project.getTitle(),
 				project.getDescription(),
-				project.getEventType().getDisplayName(),
-				project.getStatus().getDisplayName(),
+				eventTypeLabel,
+				statusLabel,
 				project.getStatus().getBadgeCode(),
 				project.getGoalAmount(),
 				project.getFundingStartAt().toLocalDate(),

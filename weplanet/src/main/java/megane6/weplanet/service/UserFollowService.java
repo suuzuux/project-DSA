@@ -48,14 +48,24 @@ public class UserFollowService {
     @Transactional
     public boolean toggle(User me, Long targetUserId, Long communityId) {
         if (me.getId().equals(targetUserId)) {
-            throw new IllegalStateException("본인을 팔로우할 수 없습니다.");
+            throw new IllegalStateException("error.follow.self");
         }
+
+        // 이미 팔로우 중이면 취소한다. 취소는 아래 조건(가입·숨김 등)과 상관없이 항상 허용한다 -
+        // 예전에는 조건 검사를 먼저 해서, 상대가 콘텐츠를 숨기거나 커뮤니티를 떠난 뒤(또는 내가 나간 뒤)에는
+        // 이미 걸려 있는 팔로우를 취소할 수 없었다.
+        if (userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId)) {
+            userFollowRepository.deleteByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId);
+            return false;
+        }
+
+        // 여기부터는 새로 팔로우하는 경우의 조건
         if (!me.canParticipateInCommunity()) {
-            throw new IllegalStateException("팬 또는 아티스트 계정만 팔로우할 수 있습니다.");
+            throw new IllegalStateException("error.follow.fanOrArtistOnly");
         }
 
         User target = userRepository.findById(targetUserId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 
         // 대상이 이 커뮤니티의 주인(아티스트 본인)인지 - 그렇다면 "팬→아티스트" 팔로우로 취급한다.
         boolean targetIsArtistOfThisCommunity = target.getRole() == Role.ARTIST && targetUserId.equals(communityId);
@@ -63,25 +73,18 @@ public class UserFollowService {
         if (!targetIsArtistOfThisCommunity) {
             // 팬↔팬 팔로우: 나도, 상대도 이 커뮤니티에 가입돼 있어야 한다.
             if (!communityMemberRepository.existsByFanIdAndArtistId(me.getId(), communityId)) {
-                throw new IllegalStateException("이 커뮤니티에 가입해야 팔로우할 수 있습니다.");
+                throw new IllegalStateException("error.follow.joinRequired");
             }
             if (!communityMemberRepository.existsByFanIdAndArtistId(targetUserId, communityId)) {
-                throw new IllegalStateException("상대방이 이 커뮤니티에 가입되어 있지 않습니다.");
+                throw new IllegalStateException("error.follow.targetNotJoined");
             }
             // 상대가 이 커뮤니티에서 콘텐츠를 숨긴 상태면 팔로우 불가
             CommunityProfile targetProfile = communityJoinService.profileOf(target, communityId);
             if (targetProfile != null && targetProfile.isContentHidden()) {
-                throw new IllegalStateException("콘텐츠를 숨긴 사용자는 팔로우할 수 없습니다.");
+                throw new IllegalStateException("error.follow.targetHidden");
             }
         }
         // 팬→아티스트는 가입 여부와 무관하게 팔로우 가능 (기존 GroupFollow 방식)
-
-        boolean following = userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(
-                me.getId(), targetUserId, communityId);
-        if (following) {
-            userFollowRepository.deleteByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId);
-            return false;
-        }
 
         userFollowRepository.save(UserFollow.builder()
                 .followerId(me.getId())

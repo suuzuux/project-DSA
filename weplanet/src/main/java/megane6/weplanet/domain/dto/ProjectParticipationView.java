@@ -19,12 +19,15 @@ public record ProjectParticipationView(
 		String projectTitle,
 		Long amount,
 		String statusLabel,
+		// SETTINGS-03 커밋5: 화면은 이 키로 번역한다(statusLabel은 레거시 폴백)
+		String statusMessageKey,
 		String statusCode,
 		boolean waitingForDeposit,
 		boolean anonymous,
 		LocalDateTime orderedAt,
 		LocalDateTime paidAt,
 		String bankName,
+		String bankMessageKey,
 		String accountNumber,
 		LocalDateTime dueDate
 ) {
@@ -40,12 +43,14 @@ public record ProjectParticipationView(
 				contribution.getProject().getTitle(),
 				contribution.getAmount(),
 				status.getDisplayName(),
+				status.getMessageKey(),
 				status.getBadgeCode(),
 				waiting,
 				contribution.isAnonymous(),
 				contribution.getCreatedAt(),
 				contribution.getPaidAt(),
 				waiting ? SettlementBank.displayNameOfTossCode(contribution.getVirtualBankCode()) : null,
+				waiting ? SettlementBank.messageKeyOfTossCode(contribution.getVirtualBankCode()) : null,
 				waiting ? contribution.getVirtualAccountNumber() : null,
 				waiting ? contribution.getDueDate() : null
 		);

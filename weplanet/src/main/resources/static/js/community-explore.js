@@ -28,6 +28,16 @@
     (window.__WEPLANET_ARTISTS__ || []).map((a) => String(a.id))
   );
 
+  // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  const t = (key, fallback, args) =>
+    (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
+
+  // 카테고리는 DB에 한국어 값(아이돌/배우)으로 저장돼 있어서(검색 필터 값도 같은 문자열) 표시할 때만 번역한다.
+  // 등록된 두 값 외의 직접 입력한 카테고리는 저장된 그대로 보여준다.
+  const CATEGORY_KEYS = { "아이돌": "main.search.categoryIdol", "배우": "main.search.categoryActor" };
+  const categoryLabel = (category) =>
+    CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category], category) : (category || "");
+
   function escapeHtml(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -37,26 +47,26 @@
   }
 
   function renderCard(a) {
-    const soloBadge = a.solo ? `<span class="badge-solo">솔로</span>` : "";
+    const soloBadge = a.solo ? `<span class="badge-solo">${escapeHtml(t("client.explore.solo", "솔로"))}</span>` : "";
     const joined = joinedArtistIds.has(String(a.artistId));
 
     // 가입한 커뮤니티는 data-join-btn 을 붙이지 않는다 -> 닉네임 모달이 열리지 않음
     // AUTH-11: 본인 커뮤니티(a.own - 아티스트/그룹 멤버)도 가입 대상이 아니므로 버튼 대신 표시만 한다
     const actionHtml = a.own
       ? `<button type="button" class="btn btn--ghost btn--sm" disabled
-                 style="opacity:.7;cursor:default;">내 커뮤니티</button>`
+                 style="opacity:.7;cursor:default;">${escapeHtml(t("client.explore.mine", "내 커뮤니티"))}</button>`
       : joined
       ? `<button type="button" class="btn btn--ghost btn--sm" disabled
-                 style="opacity:.7;cursor:default;">✓ 가입중</button>`
+                 style="opacity:.7;cursor:default;">${escapeHtml(t("client.explore.joined", "✓ 가입중"))}</button>`
       : `<button type="button" class="btn btn--primary btn--sm" data-join-btn
-                 data-artist-id="${a.artistId}" data-artist-name="${escapeHtml(a.nickname)}">가입</button>`;
+                 data-artist-id="${a.artistId}" data-artist-name="${escapeHtml(a.nickname)}">${escapeHtml(t("client.explore.join", "가입"))}</button>`;
 
     return `<div class="rising-card" style="justify-content:space-between;">
       <a href="/community/${a.artistId}" class="flex-center" style="gap:12px;flex:1;min-width:0;">
         <div class="avatar avatar--lg">${escapeHtml(a.logo)}</div>
         <div class="rising-card__info">
           <strong>${escapeHtml(a.nickname)} ${soloBadge}</strong>
-          <span>${escapeHtml(a.nationality)} · ${escapeHtml(a.category)}</span>
+          <span>${escapeHtml(a.nationality)} · ${escapeHtml(categoryLabel(a.category))}</span>
         </div>
       </a>
       ${actionHtml}
@@ -72,17 +82,19 @@
   }
 
   async function runSearch() {
-    resultsEl.innerHTML = `<p class="text-muted">검색 중...</p>`;
+    resultsEl.innerHTML = `<p class="text-muted">${escapeHtml(t("client.explore.searching", "검색 중..."))}</p>`;
     try {
+      // ?openSearch=1 로 페이지 로드 직후 바로 검색할 때도 번역 문구로 그리도록 i18n 응답을 기다린다
+      if (window.WePlaNet && window.WePlaNet.i18nReady) await window.WePlaNet.i18nReady;
       const res = await fetch("/community/search?" + buildParams().toString(), {
         headers: { "X-Requested-With": "fetch" },
       });
       const rows = await res.json();
       resultsEl.innerHTML = rows.length
         ? rows.map(renderCard).join("")
-        : `<p class="text-muted">검색 결과가 없습니다.</p>`;
+        : `<p class="text-muted">${escapeHtml(t("client.explore.empty", "검색 결과가 없습니다."))}</p>`;
     } catch (err) {
-      resultsEl.innerHTML = `<p class="text-muted">검색 중 오류가 발생했습니다.</p>`;
+      resultsEl.innerHTML = `<p class="text-muted">${escapeHtml(t("client.explore.error", "검색 중 오류가 발생했습니다."))}</p>`;
     }
   }
 

@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.util.List;
@@ -52,6 +53,9 @@ public class SecurityConfig {
             "/api/schedules",
             "/api/notifications",
             "/api/site-notices",
+            // SETTINGS-03: shell.js(공통 헤더/사이드바)가 로그인 여부와 무관하게 fetch로 받아가는
+            // 다국어 문자열 API - 비로그인 화면(메인 등)에서도 셸이 그려지므로 공개해야 한다
+            "/api/i18n/**",
             // 햄버거 메뉴 커뮤니티 목록 - 비로그인도 전체 커뮤니티는 볼 수 있다
             "/api/side-menu/communities",
             "/api/artists",
@@ -78,6 +82,8 @@ public class SecurityConfig {
             "/css/**",
             "/js/**",
             "/img/**",
+            // 브라우저 탭 아이콘 - 로그인 전 화면에서도 브라우저가 자동으로 요청한다
+            "/favicon.ico",
             "/signup-wireframe",
             "/login-wireframe",
             "/oauth2/authorization/**",
@@ -92,10 +98,15 @@ public class SecurityConfig {
     private final UserRepository userRepository;
     private final CommunitySlugForwardFilter communitySlugForwardFilter;
     private final SessionRegistry sessionRegistry; // AUTH-11: SessionRegistryConfig 참고
+    private final LoginAttemptService loginAttemptService; // 로그인 비밀번호 대입 방어
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        AuthenticationFailureHandler failureHandler = portalAwareFailureHandler();
         http
+                // 로그인 처리 직전에 잠긴 아이디/IP 인지 먼저 확인 (LoginAttemptFilter, LoginAttemptService)
+                .addFilterBefore(new LoginAttemptFilter(loginAttemptService, failureHandler),
+                        UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -126,7 +137,7 @@ public class SecurityConfig {
                         .passwordParameter("password")
                         .loginProcessingUrl("/login")
                         .successHandler(loginSuccessHandler)
-                        .failureHandler(portalAwareFailureHandler())
+                        .failureHandler(failureHandler)
                         .permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -137,6 +148,8 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
+                        // 세션을 버리기 전에 화면 언어를 읽어 두고, 로그아웃 후 새 세션에 다시 넣는다 (RoleAwareLogoutSuccessHandler)
+                        .addLogoutHandler(roleAwareLogoutSuccessHandler)
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .logoutSuccessHandler(roleAwareLogoutSuccessHandler)
@@ -154,8 +167,22 @@ public class SecurityConfig {
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {
         return (request, response, exception) -> {
+            // 로그인 비밀번호 대입 방어 (LoginAttemptService): 비밀번호가 틀린 경우만 센다.
+            // 휴면·활성화 전처럼 비밀번호가 맞았는데 막힌 경우나, 이미 잠겨서 막힌 경우는 세지 않는다.
+            // 없는 아이디는 지킬 계정이 없으므로 IP 횟수만 센다 - 아이디까지 잠그면 아래 "가입된 아이디가 없습니다"
+            // 안내(5회째 회원가입 확인창) 대신 잠금 안내가 떠 버린다.
+            String attemptedUsername = request.getParameter("username");
+            if (exception instanceof BadCredentialsException) {
+                boolean accountExists = attemptedUsername != null && !attemptedUsername.isBlank()
+                        && userRepository.existsByUsername(attemptedUsername.trim());
+                loginAttemptService.recordFailure(accountExists ? attemptedUsername : null, request.getRemoteAddr());
+            }
+            // 이번 실패로 한도에 닿았으면 바로 "잠시 후 다시 시도" 안내를 보여준다
+            boolean locked = exception instanceof LoginAttemptsExceededException
+                    || loginAttemptService.isBlocked(attemptedUsername, request.getRemoteAddr());
+
             if ("true".equals(request.getParameter("adminLogin"))) {
-                response.sendRedirect("/admin/login?error");
+                response.sendRedirect(locked ? "/admin/login?locked" : "/admin/login?error");
                 return;
             }
             if ("true".equals(request.getParameter("portalLogin"))) {
@@ -163,7 +190,12 @@ public class SecurityConfig {
                 String roleQs = (portalRole != null && !portalRole.isBlank())
                         ? "&role=" + portalRole.trim().toUpperCase()
                         : "";
-                
+
+                if (locked) {
+                    response.sendRedirect("/portal/login?error=locked" + roleQs);
+                    return;
+                }
+
                 // 입점 승인은 됐지만, 아직 메일 링크로 비밀번호를 설정하지 않은 소속사 계정
                 if (exception instanceof DisabledException) {
                     String username = request.getParameter("username");
@@ -178,6 +210,10 @@ public class SecurityConfig {
                 }
                 
                 response.sendRedirect("/portal/login?error" + roleQs);
+                return;
+            }
+            if (locked) {
+                response.sendRedirect("/login/id?locked");
                 return;
             }
             if (exception instanceof DisabledException) {

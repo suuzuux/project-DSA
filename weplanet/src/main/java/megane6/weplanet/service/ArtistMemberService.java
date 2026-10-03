@@ -7,6 +7,8 @@ import megane6.weplanet.domain.entity.ArtistAccountProfile;
 import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
+import megane6.weplanet.exception.LocalizedIllegalStateException;
 import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
 import megane6.weplanet.repository.GroupMemberRepository;
@@ -48,14 +50,14 @@ public class ArtistMemberService {
 	public GroupMember addMember(User agencyUser, Long groupId, String rawName) {
 		requireManagedGroup(agencyUser, groupId);
 		Agency agency = ar.findById(agencyUser.agencyId())
-				.orElseThrow(() -> new IllegalStateException("소속사 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalStateException("error.portalArtist.agencyNotFound"));
 
 		String memberName = requireName(rawName);
 
 		// 팬 닉네임이나 다른 그룹 멤버와는 겹쳐도 된다(아티스트는 체크 표시로 구분).
 		// 다만 같은 그룹 안에서 겹치면 프로필 선택 화면에서 누가 누군지 알 수 없으므로 막는다.
 		if (gmr.existsByGroupIdAndLeftAtIsNullAndMember_Nickname(groupId, memberName)) {
-			throw new IllegalStateException("이 그룹에 이미 같은 이름의 멤버가 있습니다: " + memberName);
+			throw new LocalizedIllegalStateException("error.groupMember.duplicateName", memberName);
 		}
 		
 		String username = newMemberUsername(groupId);
@@ -112,7 +114,7 @@ public class ArtistMemberService {
 	
 	private GroupMember requireActiveMember(Long groupId, Long memberId) {
 		return gmr.findByGroupIdAndMember_IdAndLeftAtIsNull(groupId, memberId)
-				.orElseThrow(() -> new IllegalStateException("이 그룹의 활동 중인 멤버가 아닙니다."));
+				.orElseThrow(() -> new IllegalStateException("error.groupMember.notActive"));
 	}
 	
 	// 다른 소속사의 그룹에 멤버를 끼워 넣지 못하게, 이 소속사가 관리하는 ARTIST 계정인지 확인
@@ -122,18 +124,18 @@ public class ArtistMemberService {
 		return ur.findOneById(groupId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.filter(user -> agencyId != null && agencyId.equals(user.agencyId()))
-				.orElseThrow(() -> new IllegalStateException("관리할 수 있는 아티스트가 아닙니다."));
+				.orElseThrow(() -> new IllegalStateException("error.portalArtist.notManaged"));
 	}
 	
 	private String requireName(String rawName) {
 		if (rawName == null || rawName.isBlank()) {
-			throw new IllegalArgumentException("멤버 이름을 입력해주세요.");
+			throw new IllegalArgumentException("error.groupMember.nameRequired");
 		}
 		
 		String name = rawName.trim();
 		
 		if (name.length() > MEMBER_NAME_MAX_LENGTH) {
-			throw new IllegalArgumentException("멤버 이름은 " + MEMBER_NAME_MAX_LENGTH + "자 이내로 입력해주세요.");
+			throw new LocalizedIllegalArgumentException("error.groupMember.nameTooLong", MEMBER_NAME_MAX_LENGTH);
 		}
 		
 		return name;

@@ -22,6 +22,11 @@
   const submitBtn = document.getElementById("communityJoinSubmitBtn");
   let selectedArtistId = null;
 
+  // SETTINGS-03 커밋3: 이 파일은 main.js보다 먼저 로드되는 화면도 있어서, 문구를 꺼내는 시점(클릭 등)에
+  // WePlaNet.t를 찾는다. main.js가 없으면 한국어 기본값을 그대로 쓴다.
+  const t = (key, fallback, args) =>
+    (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
+
   function clearError() {
     nicknameGroup?.classList.remove("is-invalid");
     if (nicknameError) nicknameError.textContent = "";
@@ -64,11 +69,11 @@
     clearError();
 
     if (!nickname) {
-      showError("닉네임을 입력해주세요.");
+      showError(t("error.community.nicknameRequired", "닉네임을 입력해주세요."));
       return;
     }
     if (nickname.length > 10) {
-      showError("닉네임은 10자 이내로 입력해주세요.");
+      showError(t("error.community.nicknameTooLong", "닉네임은 10자 이내로 입력해주세요."));
       return;
     }
 
@@ -94,7 +99,7 @@
         return;
       }
 
-      let message = "가입 중 오류가 발생했습니다.";
+      let message = t("client.join.failed", "가입 중 오류가 발생했습니다.");
       try {
         const data = await res.json();
         if (data?.message) message = data.message;
@@ -103,7 +108,7 @@
       }
       showError(message);
     } catch (err) {
-      showError("가입 중 오류가 발생했습니다.");
+      showError(t("client.join.failed", "가입 중 오류가 발생했습니다."));
     } finally {
       submitBtn.disabled = false;
     }

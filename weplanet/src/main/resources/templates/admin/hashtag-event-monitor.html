@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- 진행 중일 때만 30초마다 페이지 전체를 새로고침 (JS 없이 가장 간단한 "실시간") -->
   <meta th:if="${dashboard.ongoing()}" http-equiv="refresh" content="30" />
-  <title th:text="${dashboard.title()} + ' 모니터링 | WePlaNet ADMIN'">해시태그 총공 모니터링 | WePlaNet ADMIN</title>
+  <title th:text="${dashboard.title()} + ' ' + #{adminHashtag.monitor} + ' | WePlaNet ADMIN'">해시태그 총공 모니터링 | WePlaNet ADMIN</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -22,37 +22,37 @@
       <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
       <details class="portal-sidebar__group">
         <summary>
-          <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
         </summary>
-        <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+        <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
       </details>
       <details class="portal-sidebar__group">
         <summary>
-          <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
         </summary>
-        <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+        <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
       </details>
-      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-      <a th:href="@{/admin/users}">👥 전체 회원</a>
-      <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-      <a th:href="@{/admin/notices}">📢 전체 공지</a>
-      <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+      <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
       <details class="portal-sidebar__group" open>
         <summary>
-          <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
-          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
         </summary>
-        <a class="portal-sidebar__sub is-active" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+        <a class="portal-sidebar__sub is-active" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
       </details>
-      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
     </nav>
 
     <div class="portal-sidebar__footer">
-      <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
+      <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
       <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-        <button type="submit" class="btn">🚪 로그아웃</button>
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
       </form>
     </div>
   </aside>
@@ -61,38 +61,39 @@
     <div class="portal-main__head">
       <div>
         <p class="text-xs text-muted">
-          <a th:href="@{/admin/events/hashtag}">해시태그 총공</a> › 모니터링
+          <a th:href="@{/admin/events/hashtag}" th:text="#{admin.nav.hashtagEvent}">해시태그 총공</a> › <span th:text="#{adminHashtag.monitor}">모니터링</span>
         </p>
         <h1>
           <span th:text="${d.title()}">9월 해시태그 총공</span>
           <span class="tag" style="vertical-align:middle;"
                 th:classappend="${d.statusTagClass()}"
-                th:text="${d.status().displayName}">진행 중</span>
+                th:text="#{${d.status().messageKey}}">진행 중</span>
         </h1>
         <p class="text-sm text-muted">
           <span th:text="${#temporals.format(d.startAt(), 'yyyy.MM.dd HH:mm')}">2026.09.22 00:00</span>
           ~
           <span th:text="${#temporals.format(d.endAt(), 'yyyy.MM.dd HH:mm')}">2026.09.28 23:59</span>
-          <th:block th:if="${d.ongoing()}"> · 30초마다 자동 새로고침</th:block>
+          <th:block th:if="${d.ongoing()}" th:text="|· #{adminHashtag.monitor.autoRefresh}|"> · 30초마다 자동 새로고침</th:block>
           <th:block th:if="${d.finalized()}"
-                    th:text="' · ' + ${#temporals.format(d.finalizedAt(), 'yyyy.MM.dd HH:mm')} + ' 집계 확정 (아래 숫자는 확정 시점 기준으로 고정)'"></th:block>
+                    th:text="' · ' + #{adminHashtag.monitor.finalizedAt(${#temporals.format(d.finalizedAt(), 'yyyy.MM.dd HH:mm')})}"></th:block>
         </p>
       </div>
 
       <div class="flex-center">
         <!-- 공개 이벤트 페이지 (5단계에서 만든다) -->
-        <a class="btn btn--ghost btn--sm" th:href="@{/events/hashtag}" target="_blank">공개 페이지 ↗</a>
+        <a class="btn btn--ghost btn--sm" th:href="@{/events/hashtag}" target="_blank" th:text="#{adminHashtag.monitor.publicPage}">공개 페이지 ↗</a>
 
         <!-- 종료 후, 확정 전에만 -->
         <form th:if="${d.finalizable()}" method="post" style="margin:0;"
               th:action="@{/admin/events/hashtag/{id}/finalize(id=${d.eventId()})}"
-              onsubmit="return confirm('지금 순위로 집계를 확정할까요? 확정하면 숫자가 고정되고 되돌릴 수 없습니다.');">
-          <button type="submit" class="btn btn--primary btn--sm">집계 확정</button>
+              th:attr="data-confirm=#{adminHashtag.monitor.confirmFinalize}"
+              onsubmit="return confirm(this.dataset.confirm);">
+          <button type="submit" class="btn btn--primary btn--sm" th:text="#{adminHashtag.monitor.finalize}">집계 확정</button>
         </form>
 
         <!-- 확정 후: 결과 공지 작성 (7단계에서 자동 채우기를 붙인다) -->
         <a th:if="${d.finalized()}" class="btn btn--primary btn--sm"
-           th:href="@{/admin/notices/new(hashtagEventId=${d.eventId()})}">결과 공지 작성</a>
+           th:href="@{/admin/notices/new(hashtagEventId=${d.eventId()})}" th:text="#{adminHashtag.monitor.writeNotice}">결과 공지 작성</a>
       </div>
     </div>
 
@@ -104,14 +105,14 @@
       <article class="admin-stat">
         <span class="admin-stat__icon admin-stat__icon--violet">🎤</span>
         <span class="admin-stat__body">
-          <span class="admin-stat__label">참여 커뮤니티</span>
-          <strong class="admin-stat__value" th:text="${#lists.size(d.ranking())} + '팀'">5팀</strong>
+          <span class="admin-stat__label" th:text="#{adminHashtag.monitor.stat.communities}">참여 커뮤니티</span>
+          <strong class="admin-stat__value" th:text="#{adminHashtag.teams(${#lists.size(d.ranking())})}">5팀</strong>
         </span>
       </article>
       <article class="admin-stat">
         <span class="admin-stat__icon admin-stat__icon--green">#</span>
         <span class="admin-stat__body">
-          <span class="admin-stat__label">인정된 해시태그 글</span>
+          <span class="admin-stat__label" th:text="#{adminHashtag.monitor.stat.posts}">인정된 해시태그 글</span>
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(d.totalPostCount(), 0, 'COMMA')}">3,412</strong>
         </span>
@@ -119,7 +120,7 @@
       <article class="admin-stat">
         <span class="admin-stat__icon admin-stat__icon--blue">👥</span>
         <span class="admin-stat__body">
-          <span class="admin-stat__label">총 참여 인원 (커뮤니티별 합)</span>
+          <span class="admin-stat__label" th:text="#{adminHashtag.monitor.stat.participants}">총 참여 인원 (커뮤니티별 합)</span>
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(d.totalParticipantCount(), 0, 'COMMA')}">1,208</strong>
         </span>
@@ -127,11 +128,11 @@
       <article class="admin-stat admin-stat--alert">
         <span class="admin-stat__icon admin-stat__icon--orange">🚫</span>
         <span class="admin-stat__body">
-          <span class="admin-stat__label">제외된 글</span>
+          <span class="admin-stat__label" th:text="#{adminHashtag.monitor.stat.excluded}">제외된 글</span>
           <strong class="admin-stat__value"
                   th:text="${#numbers.formatInteger(d.excludedTotal(), 0, 'COMMA')}">287</strong>
           <span class="text-xs text-muted" th:each="excluded : ${d.excludedCounts()}"
-                th:text="${excluded.key.displayName} + ' ' + ${excluded.value} + '건 '">1인 1일 3건 초과 12건</span>
+                th:text="${#messages.msg('adminHashtag.monitor.excludedItem', #messages.msg(excluded.key.messageKey), excluded.value)} + ' '">1인 1일 3건 초과 12건</span>
         </span>
       </article>
     </div>
@@ -140,8 +141,8 @@
     <section class="panel">
       <div class="panel__head">
         <div>
-          <h2 class="panel__title">참여율 순위</h2>
-          <p class="text-xs text-muted">
+          <h2 class="panel__title" th:text="#{adminHashtag.monitor.rankingTitle}">참여율 순위</h2>
+          <p class="text-xs text-muted" th:text="#{adminHashtag.monitor.rankingDesc}">
             참여율 = 인정된 글을 1건 이상 쓴 가입자 ÷ 가입자. 같으면 참여 인원 → 글 수 순.
           </p>
         </div>
@@ -151,18 +152,18 @@
         <table class="data-table">
           <thead>
           <tr>
-            <th>순위</th>
-            <th>아티스트</th>
-            <th>해시태그</th>
-            <th>가입자</th>
-            <th>참여 인원</th>
-            <th>참여율</th>
-            <th>인정 글 수</th>
+            <th th:text="#{adminHashtag.monitor.col.rank}">순위</th>
+            <th th:text="#{admin.artists.col.artist}">아티스트</th>
+            <th th:text="#{adminHashtag.monitor.col.hashtag}">해시태그</th>
+            <th th:text="#{adminHashtag.monitor.col.members}">가입자</th>
+            <th th:text="#{adminHashtag.monitor.col.participants}">참여 인원</th>
+            <th th:text="#{adminHashtag.monitor.col.rate}">참여율</th>
+            <th th:text="#{adminHashtag.monitor.col.posts}">인정 글 수</th>
           </tr>
           </thead>
           <tbody>
           <tr th:if="${#lists.isEmpty(d.ranking())}">
-            <td colspan="7" class="text-sm text-muted">참여 아티스트가 없습니다.</td>
+            <td colspan="7" class="text-sm text-muted" th:text="#{adminHashtag.monitor.noTargets}">참여 아티스트가 없습니다.</td>
           </tr>
           <tr th:each="row : ${d.ranking()}">
             <td><strong th:text="${row.rank()}">1</strong></td>
@@ -187,10 +188,10 @@
     <!-- 일자별 추이 -->
     <section class="panel mt-16">
       <div class="panel__head">
-        <h2 class="panel__title">일자별 인정 글 수</h2>
+        <h2 class="panel__title" th:text="#{adminHashtag.monitor.dailyTitle}">일자별 인정 글 수</h2>
       </div>
 
-      <p th:if="${#lists.isEmpty(d.dailyCounts())}" class="text-sm text-muted">
+      <p th:if="${#lists.isEmpty(d.dailyCounts())}" class="text-sm text-muted" th:text="#{adminHashtag.monitor.notStarted}">
         아직 시작 전입니다.
       </p>
 
@@ -205,4 +206,4 @@
   </main>
 </div>
 </body>
-</html>
+</html>

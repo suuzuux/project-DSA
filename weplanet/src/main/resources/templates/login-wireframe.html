@@ -1,78 +1,78 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WePlaNet – 로그인</title>
+  <title th:text="#{loginEntry.pageTitle}">WePlaNet – 로그인</title>
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body class="auth-page">
   <div class="auth-card">
-    <a class="auth-card__back" href="/">← 뒤로</a>
+    <a class="auth-card__back" href="/" th:text="#{login.back}">← 뒤로</a>
     <div class="flex-between mb-16">
       <span></span>
     </div>
 
-    <h1 class="auth-card__title">가장 편한 방법으로<br />위플래닛에<br />로그인하세요!</h1>
+    <h1 class="auth-card__title" th:utext="#{loginEntry.heading}">가장 편한 방법으로<br />위플래닛에<br />로그인하세요!</h1>
     <p class="auth-card__brand">We<span>Pla</span>Net</p>
 
-    <p th:if="${param.error != null and param.error[0] == 'portal'}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.error != null and param.error[0] == 'portal'}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.errorPortal}">
       아티스트/에이전시 포털은 팬 계정으로 이용할 수 없습니다. 아래에서 팬 로그인을 진행해 주세요.
     </p>
 
     <!-- AUTH-11: 소셜 로그인 실패 등 일반 오류 (portal 오류는 위에서 따로 안내) -->
-    <p th:if="${param.error != null and param.error[0] != 'portal'}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.error != null and param.error[0] != 'portal'}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.errorGeneric}">
       로그인에 실패했습니다. 다시 시도해주세요.
     </p>
 
     <!-- AUTH-11: 탈퇴·이용 정지된 계정으로 소셜 로그인했거나, 로그인 중 계정이 정지된 경우 -->
-    <p th:if="${param.accountUnavailable}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.accountUnavailable}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.accountUnavailable}">
       탈퇴했거나 이용이 정지된 계정이라 로그인할 수 없습니다.
     </p>
 
     <!-- 가입된 계정이 없는 소셜 계정은 이제 안내 대신 가입 확인 화면(social-signup-confirm)으로 간다.
          그 소셜 이메일이 이미 다른 계정에 쓰이고 있으면 가입하지 않고 여기서 안내한다 -->
-    <p th:if="${param.socialEmailTaken}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.socialEmailTaken}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.socialEmailTaken}">
       이미 가입된 이메일입니다. 먼저 로그인한 뒤, 설정 화면에서 소셜 계정을 연동해주세요.
     </p>
-    <p th:if="${param.socialSignupCancelled}" class="text-sm text-muted" style="margin-top:8px;">
+    <p th:if="${param.socialSignupCancelled}" class="text-sm text-muted" style="margin-top:8px;" th:text="#{loginEntry.socialSignupCancelled}">
       회원가입을 취소했어요. 원하실 때 다시 가입해주세요.
     </p>
 
-    <p th:if="${param.sessionExpired}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.sessionExpired}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.sessionExpired}">
       세션이 만료되었습니다. 다시 로그인해주세요.
     </p>
 
-    <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.expired}">
       세션이 만료되어 다시 로그인해주세요.
     </p>
 
-    <p th:if="${param.duplicateLogin}" class="text-sm" style="color:#c45c26;margin-top:8px;">
+    <p th:if="${param.duplicateLogin}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.duplicateLogin}">
       다른 기기에서 로그인되어 로그아웃되었습니다.
     </p>
 
     <p th:if="${param.dormant}" class="text-sm" style="color:#c45c26;margin-top:8px;">
-      장기간 미접속으로 휴면 처리된 계정입니다.
-      <a th:href="@{/login/reactivate}" style="color:var(--wp-brand);font-weight:600;">이메일 인증으로 다시 활성화하기</a>
+      <span th:text="#{loginEntry.dormantNotice}">장기간 미접속으로 휴면 처리된 계정입니다.</span>
+      <a th:href="@{/login/reactivate}" style="color:var(--wp-brand);font-weight:600;" th:text="#{loginEntry.dormantReactivateLink}">이메일 인증으로 다시 활성화하기</a>
     </p>
 
     <div class="stack">
       <a class="btn btn--sns" href="/social-login/google/login">
-        <span class="sns-icon sns-icon--google">G</span> Google로 로그인하기
+        <span class="sns-icon sns-icon--google">G</span> <span th:text="#{loginEntry.snsGoogle}">Google로 로그인하기</span>
       </a>
       <a class="btn btn--sns" href="/social-login/kakao/login">
-        <span class="sns-icon sns-icon--kakao">K</span> Kakao로 로그인하기
+        <span class="sns-icon sns-icon--kakao">K</span> <span th:text="#{loginEntry.snsKakao}">Kakao로 로그인하기</span>
       </a>
       <a class="btn btn--sns" href="/social-login/line/login">
-        <span class="sns-icon sns-icon--line">L</span> LINE으로 로그인하기
+        <span class="sns-icon sns-icon--line">L</span> <span th:text="#{loginEntry.snsLine}">LINE으로 로그인하기</span>
       </a>
     </div>
 
-    <div class="auth-divider">또는</div>
-    <a class="btn btn--primary btn--block btn--lg" href="/login/id">아이디로 로그인하기</a>
+    <div class="auth-divider" th:text="#{auth.divider}">또는</div>
+    <a class="btn btn--primary btn--block btn--lg" href="/login/id" th:text="#{loginEntry.idLoginButton}">아이디로 로그인하기</a>
     <p class="text-sm text-muted" style="margin-top:20px;text-align:center;">
-      아직 계정이 없으신가요?
-      <a th:href="@{/signup}" style="color:var(--wp-brand);font-weight:600;">회원가입</a>
+      <span th:text="#{loginEntry.noAccountPrompt}">아직 계정이 없으신가요?</span>
+      <a th:href="@{/signup}" style="color:var(--wp-brand);font-weight:600;" th:text="#{shell.guest.signup}">회원가입</a>
     </p>
   </div>
 </body>

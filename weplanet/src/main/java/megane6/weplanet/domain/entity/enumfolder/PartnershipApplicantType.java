@@ -10,4 +10,8 @@ public enum PartnershipApplicantType {
 	AGENCY("소속사");
 	
 	private final String displayName;
+	
+	public String getMessageKey() {
+		return "partnership.applicantType." + name();
+	}
 }

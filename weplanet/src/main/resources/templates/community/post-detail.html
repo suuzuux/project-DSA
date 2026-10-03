@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${artist.nickname()} + ' – ' + ${boardTab == 'artist' ? 'Artist' : 'Fan'} + ' 게시글 | WePlaNet'">게시글 | WePlaNet</title>
+  <title th:text="#{community.postDetail.pageTitle(${artist.nickname()}, ${boardTab == 'artist' ? 'Artist' : 'Fan'})}">게시글 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
@@ -27,13 +27,13 @@
     <div class="community-main">
     <a class="section__link mb-16" style="display:inline-block;"
        th:href="@{/community/{id}/{tab}(id=${artist.id()}, tab=${boardTab})}"
-       th:text="${boardTab == 'artist'} ? '← Artist 게시판' : '← Fan 게시판'">← 게시판</a>
+       th:text="${boardTab == 'artist'} ? #{community.postDetail.backArtist} : #{community.postDetail.backFan}">← 게시판</a>
 
     <article class="post-card">
       <div class="post-card__head">
         <a th:if="${post.author != null}"
            th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
-           class="avatar post-author-avatar" aria-label="작성자 프로필로 이동">
+           class="avatar post-author-avatar" th:aria-label="#{community.post.authorProfileAria}">
           <img th:if="${authorAvatarUrls.get('' + post.author.id) != null}"
                th:src="${authorAvatarUrls.get('' + post.author.id)}" alt="" />
           <svg th:unless="${authorAvatarUrls.get('' + post.author.id) != null}"
@@ -56,7 +56,7 @@
                th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
                style="color:inherit;text-decoration:none;"
                th:text="${authorNicknames.get('' + post.author.id)}">닉네임</a>
-            <span th:unless="${post.author != null}">(알 수 없음)</span>
+            <span th:unless="${post.author != null}" th:text="#{community.post.unknownAuthor}">(알 수 없음)</span>
             <span th:if="${post.author != null and post.author.artistSide}" class="badge-verified">✓</span>
           </div>
           <div class="post-card__time"
@@ -65,7 +65,7 @@
         </div>
       </div>
 
-      <a href="javascript:void(0)" id="postTranslateLink" class="translate-link">번역보기</a>
+      <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" th:text="#{community.translate.show}">번역보기</a>
       <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
       <div id="contentViewer" class="post-card__body"></div>
 
@@ -93,7 +93,7 @@
           <svg class="icon" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
           <span id="likeCount" th:text="${post.likeCount}">0</span>
         </button>
-        <a href="#commentContentInput" class="post-comment" aria-label="댓글 작성란으로 이동">
+        <a href="#commentContentInput" class="post-comment" th:aria-label="#{community.post.commentLinkAria}">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
           <span th:text="${#lists.size(comments)}">0</span>
         </a>
@@ -112,27 +112,29 @@
         <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
           <th:block th:if="${#authentication.principal.id == post.author.id}">
             <button type="button" class="translate-link" style="background:none;border:none;cursor:pointer;"
-                    data-modal-open="editPostModal">수정</button>
+                    data-modal-open="editPostModal" th:text="#{common.edit}">수정</button>
+            <!-- SETTINGS-03 커밋3: th:onsubmit엔 문자열 표현식을 못 넣어서(Thymeleaf 제한) 확인 문구는 data-confirm으로 넘긴다 -->
             <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post"
-                  onsubmit="return WePlaNet.confirmSubmit(this, '게시글을 삭제할까요?');" style="display:inline;">
+                  th:attr="data-confirm=#{community.postDetail.deleteConfirm}"
+                  onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);" style="display:inline;">
               <button type="submit" class="translate-link"
-                      style="background:none;border:none;cursor:pointer;color:var(--wp-danger, #d33);">삭제</button>
+                      style="background:none;border:none;cursor:pointer;color:var(--wp-danger, #d33);" th:text="#{common.delete}">삭제</button>
             </form>
           </th:block>
           <button type="button" th:unless="${#authentication.principal.id == post.author.id}"
-                  id="postReportToggle" class="translate-link" style="background:none;border:none;cursor:pointer;">신고</button>
+                  id="postReportToggle" class="translate-link" style="background:none;border:none;cursor:pointer;" th:text="#{community.report.toggle}">신고</button>
         </th:block>
       </div>
       <div id="postReportRow" style="display:none;margin-top:8px;">
         <form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post"
               style="display:flex;gap:8px;align-items:center;">
           <select name="reason" class="form-select" style="min-height:34px;padding:4px 8px;">
-            <option value="SPAM">스팸</option>
-            <option value="ABUSE">욕설/혐오</option>
-            <option value="SEXUAL">음란물</option>
-            <option value="ETC">기타</option>
+            <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
+            <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
+            <option value="SEXUAL" th:text="#{community.report.reason.SEXUAL}">음란물</option>
+            <option value="ETC" th:text="#{community.report.reason.ETC}">기타</option>
           </select>
-          <button type="submit" class="btn btn--ghost btn--sm">신고하기</button>
+          <button type="submit" class="btn btn--ghost btn--sm" th:text="#{community.report.submit}">신고하기</button>
         </form>
         <span id="postReportMsg" class="text-xs"></span>
       </div>
@@ -140,7 +142,7 @@
       <!-- AI 자동요약 - 백엔드(SummaryService, /posts/detail/{id}/summarize)는 이미 있었는데
            지금 쓰는 커뮤니티 상세 페이지엔 버튼이 안 붙어있었음. 레거시 feed/postDetail.html에서 로직 그대로 옮김 -->
       <div class="mt-12">
-        <button id="summarizeButton" type="button" class="btn btn--soft btn--sm">AI 요약보기</button>
+        <button id="summarizeButton" type="button" class="btn btn--soft btn--sm" th:text="#{community.postDetail.summarize}">AI 요약보기</button>
         <div id="summaryArea"></div>
       </div>
     </article>
@@ -154,7 +156,7 @@
        th:if="${post.author != null and #authentication.name != 'anonymousUser' and #authentication.principal.id == post.author.id}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
-        <h2 class="modal__title">게시글 수정</h2>
+        <h2 class="modal__title" th:text="#{community.postDetail.editTitle}">게시글 수정</h2>
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
       <form id="editPostForm" th:action="@{/posts/detail/{id}/edit(id=${post.id})}" method="post">
@@ -162,7 +164,7 @@
         <div id="editPostEditor"></div>
         <div class="flex-between mt-8">
           <span class="char-count text-xs text-muted" id="editPostCharCount">0 / 1000</span>
-          <button type="submit" class="btn btn--primary btn--sm" id="editPostSubmit">저장</button>
+          <button type="submit" class="btn btn--primary btn--sm" id="editPostSubmit" th:text="#{common.save}">저장</button>
         </div>
       </form>
     </div>

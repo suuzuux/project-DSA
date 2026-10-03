@@ -57,7 +57,7 @@ public class CollectionController {
 			@AuthenticationPrincipal AuthenticatedUser principal
 	) {
 		if (principal == null) {
-			throw new IllegalStateException("로그인이 필요합니다.");
+			throw new IllegalStateException("common.error.loginRequired");
 		}
 		return cs.getBadgeCollection(principal.getId(), artistId);
 	}

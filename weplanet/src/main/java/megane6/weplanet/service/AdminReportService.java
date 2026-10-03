@@ -37,6 +37,8 @@ public class AdminReportService {
 	private final CommentService commentService;
 	private final AdminActionLogService als;
 	private final AdminUserService aus;
+	// SETTINGS-03 커밋5: 댓글 신고 대상 제목("댓글 (원글 : ...)")을 요청 로케일로 만든다
+	private final megane6.weplanet.i18n.Messages messages;
 
 	// 대상 종류 - 게시글 신고인지 댓글 신고인지
 	public enum TargetType {
@@ -128,7 +130,7 @@ public class AdminReportService {
 						latest.getReporter().getNickname(),
 						comment.getAuthor().getId(),
 						comment.getAuthor().getNickname(),
-						"댓글 (원글 : " + comment.getPost().getTitle() + ")",
+						messages.get("admin.reports.commentTarget", comment.getPost().getTitle()),
 						excerpt(comment.getContent()),
 						latest.getCreatedAt()
 				));
@@ -161,7 +163,7 @@ public class AdminReportService {
 		List<Report> pending = reportRepository
 				.findByPost_IdAndStatus(postId, ReportStatus.PENDING);
 		if (pending.isEmpty()) {
-			throw new IllegalArgumentException("처리 대기 중인 신고를 찾을 수 없습니다. postId=" + postId);
+			throw new IllegalArgumentException("admin.error.report.pendingNotFound");
 		}
 		LocalDateTime now = LocalDateTime.now();
 		for (Report report : pending) {
@@ -184,7 +186,7 @@ public class AdminReportService {
 		List<CommentReport> pending = commentReportRepository
 				.findByComment_IdAndStatus(commentId, ReportStatus.PENDING);
 		if (pending.isEmpty()) {
-			throw new IllegalArgumentException("처리 대기 중인 신고를 찾을 수 없습니다. commentId=" + commentId);
+			throw new IllegalArgumentException("admin.error.report.pendingNotFound");
 		}
 		LocalDateTime now = LocalDateTime.now();
 		for (CommentReport report : pending) {
