@@ -16,10 +16,15 @@ public record ProjectPaymentStatusView(
 		boolean finished
 ) {
 	public static ProjectPaymentStatusView from(ProjectContribution contribution) {
+		return from(contribution, contribution.getPaymentStatus().getDisplayName());
+	}
+
+	// SETTINGS-03 커밋3: 상태 라벨은 호출부(ProjectContributionService)가 현재 로케일로 번역해서 넘긴다
+	public static ProjectPaymentStatusView from(ProjectContribution contribution, String statusLabel) {
 		FanProjectPaymentStatus status = contribution.getPaymentStatus();
 		return new ProjectPaymentStatusView(
 				status.name(),
-				status.getDisplayName(),
+				statusLabel,
 				status == FanProjectPaymentStatus.PAID,
 				status != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT
 		);

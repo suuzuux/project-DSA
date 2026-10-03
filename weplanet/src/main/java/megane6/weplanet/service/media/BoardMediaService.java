@@ -11,6 +11,8 @@ import megane6.weplanet.domain.entity.media.BoardMediaLike;
 import megane6.weplanet.repository.media.BoardMediaFileRepository;
 import megane6.weplanet.repository.media.BoardMediaLikeRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,12 @@ public class BoardMediaService {
     private final BoardMediaFileRepository boardMediaFileRepository;
     private final BoardMediaLikeRepository boardMediaLikeRepository;
     private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
+    private final MessageSource messageSource;
+
+    // SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+    private String msg(String code, Object... args) {
+        return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
+    }
 
     // 허용하는 파일 형식(MIME)
     private static final List<String> ALLOWED_TYPES = Arrays.asList(
@@ -75,7 +83,7 @@ public class BoardMediaService {
                 }
                 String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
-                    throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
+                    throw new IllegalArgumentException(msg("mediaForm.error.fileTypeNotAllowed", contentType));
                 }
 
                 String storedName = fileStorageService.store(file); // 디스크에 저장
@@ -96,7 +104,7 @@ public class BoardMediaService {
         }
 
         if (post.getFiles().isEmpty()) {
-            throw new IllegalArgumentException("파일을 최소 1개 첨부해 주세요.");
+            throw new IllegalArgumentException(msg("mediaForm.error.fileRequired"));
         }
 
         boardMediaRepository.save(post); // cascade 로 파일도 함께 저장
@@ -119,7 +127,7 @@ public class BoardMediaService {
                 }
                 String contentType = resolveContentType(file);
                 if (!ALLOWED_TYPES.contains(contentType)) {
-                    throw new IllegalArgumentException("허용되지 않는 파일 형식입니다: " + contentType);
+                    throw new IllegalArgumentException("error.media.fileTypeNotAllowed");
                 }
                 String storedName = fileStorageService.store(file);
 
@@ -156,10 +164,10 @@ public class BoardMediaService {
     public BoardMediaViewDTO getInCommunity(Long id, Long groupId, boolean canSeeMembership) {
         BoardMediaEntity post = getActivePost(id);
         if (!post.getGroupId().equals(groupId)) {
-            throw new IllegalArgumentException("이 커뮤니티의 미디어가 아닙니다.");
+            throw new IllegalArgumentException("error.media.notInCommunity");
         }
         if (post.isMembershipOnly() && !canSeeMembership) {
-            throw new IllegalArgumentException("멤버십 전용 미디어입니다.");
+            throw new IllegalArgumentException("error.media.membershipOnly");
         }
         return toViewDTO(post);
     }
@@ -203,7 +211,7 @@ public class BoardMediaService {
     @Transactional(readOnly = true)
     public BoardMediaFileEntity getFile(Long fileId) {
         return boardMediaFileRepository.findById(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("파일을 찾을 수 없습니다: " + fileId));
+                .orElseThrow(() -> new IllegalArgumentException("error.media.fileNotFound"));
     }
 
     public Resource loadResource(BoardMediaFileEntity file) {
@@ -295,13 +303,13 @@ public class BoardMediaService {
 
     private BoardMediaEntity getActivePost(Long id) {
         return boardMediaRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다: " + id));
+                .orElseThrow(() -> new IllegalArgumentException("error.post.notFound"));
     }
 
     private BoardMediaEntity getActivePostInCommunity(Long id, Long communityGroupId) {
         BoardMediaEntity post = getActivePost(id);
         if (!post.getGroupId().equals(communityGroupId)) {
-            throw new IllegalStateException("다른 커뮤니티의 미디어는 수정/삭제할 수 없습니다.");
+            throw new IllegalStateException("error.media.otherCommunity");
         }
         return post;
     }

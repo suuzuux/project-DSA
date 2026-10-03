@@ -15,6 +15,8 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.ShopCartService;
 import megane6.weplanet.service.ShopService;
 import megane6.weplanet.service.community.CommunityJoinService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -45,7 +47,15 @@ public class ShopController {
 	private final AuthenticatedUserResolver userResolver;
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
+	private final MessageSource messageSource;
+	// SETTINGS-03 커밋5: 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
+	private final megane6.weplanet.i18n.Messages messages;
 	private final megane6.weplanet.service.community.CommunityUrls communityUrls;
+
+	// SETTINGS-03: 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
 
 	/** 메인 메뉴 → 전체 굿즈샵 (아티스트 필터 선택 가능) */
 	@GetMapping("/shop")
@@ -72,7 +82,7 @@ public class ShopController {
 	                            Model model) {
 		rememberShopPage(request);
 		ArtistCardView artist = shopService.findArtist(artistId)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.artistNotFound")));
 		populateShellMenu(principal, model);
 		populateCartBadge(principal, model);
 		model.addAttribute("communityMode", true);
@@ -91,7 +101,7 @@ public class ShopController {
 	                            Model model) {
 		rememberShopPage(request);
 		ShopProductView product = shopService.findProduct(productId)
-				.orElseThrow(() -> new IllegalArgumentException("상품을 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException(msg("shop.error.productNotFound")));
 		populateShellMenu(principal, model);
 		populateCartBadge(principal, model);
 		model.addAttribute("product", product);
@@ -151,7 +161,7 @@ public class ShopController {
 	                                     @RequestParam(defaultValue = "1") int quantity,
 	                                     @AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) {
-			return Map.of("ok", false, "message", "로그인이 필요합니다.");
+			return Map.of("ok", false, "message", msg("common.error.loginRequired"));
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		try {
@@ -159,13 +169,13 @@ public class ShopController {
 			ShopCartSummaryView cart = shopCartService.getCartSummary(me);
 			Map<String, Object> body = new LinkedHashMap<>();
 			body.put("ok", true);
-			body.put("message", "장바구니에 담았습니다.");
+			body.put("message", msg("shop.msg.addedToCart"));
 			body.put("cartCount", shopCartService.countItems(me));
 			body.put("addedProductId", productId);
 			body.put("cart", toCartJson(cart));
 			return body;
 		} catch (IllegalArgumentException e) {
-			return Map.of("ok", false, "message", e.getMessage());
+			return Map.of("ok", false, "message", messages.resolve(e));
 		}
 	}
 
@@ -181,7 +191,7 @@ public class ShopController {
 	                                      @RequestParam(defaultValue = "1") int quantity,
 	                                      @AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) {
-			return Map.of("success", false, "message", "로그인이 필요합니다.");
+			return Map.of("success", false, "message", msg("common.error.loginRequired"));
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		String checkoutId = (variantProductId != null && !variantProductId.isBlank())
@@ -191,7 +201,7 @@ public class ShopController {
 			shopCartService.addItem(me, checkoutId, quantity);
 			return Map.of("success", true, "redirect", "/shop/checkout");
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			return Map.of("success", false, "message", e.getMessage());
+			return Map.of("success", false, "message", messages.resolve(e));
 		}
 	}
 
@@ -215,7 +225,7 @@ public class ShopController {
 			shopCartService.addItem(me, checkoutId, quantity);
 			return "redirect:/shop/checkout";
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e));
 			return back;
 		}
 	}
@@ -233,7 +243,7 @@ public class ShopController {
 		try {
 			shopCartService.updateQuantity(me, itemId, quantity);
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
+			redirectAttributes.addFlashAttribute("message", messages.resolve(e));
 		}
 		return checkoutReturn(from);
 	}
@@ -248,7 +258,7 @@ public class ShopController {
 		}
 		User me = userResolver.requireAuthenticated(principal);
 		shopCartService.removeItem(me, itemId);
-		redirectAttributes.addFlashAttribute("message", "장바구니에서 삭제했습니다.");
+		redirectAttributes.addFlashAttribute("message", msg("shop.msg.removedFromCart"));
 		return checkoutReturn(from);
 	}
 

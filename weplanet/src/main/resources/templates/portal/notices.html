@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>공지사항 관리 | Artist Portal</title>
+  <title th:text="#{portal.notices.pageTitle}">공지사항 관리 | Artist Portal</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -13,37 +13,37 @@
     <th:block th:replace="~{portal/fragments/sidebars :: sidebars}"></th:block>
 
     <main class="portal-main">
-      <th:block th:replace="~{portal/fragments/sidebars :: pickHint('공지사항 관리')}"></th:block>
+      <th:block th:replace="~{portal/fragments/sidebars :: pickHint(#{portal.notices.heading})}"></th:block>
       <th:block th:if="${artistSelected}">
       <div class="portal-main__head">
-        <h1>공지사항 관리</h1>
-        <a class="btn btn--primary btn--sm" th:href="@{/portal/notices/new}">등록하기</a>
+        <h1 th:text="#{portal.notices.heading}">공지사항 관리</h1>
+        <a class="btn btn--primary btn--sm" th:href="@{/portal/notices/new}" th:text="#{portal.common.register}">등록하기</a>
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
-      <p class="text-sm text-muted" style="margin-bottom:12px;">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 5개)</p>
+      <p class="text-sm text-muted" style="margin-bottom:12px;" th:text="#{portal.notices.pinnedHint}">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 5개)</p>
 
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
               <th style="width:40px;"></th>
-              <th>제목</th>
-              <th>작성일자</th>
-              <th>공개여부</th>
-              <th>관리</th>
+              <th th:text="#{noticeForm.titleLabel}">제목</th>
+              <th th:text="#{portal.notices.createdAt}">작성일자</th>
+              <th th:text="#{noticeForm.publishedLabel}">공개여부</th>
+              <th th:text="#{portal.common.manage}">관리</th>
             </tr>
           </thead>
           <tbody id="noticeTableBody">
             <tr th:if="${#lists.isEmpty(notices)}">
-              <td colspan="5" class="text-sm text-muted">등록된 공지가 없습니다.</td>
+              <td colspan="5" class="text-sm text-muted" th:text="#{portal.notices.empty}">등록된 공지가 없습니다.</td>
             </tr>
             <tr th:each="notice : ${notices}"
                 th:attr="data-id=${notice.id}, draggable=${notice.pinned}"
                 th:classappend="${notice.pinned} ? ' js-pinned'">
               <td class="notice-drag-cell">
-                <span th:if="${notice.pinned}" class="notice-drag-handle" title="드래그하여 순서 변경">☰</span>
+                <span th:if="${notice.pinned}" class="notice-drag-handle" th:title="#{portal.common.dragToReorder}" title="드래그하여 순서 변경">☰</span>
               </td>
               <td>
                 <a th:href="@{/portal/notices/{id}/edit(id=${notice.id})}"
@@ -53,13 +53,13 @@
               <td th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.25 16:00</td>
               <td>
                 <span class="tag" th:classappend="${notice.published} ? ' tag--public' : ' tag--private'"
-                      th:text="${notice.published} ? '공개' : '비공개'">공개</span>
+                      th:text="${notice.published} ? #{noticeForm.publishedTrue} : #{noticeForm.publishedFalse}">공개</span>
               </td>
               <td>
                 <div class="flex-center">
-                  <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices/{id}/edit(id=${notice.id})}">수정</a>
+                  <a class="btn btn--ghost btn--sm" th:href="@{/portal/notices/{id}/edit(id=${notice.id})}" th:text="#{common.edit}">수정</a>
                   <form th:action="@{/portal/notices/{id}/delete(id=${notice.id})}" method="post">
-                    <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                    <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                   </form>
                 </div>
               </td>
@@ -70,12 +70,14 @@
       </th:block>
     </main>
   </div>
-  <script>
+  <script th:inline="javascript">
     (function () {
       var tbody = document.getElementById("noticeTableBody");
       if (!tbody) return;
       var dragging = null;
       var orderBeforeDrag = null;
+      // SETTINGS-03 커밋5: 화면 언어에 맞춘 문구 (원래 한국어는 fallback)
+      var MSG_REORDER_FAILED = /*[[#{portal.notices.reorderFailed}]]*/ "순서를 저장하지 못했습니다.";
 
       function pinnedIds() {
         return Array.prototype.map.call(tbody.querySelectorAll("tr.js-pinned"), function (row) {
@@ -94,14 +96,14 @@
           .then(function (res) { return res.json(); })
           .then(function (data) {
             if (!data.ok) {
-              alert(data.message || "순서를 저장하지 못했습니다.");
+              alert(data.message || MSG_REORDER_FAILED);
               window.location.reload();
               return;
             }
             orderBeforeDrag = ids.slice();
           })
           .catch(function () {
-            alert("순서를 저장하지 못했습니다.");
+            alert(MSG_REORDER_FAILED);
             window.location.reload();
           });
       }

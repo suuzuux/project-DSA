@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.SocialLoginIntent;
+import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.PendingSocialLink;
 import megane6.weplanet.security.PendingSocialSignup;
@@ -46,6 +47,7 @@ public class SocialLoginEntryController {
 	private final AuthenticatedUserResolver userResolver;
 	private final SocialSignupService socialSignupService;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
+	private final Messages messages;
 
 	// 가입된 계정이 없는 소셜 계정으로 로그인(또는 가입)을 시도했을 때 보여주는 "이 계정으로 가입하시겠습니까?" 화면.
 	// OAuth2LoginSuccessHandler 가 소셜 정보를 세션에 담고 여기로 보낸다. 담긴 정보가 없거나 10분이 지났으면 로그인 화면으로.
@@ -75,7 +77,7 @@ public class SocialLoginEntryController {
 		}
 		// 화면에서도 막지만(required), 직접 요청을 보내는 경우까지 서버에서 다시 확인한다
 		if (!agreeAge || !agreeTerms) {
-			redirectAttributes.addFlashAttribute("errorMessage", "필수 약관에 동의해 주세요.");
+			redirectAttributes.addFlashAttribute("errorMessage", messages.get("socialSignup.error.termsRequired"));
 			return "redirect:/social-login/signup-confirm";
 		}
 		User user;
@@ -184,12 +186,9 @@ public class SocialLoginEntryController {
 		return null;
 	}
 
-	private static String providerLabel(AuthProvider provider) {
-		return switch (provider) {
-			case GOOGLE -> "Google";
-			case KAKAO -> "카카오";
-			case LINE -> "LINE";
-		};
+	// 화면 언어에 맞춘 소셜 서비스 이름 (socialSignup.provider.GOOGLE / KAKAO / LINE)
+	private String providerLabel(AuthProvider provider) {
+		return messages.get("socialSignup.provider." + provider.name());
 	}
 
 	private PendingSocialLink pendingLink(HttpSession session) {

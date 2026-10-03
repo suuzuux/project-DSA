@@ -6,6 +6,7 @@ import megane6.weplanet.domain.entity.MainBanner;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.BannerType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.MainBannerService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +27,7 @@ public class AdminBannerController {
 
 	private final MainBannerService mainBannerService;
 	private final AuthenticatedUserResolver userResolver;
+	private final Messages messages;
 
 	@GetMapping
 	public String list(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
@@ -58,9 +60,9 @@ public class AdminBannerController {
 		User admin = requireAdmin(principal);
 		try {
 			mainBannerService.save(admin, null, form, image);
-			redirectAttributes.addFlashAttribute("msg", "배너가 등록되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", messages.get("adminBanner.flash.created"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/banners/new";
 		}
 		return "redirect:/admin/banners";
@@ -75,9 +77,9 @@ public class AdminBannerController {
 		User admin = requireAdmin(principal);
 		try {
 			mainBannerService.save(admin, bannerId, form, image);
-			redirectAttributes.addFlashAttribute("msg", "배너가 수정되었습니다.");
+			redirectAttributes.addFlashAttribute("msg", messages.get("adminBanner.flash.updated"));
 		} catch (IllegalArgumentException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
+			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/banners/" + bannerId + "/edit";
 		}
 		return "redirect:/admin/banners";
@@ -90,7 +92,7 @@ public class AdminBannerController {
 						 RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		mainBannerService.toggleActive(bannerId);
-		redirectAttributes.addFlashAttribute("msg", "노출 상태를 바꿨습니다.");
+		redirectAttributes.addFlashAttribute("msg", messages.get("adminBanner.flash.toggled"));
 		return "redirect:/admin/banners";
 	}
 
@@ -100,7 +102,7 @@ public class AdminBannerController {
 						 RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		mainBannerService.delete(bannerId);
-		redirectAttributes.addFlashAttribute("msg", "배너가 삭제되었습니다.");
+		redirectAttributes.addFlashAttribute("msg", messages.get("adminBanner.flash.deleted"));
 		return "redirect:/admin/banners";
 	}
 
@@ -116,7 +118,7 @@ public class AdminBannerController {
 	private User requireAdmin(AuthenticatedUser principal) {
 		User user = userResolver.requireAuthenticated(principal);
 		if (user.getRole() != Role.ADMIN) {
-			throw new IllegalStateException("관리자만 접근할 수 있습니다.");
+			throw new IllegalStateException("error.admin.adminOnly");
 		}
 		return user;
 	}

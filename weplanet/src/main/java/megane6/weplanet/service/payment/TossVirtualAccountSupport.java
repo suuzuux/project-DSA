@@ -32,7 +32,7 @@ public final class TossVirtualAccountSupport {
 	public static void requireWaitingVirtualAccount(TossPaymentResponse response) {
 		TossPaymentResponse.VirtualAccount account = response.virtualAccount();
 		if (!"WAITING_FOR_DEPOSIT".equals(response.status()) || account == null || account.dueDate() == null) {
-			throw new TossPaymentException("UNEXPECTED_STATUS", "가상계좌 발급 결과를 확인할 수 없습니다. 다시 시도해주세요.");
+			throw new TossPaymentException("UNEXPECTED_STATUS", "error.contribution.virtualAccountUnknown");
 		}
 	}
 }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>홈페이지 관리 공지사항 | WePlaNet</title>
+  <title th:text="#{admin.notices.pageTitle}">홈페이지 관리 공지사항 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
@@ -24,45 +24,45 @@
         <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
         <details class="portal-sidebar__group">
           <summary>
-            <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+            <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
           </summary>
-          <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+          <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
         </details>
         <details class="portal-sidebar__group">
           <summary>
-            <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+            <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
           </summary>
-          <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+          <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
         </details>
-        <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-        <a th:href="@{/admin/users}">👥 전체 회원</a>
-        <a th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-        <a class="is-active" th:href="@{/admin/notices}">📢 전체 공지</a>
-        <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+        <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+        <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+        <a th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+        <a class="is-active" th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+        <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
         <details class="portal-sidebar__group">
           <summary>
-            <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
-            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+            <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+            <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
           </summary>
-          <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+          <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
         </details>
-        <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+        <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
       </nav>
 
       <div class="portal-sidebar__footer">
-        <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
+        <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
         <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-          <button type="submit" class="btn">🚪 로그아웃</button>
+          <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
         </form>
       </div>
     </aside>
 
     <main class="portal-main">
       <div class="portal-main__head">
-        <h1>홈페이지 관리 공지사항</h1>
-        <a class="btn btn--primary btn--sm" th:href="@{/admin/notices/new}">글쓰기</a>
+        <h1 th:text="#{admin.notices.heading}">홈페이지 관리 공지사항</h1>
+        <a class="btn btn--primary btn--sm" th:href="@{/admin/notices/new}" th:text="#{admin.notices.write}">글쓰기</a>
       </div>
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
@@ -71,38 +71,38 @@
         <article class="admin-stat">
           <span class="admin-stat__icon admin-stat__icon--violet">📢</span>
           <span class="admin-stat__body">
-            <span class="admin-stat__label">게시 중</span>
+            <span class="admin-stat__label" th:text="#{admin.notices.stat.visible}">게시 중</span>
             <strong class="admin-stat__value" th:text="${stats.visible()}">0</strong>
           </span>
         </article>
         <article class="admin-stat">
           <span class="admin-stat__icon admin-stat__icon--orange">⏰</span>
           <span class="admin-stat__body">
-            <span class="admin-stat__label">예약 대기</span>
+            <span class="admin-stat__label" th:text="#{admin.notices.stat.scheduled}">예약 대기</span>
             <strong class="admin-stat__value" th:text="${stats.scheduled()}">0</strong>
           </span>
         </article>
         <article class="admin-stat">
           <span class="admin-stat__icon admin-stat__icon--blue">📝</span>
           <span class="admin-stat__body">
-            <span class="admin-stat__label">비공개</span>
+            <span class="admin-stat__label" th:text="#{noticeForm.publishedFalse}">비공개</span>
             <strong class="admin-stat__value" th:text="${stats.hidden()}">0</strong>
           </span>
         </article>
         <article class="admin-stat">
           <span class="admin-stat__icon admin-stat__icon--khaki">📌</span>
           <span class="admin-stat__body">
-            <span class="admin-stat__label">상단 고정</span>
+            <span class="admin-stat__label" th:text="#{admin.notices.stat.pinned}">상단 고정</span>
             <strong class="admin-stat__value" th:text="${stats.pinned()} + ' / ' + ${T(megane6.weplanet.service.SiteNoticeService).MAX_PINNED}">0 / 3</strong>
           </span>
         </article>
       </div>
-      <p class="text-sm text-muted" style="margin-bottom:12px;">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 3개)</p>
+      <p class="text-sm text-muted" style="margin-bottom:12px;" th:text="#{admin.notices.dragHint(${T(megane6.weplanet.service.SiteNoticeService).MAX_PINNED})}">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 3개)</p>
       <form method="get" th:action="@{/admin/notices}" class="report-filter-bar">
         <input type="hidden" name="category" th:value="${selectedCategory}" />
-        <input type="text" name="keyword" placeholder="제목 검색" th:value="${keyword}" />
-        <button type="submit" class="btn btn--primary btn--sm">검색</button>
-        <a th:href="@{/admin/notices}" class="btn btn--ghost btn--sm">초기화</a>
+        <input type="text" name="keyword" placeholder="제목 검색" th:placeholder="#{admin.notices.searchPlaceholder}" th:value="${keyword}" />
+        <button type="submit" class="btn btn--primary btn--sm" th:text="#{admin.common.search}">검색</button>
+        <a th:href="@{/admin/notices}" class="btn btn--ghost btn--sm" th:text="#{admin.common.reset}">초기화</a>
       </form>
 
       <div class="table-wrap">
@@ -110,30 +110,25 @@
           <thead>
             <tr>
               <th style="width: 40px;"></th>
-              <th>분류</th>
-              <th>제목</th>
-              <th>작성일자</th>
-              <th>공개여부</th>
-              <th>관리</th>
+              <th th:text="#{admin.notices.col.category}">분류</th>
+              <th th:text="#{noticeForm.titleLabel}">제목</th>
+              <th th:text="#{admin.notices.col.createdAt}">작성일자</th>
+              <th th:text="#{noticeForm.publishedLabel}">공개여부</th>
+              <th th:text="#{admin.common.manage}">관리</th>
             </tr>
           </thead>
           <tbody id="noticeTableBody">
           <tr th:if="${#lists.isEmpty(pageResult.content())}">
-            <td colspan="6" class="text-sm text-muted">등록된 공지가 없습니다.</td>
+            <td colspan="6" class="text-sm text-muted" th:text="#{admin.notices.empty}">등록된 공지가 없습니다.</td>
           </tr>
           <tr th:each="notice : ${pageResult.content()}"
               th:attr="data-id=${notice.id}, draggable=${notice.pinned}"
               th:classappend="${notice.pinned} ? ' js-pinned'">
             <td class="notice-drag-cell">
-              <span th:if="${notice.pinned}" class="notice-drag-handle" title="드래그하여 순서 변경">☰</span>
+              <span th:if="${notice.pinned}" class="notice-drag-handle" title="드래그하여 순서 변경" th:title="#{admin.notices.dragTitle}">☰</span>
             </td>
             <td>
-              <span class="tag tag--member" th:switch="${notice.category.name()}">
-                <th:block th:case="'GENERAL'">일반</th:block>
-                <th:block th:case="'EVENT'">이벤트</th:block>
-                <th:block th:case="'MAINTENANCE'">점검</th:block>
-                <th:block th:case="'UPDATE'">업데이트</th:block>
-              </span>
+              <span class="tag tag--member" th:text="#{${'siteNotice.category.' + notice.category.name()}}">일반</span>
             </td>
             <td>
               <a th:href="@{/admin/notices/{id}/edit(id=${notice.id})}"
@@ -143,13 +138,13 @@
             <td th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31 16:00</td>
             <td>
             <span class="tag" th:classappend="${notice.published} ? ' tag--public' : ' tag--private'"
-                  th:text="${notice.published} ? '공개' : '비공개'">공개</span>
+                  th:text="${notice.published} ? #{noticeForm.publishedTrue} : #{noticeForm.publishedFalse}">공개</span>
             </td>
             <td>
               <div class="flex-center">
-                <a class="btn btn--ghost btn--sm" th:href="@{/admin/notices/{id}/edit(id=${notice.id})}">수정</a>
+                <a class="btn btn--ghost btn--sm" th:href="@{/admin/notices/{id}/edit(id=${notice.id})}" th:text="#{common.edit}">수정</a>
                 <form th:action="@{/admin/notices/{id}/delete(id=${notice.id})}" method="post">
-                  <button type="submit" class="btn btn--ghost btn--sm">삭제</button>
+                  <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                 </form>
               </div>
             </td>
@@ -160,21 +155,22 @@
       <div class="flex-center" style="margin-top:16px; gap:8px;">
         <a th:if="${pageResult.hasPrevious()}"
            th:href="@{/admin/notices(category=${selectedCategory}, keyword=${keyword}, page=${pageResult.page() - 1}, size=${pageResult.size()})}"
-           class="btn btn--ghost btn--sm">‹ 이전</a>
+           class="btn btn--ghost btn--sm" th:text="|‹ #{admin.common.prev}|">‹ 이전</a>
         <span class="text-xs text-muted"
               th:text="(${pageResult.page()} + 1) + ' / ' + ${pageResult.totalPages()}">1 / 1</span>
         <a th:if="${pageResult.hasNext()}"
            th:href="@{/admin/notices(category=${selectedCategory}, keyword=${keyword}, page=${pageResult.page() + 1}, size=${pageResult.size()})}"
-           class="btn btn--ghost btn--sm">다음 ›</a>
+           class="btn btn--ghost btn--sm" th:text="|#{admin.common.next} ›|">다음 ›</a>
       </div>
     </main>
   </div>
-  <script>
+  <script th:inline="javascript">
     (function () {
       var tbody = document.getElementById("noticeTableBody");
       if (!tbody) return;
       var dragging = null;
       var orderBeforeDrag = null;
+      var saveOrderFailedMessage = /*[[#{admin.notices.saveOrderFailed}]]*/ "순서를 저장하지 못했습니다.";
 
       function pinnedIds() {
         return Array.prototype.map.call(tbody.querySelectorAll("tr.js-pinned"), function (row) {
@@ -193,14 +189,14 @@
           .then(function (res) { return res.json(); })
           .then(function (data) {
             if (!data.ok) {
-              alert(data.message || "순서를 저장하지 못했습니다.");
+              alert(data.message || saveOrderFailedMessage);
               window.location.reload();
               return;
             }
             orderBeforeDrag = ids.slice();
           })
           .catch(function () {
-            alert("순서를 저장하지 못했습니다.");
+            alert(saveOrderFailedMessage);
             window.location.reload();
           });
       }

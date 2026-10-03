@@ -20,6 +20,10 @@
     const commentForm = document.getElementById("live-comment-form");
     const commentInput = document.getElementById("live-comment-input");
 
+    // SETTINGS-03 커밋5: live.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
+    const I18N = window.PORTAL_I18N || {};
+    const t = (key, ko) => (I18N[key] != null ? I18N[key] : ko);
+
     const ICE = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
     const FETCH_HEADERS = { "X-Requested-With": "fetch", "Content-Type": "application/json" };
 
@@ -50,7 +54,7 @@
     }
 
     function updateViewerCount() {
-        viewerCountEl.textContent = "시청자 " + viewers.size + "명";
+        viewerCountEl.textContent = t("portal.live.viewers", "시청자 {0}명").replace("{0}", viewers.size);
     }
 
     function showCameraError(message) {
@@ -137,20 +141,20 @@
 
     function uploadReplay(blob) {
         if (!blob) {
-            showSaveStatus("다시보기 영상이 없어 저장하지 못했습니다.");
+            showSaveStatus(t("portal.live.replayMissing", "다시보기 영상이 없어 저장하지 못했습니다."));
             return Promise.resolve();
         }
         const type = (blob.type || "video/webm").split(";")[0];
         const ext = type.indexOf("mp4") >= 0 ? "mp4" : "webm";
         const form = new FormData();
         form.append("file", blob, "live-replay." + ext);
-        showSaveStatus("다시보기를 Live 탭에 저장하는 중...");
+        showSaveStatus(t("portal.live.replaySaving", "다시보기를 Live 탭에 저장하는 중..."));
         return fetch("/api/portal/live/replay", {
             method: "POST",
             headers: { "X-Requested-With": "fetch" },
             body: form
         }).then(parseResponse).then(function () {
-            showSaveStatus("다시보기가 Live 탭에 저장되었습니다.");
+            showSaveStatus(t("portal.live.replaySaved", "다시보기가 Live 탭에 저장되었습니다."));
         });
     }
 
@@ -173,20 +177,20 @@
         }
         const reported = comment.reportedByMe === true || comment.reportedByMe === "true";
         const name = document.createElement("strong");
-        name.textContent = comment.authorNickname || "익명";
+        name.textContent = comment.authorNickname || t("client.live.anonymous", "익명");
         if (!reported && (comment.fromArtist || Number(comment.authorId) === artistId)) {
             name.className = "live-comment__name--artist";
             name.style.color = randomArtistColor();
         }
         const body = document.createElement("span");
-        body.textContent = reported ? "신고접수된 댓글입니다" : (comment.content || "");
+        body.textContent = reported ? t("portal.live.reportedComment", "신고접수된 댓글입니다") : (comment.content || "");
         row.appendChild(name);
         row.appendChild(body);
         if (!reported && comment.id && hostId && Number(comment.authorId) !== hostId) {
             const reportBtn = document.createElement("button");
             reportBtn.type = "button";
             reportBtn.className = "live-comment__report";
-            reportBtn.textContent = "신고";
+            reportBtn.textContent = t("community.report.toggle", "신고");
             reportBtn.addEventListener("click", function () {
                 reportLiveComment(comment.id, row);
             });
@@ -209,7 +213,7 @@
         row.classList.add("live-comment--reported");
         const body = row.querySelector("span");
         if (body) {
-            body.textContent = "신고접수된 댓글입니다";
+            body.textContent = t("portal.live.reportedComment", "신고접수된 댓글입니다");
         }
         const name = row.querySelector("strong");
         if (name) {
@@ -224,11 +228,11 @@
 
     async function reportLiveComment(commentId, row) {
         if (!commentId) return;
-        const reason = window.prompt("신고 사유를 선택하세요.\nSPAM / ABUSE / SEXUAL / ETC", "ABUSE");
+        const reason = window.prompt(t("client.live.reportPrompt", "신고 사유를 선택하세요.\nSPAM / ABUSE / SEXUAL / ETC"), "ABUSE");
         if (!reason) return;
         const normalized = String(reason).trim().toUpperCase();
         if (!["SPAM", "ABUSE", "SEXUAL", "ETC"].includes(normalized)) {
-            window.alert("신고 사유는 SPAM, ABUSE, SEXUAL, ETC 중 하나여야 합니다.");
+            window.alert(t("client.live.reportReasonInvalid", "신고 사유는 SPAM, ABUSE, SEXUAL, ETC 중 하나여야 합니다."));
             return;
         }
         try {
@@ -241,13 +245,13 @@
             );
             const data = await res.json().catch(function () { return {}; });
             if (!res.ok || data.success === false) {
-                window.alert((data && data.message) || "신고에 실패했습니다.");
+                window.alert((data && data.message) || t("client.live.reportFailed", "신고에 실패했습니다."));
                 return;
             }
             markLiveCommentReported(row);
         } catch (err) {
             console.warn("[LIVE] 채팅 신고 실패", err);
-            window.alert("신고에 실패했습니다.");
+            window.alert(t("client.live.reportFailed", "신고에 실패했습니다."));
         }
     }
 
@@ -411,7 +415,7 @@
     async function parseResponse(res) {
         const data = await res.json().catch(function () { return {}; });
         if (!res.ok || data.success === false) {
-            throw new Error(data.message || "요청에 실패했습니다.");
+            throw new Error(data.message || t("client.request.failed", "요청에 실패했습니다."));
         }
         return data;
     }
@@ -440,14 +444,14 @@
             refreshControls();
         } catch (err) {
             console.error("[LIVE] 카메라 접근 실패", err);
-            showCameraError("카메라 또는 마이크를 사용할 수 없습니다. 브라우저 권한을 확인해주세요.");
+            showCameraError(t("portal.live.cameraUnavailable", "카메라 또는 마이크를 사용할 수 없습니다. 브라우저 권한을 확인해주세요."));
             refreshControls();
         }
     }
 
     startBtn.addEventListener("click", function () {
         if (!localStream) {
-            showCameraError("카메라를 먼저 켜주세요.");
+            showCameraError(t("portal.live.cameraFirst", "카메라를 먼저 켜주세요."));
             return;
         }
         startBtn.disabled = true;

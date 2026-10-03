@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class MembershipPaymentController {
 
 	private final MembershipPaymentService membershipPaymentService;
+	private final megane6.weplanet.i18n.Messages messages;
 	private final AuthenticatedUserResolver userResolver;
 	private final UserRepository userRepository;
 
@@ -38,7 +39,7 @@ public class MembershipPaymentController {
 		}
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("아티스트를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("shop.error.artistNotFound"));
 		model.addAttribute("artistId", artistId);
 		model.addAttribute("artistName", artist.getNickname());
 		model.addAttribute("amount", MembershipOrder.YEARLY_PRICE);
@@ -69,13 +70,13 @@ public class MembershipPaymentController {
 		try {
 			model.addAttribute("result", membershipPaymentService.confirmVirtualAccount(
 					principal.getId(), paymentKey, orderId, amount));
-			model.addAttribute("paidMessage", "멤버십 가입이 확정되었습니다.");
-			model.addAttribute("waitingMessage", "아래 계좌로 입금기한 안에 입금하면 멤버십이 활성화돼요.");
+			model.addAttribute("paidMessage", messages.get("membershipCheckout.paidMessage"));
+			model.addAttribute("waitingMessage", messages.get("membershipCheckout.waitingMessage"));
 			model.addAttribute("statusUrl", "/payments/membership/orders/" + orderId + "/status");
 			return "payment/commerce-virtual-account";
 		} catch (TossPaymentException | IllegalArgumentException
 				 | IllegalStateException | AccessDeniedException e) {
-			model.addAttribute("message", e.getMessage());
+			model.addAttribute("message", messages.resolve(e));
 			return "payment/fail";
 		}
 	}
@@ -91,8 +92,8 @@ public class MembershipPaymentController {
 		}
 		membershipPaymentService.failOrder(principal.getId(), orderId);
 		model.addAttribute("message", "PAY_PROCESS_CANCELED".equals(code)
-				? "결제를 취소했어요."
-				: (message != null ? message : "결제에 실패했습니다."));
+				? messages.get("payment.cancelled")
+				: (message != null ? message : messages.get("shop.error.paymentFailedGeneric")));
 		return "payment/fail";
 	}
 

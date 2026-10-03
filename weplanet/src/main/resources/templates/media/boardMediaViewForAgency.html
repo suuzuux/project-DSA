@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8"/>
-    <title>미디어 (소속사)</title>
+    <title th:text="#{media.agency.title}">미디어 (소속사)</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
 </head>
@@ -11,7 +11,7 @@
 <header class="community-top">
     <div class="community-top__left">
         <a class="home-link" th:href="@{/}">🏠</a>
-        <h1 class="community-top__name">ARTIST 게시판</h1>
+        <h1 class="community-top__name" th:text="#{media.board.artist}">ARTIST 게시판</h1>
     </div>
 </header>
 
@@ -25,19 +25,19 @@
 </nav>
 
 <div style="width:min(100% - 40px, 1120px);margin:16px auto;">
-    <h1>미디어 (소속사)</h1>
+    <h1 th:text="#{media.agency.title}">미디어 (소속사)</h1>
 
     <p th:if="${msg}" th:text="${msg}"></p>
     <p th:if="${error}" th:text="${error}"></p>
 
-    <button type="button" onclick="document.getElementById('writeDialog').showModal()">글쓰기</button>
-    <button type="button" onclick="WePlaNet.alert('순서 편집 기능은 다음 단계에서 추가됩니다.')">편집</button>
+    <button type="button" onclick="document.getElementById('writeDialog').showModal()" th:text="#{media.agency.write}">글쓰기</button>
+    <button type="button" th:attr="data-alert=#{media.agency.reorderSoon}" onclick="WePlaNet.alert(this.dataset.alert)" th:text="#{media.agency.reorder}">편집</button>
 
-    <p th:if="${list.isEmpty()}" class="list-empty">아직 등록된 미디어가 없습니다.</p>
+    <p th:if="${list.isEmpty()}" class="list-empty" th:text="#{media.emptyYet}">아직 등록된 미디어가 없습니다.</p>
 
     <div th:each="post : ${list}">
         <hr/>
-        <h3 th:text="${post.title}">제목</h3>
+        <h3 th:text="${post.title != null and #strings.startsWith(post.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(post.title, 11)})} : ${post.title}">제목</h3>
         <p th:text="${post.content}">설명</p>
 
         <div>
@@ -49,29 +49,30 @@
             </span>
         </div>
 
-        <p th:text="'첨부 ' + ${post.fileCount} + '개'">첨부 개수</p>
+        <p th:text="#{community.media.fileCount(${post.fileCount})}">첨부 개수</p>
 
         <form th:action="@{/board/media/{id}/delete(id=${post.id})}" method="post"
-              onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?');">
+              th:attr="data-confirm=#{community.media.deleteConfirm}"
+              onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
             <input type="hidden" name="groupId" th:value="${groupId}"/>
-            <button type="submit">삭제</button>
+            <button type="submit" th:text="#{common.delete}">삭제</button>
         </form>
     </div>
 </div>
 
 <dialog id="writeDialog">
-    <h2>새 미디어 글쓰기</h2>
+    <h2 th:text="#{media.agency.newTitle}">새 미디어 글쓰기</h2>
     <form th:action="@{/board/media/upload}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="groupId" th:value="${groupId}"/>
 
-        <p>제목: <input type="text" name="title" required/></p>
-        <p>설명:<br/><textarea name="content" rows="3" cols="30"></textarea></p>
-        <p>파일(여러 개 선택 가능):<br/>
+        <p><span th:text="#{media.agency.titleField}">제목:</span> <input type="text" name="title" required/></p>
+        <p><span th:text="#{media.agency.contentField}">설명:</span><br/><textarea name="content" rows="3" cols="30"></textarea></p>
+        <p><span th:text="#{media.agency.filesField}">파일(여러 개 선택 가능):</span><br/>
            <input type="file" name="files" accept="image/*,video/*" multiple required/></p>
 
-        <button type="submit">등록</button>
-        <button type="reset">초기화</button>
-        <button type="button" onclick="document.getElementById('writeDialog').close()">취소</button>
+        <button type="submit" th:text="#{schedule.submit}">등록</button>
+        <button type="reset" th:text="#{media.agency.reset}">초기화</button>
+        <button type="button" onclick="document.getElementById('writeDialog').close()" th:text="#{common.cancel}">취소</button>
     </form>
 </dialog>
 

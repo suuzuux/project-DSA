@@ -1,5 +1,6 @@
 package megane6.weplanet.service.event;
 
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.event.*;
 import megane6.weplanet.domain.entity.User;
@@ -202,7 +203,7 @@ public class HashtagEventAdminService {
 	public HashtagResultNoticeDraft buildResultNotice(Long eventId) {
 		HashtagEvent event = requireEvent(eventId);
 		if (event.getFinalizedAt() == null) {
-			throw new IllegalStateException("집계를 확정한 뒤에 결과 공지를 작성할 수 있습니다.");
+			throw new IllegalStateException("adminHashtag.error.notFinalized");
 		}
 		
 		return HashtagResultNoticeDraft.from(hess.getDashboard(event));
@@ -210,14 +211,14 @@ public class HashtagEventAdminService {
 	
 	public HashtagEvent requireEvent(Long eventId) {
 		return her.findById(eventId).orElseThrow(() ->
-				new IllegalArgumentException("해시태그 총공 이벤트를 찾을 수 없습니다."));
+				new IllegalArgumentException("hashtagEvent.error.notFound"));
 	}
 	
 	// 시작일은 오늘 이후 + 다른 이벤트와 기간이 겹치면 안 됨 (동시 진행 1개)
 	// 오늘 시작도 허용: 등록하는 순간 바로 "진행 중"이 되고 그때부터 쓴 글이 집계된다 (시연할 때 편함)
 	private void validateSchedule(HashtagEvent event, Long selfId, LocalDateTime now) {
 		if (event.getStartAt().toLocalDate().isBefore(now.toLocalDate())) {
-			throw new IllegalArgumentException("시작일은 오늘 이후로 정해주세요.");
+			throw new IllegalArgumentException("adminHashtag.error.startInPast");
 		}
 		
 		boolean overlapped = (selfId == null)
@@ -228,7 +229,7 @@ public class HashtagEventAdminService {
 		
 		if (overlapped) {
 			throw new IllegalArgumentException(
-					"기간이 겹치는 다른 해시태그 총공 이벤트가 있습니다. (동시에 1개만 진행할 수 있어요)");
+					"adminHashtag.error.overlap");
 		}
 	}
 	
@@ -236,10 +237,10 @@ public class HashtagEventAdminService {
 		List<Long> artistIds = form.getArtistIds();
 		
 		if (artistIds.size() < MIN_TARGETS) {
-			throw new IllegalArgumentException("참여 아티스트를 " + MIN_TARGETS + "팀 이상 지정해주세요.");
+			throw new LocalizedIllegalArgumentException("adminHashtag.error.minTargets", MIN_TARGETS);
 		}
 		if (new HashSet<>(artistIds).size() != artistIds.size()) {
-			throw new IllegalArgumentException("같은 아티스트가 두 번 들어갔습니다.");
+			throw new IllegalArgumentException("adminHashtag.error.duplicateArtist");
 		}
 		
 		Map<Long, User> artists = ur.findAllById(artistIds)
@@ -253,21 +254,21 @@ public class HashtagEventAdminService {
 		for (int i = 0; i < artistIds.size(); i++) {
 			User artist = artists.get(artistIds.get(i));
 			if (artist == null || artist.getRole() != Role.ARTIST) {
-				throw new IllegalArgumentException("아티스트를 찾을 수 없습니다. (id " + artistIds.get(i) + ")");
+				throw new LocalizedIllegalArgumentException("adminHashtag.error.artistNotFound", String.valueOf(artistIds.get(i)));
 			}
 			
 			String rawHashtag = form.hashtagAt(i);
 			if (rawHashtag == null || rawHashtag.isBlank()) {
-				throw new IllegalArgumentException(artist.getNickname() + "의 해시태그를 입력해주세요.");
+				throw new LocalizedIllegalArgumentException("adminHashtag.error.hashtagRequired", artist.getNickname());
 			}
 			
 			String hashtag = HashtagEventTarget.normalize(rawHashtag);
 			// 대소문자만 다른 태그는 같은 태그로 본다 (#STELLA = #stella → 집계할 때도 대소문자 무시)
 			if (!usedHashtags.add(hashtag.toLowerCase(Locale.ROOT))) {
-				throw new IllegalArgumentException("다른 아티스트와 해시태그가 겹칩니다: " + hashtag);
+				throw new LocalizedIllegalArgumentException("adminHashtag.error.duplicateHashtag", hashtag);
 			}
 			
 			event.putTarget(artist, hashtag);
 		}
 	}
-}
+}

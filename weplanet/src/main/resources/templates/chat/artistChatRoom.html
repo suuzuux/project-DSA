@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>아티스트 채팅방</title>
+    <title th:text="#{artistChat.pageTitle}">아티스트 채팅방</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
@@ -19,8 +19,8 @@
 
 <div class="container container--narrow section">
     <div class="section__head">
-        <h1 class="section__title">내 채팅방 (아티스트 화면)</h1>
-        <button id="aiFanButton" type="button" class="btn btn--soft btn--sm">AI 팬 인사 받기 (시연용)</button>
+        <h1 class="section__title" th:text="#{artistChat.heading}">내 채팅방 (아티스트 화면)</h1>
+        <button id="aiFanButton" type="button" class="btn btn--soft btn--sm" th:text="#{artistChat.aiFanButton}">AI 팬 인사 받기 (시연용)</button>
     </div>
 
     <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
@@ -30,8 +30,8 @@
     <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
 
     <div style="display:flex;gap:8px;">
-        <input type="text" id="messageInput" class="form-input" placeholder="팬들에게 메시지를 입력하세요">
-        <button id="sendButton" class="btn btn--primary">보내기</button>
+        <input type="text" id="messageInput" class="form-input" th:placeholder="#{artistChat.messagePlaceholder}" placeholder="팬들에게 메시지를 입력하세요">
+        <button id="sendButton" class="btn btn--primary" th:text="#{artistChat.sendButton}">보내기</button>
     </div>
 </div>
 
@@ -51,6 +51,11 @@
     const artistId = /*[[${artistId}]]*/ 0;
     // 서버가 내려준 지난 대화 이력 (새로고침해도 메시지가 남아있도록)
     const history = /*[[${history}]]*/ [];
+
+    // 화면 언어에 맞춘 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    const MSG = {
+        warningPrefix: /*[[#{artistChat.warningPrefix}]]*/ "[경고] {0}"
+    };
 
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(proto + '//' + location.host + '/ws-chat');
@@ -80,7 +85,7 @@
 
     function showWarning(message) {
         const banner = document.getElementById('warningBanner');
-        banner.textContent = '[경고] ' + message;
+        banner.textContent = MSG.warningPrefix.replace('{0}', message);
         banner.hidden = false;
 
         clearTimeout(warningTimer);

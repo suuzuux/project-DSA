@@ -22,6 +22,41 @@
   const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 
   /* ---------------------------------------------------------
+   * SETTINGS-03 커밋3: 순수 클라이언트 JS 문구 (/api/i18n/client)
+   * -----------------------------------------------------------
+   * shell.js(/api/i18n/shell)와 같은 방식으로 현재 세션 로케일 문구를 한 번 받아온다.
+   * 커뮤니티 화면 JS(community-*.js)도 WePlaNet.t(key, 한국어기본값, [인자])로 같이 쓴다.
+   *  - 문구는 대부분 클릭 등 사용자 동작 시점에 꺼내 쓰므로 그때는 이미 받아와 있다.
+   *  - 페이지를 그리는 시점에 필요한 곳은 WePlaNet.i18nReady(Promise)가 끝난 뒤에 그린다.
+   *  - 요청이 실패하면 호출하는 쪽이 넘긴 한국어 기본값을 쓴다(안전망).
+   * --------------------------------------------------------- */
+  let clientMessages = null;
+
+  function formatMessage(template, args) {
+    let result = String(template == null ? "" : template);
+    (args || []).forEach((arg, idx) => {
+      result = result.split("{" + idx + "}").join(String(arg == null ? "" : arg));
+    });
+    return result;
+  }
+
+  const i18nReady = fetch("/api/i18n/client", { headers: { Accept: "application/json" } })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      clientMessages = data || {};
+      return clientMessages;
+    })
+    .catch(() => {
+      clientMessages = {};
+      return clientMessages;
+    });
+
+  function t(key, fallback, args) {
+    const template = (clientMessages && clientMessages[key] != null) ? clientMessages[key] : fallback;
+    return formatMessage(template == null ? key : template, args);
+  }
+
+  /* ---------------------------------------------------------
    * 라이트 / 다크 테마
    * - 고른 값은 localStorage에 남겨서 다음 방문/다른 페이지에서도 유지
    * - 고른 적이 없으면 OS 설정(prefers-color-scheme)을 따라간다
@@ -85,8 +120,8 @@
       '<div class="wp-dialog" role="dialog" aria-modal="true" aria-labelledby="wpDialogMsg">' +
       '  <p class="wp-dialog__msg" id="wpDialogMsg"></p>' +
       '  <div class="wp-dialog__actions">' +
-      '    <button type="button" class="btn btn--soft" data-wp-dialog="cancel">취소</button>' +
-      '    <button type="button" class="btn btn--primary" data-wp-dialog="ok">확인</button>' +
+      '    <button type="button" class="btn btn--soft" data-wp-dialog="cancel"></button>' +
+      '    <button type="button" class="btn btn--primary" data-wp-dialog="ok"></button>' +
       "  </div>" +
       "</div>";
     document.body.appendChild(root);
@@ -100,6 +135,9 @@
     const cancelBtn = root.querySelector('[data-wp-dialog="cancel"]');
 
     msgEl.textContent = message;
+    // 버튼 문구는 열 때마다 채운다 - 다이얼로그가 i18n 응답보다 먼저 만들어졌어도 다음부터는 번역 문구가 나오게
+    okBtn.textContent = t("common.confirm", "확인");
+    cancelBtn.textContent = t("common.cancel", "취소");
     cancelBtn.hidden = !withCancel;
     root.hidden = false;
     okBtn.focus();
@@ -136,6 +174,8 @@
   }
 
   window.WePlaNet = window.WePlaNet || {};
+  window.WePlaNet.t = t;
+  window.WePlaNet.i18nReady = i18nReady;
   window.WePlaNet.alert = function (message) {
     return openDialog(message, false);
   };
@@ -230,8 +270,14 @@
       // 도트 생성
       if (dotsWrap) {
         dotsWrap.innerHTML = slides
-          .map((_, i) => `<button type="button" class="banner__dot${i === 0 ? " is-active" : ""}" data-i="${i}" aria-label="슬라이드 ${i + 1}"></button>`)
+          .map((_, i) => `<button type="button" class="banner__dot${i === 0 ? " is-active" : ""}" data-i="${i}"></button>`)
           .join("");
+        // aria-label은 i18n 응답이 온 뒤에 채운다 (도트는 페이지 로드 직후에 그려지므로)
+        i18nReady.then(() => {
+          qsa(".banner__dot", dotsWrap).forEach((dot, i) => {
+            dot.setAttribute("aria-label", t("client.carousel.slide", "슬라이드 {0}", [i + 1]));
+          });
+        });
       }
 
       const go = (i) => {
@@ -324,30 +370,31 @@
     const form = qs("#signupForm");
     if (!form) return;
 
+    // SETTINGS-03 커밋3: 메시지는 검증 시점에 꺼내도록 getter로 둔다(서버 문구와 같은 키 재사용)
     const rules = {
       username: {
         test: (v) => /^[a-zA-Z0-9]{4,20}$/.test(v),
-        msg: "아이디는 영문/숫자 4~20자로 입력해주세요.",
+        get msg() { return t("signup.validation.usernamePattern", "아이디는 영문/숫자 4~20자로 입력해주세요."); },
       },
       password: {
         test: (v) => /^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$/.test(v),
-        msg: "비밀번호는 영문/숫자 포함 8~20자로 입력해주세요.",
+        get msg() { return t("signup.validation.passwordPattern", "비밀번호는 영문/숫자 포함 8~20자로 입력해주세요."); },
       },
       passwordConfirm: {
         test: (v) => v === (qs("#password")?.value || ""),
-        msg: "비밀번호가 일치하지 않습니다.",
+        get msg() { return t("signup.error.passwordMismatch", "비밀번호가 일치하지 않습니다."); },
       },
       realName: {
         test: (v) => v.trim().length > 0,
-        msg: "이름을 입력해주세요.",
+        get msg() { return t("signup.validation.realNameRequired", "이름을 입력해주세요."); },
       },
       email: {
         test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-        msg: "올바른 이메일 형식으로 입력해주세요.",
+        get msg() { return t("signup.validation.emailFormat", "올바른 이메일 형식으로 입력해주세요."); },
       },
       nickname: {
         test: (v) => v.trim() === "" || (v.length >= 3 && v.length <= 10),
-        msg: "닉네임은 3~10자로 입력해주세요.",
+        get msg() { return t("client.signup.nicknameLength", "닉네임은 3~10자로 입력해주세요."); },
       },
     };
 
@@ -372,7 +419,7 @@
       const agreeOk = requiredAgrees.every((c) => c.checked);
       if (!agreeOk) {
         e.preventDefault();
-        window.WePlaNet.alert("필수 약관에 동의해 주세요.");
+        window.WePlaNet.alert(t("client.signup.agreeRequired", "필수 약관에 동의해 주세요."));
         return;
       }
       if (!ok) {
@@ -392,7 +439,7 @@
         if (go && go !== "true") {
           window.location.href = go;
         } else {
-          window.WePlaNet.alert("목업 화면입니다. 실제 서버 전송은 하지 않습니다.");
+          window.WePlaNet.alert(t("client.mockSubmit", "목업 화면입니다. 실제 서버 전송은 하지 않습니다."));
         }
       });
     });

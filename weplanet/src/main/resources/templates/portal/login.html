@@ -1,49 +1,70 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Artist Portal – 로그인</title>
+  <title th:text="#{portalLogin.pageTitle}">Artist Portal – 로그인</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
+  <style>
+    .lang-menu__item { display:block; width:100%; text-align:left; padding:8px 12px; border:none; background:none; border-radius:8px; cursor:pointer; font-size:14px; color:#333; font-family:inherit; }
+    .lang-menu__item:hover { background:#f2f2f2; }
+  </style>
 </head>
 <body>
+
+<!-- 언어 전환: 로그인 전이라 헤더/사이드바가 없어서 화면 우상단에 고정 배치. 클릭하면 한국어/日本語/English 메뉴가 뜨고, 항목 선택 시 그 언어로 전환 -->
+<div style="position:fixed;top:20px;right:20px;z-index:50;">
+  <button type="button" class="icon-btn" id="langToggleBtn" data-icon="language"
+          th:aria-label="#{layout.header.languageLabel}" aria-haspopup="true" aria-expanded="false">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+  </button>
+  <div id="langMenu" hidden
+       style="position:absolute;top:48px;right:0;min-width:128px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px;">
+    <button type="button" class="lang-menu__item" data-lang="ko">한국어</button>
+    <button type="button" class="lang-menu__item" data-lang="ja">日本語</button>
+    <button type="button" class="lang-menu__item" data-lang="en">English</button>
+  </div>
+</div>
+
   <div class="portal-login">
     <aside class="portal-login__visual">
       <p class="text-xs" style="letter-spacing:0.12em;text-transform:uppercase;opacity:.7;margin-bottom:12px;">
         ARTIST / AGENCY PORTAL
       </p>
-      <h1>아티스트와 에이전시가<br />팬과 더 가까이 연결합니다.</h1>
-      <p>공식 콘텐츠, 커뮤니티, 일정, 미디어를 하나의 공간에서 관리하세요.</p>
-      <a th:href="@{/}" class="mt-24" style="color:#d6cec7;font-size:13px;">← 메인 사이트로 이동</a>
+      <h1 th:utext="#{portalLogin.visualHeading}">아티스트와 에이전시가<br />팬과 더 가까이 연결합니다.</h1>
+      <p th:text="#{portalLogin.visualDesc}">공식 콘텐츠, 커뮤니티, 일정, 미디어를 하나의 공간에서 관리하세요.</p>
+      <a th:href="@{/}" class="mt-24" style="color:#d6cec7;font-size:13px;" th:text="#{portalLogin.backToMain}">← 메인 사이트로 이동</a>
     </aside>
 
     <div class="portal-login__form-wrap">
       <div class="portal-login__form">
-        <h2 id="portalLoginTitle" class="auth-card__title" style="margin-bottom:8px;">아티스트 로그인</h2>
-        <p id="portalLoginLead" class="text-sm text-muted" style="margin-bottom:20px;">
+        <h2 id="portalLoginTitle" class="auth-card__title" style="margin-bottom:8px;" th:text="#{portalLogin.artist.title}">아티스트 로그인</h2>
+        <p id="portalLoginLead" class="text-sm text-muted" style="margin-bottom:20px;" th:text="#{portalLogin.artist.lead}">
           아티스트 계정으로만 로그인할 수 있습니다.
         </p>
 
-        <div class="role-tabs" role="radiogroup" aria-label="로그인 유형">
-          <button type="button" class="is-active" data-portal-role="ARTIST" aria-pressed="true">아티스트</button>
-          <button type="button" data-portal-role="AGENCY" aria-pressed="false">에이전시</button>
+        <div class="role-tabs" role="radiogroup" th:attr="aria-label=#{portalLogin.roleTabsLabel}">
+          <button type="button" class="is-active" data-portal-role="ARTIST" aria-pressed="true" th:text="#{portalLogin.tabArtist}">아티스트</button>
+          <button type="button" data-portal-role="AGENCY" aria-pressed="false" th:text="#{portalLogin.tabAgency}">에이전시</button>
         </div>
 
-        <p th:if="${param.activated}" class="text-sm" style="color:#63704a;margin-bottom:16px;">
+        <p th:if="${param.activated}" class="text-sm" style="color:#63704a;margin-bottom:16px;" th:text="#{portalLogin.activated}">
           계정이 활성화되었습니다. 설정한 비밀번호로 로그인해주세요.
         </p>
         <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin-bottom:16px;"
-           th:text="${param.error[0] == 'role'} ? '선택한 유형과 계정 역할이 일치하지 않습니다. 아티스트/에이전시를 다시 선택해 주세요.'
-                    : (${param.error[0] == 'pending'} ? '아직 활성화되지 않은 계정입니다. 메일로 받은 링크에서 비밀번호를 먼저 설정해주세요.'
-                    : (${param.error[0] == 'profile'} ? '프로필 선택 시간이 지났습니다. 그룹 계정으로 다시 로그인해주세요.'
-                    : '아이디 또는 비밀번호가 올바르지 않습니다.'))">
+           th:text="${param.error[0] == 'role'} ? #{portalLogin.errorRole}
+                    : (${param.error[0] == 'pending'} ? #{portalLogin.errorPending}
+                    : (${param.error[0] == 'profile'} ? #{portalLogin.errorProfile}
+                    : (${param.error[0] == 'locked'} ? #{login.tooManyAttempts(${T(megane6.weplanet.security.LoginAttemptService).LOCK_MINUTES})}
+                    : #{portalLogin.errorCredentials})))">
+
           아이디 또는 비밀번호가 올바르지 않습니다.
         </p>
-        <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
+        <p th:if="${param.expired}" class="text-sm" style="color:#c45c26;margin-bottom:16px;" th:text="#{portalLogin.expired}">
           세션이 만료되어 다시 로그인해주세요.
         </p>
-        <p th:if="${param.duplicateLogin}" class="text-sm" style="color:#c45c26;margin-bottom:16px;">
+        <p th:if="${param.duplicateLogin}" class="text-sm" style="color:#c45c26;margin-bottom:16px;" th:text="#{portalLogin.duplicateLogin}">
           다른 기기에서 로그인되어 로그아웃되었습니다.
         </p>
 
@@ -51,19 +72,19 @@
           <input type="hidden" name="portalLogin" value="true" />
           <input type="hidden" name="portalRole" id="portalRole" value="ARTIST" />
           <div class="form-group">
-            <label class="form-label" for="artistId" id="portalIdLabel">아티스트 아이디</label>
+            <label class="form-label" for="artistId" id="portalIdLabel" th:text="#{portalLogin.artist.idLabel}">아티스트 아이디</label>
             <input class="form-input" id="artistId" name="username" type="text"
-                   placeholder="아티스트 아이디 입력" required autocomplete="username" />
+                   th:placeholder="#{portalLogin.artist.idPlaceholder}" placeholder="아티스트 아이디 입력" required autocomplete="username" />
           </div>
           <div class="form-group">
-            <label class="form-label" for="artistPw">비밀번호</label>
+            <label class="form-label" for="artistPw" th:text="#{portalLogin.passwordLabel}">비밀번호</label>
             <input class="form-input" id="artistPw" name="password" type="password"
-                   placeholder="비밀번호 입력" required autocomplete="current-password" />
+                   th:placeholder="#{portalLogin.passwordPlaceholder}" placeholder="비밀번호 입력" required autocomplete="current-password" />
           </div>
-          <button type="submit" class="btn btn--primary btn--block btn--lg" id="portalSubmitBtn">아티스트 로그인</button>
+          <button type="submit" class="btn btn--primary btn--block btn--lg" id="portalSubmitBtn" th:text="#{portalLogin.artist.submit}">아티스트 로그인</button>
         </form>
 
-        <p class="text-sm text-muted mt-16" style="text-align:center;" id="portalLoginHint">
+        <p class="text-sm text-muted mt-16" style="text-align:center;" id="portalLoginHint" th:utext="#{portalLogin.artist.hint}">
           로그인 후 본인 커뮤니티로 이동합니다.<br />
           테스트 계정 예) <strong>artist_hyeseon</strong> / Test1234
         </p>
@@ -71,7 +92,7 @@
     </div>
   </div>
 
-  <script>
+  <script th:inline="javascript">
     (function () {
       var roleInput = document.getElementById("portalRole");
       var titleEl = document.getElementById("portalLoginTitle");
@@ -82,27 +103,29 @@
       var hintEl = document.getElementById("portalLoginHint");
       var tabs = document.querySelectorAll(".role-tabs [data-portal-role]");
 
-      var copy = {
+      // 서버가 내려준 번역 문자열 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+      var MSG = {
+        titleSuffix: /*[[#{portalLogin.titleSuffix}]]*/ " | Artist Portal",
         ARTIST: {
-          title: "아티스트 로그인",
-          lead: "아티스트 계정으로만 로그인할 수 있습니다.",
-          idLabel: "아티스트 아이디",
-          placeholder: "아티스트 아이디 입력",
-          submit: "아티스트 로그인",
-          hint: "로그인 후 본인 커뮤니티로 이동합니다.<br />테스트 계정 예) <strong>artist_hyeseon</strong> / Test1234"
+          title: /*[[#{portalLogin.artist.title}]]*/ "아티스트 로그인",
+          lead: /*[[#{portalLogin.artist.lead}]]*/ "아티스트 계정으로만 로그인할 수 있습니다.",
+          idLabel: /*[[#{portalLogin.artist.idLabel}]]*/ "아티스트 아이디",
+          placeholder: /*[[#{portalLogin.artist.idPlaceholder}]]*/ "아티스트 아이디 입력",
+          submit: /*[[#{portalLogin.artist.submit}]]*/ "아티스트 로그인",
+          hint: /*[[#{portalLogin.artist.hint}]]*/ "로그인 후 본인 커뮤니티로 이동합니다.<br />테스트 계정 예) <strong>artist_hyeseon</strong> / Test1234"
         },
         AGENCY: {
-          title: "에이전시 로그인",
-          lead: "에이전시 계정으로만 로그인할 수 있습니다.",
-          idLabel: "에이전시 아이디",
-          placeholder: "에이전시 아이디 입력",
-          submit: "에이전시 로그인",
-          hint: "로그인 후 포털 대시보드로 이동합니다.<br />테스트 계정 예) <strong>agency_wp</strong> / Test1234"
+          title: /*[[#{portalLogin.agency.title}]]*/ "에이전시 로그인",
+          lead: /*[[#{portalLogin.agency.lead}]]*/ "에이전시 계정으로만 로그인할 수 있습니다.",
+          idLabel: /*[[#{portalLogin.agency.idLabel}]]*/ "에이전시 아이디",
+          placeholder: /*[[#{portalLogin.agency.idPlaceholder}]]*/ "에이전시 아이디 입력",
+          submit: /*[[#{portalLogin.agency.submit}]]*/ "에이전시 로그인",
+          hint: /*[[#{portalLogin.agency.hint}]]*/ "로그인 후 포털 대시보드로 이동합니다.<br />테스트 계정 예) <strong>agency_wp</strong> / Test1234"
         }
       };
 
       function applyRole(role) {
-        var c = copy[role] || copy.ARTIST;
+        var c = MSG[role] || MSG.ARTIST;
         roleInput.value = role;
         titleEl.textContent = c.title;
         leadEl.textContent = c.lead;
@@ -110,7 +133,7 @@
         idInput.placeholder = c.placeholder;
         submitBtn.textContent = c.submit;
         hintEl.innerHTML = c.hint;
-        document.title = c.title + " | Artist Portal";
+        document.title = c.title + MSG.titleSuffix;
         tabs.forEach(function (btn) {
           var on = btn.getAttribute("data-portal-role") === role;
           btn.classList.toggle("is-active", on);
@@ -127,6 +150,42 @@
       var params = new URLSearchParams(window.location.search);
       var initial = (params.get("role") || "").toUpperCase();
       applyRole(initial === "AGENCY" ? "AGENCY" : "ARTIST");
+    })();
+  </script>
+
+  <script>
+    (function () {
+      var btn = document.getElementById("langToggleBtn");
+      var menu = document.getElementById("langMenu");
+      if (!btn || !menu) return;
+
+      function closeMenu() {
+        menu.hidden = true;
+        btn.setAttribute("aria-expanded", "false");
+      }
+
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var willOpen = menu.hidden;
+        menu.hidden = !willOpen;
+        btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      });
+
+      menu.querySelectorAll("[data-lang]").forEach(function (item) {
+        item.addEventListener("click", function () {
+          fetch("/language", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "language=" + encodeURIComponent(item.getAttribute("data-lang").toUpperCase())
+          }).finally(function () {
+            window.location.reload();
+          });
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!menu.hidden && !menu.contains(e.target) && e.target !== btn) closeMenu();
+      });
     })();
   </script>
 </body>

@@ -23,12 +23,12 @@ public class LocalShopImageStorage implements ShopImageStorage {
 	@Override
 	public String storeImage(MultipartFile file) {
 		if (file == null || file.isEmpty()) {
-			throw new IllegalArgumentException("이미지 파일을 선택해주세요.");
+			throw new IllegalArgumentException("error.goods.imageRequired");
 		}
 		String contentType = normalizeContentType(file.getContentType());
 		if (contentType == null || !ALLOWED_TYPES.contains(contentType)) {
 			if (!hasAllowedExtension(file.getOriginalFilename())) {
-				throw new IllegalArgumentException("jpg, png, webp, gif 이미지만 업로드할 수 있습니다.");
+				throw new IllegalArgumentException("error.goods.imageTypeNotAllowed");
 			}
 		}
 		return fileStorageService.store(file);

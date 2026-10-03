@@ -278,11 +278,11 @@ public class User {
 	// 메일 링크를 실제로 열었다는 뜻이므로, 이메일 인증도 이 시점에 완료 처리한다.
 	public void activateWithPassword(String encodedPassword) {
 		if (this.status != UserStatus.PENDING_ACTIVATION) {
-			throw new IllegalStateException("활성화 대기 중인 계정이 아닙니다.");
+			throw new IllegalStateException("error.activation.notPending");
 		}
 		
 		if (encodedPassword == null || encodedPassword.isBlank()) {
-			throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+			throw new IllegalArgumentException("signup.validation.passwordRequired");
 		}
 		
 		this.password = encodedPassword;
@@ -294,15 +294,15 @@ public class User {
 	// 이미 비밀번호가 있으면 막는다 - 다른 사람이 남의 프로필 비밀번호를 덮어쓰지 못하게
 	public void setInitialMemberPassword(String encodedPassword) {
 		if (this.role != Role.ARTIST_MEMBER) {
-			throw new IllegalStateException("그룹 멤버 계정이 아닙니다.");
+			throw new IllegalStateException("error.member.notGroupMember");
 		}
 		
 		if (hasPassword()) {
-			throw new IllegalStateException("이미 개인 비밀번호가 설정된 프로필입니다.");
+			throw new IllegalStateException("error.member.passwordAlreadySet");
 		}
 		
 		if (encodedPassword == null || encodedPassword.isBlank()) {
-			throw new IllegalArgumentException("비밀번호를 입력해주세요.");
+			throw new IllegalArgumentException("signup.validation.passwordRequired");
 		}
 		
 		this.password = encodedPassword;
@@ -312,7 +312,7 @@ public class User {
 	// null로 되돌리면 프로필 선택 화면에서 "첫 로그인"처럼 새 비밀번호를 정하게 된다
 	public void resetMemberPassword() {
 		if (this.role != Role.ARTIST_MEMBER) {
-			throw new IllegalStateException("그룹 멤버 계정이 아닙니다.");
+			throw new IllegalStateException("error.member.notGroupMember");
 		}
 		
 		this.password = null;

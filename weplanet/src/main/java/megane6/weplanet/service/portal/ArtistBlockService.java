@@ -28,7 +28,7 @@ public class ArtistBlockService {
 
     public void requireNotBlocked(User artist, User blockedUser) {
         if (isBlocked(artist, blockedUser)) {
-            throw new IllegalStateException("이 아티스트 커뮤니티에서 차단된 계정입니다.");
+            throw new IllegalStateException("error.community.blocked");
         }
     }
 
@@ -39,7 +39,7 @@ public class ArtistBlockService {
 
     public void unblock(User artist, Long blockId) {
         ArtistBlock block = artistBlockRepository.findByIdAndArtist(blockId, artist)
-                .orElseThrow(() -> new IllegalArgumentException("차단 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("error.block.notFound"));
         artistBlockRepository.delete(block);
     }
 }

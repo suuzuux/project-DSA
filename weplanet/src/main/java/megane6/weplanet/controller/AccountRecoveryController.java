@@ -3,8 +3,13 @@ package megane6.weplanet.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.security.LoginAttemptService;
+import megane6.weplanet.security.UserSessionExpirer;
 import megane6.weplanet.service.AccountRecoveryService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import megane6.weplanet.service.email.SignupEmailVerificationService.VerificationResult;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.email.VerificationRateLimitException;
@@ -25,13 +30,19 @@ public class AccountRecoveryController {
 	// AUTH-11: 입력한 정보와 일치하는 계정이 있든 없든 같은 문구를 보여준다. 예전에는 "일치하는 회원정보를 찾을 수 없습니다" /
 	// "비밀번호가 설정되어 있지 않아…" 처럼 경우마다 문구가 달라서, 이름+이메일(또는 아이디+이메일) 조합으로
 	// 계정이 있는지, 소셜 전용 계정인지까지 알아낼 수 있었다.
-	private static final String CODE_SENT_IF_MATCHED =
-			"입력하신 정보와 일치하는 회원이 있다면 인증코드를 보냈습니다. 메일함(스팸함 포함)을 확인해주세요. "
-					+ "(소셜 로그인으로만 가입한 계정은 아이디/비밀번호 찾기를 이용할 수 없습니다.)";
+	// (SETTINGS-03 병합: 문구는 메시지 키 recovery.codeSentIfMatched 로 옮김)
 	
 	private final AccountRecoveryService accountRecoveryService;
 	private final SignupEmailVerificationService emailVerificationService;
-	
+	private final MessageSource messageSource;
+	private final megane6.weplanet.i18n.Messages messages;
+	private final UserSessionExpirer userSessionExpirer;
+	private final LoginAttemptService loginAttemptService;
+
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
 	@GetMapping("/find-id")
 	public String findIdForm() {
 		return "find-id";
@@ -46,14 +57,14 @@ public class AccountRecoveryController {
 		try {
 			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, eligible);
 			result.put("success", true);
-			result.put("message", CODE_SENT_IF_MATCHED);
+			result.put("message", msg("recovery.codeSentIfMatched"));
 		} catch (VerificationRateLimitException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e));
 		} catch (Exception e) {
 			log.error("[아이디 찾기] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
-			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+			result.put("message", msg("findId.codeSendFailed"));
 		}
 		return result;
 	}
@@ -66,13 +77,13 @@ public class AccountRecoveryController {
 		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.FIND_ID, email, code);
 		if (!verified.isSuccess()) {
 			result.put("success", false);
-			result.put("message", verified.failureMessage());
+			result.put("message", messages.resolve(verified.failureMessage()));
 			return result;
 		}
 		if (!accountRecoveryService.matchesRealNameAndEmail(realName, email)
 				|| !accountRecoveryService.isEligibleForRecovery(email)) {
 			result.put("success", false);
-			result.put("message", "일치하는 회원정보를 찾을 수 없습니다.");
+			result.put("message", msg("findId.noMatch"));
 			return result;
 		}
 		result.put("success", true);
@@ -95,14 +106,14 @@ public class AccountRecoveryController {
 		try {
 			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, eligible);
 			result.put("success", true);
-			result.put("message", CODE_SENT_IF_MATCHED);
+			result.put("message", msg("recovery.codeSentIfMatched"));
 		} catch (VerificationRateLimitException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e));
 		} catch (Exception e) {
 			log.error("[비밀번호 재설정] 이메일 발송 실패 (to={})", email, e);
 			result.put("success", false);
-			result.put("message", "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.");
+			result.put("message", msg("resetPassword.codeSendFailed"));
 		}
 		return result;
 	}
@@ -115,11 +126,11 @@ public class AccountRecoveryController {
 		VerificationResult verified = emailVerificationService.verifyCode(session, VerificationPurpose.RESET_PASSWORD, email, code);
 		if (!verified.isSuccess()) {
 			result.put("success", false);
-			result.put("message", verified.failureMessage());
+			result.put("message", messages.resolve(verified.failureMessage()));
 			return result;
 		}
 		result.put("success", true);
-		result.put("message", "인증이 완료되었습니다. 새 비밀번호를 입력해주세요.");
+		result.put("message", msg("resetPassword.verifySuccess"));
 		return result;
 	}
 	
@@ -135,17 +146,21 @@ public class AccountRecoveryController {
 		if (!emailVerificationService.isVerified(session, VerificationPurpose.RESET_PASSWORD, email)
 				|| !accountRecoveryService.matchesUsernameAndEmail(username, email)) {
 			result.put("success", false);
-			result.put("message", "이메일 인증을 먼저 완료해주세요.");
+			result.put("message", msg("resetPassword.verifyRequired"));
 			return result;
 		}
 		try {
-			accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
+			User user = accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
 			emailVerificationService.clear(session, VerificationPurpose.RESET_PASSWORD, email);
+			// 비밀번호를 바꿨으면 그 계정에 이미 로그인돼 있던 세션은 모두 끊는다 - 예전에는 계정을 탈취당해 비밀번호를
+			// 재설정해도 공격자의 로그인 세션이 그대로 살아 있었다. 본인이 계정을 되찾았으니 로그인 잠금도 푼다.
+			userSessionExpirer.expireAllSessions(user.getId());
+			loginAttemptService.reset(user.getUsername());
 			result.put("success", true);
-			result.put("message", "비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+			result.put("message", msg("resetPassword.resetSuccess"));
 		} catch (IllegalArgumentException e) {
 			result.put("success", false);
-			result.put("message", e.getMessage());
+			result.put("message", messages.resolve(e));
 		}
 		return result;
 	}

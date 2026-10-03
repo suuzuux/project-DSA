@@ -79,7 +79,7 @@ public record GoodsCategoryOptionsPayload(
 		} catch (IllegalArgumentException ex) {
 			throw ex;
 		} catch (Exception ex) {
-			throw new IllegalArgumentException("카테고리·옵션 형식이 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.goods.optionsInvalid");
 		}
 	}
 
@@ -145,14 +145,14 @@ public record GoodsCategoryOptionsPayload(
 		if (selected.contains(GoodsCategoryType.CLOTHING)) {
 			Map<String, Integer> sizes = sizeMap("CLOTHING");
 			if (sizes.isEmpty()) {
-				throw new IllegalArgumentException("의류는 취급 사이즈와 재고를 입력해주세요.");
+				throw new IllegalArgumentException("error.goods.clothingSizesRequired");
 			}
 			sizes.values().forEach(GoodsCategoryOptionsPayload::requireNonNegative);
 		}
 		if (selected.contains(GoodsCategoryType.SHOES)) {
 			Map<String, Integer> mm = sizeMap("SHOES");
 			if (mm.isEmpty()) {
-				throw new IllegalArgumentException("신발은 취급 치수와 재고를 입력해주세요.");
+				throw new IllegalArgumentException("error.goods.shoeSizesRequired");
 			}
 			mm.values().forEach(GoodsCategoryOptionsPayload::requireNonNegative);
 		}
@@ -165,9 +165,9 @@ public record GoodsCategoryOptionsPayload(
 
 		if (selected.contains(GoodsCategoryType.BAG)) {
 			Map<String, String> bag = attributes.getOrDefault("BAG", Map.of());
-			requirePositiveNumber(bag.get("width"), "가방 가로");
-			requirePositiveNumber(bag.get("height"), "가방 높이");
-			requirePositiveNumber(bag.get("depth"), "가방 세로");
+			requirePositiveNumber(bag.get("width"), "width");
+			requirePositiveNumber(bag.get("height"), "height");
+			requirePositiveNumber(bag.get("depth"), "depth");
 		}
 	}
 
@@ -204,31 +204,32 @@ public record GoodsCategoryOptionsPayload(
 		try {
 			int n = Integer.parseInt(String.valueOf(v).trim());
 			if (n < 0) {
-				throw new IllegalArgumentException("재고는 0 이상이어야 합니다.");
+				throw new IllegalArgumentException("error.goods.stockNegative");
 			}
 			return n;
 		} catch (NumberFormatException ex) {
-			throw new IllegalArgumentException("재고 수량이 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.goods.stockInvalid");
 		}
 	}
 
 	private static void requireNonNegative(int n) {
 		if (n < 0) {
-			throw new IllegalArgumentException("재고는 0 이상이어야 합니다.");
+			throw new IllegalArgumentException("error.goods.stockNegative");
 		}
 	}
 
-	private static void requirePositiveNumber(String raw, String label) {
+	// SETTINGS-03 커밋5: dim(width/height/depth)별 메시지 키(error.goods.bag.{dim}.*)로 던진다
+	private static void requirePositiveNumber(String raw, String dim) {
 		if (raw == null || raw.isBlank()) {
-			throw new IllegalArgumentException(label + " 치수를 입력해주세요.");
+			throw new IllegalArgumentException("error.goods.bag." + dim + ".required");
 		}
 		try {
 			double v = Double.parseDouble(raw.trim());
 			if (v <= 0) {
-				throw new IllegalArgumentException(label + " 치수는 0보다 커야 합니다.");
+				throw new IllegalArgumentException("error.goods.bag." + dim + ".positive");
 			}
 		} catch (NumberFormatException ex) {
-			throw new IllegalArgumentException(label + " 치수가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.goods.bag." + dim + ".invalid");
 		}
 	}
 }

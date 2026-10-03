@@ -56,14 +56,14 @@ public class SiteNoticeService {
 	@Transactional(readOnly = true)
 	public SiteNotice get(Long noticeId) {
 		return siteNoticeRepository.findById(noticeId)
-				.orElseThrow(() -> new IllegalArgumentException("공지를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("error.notice.notFound"));
 	}
 
 	@Transactional(readOnly = true)
 	public SiteNotice getPublished(Long noticeId) {
 		SiteNotice notice = get(noticeId);
 		if (!notice.isVisible()) {
-			throw new IllegalArgumentException("공지를 찾을 수 없습니다.");
+			throw new IllegalArgumentException("error.notice.notFound");
 		}
 		return notice;
 	}
@@ -79,10 +79,10 @@ public class SiteNoticeService {
 			boolean pinned,
 			String ipAddress) {
 		if (title == null || title.isBlank()) {
-			throw new IllegalArgumentException("제목을 입력해주세요.");
+			throw new IllegalArgumentException("noticeForm.error.titleRequired");
 		}
 		if (content == null || content.isBlank()) {
-			throw new IllegalArgumentException("본문을 입력해주세요.");
+			throw new IllegalArgumentException("noticeForm.error.contentRequired");
 		}
 		
 		boolean creating = noticeId == null;
@@ -122,7 +122,7 @@ public class SiteNoticeService {
 		List<SiteNotice> pinned =
 				siteNoticeRepository.findByPinnedTrueOrderByPinOrderAsc();
 		if (ids == null || ids.isEmpty() || ids.size() != pinned.size()) {
-			throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.notice.pinnedOrderInvalid");
 		}
 		Map<Long, SiteNotice> byId = pinned.stream()
 				.collect(Collectors.toMap(SiteNotice::getId, item -> item));
@@ -131,13 +131,13 @@ public class SiteNoticeService {
 		for (Long id : ids) {
 			SiteNotice notice = byId.remove(id);
 			if (notice == null) {
-				throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+				throw new IllegalArgumentException("error.notice.pinnedOrderInvalid");
 			}
 			notice.applyPin(true, order++);
 			reordered.add(notice);
 		}
 		if (!byId.isEmpty()) {
-			throw new IllegalArgumentException("상단 노출 공지 순서가 올바르지 않습니다.");
+			throw new IllegalArgumentException("error.notice.pinnedOrderInvalid");
 		}
 		siteNoticeRepository.saveAll(reordered);
 	}
@@ -162,8 +162,7 @@ public class SiteNoticeService {
 		if (pinned) {
 			long count = siteNoticeRepository.countByPinnedTrue();
 			if (!wasPinned && count >= MAX_PINNED) {
-				throw new IllegalArgumentException("상단 노출은 최대 "
-					+ MAX_PINNED + "개까지 가능합니다.");
+				throw new IllegalArgumentException("siteNotice.error.pinnedLimit");
 			}
 			if (!wasPinned) {
 				List<SiteNotice> current =

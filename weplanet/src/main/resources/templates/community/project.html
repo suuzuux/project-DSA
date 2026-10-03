@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org"
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${artist.nickname()} + ' – 프로젝트 | WePlaNet'">프로젝트 | WePlaNet</title>
+  <title th:text="#{community.project.pageTitle(${artist.nickname()})}">프로젝트 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
@@ -29,12 +29,12 @@
         <div class="chip-row" style="margin:0;">
           <a class="chip" th:href="@{${artist.homeUrl() + '/fan'}}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-            포스트
+            <span th:text="#{community.board.postsChip}">포스트</span>
           </a>
           <a class="chip is-active"
              th:href="@{/community/{id}/project(id=${artist.id()})}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-            프로젝트
+            <span th:text="#{community.board.projectChip}">프로젝트</span>
           </a>
         </div>
 
@@ -44,9 +44,9 @@
             <svg class="board-select__ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5h10"></path><path d="M11 12h10"></path><path d="M11 19h10"></path><path d="M3 5l2 2 4-4"></path><path d="M3 12h4"></path><path d="M3 19h4"></path></svg>
             <select id="projectSort"
                     class="form-select"
-                    aria-label="프로젝트 정렬">
-              <option value="deadline" th:selected="${sort != 'latest'}">마감임박순</option>
-              <option value="latest" th:selected="${sort == 'latest'}">최신순</option>
+                    th:aria-label="#{community.project.sortAria}">
+              <option value="deadline" th:selected="${sort != 'latest'}" th:text="#{community.project.sortDeadline}">마감임박순</option>
+              <option value="latest" th:selected="${sort == 'latest'}" th:text="#{community.board.sortLatest}">최신순</option>
             </select>
           </label>
         </div>
@@ -98,27 +98,27 @@
                 <span th:style="${'width:' + project.progressBarPercent() + '%'}"></span>
               </div>
               <div class="project-card__progress-meta">
-                <strong th:text="${project.progressPercent() + '% 달성'}">0% 달성</strong>
-                <span th:text="${#numbers.formatInteger(project.fundedAmount(), 0, 'COMMA') + '원'}">0원</span>
+                <strong th:text="#{community.project.progress(${project.progressPercent()})}">0% 달성</strong>
+                <span th:text="#{community.project.amount(${#numbers.formatInteger(project.fundedAmount(), 0, 'COMMA')})}">0원</span>
               </div>
             </div>
 
             <div class="project-card__foot">
               <strong class="project-card__goal"
-                      th:text="${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')} + '원 목표'">500,000원 목표</strong>
+                      th:text="#{community.project.goal(${#numbers.formatInteger(project.goalAmount(), 0, 'COMMA')})}">500,000원 목표</strong>
               <span class="project-card__dday"
                     th:classappend="${project.isClosed()} ? 'is-closed' : ''"
-                    th:text="${project.dDayLabel()}">D-30</span>
+                    th:text="${project.isClosed()} ? #{community.project.js.ddayClosed} : ${project.dDayLabel()}">D-30</span>
             </div>
             <p class="project-card__participants"
-               th:text="${'참여자 ' + #numbers.formatInteger(project.participantCount(), 0, 'COMMA') + '명'}">
+               th:text="#{community.project.participants(${#numbers.formatInteger(project.participantCount(), 0, 'COMMA')})}">
               참여자 0명
             </p>
           </div>
         </a>
       </div>
 
-      <p class="list-empty" th:if="${projects.isEmpty()}">
+      <p class="list-empty" th:if="${projects.isEmpty()}" th:text="#{community.project.empty}">
         표시할 팬 프로젝트가 없습니다.
       </p>
     </div>
@@ -137,25 +137,25 @@
          onclick="event.stopPropagation()">
 
       <div class="modal__head">
-        <h2 class="modal__title" id="projectDetailModalTitle">
+        <h2 class="modal__title" id="projectDetailModalTitle" th:text="#{community.project.participateTitle}">
           프로젝트 참여하기
         </h2>
         <button type="button"
                 class="modal__close"
                 data-modal-close
-                aria-label="닫기">✕</button>
+                th:aria-label="#{calendar.ui.close}">✕</button>
       </div>
 
       <!-- 서버 응답 대기 -->
       <p id="projectDetailLoading"
-         class="text-muted">
+         class="text-muted" th:text="#{community.project.loading}">
         프로젝트 정보를 불러오고 있습니다.
       </p>
 
       <!-- 불러오기 실패 -->
       <p id="projectDetailError"
          class="project-detail-modal__error"
-         hidden>
+         hidden th:text="#{community.project.loadFailed}">
         프로젝트 정보를 불러오지 못했습니다.
       </p>
 
@@ -184,7 +184,7 @@
             class="project-detail__title"></h3>
 
         <p class="project-detail__meta">
-          개설자 ·
+          <th:block th:text="#{community.project.creatorLabel}">개설자</th:block> ·
           <span id="projectDetailCreator"></span>
         </p>
 
@@ -199,22 +199,22 @@
           <div class="project-funding-progress__track">
             <span id="projectDetailProgressBar"></span>
           </div>
-          <p id="projectDetailParticipants" class="text-xs text-muted">참여자 0명</p>
+          <p id="projectDetailParticipants" class="text-xs text-muted"></p>
         </div>
 
         <dl class="project-detail__summary">
           <div>
-            <dt>목표 금액</dt>
+            <dt th:text="#{community.project.goalLabel}">목표 금액</dt>
             <dd id="projectDetailGoal"></dd>
           </div>
 
           <div>
-            <dt>모금 기간</dt>
+            <dt th:text="#{community.project.periodLabel}">모금 기간</dt>
             <dd id="projectDetailPeriod"></dd>
           </div>
 
           <div>
-            <dt>남은 기간</dt>
+            <dt th:text="#{community.project.remainingLabel}">남은 기간</dt>
             <dd>
             <span id="projectDetailDday"
                   class="project-card__dday"></span>
@@ -223,14 +223,14 @@
         </dl>
 
         <section class="project-detail__body">
-          <h4 class="project-detail__section-title">상세 설명</h4>
+          <h4 class="project-detail__section-title" th:text="#{community.project.descriptionTitle}">상세 설명</h4>
           <p id="projectDetailDescription"
              class="project-detail__description"></p>
         </section>
 
         <button id="projectParticipationNextButton"
                 type="button"
-                class="btn btn--primary btn--block mt-24">
+                class="btn btn--primary btn--block mt-24" th:text="#{community.project.next}">
           다음으로 →
         </button>
       </article>
@@ -241,7 +241,7 @@
                hidden>
         <button id="projectContributionBackButton"
                 type="button"
-                class="section__link project-contribution__back">
+                class="section__link project-contribution__back" th:text="#{community.project.backToDetail}">
           ← 프로젝트 상세
         </button>
 
@@ -264,11 +264,11 @@
 
         <form id="projectContributionForm">
           <div class="form-group">
-            <label class="form-label" for="projectContributionAmount">참여 금액</label>
-            <div class="project-contribution-amounts" aria-label="빠른 금액 선택">
-              <button type="button" data-contribution-amount="5000">5,000원</button>
-              <button type="button" data-contribution-amount="10000">10,000원</button>
-              <button type="button" data-contribution-amount="30000">30,000원</button>
+            <label class="form-label" for="projectContributionAmount" th:text="#{community.project.contributionAmountLabel}">참여 금액</label>
+            <div class="project-contribution-amounts" th:aria-label="#{community.project.quickAmountAria}">
+              <button type="button" data-contribution-amount="5000" th:text="#{community.project.amount('5,000')}">5,000원</button>
+              <button type="button" data-contribution-amount="10000" th:text="#{community.project.amount('10,000')}">10,000원</button>
+              <button type="button" data-contribution-amount="30000" th:text="#{community.project.amount('30,000')}">30,000원</button>
             </div>
             <input id="projectContributionAmount"
                    class="form-input"
@@ -277,29 +277,30 @@
                    max="3000000"
                    step="1000"
                    required
-                   placeholder="1,000원 이상 입력해주세요" />
+                   placeholder="1,000원 이상 입력해주세요"
+                   th:placeholder="#{community.project.contributionAmountPlaceholder}" />
           </div>
 
           <div class="project-mock-account">
-            <div><span>결제 수단</span><strong>가상계좌 (무통장 입금)</strong></div>
-            <div><span>입금 기한</span><strong>발급 후 최대 24시간 (모금 마감 전까지)</strong></div>
-            <p>참여하기를 누르면 토스페이먼츠 결제창이 열려요. 발급된 계좌로 입금이 확인되면 참여가 확정됩니다.</p>
+            <div><span th:text="#{community.project.paymentMethodLabel}">결제 수단</span><strong th:text="#{community.project.paymentMethodValue}">가상계좌 (무통장 입금)</strong></div>
+            <div><span th:text="#{community.project.depositDeadlineLabel}">입금 기한</span><strong th:text="#{community.project.depositDeadlineValue}">발급 후 최대 24시간 (모금 마감 전까지)</strong></div>
+            <p th:text="#{community.project.paymentGuide}">참여하기를 누르면 토스페이먼츠 결제창이 열려요. 발급된 계좌로 입금이 확인되면 참여가 확정됩니다.</p>
           </div>
 
           <div class="project-contribution-agreements">
             <label>
               <input id="projectContributionAnonymous" type="checkbox" />
-              닉네임 비공개로 참여할게요
+              <th:block th:text="#{community.project.anonymousLabel}">닉네임 비공개로 참여할게요</th:block>
             </label>
 
             <label>
               <input id="projectContributionRefundAgreed" type="checkbox" required />
-              환불 규정에 동의합니다
+              <th:block th:text="#{community.project.refundAgreeLabel}">환불 규정에 동의합니다</th:block>
             </label>
 
             <details>
-              <summary>환불 규정 보기</summary>
-              <p>입금 전에는 입금기한이 지나면 주문이 자동으로 취소됩니다. 입금 후 취소·환불은 모금 마감 전까지 요청할 수 있으며, 가상계좌 특성상 환불받을 계좌 정보가 필요합니다.</p>
+              <summary th:text="#{community.project.refundPolicyToggle}">환불 규정 보기</summary>
+              <p th:text="#{community.project.refundPolicyText}">입금 전에는 입금기한이 지나면 주문이 자동으로 취소됩니다. 입금 후 취소·환불은 모금 마감 전까지 요청할 수 있으며, 가상계좌 특성상 환불받을 계좌 정보가 필요합니다.</p>
             </details>
           </div>
 
@@ -310,7 +311,7 @@
 
           <button id="projectContributionSubmitButton"
                   type="submit"
-                  class="btn btn--primary btn--block">
+                  class="btn btn--primary btn--block" th:text="#{community.project.participate}">
             참여하기
           </button>
         </form>
@@ -324,11 +325,11 @@
        sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
       <div class="modal__head">
-        <h2 class="modal__title">프로젝트 등록하기</h2>
+        <h2 class="modal__title" th:text="#{community.project.createButton}">프로젝트 등록하기</h2>
         <button type="button" class="modal__close" data-modal-close>✕</button>
       </div>
 
-      <p class="text-xs text-muted mb-16">
+      <p class="text-xs text-muted mb-16" th:text="#{community.project.badgeRequirement}">
         기본 뱃지 5개 이상과 스페셜 뱃지 1개 이상을 모두 보유한 팬만 등록할 수 있어요.
       </p>
 
@@ -353,34 +354,35 @@
 
         <div class="form-group"
              th:classappend="${#fields.hasErrors('title')} ? 'is-invalid' : ''">
-          <label class="form-label" for="projectTitle">프로젝트 제목</label>
+          <label class="form-label" for="projectTitle" th:text="#{community.project.titleLabel}">프로젝트 제목</label>
           <input id="projectTitle"
                  class="form-input"
                  type="text"
                  th:field="*{title}"
                  maxlength="20"
                  required
-                 placeholder="20자 이내로 입력해주세요" />
+                 placeholder="20자 이내로 입력해주세요"
+                 th:placeholder="#{community.project.titlePlaceholder}" />
           <p class="form-error" th:errors="*{title}"></p>
         </div>
 
         <div class="grid-2">
           <div class="form-group"
                th:classappend="${#fields.hasErrors('eventType')} ? 'is-invalid' : ''">
-            <label class="form-label" for="eventType">이벤트 유형</label>
+            <label class="form-label" for="eventType" th:text="#{community.project.eventTypeLabel}">이벤트 유형</label>
             <select id="eventType" class="form-select" th:field="*{eventType}" required>
-              <option value="">선택해주세요</option>
-              <option value="BIRTHDAY_CAFE">생일카페</option>
-              <option value="BILLBOARD">전광판</option>
-              <option value="CONCERT">콘서트</option>
-              <option value="ETC">기타</option>
+              <option value="" th:text="#{community.project.selectPlaceholder}">선택해주세요</option>
+              <option value="BIRTHDAY_CAFE" th:text="#{project.eventType.BIRTHDAY_CAFE}">생일카페</option>
+              <option value="BILLBOARD" th:text="#{project.eventType.BILLBOARD}">전광판</option>
+              <option value="CONCERT" th:text="#{project.eventType.CONCERT}">콘서트</option>
+              <option value="ETC" th:text="#{project.eventType.ETC}">기타</option>
             </select>
             <p class="form-error" th:errors="*{eventType}"></p>
           </div>
 
           <div class="form-group"
                th:classappend="${#fields.hasErrors('coverImage')} ? 'is-invalid' : ''">
-            <label class="form-label" for="coverImage">대표 이미지 (선택)</label>
+            <label class="form-label" for="coverImage" th:text="#{community.project.coverImageLabel}">대표 이미지 (선택)</label>
             <input id="coverImage"
                    class="form-input"
                    type="file"
@@ -392,7 +394,7 @@
 
         <div class="form-group"
              th:classappend="${#fields.hasErrors('goalAmount')} ? 'is-invalid' : ''">
-          <label class="form-label" for="goalAmount">목표 금액</label>
+          <label class="form-label" for="goalAmount" th:text="#{community.project.goalLabel}">목표 금액</label>
           <input id="goalAmount"
                  class="form-input"
                  type="number"
@@ -401,15 +403,16 @@
                  max="3000000"
                  step="1000"
                  required
-                 placeholder="10,000원 ~ 3,000,000원" />
+                 placeholder="10,000원 ~ 3,000,000원"
+                 th:placeholder="#{community.project.goalPlaceholder}" />
           <p class="form-error" th:errors="*{goalAmount}"></p>
-          <p class="form-hint">최소 10,000원, 최대 3,000,000원</p>
+          <p class="form-hint" th:text="#{community.project.goalHint}">최소 10,000원, 최대 3,000,000원</p>
         </div>
 
         <div class="grid-2">
           <div class="form-group"
                th:classappend="${#fields.hasErrors('fundingStartAt')} ? 'is-invalid' : ''">
-            <label class="form-label" for="fundingStartAt">모금 시작</label>
+            <label class="form-label" for="fundingStartAt" th:text="#{community.project.fundingStartLabel}">모금 시작</label>
             <input id="fundingStartAt"
                    class="form-input"
                    type="date"
@@ -420,7 +423,7 @@
 
           <div class="form-group"
                th:classappend="${#fields.hasErrors('fundingEndAt')} ? 'is-invalid' : ''">
-            <label class="form-label" for="fundingEndAt">모금 마감</label>
+            <label class="form-label" for="fundingEndAt" th:text="#{community.project.fundingEndLabel}">모금 마감</label>
             <input id="fundingEndAt"
                    class="form-input"
                    type="date"
@@ -432,14 +435,15 @@
 
         <div class="form-group"
              th:classappend="${#fields.hasErrors('description')} ? 'is-invalid' : ''">
-          <label class="form-label" for="description">프로젝트 상세 설명</label>
+          <label class="form-label" for="description" th:text="#{community.project.descriptionLabel}">프로젝트 상세 설명</label>
           <textarea id="description"
                     class="form-textarea"
                     th:field="*{description}"
                     maxlength="1000"
                     data-count="1000"
                     required
-                    placeholder="프로젝트 목표와 진행 계획을 입력해주세요"></textarea>
+                    placeholder="프로젝트 목표와 진행 계획을 입력해주세요"
+                    th:placeholder="#{community.project.descriptionPlaceholder}"></textarea>
           <span class="char-count text-xs text-muted"></span>
           <p class="form-error" th:errors="*{description}"></p>
         </div>
@@ -447,7 +451,7 @@
         <div class="form-group"
              th:classappend="${#fields.hasErrors('emailVerificationKey')} ? 'is-invalid' : ''">
 
-          <label class="form-label" for="registeredEmail">이메일 인증</label>
+          <label class="form-label" for="registeredEmail" th:text="#{community.project.emailLabel}">이메일 인증</label>
 
           <div class="flex-center">
             <input id="registeredEmail"
@@ -459,12 +463,13 @@
             <button id="projectEmailSendButton"
                     type="button"
                     class="btn btn--soft"
-                    th:attr="data-url=@{/community/{id}/project/email-verification(id=${artist.id()})}">
+                    th:attr="data-url=@{/community/{id}/project/email-verification(id=${artist.id()})}"
+                    th:text="#{community.project.emailSend}">
               전송하기
             </button>
           </div>
 
-          <p class="form-hint">
+          <p class="form-hint" th:text="#{community.project.emailHint}">
             회원가입 시 입력한 이메일 주소로만 인증할 수 있습니다.
           </p>
 
@@ -479,12 +484,14 @@
                    maxlength="6"
                    pattern="[0-9]{6}"
                    placeholder="인증번호 6자리"
+                   th:placeholder="#{community.project.emailCodePlaceholder}"
                    disabled />
 
             <button id="projectEmailConfirmButton"
                     type="button"
                     class="btn btn--soft"
                     th:attr="data-url=@{/community/{id}/project/email-verification/confirm(id=${artist.id()})}"
+                    th:text="#{community.project.emailConfirm}"
                     disabled>
               인증하기
             </button>
@@ -502,22 +509,22 @@
         <div class="grid-2">
           <div class="form-group"
                th:classappend="${#fields.hasErrors('settlementBank')} ? 'is-invalid' : ''">
-            <label class="form-label" for="settlementBank">정산 은행</label>
+            <label class="form-label" for="settlementBank" th:text="#{community.project.bankLabel}">정산 은행</label>
             <select id="settlementBank"
                     class="form-select"
                     th:field="*{settlementBank}"
                     required>
-              <option value="">은행을 선택해주세요</option>
+              <option value="" th:text="#{community.project.bankPlaceholder}">은행을 선택해주세요</option>
               <option th:each="bank : ${settlementBanks}"
                       th:value="${bank}"
-                      th:text="${bank.displayName}">국민은행</option>
+                      th:text="#{${bank.messageKey}}">국민은행</option>
             </select>
             <p class="form-error" th:errors="*{settlementBank}"></p>
           </div>
 
           <div class="form-group"
                th:classappend="${#fields.hasErrors('accountNumber')} ? 'is-invalid' : ''">
-            <label class="form-label" for="accountNumber">계좌번호</label>
+            <label class="form-label" for="accountNumber" th:text="#{community.project.accountNumberLabel}">계좌번호</label>
             <input id="accountNumber"
                    class="form-input"
                    type="text"
@@ -528,19 +535,20 @@
                    pattern="[0-9]{6,30}"
                    autocomplete="off"
                    required
-                   placeholder="하이픈 없이 숫자만 입력" />
+                   placeholder="하이픈 없이 숫자만 입력"
+                   th:placeholder="#{community.project.accountNumberPlaceholder}" />
             <p class="form-error" th:errors="*{accountNumber}"></p>
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="accountHolderName">예금주명</label>
+          <label class="form-label" for="accountHolderName" th:text="#{community.project.accountHolderLabel}">예금주명</label>
           <input id="accountHolderName"
                  class="form-input"
                  type="text"
                  th:value="${accountHolderName}"
                  readonly />
-          <p class="form-hint">
+          <p class="form-hint" th:text="#{community.project.accountHolderHint}">
             회원가입 시 입력한 회원 실명이 자동으로 사용됩니다.
           </p>
         </div>
@@ -548,7 +556,7 @@
         <div class="form-group project-agreements">
           <label>
             <input id="projectAgreeAll" type="checkbox" />
-            전체 동의
+            <th:block th:text="#{community.project.agreeAll}">전체 동의</th:block>
           </label>
 
           <label>
@@ -556,7 +564,7 @@
                    class="project-required-agreement"
                    th:field="*{projectPolicyAgreed}"
                    required />
-            [필수] 프로젝트 운영 및 이용사항 확인
+            <th:block th:text="#{community.project.agreeProjectPolicy}">[필수] 프로젝트 운영 및 이용사항 확인</th:block>
           </label>
           <p class="form-error" th:errors="*{projectPolicyAgreed}"></p>
 
@@ -565,7 +573,7 @@
                    class="project-required-agreement"
                    th:field="*{settlementPolicyAgreed}"
                    required />
-            [필수] 모금·정산·환불 관련 주의사항 확인
+            <th:block th:text="#{community.project.agreeSettlementPolicy}">[필수] 모금·정산·환불 관련 주의사항 확인</th:block>
           </label>
           <p class="form-error" th:errors="*{settlementPolicyAgreed}"></p>
 
@@ -574,7 +582,7 @@
                    class="project-required-agreement"
                    th:field="*{privacyPolicyAgreed}"
                    required />
-            [필수] 개인정보 수집·이용 동의
+            <th:block th:text="#{community.project.agreePrivacyPolicy}">[필수] 개인정보 수집·이용 동의</th:block>
           </label>
           <p class="form-error" th:errors="*{privacyPolicyAgreed}"></p>
         </div>
@@ -582,6 +590,7 @@
         <button id="projectRequestButton"
                 type="submit"
                 class="btn btn--primary btn--block"
+                th:text="#{community.project.requestSubmit}"
                 disabled>
           요청하기
         </button>
@@ -594,7 +603,46 @@
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/dm-realtime.js}"></script>
-  <script>
+  <script th:inline="javascript">
+    // SETTINGS-03 커밋3: 이 인라인 스크립트의 화면 문구는 서버 렌더 시점에 MSG로 주입한다.
+    // #{...}를 인자 없이 해석하므로 {0} 자리표시자는 그대로 남고, 아래 fmt()로 직접 치환한다.
+    const MSG = {
+      eligibilityCheckFailed: /*[[#{community.project.js.eligibilityCheckFailed}]]*/ "등록 자격을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.",
+      ddayClosed: /*[[#{community.project.js.ddayClosed}]]*/ "마감",
+      progress: /*[[#{community.project.progress}]]*/ "{0}% 달성",
+      amount: /*[[#{community.project.amount}]]*/ "{0}원",
+      participants: /*[[#{community.project.participants}]]*/ "참여자 {0}명",
+      waitApproval: /*[[#{community.project.js.waitApproval}]]*/ "승인 후 참여 가능",
+      beforeFunding: /*[[#{community.project.js.beforeFunding}]]*/ "모금 시작 전",
+      fundingClosed: /*[[#{community.project.js.fundingClosed}]]*/ "모금 마감",
+      next: /*[[#{community.project.next}]]*/ "다음으로 →",
+      fundingTitle: /*[[#{community.project.js.fundingTitle}]]*/ "펀딩 참여하기",
+      participateTitle: /*[[#{community.project.participateTitle}]]*/ "프로젝트 참여하기",
+      participate: /*[[#{community.project.participate}]]*/ "참여하기",
+      loadFailed: /*[[#{community.project.loadFailed}]]*/ "프로젝트 정보를 불러오지 못했습니다.",
+      amountRange: /*[[#{community.project.js.amountRange}]]*/ "참여 금액은 1,000원 이상 3,000,000원 이하로 입력해주세요.",
+      refundRequired: /*[[#{community.project.js.refundRequired}]]*/ "환불 규정에 동의해주세요.",
+      creatingOrder: /*[[#{community.project.js.creatingOrder}]]*/ "주문을 만들고 있습니다.",
+      participateFailed: /*[[#{community.project.js.participateFailed}]]*/ "프로젝트 참여에 실패했습니다.",
+      openingPayment: /*[[#{community.project.js.openingPayment}]]*/ "결제창을 여는 중입니다.",
+      paymentCancelled: /*[[#{community.project.js.paymentCancelled}]]*/ "결제를 취소했어요. 다시 시도할 수 있어요.",
+      emailSending: /*[[#{community.project.js.emailSending}]]*/ "인증번호를 전송하고 있습니다.",
+      emailSendFailed: /*[[#{community.project.js.emailSendFailed}]]*/ "인증번호 전송에 실패했습니다.",
+      emailResend: /*[[#{community.project.js.emailResend}]]*/ "재전송",
+      emailCodeInvalid: /*[[#{community.project.js.emailCodeInvalid}]]*/ "숫자 6자리 인증번호를 입력해주세요.",
+      emailSendFirst: /*[[#{community.project.js.emailSendFirst}]]*/ "인증번호를 먼저 전송해주세요.",
+      emailVerifyFailed: /*[[#{community.project.js.emailVerifyFailed}]]*/ "이메일 인증에 실패했습니다.",
+      remainingAttempts: /*[[#{community.project.js.remainingAttempts}]]*/ "{0} 남은 횟수: {1}회"
+    };
+
+    function fmt(template, args) {
+      let result = String(template == null ? "" : template);
+      (args || []).forEach(function (arg, idx) {
+        result = result.split("{" + idx + "}").join(String(arg == null ? "" : arg));
+      });
+      return result;
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
       const form = document.getElementById("projectCreateForm");
       const modal = document.getElementById("projectCreateModal");
@@ -617,7 +665,7 @@
         try {
           const response = await fetch(`/community/${artistId}/project/eligibility`);
           if (!response.ok) {
-            WePlaNet.alert("등록 자격을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.");
+            WePlaNet.alert(MSG.eligibilityCheckFailed);
             return;
           }
           const result = await response.json();
@@ -628,7 +676,7 @@
           }
           modal.classList.add("is-open");
         } catch (error) {
-          WePlaNet.alert("등록 자격을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.");
+          WePlaNet.alert(MSG.eligibilityCheckFailed);
         }
       }, true);
 
@@ -681,7 +729,7 @@
       }
 
       function projectDdayLabel(remainingDays) {
-        if (remainingDays < 0) return "마감";
+        if (remainingDays < 0) return MSG.ddayClosed;
         if (remainingDays === 0) return "D-DAY";
         return `D-${remainingDays}`;
       }
@@ -695,10 +743,10 @@
         const participantCount = Number(project.participantCount || 0);
         const progressPercent = Number(project.progressPercent || 0);
 
-        detailProgressLabel.textContent = `${progressPercent}% 달성`;
-        detailFundedAmount.textContent = `${fundedAmount.toLocaleString("ko-KR")}원`;
-        detailGoalInline.textContent = `${Number(project.goalAmount).toLocaleString("ko-KR")}원`;
-        detailParticipants.textContent = `참여자 ${participantCount.toLocaleString("ko-KR")}명`;
+        detailProgressLabel.textContent = fmt(MSG.progress, [progressPercent]);
+        detailFundedAmount.textContent = fmt(MSG.amount, [fundedAmount.toLocaleString("ko-KR")]);
+        detailGoalInline.textContent = fmt(MSG.amount, [Number(project.goalAmount).toLocaleString("ko-KR")]);
+        detailParticipants.textContent = fmt(MSG.participants, [participantCount.toLocaleString("ko-KR")]);
         updateProgressBar(detailProgressBar, progressPercent);
       }
 
@@ -710,14 +758,14 @@
 
         participationNextButton.disabled = true;
         if (!approvedStatus) {
-          participationNextButton.textContent = "승인 후 참여 가능";
+          participationNextButton.textContent = MSG.waitApproval;
         } else if (now < startsAt) {
-          participationNextButton.textContent = "모금 시작 전";
+          participationNextButton.textContent = MSG.beforeFunding;
         } else if (now > endsAt) {
-          participationNextButton.textContent = "모금 마감";
+          participationNextButton.textContent = MSG.fundingClosed;
         } else {
           participationNextButton.disabled = false;
-          participationNextButton.textContent = "다음으로 →";
+          participationNextButton.textContent = MSG.next;
         }
       }
 
@@ -729,7 +777,7 @@
         detailDescription.textContent = project.description;
 
         detailGoal.textContent =
-            `${Number(project.goalAmount).toLocaleString("ko-KR")}원`;
+            fmt(MSG.amount, [Number(project.goalAmount).toLocaleString("ko-KR")]);
         updateDetailFunding(project);
         updateParticipationAvailability(project);
 
@@ -774,7 +822,7 @@
 
       function fillContributionSummary(project) {
         contributionTitle.textContent = project.title;
-        contributionProgressLabel.textContent = `${Number(project.progressPercent || 0)}% 달성`;
+        contributionProgressLabel.textContent = fmt(MSG.progress, [Number(project.progressPercent || 0)]);
         contributionDday.textContent = projectDdayLabel(Number(project.remainingDays));
         updateProgressBar(contributionProgressBar, project.progressPercent || 0);
 
@@ -794,7 +842,7 @@
       function openContributionStep() {
         if (!selectedProject || !selectedContributionUrl) return;
 
-        detailModalTitle.textContent = "펀딩 참여하기";
+        detailModalTitle.textContent = MSG.fundingTitle;
         detailContent.hidden = true;
         contributionContent.hidden = false;
         contributionForm.reset();
@@ -802,13 +850,13 @@
             .forEach(button => button.classList.remove("is-selected"));
         contributionStatus.hidden = true;
         contributionSubmitButton.disabled = false;
-        contributionSubmitButton.textContent = "참여하기";
+        contributionSubmitButton.textContent = MSG.participate;
         contributionIdempotencyKey = createIdempotencyKey();
         fillContributionSummary(selectedProject);
       }
 
       function openDetailStep() {
-        detailModalTitle.textContent = "프로젝트 참여하기";
+        detailModalTitle.textContent = MSG.participateTitle;
         contributionContent.hidden = true;
         detailContent.hidden = false;
       }
@@ -822,7 +870,7 @@
           detailError.hidden = true;
           detailContent.hidden = true;
           contributionContent.hidden = true;
-          detailModalTitle.textContent = "프로젝트 참여하기";
+          detailModalTitle.textContent = MSG.participateTitle;
           detailModal.classList.add("is-open");
 
           try {
@@ -841,7 +889,7 @@
 
             if (!response.ok) {
               throw new Error(
-                  result.message || "프로젝트 정보를 불러오지 못했습니다."
+                  result.message || MSG.loadFailed
               );
             }
 
@@ -883,18 +931,18 @@
         const amount = Number(contributionAmount.value);
 
         if (!Number.isInteger(amount) || amount < 1000 || amount > 3000000) {
-          showContributionStatus("참여 금액은 1,000원 이상 3,000,000원 이하로 입력해주세요.", true);
+          showContributionStatus(MSG.amountRange, true);
           contributionAmount.focus();
           return;
         }
         if (!refundPolicyAgreed.checked) {
-          showContributionStatus("환불 규정에 동의해주세요.", true);
+          showContributionStatus(MSG.refundRequired, true);
           refundPolicyAgreed.focus();
           return;
         }
 
         contributionSubmitButton.disabled = true;
-        showContributionStatus("주문을 만들고 있습니다.", false);
+        showContributionStatus(MSG.creatingOrder, false);
 
         try {
           // 1) 우리 서버에 주문(READY) 생성 요청 -> 결제창 정보 받기
@@ -919,11 +967,11 @@
 
           const prepared = await response.json();
           if (!response.ok || !prepared.success) {
-            throw new Error(prepared.message || "프로젝트 참여에 실패했습니다.");
+            throw new Error(prepared.message || MSG.participateFailed);
           }
 
           // 2) 토스 결제창 열기 (가상계좌)
-          showContributionStatus("결제창을 여는 중입니다.", false);
+          showContributionStatus(MSG.openingPayment, false);
           const tossPayments = TossPayments(prepared.clientKey);
           // 우리 서비스는 카드 저장 같은 회원 기능을 안 쓰므로 비회원(ANONYMOUS)으로 연다
           const payment = tossPayments.payment({ customerKey: TossPayments.ANONYMOUS });
@@ -947,7 +995,7 @@
         } catch (error) {
           // 사용자가 결제창을 그냥 닫으면 토스 SDK가 USER_CANCEL 에러를 던진다
           const message = error.code === "USER_CANCEL"
-              ? "결제를 취소했어요. 다시 시도할 수 있어요."
+              ? MSG.paymentCancelled
               : error.message;
           showContributionStatus(message, true);
           // 다음 시도에서 금액을 바꿔도 되도록 새 요청 키 발급
@@ -984,7 +1032,7 @@
       emailCodeInput.disabled = true;
       emailConfirmButton.disabled = true;
 
-      showEmailStatus("인증번호를 전송하고 있습니다.", false);
+      showEmailStatus(MSG.emailSending, false);
       updateAgreementState();
 
       try {
@@ -998,7 +1046,7 @@
         const result = await response.json();
 
         if (!response.ok || !result.success) {
-          throw new Error(result.message || "인증번호 전송에 실패했습니다.");
+          throw new Error(result.message || MSG.emailSendFailed);
         }
 
         emailVerificationKeyInput.value = result.verificationKey;
@@ -1006,7 +1054,7 @@
         emailConfirmButton.disabled = false;
         emailCodeInput.focus();
 
-        emailSendButton.textContent = "재전송";
+        emailSendButton.textContent = MSG.emailResend;
         showEmailStatus(result.message, false);
       } catch (error) {
         showEmailStatus(error.message, true);
@@ -1020,13 +1068,13 @@
       const verificationKey = emailVerificationKeyInput.value;
 
       if (!/^[0-9]{6}$/.test(code)) {
-        showEmailStatus("숫자 6자리 인증번호를 입력해주세요.", true);
+        showEmailStatus(MSG.emailCodeInvalid, true);
         emailCodeInput.focus();
         return;
       }
 
       if (!verificationKey) {
-        showEmailStatus("인증번호를 먼저 전송해주세요.", true);
+        showEmailStatus(MSG.emailSendFirst, true);
         return;
       }
 
@@ -1049,13 +1097,13 @@
         const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.message || "이메일 인증에 실패했습니다.");
+          throw new Error(result.message || MSG.emailVerifyFailed);
         }
 
         if (!result.success) {
           emailCodeInput.disabled = false;
           showEmailStatus(
-              `${result.message} 남은 횟수: ${result.remainingAttempts}회`,
+              fmt(MSG.remainingAttempts, [result.message, result.remainingAttempts]),
               true
           );
           emailCodeInput.select();

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<!--
+  개인정보처리방침 본문 조각 - privacy.html에서 ${#locale.language}에 따라 ko / ja / en 중 하나를 끼워 넣는다.
+  한국어(ko)가 원문이며, ja / en은 번역본(상단에 policy.privacyTranslationNotice 안내 표시).
+-->
+<body>
+
+<!-- ===================== 한국어 (원문) ===================== -->
+<th:block th:fragment="ko">
+    <ul class="policy-toc">
+        <li><a href="#art1">제1조 개인정보 처리방침의 목적</a></li>
+        <li><a href="#art2">제2조 개인정보의 처리 목적</a></li>
+        <li><a href="#art3">제3조 처리하는 개인정보의 항목</a></li>
+        <li><a href="#art4">제4조 개인정보의 처리 및 보유기간</a></li>
+        <li><a href="#art5">제5조 개인정보의 제3자 제공</a></li>
+        <li><a href="#art6">제6조 개인정보 처리의 위탁</a></li>
+        <li><a href="#art7">제7조 정보주체의 권리·의무 및 행사방법</a></li>
+        <li><a href="#art8">제8조 개인정보의 파기절차 및 방법</a></li>
+        <li><a href="#art9">제9조 개인정보의 안전성 확보조치</a></li>
+        <li><a href="#art10">제10조 쿠키(Cookie)의 운영 및 거부</a></li>
+        <li><a href="#art11">제11조 개인정보 자동 수집장치 및 세션 관리</a></li>
+        <li><a href="#art12">제12조 개인정보 보호책임자</a></li>
+        <li><a href="#art13">제13조 권익침해 구제방법</a></li>
+        <li><a href="#art14">제14조 개인정보 처리방침의 변경</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>제1조(개인정보 처리방침의 목적)</h2>
+        <p>본 개인정보 처리방침(이하 "본 방침")은 WePlaNet(이하 "회사" 또는 "위플래닛")이 제공하는 웹사이트 및 관련 서비스(이하 "서비스")를 이용하는 회원의 개인정보를 어떠한 목적과 방식으로 처리하며, 개인정보 보호를 위해 어떠한 조치를 취하고 있는지 안내하기 위해 작성되었습니다. 회사는 「개인정보 보호법」 등 관계 법령을 준수하며, 본 방침을 통해 회원이 자신의 개인정보와 관련한 권리를 어떻게 행사할 수 있는지 안내합니다.</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>제2조(개인정보의 처리 목적)</h2>
+        <p>회사는 다음 각 호의 목적을 위하여 회원의 개인정보를 처리합니다. 처리한 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 관계 법령에 따라 별도의 동의를 받는 등 필요한 조치를 이행합니다.</p>
+        <ol>
+            <li>회원가입 및 계정 관리: 아이디·비밀번호 기반 또는 구글·카카오·라인 소셜 계정을 통한 회원가입, 본인 확인, 로그인 유지, 휴면계정 전환·재활성화, 부정 이용 확인 및 방지, 회원 탈퇴 처리</li>
+            <li>커뮤니티 서비스 제공: 아티스트별 커뮤니티 가입 관리, 프로필(닉네임·소개글·프로필/배경 이미지) 등록·수정, 게시글·댓글·다이렉트 메시지(DM) 등 커뮤니티 활동 지원</li>
+            <li>멤버십 및 상품 서비스 제공: 아티스트 멤버십 가입 및 만료 관리, 샵 상품 구매, 팬 프로젝트(크라우드펀딩) 참여 및 환불 처리</li>
+            <li>고객 문의 응대: 입점 문의 등 각종 문의 접수 및 답변, 공지사항 전달</li>
+            <li>서비스 운영 및 개선: 서비스 이용 통계 분석, 오류 확인 및 개선, 신규 기능 개발</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>제3조(처리하는 개인정보의 항목)</h2>
+        <p>회사는 서비스 제공을 위해 다음과 같은 개인정보를 처리합니다.</p>
+        <p><strong>(1) 필수 항목</strong></p>
+        <ul>
+            <li>회원가입 시: 아이디, 비밀번호(아이디·비밀번호로 가입한 회원에 한하며 암호화하여 저장), 또는 연동한 소셜 계정 정보(제공자 및 제공자 고유 식별값), 닉네임, 실명, 이메일 주소</li>
+        </ul>
+        <p><strong>(2) 선택 항목</strong></p>
+        <ul>
+            <li>전화번호, 거주 국가/지역, 프로필 및 배경 이미지</li>
+        </ul>
+        <p><strong>(3) 서비스 이용 과정에서 자동으로 생성·수집되는 정보</strong></p>
+        <ul>
+            <li>접속 IP, 접속 일시, 쿠키(로그인 세션 식별자)</li>
+        </ul>
+        <p><strong>(4) 특정 서비스 이용 시 추가로 처리되는 정보</strong></p>
+        <ul>
+            <li>팬 프로젝트(크라우드펀딩) 참여 시: 입금자명(암호화하여 저장), 후원 금액, 주문번호, 결제 상태, 환불 시 환불 계좌 정보</li>
+            <li>소셜 계정 연동/연동 해제 시: 연동 이력</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>제4조(개인정보의 처리 및 보유기간)</h2>
+        <p>회사는 원칙적으로 회원 탈퇴 시까지 개인정보를 보유·이용합니다. 회원이 탈퇴하면 회사는 지체 없이 아이디·이메일·연동된 소셜 식별값을 복원할 수 없는 형태(예: "withdrawn_회원번호")로, 실명을 "탈퇴한 회원"으로 각각 대체하고, 전화번호 등 선택 항목은 삭제하는 방식으로 개인정보를 익명 처리합니다. 다만 다음의 정보에 대해서는 명시한 사유가 있는 기간 동안 별도 보관합니다.</p>
+        <ul>
+            <li>팬 프로젝트 후원 및 환불 관련 기록: 「전자상거래 등에서의 소비자보호에 관한 법률」 등 관계 법령에 따라 5년</li>
+            <li>서비스 부정이용 관련 접속 기록: 3개월</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>제5조(개인정보의 제3자 제공)</h2>
+        <p>회사는 회원의 개인정보를 제2조에서 명시한 목적 범위 내에서만 처리하며, 회원의 동의가 있거나 법령에 특별한 규정이 있는 경우를 제외하고는 회원의 개인정보를 제3자에게 제공하지 않습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>제6조(개인정보 처리의 위탁)</h2>
+        <p>회사는 서비스 제공을 위해 다음과 같이 개인정보 처리 업무를 외부에 위탁하고 있습니다. 회사는 위탁 계약 체결 시 개인정보가 안전하게 관리될 수 있도록 필요한 사항을 규정하고 있습니다.</p>
+        <ul>
+            <li>위탁받는 자: Google LLC (Gmail SMTP)</li>
+            <li>위탁 업무 내용: 회원가입 이메일 인증, 비밀번호 재설정, 휴면계정 안내 등 이메일 발송</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>제7조(정보주체의 권리·의무 및 행사방법)</h2>
+        <p>회원은 언제든지 자신의 개인정보에 대해 다음 각 호의 권리를 행사할 수 있습니다.</p>
+        <ol>
+            <li>개인정보 열람·정정 요구권: 설정 화면의 "회원정보 수정"을 통해 닉네임, 실명, 이메일, 비밀번호, 전화번호 등을 직접 열람하고 수정할 수 있습니다.</li>
+            <li>개인정보 삭제(처리정지) 요구권: 설정 화면의 "위플래닛 계정 탈퇴하기"를 통해 언제든지 탈퇴하고 제4조에 따른 익명 처리를 요청할 수 있습니다.</li>
+            <li>위 방법으로 해결되지 않는 사항은 제12조의 연락처로 문의할 수 있으며, 회사는 지체 없이 조치합니다.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>제8조(개인정보의 파기절차 및 방법)</h2>
+        <p>회사는 개인정보의 보유기간이 경과하거나 처리 목적이 달성된 경우 해당 개인정보를 지체 없이 파기합니다. 전자적 파일 형태로 저장된 개인정보는 기록을 복구할 수 없는 기술적 방법을 사용하여 삭제하며, 종이 문서에 출력된 개인정보는 분쇄하거나 소각합니다.</p>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>제9조(개인정보의 안전성 확보조치)</h2>
+        <p>회사는 개인정보 보호를 위해 다음과 같은 기술적·관리적 조치를 취하고 있습니다.</p>
+        <ul>
+            <li>비밀번호는 복호화할 수 없는 일방향 암호화(BCrypt) 방식으로 저장합니다.</li>
+            <li>실명, 입금자명 등 민감한 개인정보는 암호화하여 저장합니다.</li>
+            <li>1시간 이상 활동이 없으면 자동으로 로그아웃되며, 동일 계정은 하나의 기기에서만 로그인할 수 있도록 제한합니다.</li>
+            <li>개인정보를 처리할 수 있는 인원을 최소한으로 제한하고 있습니다.</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>제10조(쿠키(Cookie)의 운영 및 거부)</h2>
+        <p>회사는 회원의 로그인 상태를 유지하기 위해 세션 식별을 위한 쿠키를 사용합니다. 회원은 웹브라우저 설정을 통해 쿠키 저장을 거부할 수 있으나, 이 경우 로그인이 필요한 서비스 이용에 제한이 있을 수 있습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>제11조(개인정보 자동 수집장치 및 세션 관리)</h2>
+        <p>회사는 부정 이용 방지 및 서비스 안정성 확보를 위해 로그인 세션을 관리하며, 비정상적으로 만료되거나 중복된 세션이 감지되는 경우 회원을 재인증하도록 안내할 수 있습니다.</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>제12조(개인정보 보호책임자)</h2>
+        <p>회사는 개인정보 처리에 관한 업무를 총괄하고 회원의 불만 처리 및 피해 구제를 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
+        <ul>
+            <li>담당: WePlaNet 운영팀</li>
+            <li>이메일: admin4.wp@gmail.com</li>
+        </ul>
+        <p>회원은 서비스 이용 중 발생한 모든 개인정보 관련 문의를 위 연락처로 하실 수 있으며, 회사는 지체 없이 답변 드립니다.</p>
+    </section>
+
+    <section class="policy-article" id="art13">
+        <h2>제13조(권익침해 구제방법)</h2>
+        <p>개인정보 침해에 대한 신고나 상담이 필요한 경우 아래 기관에 문의할 수 있습니다.</p>
+        <ul>
+            <li>개인정보침해신고센터 (privacy.kisa.or.kr / 국번없이 118)</li>
+            <li>개인정보 분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
+            <li>대검찰청 사이버수사과 (spo.go.kr / 국번없이 1301)</li>
+            <li>경찰청 사이버수사국 (ecrm.police.go.kr / 국번없이 182)</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art14">
+        <h2>제14조(개인정보 처리방침의 변경)</h2>
+        <p>본 방침은 법령, 정책 또는 서비스 변경사항을 반영하기 위해 개정될 수 있으며, 변경되는 경우 시행일자 및 변경 사항을 서비스 내 공지사항을 통해 사전에 안내합니다.</p>
+        <p class="policy-meta" style="margin-top:16px;">부칙: 본 방침은 2026년 9월 16일부터 시행됩니다.</p>
+    </section>
+</th:block>
+
+<!-- ===================== 日本語 (翻訳) ===================== -->
+<th:block th:fragment="ja">
+    <p class="policy-meta" th:text="#{policy.privacyTranslationNotice}">本方針は韓国語版を原文とし、翻訳版との間に相違がある場合は韓国語版が優先します。</p>
+
+    <ul class="policy-toc">
+        <li><a href="#art1">第1条 プライバシーポリシーの目的</a></li>
+        <li><a href="#art2">第2条 個人情報の処理目的</a></li>
+        <li><a href="#art3">第3条 処理する個人情報の項目</a></li>
+        <li><a href="#art4">第4条 個人情報の処理および保有期間</a></li>
+        <li><a href="#art5">第5条 個人情報の第三者提供</a></li>
+        <li><a href="#art6">第6条 個人情報の処理の委託</a></li>
+        <li><a href="#art7">第7条 情報主体の権利・義務およびその行使方法</a></li>
+        <li><a href="#art8">第8条 個人情報の破棄手続および方法</a></li>
+        <li><a href="#art9">第9条 個人情報の安全性確保措置</a></li>
+        <li><a href="#art10">第10条 Cookie（クッキー）の運用および拒否</a></li>
+        <li><a href="#art11">第11条 個人情報の自動収集装置およびセッション管理</a></li>
+        <li><a href="#art12">第12条 個人情報保護責任者</a></li>
+        <li><a href="#art13">第13条 権利侵害の救済方法</a></li>
+        <li><a href="#art14">第14条 プライバシーポリシーの変更</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>第1条（プライバシーポリシーの目的）</h2>
+        <p>本プライバシーポリシー（以下「本方針」といいます）は、WePlaNet（以下「会社」または「WePlaNet」といいます）が提供するウェブサイトおよび関連サービス（以下「サービス」といいます）を利用する会員の個人情報を、どのような目的および方法で処理し、個人情報の保護のためにどのような措置を講じているかをご案内するために作成されたものです。会社は、大韓民国「個人情報保護法」その他の関係法令を遵守し、本方針を通じて、会員がご自身の個人情報に関する権利をどのように行使できるかをご案内します。</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>第2条（個人情報の処理目的）</h2>
+        <p>会社は、次の各号の目的のために会員の個人情報を処理します。処理した個人情報は、次の目的以外の用途には利用せず、利用目的が変更される場合には、関係法令に従い別途同意を得るなど必要な措置を講じます。</p>
+        <ol>
+            <li>会員登録およびアカウント管理：ID・パスワードまたはGoogle・Kakao・LINEのソーシャルアカウントによる会員登録、本人確認、ログイン状態の維持、休眠アカウントへの切替え・再有効化、不正利用の確認および防止、退会処理</li>
+            <li>コミュニティサービスの提供：アーティスト別コミュニティへの加入管理、プロフィール（ニックネーム・自己紹介・プロフィール／背景画像）の登録・修正、投稿・コメント・ダイレクトメッセージ（DM）などのコミュニティ活動の支援</li>
+            <li>メンバーシップおよび商品サービスの提供：アーティストメンバーシップの加入および有効期限の管理、ショップ商品の購入、ファンプロジェクト（クラウドファンディング）への参加および返金処理</li>
+            <li>お問い合わせへの対応：出店に関するお問い合わせなど各種お問い合わせの受付および回答、お知らせの配信</li>
+            <li>サービスの運営および改善：サービス利用統計の分析、不具合の確認および改善、新機能の開発</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>第3条（処理する個人情報の項目）</h2>
+        <p>会社は、サービスの提供のために次の個人情報を処理します。</p>
+        <p><strong>(1) 必須項目</strong></p>
+        <ul>
+            <li>会員登録時：ID、パスワード（ID・パスワードで登録した会員に限り、暗号化して保存）、または連携したソーシャルアカウント情報（提供者および提供者固有の識別子）、ニックネーム、氏名（実名）、メールアドレス</li>
+        </ul>
+        <p><strong>(2) 任意項目</strong></p>
+        <ul>
+            <li>電話番号、居住国／地域、プロフィール画像および背景画像</li>
+        </ul>
+        <p><strong>(3) サービス利用の過程で自動的に生成・収集される情報</strong></p>
+        <ul>
+            <li>接続IP、接続日時、Cookie（ログインセッション識別子）</li>
+        </ul>
+        <p><strong>(4) 特定のサービス利用時に追加で処理される情報</strong></p>
+        <ul>
+            <li>ファンプロジェクト（クラウドファンディング）参加時：振込名義人名（暗号化して保存）、支援金額、注文番号、決済状況、返金時の返金口座情報</li>
+            <li>ソーシャルアカウントの連携／連携解除時：連携履歴</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>第4条（個人情報の処理および保有期間）</h2>
+        <p>会社は、原則として会員の退会時まで個人情報を保有・利用します。会員が退会した場合、会社は遅滞なく、ID・メールアドレス・連携したソーシャル識別子を復元不可能な形式（例：「withdrawn_会員番号」）に、氏名（実名）を「退会した会員」にそれぞれ置き換え、電話番号などの任意項目を削除する方法により、個人情報を匿名化します。ただし、次の情報については、明示した事由に基づく期間中、別途保管します。</p>
+        <ul>
+            <li>ファンプロジェクトの支援および返金に関する記録：大韓民国「電子商取引等における消費者保護に関する法律」その他の関係法令に基づき5年間</li>
+            <li>サービスの不正利用に関する接続記録：3か月間</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>第5条（個人情報の第三者提供）</h2>
+        <p>会社は、会員の個人情報を第2条で明示した目的の範囲内でのみ処理し、会員の同意がある場合または法令に特別の定めがある場合を除き、会員の個人情報を第三者に提供しません。</p>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>第6条（個人情報の処理の委託）</h2>
+        <p>会社は、サービスの提供のために、次のとおり個人情報の処理業務を外部に委託しています。会社は、委託契約の締結に際し、個人情報が安全に管理されるよう必要な事項を定めています。</p>
+        <ul>
+            <li>委託先：Google LLC (Gmail SMTP)</li>
+            <li>委託業務の内容：会員登録時のメール認証、パスワードの再設定、休眠アカウントのご案内などのメール送信</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>第7条（情報主体の権利・義務およびその行使方法）</h2>
+        <p>会員は、いつでも自身の個人情報について、次の各号の権利を行使することができます。</p>
+        <ol>
+            <li>個人情報の閲覧・訂正請求権：設定画面の「会員情報の修正」から、ニックネーム、氏名（実名）、メールアドレス、パスワード、電話番号などを直接閲覧し、修正することができます。</li>
+            <li>個人情報の削除（処理停止）請求権：設定画面の「WePlaNetアカウントを退会する」から、いつでも退会し、第4条に基づく匿名化を請求することができます。</li>
+            <li>上記の方法で解決しない事項については、第12条の連絡先までお問い合わせいただくことができ、会社は遅滞なく対応します。</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>第8条（個人情報の破棄手続および方法）</h2>
+        <p>会社は、個人情報の保有期間が経過し、または処理目的が達成された場合、当該個人情報を遅滞なく破棄します。電子ファイル形式で保存された個人情報は、記録を復元できない技術的方法により削除し、紙の文書に出力された個人情報は、裁断または焼却により破棄します。</p>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>第9条（個人情報の安全性確保措置）</h2>
+        <p>会社は、個人情報の保護のために、次の技術的・管理的措置を講じています。</p>
+        <ul>
+            <li>パスワードは、復号できない一方向暗号化（BCrypt）方式で保存します。</li>
+            <li>氏名（実名）、振込名義人名などの機微な個人情報は、暗号化して保存します。</li>
+            <li>1時間以上操作がない場合は自動的にログアウトされ、同一アカウントは1台の端末でのみログインできるよう制限しています。</li>
+            <li>個人情報を取り扱うことができる担当者を必要最小限に制限しています。</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>第10条（Cookie（クッキー）の運用および拒否）</h2>
+        <p>会社は、会員のログイン状態を維持するために、セッション識別用のCookieを使用します。会員はウェブブラウザの設定によりCookieの保存を拒否することができますが、その場合、ログインが必要なサービスの利用が制限されることがあります。</p>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>第11条（個人情報の自動収集装置およびセッション管理）</h2>
+        <p>会社は、不正利用の防止およびサービスの安定性確保のためにログインセッションを管理しており、異常に失効したセッションまたは重複したセッションが検知された場合、会員に再認証を行うよう案内することがあります。</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>第12条（個人情報保護責任者）</h2>
+        <p>会社は、個人情報の処理に関する業務を統括し、会員からの苦情処理および被害救済のために、以下のとおり個人情報保護責任者を指定しています。</p>
+        <ul>
+            <li>担当：WePlaNet 運営チーム</li>
+            <li>メールアドレス：admin4.wp@gmail.com</li>
+        </ul>
+        <p>会員は、サービスの利用中に生じた個人情報に関するすべてのお問い合わせを上記の連絡先までお寄せいただくことができ、会社は遅滞なく回答いたします。</p>
+    </section>
+
+    <section class="policy-article" id="art13">
+        <h2>第13条（権利侵害の救済方法）</h2>
+        <p>個人情報の侵害に関する申告や相談が必要な場合は、以下の機関（いずれも大韓民国の機関）にお問い合わせいただくことができます。</p>
+        <ul>
+            <li>個人情報侵害申告センター (privacy.kisa.or.kr / 局番なし 118)</li>
+            <li>個人情報紛争調停委員会 (kopico.go.kr / 1833-6972)</li>
+            <li>大検察庁 サイバー捜査課 (spo.go.kr / 局番なし 1301)</li>
+            <li>警察庁 サイバー捜査局 (ecrm.police.go.kr / 局番なし 182)</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art14">
+        <h2>第14条（プライバシーポリシーの変更）</h2>
+        <p>本方針は、法令、ポリシーまたはサービスの変更内容を反映するために改定されることがあり、変更される場合は、施行日および変更内容をサービス内のお知らせを通じて事前にご案内します。</p>
+        <p class="policy-meta" style="margin-top:16px;">附則：本方針は2026年9月16日から施行します。</p>
+    </section>
+</th:block>
+
+<!-- ===================== English (translation) ===================== -->
+<th:block th:fragment="en">
+    <p class="policy-meta" th:text="#{policy.privacyTranslationNotice}">This is a translation of the Korean original. In case of any discrepancy, the Korean version prevails.</p>
+
+    <ul class="policy-toc">
+        <li><a href="#art1">Article 1. Purpose of this Privacy Policy</a></li>
+        <li><a href="#art2">Article 2. Purposes of Processing Personal Information</a></li>
+        <li><a href="#art3">Article 3. Personal Information Processed</a></li>
+        <li><a href="#art4">Article 4. Processing and Retention Period</a></li>
+        <li><a href="#art5">Article 5. Provision of Personal Information to Third Parties</a></li>
+        <li><a href="#art6">Article 6. Outsourcing of Processing</a></li>
+        <li><a href="#art7">Article 7. Rights and Obligations of Data Subjects and How to Exercise Them</a></li>
+        <li><a href="#art8">Article 8. Procedure and Method of Destruction</a></li>
+        <li><a href="#art9">Article 9. Security Measures</a></li>
+        <li><a href="#art10">Article 10. Use and Refusal of Cookies</a></li>
+        <li><a href="#art11">Article 11. Automatic Collection Tools and Session Management</a></li>
+        <li><a href="#art12">Article 12. Chief Privacy Officer</a></li>
+        <li><a href="#art13">Article 13. Remedies for Infringement of Rights</a></li>
+        <li><a href="#art14">Article 14. Changes to this Privacy Policy</a></li>
+    </ul>
+
+    <section class="policy-article" id="art1">
+        <h2>Article 1 (Purpose of this Privacy Policy)</h2>
+        <p>This Privacy Policy (the "Policy") has been prepared to explain for what purposes and in what manner WePlaNet (the "Company" or "WePlaNet") processes the personal information of members who use the website and related services provided by the Company (the "Service"), and what measures it takes to protect personal information. The Company complies with the Personal Information Protection Act of the Republic of Korea and other applicable laws, and through this Policy explains how members can exercise their rights regarding their personal information.</p>
+    </section>
+
+    <section class="policy-article" id="art2">
+        <h2>Article 2 (Purposes of Processing Personal Information)</h2>
+        <p>The Company processes members' personal information for the following purposes. Personal information processed will not be used for any purpose other than those listed below, and if the purpose of use changes, the Company will take the necessary measures, such as obtaining separate consent, in accordance with applicable laws.</p>
+        <ol>
+            <li>Membership registration and account management: registration with an ID and password or via a Google, Kakao or LINE social account, identity verification, keeping members logged in, converting accounts to dormant status and reactivating them, detecting and preventing fraudulent use, and processing withdrawals</li>
+            <li>Provision of community services: managing membership in each artist's community, registering and editing profiles (nickname, bio, profile/background images), and supporting community activities such as posts, comments and direct messages (DM)</li>
+            <li>Provision of membership and product services: managing artist membership subscriptions and expirations, shop purchases, and participation in and refunds for fan projects (crowdfunding)</li>
+            <li>Responding to inquiries: receiving and answering inquiries, including store-listing (partnership) inquiries, and delivering notices</li>
+            <li>Operating and improving the Service: analyzing Service usage statistics, identifying and fixing errors, and developing new features</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art3">
+        <h2>Article 3 (Personal Information Processed)</h2>
+        <p>The Company processes the following personal information to provide the Service.</p>
+        <p><strong>(1) Required items</strong></p>
+        <ul>
+            <li>At registration: ID, password (only for members who registered with an ID and password; stored in encrypted form), or linked social account information (provider and the provider's unique identifier), nickname, real name, and email address</li>
+        </ul>
+        <p><strong>(2) Optional items</strong></p>
+        <ul>
+            <li>Phone number, country/region of residence, profile and background images</li>
+        </ul>
+        <p><strong>(3) Information automatically generated and collected while using the Service</strong></p>
+        <ul>
+            <li>Access IP address, access date and time, cookies (login session identifier)</li>
+        </ul>
+        <p><strong>(4) Information additionally processed when using specific services</strong></p>
+        <ul>
+            <li>When participating in a fan project (crowdfunding): depositor name (stored in encrypted form), contribution amount, order number, payment status, and refund account information in the case of a refund</li>
+            <li>When linking/unlinking a social account: linking history</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art4">
+        <h2>Article 4 (Processing and Retention Period)</h2>
+        <p>In principle, the Company retains and uses personal information until the member withdraws. When a member withdraws, the Company anonymizes the personal information without delay by replacing the ID, email address and linked social identifier with an irreversible form (e.g., "withdrawn_memberNumber"), replacing the real name with "Withdrawn member," and deleting optional items such as the phone number. However, the following information is stored separately for the period stated, for the reasons specified:</p>
+        <ul>
+            <li>Records of fan project contributions and refunds: 5 years, in accordance with the Act on the Consumer Protection in Electronic Commerce, etc. of the Republic of Korea and other applicable laws</li>
+            <li>Access logs relating to fraudulent use of the Service: 3 months</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art5">
+        <h2>Article 5 (Provision of Personal Information to Third Parties)</h2>
+        <p>The Company processes members' personal information only within the scope of the purposes specified in Article 2, and does not provide members' personal information to third parties except with the member's consent or where specifically required by law.</p>
+    </section>
+
+    <section class="policy-article" id="art6">
+        <h2>Article 6 (Outsourcing of Processing)</h2>
+        <p>To provide the Service, the Company outsources the processing of personal information as follows. When entering into an outsourcing agreement, the Company stipulates the matters necessary to ensure that personal information is managed securely.</p>
+        <ul>
+            <li>Contractor: Google LLC (Gmail SMTP)</li>
+            <li>Outsourced tasks: sending emails, such as email verification at registration, password resets and dormant account notices</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art7">
+        <h2>Article 7 (Rights and Obligations of Data Subjects and How to Exercise Them)</h2>
+        <p>Members may exercise the following rights regarding their personal information at any time.</p>
+        <ol>
+            <li>Right to access and correct personal information: members can view and edit their nickname, real name, email address, password, phone number and other information directly via "Edit profile" on the Settings screen.</li>
+            <li>Right to request deletion (suspension of processing) of personal information: members can withdraw at any time via "Delete WePlaNet account" on the Settings screen and request anonymization under Article 4.</li>
+            <li>Matters that cannot be resolved by the above methods may be referred to the contact in Article 12, and the Company will take action without delay.</li>
+        </ol>
+    </section>
+
+    <section class="policy-article" id="art8">
+        <h2>Article 8 (Procedure and Method of Destruction)</h2>
+        <p>When the retention period of personal information has expired or the purpose of processing has been achieved, the Company destroys the personal information without delay. Personal information stored in electronic files is deleted using technical methods that make the records unrecoverable, and personal information printed on paper is shredded or incinerated.</p>
+    </section>
+
+    <section class="policy-article" id="art9">
+        <h2>Article 9 (Security Measures)</h2>
+        <p>The Company takes the following technical and administrative measures to protect personal information.</p>
+        <ul>
+            <li>Passwords are stored using one-way encryption (BCrypt) that cannot be decrypted.</li>
+            <li>Sensitive personal information, such as real names and depositor names, is stored in encrypted form.</li>
+            <li>Members are automatically logged out after 1 hour or more of inactivity, and each account can be logged in on only one device at a time.</li>
+            <li>The number of personnel who can process personal information is kept to a minimum.</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art10">
+        <h2>Article 10 (Use and Refusal of Cookies)</h2>
+        <p>The Company uses cookies for session identification in order to keep members logged in. Members can refuse the storage of cookies through their web browser settings; in that case, however, the use of services that require login may be restricted.</p>
+    </section>
+
+    <section class="policy-article" id="art11">
+        <h2>Article 11 (Automatic Collection Tools and Session Management)</h2>
+        <p>The Company manages login sessions to prevent fraudulent use and ensure the stability of the Service, and may ask members to re-authenticate if an abnormally expired or duplicate session is detected.</p>
+    </section>
+
+    <section class="policy-article" id="art12">
+        <h2>Article 12 (Chief Privacy Officer)</h2>
+        <p>The Company has designated a chief privacy officer, as set out below, to oversee matters relating to the processing of personal information and to handle members' complaints and provide redress for damages.</p>
+        <ul>
+            <li>Department: WePlaNet Operations Team</li>
+            <li>Email: admin4.wp@gmail.com</li>
+        </ul>
+        <p>Members may direct all inquiries regarding personal information arising while using the Service to the above contact, and the Company will respond without delay.</p>
+    </section>
+
+    <section class="policy-article" id="art13">
+        <h2>Article 13 (Remedies for Infringement of Rights)</h2>
+        <p>If you need to report or seek advice on an infringement of personal information, you may contact the following institutions (all in the Republic of Korea).</p>
+        <ul>
+            <li>Personal Information Infringement Report Center (privacy.kisa.or.kr / 118 without area code)</li>
+            <li>Personal Information Dispute Mediation Committee (kopico.go.kr / 1833-6972)</li>
+            <li>Supreme Prosecutors' Office, Cyber Investigation Division (spo.go.kr / 1301 without area code)</li>
+            <li>Korean National Police Agency, Cyber Investigation Bureau (ecrm.police.go.kr / 182 without area code)</li>
+        </ul>
+    </section>
+
+    <section class="policy-article" id="art14">
+        <h2>Article 14 (Changes to this Privacy Policy)</h2>
+        <p>This Policy may be amended to reflect changes in laws, policies or the Service. In the event of any change, the Company will give prior notice of the effective date and the changes through the notices within the Service.</p>
+        <p class="policy-meta" style="margin-top:16px;">Addendum: This Policy takes effect on September 16, 2026.</p>
+    </section>
+</th:block>
+
+</body>
+</html>

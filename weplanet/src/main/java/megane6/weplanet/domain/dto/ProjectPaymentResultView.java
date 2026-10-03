@@ -14,6 +14,8 @@ public record ProjectPaymentResultView(
 		String projectTitle,
 		Long amount,
 		String bankName,
+		// SETTINGS-03 커밋3: 은행 이름 메시지 키 (목록에 없는 은행이면 null -> 화면은 bankName 사용)
+		String bankMessageKey,
 		String accountNumber,
 		LocalDateTime dueDate,
 		boolean paid
@@ -25,6 +27,7 @@ public record ProjectPaymentResultView(
 				contribution.getProject().getTitle(),
 				contribution.getAmount(),
 				SettlementBank.displayNameOfTossCode(contribution.getVirtualBankCode()),
+				SettlementBank.messageKeyOfTossCode(contribution.getVirtualBankCode()),
 				contribution.getVirtualAccountNumber(),
 				contribution.getDueDate(),
 				contribution.getPaymentStatus() == FanProjectPaymentStatus.PAID

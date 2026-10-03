@@ -1,5 +1,6 @@
 package megane6.weplanet.domain.entity.event;
 
+import megane6.weplanet.exception.LocalizedIllegalArgumentException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -53,7 +54,7 @@ public class HashtagEventTarget {
 	// HashtagEvent.putTarget 에서만 만든다 (같은 패키지라 public 이 아니어도 됨)
 	static HashtagEventTarget create(HashtagEvent event, User artist, String hashtag) {
 		if (artist == null) {
-			throw new IllegalArgumentException("참여 아티스트가 필요합니다.");
+			throw new IllegalArgumentException("adminHashtag.error.artistRequired");
 		}
 		
 		HashtagEventTarget target = new HashtagEventTarget();
@@ -77,7 +78,7 @@ public class HashtagEventTarget {
 	// "가을총공_STELLA", " #가을총공_STELLA " → "#가을총공_STELLA"
 	public static String normalize(String raw) {
 		if (raw == null || raw.isBlank()) {
-			throw new IllegalArgumentException("해시태그를 입력해주세요.");
+			throw new IllegalArgumentException("adminHashtag.error.hashtagEmpty");
 		}
 		
 		String tag = raw.strip();
@@ -86,10 +87,9 @@ public class HashtagEventTarget {
 		}
 		
 		if (!HASHTAG_PATTERN.matcher(tag).matches()) {
-			throw new IllegalArgumentException(
-					"해시태그는 # 뒤에 한글, 영문, 숫자, _ 만 쓸 수 있습니다. (띄어쓰기 불가): " + raw);
+			throw new LocalizedIllegalArgumentException("adminHashtag.error.hashtagInvalid", raw);
 		}
 		
 		return tag;
 	}
-}
+}

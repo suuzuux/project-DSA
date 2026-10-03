@@ -1,15 +1,21 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.SignupRequestDto;
+import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.RoleHomeRedirects;
+import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.service.UserService;
 import megane6.weplanet.util.NicknameGenerator;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -20,6 +26,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,11 +40,20 @@ public class AuthController {
 	// 가입된 아이디가 없어서 로그인에 실패한 횟수 - 5회째에 "회원가입하시겠습니까?" 확인창을 띄운다 (SecurityConfig)
 	public static final String SESSION_KEY_LOGIN_NOT_FOUND_COUNT = "LOGIN_NOT_FOUND_COUNT";
 	public static final int LOGIN_NOT_FOUND_ASK_AT = 5;
+	// 회원가입 직후 자동 로그인으로 메인에 들어왔을 때 환영 토스트를 한 번 띄우는 표시 (index.html)
+	public static final String FLASH_SIGNUP_WELCOME = "signupWelcome";
 
 	private final UserService userService;
 	private final SignupEmailVerificationService emailVerificationService;
 	private final NicknameGenerator nicknameGenerator;
-	
+	private final MessageSource messageSource;
+	private final megane6.weplanet.i18n.Messages messages;
+	private final SocialLoginSessionSupport loginSessionSupport;
+
+	private String msg(String code) {
+		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+	}
+
 	// 회원가입 화면의 "중복 확인" 버튼 - 실제로 DB를 조회해서 사용 가능 여부를 JSON으로 알려준다.
 	@PostMapping("/signup/username/check")
 	@ResponseBody
@@ -46,12 +62,12 @@ public class AuthController {
 		String trimmed = username == null ? "" : username.trim();
 		if (!trimmed.matches("^[a-zA-Z0-9]{4,20}$")) {
 			result.put("available", false);
-			result.put("message", "아이디는 영문/숫자 4~20자로 입력해주세요.");
+			result.put("message", msg("signup.validation.usernamePattern"));
 			return result;
 		}
 		boolean available = userService.isUsernameAvailable(trimmed);
 		result.put("available", available);
-		result.put("message", available ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.");
+		result.put("message", available ? msg("signup.usernameCheck.available") : msg("signup.error.usernameTaken"));
 		return result;
 	}
 	
@@ -84,33 +100,43 @@ public class AuthController {
 	public String signup(@Valid @ModelAttribute SignupRequestDto signupRequestDto,
 						 BindingResult bindingResult,
 						 Model model,
-						 HttpSession session) {
+						 HttpSession session,
+						 HttpServletRequest request,
+						 HttpServletResponse response,
+						 RedirectAttributes redirectAttributes) {
 		if (bindingResult.hasErrors()) {
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
 		// 화면(JS)에서 인증코드 확인을 막아두지만, 직접 POST를 보내는 우회를 막기 위해 서버에서도 확인한다
 		if (!emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail())) {
-			model.addAttribute("errorMessage", "이메일 인증을 먼저 완료해주세요.");
+			model.addAttribute("errorMessage", msg("signup.error.emailNotVerified"));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
+		User user;
 		try {
-			userService.signup(signupRequestDto);
+			user = userService.signup(signupRequestDto);
 			emailVerificationService.clear(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
-			model.addAttribute("errorMessage", e.getMessage());
+			model.addAttribute("errorMessage", messages.resolve(e));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		} catch (DataIntegrityViolationException e) {
 			// AUTH-11: 중복 확인(existsBy...)과 저장 사이에 같은 아이디나 이메일로 다른 가입이 먼저 끝난 경우(동시 가입).
 			// DB 의 유니크 제약(uk_users_username / uk_users_email)이 두 번째 저장을 막는데, 예전에는 그 오류가
 			// 그대로 500 화면으로 나갔다.
-			model.addAttribute("errorMessage", "방금 같은 아이디 또는 이메일로 가입이 완료되었습니다. 다시 확인해주세요.");
+			model.addAttribute("errorMessage", msg("signup.error.concurrentSignup"));
 			fillNicknameIfBlank(signupRequestDto);
 			return "signup-id";
 		}
-		return "redirect:/login";
+		// 가입이 끝나면 로그인 화면을 거치지 않고 바로 로그인시켜서 메인으로 보낸다 (소셜 회원가입과 같은 흐름).
+		// 이메일 인증을 마쳤고 방금 본인이 정한 비밀번호로 만든 계정이라 다시 입력받을 이유가 없다.
+		// 세션 id 교체 · 동시 로그인 제한은 loginAs 가 폼 로그인과 똑같이 처리한다.
+		// 마지막 로그인 시각은 UserService.signup 에서, 화면 언어는 가입하던 언어 그대로 이어진다.
+		loginSessionSupport.loginAs(user, request, response);
+		redirectAttributes.addFlashAttribute(FLASH_SIGNUP_WELCOME, true);
+		return "redirect:/";
 	}
 
 	// 다른 항목(비밀번호 등) 검증에 실패해서 회원가입 화면을 다시 보여줄 때, 닉네임 칸을 비워둔 채 왔으면

@@ -2,32 +2,39 @@ package megane6.weplanet.service.email;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
+import org.springframework.context.MessageSource;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
+
+// SETTINGS-03 커밋5: 스케줄러에서 발송되므로 요청 로케일이 없다 - 받는 회원의 선호 언어로 메일을 만든다.
 @Service
 @RequiredArgsConstructor
 public class DormantAccountNoticeService {
 
     private final JavaMailSender mailSender;
+    private final MessageSource messageSource;
 
     public void sendDormantNotice(User user) {
+        Locale locale = PreferredLocaleResolver.toLocale(user.getPreferredLanguage());
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
-        message.setSubject("[WePlaNet] 계정이 30일 후 휴면 상태로 전환됩니다");
-        message.setText(user.getNickname() + "님, 안녕하세요.\n\n"
-                + "장기간 로그인 기록이 없어 30일 후 휴면 상태로 전환될 예정입니다.\n"
-                + "휴면 전환 후에도 이메일 인증만으로 언제든 다시 활성화할 수 있습니다.");
+        message.setSubject(messageSource.getMessage("mail.dormant.notice.subject", null, locale));
+        message.setText(messageSource.getMessage("mail.common.greeting", new Object[]{user.getNickname()}, locale) + "\n\n"
+                + messageSource.getMessage("mail.dormant.notice.body", null, locale));
         mailSender.send(message);
     }
 
     public void sendDormantConvertedNotice(User user) {
+        Locale locale = PreferredLocaleResolver.toLocale(user.getPreferredLanguage());
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(user.getEmail());
-        message.setSubject("[WePlaNet] 계정이 휴면 상태로 전환되었습니다");
-        message.setText(user.getNickname() + "님, 안녕하세요.\n\n"
-                + "장기간 미접속으로 휴면 처리되었습니다. 로그인 시 이메일 인증코드로 바로 해제할 수 있습니다.");
+        message.setSubject(messageSource.getMessage("mail.dormant.converted.subject", null, locale));
+        message.setText(messageSource.getMessage("mail.common.greeting", new Object[]{user.getNickname()}, locale) + "\n\n"
+                + messageSource.getMessage("mail.dormant.converted.body", null, locale));
         mailSender.send(message);
     }
 }

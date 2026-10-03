@@ -45,6 +45,8 @@ public class AdminCommunityService {
 	private final CommentReportRepository crr;
 	
 	private final AdminActionLogService als;
+	// SETTINGS-03 커밋5: 화면 표시용 라벨을 현재 로케일로 해석
+	private final megane6.weplanet.i18n.Messages messages;
 	
 	public CommunityStats getStats() {
 		long totalCommunityCount = ur.countByRole(Role.ARTIST);
@@ -163,13 +165,13 @@ public class AdminCommunityService {
 	public AdminCommunityDetailResponse getCommunityDetail(Long artistId) {
 		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("admin.error.community.notFound"));
 		AdminCommunityOverviewResponse overview =
 				getCommunityOverview(artist.getUsername(), null, "NAME_ASC")
 						.stream()
 						.filter(item -> item.artistId().equals(artistId))
 						.findFirst()
-						.orElseThrow(() -> new IllegalArgumentException("커뮤니티 현황을 조회할 수 없습니다."));
+						.orElseThrow(() -> new IllegalArgumentException("admin.error.community.overviewUnavailable"));
 		
 		List<RecentPostItem> recentPosts =
 				postRepository
@@ -195,9 +197,9 @@ public class AdminCommunityService {
 						.map(project -> new ProjectItem(
 								project.getId(),
 								project.getTitle(),
-								project.getEventType().getDisplayName(),
+								messages.get("project.eventType." + project.getEventType().name()),
 								project.getStatus().name(),
-								project.getStatus().getDisplayName(),
+								messages.get("project.status." + project.getStatus().name()),
 								project.getGoalAmount(),
 								project.getFundingEndAt()
 						))
@@ -213,7 +215,7 @@ public class AdminCommunityService {
 								block.getBlockedUser().getNickname(),
 								block.getBlockedUser().getUsername(),
 								block.getReason() == null
-										? "사유 미입력"
+										? messages.get("admin.communityDetail.noReason")
 										: block.getReason(),
 								block.getCreatedAt()
 						))
@@ -226,7 +228,7 @@ public class AdminCommunityService {
 						)
 						.stream()
 						.map(report -> new PendingReportItem(
-								"게시글",
+								messages.get("admin.communityDetail.target.POST"),
 								report.getPost().getId(),
 								report.getPost().getTitle(),
 								report.getReporter().getNickname(),
@@ -242,7 +244,7 @@ public class AdminCommunityService {
 						)
 						.stream()
 						.map(report -> new PendingReportItem(
-								"댓글",
+								messages.get("admin.communityDetail.target.COMMENT"),
 								report.getComment().getId(),
 								summarizeText(
 										report.getComment().getContent()
@@ -284,10 +286,10 @@ public class AdminCommunityService {
 		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
 				.orElseThrow(() ->
-						new IllegalArgumentException("커뮤니티를 찾을 수 없습니다."));
+						new IllegalArgumentException("admin.error.community.notFound"));
 		
 		ArtistBlock block = abr.findByIdAndArtist(blockId, artist)
-				.orElseThrow(() -> new IllegalArgumentException("차단 정보를 찾을 수 없습니다."));
+				.orElseThrow(() -> new IllegalArgumentException("admin.error.community.blockNotFound"));
 		
 		User blockedUser = block.getBlockedUser();
 		
@@ -306,17 +308,17 @@ public class AdminCommunityService {
 	
 	private String boardTypeLabel(BoardType boardType) {
 		return switch (boardType) {
-			case FAN -> "팬 게시판";
-			case ARTIST -> "아티스트 게시판";
+			case FAN -> messages.get("admin.communityDetail.board.FAN");
+			case ARTIST -> messages.get("admin.communityDetail.board.ARTIST");
 		};
 	}
 	
 	private String reportReasonLabel(ReportReason reason) {
 		return switch (reason) {
-			case SPAM -> "스팸";
-			case ABUSE -> "욕설·혐오";
-			case SEXUAL -> "음란물";
-			case ETC -> "기타";
+			case SPAM -> messages.get("community.report.reason.SPAM");
+			case ABUSE -> messages.get("community.report.reason.ABUSE");
+			case SEXUAL -> messages.get("community.report.reason.SEXUAL");
+			case ETC -> messages.get("community.report.reason.ETC");
 		};
 	}
 	
@@ -376,11 +378,11 @@ public class AdminCommunityService {
 					return new AdminProjectItem(
 							project.getId(),
 							project.getTitle(),
-							project.getEventType().getDisplayName(),
+							messages.get("project.eventType." + project.getEventType().name()),
 							project.getArtist().getNickname(),
 							project.getCreator().getNickname(),
 							project.getStatus().name(),
-							project.getStatus().getDisplayName(),
+							messages.get("project.status." + project.getStatus().name()),
 							project.getGoalAmount(),
 							summary.fundedAmount(),
 							summary.participantCount(),
@@ -436,7 +438,7 @@ public class AdminCommunityService {
 					summary.participantCount(),
 					calculateProgress(summary.fundedAmount(), project.getGoalAmount()),
 					project.getFundingEndAt(),
-					account == null ? "-" : account.getBank().getDisplayName(),
+					account == null ? "-" : messages.get("project.bank." + account.getBank().name()),
 					account == null ? "-" : account.getAccountNumberLast4(),
 					account == null ? "MISSING" : account.getVerificationStatus().name(),
 					verificationLabel(account)
@@ -447,12 +449,12 @@ public class AdminCommunityService {
 	
 	private String verificationLabel(ProjectSettlementAccount account) {
 		if (account == null) {
-			return "계좌 미등록";
+			return messages.get("admin.communities.verification.MISSING");
 		}
 		return switch (account.getVerificationStatus()) {
-			case UNVERIFIED -> "확인 대기";
-			case VERIFIED -> "확인 완료";
-			case FAILED -> "확인 실패";
+			case UNVERIFIED -> messages.get("admin.communities.verification.UNVERIFIED");
+			case VERIFIED -> messages.get("admin.communities.verification.VERIFIED");
+			case FAILED -> messages.get("admin.communities.verification.FAILED");
 		};
 	}
 	
@@ -467,7 +469,7 @@ public class AdminCommunityService {
 		return new PendingProjectItem(
 				project.getId(),
 				project.getTitle(),
-				project.getEventType().getDisplayName(),
+				messages.get("project.eventType." + project.getEventType().name()),
 				project.getArtist().getNickname(),
 				project.getCreator().getNickname(),
 				project.getGoalAmount(),
@@ -487,11 +489,11 @@ public class AdminCommunityService {
 	
 	private String userStatusLabel(UserStatus status) {
 		return switch (status) {
-			case ACTIVE -> "운영 중";
-			case DORMANT -> "휴면";
-			case SUSPENDED -> "운영 정지";
-			case WITHDRAWN -> "탈퇴";
-			case PENDING_ACTIVATION -> "활성화 대기";
+			case ACTIVE -> messages.get("admin.overview.status.ACTIVE");
+			case DORMANT -> messages.get("admin.overview.status.DORMANT");
+			case SUSPENDED -> messages.get("admin.overview.status.SUSPENDED");
+			case WITHDRAWN -> messages.get("admin.overview.status.WITHDRAWN");
+			case PENDING_ACTIVATION -> messages.get("admin.overview.status.PENDING_ACTIVATION");
 		};
 	}
 	
@@ -545,7 +547,7 @@ public class AdminCommunityService {
 		ProjectSettlementAccount account = getSettlementAccount(projectId);
 		
 		if (account.getVerificationStatus() != SettlementVerificationStatus.VERIFIED) {
-			throw new IllegalStateException("계좌 확인이 완료된 프로젝트만 정산할 수 있습니다.");
+			throw new IllegalStateException("admin.error.settlement.accountNotVerified");
 		}
 		
 		project.completeSettlement(admin);
@@ -560,41 +562,41 @@ public class AdminCommunityService {
 	
 	private User getAdmin(Long adminId) {
 		return ur.findById(adminId).filter(user -> user.getRole() == Role.ADMIN)
-				.orElseThrow(() -> new IllegalStateException("ADMIN만 정산 업무를 처리할 수 있습니다."));
+				.orElseThrow(() -> new IllegalStateException("admin.error.settlement.adminOnly"));
 	}
 	
 	private Project getSettlementProject(Long projectId) {
 		Project project = pr.findById(projectId).orElseThrow(() ->
-				new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+				new IllegalArgumentException("error.project.notFound"));
 		if (project.getDeletedAt() != null) {
-			throw new IllegalArgumentException("삭제된 프로젝트입니다.");
+			throw new IllegalArgumentException("error.project.deleted");
 		}
 		if (project.getStatus() != FanProjectStatus.FUNDING_CLOSED) {
-			throw new IllegalStateException("모금이 마감된 프로젝트만 정산할 수 있습니다.");
+			throw new IllegalStateException("error.project.settleOnlyClosed");
 		}
 		return project;
 	}
 	
 	private ProjectSettlementAccount getSettlementAccount(Long projectId) {
 		return psr.findByProject_Id(projectId).orElseThrow(() ->
-				new IllegalArgumentException("등록된 정산 계좌가 없습니다."));
+				new IllegalArgumentException("admin.error.settlement.accountMissing"));
 	}
 	
 	public ProjectReviewDetail getProjectReviewDetail(Long projectId) {
 		Project project = pr.findById(projectId).orElseThrow(() ->
-				new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+				new IllegalArgumentException("error.project.notFound"));
 		if (project.getDeletedAt() != null) {
-			throw new IllegalArgumentException("삭제된 프로젝트입니다.");
+			throw new IllegalArgumentException("error.project.deleted");
 		}
 		if (project.getStatus() != FanProjectStatus.PENDING_APPROVAL) {
-			throw new IllegalArgumentException("현재 승인 대기 중인 프로젝트가 아닙니다.");
+			throw new IllegalArgumentException("admin.error.community.notPendingProject");
 		}
 		return new ProjectReviewDetail(
 				project.getId(),
 				project.getArtist().getId(),
 				project.getTitle(),
 				project.getDescription(),
-				project.getEventType().getDisplayName(),
+				messages.get("project.eventType." + project.getEventType().name()),
 				project.getArtist().getNickname(),
 				project.getCreator().getNickname(),
 				project.getGoalAmount(),
@@ -603,7 +605,7 @@ public class AdminCommunityService {
 				project.getBasicBadgeCountAtApply(),
 				project.getSpecialBadgeCountAtApply(),
 				project.getIdentityVerifiedAt(),
-				project.getStatus().getDisplayName(),
+				messages.get("project.status." + project.getStatus().name()),
 				project.getCreatedAt()
 		);
 	}

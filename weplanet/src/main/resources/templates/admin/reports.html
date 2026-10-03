@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="https://www.thymeleaf.org">
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>통합 신고 · 제재 | WePlaNet ADMIN</title>
+  <title th:text="#{admin.reports.title} + ' | WePlaNet ADMIN'">통합 신고 · 제재 | WePlaNet ADMIN</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
 </head>
@@ -20,135 +20,142 @@
       <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
       <details class="portal-sidebar__group">
         <summary>
-          <a th:href="@{/admin/dashboard}">📊 통합 대시보드</a>
-          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
         </summary>
-        <a class="portal-sidebar__sub" th:href="@{/admin/banners}">🖼 배너 영역 관리</a>
+        <a class="portal-sidebar__sub" th:href="@{/admin/banners}" th:text="|🖼 #{admin.nav.banners}|">🖼 배너 영역 관리</a>
       </details>
       <details class="portal-sidebar__group">
         <summary>
-          <a th:href="@{/admin/agencies}">🏢 소속사 관리</a>
-          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          <a th:href="@{/admin/agencies}" th:text="|🏢 #{admin.nav.agencies}|">🏢 소속사 관리</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
         </summary>
-        <a class="portal-sidebar__sub" th:href="@{/admin/applications}">📥 등록 신청</a>
+        <a class="portal-sidebar__sub" th:href="@{/admin/applications}" th:text="|📥 #{admin.nav.applications}|">📥 등록 신청</a>
       </details>
-      <a th:href="@{/admin/artists}">🎤 아티스트 관리</a>
-      <a th:href="@{/admin/users}">👥 전체 회원</a>
-      <a class="is-active" th:href="@{/admin/reports}">🚩 통합 신고 · 제재</a>
-      <a th:href="@{/admin/notices}">📢 전체 공지</a>
-      <a th:href="@{/admin/communities}">🎁 프로젝트 운영</a>
+      <a th:href="@{/admin/artists}" th:text="|🎤 #{admin.nav.artists}|">🎤 아티스트 관리</a>
+      <a th:href="@{/admin/users}" th:text="|👥 #{admin.nav.users}|">👥 전체 회원</a>
+      <a class="is-active" th:href="@{/admin/reports}" th:text="|🚩 #{admin.nav.reports}|">🚩 통합 신고 · 제재</a>
+      <a th:href="@{/admin/notices}" th:text="|📢 #{admin.nav.notices}|">📢 전체 공지</a>
+      <a th:href="@{/admin/communities}" th:text="|🎁 #{admin.nav.projects}|">🎁 프로젝트 운영</a>
       <details class="portal-sidebar__group">
         <summary>
-          <a th:href="@{/admin/events/hashtag}">🎉 이벤트</a>
-          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기"></span>
+          <a th:href="@{/admin/events/hashtag}" th:text="|🎉 #{admin.nav.events}|">🎉 이벤트</a>
+          <span class="portal-sidebar__caret" aria-label="하위 메뉴 열기/닫기" th:aria-label="#{admin.nav.submenuToggle}"></span>
         </summary>
-        <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}">🔥 해시태그 총공</a>
+        <a class="portal-sidebar__sub" th:href="@{/admin/events/hashtag}" th:text="|🔥 #{admin.nav.hashtagEvent}|">🔥 해시태그 총공</a>
       </details>
-      <a th:href="@{/admin/logs}">🧾 관리자 로그</a>
+      <a th:href="@{/admin/logs}" th:text="|🧾 #{admin.nav.logs}|">🧾 관리자 로그</a>
     </nav>
 
     <div class="portal-sidebar__footer">
-      <a class="btn" th:href="@{/}">🏠 메인 페이지 이동</a>
+      <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
       <form th:action="@{/admin/logout}" method="post" style="margin:0;">
-        <button type="submit" class="btn">🚪 로그아웃</button>
+        <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
       </form>
     </div>
   </aside>
 
   <main class="portal-main">
     <div class="portal-main__head">
-      <h1>통합 신고 · 제재</h1>
+      <h1 th:text="#{admin.reports.title}">통합 신고 · 제재</h1>
     </div>
 
     <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
     <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
     <div style="display:flex; gap:8px; margin-bottom:16px;">
-      <a th:href="@{/admin/reports}" class="btn btn--sm btn--primary">통합 신고함</a>
-      <a th:href="@{/admin/reports/suspended}" class="btn btn--sm btn--ghost">제재 대상</a>
+      <a th:href="@{/admin/reports}" class="btn btn--sm btn--primary" th:text="#{admin.reports.tab.inbox}">통합 신고함</a>
+      <a th:href="@{/admin/reports/suspended}" class="btn btn--sm btn--ghost" th:text="#{admin.reports.tab.suspended}">제재 대상</a>
     </div>
     <section class="panel">
       <form method="get" th:action="@{/admin/reports}" class="report-filter-bar">
         <select name="type">
-          <option value="" th:selected="${selectedType == null}">전체 유형</option>
-          <option value="POST" th:selected="${selectedType == 'POST'}">게시글</option>
-          <option value="COMMENT" th:selected="${selectedType == 'COMMENT'}">댓글</option>
+          <option value="" th:selected="${selectedType == null}" th:text="#{admin.reports.filter.allTypes}">전체 유형</option>
+          <option value="POST" th:selected="${selectedType == 'POST'}" th:text="#{admin.reports.type.POST}">게시글</option>
+          <option value="COMMENT" th:selected="${selectedType == 'COMMENT'}" th:text="#{admin.reports.type.COMMENT}">댓글</option>
         </select>
         <select name="status">
-          <option value="PENDING" th:selected="${selectedStatus == 'PENDING'}">처리 대기</option>
-          <option value="DISMISSED" th:selected="${selectedStatus == 'DISMISSED'}">처리완료(기각)</option>
+          <option value="PENDING" th:selected="${selectedStatus == 'PENDING'}" th:text="#{admin.reports.filter.pending}">처리 대기</option>
+          <option value="DISMISSED" th:selected="${selectedStatus == 'DISMISSED'}" th:text="#{admin.reports.filter.dismissed}">처리완료(기각)</option>
         </select>
         <select name="reason">
-          <option value="" th:selected="${selectedReason == null}">전체 사유</option>
-          <option value="SPAM" th:selected="${selectedReason == 'SPAM'}">스팸</option>
-          <option value="ABUSE" th:selected="${selectedReason == 'ABUSE'}">욕설·혐오</option>
-          <option value="SEXUAL" th:selected="${selectedReason == 'SEXUAL'}">음란물</option>
-          <option value="ETC" th:selected="${selectedReason == 'ETC'}">기타</option>
+          <option value="" th:selected="${selectedReason == null}" th:text="#{admin.reports.filter.allReasons}">전체 사유</option>
+          <option value="SPAM" th:selected="${selectedReason == 'SPAM'}" th:text="#{community.report.reason.SPAM}">스팸</option>
+          <option value="ABUSE" th:selected="${selectedReason == 'ABUSE'}" th:text="#{community.report.reason.ABUSE}">욕설·혐오</option>
+          <option value="SEXUAL" th:selected="${selectedReason == 'SEXUAL'}" th:text="#{community.report.reason.SEXUAL}">음란물</option>
+          <option value="ETC" th:selected="${selectedReason == 'ETC'}" th:text="#{community.report.reason.ETC}">기타</option>
         </select>
-        <input type="text" name="keyword" placeholder="작성자 닉네임 검색" th:value="${keyword}" />
-        <button type="submit" class="btn btn--primary btn--sm">검색</button>
-        <a th:href="@{/admin/reports}" class="btn btn--ghost btn--sm">초기화</a>
+        <input type="text" name="keyword" placeholder="작성자 닉네임 검색" th:placeholder="#{admin.reports.searchPlaceholder}" th:value="${keyword}" />
+        <button type="submit" class="btn btn--primary btn--sm" th:text="#{admin.common.search}">검색</button>
+        <a th:href="@{/admin/reports}" class="btn btn--ghost btn--sm" th:text="#{admin.common.reset}">초기화</a>
       </form>
       <div class="panel__head">
         <h2 class="panel__title"
-            th:text="${selectedStatus == 'PENDING'} ? '처리 대기 신고' : '처리완료 신고'">처리 대기 신고</h2>
-        <span class="text-xs text-muted" th:text="${pageResult.totalElements()} + '건'">0건</span>
+            th:text="${selectedStatus == 'PENDING'} ? #{admin.reports.heading.pending} : #{admin.reports.heading.done}">처리 대기 신고</h2>
+        <span class="text-xs text-muted" th:text="#{admin.common.caseCount(${#numbers.formatInteger(pageResult.totalElements(), 0, 'COMMA')})}">0건</span>
       </div>
 
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>유형</th>
-              <th>상태</th>
-              <th>사유</th>
-              <th>신고 수</th>
-              <th>대상</th>
-              <th>작성자</th>
-              <th>신고자</th>
-              <th>신고일시</th>
-              <th>처리</th>
+              <th th:text="#{admin.reports.col.type}">유형</th>
+              <th th:text="#{admin.common.status}">상태</th>
+              <th th:text="#{admin.reports.col.reason}">사유</th>
+              <th th:text="#{admin.reports.col.count}">신고 수</th>
+              <th th:text="#{admin.reports.col.target}">대상</th>
+              <th th:text="#{admin.reports.col.author}">작성자</th>
+              <th th:text="#{admin.reports.col.reporter}">신고자</th>
+              <th th:text="#{admin.reports.col.reportedAt}">신고일시</th>
+              <th th:text="#{admin.reports.col.action}">처리</th>
             </tr>
           </thead>
           <tbody>
             <tr th:if="${#lists.isEmpty(pageResult.content())}">
-              <td colspan="9" class="text-sm text-muted">처리 대기 중인 신고가 없습니다.</td>
+              <td colspan="9" class="text-sm text-muted"
+                  th:text="${selectedStatus == 'PENDING'} ? #{admin.reports.empty.pending} : #{admin.reports.empty.done}">처리 대기 중인 신고가 없습니다.</td>
             </tr>
             <tr th:each="r : ${pageResult.content()}" th:with="isPost=${r.targetType.name() == 'POST'}, segment=${isPost ? 'posts' : 'comments'}">
               <td>
                 <span class="tag" th:classappend="${isPost} ? ' tag--public' : ' tag--private'"
-                      th:text="${isPost} ? '게시글' : '댓글'">게시글</span>
+                      th:text="#{${'admin.reports.type.' + r.targetType.name()}}">게시글</span>
               </td>
               <td>
                 <span class="tag" th:classappend="${r.status.name() == 'PENDING'} ? ' tag--danger' : ' tag--public'"
-                      th:text="${r.status.name() == 'PENDING'} ? '대기' : '처리완료'">대기</span>
+                      th:text="#{${'admin.reports.status.' + r.status.name()}}">대기</span>
               </td>
               <td>
-                <span class="tag tag--danger" th:text="${r.latestReason}">SPAM</span>
+                <span class="tag tag--danger" th:text="${r.latestReason == null} ? '-' : #{${'community.report.reason.' + r.latestReason.name()}}">SPAM</span>
               </td>
-              <td th:text="${r.reportCount} + '건'">1건</td>
+              <td th:text="#{admin.common.caseCount(${r.reportCount})}">1건</td>
               <td>
                 <strong th:text="${r.targetTitle}">제목</strong><br />
                 <span class="text-xs text-muted" th:text="${r.targetExcerpt}">본문 일부</span>
               </td>
               <td th:text="${r.authorNickname}">작성자</td>
-              <td th:text="${r.latestReporterNickname} + (${r.reportCount} > 1 ? ' 외 ' + (${r.reportCount} - 1) + '명' : '')">신고자</td>
+              <td th:text="${r.reportCount > 1} ? #{admin.reports.reporterOthers(${r.latestReporterNickname}, ${r.reportCount - 1})} : ${r.latestReporterNickname}">신고자</td>
               <td th:text="${#temporals.format(r.latestReportedAt, 'yyyy.MM.dd HH:mm')}">2026.09.02 12:00</td>
               <td>
                 <div class="flex-center">
                   <form th:action="@{/admin/reports/{segment}/{id}/dismiss(segment=${segment},id=${r.targetId})}"
                         method="post">
                     <button type="submit" class="btn btn--ghost btn--sm"
-                            onclick="return confirm('이 게시물/댓글 하나에 걸린 신고만 전부 기각합니다 (작성자의 다른 글이나 계정에는 영향 없음). 게시물/댓글 자체는 삭제되지 않습니다.');">기각</button>
+                            th:attr="data-confirm=#{admin.reports.confirmDismiss}"
+                            onclick="return confirm(this.dataset.confirm);"
+                            th:text="#{admin.reports.dismiss}">기각</button>
                   </form>
                   <form th:action="@{/admin/reports/{segment}/{id}/delete-content(segment=${segment},id=${r.targetId})}"
                         method="post">
                     <button type="submit" class="btn btn--ghost btn--sm"
-                            onclick="return confirm('신고된 게시물/댓글을 삭제할까요? 되돌릴 수 없습니다.');">대상 삭제</button>
+                            th:attr="data-confirm=#{admin.reports.confirmDeleteTarget}"
+                            onclick="return confirm(this.dataset.confirm);"
+                            th:text="#{admin.reports.deleteTarget}">대상 삭제</button>
                   </form>
                   <form th:action="@{/admin/reports/users/{userId}/suspend(userId=${r.authorId})}" method="post">
                     <button type="submit" class="btn btn--ghost btn--sm"
-                            onclick="return confirm('이 신고의 작성자 계정을 정지할까요?');">작성자 제재</button>
+                            th:attr="data-confirm=#{admin.reports.confirmSuspendAuthor}"
+                            onclick="return confirm(this.dataset.confirm);"
+                            th:text="#{admin.reports.suspendAuthor}">작성자 제재</button>
                   </form>
                 </div>
               </td>
@@ -159,12 +166,14 @@
       <div class="flex-center" style="margin-top:16px; gap:8px;">
         <a th:if="${pageResult.hasPrevious()}"
            th:href="@{/admin/reports(type=${selectedType}, status=${selectedStatus}, reason=${selectedReason}, keyword=${keyword}, page=${pageResult.page() - 1}, size=${pageResult.size()})}"
-           class="btn btn--ghost btn--sm">‹ 이전</a>
+           class="btn btn--ghost btn--sm"
+           th:text="|‹ #{admin.common.prev}|">‹ 이전</a>
         <span class="text-xs text-muted"
               th:text="(${pageResult.page()} + 1) + ' / ' + ${pageResult.totalPages()}">1 / 1</span>
         <a th:if="${pageResult.hasNext()}"
            th:href="@{/admin/reports(type=${selectedType}, status=${selectedStatus}, reason=${selectedReason}, keyword=${keyword}, page=${pageResult.page() + 1}, size=${pageResult.size()})}"
-           class="btn btn--ghost btn--sm">다음 ›</a>
+           class="btn btn--ghost btn--sm"
+           th:text="|#{admin.common.next} ›|">다음 ›</a>
       </div>
     </section>
   </main>
