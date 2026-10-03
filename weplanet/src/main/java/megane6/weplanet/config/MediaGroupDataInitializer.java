@@ -38,7 +38,7 @@ public class MediaGroupDataInitializer implements ApplicationRunner {
 			// (실제 값은 없으니, 테스트가 매번 똑같이 보이도록 아티스트 id 기준으로 날짜를 살짝 다르게 잡음)
 			LocalDate debutDate = LocalDate.of(2023, 1, 1).plusDays(artist.getId() * 37);
 			ensureArtistGroup(artist, debutDate);
-			ensureArtistGroupProfile(artist, debutDate);
+			fillExploreFiltersIfEmpty(artist, debutDate);
 		}
 	}
 
@@ -65,6 +65,7 @@ public class MediaGroupDataInitializer implements ApplicationRunner {
 		}
 
 		// group_id 를 커뮤니티 artistId 와 동일하게 맞춰 Media 조회/업로드를 단순화
+		// 커뮤니티 탐색 필터(성별·인원·국적·카테고리)는 아래 fillExploreFiltersIfEmpty 가 채운다
 		jdbcTemplate.update("""
 				INSERT INTO artist_groups (id, agency_id, name, name_en, fandom_name, debut_date, status, created_at, updated_at)
 				VALUES (?, 1, ?, NULL, NULL, ?, 'ACTIVE', NOW(6), NOW(6))
@@ -72,28 +73,28 @@ public class MediaGroupDataInitializer implements ApplicationRunner {
 		log.info("아티스트 그룹 생성: id={} name={}", artist.getId(), artist.getNickname());
 	}
 
-	// EXPLORE-02 커뮤니티 검색(/community/search)이 artist_group_profiles 를 조인해서 조회하므로,
-	// 이 테이블에 행이 없으면 아티스트가 users 테이블에 있어도 검색 결과에는 안 뜬다.
-	// 실제 프로필 값은 없으니, 검색 기능 테스트가 가능하도록 임시로 채워둠.
-	private void ensureArtistGroupProfile(User artist, LocalDate debutDate) {
-		Integer exists = jdbcTemplate.queryForObject(
-				"SELECT COUNT(*) FROM artist_group_profiles WHERE artist_id = ?",
-				Integer.class,
-				artist.getId()
-		);
-		if (exists != null && exists > 0) {
-			return;
-		}
-
+	// EXPLORE-02 커뮤니티 검색(/community/search)은 artist_groups 의 탐색 필터 컬럼으로 거른다.
+	// (예전에는 artist_group_profiles 테이블에 따로 있었는데 artist_groups 로 합쳤다)
+	// 시드 SQL로 들어간 그룹은 이 값이 비어 있으니, 검색 기능 테스트가 가능하도록 임시로 채워둠.
+	// member_count 가 비어 있을 때만 채워서, 포털에서 등록한 실제 값은 덮어쓰지 않는다.
+	private void fillExploreFiltersIfEmpty(User artist, LocalDate debutDate) {
 		String gender = switch (artist.getUsername()) {
 			case "artist_hwiwon" -> "FEMALE";
 			case "artist_jungsik" -> "MALE";
 			default -> "MIXED";
 		};
-		jdbcTemplate.update("""
-				INSERT INTO artist_group_profiles (artist_id, gender, member_count, nationality, category, debut_date, updated_at)
-				VALUES (?, ?, 1, 'KR', '아이돌', ?, NOW(6))
-				""", artist.getId(), gender, debutDate);
-		log.info("아티스트 프로필(artist_group_profiles) 생성: id={} name={}", artist.getId(), artist.getNickname());
+		int updated = jdbcTemplate.update("""
+				UPDATE artist_groups
+				SET gender = COALESCE(gender, ?),
+				    member_count = 1,
+				    nationality = COALESCE(nationality, 'KR'),
+				    category = COALESCE(category, '아이돌'),
+				    debut_date = COALESCE(debut_date, ?),
+				    updated_at = NOW(6)
+				WHERE id = ? AND member_count IS NULL
+				""", gender, debutDate, artist.getId());
+		if (updated > 0) {
+			log.info("커뮤니티 탐색 필터 채움: id={} name={}", artist.getId(), artist.getNickname());
+		}
 	}
 }

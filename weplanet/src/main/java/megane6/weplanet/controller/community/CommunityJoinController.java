@@ -66,7 +66,7 @@ public class CommunityJoinController {
 							  @RequestHeader(value = "Referer", required = false) String referer,
 							  HttpServletRequest request) {
 		User me = userResolver.requireAuthenticated(principal);
-		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 가입 프로필(community_profiles)이 없으므로
+		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 가입 프로필(community_members)이 없으므로
 		// 계정별 포털 프로필(소개/사진/배경)을 고친다. 이름과 콘텐츠 숨김은 아티스트에게 해당 없음.
 		if (communityArtistResolver.isArtistOf(me, artistId)) {
 			portalManagementService.updateArtistCommunityProfile(me, bio, avatar, background,
