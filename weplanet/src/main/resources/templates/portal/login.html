@@ -39,10 +39,7 @@
 
     <div class="portal-login__form-wrap">
       <div class="portal-login__form">
-        <h2 id="portalLoginTitle" class="auth-card__title" style="margin-bottom:8px;" th:text="#{portalLogin.artist.title}">아티스트 로그인</h2>
-        <p id="portalLoginLead" class="text-sm text-muted" style="margin-bottom:20px;" th:text="#{portalLogin.artist.lead}">
-          아티스트 계정으로만 로그인할 수 있습니다.
-        </p>
+        <h2 id="portalLoginTitle" class="auth-card__title" style="margin-bottom:20px;" th:text="#{portalLogin.artist.title}">아티스트 로그인</h2>
 
         <div class="role-tabs" role="radiogroup" th:attr="aria-label=#{portalLogin.roleTabsLabel}">
           <button type="button" class="is-active" data-portal-role="ARTIST" aria-pressed="true" th:text="#{portalLogin.tabArtist}">아티스트</button>
@@ -84,10 +81,6 @@
           <button type="submit" class="btn btn--primary btn--block btn--lg" id="portalSubmitBtn" th:text="#{portalLogin.artist.submit}">아티스트 로그인</button>
         </form>
 
-        <p class="text-sm text-muted mt-16" style="text-align:center;" id="portalLoginHint" th:utext="#{portalLogin.artist.hint}">
-          로그인 후 본인 커뮤니티로 이동합니다.<br />
-          테스트 계정 예) <strong>artist_hyeseon</strong> / Test1234
-        </p>
       </div>
     </div>
   </div>
@@ -96,11 +89,9 @@
     (function () {
       var roleInput = document.getElementById("portalRole");
       var titleEl = document.getElementById("portalLoginTitle");
-      var leadEl = document.getElementById("portalLoginLead");
       var idLabel = document.getElementById("portalIdLabel");
       var idInput = document.getElementById("artistId");
       var submitBtn = document.getElementById("portalSubmitBtn");
-      var hintEl = document.getElementById("portalLoginHint");
       var tabs = document.querySelectorAll(".role-tabs [data-portal-role]");
 
       // 서버가 내려준 번역 문자열 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
@@ -108,19 +99,15 @@
         titleSuffix: /*[[#{portalLogin.titleSuffix}]]*/ " | Artist Portal",
         ARTIST: {
           title: /*[[#{portalLogin.artist.title}]]*/ "아티스트 로그인",
-          lead: /*[[#{portalLogin.artist.lead}]]*/ "아티스트 계정으로만 로그인할 수 있습니다.",
           idLabel: /*[[#{portalLogin.artist.idLabel}]]*/ "아티스트 아이디",
           placeholder: /*[[#{portalLogin.artist.idPlaceholder}]]*/ "아티스트 아이디 입력",
-          submit: /*[[#{portalLogin.artist.submit}]]*/ "아티스트 로그인",
-          hint: /*[[#{portalLogin.artist.hint}]]*/ "로그인 후 본인 커뮤니티로 이동합니다.<br />테스트 계정 예) <strong>artist_hyeseon</strong> / Test1234"
+          submit: /*[[#{portalLogin.artist.submit}]]*/ "아티스트 로그인"
         },
         AGENCY: {
           title: /*[[#{portalLogin.agency.title}]]*/ "에이전시 로그인",
-          lead: /*[[#{portalLogin.agency.lead}]]*/ "에이전시 계정으로만 로그인할 수 있습니다.",
           idLabel: /*[[#{portalLogin.agency.idLabel}]]*/ "에이전시 아이디",
           placeholder: /*[[#{portalLogin.agency.idPlaceholder}]]*/ "에이전시 아이디 입력",
-          submit: /*[[#{portalLogin.agency.submit}]]*/ "에이전시 로그인",
-          hint: /*[[#{portalLogin.agency.hint}]]*/ "로그인 후 포털 대시보드로 이동합니다.<br />테스트 계정 예) <strong>agency_wp</strong> / Test1234"
+          submit: /*[[#{portalLogin.agency.submit}]]*/ "에이전시 로그인"
         }
       };
 
@@ -128,11 +115,9 @@
         var c = MSG[role] || MSG.ARTIST;
         roleInput.value = role;
         titleEl.textContent = c.title;
-        leadEl.textContent = c.lead;
         idLabel.textContent = c.idLabel;
         idInput.placeholder = c.placeholder;
         submitBtn.textContent = c.submit;
-        hintEl.innerHTML = c.hint;
         document.title = c.title + MSG.titleSuffix;
         tabs.forEach(function (btn) {
           var on = btn.getAttribute("data-portal-role") === role;
