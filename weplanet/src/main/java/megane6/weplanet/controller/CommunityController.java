@@ -1,5 +1,6 @@
 package megane6.weplanet.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
@@ -24,6 +25,7 @@ import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.media.BoardMediaService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import megane6.weplanet.web.RefererRedirects;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -418,26 +420,35 @@ public class CommunityController {
 		}
 		
 		boolean oldest = "oldest".equals(sort);
-		
-		List<Comment> myComments = oldest
+
+		// 활동 목록(댓글/포스트/좋아요/북마크)은 지금 보고 있는 커뮤니티(artistId)의 글에 대한 것만 보여준다.
+		// 예전에는 커뮤니티 구분 없이 전부 보여줘서, 내가 가입하지 않은 다른 커뮤니티의 글 제목과 댓글 내용까지 보였다.
+		List<Comment> myComments = (oldest
 				? commentRepository.findByAuthorOrderByCreatedAtAsc(targetUser)
-				: commentRepository.findByAuthorOrderByCreatedAtDesc(targetUser);
-		
-		List<Post> myPosts = oldest
-				? postService.getPostsByAuthor(targetUser, true)
-				: postService.getPostsByAuthor(targetUser, false);
+				: commentRepository.findByAuthorOrderByCreatedAtDesc(targetUser)).stream()
+				.filter(comment -> isPostOfCommunity(comment.getPost(), artistId))
+				.toList();
+
+		List<Post> myPosts = postService.getPostsByAuthor(targetUser, oldest).stream()
+				.filter(post -> isPostOfCommunity(post, artistId))
+				.toList();
 		Map<Long, Long> myPostCommentCounts = new HashMap<>();
 		for (Post post : myPosts) {
 			myPostCommentCounts.put(post.getId(), commentService.getCommentCount(post));
 		}
-		
+
 		List<Post> likedPosts = likeRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
 				.map(Like::getPost)
+				.filter(post -> isPostOfCommunity(post, artistId))
 				.toList();
-		
-		List<Post> bookmarkedPosts = bookmarkRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
-				.map(Bookmark::getPost)
-				.toList();
+
+		// 북마크는 본인만 보는 정보라 내 프로필에서만 불러온다 (화면에서도 북마크 탭은 내 프로필에서만 보인다)
+		List<Post> bookmarkedPosts = isOwnProfile
+				? bookmarkRepository.findByUserOrderByCreatedAtDesc(targetUser).stream()
+						.map(Bookmark::getPost)
+						.filter(post -> isPostOfCommunity(post, artistId))
+						.toList()
+				: List.of();
 		
 		// [닉네임 관리] 프로필에서 댓글/좋아요/북마크한 "다른 사람들"의 글이 함께 보이는데,
 		// 그 작성자 닉네임도 이 커뮤니티에서 통용되는 닉네임(가입할 때 닉네임)으로 통일해서 보여준다.
@@ -475,7 +486,8 @@ public class CommunityController {
 			@PathVariable Long artistId,
 			@PathVariable Long userId,
 			@AuthenticationPrincipal AuthenticatedUser principal,
-			@RequestHeader(value = "Referer", required = false) String referer
+			@RequestHeader(value = "Referer", required = false) String referer,
+			HttpServletRequest request
 	) {
 		if (principal == null) {
 			return "redirect:/login";
@@ -486,7 +498,8 @@ public class CommunityController {
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
 			// AUTH-11: 팔로우 버튼을 빠르게 두 번 눌러 같은 팔로우가 동시에 저장된 경우 - 이미 팔로우된 상태이므로 그대로 둔다
 		}
-		return "redirect:" + (referer != null ? referer : "/community/" + artistId + "/profile/" + userId);
+		// 우리 사이트 주소일 때만 누른 화면으로 돌아간다 (RefererRedirects - 오픈 리다이렉트 방지)
+		return RefererRedirects.back(referer, request, "/community/" + artistId + "/profile/" + userId);
 	}
 
 	// FOLLOW-01: 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트(닉네임+아바타) - 모달에서 fetch로 불러 씀
@@ -624,6 +637,11 @@ public class CommunityController {
 	// 예전엔 Follow 기준이었는데, 검색/커뮤니티 페이지 어디서 가입하든 닉네임을 받도록 통일하면서
 	// 가입 여부의 기준도 CommunityMember로 옮겼음 (Follow는 About 위젯의 팔로우 버튼 전용으로 남김).
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
+	// 프로필 활동 목록용: 이 글이 지금 보고 있는 커뮤니티(artistId)의 글인지
+	private static boolean isPostOfCommunity(Post post, Long artistId) {
+		return post != null && post.getArtist() != null && post.getArtist().getId().equals(artistId);
+	}
+
 	private boolean hasCommunityAccess(User currentUser, Long artistId) {
 		// 커뮤니티 주인(그 아티스트 본인)은 가입 절차 없이 항상 열람 가능해야 함.
 		// 아티스트는 팬 전용 가입 절차를 밟을 수 없어서, 가입 여부만 보면

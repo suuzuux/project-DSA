@@ -24,6 +24,7 @@ import java.util.List;
 // 공통으로 필요로 하는 "세션의 SecurityContext를 우리 서비스 계정으로 채워넣기/비우기" 로직을 모아둔 헬퍼.
 // 예전엔 OAuth2LoginSuccessHandler 안에 private 메서드로만 있었는데, 이메일 중복 확인 화면에서
 // [예, 연동합니다]를 눌렀을 때도 같은 로그인 처리가 필요해져서 재사용 가능하도록 분리했다.
+// (지금은 휴면 해제, 아티스트 멤버 프로필 로그인, 아이디 회원가입 직후 자동 로그인도 이 헬퍼를 쓴다)
 @Component
 @RequiredArgsConstructor
 public class SocialLoginSessionSupport {
