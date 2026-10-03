@@ -28,6 +28,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	private final AgencyEnrollmentService agencyEnrollmentService;
 	private final LocaleResolver localeResolver;
 	private final GroupMemberRepository groupMemberRepository;
+	private final LoginAttemptService loginAttemptService;
 
 	@PostConstruct
 	public void init() {
@@ -40,6 +41,8 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 										Authentication authentication) throws IOException, ServletException {
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
+		// 비밀번호가 맞았으므로 그동안 틀린 횟수를 지운다 (LoginAttemptService - 로그인 비밀번호 대입 방어)
+		loginAttemptService.recordSuccess(principal.getUsername());
 		boolean portalLogin = "true".equals(request.getParameter("portalLogin"));
 		boolean adminLogin = "true".equals(request.getParameter("adminLogin"));
 		// 포털(아티스트/에이전시) 로그인 화면에서 직접 고른 언어. 아래 clearAuthentication 이 세션을 버리기 전에

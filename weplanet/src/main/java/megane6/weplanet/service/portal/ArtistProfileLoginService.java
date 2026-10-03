@@ -48,7 +48,7 @@ public class ArtistProfileLoginService {
 	public ProfileScreen loadScreen(Long groupId) {
 		User group = ur.findOneById(groupId)
 				.filter(user -> user.getRole() == Role.ARTIST)
-				.orElseThrow(() -> new IllegalStateException("그룹 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+				.orElseThrow(() -> new IllegalStateException("error.profileLogin.groupNotFound"));
 		
 		List<ProfileCard> profiles = gmr.findByGroupIdAndLeftAtIsNullOrderByIdAsc(groupId).stream()
 				.map(GroupMember::getMember)
