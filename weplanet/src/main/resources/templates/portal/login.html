@@ -56,7 +56,8 @@
            th:text="${param.error[0] == 'role'} ? #{portalLogin.errorRole}
                     : (${param.error[0] == 'pending'} ? #{portalLogin.errorPending}
                     : (${param.error[0] == 'profile'} ? #{portalLogin.errorProfile}
-                    : #{portalLogin.errorCredentials}))">
+                    : (${param.error[0] == 'locked'} ? #{login.tooManyAttempts(${T(megane6.weplanet.security.LoginAttemptService).LOCK_MINUTES})}
+                    : #{portalLogin.errorCredentials})))">
 
           아이디 또는 비밀번호가 올바르지 않습니다.
         </p>
