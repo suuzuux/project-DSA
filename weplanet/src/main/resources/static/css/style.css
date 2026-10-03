@@ -2132,3 +2132,13 @@ span.chip {
   font-weight: 700;
   opacity: 0.9;
 }
+
+/* 모바일: 입력칸 글자가 16px 보다 작으면 iOS Safari 가 입력할 때 화면을 자동 확대한다.
+   입력칸마다 클래스로 크기를 따로 주고 있어서 !important 로 한 번에 맞춘다. */
+@media (max-width: 560px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
