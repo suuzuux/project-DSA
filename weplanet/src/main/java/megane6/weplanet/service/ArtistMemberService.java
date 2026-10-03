@@ -11,9 +11,9 @@ import megane6.weplanet.exception.LocalizedIllegalArgumentException;
 import megane6.weplanet.exception.LocalizedIllegalStateException;
 import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
+import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.GroupMemberRepository;
 import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.repository.community.ArtistGroupProfileRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +40,7 @@ public class ArtistMemberService {
 	private final AgencyRepository ar;
 	private final ArtistAccountProfileRepository aapr;
 	private final GroupMemberRepository gmr;
-	private final ArtistGroupProfileRepository agpr;
+	private final ArtistGroupRepository agr;
 	
 	public List<GroupMember> activeMembers(Long groupId) {
 		return gmr.findByGroupIdAndLeftAtIsNullOrderByIdAsc(groupId);
@@ -153,11 +153,12 @@ public class ArtistMemberService {
 	}
 	
 	// 커뮤니티 탐색의 "솔로/그룹" 필터가 member_count를 본다. 멤버가 0명이면 솔로(1)로 둔다.
-	// ArtistGroupProfile 은 @Data라 setter가 있고, 트랜잭션이 끝날 때 변경 감지로 UPDATE 된다.
+	// ArtistGroup 은 @Data라 setter가 있고, 트랜잭션이 끝날 때 변경 감지로 UPDATE 된다.
+	// (artist_groups.id == 그룹 계정 users.id 라서 groupId 로 바로 찾는다)
 	private void syncMemberCount(Long groupId) {
 		long activeCount = gmr.countByGroupIdAndLeftAtIsNull(groupId);
-		
-		agpr.findByArtistId(groupId)
-				.ifPresent(profile -> profile.setMemberCount((int) Math.max(1, activeCount)));
+
+		agr.findById(groupId)
+				.ifPresent(group -> group.setMemberCount((int) Math.max(1, activeCount)));
 	}
 }
