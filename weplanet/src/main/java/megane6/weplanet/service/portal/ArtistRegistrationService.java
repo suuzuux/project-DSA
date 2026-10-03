@@ -6,7 +6,6 @@ import megane6.weplanet.domain.entity.Agency;
 import megane6.weplanet.domain.entity.ArtistAccountProfile;
 import megane6.weplanet.domain.entity.ArtistGroup;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.community.ArtistGroupProfile;
 import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
@@ -16,7 +15,6 @@ import megane6.weplanet.repository.AgencyRepository;
 import megane6.weplanet.repository.ArtistAccountProfileRepository;
 import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.repository.community.ArtistGroupProfileRepository;
 import megane6.weplanet.service.AgencyActivationService;
 import megane6.weplanet.service.community.CommunityUrls;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,7 +29,7 @@ import java.util.regex.Pattern;
 /**
  * 소속사가 포털에서 아티스트(그룹/솔로)를 등록한다.
  * 등록 = 커뮤니티 생성. 한 트랜잭션에서 아래를 모두 만들고, 하나라도 실패하면 전부 롤백한다.
- *   users(ARTIST, 활성화 대기) / artist_profiles / artist_groups / artist_group_profiles / 활성화 토큰
+ *   users(ARTIST, 활성화 대기) / artist_profiles / artist_groups(탐색 필터 포함) / 활성화 토큰
  * 멤버는 4단계에서 따로 추가한다. 멤버가 없으면 솔로로 동작한다.
  */
 @Slf4j
@@ -51,7 +49,6 @@ public class ArtistRegistrationService {
 	private final AgencyRepository ar;
 	private final ArtistAccountProfileRepository aapr;
 	private final ArtistGroupRepository agr;
-	private final ArtistGroupProfileRepository agpr;
 	private final AgencyActivationService aas;
 	
 	@Transactional
@@ -75,6 +72,7 @@ public class ArtistRegistrationService {
 		
 		// 3) 그룹 = 커뮤니티. id를 그룹 계정 users.id 와 같게 맞춘다.
 		//    미디어(board_media.group_id)와 커뮤니티 URL(/community/{id})이 같은 번호를 쓰기 때문
+		//    커뮤니티 탐색(검색/필터)용 정보도 같은 행에 넣는다. 멤버를 추가하기 전까지는 솔로(1명)로 본다.
 		LocalDateTime now = LocalDateTime.now();
 		agr.save(ArtistGroup.builder()
 				.id(artist.getId())
@@ -84,21 +82,15 @@ public class ArtistRegistrationService {
 				.fandomName(optionalText(command.fandomName(), SHORT_TEXT_MAX_LENGTH, "error.artistRegistration.fandomNameTooLong"))
 				.debutDate(command.debutDate())
 				.status("ACTIVE")
-				.createdAt(now)
-				.updatedAt(now)
-				.build());
-		
-		// 4) 커뮤니티 탐색(검색/필터)용 정보. 멤버를 추가하기 전까지는 솔로(1명)로 본다.
-		agpr.save(ArtistGroupProfile.builder()
-				.artistId(artist.getId())
 				.gender(command.gender())
 				.memberCount(1)
 				.nationality(optionalText(command.nationality(), SHORT_TEXT_MAX_LENGTH, "error.artistRegistration.nationalityTooLong"))
 				.category(normalizeCategory(optionalText(command.category(), SHORT_TEXT_MAX_LENGTH, "error.artistRegistration.categoryTooLong")))
-				.debutDate(command.debutDate())
+				.createdAt(now)
+				.updatedAt(now)
 				.build());
-		
-		// 5) 그룹 이메일로 보낼 활성화 링크
+
+		// 4) 그룹 이메일로 보낼 활성화 링크
 		AgencyActivationService.IssuedActivation activation = aas.issueActivationToken(artist);
 		
 		log.info("아티스트 등록 완료: artistId={}, agencyId={}, name={}",

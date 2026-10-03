@@ -7,7 +7,7 @@ import megane6.weplanet.domain.dto.RisingCommunityCardView;
 import megane6.weplanet.domain.entity.ArtistGroup;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
+import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.ArtistGroupRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -54,7 +54,7 @@ public class HomeController {
 		// [해시태그 총공] 진행 중(또는 예정·결과 발표) 총공이 있으면 캐러셀 맨 앞에 붙는 슬라이드. 없으면 null
 		model.addAttribute("hashtagBanner", hashtagEventPageService.getHomeBanner().orElse(null));
 		
-		Map<Long, CommunityProfile> joinedProfiles;
+		Map<Long, CommunityMember> joinedProfiles;
 		Set<Long> joinedArtistIds;
 		User viewer = null;
 		if (principal != null) {
