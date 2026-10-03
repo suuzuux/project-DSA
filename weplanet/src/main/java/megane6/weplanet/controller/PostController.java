@@ -62,19 +62,14 @@ public class PostController {
     private final Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
-    private User resolveAuthor(AuthenticatedUser principal, Long testUserId) {
-        return userResolver.resolve(principal, testUserId);
-    }
-
     private String renderCommentsResponse(
             Post post,
             Long artistId,
             AuthenticatedUser principal,
-            Long testUserId,
             String requestedWith,
             Model model
     ) {
-        User currentUser = userResolver.resolve(principal, testUserId);
+        User currentUser = userResolver.requireAuthenticated(principal);
         postDetailModelHelper.populate(model, post, currentUser, artistId);
 
         if (artistId != null) {
@@ -159,7 +154,6 @@ public class PostController {
             // List<MultipartFile> : 폼에서 <input type="file" multiple>로 여러 개 고른 파일들이
             // 하나의 리스트로 담겨서 들어옴. required=false라서 파일을 하나도 안 골라도 에러 안 남
             @RequestParam(required = false) List<MultipartFile> files,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
             // 36번: 팬 게시판 글쓰기 모달의 🔗 링크 첨부 + "Hide from Artists" 토글 (팬 게시판일 때만 의미 있음)
             @RequestParam(required = false) String linkUrl,
@@ -175,8 +169,6 @@ public class PostController {
             throw new IllegalArgumentException("error.post.tooManyAttachments");
         }
 
-        // 로그인했으면 로그인한 사람이 작성자, 아니면 "테스트 작성자" 드롭다운으로 고른 사람이 작성자
-        // (예전엔 testUserId로 비로그인 상태에서도 남의 계정 명의로 글을 쓸 수 있었음 - 이제 실제 로그인을 요구함)
         User tempAuthor = userResolver.requireAuthenticated(principal);
 
         // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 해당 커뮤니티의 아티스트(솔로 본인/그룹 멤버)만 작성 가능
@@ -242,15 +234,11 @@ public class PostController {
     @GetMapping("/posts/detail/{id}")
     public String detail(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             Model model
     ) {
         Post post = postService.getPost(id);
 
-        // 이 라우트는 커뮤니티 분리 이전의 구식 상세 화면이라 가입자 확인이 아예 없음.
-        // 그래서 미가입자도 /posts/detail/11 을 직접 치면 커뮤니티 글의 본문과 댓글을 다 볼 수 있었고,
-        // 화면 하단의 "테스트 도구" 블록까지 그대로 노출됐음.
         // 커뮤니티에 속한 글이면 접근 제어가 걸려 있는 커뮤니티 상세로 넘김
         // (아티스트가 없는 레거시 전역 게시글은 지금처럼 이 화면을 계속 사용)
         if (post.getArtist() != null) {
@@ -258,7 +246,7 @@ public class PostController {
             return "redirect:/community/" + post.getArtist().getId() + "/" + tab + "/" + post.getId();
         }
 
-        User currentUser = resolveAuthor(principal, testUserId);
+        User currentUser = userResolver.requireAuthenticated(principal);
         postDetailModelHelper.populate(model, post, currentUser);
 
         return "feed/postDetail";
@@ -269,7 +257,6 @@ public class PostController {
     public String addComment(
             @PathVariable Long id,
             @RequestParam String content,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
             // [대댓글] 답글 폼에서만 넘어오는 값. 없으면 지금까지처럼 일반 댓글로 저장됨
             @RequestParam(required = false) Long parentId,
@@ -291,7 +278,7 @@ public class PostController {
         Comment parent = parentId != null ? commentService.getComment(parentId) : null;
         commentService.createComment(post, author, content, parent);
 
-        return renderCommentsResponse(post, artistId, principal, testUserId, requestedWith, model);
+        return renderCommentsResponse(post, artistId, principal, requestedWith, model);
     }
 
     // 댓글 삭제 - 작성자 본인만 삭제 가능
@@ -299,7 +286,6 @@ public class PostController {
     public String deleteComment(
             @PathVariable Long id,
             @PathVariable Long commentId,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
@@ -310,7 +296,7 @@ public class PostController {
         commentService.deleteComment(commentId, requester);
 
         Post post = postService.getPost(id);
-        return renderCommentsResponse(post, artistId, principal, testUserId, requestedWith, model);
+        return renderCommentsResponse(post, artistId, principal, requestedWith, model);
     }
 
     // 댓글 수정 - 작성자 본인만 가능. 응답 방식은 작성/삭제와 동일 (댓글 영역 통째로 다시 그려서 돌려줌)
@@ -319,7 +305,6 @@ public class PostController {
             @PathVariable Long id,
             @PathVariable Long commentId,
             @RequestParam String content,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @RequestParam(required = false) Long artistId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
@@ -337,7 +322,7 @@ public class PostController {
         commentService.updateComment(commentId, requester, content);
 
         Post post = postService.getPost(id);
-        return renderCommentsResponse(post, artistId, principal, testUserId, requestedWith, model);
+        return renderCommentsResponse(post, artistId, principal, requestedWith, model);
     }
 
     /**
@@ -353,7 +338,6 @@ public class PostController {
             @PathVariable Long id,
             @PathVariable Long commentId,
             @RequestParam ReportReason reason,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
@@ -382,14 +366,13 @@ public class PostController {
     @ResponseBody
     public Map<String, Object> like(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
         User user = userResolver.requireAuthenticated(principal);
 
         boolean liked = postService.toggleLike(post, user);
-        log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, testUserId, liked ? "눌림" : "취소");
+        log.debug("좋아요 토글: postId={}, userId={}, 결과={}", id, user.getId(), liked ? "눌림" : "취소");
 
         return Map.of(
                 "liked", liked,
@@ -404,14 +387,13 @@ public class PostController {
     @ResponseBody
     public Map<String, Object> bookmark(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
         User user = userResolver.requireAuthenticated(principal);
 
         boolean bookmarked = postService.toggleBookmark(post, user);
-        log.debug("북마크 토글: postId={}, userId={}, 결과={}", id, testUserId, bookmarked ? "눌림" : "취소");
+        log.debug("북마크 토글: postId={}, userId={}, 결과={}", id, user.getId(), bookmarked ? "눌림" : "취소");
 
         return Map.of("bookmarked", bookmarked);
     }
@@ -420,7 +402,6 @@ public class PostController {
     @PostMapping("/posts/detail/{id}/delete")
     public String deletePost(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
@@ -444,7 +425,6 @@ public class PostController {
     public Object reportPost(
             @PathVariable Long id,
             @RequestParam ReportReason reason,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith
     ) {
@@ -479,7 +459,6 @@ public class PostController {
             @PathVariable Long id,
             @RequestParam(required = false) String title,
             @RequestParam String content,
-            @RequestParam(defaultValue = "1") Long testUserId,
             @AuthenticationPrincipal AuthenticatedUser principal
     ) {
         Post post = postService.getPost(id);
