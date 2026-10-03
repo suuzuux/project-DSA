@@ -1,8 +1,14 @@
 package megane6.weplanet.repository;
 
+import megane6.weplanet.domain.dto.community.ArtistSearchRow;
 import megane6.weplanet.domain.entity.ArtistGroup;
+import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 public interface ArtistGroupRepository extends JpaRepository<ArtistGroup, Long> {
@@ -15,4 +21,36 @@ public interface ArtistGroupRepository extends JpaRepository<ArtistGroup, Long> 
 	Optional<ArtistGroup> findFirstByNameEnOrderByIdAsc(String nameEn);
 
 	boolean existsByNameEn(String nameEn);
+
+	// 커뮤니티 탐색 (예전 ArtistGroupProfileRepository.search). artist_groups.id == 아티스트 users.id
+	// 필터는 전부 선택사항 - null로 넘기면 그 조건은 무시됨 (검색창 처음 열었을 때 = 전체 목록)
+	// AUTH-11: 활동 중(ACTIVE)인 아티스트만 검색된다 - 아직 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트 제외
+	@Query("""
+			SELECT new megane6.weplanet.domain.dto.community.ArtistSearchRow(
+				u.id, u.nickname, g.gender, g.memberCount, g.nationality, g.category, g.debutDate)
+			FROM ArtistGroup g
+			JOIN User u ON u.id = g.id
+			WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
+			  AND (:keyword IS NULL OR u.nickname LIKE CONCAT('%', :keyword, '%'))
+			  AND (:gender IS NULL OR g.gender = :gender)
+			  AND (:nationality IS NULL OR g.nationality = :nationality)
+			  AND (:category IS NULL OR g.category = :category)
+			  AND (:memberCount IS NULL OR g.memberCount = :memberCount)
+			  AND (:isSolo IS NULL
+			       OR (:isSolo = true AND g.memberCount = 1)
+			       OR (:isSolo = false AND g.memberCount > 1))
+			  AND (:debutFrom IS NULL OR g.debutDate >= :debutFrom)
+			  AND (:debutTo IS NULL OR g.debutDate <= :debutTo)
+			ORDER BY u.nickname ASC
+			""")
+	List<ArtistSearchRow> search(
+			@Param("keyword") String keyword,
+			@Param("gender") GroupGender gender,
+			@Param("nationality") String nationality,
+			@Param("category") String category,
+			@Param("memberCount") Integer memberCount,
+			@Param("isSolo") Boolean isSolo,
+			@Param("debutFrom") LocalDate debutFrom,
+			@Param("debutTo") LocalDate debutTo
+	);
 }

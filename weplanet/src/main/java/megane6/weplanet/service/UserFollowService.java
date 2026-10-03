@@ -3,7 +3,7 @@ package megane6.weplanet.service;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.UserFollow;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
+import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.UserFollowRepository;
@@ -79,7 +79,7 @@ public class UserFollowService {
                 throw new IllegalStateException("error.follow.targetNotJoined");
             }
             // 상대가 이 커뮤니티에서 콘텐츠를 숨긴 상태면 팔로우 불가
-            CommunityProfile targetProfile = communityJoinService.profileOf(target, communityId);
+            CommunityMember targetProfile = communityJoinService.profileOf(target, communityId);
             if (targetProfile != null && targetProfile.isContentHidden()) {
                 throw new IllegalStateException("error.follow.targetHidden");
             }

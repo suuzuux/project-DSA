@@ -2,11 +2,9 @@ package megane6.weplanet.service.community;
 
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
-import megane6.weplanet.repository.community.CommunityProfileRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.service.FileStorageService;
 import org.junit.jupiter.api.Test;
@@ -26,10 +24,10 @@ class CommunityJoinServiceTest {
 
 	@Test
 	void authorViewsUseCommunityAvatarAndRespectHiddenProfile() {
-		CommunityProfileRepository profileRepository = mock(CommunityProfileRepository.class);
+		// 커뮤니티별 프로필은 가입 행(community_members)에 합쳐져 있다
+		CommunityMemberRepository memberRepository = mock(CommunityMemberRepository.class);
 		CommunityJoinService service = new CommunityJoinService(
-				mock(CommunityMemberRepository.class),
-				profileRepository,
+				memberRepository,
 				mock(ArtistProfileRepository.class),	// 아티스트 작성자의 포털 프로필 사진 조회용으로 서비스에 추가된 의존성
 				mock(UserRepository.class),
 				mock(FileStorageService.class),
@@ -37,9 +35,9 @@ class CommunityJoinServiceTest {
 				mock(UserFollowRepository.class));
 		User visibleAuthor = author(11L, "계정닉네임");
 		User hiddenAuthor = author(12L, "숨김계정");
-		CommunityProfile visibleProfile = profile(11L, "커뮤니티닉", "avatar.png", false);
-		CommunityProfile hiddenProfile = profile(12L, "비공개닉", "hidden.png", true);
-		when(profileRepository.findForAuthorsInCommunity(eq(22L), anyCollection()))
+		CommunityMember visibleProfile = profile(11L, "커뮤니티닉", "avatar.png", false);
+		CommunityMember hiddenProfile = profile(12L, "비공개닉", "hidden.png", true);
+		when(memberRepository.findByArtistIdAndFanIdIn(eq(22L), anyCollection()))
 				.thenReturn(List.of(visibleProfile, hiddenProfile));
 
 		var views = service.authorViewsByAuthorIdKey(List.of(visibleAuthor, hiddenAuthor), 22L);
@@ -48,7 +46,7 @@ class CommunityJoinServiceTest {
 		assertEquals("/uploads/avatar.png", views.get("11").avatarUrl());
 		assertEquals("비공개닉", views.get("12").nickname());
 		assertNull(views.get("12").avatarUrl());
-		verify(profileRepository).findForAuthorsInCommunity(eq(22L), anyCollection());
+		verify(memberRepository).findByArtistIdAndFanIdIn(eq(22L), anyCollection());
 	}
 
 	private User author(Long id, String nickname) {
@@ -58,9 +56,10 @@ class CommunityJoinServiceTest {
 		return user;
 	}
 
-	private CommunityProfile profile(Long authorId, String nickname, String avatar, boolean hidden) {
-		return CommunityProfile.builder()
-				.communityMember(CommunityMember.builder().fanId(authorId).artistId(22L).build())
+	private CommunityMember profile(Long authorId, String nickname, String avatar, boolean hidden) {
+		return CommunityMember.builder()
+				.fanId(authorId)
+				.artistId(22L)
 				.nickname(nickname)
 				.avatarStoredName(avatar)
 				.contentHidden(hidden)
