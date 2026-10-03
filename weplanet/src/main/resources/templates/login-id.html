@@ -44,6 +44,11 @@
     <!-- 입력한 아이디로 가입된 계정이 없을 때 (1~4회째): 안내만 보여준다. 5회째에는 아래 확인창이 뜬다.
          회원가입으로 넘어가면 입력했던 아이디가 채워진 가입 화면이 열린다 (SecurityConfig 로그인 실패 처리, AuthController) -->
     <!-- 로그인 실패 안내는 모두 이 자리(찾기 링크 아래, 로그인 버튼 위)에 모은다 -->
+    <!-- 비밀번호를 여러 번 틀려 잠시 로그인할 수 없을 때 (LoginAttemptService) -->
+    <p th:if="${param.locked}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;"
+       th:text="#{login.tooManyAttempts(${T(megane6.weplanet.security.LoginAttemptService).LOCK_MINUTES})}">
+      로그인 시도가 너무 많습니다. 10분 후 다시 시도해주세요.
+    </p>
     <p th:if="${param.error}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;" th:text="#{login.error}">
       아이디 또는 비밀번호가 올바르지 않습니다.
     </p>

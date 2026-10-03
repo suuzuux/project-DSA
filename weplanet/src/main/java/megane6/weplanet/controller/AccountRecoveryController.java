@@ -3,6 +3,9 @@ package megane6.weplanet.controller;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.security.LoginAttemptService;
+import megane6.weplanet.security.UserSessionExpirer;
 import megane6.weplanet.service.AccountRecoveryService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.context.MessageSource;
@@ -33,6 +36,8 @@ public class AccountRecoveryController {
 	private final SignupEmailVerificationService emailVerificationService;
 	private final MessageSource messageSource;
 	private final megane6.weplanet.i18n.Messages messages;
+	private final UserSessionExpirer userSessionExpirer;
+	private final LoginAttemptService loginAttemptService;
 
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
@@ -145,8 +150,12 @@ public class AccountRecoveryController {
 			return result;
 		}
 		try {
-			accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
+			User user = accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
 			emailVerificationService.clear(session, VerificationPurpose.RESET_PASSWORD, email);
+			// 비밀번호를 바꿨으면 그 계정에 이미 로그인돼 있던 세션은 모두 끊는다 - 예전에는 계정을 탈취당해 비밀번호를
+			// 재설정해도 공격자의 로그인 세션이 그대로 살아 있었다. 본인이 계정을 되찾았으니 로그인 잠금도 푼다.
+			userSessionExpirer.expireAllSessions(user.getId());
+			loginAttemptService.reset(user.getUsername());
 			result.put("success", true);
 			result.put("message", msg("resetPassword.resetSuccess"));
 		} catch (IllegalArgumentException e) {

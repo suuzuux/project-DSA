@@ -17,6 +17,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.util.List;
@@ -97,10 +98,15 @@ public class SecurityConfig {
     private final UserRepository userRepository;
     private final CommunitySlugForwardFilter communitySlugForwardFilter;
     private final SessionRegistry sessionRegistry; // AUTH-11: SessionRegistryConfig 참고
+    private final LoginAttemptService loginAttemptService; // 로그인 비밀번호 대입 방어
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        AuthenticationFailureHandler failureHandler = portalAwareFailureHandler();
         http
+                // 로그인 처리 직전에 잠긴 아이디/IP 인지 먼저 확인 (LoginAttemptFilter, LoginAttemptService)
+                .addFilterBefore(new LoginAttemptFilter(loginAttemptService, failureHandler),
+                        UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
@@ -131,7 +137,7 @@ public class SecurityConfig {
                         .passwordParameter("password")
                         .loginProcessingUrl("/login")
                         .successHandler(loginSuccessHandler)
-                        .failureHandler(portalAwareFailureHandler())
+                        .failureHandler(failureHandler)
                         .permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -161,8 +167,22 @@ public class SecurityConfig {
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {
         return (request, response, exception) -> {
+            // 로그인 비밀번호 대입 방어 (LoginAttemptService): 비밀번호가 틀린 경우만 센다.
+            // 휴면·활성화 전처럼 비밀번호가 맞았는데 막힌 경우나, 이미 잠겨서 막힌 경우는 세지 않는다.
+            // 없는 아이디는 지킬 계정이 없으므로 IP 횟수만 센다 - 아이디까지 잠그면 아래 "가입된 아이디가 없습니다"
+            // 안내(5회째 회원가입 확인창) 대신 잠금 안내가 떠 버린다.
+            String attemptedUsername = request.getParameter("username");
+            if (exception instanceof BadCredentialsException) {
+                boolean accountExists = attemptedUsername != null && !attemptedUsername.isBlank()
+                        && userRepository.existsByUsername(attemptedUsername.trim());
+                loginAttemptService.recordFailure(accountExists ? attemptedUsername : null, request.getRemoteAddr());
+            }
+            // 이번 실패로 한도에 닿았으면 바로 "잠시 후 다시 시도" 안내를 보여준다
+            boolean locked = exception instanceof LoginAttemptsExceededException
+                    || loginAttemptService.isBlocked(attemptedUsername, request.getRemoteAddr());
+
             if ("true".equals(request.getParameter("adminLogin"))) {
-                response.sendRedirect("/admin/login?error");
+                response.sendRedirect(locked ? "/admin/login?locked" : "/admin/login?error");
                 return;
             }
             if ("true".equals(request.getParameter("portalLogin"))) {
@@ -170,7 +190,12 @@ public class SecurityConfig {
                 String roleQs = (portalRole != null && !portalRole.isBlank())
                         ? "&role=" + portalRole.trim().toUpperCase()
                         : "";
-                
+
+                if (locked) {
+                    response.sendRedirect("/portal/login?error=locked" + roleQs);
+                    return;
+                }
+
                 // 입점 승인은 됐지만, 아직 메일 링크로 비밀번호를 설정하지 않은 소속사 계정
                 if (exception instanceof DisabledException) {
                     String username = request.getParameter("username");
@@ -185,6 +210,10 @@ public class SecurityConfig {
                 }
                 
                 response.sendRedirect("/portal/login?error" + roleQs);
+                return;
+            }
+            if (locked) {
+                response.sendRedirect("/login/id?locked");
                 return;
             }
             if (exception instanceof DisabledException) {
