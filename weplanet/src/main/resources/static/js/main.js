@@ -22,13 +22,10 @@
   const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 
   /* ---------------------------------------------------------
-   * SETTINGS-03 커밋3: 순수 클라이언트 JS 문구 (/api/i18n/client)
+   * 순수 클라이언트 JS 문구 (/api/i18n/client)
    * -----------------------------------------------------------
-   * shell.js(/api/i18n/shell)와 같은 방식으로 현재 세션 로케일 문구를 한 번 받아온다.
-   * 커뮤니티 화면 JS(community-*.js)도 WePlaNet.t(key, 한국어기본값, [인자])로 같이 쓴다.
-   *  - 문구는 대부분 클릭 등 사용자 동작 시점에 꺼내 쓰므로 그때는 이미 받아와 있다.
-   *  - 페이지를 그리는 시점에 필요한 곳은 WePlaNet.i18nReady(Promise)가 끝난 뒤에 그린다.
-   *  - 요청이 실패하면 호출하는 쪽이 넘긴 한국어 기본값을 쓴다(안전망).
+   * 현재 화면 언어 문구를 한 번 받아와 WePlaNet.t(key, 한국어기본값, [인자])로 꺼내 쓴다 (community-*.js 공용).
+   * 페이지를 그릴 때 필요한 곳은 WePlaNet.i18nReady 뒤에 그리고, 요청이 실패하면 한국어 기본값을 쓴다.
    * --------------------------------------------------------- */
   let clientMessages = null;
 
@@ -370,7 +367,7 @@
     const form = qs("#signupForm");
     if (!form) return;
 
-    // SETTINGS-03 커밋3: 메시지는 검증 시점에 꺼내도록 getter로 둔다(서버 문구와 같은 키 재사용)
+    // 메시지는 검증 시점에 꺼내도록 getter로 둔다(서버 문구와 같은 키 재사용)
     const rules = {
       username: {
         test: (v) => /^[a-zA-Z0-9]{4,20}$/.test(v),
