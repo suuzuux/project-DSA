@@ -33,6 +33,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -413,8 +414,12 @@ public class CommunityController {
 		}
 
 		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
-		// 아티스트 본인이나 관리자는 가입 절차 없이 접근할 수 있으므로 joinedAt이 null일 수 있다.
+		// 아티스트 쪽 계정은 자기 커뮤니티에 따로 가입하지 않으므로 가입 행이 없을 때 계정 생성일을
+		// 커뮤니티 활동 시작일로 사용한다. 팬은 기존처럼 community_members.joined_at만 사용한다.
 		CommunityJoinInfo communityJoinInfo = communityJoinService.joinInfoOf(targetUser, artistId);
+		if (communityJoinInfo == null && targetIsArtistHere && targetUser.getCreatedAt() != null) {
+			communityJoinInfo = CommunityJoinInfo.from(targetUser.getCreatedAt(), LocalDate.now());
+		}
 		if (communityJoinInfo != null) {
 			model.addAttribute("communityJoinInfo", communityJoinInfo);
 		}

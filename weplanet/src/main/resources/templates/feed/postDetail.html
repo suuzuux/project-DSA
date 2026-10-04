@@ -55,10 +55,6 @@
     <!-- 와이어프레임 기준: 하단에 좋아요/댓글/북마크 아이콘 고정, 숫자는 0이면 표시 안 함 -->
     <div class="post-card__actions">
         <span style="display:flex;align-items:center;gap:6px;">
-            <select id="likeUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:12px;width:auto;">
-                <option value="1">1번 - 팬 계정</option>
-                <option value="2">2번 - 아티스트 계정</option>
-            </select>
             <button id="likeButton" type="button" style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;">
                 ♥ <span id="likeCount" th:text="${post.likeCount > 0 ? post.likeCount : ''}"></span>
             </button>
@@ -66,7 +62,6 @@
         <span th:if="${#lists.size(comments) > 0}">💬 <span th:text="${#lists.size(comments)}"></span></span>
         <span th:unless="${#lists.size(comments) > 0}">💬</span>
 
-        <!-- 북마크 - 좋아요와 같은 testUserId 선택값을 그대로 씀 -->
         <button id="bookmarkButton" type="button"
                 th:classappend="${bookmarked} ? ' is-active'"
                 style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;margin-left:auto;">
@@ -75,25 +70,15 @@
     </div>
 </article>
 
-<!-- 테스트/관리용 도구 - 실제 서비스 화면(와이어프레임)엔 없는, testUserId 기반 개발용 버튼 모음 -->
 <div class="post-card" style="margin-top:12px;">
-    <p class="text-xs text-muted" style="margin-bottom:10px;">테스트 도구 (실제 화면에는 없음)</p>
     <div class="post-card__actions" style="flex-wrap:wrap;border-top:none;padding-top:0;">
         <a class="btn btn--ghost btn--sm" th:href="@{/posts/detail/{id}/edit(id=${post.id})}">게시글 수정</a>
 
         <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
-            <select name="testUserId" class="form-select" style="min-height:34px;padding:4px 8px;">
-                <option value="1">1번(팬)으로 삭제 시도</option>
-                <option value="2">2번(아티스트)으로 삭제 시도</option>
-            </select>
             <button type="submit" class="btn btn--ghost btn--sm">게시글 삭제</button>
         </form>
 
         <form id="postReportForm" th:action="@{/posts/detail/{id}/report(id=${post.id})}" method="post" style="display:flex;gap:6px;align-items:center;">
-            <select name="testUserId" class="form-select" style="min-height:34px;padding:4px 8px;">
-                <option value="1">1번(팬)으로 신고</option>
-                <option value="2">2번(아티스트)으로 신고</option>
-            </select>
             <select name="reason" class="form-select" style="min-height:34px;padding:4px 8px;">
                 <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
                 <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
@@ -114,10 +99,6 @@
     <div class="post-card">
         <p class="form-label" style="margin-bottom:8px;" th:text="#{feed.commentWrite}">댓글 작성</p>
         <form id="commentForm" th:action="@{/posts/detail/{id}/comment(id=${post.id})}" method="post">
-            <select name="testUserId" class="form-select" style="margin-bottom:8px;">
-                <option value="1">1번 - 팬 계정</option>
-                <option value="2">2번 - 아티스트 계정</option>
-            </select>
             <input type="text" name="content" id="commentContentInput" class="form-input" maxlength="100"
                    placeholder="댓글을 입력하세요." th:placeholder="#{feed.commentPlaceholder}">
             <p class="text-xs text-muted" style="text-align:right;margin-top:4px;">
@@ -162,19 +143,11 @@
                         <form class="comment-delete-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
                               method="post">
-                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                                <option value="1">1번(팬)</option>
-                                <option value="2">2번(아티스트)</option>
-                            </select>
                             <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                         </form>
                         <form class="comment-report-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
                               method="post">
-                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                                <option value="1">1번(팬)</option>
-                                <option value="2">2번(아티스트)</option>
-                            </select>
                             <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
                                 <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
                                 <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
@@ -209,19 +182,11 @@
                         <form class="comment-delete-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/delete(id=${post.id}, commentId=${comment.id})}"
                               method="post">
-                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                                <option value="1">1번(팬)</option>
-                                <option value="2">2번(아티스트)</option>
-                            </select>
                             <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                         </form>
                         <form class="comment-report-form" style="display:flex;gap:4px;"
                               th:action="@{/posts/detail/{id}/comment/{commentId}/report(id=${post.id}, commentId=${comment.id})}"
                               method="post">
-                            <select name="testUserId" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
-                                <option value="1">1번(팬)</option>
-                                <option value="2">2번(아티스트)</option>
-                            </select>
                             <select name="reason" class="form-select" style="min-height:28px;padding:2px 6px;font-size:11px;">
                                 <option value="SPAM" th:text="#{community.report.reason.SPAM}">스팸</option>
                                 <option value="ABUSE" th:text="#{community.report.reason.ABUSE}">욕설/혐오</option>
@@ -261,9 +226,7 @@
 
     // ----- 좋아요 버튼 -----
     document.getElementById('likeButton').addEventListener('click', function () {
-        const testUserId = document.getElementById('likeUserId').value;
-
-        fetch(`/posts/detail/${postId}/like?testUserId=${testUserId}`, {method: 'POST'})
+        fetch(`/posts/detail/${postId}/like`, {method: 'POST'})
             .then(function (response) {
                 return response.json();
             })
@@ -272,12 +235,11 @@
             });
     });
 
-    // ----- 북마크 버튼 (좋아요와 같은 testUserId 선택값을 그대로 씀) -----
+    // ----- 북마크 버튼 -----
     document.getElementById('bookmarkButton').addEventListener('click', function () {
-        const testUserId = document.getElementById('likeUserId').value;
         const btn = this;
 
-        fetch(`/posts/detail/${postId}/bookmark?testUserId=${testUserId}`, {method: 'POST'})
+        fetch(`/posts/detail/${postId}/bookmark`, {method: 'POST'})
             .then(function (response) {
                 return response.json();
             })

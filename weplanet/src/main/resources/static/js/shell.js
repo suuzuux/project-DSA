@@ -104,6 +104,8 @@
     "shell.dm.more": "더보기",
     "shell.dm.expiredTitle": "DM 구독 만료",
     "shell.dm.expiredDesc": "아티스트 커뮤니티에서 멤버십을 갱신해주세요.",
+    "shell.dm.joinTitle": "멤버십 가입하고 DM을 시작해보세요",
+    "shell.dm.joinDesc": "아티스트 커뮤니티에서 멤버십에 가입하면 아티스트와 1:1 DM을 나눌 수 있어요.",
     "shell.dm.startConversation": "대화를 시작해보세요.",
     "shell.dm.attach": "첨부",
     "shell.dm.inputPlaceholder": "메시지 입력",
@@ -313,12 +315,17 @@
       <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.more"))}" aria-label="${escapeHtml(t("shell.dm.more"))}">⋮</button>
     </div>
 
-    <!-- 구독 만료 배너 (data-room에 따라 표시) -->
+    <!-- 구독 만료 배너 (data-room에 따라 표시)
+         한 번도 가입 안 한 팬이면 is-never-subscribed 를 붙여 만료 문구 대신 가입 안내 문구를 보여줌 -->
     <div class="dm-expired ${dmExpired ? "" : "hidden"}" id="dmExpiredBanner">
       <div class="dm-expired__icon">${ICONS.heart}</div>
-      <div class="dm-expired__text">
+      <div class="dm-expired__text dm-expired__text--expired">
         <strong>${escapeHtml(t("shell.dm.expiredTitle"))}</strong>
         <span>${escapeHtml(t("shell.dm.expiredDesc"))}</span>
+      </div>
+      <div class="dm-expired__text dm-expired__text--join">
+        <strong>${escapeHtml(t("shell.dm.joinTitle"))}</strong>
+        <span>${escapeHtml(t("shell.dm.joinDesc"))}</span>
       </div>
     </div>
 
@@ -607,11 +614,12 @@
       dmRoomView.classList.remove("is-active");
     }
 
-    function showRoom(name, expired) {
+    function showRoom(name, expired, neverSubscribed) {
       dmRoomName.textContent = name;
       dmExpiredBanner.classList.toggle("hidden", !expired && !dmExpired);
       if (expired || dmExpired) dmExpiredBanner.classList.remove("hidden");
       else dmExpiredBanner.classList.add("hidden");
+      dmExpiredBanner.classList.toggle("is-never-subscribed", !!neverSubscribed);
       dmListView.classList.remove("is-active");
       dmRoomView.classList.add("is-active");
     }
@@ -693,7 +701,8 @@
           roomBtn.querySelector(".dm-list-item__name")?.textContent?.trim() ||
           roomBtn.getAttribute("data-open-room");
         const expired = roomBtn.getAttribute("data-room-expired") === "true";
-        showRoom(name, expired);
+        const neverSubscribed = roomBtn.getAttribute("data-room-never-subscribed") === "true";
+        showRoom(name, expired, neverSubscribed);
         return;
       }
     });
@@ -876,6 +885,26 @@
         e.target.classList.remove("is-open");
       }
     });
+
+    // 셸은 /api/i18n/shell 응답을 받은 뒤에야 그려지므로(비동기), 셸이 그린 DM 위젯에 실제 기능을 붙이는
+    // dm-realtime.js 는 이 신호를 받은 뒤에 시작해야 함. 예전엔 로드되자마자 #dmComposer 를 찾다가 못 찾아서
+    // 위의 "DM 전송 목업"만 남았고, 메시지가 화면에만 붙고 서버로는 안 가서 횟수 차감/아티스트 수신이 안 됐음
+    window.WePlaNetShellReady = true;
+    document.dispatchEvent(new Event("weplanet:shell-ready"));
+
+    // 상점/설정/공지/프로필 등 dm-realtime.js 를 직접 불러오지 않는 화면에서는 DM 위젯이 목업 그대로라
+    // 대화 목록도 안 뜨고 메시지도 못 보냈음. 화면마다 스크립트를 넣는 대신 셸이 없으면 여기서 불러온다.
+    // dm-realtime.js 는 Stomp 전역이 필요해서 stomp.min.js 를 먼저 불러온 뒤에 붙인다.
+    if (!isAdmin && !document.querySelector('script[src*="dm-realtime.js"]')) {
+      if (window.Stomp) {
+        loadScriptOnce("dm-realtime.js");
+      } else {
+        const stomp = document.createElement("script");
+        stomp.src = "https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js";
+        stomp.onload = () => loadScriptOnce("dm-realtime.js");
+        document.body.appendChild(stomp);
+      }
+    }
   }
 
   // 현재 세션 로케일의 문구를 받아온 뒤에만 화면을 그린다. 실패해도 한국어 기본값으로 진행한다

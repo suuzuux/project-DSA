@@ -16,9 +16,6 @@ import java.time.LocalDateTime;
  * 1) 아이디/비밀번호 확인 -> 관리자 계정 이메일로 인증번호 발송
  * 2) 인증번호 확인 -> 로그인 허용
  * 인증번호만으로는 로그인 X, 2단계에서도 아이디/비밀번호 다시 확인
- * <p>
- * AUTH-11: 현재 이 서비스는 로그인 흐름에 연결되어 있지 않다(관리자는 /admin/login 에서 아이디/비밀번호로만 로그인).
- * 2단계 인증을 쓰기로 하면 LoginSuccessHandler 의 관리자 분기에서 이 서비스로 넘기도록 연결해야 한다.
  */
 @Service
 @RequiredArgsConstructor
@@ -79,7 +76,7 @@ public class AdminLoginService {
 	}
 	
 	/**
-	 * 2단계 - 아이디 및 비밀번호 재확인, 인증번호 일치 시 관리자 돌려줌
+	 * 2단계 - 아이디 및 비밀번호 재확인, 인증번호 일치 시 인증 기록을 소모하고 관리자 돌려줌
 	 * @param username
 	 * @param rawPassword
 	 * @param verificationKey
@@ -105,12 +102,17 @@ public class AdminLoginService {
 			throw new IllegalArgumentException(messages.get("admin.login.error.invalidCode", result.remainingAttempts()
 					));
 		}
+
+		// 한 번 로그인에 사용한 인증번호는 유효시간이 남아 있어도 다시 쓸 수 없게 한다.
+		evs.consumeAdminLoginVerification(admin.getId(), verificationKey);
+		admin.recordLogin();
 		return admin;
 	}
 	
 	// 아이디, 비밀번호, 역할, 계정상태 한 번에 확인
 	private User authenticate(String username, String rawPassword) {
-		User admin = ur.findByUsername(username).orElseThrow(() ->
+		String normalizedUsername = username == null ? "" : username.trim();
+		User admin = ur.findByUsername(normalizedUsername).orElseThrow(() ->
 				new IllegalArgumentException("admin.login.error.badCredentials"));
 		
 		// 아이디, 비밀번호 중 어느 곳이 틀렸는지 알려주지 X (보안강화)
@@ -129,9 +131,8 @@ public class AdminLoginService {
 		return admin;
 	}
 	
-	// 화면에 "ab****@gmail.com로 보냈습니다."라고 안내하기 위함
 	// 관리자 이메일은 화면에 노출하지 않는다(계정 정보 유출 방지).
-	// 만료 시각만 내려보내 화면 타이머가 서버 기준으로 돌게 한다.
+	// 인증 키와 만료 시각만 내려보내 서버 검증 및 화면 타이머에 사용한다.
 	public record IssuedResult(String verificationKey, LocalDateTime expiresAt) {
 	}
 }
