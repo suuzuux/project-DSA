@@ -14,7 +14,7 @@
       PROFILE-01 범위: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
       공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다.
       단 편집 패널에는 실제 설정값이 그대로 보여서 언제든 수정할 수 있다.
-      D-DAY와 가입일은 community_members.joined_at을 기준으로 표시한다.
+      D-DAY와 가입일은 팬은 community_members.joined_at, 가입 행이 없는 아티스트는 users.created_at을 기준으로 표시한다.
       FOLLOW-01: 이제 이 화면은 "내 프로필"뿐 아니라 다른 사람 프로필도 보여준다(/profile/{userId}).
       isOwnProfile이면 예전처럼 편집 버튼, 아니면 팔로우 버튼. 팔로워/팔로잉 숫자는 콘텐츠 숨김이면
       이미지·소개글과 함께 가려지고, 댓글·포스트·좋아요·북마크 탭은 본인이거나 숨김이 아닐 때만 보인다.
@@ -333,7 +333,7 @@
                     </svg>
                 </h2>
 
-                <!-- 커뮤니티 가입일 - 계정 생성일(users.created_at)과 구분한다.
+                <!-- 가입일 - 팬은 커뮤니티 가입일, 가입 절차가 없는 아티스트는 계정 생성일이다.
                      본인에게는 숨김 설정과 무관하게 항상 보여주고, 다른 사람에게는 숨김이면 감춘다. -->
                 <p class="profile-card__joined-date"
                    th:if="${communityJoinInfo != null and contentVisible}"
