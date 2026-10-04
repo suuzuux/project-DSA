@@ -75,17 +75,31 @@
         return proto + "//" + location.host + "/ws-chat";
     }
 
+    // 연결 중에 또 요청이 오면 소켓을 하나 더 만들지 않고 기다렸다가 같이 실행한다
+    // (안 읽은 DM 알림 구독과 DM 방 열기가 동시에 소켓을 찾을 수 있어서 - 소켓이 둘 생기면 앞쪽 구독이 사라짐)
+    let socketWaiters = null;
+
     function ensureSocket(callback) {
         if (stompClient && stompClient.connected) {
             callback();
             return;
         }
+        if (socketWaiters) {
+            socketWaiters.push(callback);
+            return;
+        }
+        socketWaiters = [callback];
         const socket = new WebSocket(wsChatUrl());
         stompClient = Stomp.over(socket);
         stompClient.debug = null; // 콘솔에 웹소켓 로그가 너무 많이 찍히는 걸 막음
         stompClient.connect({}, function () {
-            callback();
+            const waiters = socketWaiters;
+            socketWaiters = null;
+            waiters.forEach(function (fn) {
+                fn();
+            });
         }, function (err) {
+            socketWaiters = null;
             console.error('[DM] 웹소켓 연결 실패', err);
         });
     }
@@ -182,6 +196,8 @@
         withoutHistory.forEach(function (item) {
             dmBody.appendChild(buildItem(item));
         });
+
+        renderUnreadBadges(); // 목록을 새로 그렸으니 방별 안 읽은 개수도 다시 붙임
     }
 
     function loadInbox() {
@@ -328,6 +344,9 @@
                 // 오늘 남은 전송 횟수 표시 (CHAT-05)
                 updateQuota(data.remaining);
 
+                // 방을 열었으니 이 방 메시지는 모두 읽은 것으로 처리 (비행기 버튼 숫자에서 빠짐)
+                markRoomRead(currentArtistId);
+
                 unsubscribeAll();
                 ensureSocket(function () {
                     const personalTopic = "/topic/chat." + currentArtistId + ".fan." + fanId;
@@ -441,6 +460,162 @@
         }
     });
 
+    // ------------------------------------------------------------
+    // [팬 전용] 안 읽은 DM 개수 - 비행기(DM) 버튼 위 숫자 배지
+    // 서버(/chat/unread-source)는 최근 7일간 방 주인(아티스트/멤버)이 보낸 메시지 시각만 내려주고,
+    // "방마다 어디까지 읽었는지"는 이 브라우저의 localStorage 에 기억한다 (DB 테이블을 새로 만들지 않기 위함).
+    // 아티스트가 새로 보내는 메시지는 웹소켓으로 받아서 바로 숫자를 올린다.
+    // ------------------------------------------------------------
+    const LAST_READ_KEY = "weplanet.dm.lastRead." + fanId;
+    let serverSkew = 0;   // 서버 시각 - 브라우저 시각(ms). 읽은 시각을 서버 기준으로 맞추려고 씀
+    let unreadTimes = {}; // 방(artistId) -> 처음 불러올 때 받은 방 주인 메시지 시각들 (서버 기준 epoch ms)
+    let liveUnread = {};  // 방(artistId) -> 페이지를 연 뒤 실시간으로 새로 받은 개수
+    let notifySubs = [];  // DM 방을 바꿀 때 지우는 subscriptions 와 섞이지 않게 따로 관리
+
+    function loadLastRead() {
+        try {
+            return JSON.parse(localStorage.getItem(LAST_READ_KEY)) || {};
+        } catch (e) {
+            return {}; // 시크릿 창 등 저장소를 못 쓰면 매번 "처음"처럼 동작
+        }
+    }
+
+    function saveLastRead(map) {
+        try {
+            localStorage.setItem(LAST_READ_KEY, JSON.stringify(map));
+        } catch (e) {
+            // 저장 실패는 무시 (숫자가 새로고침 후 다시 보일 수 있을 뿐)
+        }
+    }
+
+    function serverNow() {
+        return Date.now() + serverSkew;
+    }
+
+    function unreadCount(artistId) {
+        if (!(artistId in unreadTimes)) return 0;
+        const lastRead = loadLastRead()[artistId] || 0;
+        const fromHistory = unreadTimes[artistId].filter(function (time) {
+            return time > lastRead;
+        }).length;
+        return fromHistory + (liveUnread[artistId] || 0);
+    }
+
+    function countLabel(n) {
+        return n > 99 ? "99+" : String(n);
+    }
+
+    function renderUnreadBadges() {
+        let total = 0;
+        Object.keys(unreadTimes).forEach(function (id) {
+            total += unreadCount(id);
+        });
+
+        const fab = document.getElementById("fabChat");
+        if (fab) {
+            if (!fab.dataset.baseLabel) fab.dataset.baseLabel = fab.getAttribute("aria-label") || "";
+            let badge = fab.querySelector(".fab__badge");
+            if (total > 0) {
+                if (!badge) {
+                    badge = document.createElement("span");
+                    badge.className = "fab__badge";
+                    badge.setAttribute("aria-hidden", "true");
+                    fab.appendChild(badge);
+                }
+                badge.textContent = countLabel(total);
+                fab.setAttribute("aria-label", t("client.dm.unreadLabel", "읽지 않은 DM {0}개").replace("{0}", total));
+            } else {
+                if (badge) badge.remove();
+                fab.setAttribute("aria-label", fab.dataset.baseLabel);
+            }
+        }
+
+        // DM 목록이 열려 있으면 방별 개수도 표시
+        document.querySelectorAll("#dmListView .dm-list-item[data-open-room]").forEach(function (item) {
+            const n = unreadCount(item.getAttribute("data-open-room"));
+            let pill = item.querySelector(".dm-list-item__unread");
+            if (n > 0) {
+                if (!pill) {
+                    pill = document.createElement("span");
+                    pill.className = "dm-list-item__unread";
+                    item.appendChild(pill);
+                }
+                pill.textContent = countLabel(n);
+            } else if (pill) {
+                pill.remove();
+            }
+        });
+    }
+
+    function markRoomRead(artistId) {
+        if (!artistId || !(String(artistId) in unreadTimes)) return;
+        const map = loadLastRead();
+        map[artistId] = serverNow();
+        saveLastRead(map);
+        liveUnread[artistId] = 0;
+        renderUnreadBadges();
+    }
+
+    // 지금 그 방 대화창을 보고 있는지 (DM 패널이 열려 있고, 목록이 아니라 그 방이 떠 있는 상태)
+    function isRoomOnScreen(artistId) {
+        const panel = document.getElementById("dmPanel");
+        const room = document.getElementById("dmRoomView");
+        return !!panel && panel.classList.contains("is-open")
+            && !!room && room.classList.contains("is-active")
+            && Number(currentArtistId) === Number(artistId);
+    }
+
+    function startUnreadWatcher() {
+        fetch("/chat/unread-source")
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                serverSkew = (data.serverNow || Date.now()) - Date.now();
+                const lastRead = loadLastRead();
+                let changed = false;
+                unreadTimes = {};
+                (data.rooms || []).forEach(function (room) {
+                    unreadTimes[room.artistId] = room.times || [];
+                    // 처음 보는 방은 "지금"을 기준점으로 잡는다 - 기능을 처음 쓰는 순간 지난 메시지가 한꺼번에 쌓여 보이지 않게
+                    if (!(room.artistId in lastRead)) {
+                        lastRead[room.artistId] = serverNow();
+                        changed = true;
+                    }
+                });
+                if (changed) saveLastRead(lastRead);
+                renderUnreadBadges();
+
+                const roomIds = Object.keys(unreadTimes);
+                if (roomIds.length === 0) return;
+                ensureSocket(function () {
+                    notifySubs.forEach(function (sub) {
+                        sub.unsubscribe();
+                    });
+                    notifySubs = [];
+                    roomIds.forEach(function (roomId) {
+                        const onMessage = function (frame) {
+                            const payload = JSON.parse(frame.body);
+                            // 방 주인이 직접 보낸 것만 센다 (AI 가상 팬·내가 보낸 메시지는 제외)
+                            if (Number(payload.senderId) !== Number(roomId)) return;
+                            if (isRoomOnScreen(roomId)) {
+                                markRoomRead(roomId);
+                                return;
+                            }
+                            liveUnread[roomId] = (liveUnread[roomId] || 0) + 1;
+                            renderUnreadBadges();
+                        };
+                        // 아티스트 전체 방송 + 나에게 온 개인 메시지
+                        notifySubs.push(stompClient.subscribe("/topic/chat." + roomId, onMessage));
+                        notifySubs.push(stompClient.subscribe("/topic/chat." + roomId + ".fan." + fanId, onMessage));
+                    });
+                });
+            })
+            .catch(function () {
+                // 알림 숫자는 부가 기능이라, 실패해도 DM 자체는 그대로 쓸 수 있게 조용히 넘어감
+            });
+    }
+
     // shell.js는 번역 문구(/api/i18n/shell)를 받아온 뒤에 DM 위젯을 그리므로(비동기), 위젯이 다 그려졌다는
     // 신호(weplanet:shell-ready)를 받은 뒤에 폼 교체/인박스 로딩을 시작함. 이 순서를 안 지키면 아래 #dmComposer 를
     // 못 찾아서 목업 전송만 남음 - 메시지가 화면에만 붙고 서버로 안 가서 횟수 차감도, 아티스트 수신도 안 됐음
@@ -498,6 +673,11 @@
 
         if (!isArtist) {
             loadInbox();
+        }
+
+        // 안 읽은 DM 숫자는 로그인한 팬에게만 (아티스트·소속사는 받는 DM 구조가 달라서 제외)
+        if (fanId && roleName === "ROLE_FAN") {
+            startUnreadWatcher();
         }
     });
 })();
