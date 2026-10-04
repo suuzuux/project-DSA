@@ -9,6 +9,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.ChatMessageRepository;
 import megane6.weplanet.repository.GroupMemberRepository;
+import megane6.weplanet.repository.MembershipPeriodRepository;
 import megane6.weplanet.repository.MembershipRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.community.CommunityArtistResolver;
@@ -28,6 +29,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
+    private final MembershipPeriodRepository membershipPeriodRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final CommunityArtistResolver communityArtistResolver;
 
@@ -100,7 +102,8 @@ public class ChatMessageService {
                 .artistId(owner.user().getId())
                 .artistNickname(owner.user().getNickname())
                 .groupName(owner.group() != null ? owner.group().getNickname() : null)
-                .membershipExpired(isCommunityMembershipExpired(fan, owner.community()));
+                .membershipExpired(isCommunityMembershipExpired(fan, owner.community()))
+                .neverSubscribed(isCommunityNeverSubscribed(fan, owner.community()));
     }
 
     // DM 방 주인 한 명. group 이 null 이면 솔로 아티스트 본인, 아니면 그 그룹의 멤버
@@ -174,5 +177,28 @@ public class ChatMessageService {
         return membershipRepository.findByFanAndArtist(fan, community)
                 .map(Membership::isExpired)
                 .orElse(true);
+    }
+
+    // DM 배너 문구 구분용 - 위 isMembershipExpired 는 "가입 안 함"과 "만료"를 똑같이 막지만,
+    // 한 번도 가입 안 한 팬에게 "구독 만료"라고 보여주는 건 맞지 않아서 가입 안내 문구를 따로 보여줌.
+    // 해지(MembershipService.cancel)하면 membership 줄이 지워지므로, 가입 이력(membership_period)까지 확인함
+    // 멤버별 DM도 가입은 그룹(커뮤니티) 단위이므로 roomOwner가 멤버면 소속 그룹 이력을 확인한다.
+    public boolean isNeverSubscribed(User fan, User roomOwner) {
+        Long communityId = communityArtistResolver.ownCommunityId(roomOwner);
+        if (communityId == null) {
+            return true;
+        }
+        User community = communityId.equals(roomOwner.getId())
+                ? roomOwner
+                : userRepository.findById(communityId).orElse(null);
+        return isCommunityNeverSubscribed(fan, community);
+    }
+
+    private boolean isCommunityNeverSubscribed(User fan, User community) {
+        if (community == null) {
+            return true;
+        }
+        return membershipRepository.findByFanAndArtist(fan, community).isEmpty()
+                && !membershipPeriodRepository.existsByFanIdAndArtistId(fan.getId(), community.getId());
     }
 }

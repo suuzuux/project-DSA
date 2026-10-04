@@ -8,6 +8,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.ChatMessageRepository;
 import megane6.weplanet.repository.GroupMemberRepository;
+import megane6.weplanet.repository.MembershipPeriodRepository;
 import megane6.weplanet.repository.MembershipRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.service.community.CommunityArtistResolver;
@@ -22,10 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-// 멤버별 DM: 그룹은 멤버 한 명 한 명이 DM 상대, 멤버십은 그룹 단위로 확인한다
+// 멤버별 DM: 그룹은 멤버 한 명 한 명이 DM 상대, 멤버십과 가입 이력은 그룹 단위로 확인한다
 class ChatMessageServiceTest {
 
 	private static final Long FAN = 1L;
@@ -37,10 +37,17 @@ class ChatMessageServiceTest {
 	private final ChatMessageRepository chatMessageRepository = mock(ChatMessageRepository.class);
 	private final UserRepository userRepository = mock(UserRepository.class);
 	private final MembershipRepository membershipRepository = mock(MembershipRepository.class);
+	private final MembershipPeriodRepository periodRepository = mock(MembershipPeriodRepository.class);
 	private final GroupMemberRepository groupMemberRepository = mock(GroupMemberRepository.class);
 	private final CommunityArtistResolver resolver = new CommunityArtistResolver(groupMemberRepository);
 	private final ChatMessageService service = new ChatMessageService(
-			chatMessageRepository, userRepository, membershipRepository, groupMemberRepository, resolver);
+			chatMessageRepository,
+			userRepository,
+			membershipRepository,
+			periodRepository,
+			groupMemberRepository,
+			resolver
+	);
 
 	private final User fan = user(FAN, Role.FAN, "fan");
 	private final User group = user(GROUP, Role.ARTIST, "GROUP");
@@ -76,9 +83,53 @@ class ChatMessageServiceTest {
 				.thenReturn(Optional.of(GroupMember.join(GROUP, memberA)));
 		when(userRepository.findById(GROUP)).thenReturn(Optional.of(group));
 		when(membershipRepository.findByFanAndArtist(fan, group)).thenReturn(Optional.of(
-				Membership.builder().expiresAt(LocalDateTime.now().plusDays(1)).build()));
+				membership(LocalDateTime.now().plusDays(1))));
 
 		assertFalse(service.isMembershipExpired(fan, memberA));
+	}
+
+	// 가입 이력 안내도 멤버 개인 id가 아니라 소속 그룹 id로 판단한다
+	@Test
+	void subscriptionHistoryForMemberRoomIsCheckedAgainstGroup() {
+		when(groupMemberRepository.findByMember_IdAndLeftAtIsNull(MEMBER_A))
+				.thenReturn(Optional.of(GroupMember.join(GROUP, memberA)));
+		when(userRepository.findById(GROUP)).thenReturn(Optional.of(group));
+		when(membershipRepository.findByFanAndArtist(fan, group)).thenReturn(Optional.empty());
+		when(periodRepository.existsByFanIdAndArtistId(FAN, GROUP)).thenReturn(true);
+
+		assertFalse(service.isNeverSubscribed(fan, memberA));
+		verify(periodRepository).existsByFanIdAndArtistId(FAN, GROUP);
+		verify(periodRepository, never()).existsByFanIdAndArtistId(FAN, MEMBER_A);
+	}
+
+	// 가입한 적이 없으면 DM은 막히지만, 배너는 "만료"가 아니라 가입 안내여야 한다
+	@Test
+	void neverJoinedFanIsBlockedButNotShownAsExpired() {
+		when(membershipRepository.findByFanAndArtist(fan, solo)).thenReturn(Optional.empty());
+		when(periodRepository.existsByFanIdAndArtistId(FAN, SOLO)).thenReturn(false);
+
+		assertTrue(service.isMembershipExpired(fan, solo));
+		assertTrue(service.isNeverSubscribed(fan, solo));
+	}
+
+	// 가입했다가 기간이 지난 팬은 지금처럼 만료 배너
+	@Test
+	void expiredFanIsShownAsExpired() {
+		when(membershipRepository.findByFanAndArtist(fan, solo))
+				.thenReturn(Optional.of(membership(LocalDateTime.now().minusDays(1))));
+
+		assertTrue(service.isMembershipExpired(fan, solo));
+		assertFalse(service.isNeverSubscribed(fan, solo));
+	}
+
+	// 해지하면 membership 줄은 지워지지만 가입 이력이 남아 있으므로 처음 온 사람으로 보지 않는다
+	@Test
+	void cancelledFanWithHistoryIsShownAsExpired() {
+		when(membershipRepository.findByFanAndArtist(fan, solo)).thenReturn(Optional.empty());
+		when(periodRepository.existsByFanIdAndArtistId(FAN, SOLO)).thenReturn(true);
+
+		assertTrue(service.isMembershipExpired(fan, solo));
+		assertFalse(service.isNeverSubscribed(fan, solo));
 	}
 
 	// 방 주인 규칙: 솔로/활동 멤버는 방 주인, 활동 멤버가 있는 그룹 계정과 팬은 아니다
@@ -105,6 +156,10 @@ class ChatMessageServiceTest {
 				.content(content)
 				.createdAt(LocalDateTime.now())
 				.build();
+	}
+
+	private static Membership membership(LocalDateTime expiresAt) {
+		return Membership.builder().expiresAt(expiresAt).build();
 	}
 
 	private static User user(Long id, Role role, String nickname) {
