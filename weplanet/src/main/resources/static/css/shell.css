@@ -401,6 +401,16 @@
   min-width: 0;
 }
 
+/* 한 번도 가입 안 한 팬: "구독 만료" 대신 가입 안내 문구 */
+.dm-expired__text--join,
+.dm-expired.is-never-subscribed .dm-expired__text--expired {
+  display: none;
+}
+
+.dm-expired.is-never-subscribed .dm-expired__text--join {
+  display: block;
+}
+
 .dm-expired__text strong {
   display: block;
   font-size: var(--wp-fs-sm);

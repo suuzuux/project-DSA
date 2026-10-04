@@ -1,5 +1,6 @@
 package megane6.weplanet.controller.community;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.controller.AuthenticatedUserResolver;
 import megane6.weplanet.domain.entity.User;
@@ -7,6 +8,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.portal.PortalManagementService;
+import megane6.weplanet.web.RefererRedirects;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,7 +33,8 @@ public class CommunityJoinController {
 					   @RequestParam(required = false) MultipartFile avatar,
 					   @RequestParam(required = false) MultipartFile background,
 					   @AuthenticationPrincipal AuthenticatedUser principal,
-					   @RequestHeader(value = "Referer", required = false) String referer) {
+					   @RequestHeader(value = "Referer", required = false) String referer,
+					   HttpServletRequest request) {
 		User me = userResolver.requireAuthenticated(principal);
 		if (!me.canParticipateInCommunity()) {
 			throw new IllegalStateException("error.community.joinFanOrArtistOnly");
@@ -44,7 +47,7 @@ public class CommunityJoinController {
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
 			// AUTH-11: 가입 버튼을 빠르게 두 번 눌러 같은 가입이 동시에 들어온 경우 - 먼저 끝난 가입이 있으므로 그대로 진행
 		}
-		return "redirect:" + (referer != null ? referer : "/");
+		return RefererRedirects.back(referer, request, "/"); // 우리 사이트 주소일 때만 누른 화면으로 (오픈 리다이렉트 방지)
 	}
 	
 	// PROFILE-01: 프로필 편집
@@ -60,9 +63,10 @@ public class CommunityJoinController {
 							  @RequestParam(defaultValue = "false") boolean removeBackground,
 							  @RequestParam(defaultValue = "false") boolean contentHidden,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
-							  @RequestHeader(value = "Referer", required = false) String referer) {
+							  @RequestHeader(value = "Referer", required = false) String referer,
+							  HttpServletRequest request) {
 		User me = userResolver.requireAuthenticated(principal);
-		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 가입 프로필(community_profiles)이 없으므로
+		// 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)는 가입 프로필(community_members)이 없으므로
 		// 계정별 포털 프로필(소개/사진/배경)을 고친다. 이름과 콘텐츠 숨김은 아티스트에게 해당 없음.
 		if (communityArtistResolver.isArtistOf(me, artistId)) {
 			portalManagementService.updateArtistCommunityProfile(me, bio, avatar, background,
@@ -71,15 +75,16 @@ public class CommunityJoinController {
 			communityJoinService.editProfile(me, artistId, nickname, bio, avatar, background,
 					removeAvatar, removeBackground, contentHidden);
 		}
-		return "redirect:" + (referer != null ? referer : "/");
+		return RefererRedirects.back(referer, request, "/"); // 우리 사이트 주소일 때만 누른 화면으로 (오픈 리다이렉트 방지)
 	}
 	
 	@PostMapping("/community/{artistId}/leave")
 	public String leave(@PathVariable Long artistId,
 						@AuthenticationPrincipal AuthenticatedUser principal,
-						@RequestHeader(value = "Referer", required = false) String referer) {
+						@RequestHeader(value = "Referer", required = false) String referer,
+						HttpServletRequest request) {
 		User fan = userResolver.requireAuthenticated(principal);
 		communityJoinService.leave(fan, artistId);
-		return "redirect:" + (referer != null ? referer : "/");
+		return RefererRedirects.back(referer, request, "/"); // 우리 사이트 주소일 때만 누른 화면으로 (오픈 리다이렉트 방지)
 	}
 }

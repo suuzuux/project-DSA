@@ -67,9 +67,10 @@ public class AccountRecoveryService {
 		return userRepository.findByEmail(email).map(this::isEligibleForRecovery).orElse(false);
 	}
 
-	// 비밀번호 재설정 2단계: 이메일 인증까지 끝난 뒤에만 호출됨
+	// 비밀번호 재설정 2단계: 이메일 인증까지 끝난 뒤에만 호출됨. 비밀번호를 바꾼 계정을 돌려준다
+	// (컨트롤러가 그 계정의 기존 로그인 세션을 끊는 데 쓴다)
 	@Transactional
-	public void resetPassword(String username, String email, String newPassword, String confirmPassword) {
+	public User resetPassword(String username, String email, String newPassword, String confirmPassword) {
 		User user = userRepository.findByUsername(username)
 				.filter(u -> u.getEmail().equals(email))
 				.filter(this::isEligibleForRecovery)
@@ -86,6 +87,7 @@ public class AccountRecoveryService {
 		}
 		
 		user.changePassword(passwordEncoder.encode(newPassword));
+		return user;
 	}
 
 	private boolean isEligibleForRecovery(User user) {

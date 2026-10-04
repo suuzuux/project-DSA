@@ -56,14 +56,19 @@ public class DormantAccountReactivationController {
     @ResponseBody
     public Map<String, Object> sendCode(@RequestParam String username, HttpSession session) {
         Map<String, Object> result = new HashMap<>();
-        Optional<User> target = resolveTarget(username);
-        if (target.isEmpty()) {
+        if (username == null || username.isBlank()) {
             result.put("success", false);
-            result.put("message", msg("reactivate.accountNotFound"));
+            result.put("message", msg("reactivate.usernameRequired"));
             return result;
         }
+        // 휴면 계정이 아니어도 같은 문구로 응답한다 - 예전에는 "휴면 계정을 찾을 수 없습니다"와 "코드를 보냈습니다"로
+        // 답이 달라서, 아이디만 넣어 보고 휴면 계정인지 알 수 있었다 (로그인 화면은 비밀번호가 맞기 전까지 숨기는 정보).
+        // 아이디·비밀번호 찾기와 같은 방식: 대상일 때만 실제로 보내고(백그라운드), 발송 제한은 똑같이 적용한다.
+        // 대상이 아니면 받을 주소가 없으므로 아이디로 만든 자리표시 값으로 제한만 센다.
+        Optional<User> target = resolveTarget(username);
         try {
-            emailVerificationService.sendVerificationCode(session, VerificationPurpose.REACTIVATE, target.get().getEmail());
+            emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.REACTIVATE,
+                    target.map(User::getEmail).orElse("reactivate:" + username.trim()), target.isPresent());
             result.put("success", true);
             result.put("message", msg("reactivate.codeSent"));
         } catch (VerificationRateLimitException e) {
@@ -86,7 +91,8 @@ public class DormantAccountReactivationController {
                                        Model model) {
         Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
-            model.addAttribute("errorMessage", msg("reactivate.accountNotFound"));
+            // 휴면 계정이 아니어도 "코드가 틀렸다"와 같은 문구 - 여기서도 휴면 여부가 드러나지 않게
+            model.addAttribute("errorMessage", messages.resolve(VerificationResult.INVALID.failureMessage()));
             return "login/reactivate";
         }
         User user = target.get();

@@ -18,9 +18,13 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 	
 	void deleteByFanIdAndArtistId(Long fanId, Long artistId);
 	
+	// 한 사람이 가입한 모든 커뮤니티 (가입 정보 + 커뮤니티별 프로필)
 	List<CommunityMember> findByFanId(Long fanId);
 
 	List<CommunityMember> findByArtistId(Long artistId);
+
+	// 게시글 목록 작성자들의 이 커뮤니티 프로필을 한 번에 (예전 CommunityProfileRepository.findForAuthorsInCommunity)
+	List<CommunityMember> findByArtistIdAndFanIdIn(Long artistId, Collection<Long> fanIds);
 
 	long countByArtistId(Long artistId);
 	

@@ -28,6 +28,7 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	private final AgencyEnrollmentService agencyEnrollmentService;
 	private final LocaleResolver localeResolver;
 	private final GroupMemberRepository groupMemberRepository;
+	private final LoginAttemptService loginAttemptService;
 
 	@PostConstruct
 	public void init() {
@@ -40,6 +41,8 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
 										Authentication authentication) throws IOException, ServletException {
 		AuthenticatedUser principal = (AuthenticatedUser) authentication.getPrincipal();
+		// 비밀번호가 맞았으므로 그동안 틀린 횟수를 지운다 (LoginAttemptService - 로그인 비밀번호 대입 방어)
+		loginAttemptService.recordSuccess(principal.getUsername());
 		boolean portalLogin = "true".equals(request.getParameter("portalLogin"));
 		boolean adminLogin = "true".equals(request.getParameter("adminLogin"));
 		// 포털(아티스트/에이전시) 로그인 화면에서 직접 고른 언어. 아래 clearAuthentication 이 세션을 버리기 전에
@@ -48,16 +51,12 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				? localeResolver.resolveLocale(request)
 				: null;
 
-		// AUTH-11: 관리자 로그인 화면(adminLogin=true)은 ADMIN 계정만 통과시킨다.
-		// 예전에는 이 파라미터가 있으면 역할 검사를 아예 건너뛰어서, 아티스트 그룹 계정이 관리자 로그인 화면으로
-		// 들어오면 멤버 프로필 선택 없이 그룹 계정으로 로그인되고 팬/포털 로그인 분리도 우회됐다.
-		// 역할 정보는 노출하지 않고, 일반 로그인 실패와 같은 화면으로 보낸다.
+		// 관리자는 /admin/login 의 이메일 2단계 인증을 반드시 거쳐야 한다.
+		// 예전 관리자 폼처럼 /login 에 adminLogin=true 를 직접 보내더라도 비밀번호만으로 로그인되지 않게 막는다.
 		if (adminLogin) {
-			if (!"ROLE_ADMIN".equals(principal.getRoleName())) {
-				clearAuthentication(request);
-				getRedirectStrategy().sendRedirect(request, response, "/admin/login?error");
-				return;
-			}
+			clearAuthentication(request);
+			getRedirectStrategy().sendRedirect(request, response, "/admin/login?error");
+			return;
 		} else if (portalLogin) {
 			// 포털 로그인: 아티스트/에이전시 전용. 선택 탭과 실제 역할이 일치해야 함.
 			String roleName = principal.getRoleName();

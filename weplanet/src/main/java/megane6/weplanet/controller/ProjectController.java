@@ -9,7 +9,7 @@ import megane6.weplanet.domain.dto.ProjectDetailView;
 import megane6.weplanet.domain.dto.ProjectEligibilityView;
 import megane6.weplanet.domain.dto.ProjectRequestDTO;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
+import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectEventType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
@@ -287,7 +287,7 @@ public class ProjectController {
 		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artist.getId());
 		model.addAttribute("isOwnCommunity", isOwnCommunity);
 
-		Map<Long, CommunityProfile> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
+		Map<Long, CommunityMember> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
 		Set<Long> joinedArtistIds = cjs.joinedArtistIds(currentUser);
 
 		List<ArtistCardView> joinedArtists = communityDrawerHelper.joined(currentUser, artists, joinedArtistIds);
