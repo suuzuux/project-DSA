@@ -15,7 +15,7 @@ public enum BannerType {
 		this.label = label;
 	}
 
-	// 한국어 기본값(과거 하드코딩 값). 화면에서는 getMessageKey() + MessageSource로 로케일에 맞게 보여준다.
+	// 한국어 기본값. 화면에서는 getMessageKey() + MessageSource로 로케일에 맞게 보여준다.
 	public String getLabel() {
 		return label;
 	}

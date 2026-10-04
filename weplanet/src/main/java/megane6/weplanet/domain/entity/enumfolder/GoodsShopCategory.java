@@ -10,9 +10,9 @@ public enum GoodsShopCategory {
 	MEMBERSHIP("membership", "goods.shopCategory.membership", "멤버십전용", "goods-cat--membership");
 
 	private final String filterKey;
-	// SETTINGS-03: 메시지 키 - 실제 화면에 보여줄 문구는 이 키로 MessageSource에서 로케일에 맞게 조회한다.
+	// 메시지 키 - 실제 화면에 보여줄 문구는 이 키로 MessageSource에서 로케일에 맞게 조회한다.
 	private final String messageKey;
-	// 아래 label은 messages*.properties 없이도 참고할 수 있는 한국어 기본값(과거 하드코딩 값). 새 코드는
+	// 아래 label은 messages*.properties 없이도 참고할 수 있는 한국어 기본값. 새 코드는
 	// getLabel() 대신 messageKey + MessageSource를 쓸 것.
 	private final String label;
 	private final String chipClass;

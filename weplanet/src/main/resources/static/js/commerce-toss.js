@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  // SETTINGS-03 커밋5: 페이지가 fragments/toss-i18n 으로 넣어준 문구(window.PAGE_I18N)를 쓰고, 없으면 한국어 기본값.
+  // 페이지가 fragments/toss-i18n 으로 넣어준 문구(window.PAGE_I18N)를 쓰고, 없으면 한국어 기본값.
   // (호출 시점에 읽어서, 스크립트 로드 순서와 무관하게 동작한다)
   function t(key, ko) {
     var m = window.PAGE_I18N || {};

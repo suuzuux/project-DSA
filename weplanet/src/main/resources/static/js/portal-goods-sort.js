@@ -7,7 +7,7 @@
   var statusEl = document.getElementById("goodsSortStatus");
   var dragRow = null;
 
-  // SETTINGS-03 커밋5: goods.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
+  // goods.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
   var I18N = window.PORTAL_I18N || {};
   function t(key, ko) {
     return I18N[key] != null ? I18N[key] : ko;

@@ -1,17 +1,6 @@
 /**
- * ============================================================
- * WePlaNet – EXPLORE-02/05 커뮤니티 검색 및 목록 조회
- * ------------------------------------------------------------
- * 필터는 검색어 / 성별 / 직업·카테고리(아이돌·배우) 세 가지만 제공.
- * 검색은 "검색" 버튼을 눌렀을 때(또는 키워드칸에서 Enter)만 실행됨.
- * 검색 결과 각 줄: 이름/아바타 영역을 누르면 해당 커뮤니티 페이지로 이동,
- * 오른쪽 "가입" 버튼(data-join-btn)은 community-join.js 가 받아서 닉네임 모달을 띄운다.
- * 이미 가입한 커뮤니티는 버튼 대신 비활성 "✓ 가입중"을 그린다.
- *   - 가입 여부는 드로어 "커뮤니티 바로가기"용으로 이미 내려와 있는
- *     window.__WEPLANET_ARTISTS__(=joinedArtists) 를 재사용한다. 검색 API는 손대지 않음.
- *   - 가입에 성공하면 페이지를 새로고침하므로 이 목록도 항상 최신 상태다.
- * 드로어 메뉴의 "커뮤니티 찾아보기"(?openSearch=1)로 들어오면 검색 모달이 자동으로 열림.
- * ============================================================
+ * 커뮤니티 검색 모달 - 검색어/성별/카테고리로 찾고, 결과의 "가입" 버튼은 community-join.js 가 받는다.
+ * 이미 가입한 커뮤니티는 "✓ 가입중", 본인 커뮤니티는 "내 커뮤니티"로 표시한다 (?openSearch=1 이면 자동으로 열림).
  */
 (function () {
   "use strict";
@@ -28,7 +17,7 @@
     (window.__WEPLANET_ARTISTS__ || []).map((a) => String(a.id))
   );
 
-  // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  // 문구는 main.js 의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
   const t = (key, fallback, args) =>
     (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
 
@@ -50,8 +39,7 @@
     const soloBadge = a.solo ? `<span class="badge-solo">${escapeHtml(t("client.explore.solo", "솔로"))}</span>` : "";
     const joined = joinedArtistIds.has(String(a.artistId));
 
-    // 가입한 커뮤니티는 data-join-btn 을 붙이지 않는다 -> 닉네임 모달이 열리지 않음
-    // AUTH-11: 본인 커뮤니티(a.own - 아티스트/그룹 멤버)도 가입 대상이 아니므로 버튼 대신 표시만 한다
+    // 가입한 커뮤니티와 본인 커뮤니티(a.own - 아티스트/그룹 멤버)에는 data-join-btn 을 붙이지 않는다 (가입 모달이 안 열림)
     const actionHtml = a.own
       ? `<button type="button" class="btn btn--ghost btn--sm" disabled
                  style="opacity:.7;cursor:default;">${escapeHtml(t("client.explore.mine", "내 커뮤니티"))}</button>`

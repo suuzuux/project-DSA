@@ -7,11 +7,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-// 인증코드 메일을 백그라운드에서 보낸다 (SignupEmailVerificationService.sendVerificationCodeIfEligible).
-// 아이디·비밀번호 찾기 / 휴면 해제는 "일치하는 계정이 있을 때만" 메일을 보내는데, 요청 처리 중에 보내면 그때만 응답이
-// 1~2초 늦어져서 응답 시간만 재도 계정이 있는지 알 수 있었다. 메일 제목/본문(사용자 언어)은 호출한 쪽에서 미리 만들고
-// 여기서는 SMTP 전송만 한다 - 백그라운드 스레드에서는 요청의 언어 정보를 알 수 없기 때문.
-// (@Async 는 다른 빈에서 불러야 동작하므로 별도 클래스로 둔다)
+// 인증코드 메일을 백그라운드에서 보낸다 - 찾기·휴면 해제는 대상일 때만 보내므로, 요청 중에 보내면 응답 시간으로 계정 존재가 드러난다.
+// 메일 문구(사용자 언어)는 호출한 쪽에서 미리 만든다 (@Async 는 다른 빈에서 불러야 동작해서 별도 클래스).
 @Slf4j
 @Component
 @RequiredArgsConstructor

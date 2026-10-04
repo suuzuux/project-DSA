@@ -71,10 +71,8 @@ public class PreferredLocaleResolver implements LocaleResolver {
     }
 
     /**
-     * 세션을 버리고 새 세션을 연다(로그인 거절·회원탈퇴·연동 해제·세션 정리 등).
-     * 화면 언어는 세션에만 저장되므로 그냥 버리면 다음 화면이 한국어로 돌아간다 - 그래서 버리기 전에
-     * 언어와 "로그인 전에 직접 고른 언어" 표시를 읽어 두었다가 새 세션에 다시 넣는다.
-     * 새 세션은 항상 연다: 버리기만 하면 브라우저의 이전 세션 쿠키 때문에 invalidSessionUrl(/login?expired)로 튕긴다.
+     * 세션을 버리고 새 세션을 연다 (로그인 거절·탈퇴·연동 해제 등). 화면 언어와 "직접 고른 언어" 표시는 새 세션에 이어 붙인다.
+     * 새 세션을 바로 열어야 이전 세션 쿠키 때문에 /login?expired 로 튕기지 않는다.
      */
     public static void invalidateSessionKeepingLocale(HttpServletRequest request) {
         Locale kept = storedLocale(request);

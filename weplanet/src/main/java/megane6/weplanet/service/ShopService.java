@@ -45,7 +45,7 @@ public class ShopService {
 		this.messageSource = messageSource;
 	}
 
-	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
@@ -135,7 +135,7 @@ public class ShopService {
 						v.displayLabel(),
 						v.getStockQuantity()))
 				.toList();
-		// SETTINGS-03: GoodsCategoryType.getLabel()은 하드코딩된 한국어라서, 화면 로케일에 맞는
+		// GoodsCategoryType.getLabel()은 하드코딩된 한국어라서, 화면 로케일에 맞는
 		// 문구는 messageKey로 MessageSource에서 조회한다.
 		List<String> labels = goods.getCategories().stream()
 				.map(c -> msg(c.getMessageKey()))

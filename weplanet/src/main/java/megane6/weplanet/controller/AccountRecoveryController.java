@@ -27,10 +27,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AccountRecoveryController {
 	
-	// AUTH-11: 입력한 정보와 일치하는 계정이 있든 없든 같은 문구를 보여준다. 예전에는 "일치하는 회원정보를 찾을 수 없습니다" /
-	// "비밀번호가 설정되어 있지 않아…" 처럼 경우마다 문구가 달라서, 이름+이메일(또는 아이디+이메일) 조합으로
-	// 계정이 있는지, 소셜 전용 계정인지까지 알아낼 수 있었다.
-	// (SETTINGS-03 병합: 문구는 메시지 키 recovery.codeSentIfMatched 로 옮김)
+	// 입력한 정보와 일치하는 계정이 있든 없든 같은 안내(recovery.codeSentIfMatched)를 보여준다.
+	// 문구 차이로 계정이 있는지, 소셜 전용 계정인지가 드러나지 않게 하기 위함.
 	
 	private final AccountRecoveryService accountRecoveryService;
 	private final SignupEmailVerificationService emailVerificationService;
@@ -52,10 +50,10 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendFindIdCode(@RequestParam String realName, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		boolean eligible = accountRecoveryService.matchesRealNameAndEmail(realName, email)
-				&& accountRecoveryService.isEligibleForRecovery(email);
+		// 일치하는 계정이 있으면 가입 때 등록한 주소로 보낸다 (없으면 null - 메일은 안 보내고 응답만 같게)
+		String recipient = accountRecoveryService.findIdRecipient(realName, email).orElse(null);
 		try {
-			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, eligible);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, recipient);
 			result.put("success", true);
 			result.put("message", msg("recovery.codeSentIfMatched"));
 		} catch (VerificationRateLimitException e) {
@@ -101,10 +99,10 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendResetCode(@RequestParam String username, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		boolean eligible = accountRecoveryService.matchesUsernameAndEmail(username, email)
-				&& accountRecoveryService.isEligibleForRecovery(email);
+		// 아이디 + 이메일(대소문자 무시)이 맞으면 가입 때 등록한 주소로 보낸다
+		String recipient = accountRecoveryService.resetPasswordRecipient(username, email).orElse(null);
 		try {
-			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, eligible);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, recipient);
 			result.put("success", true);
 			result.put("message", msg("recovery.codeSentIfMatched"));
 		} catch (VerificationRateLimitException e) {
@@ -152,8 +150,7 @@ public class AccountRecoveryController {
 		try {
 			User user = accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
 			emailVerificationService.clear(session, VerificationPurpose.RESET_PASSWORD, email);
-			// 비밀번호를 바꿨으면 그 계정에 이미 로그인돼 있던 세션은 모두 끊는다 - 예전에는 계정을 탈취당해 비밀번호를
-			// 재설정해도 공격자의 로그인 세션이 그대로 살아 있었다. 본인이 계정을 되찾았으니 로그인 잠금도 푼다.
+			// 비밀번호를 바꿨으면 그 계정에 로그인돼 있던 세션을 모두 끊고(탈취된 세션 차단), 본인이 되찾았으니 로그인 잠금도 푼다.
 			userSessionExpirer.expireAllSessions(user.getId());
 			loginAttemptService.reset(user.getUsername());
 			result.put("success", true);

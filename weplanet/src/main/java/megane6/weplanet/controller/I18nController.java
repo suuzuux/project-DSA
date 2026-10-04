@@ -14,9 +14,8 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * shell.js(공통 헤더 보강/좌측 메뉴 드로어 오버레이)는 Thymeleaf 프래그먼트가 아니라 순수 클라이언트
- * JS라서 #{...} 메시지 표현식을 직접 쓸 수 없다. 그래서 shell.js가 페이지 로드 시 fetch로 이 API를
- * 한 번 불러가서, 현재 세션 로케일(PreferredLocaleResolver)에 맞는 문자열 묶음을 받아간다.
+ * shell.js 등 순수 JS 화면이 쓰는 다국어 문구 API.
+ * JS 는 #{...} 를 쓸 수 없어서, 페이지를 열 때 현재 화면 언어의 문구 묶음을 받아간다.
  */
 @RestController
 @RequiredArgsConstructor
@@ -48,8 +47,7 @@ public class I18nController {
 			"shell.fab.chatDm",
 			"shell.fab.chatOpen",
 			"shell.admin.pageLink",
-			// SETTINGS-03 커밋3: 드로어 "커뮤니티 찾아보기"로 페이지에 없던 검색/가입 모달을 shell.js가
-			// 직접 만들어 넣을 때 쓰는 문구. 템플릿(index.html, layout.html :: joinModal)과 같은 키를 재사용한다.
+			// 드로어 "커뮤니티 찾아보기"에서 shell.js 가 직접 만드는 검색/가입 모달 문구 (템플릿과 같은 키 재사용)
 			"layout.header.searchTitle",
 			"main.search.placeholder",
 			"main.search.gender",
@@ -68,7 +66,7 @@ public class I18nController {
 			"community.join.nicknamePlaceholder",
 			"community.join.help",
 			"community.join.submit",
-			// SETTINGS-03 커밋5: DM 패널 / 멤버십 가입·상세 모달
+			// DM 패널 / 멤버십 가입·상세 모달
 			"shell.artistFallback",
 			"shell.dm.panelLabel",
 			"shell.dm.addFriend",
@@ -114,10 +112,8 @@ public class I18nController {
 	};
 
 	/**
-	 * SETTINGS-03 커밋3: main.js 공용 다이얼로그와 커뮤니티 화면의 순수 클라이언트 JS
-	 * (community-join/explore/posts/post-detail/live.js)가 쓰는 문구 묶음.
-	 * shell.js와 같은 방식으로 현재 세션 로케일 문구만 내려주고, 각 JS는 WePlaNet.t(key, 한국어기본값)로 꺼내 쓴다.
-	 * 템플릿과 같은 문구는 기존 키를 재사용하고, JS 전용 문구만 client.* 네임스페이스로 새로 만들었다.
+	 * main.js 공용 다이얼로그와 커뮤니티 화면 JS(community-join/explore/posts/post-detail/live.js)가 쓰는 문구 묶음.
+	 * 각 JS 는 WePlaNet.t(key, 한국어 기본값)로 꺼내 쓰고, JS 전용 문구는 client.* 키로 둔다.
 	 */
 	private static final String[] CLIENT_KEYS = {
 			// main.js - 공용 다이얼로그 / 배너 / 회원가입 폼 검증(signup-id.html의 #signupForm)
@@ -181,14 +177,14 @@ public class I18nController {
 			"community.media.replayTag",
 			// community-board-select.js - select에 aria-label이 없을 때의 기본 문구
 			"client.board.sort",
-			// SETTINGS-03 커밋5: dm-realtime.js
+			// dm-realtime.js
 			"shell.dm.messages",
 			"shell.dm.recommend",
 			"shell.dm.fanDm",
 			"client.dm.noConversation",
 			"client.dm.loginRequired",
 			"client.dm.warningPrefix",
-			// SETTINGS-03 커밋5: collection.js
+			// collection.js
 			"client.collection.badgeLoadFailed",
 	};
 
@@ -216,12 +212,8 @@ public class I18nController {
 	}
 
 	/**
-	 * SETTINGS-03 커밋4: 캘린더 위젯(global-icons.js)이 갖고 있던 ko/en/ja/zh/fr/es 자체 6개 언어
-	 * 딕셔너리를 이 API 기반 시스템으로 완전히 통합했다(zh/fr/es 는 제거, ko/ja/en 만 유지).
-	 *
-	 * 이 위젯은 언어 버튼을 누르면 페이지 새로고침 전에도 즉시 다른 언어로 다시 그려야 해서,
-	 * shell.js처럼 "현재 세션 로케일 문구만" 내려주는 게 아니라 ko/ja/en 3개 언어 문구를
-	 * 한 번에 다 내려준다. 응답 형태: { "ko": {...}, "ja": {...}, "en": {...} }
+	 * 캘린더 위젯(global-icons.js)용 문구 - 언어 버튼을 누르면 새로고침 없이 바로 다시 그려야 해서
+	 * ko/ja/en 3개 언어를 한 번에 내려준다. 응답: { "ko": {...}, "ja": {...}, "en": {...} }
 	 */
 	private static final Map<String, String> CALENDAR_UI_KEY_MAP = new LinkedHashMap<>();
 	static {
@@ -238,7 +230,7 @@ public class I18nController {
 		CALENDAR_UI_KEY_MAP.put("myCommunities", "calendar.ui.myCommunities");
 		CALENDAR_UI_KEY_MAP.put("noJoinedCommunities", "calendar.ui.noJoinedCommunities");
 		CALENDAR_UI_KEY_MAP.put("login", "calendar.ui.login");
-		// SETTINGS-03 커밋5: 헤더 테마 전환 버튼 aria-label (메인 헤더와 같은 키 재사용)
+		// 헤더 테마 전환 버튼 aria-label (메인 헤더와 같은 키 재사용)
 		CALENDAR_UI_KEY_MAP.put("themeToggle", "main.header.themeToggle");
 		CALENDAR_UI_KEY_MAP.put("markAllRead", "calendar.ui.markAllRead");
 		CALENDAR_UI_KEY_MAP.put("weekHint", "calendar.ui.weekHint");

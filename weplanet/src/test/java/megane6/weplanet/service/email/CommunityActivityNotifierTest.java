@@ -18,9 +18,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// GroupFollow/UserFollow 통합 이후: CommunityActivityNotifier의 발송 대상이
-// "가입(CommunityMember) + 팔로우(UserFollow)" 둘 다 만족하는 사람으로 좁혀졌는지 검증.
-// @Async는 스프링 프록시를 거칠 때만 동작하므로, 여기서는 new로 직접 생성해 동기 호출로 테스트한다.
+// 알림 메일 대상이 "가입 + 팔로우 + 이메일 알림 켬"을 모두 만족하는 사람으로 좁혀지는지 검증한다.
+// @Async 는 스프링 프록시를 거칠 때만 동작하므로 new 로 만들어 동기 호출로 테스트한다.
 class CommunityActivityNotifierTest {
 
 	private final CommunityMemberRepository communityMemberRepository = mock(CommunityMemberRepository.class);
@@ -38,15 +37,14 @@ class CommunityActivityNotifierTest {
 		when(artist.getId()).thenReturn(artistId);
 		Post post = mock(Post.class);
 
-		// fan101: 가입 + 팔로우 + 이메일알림 켬 -> 대상
-		// fan102: 가입만, 팔로우 안 함 -> 제외
-		// fan103: 가입 + 팔로우 O, 그러나 이메일알림 꺼짐 -> 제외
+		// fan101: 가입 + 팔로우 + 이메일 알림 켬 -> 대상 / fan102: 팔로우 안 함 -> 제외
+		// fan103: 가입 + 팔로우지만 이메일 알림 꺼짐 -> 제외
 		when(communityMemberRepository.findByArtistId(artistId)).thenReturn(List.of(
 				CommunityMember.builder().fanId(101L).artistId(artistId).build(),
 				CommunityMember.builder().fanId(102L).artistId(artistId).build(),
 				CommunityMember.builder().fanId(103L).artistId(artistId).build()
 		));
-		// AUTH-11: 팔로우 여부는 이 아티스트의 팔로워 목록을 한 번에 조회해서 가입자와 겹치는 사람만 남긴다
+		// 팔로우 여부는 이 아티스트의 팔로워 목록을 한 번에 조회해서 가입자와 겹치는 사람만 남긴다
 		when(userFollowRepository.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(artistId, artistId)).thenReturn(List.of(
 				UserFollow.builder().followerId(101L).followingId(artistId).communityId(artistId).build(),
 				UserFollow.builder().followerId(103L).followingId(artistId).communityId(artistId).build()
@@ -54,7 +52,7 @@ class CommunityActivityNotifierTest {
 
 		User fan101 = mock(User.class);
 		when(fan101.getId()).thenReturn(101L);
-		when(fan101.isLoginable()).thenReturn(true);   // AUTH-11: 휴면·정지 회원은 제외되므로 활성 회원으로 둔다
+		when(fan101.isLoginable()).thenReturn(true);   // 휴면·정지 회원은 제외되므로 활성 회원으로 둔다
 		when(fan101.isCommunityActivityEmailEnabled()).thenReturn(true);
 		when(fan101.isNightNotificationAllowed()).thenReturn(true); // 실행 시각과 무관하게 통과시키기 위함
 

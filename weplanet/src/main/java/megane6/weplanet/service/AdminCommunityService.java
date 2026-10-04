@@ -45,7 +45,7 @@ public class AdminCommunityService {
 	private final CommentReportRepository crr;
 	
 	private final AdminActionLogService als;
-	// SETTINGS-03 커밋5: 화면 표시용 라벨을 현재 로케일로 해석
+	// 화면 표시용 라벨을 현재 로케일로 해석
 	private final megane6.weplanet.i18n.Messages messages;
 	
 	public CommunityStats getStats() {

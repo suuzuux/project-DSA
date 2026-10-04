@@ -236,7 +236,7 @@
               sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')"
               xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <div class="flex-between" style="align-items:center;">
-        <!-- FOLLOW-01 통합: 커뮤니티에 가입한 사람이면 누구나 눌러서 아티스트 자기 프로필로 이동 가능
+        <!-- 커뮤니티에 가입한 사람이면 누구나 눌러서 아티스트 자기 프로필로 이동 가능
              (팔로우 여부와 무관 - 프로필 안에서 콘텐츠가 보이고 안 보이고는 팔로우 여부로 갈린다) -->
         <a class="flex-center" style="gap:8px;"
            th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${artist.id()})}">
@@ -263,7 +263,7 @@
       <strong class="modal__title" th:text="#{community.join.button}">커뮤니티 가입하기</strong>
       <button type="button" class="modal__close" data-modal-close>✕</button>
     </div>
-    <!-- SETTINGS-03 커밋3: 언어마다 어순이 달라("『이름』에서 …" / "… in 『name』") span 위치를 메시지 안에 둔다.
+    <!-- 언어마다 어순이 달라("『이름』에서 …" / "… in 『name』") span 위치를 메시지 안에 둔다.
          span 내용은 community-join.js가 textContent로 아티스트 이름으로 바꿔 넣는다. -->
     <p class="mb-24" th:with="thisCommunity=#{community.join.thisCommunity}"
        th:utext="#{community.join.modalPrompt(${thisCommunity})}"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>

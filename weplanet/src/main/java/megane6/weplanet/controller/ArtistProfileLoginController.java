@@ -93,9 +93,8 @@ public class ArtistProfileLoginController {
 		// 로그인 직전에 세션 id 를 바꾼다 (세션 고정 공격 방지 - 폼 로그인은 Spring Security 가 해주지만 여기선 직접)
 		request.changeSessionId();
 		sessionSupport.loginAs(member, request, response);
-		// SETTINGS-03 로케일 버그#2 유형 수정: 프로필 선택도 로그인을 새로 여는 지점이라 세션 로케일을 다시 맞춘다.
-		// 포털 로그인 화면에서 언어를 골랐으면(LoginSuccessHandler 가 넘겨준 표시) 그 언어를 유지하고 멤버 계정에 저장,
-		// 아니면 이 멤버의 선호 언어로 보여준다.
+		// 프로필 선택도 새로 로그인하는 지점이라 화면 언어를 다시 맞춘다.
+		// 포털 로그인 화면에서 언어를 골랐으면 그 언어를 유지해 멤버 계정에 저장하고, 아니면 멤버의 선호 언어로 보여준다.
 		if (PreferredLocaleResolver.hasExplicitChoice(request)) {
 			Locale chosen = localeResolver.resolveLocale(request);
 			userService.updateLanguage(member, PreferredLocaleResolver.toLanguage(chosen));

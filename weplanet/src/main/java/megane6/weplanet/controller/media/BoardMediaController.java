@@ -30,7 +30,7 @@ public class BoardMediaController {
 
     private final BoardMediaService boardMediaService;
     private final AuthenticatedUserResolver userResolver;
-    // SETTINGS-03 커밋3: 커뮤니티 미디어 탭의 flash 문구 번역용
+    // 커뮤니티 미디어 탭의 flash 문구 번역용
     private final megane6.weplanet.i18n.Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 

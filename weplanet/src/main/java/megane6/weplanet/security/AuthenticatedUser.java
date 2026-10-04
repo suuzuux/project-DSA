@@ -20,6 +20,8 @@ public class AuthenticatedUser implements UserDetails {
 	
 	private Long id;         // User.id (PK)
 	private String username; // 로그인 아이디
+	// 로그에 객체를 찍어도 비밀번호 해시는 나오지 않게 한다 (AuthenticatedUserDetailsService 의 debug 로그 등)
+	@ToString.Exclude
 	private String password; // 암호화된 비밀번호
 	private String nickname; // 화면 표시용 닉네임
 	private String roleName; // "ROLE_FAN" 형태의 권한 문자열

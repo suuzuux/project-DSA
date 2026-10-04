@@ -25,7 +25,7 @@ public class MailSenderService {
 	
 	/**
 	 * 최고관리자 로그인 인증번호 발송
-	 * (내부 운영자용 메일이라 한국어 고정 - SETTINGS-03 번역 대상 아님)
+	 * (내부 운영자용 메일이라 한국어 고정)
 	 * @param toEmail			받는 사람
 	 * @param code				6자리 인증번호 (로그에 남기지 X)
 	 * @param expireMinutes		유효시간 (분)
@@ -51,7 +51,7 @@ public class MailSenderService {
 	/**
 	 * 팬 프로젝트 등록 본인확인 인증번호 발송
 	 * 발송 실패 시 IllegalStateException으로 바꿔 던져서 발급한 인증 기록도 함께 롤백되게 한다.
-	 * SETTINGS-03 커밋5: 로그인한 회원 본인의 요청 중에 발송되므로 요청 로케일(= 회원 선호 언어)로 메일을 만든다.
+	 * 로그인한 회원 본인의 요청 중에 발송되므로 요청 로케일(= 회원 선호 언어)로 메일을 만든다.
 	 * @param toEmail			받는 사람 (회원가입 시 인증한 이메일)
 	 * @param code				6자리 인증번호 (로그에 남기지 X)
 	 * @param expireMinutes		유효시간 (분)

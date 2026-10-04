@@ -22,17 +22,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// GroupFollow 통합: 사람과 사람(팬↔팬, 팬↔아티스트 계정) 사이의 팔로우.
-// 예전엔 GroupFollow(About 위젯의 팬→아티스트 그룹 팔로우, 와이어프레임 26번)와 UserFollow(팬↔팬,
-// FOLLOW-01)가 완전히 별개의 테이블/서비스였는데, 이름을 "UserFollow" 하나로 통합했다.
-//
-// 팔로우는 특정 커뮤니티(communityId)에 종속된다:
-//   - 팬→아티스트: 그 아티스트 커뮤니티 가입 여부와 무관하게 팔로우 가능 (기존 GroupFollow 방식 유지).
-//     target이 곧 그 커뮤니티 주인이라 following_id == community_id.
-//   - 팬↔팬: 같은 커뮤니티(communityId) 가입자끼리만 가능 (기존 UserFollow 방식 유지), 상대가
-//     콘텐츠를 숨긴 상태면 불가.
-//   - 같은 두 사람이 여러 커뮤니티에 함께 가입돼 있어도 팔로우는 커뮤니티마다 별개의 관계다.
-//     한쪽이 그 커뮤니티를 탈퇴하면(CommunityJoinService.leave) 이 관계도 함께 삭제된다.
+// 사람과 사람 사이의 팔로우 (팬→아티스트: 가입 없이 가능 / 팬↔팬: 같은 커뮤니티 가입자끼리, 상대가 콘텐츠를 숨겼으면 불가).
+// 팔로우는 커뮤니티(communityId)마다 별개의 관계이고, 그 커뮤니티를 탈퇴하면 함께 지워진다.
 @Service
 @RequiredArgsConstructor
 public class UserFollowService {
@@ -51,9 +42,7 @@ public class UserFollowService {
             throw new IllegalStateException("error.follow.self");
         }
 
-        // 이미 팔로우 중이면 취소한다. 취소는 아래 조건(가입·숨김 등)과 상관없이 항상 허용한다 -
-        // 예전에는 조건 검사를 먼저 해서, 상대가 콘텐츠를 숨기거나 커뮤니티를 떠난 뒤(또는 내가 나간 뒤)에는
-        // 이미 걸려 있는 팔로우를 취소할 수 없었다.
+        // 이미 팔로우 중이면 취소한다 - 취소는 가입·숨김 같은 조건과 상관없이 항상 허용한다.
         if (userFollowRepository.existsByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId)) {
             userFollowRepository.deleteByFollowerIdAndFollowingIdAndCommunityId(me.getId(), targetUserId, communityId);
             return false;

@@ -18,7 +18,7 @@ public enum HashtagEventStatus {
 	
 	private final String displayName;
 	
-	// SETTINGS-03 다국어: 화면에서는 #{${status.messageKey}} 로 현재 언어 문구를 보여준다 (displayName 은 한국어 기본값)
+	// 화면에서는 #{${status.messageKey}} 로 현재 언어 문구를 보여준다 (displayName 은 한국어 기본값)
 	public String getMessageKey() {
 		return "hashtag.status." + name();
 	}

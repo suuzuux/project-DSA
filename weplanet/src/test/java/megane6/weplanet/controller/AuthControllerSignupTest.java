@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -63,6 +64,35 @@ class AuthControllerSignupTest {
 
 		verify(userService, never()).signup(any());
 		verify(loginSessionSupport, never()).loginAs(any(), any(), any());
+	}
+
+	// 닉네임 중복처럼 서버에서 막혀 가입 화면이 다시 열려도, 이미 마친 아이디 중복 확인·이메일 인증은 이어간다
+	@Test
+	void formShownAgainKeepsCheckedUsernameAndEmailVerification() throws Exception {
+		when(emailVerificationService.isVerified(any(), eq(VerificationPurpose.SIGNUP), eq("newfan01@weplanet.test")))
+				.thenReturn(true);
+		when(userService.signup(any(SignupRequestDto.class)))
+				.thenThrow(new IllegalArgumentException("signup.error.nicknameTaken"));
+		when(userService.isUsernameAvailable("newfan01")).thenReturn(true);
+
+		mockMvc.perform(validSignup())
+				.andExpect(view().name("signup-id"))
+				.andExpect(model().attribute("checkedUsername", "newfan01"))
+				.andExpect(model().attribute("emailVerified", true));
+
+		verify(loginSessionSupport, never()).loginAs(any(), any(), any());
+	}
+
+	// 그 사이에 다른 사람이 같은 아이디로 가입했으면 중복 확인은 다시 해야 한다
+	@Test
+	void formShownAgainAsksUsernameCheckWhenTakenMeanwhile() throws Exception {
+		when(emailVerificationService.isVerified(any(), any(), any())).thenReturn(true);
+		when(userService.signup(any(SignupRequestDto.class)))
+				.thenThrow(new IllegalArgumentException("signup.error.usernameTaken"));
+		when(userService.isUsernameAvailable("newfan01")).thenReturn(false);
+
+		mockMvc.perform(validSignup())
+				.andExpect(model().attribute("checkedUsername", ""));
 	}
 
 	private static org.springframework.test.web.servlet.RequestBuilder validSignup() {

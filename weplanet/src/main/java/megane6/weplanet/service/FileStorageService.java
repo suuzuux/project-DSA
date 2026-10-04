@@ -71,13 +71,8 @@ public class FileStorageService {
         return storedName;
     }
 
-    // AUTH-11: 프로필 사진·배경, 메인 배너처럼 "이미지만" 받아야 하는 곳에서 쓰는 저장 메서드.
-    // store() 는 원본 확장자를 그대로 붙이기 때문에 .html/.svg 파일을 올리면 /uploads 에서 우리 사이트 주소로
-    // 열려 스크립트가 실행될 수 있었다(저장형 XSS). 여기서는
-    //  1) 크기 상한(10MB)
-    //  2) 브라우저가 보낸 Content-Type 이 image/* 인지
-    //  3) 파일 앞부분(매직바이트)이 실제로 jpg/png/gif/webp 인지
-    // 를 모두 확인하고, 저장 확장자는 원본 파일명이 아니라 3)에서 판별한 형식으로 서버가 붙인다.
+    // 프로필 사진·배경, 메인 배너처럼 "이미지만" 받아야 하는 곳의 저장 메서드 (.html/.svg 업로드로 인한 저장형 XSS 방지).
+    // 크기(10MB)·Content-Type(image/*)·매직바이트(jpg/png/gif/webp)를 모두 확인하고, 확장자는 판별한 형식으로 서버가 붙인다.
     public static final long MAX_IMAGE_BYTES = 10L * 1024 * 1024;
 
     public String storeImage(MultipartFile file) {

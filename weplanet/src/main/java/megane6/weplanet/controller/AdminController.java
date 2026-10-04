@@ -179,10 +179,8 @@ public class AdminController {
 		return "admin/dashboard";
 	}
 	
-	// FIX-01: 예전에는 세션만 무효화하고 브라우저의 세션 쿠키(JSESSIONID)는 그대로 둬서, 다음 요청(/admin/login)이
-	// "만료된 세션"으로 판단돼 SecurityConfig 의 invalidSessionUrl(/login?expired=true) - 팬 로그인 화면으로 튕겼다.
-	// 스프링 기본 로그아웃(/logout)과 같은 처리(세션 무효화 + 인증 정보 삭제 + 세션 쿠키 삭제)를 해서
-	// 관리자 로그인 화면(/admin/login?logout)으로 정상 이동하게 한다.
+	// 스프링 기본 로그아웃처럼 세션 무효화 + 인증 정보 삭제 + 세션 쿠키(JSESSIONID) 삭제까지 해서
+	// 팬 로그인 화면(만료 세션 처리)으로 튕기지 않고 관리자 로그인 화면(/admin/login?logout)으로 이동한다.
 	@PostMapping("/logout")
 	public String logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
 		new SecurityContextLogoutHandler().logout(request, response, authentication);

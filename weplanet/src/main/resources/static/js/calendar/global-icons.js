@@ -25,12 +25,8 @@
   ];
 
   /**
-   * SETTINGS-03 커밋4: 이 위젯이 따로 갖고 있던 ko/en/ja/zh/fr/es 6개 언어 자체 딕셔너리
-   * (localStorage "weplanet.lang" 기준)를 서버 MessageSource 기반 시스템으로 완전히 통합한다.
-   * zh/fr/es 는 이번에 지원 언어에서 제거(ko/ja/en 만 유지) — 사용자 결정("완전히 새 시스템으로 통합").
-   * 아래 DEFAULT_* 는 /api/i18n/calendar fetch가 실패했을 때를 위한 한국어 기본값 안전망이고,
-   * 실제 문구는 항상 messages*.properties(서버) 값이 우선이다(shell.js와 동일한 패턴).
-   * 언어 버튼을 누르면 새로고침 전에도 즉시 다시 그려야 해서 ko/ja/en 3개 언어를 한번에 들고 있는다.
+   * 캘린더·알림 위젯 문구는 서버 MessageSource(messages*.properties, ko/ja/en)를 /api/i18n/calendar 로 받아 쓴다(shell.js와 같은 패턴).
+   * 아래 DEFAULT_* 는 fetch 실패 시 한국어 기본값이고, 언어 버튼을 누르면 새로고침 없이 다시 그리도록 3개 언어를 한번에 들고 있는다.
    */
   var DEFAULT_UI = {
     ko: {
@@ -802,10 +798,8 @@
     return slot;
   }
 
-  // SETTINGS-03 커밋4: 커밋1에서 이 아이콘들의 aria-label이 #{...}로 로케일별로 번역되면서
-  // (예: "언어" → "Language"/"言語") 한국어 리터럴만 비교하던 기존 감지 로직이 non-KO 로케일에서
-  // 버튼을 못 찾는 회귀가 있었다. data-icon 속성(안정적인 식별자)을 우선 사용하고,
-  // 아직 data-icon이 없는 페이지(예: 메인 index.html, Commit 3 범위)를 위해 텍스트 매칭도 폴백으로 남긴다.
+  // 언어 버튼 감지: aria-label은 로케일별로 번역되므로(예: "언어" → "Language"/"言語") data-icon 속성을 우선 사용하고,
+  // 아직 data-icon이 없는 페이지를 위해 한국어 텍스트 매칭도 폴백으로 남긴다.
   function isLangBtn(btn) {
     if (!btn || btn.tagName === "A") return false;
     if (btn.dataset && btn.dataset.icon === "language") return true;
@@ -952,9 +946,7 @@
   function bindLangButton(btn) {
     if (btn.dataset.wpBound === "lang") return;
     btn.dataset.wpBound = "lang";
-    // SETTINGS-03 커밋4: 예전엔 여기서 aria-label을 "언어"로 강제로 다시 써서, 커밋1이 Thymeleaf로
-    // 이미 로케일에 맞게 넣어준 번역(예: "Language"/"言語")을 매번 덮어썼다. 버튼이 이미 올바른
-    // aria-label을 갖고 있으므로 더 이상 덮어쓰지 않는다.
+    // aria-label은 Thymeleaf가 이미 로케일에 맞게 넣어 주므로 여기서 덮어쓰지 않는다.
     btn.removeAttribute("onclick");
     var slot = wrapSlot(btn, "lang");
     if (!slot.querySelector(".wp-lang-menu")) {
@@ -980,7 +972,7 @@
   function bindNotiButton(btn) {
     if (btn.dataset.wpBound === "noti") return;
     btn.dataset.wpBound = "noti";
-    // SETTINGS-03 커밋4: bindLangButton과 동일한 이유로 aria-label 강제 덮어쓰기를 제거했다.
+    // bindLangButton과 같은 이유로 aria-label은 덮어쓰지 않는다.
     btn.classList.add("icon-btn--badge", "wp-noti-bound");
     btn.removeAttribute("onclick");
     btn.onclick = null;
@@ -1638,9 +1630,8 @@
   }
 
   function init() {
-    // 화면 언어의 기준은 서버 세션 로케일(<html lang> = th:lang). localStorage 에 예전 값이 남아 있으면
-    // 로그인 화면·설정·다른 기기에서 바꾼 언어와 어긋나서, 페이지는 일본어인데 캘린더·알림·헤더 아이콘만
-    // 한국어로 나오고 <html lang>까지 ko 로 덮어쓰던 문제가 있었다 → 서버가 내려준 언어로 맞춘다.
+    // 화면 언어의 기준은 서버 세션 로케일(<html lang> = th:lang). localStorage 값은 설정·다른 기기에서 바꾼 언어와
+    // 어긋날 수 있어서, 캘린더·알림·헤더 아이콘도 서버가 내려준 언어로 맞춘다.
     var serverLang = (document.documentElement.getAttribute("lang") || "").toLowerCase().slice(0, 2);
     persistLang(LANGUAGES.some(function (l) { return l.code === serverLang; }) ? serverLang : getLang());
     injectRoot();
@@ -1653,12 +1644,8 @@
     updateNotiBadges();
     hydrateMiniCal();
     hydrateWeekGrid();
-    // SETTINGS-02: enhanceSettingsLang()은 설정 페이지의 "기본 서비스 언어" select(#languageSelect)를
-    // 이 파일의 소문자 언어 코드(ko/en/ja/zh/fr/es) 옵션으로 통째로 덮어쓰고 자체 change 리스너까지
-    // 붙여서, User.preferredLanguage(KO/JA/EN, 대문자)를 실제로 저장하는 SettingsController
-    // /settings/language 저장 로직과 충돌했다(항상 소문자 값을 보내 enum 변환이 실패함).
-    // 헤더 🌐 버튼(캘린더/알림 문구 클라이언트 전환)은 그대로 두고, 설정 페이지 select를
-    // 가로채는 이 호출만 막는다.
+    // enhanceSettingsLang()은 설정 페이지의 언어 select(#languageSelect)를 소문자 코드 옵션으로 덮어써서
+    // SettingsController의 언어 저장(KO/JA/EN)과 충돌하므로 호출하지 않는다 (헤더 🌐 버튼은 그대로).
     // enhanceSettingsLang();
     loadSchedulesFromApi();
     loadPostNotifications();
@@ -1681,7 +1668,7 @@
     getLang: getLang,
   };
 
-  // SETTINGS-03 커밋4: shell.js와 동일한 패턴 - 서버 문구(ko/ja/en)를 먼저 받아온 뒤에만
+  // shell.js와 동일한 패턴 - 서버 문구(ko/ja/en)를 먼저 받아온 뒤에만
   // 화면을 그린다. fetch가 실패해도 loadCalendarI18n()의 catch가 삼켜서 한국어 기본값으로 진행한다.
   function boot() {
     loadCalendarI18n().then(init);

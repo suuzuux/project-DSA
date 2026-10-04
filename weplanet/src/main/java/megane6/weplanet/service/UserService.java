@@ -6,15 +6,15 @@ import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.event.AccountMailEvent;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
-import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
-import org.springframework.context.MessageSource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,27 +32,24 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
-	private final MarketingConsentEmailService marketingConsentEmailService;
+	// 가입 완료·광고성 정보 동의 안내 메일 요청 (AccountMailEvent → AccountMailListener)
+	private final ApplicationEventPublisher eventPublisher;
 	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
 	private final CommunityJoinService communityJoinService;
 	private final UserFollowRepository userFollowRepository;
-	private final MessageSource messageSource;
 
-	// SETTINGS-03: 회원가입(signup-id.html) 화면에서만 쓰이는 예외 메시지를 현재 세션 로케일로 번역한다.
-	private String msg(String code) {
-		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
-	}
+	// 예외 메시지는 메시지 키로 던지고, 화면에 내보내는 컨트롤러가 Messages.resolve(e)로 번역한다 (AuthController, SettingsController).
 
 	@Transactional
 	public User signup(SignupRequestDto dto) {
 		if (!dto.isPasswordConfirmed()) {
-			throw new IllegalArgumentException(msg("signup.error.passwordMismatch"));
+			throw new IllegalArgumentException("signup.error.passwordMismatch");
 		}
 		if (userRepository.existsByUsername(dto.getUsername())) {
-			throw new IllegalArgumentException(msg("signup.error.usernameTaken"));
+			throw new IllegalArgumentException("signup.error.usernameTaken");
 		}
 		if (userRepository.existsByEmail(dto.getEmail())) {
-			throw new IllegalArgumentException(msg("signup.error.emailTaken"));
+			throw new IllegalArgumentException("signup.error.emailTaken");
 		}
 		
 		String nickname = resolveNickname(dto.getNickname());
@@ -66,7 +63,7 @@ public class UserService {
 				dto.getEmail()
 		);
 		
-		// 실제 회원가입 이메일 인증을 구현하기 전까지 사용하는 모의 인증 처리
+		// 가입 화면에서 이메일 인증코드 확인을 마친 경우에만 여기까지 온다 (AuthController.signup 이 먼저 확인) - 인증 완료 시각을 남긴다
 		user.markEmailVerified(LocalDateTime.now());
 		
 		// [설정 - 이벤트·혜택 알림] 가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스 값을 그대로 반영.
@@ -82,32 +79,17 @@ public class UserService {
 		user.recordLogin();
 
 		User saved = userRepository.save(user);
-		
-		// [광고성 정보 알림] 데모용 - 실제 운영 기능은 아니고, 이 기능이 살아있다는 걸 보여주기 위해
-		// 인증된 이메일로 가입 완료 메일을 무조건 1통 보낸다 (광고·마케팅 동의 체크 여부와 무관).
-		try {
-			marketingConsentEmailService.sendSignupWelcomeEmail(saved, saved.isMarketingConsent());
-		} catch (Exception e) {
-			log.error("[광고성 정보 알림] 회원가입 환영 메일 발송 실패: user={}", saved.getId(), e);
-		}
-		
-		// 그중 "(선택) 광고 및 마케팅 활용 동의"까지 체크한 사람에게는 곧바로 커뮤니티 가입 유도 메일을
-		// 1통 더 보낸다. 체크 안 했으면(기본값) 여기서 끝 - 나중에 설정 화면에서 토글을 켜면 그때 별도로
-		// 동의 확인 메일 1통만 보낸다 (아래 updateNotificationPreference 참고).
-		if (saved.isMarketingConsent()) {
-			try {
-				marketingConsentEmailService.sendCommunityInviteEmail(saved);
-			} catch (Exception e) {
-				log.error("[광고성 정보 알림] 커뮤니티 가입 유도 메일 발송 실패: user={}", saved.getId(), e);
-			}
-		}
-		
+
+		// 가입 완료 메일 1통(데모용, 동의 여부와 무관) + "(선택) 광고 및 마케팅 활용 동의"까지 했으면 커뮤니티 가입 유도 메일 1통.
+		// 메일은 가입이 확정된 뒤 백그라운드로 보낸다 (AccountMailListener).
+		eventPublisher.publishEvent(AccountMailEvent.signupWelcome(saved.getId(), saved.isMarketingConsent()));
+
 		return saved;
 	}
 	
 	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
 	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
-	// AUTH-11: 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
+	// 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
 	private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-]{1,20}$");
 
 	// 회원가입 화면의 "중복 확인" 버튼용 - 실제로 DB를 조회해서 사용 가능 여부를 알려준다.
@@ -115,13 +97,11 @@ public class UserService {
 		return !userRepository.existsByUsername(username);
 	}
 
-	// [닉네임 관리] 회원정보(마이페이지) 수정 - 아이디는 로그인 식별자라 여기서 바꾸지 않고,
-	// 닉네임/이름/이메일/비밀번호(선택 입력 시에만)를 갱신한다.
-	// 반환하는 AuthenticatedUser는 호출한 컨트롤러가 SecurityContext를 즉시 갱신할 때 씀 -
-	// 안 그러면 세션에 남아있는 예전 닉네임 때문에 재로그인 전까지 헤더가 안 바뀜.
+	// 회원정보 수정 - 닉네임/이름/이메일/전화번호, 비밀번호(입력했을 때만)를 바꾼다 (아이디는 바꾸지 않음).
+	// 반환한 AuthenticatedUser 로 컨트롤러가 SecurityContext 를 바로 갱신한다 (헤더 닉네임이 즉시 바뀌도록).
 	@Transactional
-	// newEmailVerified: 컨트롤러가 "이 세션에서 이메일 변경 용도로 인증을 마쳤는지" 확인해서 넘겨준다 (AUTH-11)
-	// emailChangeAuthorized: 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService, 소셜 전용 계정은 항상 true)
+	// newEmailVerified: 이 세션에서 이메일 변경 용도로 인증을 마쳤는지
+	// emailChangeAuthorized: 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (소셜 전용 계정은 항상 true)
 	public AuthenticatedUser updatePortalAccount(User user, String nickname, String realName, String email,
 												  boolean newEmailVerified, boolean emailChangeAuthorized, String phone,
 												  String currentPassword, String newPassword, String confirmPassword) {
@@ -144,18 +124,13 @@ public class UserService {
 		}
 		boolean emailChanged = !trimmedEmail.equals(user.getEmail());
 		if (emailChanged) {
-			// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 이제 연동 여부와
-			// 등록 이메일은 서로 독립적인 값이라, 제공자와 무관하게 누구나 인증 절차만 거치면 바꿀 수 있다.
-			// 이메일은 설정 화면에서 잠겨 있고, "수정하기" → 인증코드 발송/확인을 거쳐야만 값이 바뀔 수 있다.
-			// 여기서 인증 여부를 한 번 더 검증하는 건, JS를 우회해서 곧바로 폼을 제출하는 경우를 막기 위함.
+			// 이메일은 "수정하기" → 인증코드 확인을 거쳐야만 바뀐다 (소셜 연동 여부와 무관).
+			// 화면(JS)을 우회해 바로 제출하는 경우를 막으려고 서버에서도 인증 여부를 확인한다.
 			if (!newEmailVerified) {
 				throw new IllegalArgumentException("signup.error.emailNotVerified");
 			}
-			// AUTH-11: 비밀번호가 있는 계정은 이메일을 바꾸기 전에 현재 비밀번호를 다시 확인한다.
-			// 이메일이 바뀌면 아이디/비밀번호 찾기가 새 이메일로 가기 때문에, 로그인된 브라우저를 잠깐 쓴 사람이
-			// 이메일을 바꿔 계정을 가져가는 것을 막기 위함. 확인은 이메일 "수정하기"를 누를 때 따로 받고
-			// (EmailChangeAuthService), 여기서는 그 확인이 이 세션에 남아 있는지만 본다.
-			// 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어 새 이메일 인증만 거친다(항상 true 로 넘어옴).
+			// 비밀번호가 있는 계정은 이메일을 바꾸기 전에 현재 비밀번호를 다시 확인한다 (EmailChangeAuthService).
+			// 로그인된 브라우저를 잠깐 쓴 사람이 이메일을 바꿔 계정을 가져가는 것을 막기 위함.
 			if (!emailChangeAuthorized) {
 				throw new IllegalArgumentException("settings.email.passwordCheckRequired");
 			}
@@ -166,28 +141,24 @@ public class UserService {
 		} else {
 			user.changePortalProfile(trimmedNickname, user.getEmail());
 		}
-		// AUTH-11: real_name 은 VARBINARY(255)(UTF-8 바이트) - 가입 화면과 같은 50자 제한
+		// real_name 은 VARBINARY(255)(UTF-8 바이트) - 가입 화면과 같은 50자 제한
 		if (trimmedRealName.length() > 50) {
 			throw new IllegalArgumentException("signup.validation.realNameTooLong");
 		}
 		user.changeRealName(trimmedRealName);
 
-		// AUTH-11: 전화번호(선택) - 예전에는 화면에 입력칸만 있고 저장하지 않았다
+		// 전화번호(선택) - 비우면 지운다
 		String trimmedPhone = phone == null ? "" : phone.trim();
 		if (!trimmedPhone.isEmpty() && !PHONE_PATTERN.matcher(trimmedPhone).matches()) {
 			throw new IllegalArgumentException("settings.error.phoneInvalid");
 		}
 		user.changePhone(trimmedPhone.isEmpty() ? null : trimmedPhone);
 
-		// 비밀번호 변경/등록은 currentPassword/newPassword/confirmPassword 중 하나라도 입력됐으면 시도한 것으로 본다.
-		// 화면(JS)에서는 현재 비밀번호를 입력해야 새 비밀번호 칸이 열리지만, 서버에서도 한 번 더 검증한다
-		// (JS를 우회해서 직접 요청을 보내는 경우를 막기 위함).
-		// (이메일 변경 확인은 이제 별도로 받으므로 이 "현재 비밀번호" 칸은 비밀번호 변경 전용이다)
+		// 비밀번호 칸 중 하나라도 입력했으면 비밀번호 변경/등록을 시도한 것으로 본다.
+		// 화면(JS)에서도 막지만, 직접 요청을 보내는 경우를 위해 서버에서 한 번 더 검증한다.
 		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
 		if (wantsPasswordChange) {
-			// AUTH-10: provider가 아니라 "지금 비밀번호가 있는지"로 판단한다. 비밀번호가 이미 있는 계정만
-			// 현재 비밀번호 확인을 거치고, 비밀번호가 아직 없던 계정(소셜 전용 가입)은 새로 등록하는
-			// 것이므로 확인할 현재 비밀번호 자체가 없다 - 이 분기를 건너뛴다.
+			// 비밀번호가 이미 있는 계정만 현재 비밀번호를 확인한다 (소셜 전용 계정은 새로 등록하는 것이라 생략).
 			if (user.hasPassword()
 					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
 				throw new IllegalArgumentException("error.user.currentPasswordMismatch");
@@ -214,9 +185,8 @@ public class UserService {
 				.build();
 	}
 
-	// [회원탈퇴] 상태 변경(WITHDRAWN)/개인정보 익명화는 User.withdraw() 참고.
-	// 거기서 못 지우는(다른 테이블 걸쳐있는) 것들 - 가입해둔 커뮤니티, 팔로우 관계 - 은 여기서 정리한다.
-	// AUTH-11: 비밀번호가 있는 계정은 현재 비밀번호가 맞아야 탈퇴된다 (소셜 전용 계정은 확인할 비밀번호가 없어 생략).
+	// 회원 탈퇴 - 비밀번호가 있는 계정은 현재 비밀번호가 맞아야 한다 (소셜 전용 계정은 생략).
+	// 상태 변경·개인정보 익명화는 User.withdraw(), 가입한 커뮤니티와 팔로우 관계는 여기서 정리한다.
 	@Transactional
 	public void withdraw(User user, String currentPassword) {
 		if (user.hasPassword()
@@ -227,9 +197,8 @@ public class UserService {
 		}
 		user.withdraw();
 
-		// 가입해둔 커뮤니티는 CommunityJoinService.leave()로 하나씩 탈퇴 처리 - 프로필/이미지 파일 정리와
-		// 그 커뮤니티에 종속된 팔로우 관계 삭제까지 leave() 안에서 함께 처리된다.
-		// (반환된 Set을 그대로 순회하며 그 안에서 지우면 ConcurrentModificationException이 날 수 있어 복사해서 순회)
+		// 가입한 커뮤니티는 leave() 로 하나씩 탈퇴 처리한다 (프로필·사진·그 커뮤니티의 팔로우까지 정리).
+		// 순회 중 삭제로 ConcurrentModificationException 이 나지 않게 목록을 복사해서 돈다.
 		for (Long artistId : Set.copyOf(communityJoinService.joinedArtistIds(user))) {
 			communityJoinService.leave(user, artistId);
 		}
@@ -246,15 +215,10 @@ public class UserService {
 		switch (type) {
 			case "marketing" -> {
 				user.changeMarketingConsent(enabled);
-				// [광고성 정보 알림] 데모용 - 가입 때 체크를 안 했거나 소셜 계정으로 가입해서 동의값이
-				// 없던 사람이, 여기 설정 화면에서 토글을 켜는 순간(=enabled) 동의 확인 메일 1통만 보낸다.
-				// (가입 때 이미 체크해서 signup()에서 메일을 보낸 경우는 이 메서드를 타지 않으므로 안 겹침)
+				// 데모용 - 설정 화면에서 광고성 정보 알림을 켜는 순간 동의 확인 메일 1통을 보낸다.
+				// 저장이 끝난 뒤 백그라운드로 보내서 토글 응답이 메일 발송을 기다리지 않는다 (AccountMailListener).
 				if (enabled) {
-					try {
-						marketingConsentEmailService.sendMarketingConsentConfirmedEmail(user);
-					} catch (Exception e) {
-						log.error("[광고성 정보 알림] 설정 화면 동의 확인 메일 발송 실패: user={}", user.getId(), e);
-					}
+					eventPublisher.publishEvent(AccountMailEvent.marketingConsentConfirmed(user.getId()));
 				}
 			}
 			case "email" -> user.changeCommunityActivityEmailEnabled(enabled);
@@ -263,17 +227,14 @@ public class UserService {
 		}
 	}
 
-	// [설정 - 언어 설정] SETTINGS-02: "기본 서비스 언어" 저장. 이 값이 게시글/댓글 AI 번역
-	// (TranslateService) 대상 언어로도 그대로 쓰인다 (PostController.translatePost/translateComment 참고).
+	// 기본 서비스 언어 저장 - 화면 언어이자 게시글/댓글 AI 번역 대상 언어로 쓰인다.
 	@Transactional
 	public void updateLanguage(User user, Language language) {
 		user.changePreferredLanguage(language);
 	}
 
-	// [AUTH-10] 소셜 연동 해제. 비밀번호는 건드리지 않는다 - User.unlinkSocialProvider() 참고.
-	// 비밀번호가 없는 계정(소셜 전용 가입)은 이 소셜이 유일한 로그인 수단이라, 해제를 허용하면 계정에
-	// 영영 다시 로그인할 수 없게 된다. 설정 화면에서는 이 경우 버튼 자체를 비활성화해두지만, 직접 요청을
-	// 보내는 경우까지 막기 위해 여기서도 한 번 더 검증한다.
+	// 소셜 연동 해제 (비밀번호는 그대로). 비밀번호가 없는 계정은 이 소셜이 유일한 로그인 수단이라 막는다.
+	// 화면에서도 버튼을 막아 두지만, 직접 요청을 보내는 경우를 위해 서버에서 한 번 더 확인한다.
 	@Transactional
 	public void unlinkSocialProvider(User user) {
 		if (!user.hasPassword()) {
@@ -291,11 +252,11 @@ public class UserService {
 			return nicknameGenerator.generate();
 		}
 		if (!NicknamePolicy.isAllowed(requestedNickname)) {
-			throw new IllegalArgumentException(msg("signup.error.nicknameInvalid"));
+			throw new IllegalArgumentException("signup.error.nicknameInvalid");
 		}
 		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
 		if (userRepository.existsByNicknameAndRoleNotIn(requestedNickname, Role.ARTIST_SIDE)) {
-			throw new IllegalArgumentException(msg("signup.error.nicknameTaken"));
+			throw new IllegalArgumentException("signup.error.nicknameTaken");
 		}
 		return requestedNickname;
 	}

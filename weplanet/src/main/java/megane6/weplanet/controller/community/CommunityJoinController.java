@@ -45,14 +45,12 @@ public class CommunityJoinController {
 		try {
 			communityJoinService.join(me, artistId, nickname, bio, avatar, background);
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
-			// AUTH-11: 가입 버튼을 빠르게 두 번 눌러 같은 가입이 동시에 들어온 경우 - 먼저 끝난 가입이 있으므로 그대로 진행
+			// 가입 버튼을 빠르게 두 번 눌러 같은 가입이 동시에 들어온 경우 - 먼저 끝난 가입이 있으므로 그대로 진행
 		}
 		return RefererRedirects.back(referer, request, "/"); // 우리 사이트 주소일 때만 누른 화면으로 (오픈 리다이렉트 방지)
 	}
 	
-	// PROFILE-01: 프로필 편집
-	// removeAvatar/removeBackground - 화면의 "이미지 삭제하기"를 확인했을 때 true로 넘어온다.
-	// 값이 아예 안 오는 경우(다른 화면에서 호출)도 있어 기본값 false로 둔다.
+	// 커뮤니티 프로필 편집. removeAvatar/removeBackground 는 화면의 "이미지 삭제하기"를 확인했을 때 true 로 넘어온다.
 	@PostMapping("/community/{artistId}/profile/edit")
 	public String editProfile(@PathVariable Long artistId,
 							  @RequestParam(required = false) String nickname,

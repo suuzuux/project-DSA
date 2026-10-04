@@ -30,7 +30,7 @@ public class ShopCartService {
 	private final ShopCheckoutService shopCheckoutService;
 	private final MessageSource messageSource;
 
-	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}

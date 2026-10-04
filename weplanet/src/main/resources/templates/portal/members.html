@@ -83,7 +83,7 @@
 
             <!-- 멤버 추가 -->
             <form class="settings-block" style="max-width:800px;" th:action="@{/portal/members}" method="post">
-                <!-- AUTH-11: 이 화면에 보이는 그룹에 추가되도록 그룹 id 를 같이 보낸다 (탭 여러 개 대비) -->
+                <!-- 이 화면에 보이는 그룹에 추가되도록 그룹 id 를 같이 보낸다 (탭 여러 개 대비) -->
                 <input type="hidden" name="artistId" th:value="${artist.id}" />
                 <div class="form-group">
                     <label class="form-label" for="memberName" th:text="#{portalMembers.add}">멤버 추가</label>

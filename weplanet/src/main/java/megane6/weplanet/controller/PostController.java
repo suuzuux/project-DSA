@@ -53,12 +53,10 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
     private final TranslateService translateService;
-    // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부) - GroupFollow/UserFollow 통합 전에는 이 체크가
-    // 실수로 UserFollowService.isFollowingArtist(팔로우 여부)를 봤었는데, 팔로우는 가입 없이도 가능해져서
-    // "가입 안 해도 요약/번역은 된다"는 구멍이 될 뻔했다. CommunityJoinService.isJoined(가입 여부)로 바로잡음.
+    // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부 - 팔로우는 가입 없이도 할 수 있어서 팔로우 여부로 보면 안 됨)
     private final CommunityJoinService communityJoinService;
     private final PortalManagementService portalManagementService;
-    // SETTINGS-03 커밋3: 예외 메시지는 키로 던지고(GlobalExceptionHandler가 번역), fetch 성공 JSON 문구만 여기서 번역
+    // 예외 메시지는 키로 던지고(GlobalExceptionHandler가 번역), fetch 성공 JSON 문구만 여기서 번역
     private final Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
@@ -489,9 +487,7 @@ public class PostController {
      * <p>
      * 그래서 ① 로그인 여부와 ② 그 게시글이 속한 커뮤니티에 가입(팔로우)했는지를 함께 확인함.
      */
-    // SETTINGS-02: translatePost/translateComment가 로그인 사용자의 "기본 서비스 언어"를
-    // 번역 대상 언어로 넘겨줘야 해서, 이미 조회해둔 User를 그대로 반환하도록 바꿨다
-    // (summarizePost처럼 반환값이 필요 없는 호출부는 그냥 statement로 호출하면 됨).
+    // 번역·요약을 로그인 사용자의 기본 서비스 언어로 하도록 조회한 User를 반환한다 (필요 없는 호출부는 반환값 무시).
     private User requireAiAccess(Post post, AuthenticatedUser principal) {
         User user = userResolver.requireAuthenticated(principal);
 
@@ -525,7 +521,7 @@ public class PostController {
     ) {
         Post post = postService.getPost(id);
         User user = requireAiAccess(post, principal);
-        // SETTINGS-03 커밋3: 요약도 사용자의 기본 서비스 언어로 받는다 (예전엔 항상 한국어)
+        // 요약도 사용자의 기본 서비스 언어로 받는다
         String summary = summaryService.summarize(post.getContent(), user.getPreferredLanguage());
 
         return Map.of("summary", summary);
@@ -540,7 +536,7 @@ public class PostController {
     ) {
         Post post = postService.getPost(id);
         User user = requireAiAccess(post, principal);
-        // SETTINGS-02: 더 이상 영어 고정이 아니라, 로그인 사용자의 "기본 서비스 언어"로 번역
+        // 로그인 사용자의 "기본 서비스 언어"로 번역
         String translated = translateService.translate(post.getContent(), user.getPreferredLanguage());
 
         return Map.of("translated", translated);

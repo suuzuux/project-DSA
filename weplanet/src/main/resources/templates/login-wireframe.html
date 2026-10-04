@@ -30,6 +30,11 @@
       탈퇴했거나 이용이 정지된 계정이라 로그인할 수 없습니다.
     </p>
 
+    <!-- 팬이 아닌 계정(관리자·아티스트·소속사)에 연결된 소셜 계정으로 로그인한 경우 (OAuth2LoginSuccessHandler) -->
+    <p th:if="${param.socialFanOnly}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.socialFanOnly}">
+      소셜 로그인은 팬 계정만 이용할 수 있습니다. 아티스트·소속사는 포털 로그인을, 관리자는 관리자 로그인을 이용해 주세요.
+    </p>
+
     <!-- 가입된 계정이 없는 소셜 계정은 이제 안내 대신 가입 확인 화면(social-signup-confirm)으로 간다.
          그 소셜 이메일이 이미 다른 계정에 쓰이고 있으면 가입하지 않고 여기서 안내한다 -->
     <p th:if="${param.socialEmailTaken}" class="text-sm" style="color:#c45c26;margin-top:8px;" th:text="#{loginEntry.socialEmailTaken}">

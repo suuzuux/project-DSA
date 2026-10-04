@@ -172,7 +172,7 @@ public class MainBannerService {
 
 		String oldImage = banner.getImageStoredName();
 		if (hasNewImage) {
-			// AUTH-11: Content-Type 만 보던 검사를 형식(매직바이트)·크기 검증으로 바꾸고, 확장자는 서버가 정한다
+			// 이미지 형식(매직바이트)·크기를 검증하고, 확장자는 서버가 정한다 (FileStorageService.storeImage)
 			banner.changeImage(fileStorageService.storeImage(image));
 		}
 

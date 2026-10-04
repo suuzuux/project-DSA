@@ -10,7 +10,7 @@
   <div class="auth-card" style="width:min(100%,480px);">
     <a class="auth-card__back" href="/login" th:text="#{reactivate.backToLogin}">← 로그인으로</a>
     <h1 class="auth-card__title" th:text="#{reactivate.heading}">휴면계정 해제</h1>
-    <!-- AUTH-10: 로컬/소셜 로그인 중 어느 쪽으로 들어왔든 항상 같은 화면 하나로 통일했다. -->
+    <!-- 휴면 계정 해제 화면 - 로컬·소셜 로그인 어느 쪽으로 들어와도 이 화면 하나로 처리한다. -->
     <p class="text-sm text-muted" th:text="#{reactivate.desc}">아이디를 입력하고 인증코드를 받으면, 가입 시 등록된 이메일로 인증코드를 보내드려요.</p>
 
     <p th:if="${errorMessage}" class="text-sm" style="color:#c45c26;" th:text="${errorMessage}"></p>
@@ -41,7 +41,7 @@
   <script th:inline="javascript">
     (function () {
       "use strict";
-      // SETTINGS-03: 이 화면의 JS 상태 메시지를 서버 로케일 기준으로 미리 받아온다.
+      // 이 화면 JS 의 상태 메시지를 현재 화면 언어로 미리 받아 둔다.
       var MSG = {
         sending: /*[[#{reactivate.sending}]]*/ "발송 중...",
         sendCodeButton: /*[[#{reactivate.sendCodeButton}]]*/ "인증코드 받기",

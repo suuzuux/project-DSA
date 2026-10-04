@@ -93,7 +93,7 @@ public class BadgeEventListener {
 	}
 	
 	private void checkFollow(Long fanId, Long artistId) {
-		// GroupFollow 통합: 아티스트 팔로우는 following_id == community_id == artistId다.
+		// 아티스트 팔로우는 following_id == community_id == artistId다.
 		if (ufr.existsByFollowerIdAndFollowingIdAndCommunityId(fanId, artistId, artistId)) {
 			award(fanId, artistId, BadgeCode.BASIC_FOLLOW_ARTIST);
 		}

@@ -15,8 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-// EXPLORE-02: 커뮤니티 검색. CommunityController.java와 겹치지 않는 /community/search만 사용.
-// join/leave는 EXPLORE-03에서 CommunityMember가 생긴 뒤 다시 추가.
+// 커뮤니티 검색 API (/community/search). 가입·프로필 편집·탈퇴는 CommunityJoinController 가 맡는다.
 @RestController
 @RequiredArgsConstructor
 public class CommunityExploreController {
@@ -39,8 +38,7 @@ public class CommunityExploreController {
 		
 		List<ArtistSearchResultView> results = communityExploreService.search(keyword, gender, nationality, category,
 				memberCount, isSolo, debutFrom, debutTo);
-		// AUTH-11: 아티스트(그룹 멤버 포함)에게는 자기 커뮤니티에 "가입" 버튼이 나오지 않도록 표시해 준다
-		// (예전에는 버튼이 보이고, 누르면 "본인 커뮤니티에는 가입할 수 없습니다" 오류가 났다)
+		// 아티스트(그룹 멤버 포함)에게는 자기 커뮤니티에 "가입" 버튼 대신 "내 커뮤니티"가 나오도록 표시한다
 		Long ownCommunityId = principal == null ? null
 				: communityArtistResolver.ownCommunityId(userResolver.requireAuthenticated(principal));
 		if (ownCommunityId == null) {

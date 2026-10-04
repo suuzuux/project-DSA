@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,10 +57,10 @@ class DormantAccountReactivationControllerTest {
 
 		// 실제 메일은 휴면 계정에만 보낸다
 		verify(verificationService).sendVerificationCodeIfEligible(any(), eq(VerificationPurpose.REACTIVATE),
-				eq("sleeper@test.com"), eq(true));
+				eq("sleeper@test.com"), eq("sleeper@test.com"));
 		verify(verificationService).sendVerificationCodeIfEligible(any(), eq(VerificationPurpose.REACTIVATE),
-				eq("reactivate:awake"), eq(false));
+				eq("reactivate:awake"), isNull());
 		verify(verificationService).sendVerificationCodeIfEligible(any(), eq(VerificationPurpose.REACTIVATE),
-				eq("reactivate:nobody"), eq(false));
+				eq("reactivate:nobody"), isNull());
 	}
 }

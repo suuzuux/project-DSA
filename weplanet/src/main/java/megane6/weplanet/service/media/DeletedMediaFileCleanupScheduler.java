@@ -13,12 +13,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * AUTH-11: 삭제된 미디어 게시물의 업로드 파일 정리.
- * <p>
- * 미디어 게시물 삭제는 소프트 삭제(BoardMediaService.softDelete - deleted_at 만 기록)라서, 삭제해도 영상/사진 파일은
- * uploads 폴더에 계속 남아 쌓였다. 삭제 직후에 바로 지우지 않는 건 기존 설계(기록은 남김)를 존중해서, 신고 확인 등으로
- * 잠시 필요할 수 있는 기간(30일)은 그대로 두고, 그 뒤에 디스크 파일과 파일 기록(board_media_files)만 정리한다.
- * 게시물 기록(board_media) 자체는 그대로 남는다.
+ * 삭제된 미디어 게시물의 업로드 파일 정리 - 삭제(소프트 삭제) 후 30일이 지나면
+ * 디스크 파일과 파일 기록(board_media_files)만 지운다. 게시물 기록(board_media)은 남는다.
  */
 @Slf4j
 @Service

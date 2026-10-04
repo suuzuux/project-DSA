@@ -11,8 +11,7 @@ import lombok.Setter;
 @Setter
 public class SignupRequestDto {
 	
-	// SETTINGS-03: "{코드}" 형식으로 넘기면 Bean Validation이 messages.properties(MessageSource)에서
-	// 현재 세션 로케일에 맞는 문구를 찾아 채워준다 (Spring Boot의 LocalValidatorFactoryBean 기본 동작).
+	// "{코드}" 형식이면 Bean Validation 이 messages.properties 에서 현재 화면 언어의 문구를 찾아 채운다.
 	@NotBlank(message = "{signup.validation.usernameRequired}")
 	@Pattern(regexp = "^[a-zA-Z0-9]{4,20}$", message = "{signup.validation.usernamePattern}")
 	private String username;
@@ -27,7 +26,7 @@ public class SignupRequestDto {
 	private String nickname; // 선택 입력 - 비어있으면 자동 생성
 	
 	@NotBlank(message = "{signup.validation.realNameRequired}")
-	// AUTH-11: real_name 컬럼은 VARBINARY(255)(UTF-8 바이트)라 한글 약 86자를 넘으면 DB 오류(500)가 났다
+	// real_name 은 VARBINARY(255)(UTF-8 바이트)라 50자로 제한한다 (넘으면 DB 오류)
 	@Size(max = 50, message = "{signup.validation.realNameTooLong}")
 	private String realName;
 	

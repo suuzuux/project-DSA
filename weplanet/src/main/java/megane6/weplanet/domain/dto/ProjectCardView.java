@@ -43,7 +43,7 @@ public record ProjectCardView(
     }
 
     /**
-     * SETTINGS-03 커밋3: 이벤트 유형/상태 라벨을 호출하는 쪽(ProjectService)이 현재 로케일로 번역해서 넘긴다.
+     * 이벤트 유형/상태 라벨을 호출하는 쪽(ProjectService)이 현재 로케일로 번역해서 넘긴다.
      * 레코드라 MessageSource를 직접 들 수 없어서 라벨을 인자로 받는 오버로드를 둔다.
      */
     public static ProjectCardView from(

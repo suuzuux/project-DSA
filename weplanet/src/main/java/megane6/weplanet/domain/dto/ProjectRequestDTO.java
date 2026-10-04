@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 
 /**
- * SETTINGS-03 커밋3: 검증 메시지는 {project.validation.*} 키로 두고, Spring Boot 기본 검증기가
+ * 검증 메시지는 {project.validation.*} 키로 두고, Spring Boot 기본 검증기가
  * messages*.properties에서 현재 로케일 문구를 찾아 끼워 넣는다(MessageSourceMessageInterpolator).
  */
 @Getter

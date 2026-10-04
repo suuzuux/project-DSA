@@ -53,7 +53,7 @@ public class ProjectContributionService {
     private final ApplicationEventPublisher eventPublisher; // [배지] 입금 확인 시 발행 (Step 5에서 사용)
     private final TossPaymentsProperties tossProperties;
     private final TossPaymentsClient tossClient;
-    // SETTINGS-03 커밋3: 결제창 주문명/구매자명/상태 라벨을 요청 로케일로 만든다
+    // 결제창 주문명/구매자명/상태 라벨을 요청 로케일로 만든다
     private final megane6.weplanet.i18n.Messages messages;
     
     /**

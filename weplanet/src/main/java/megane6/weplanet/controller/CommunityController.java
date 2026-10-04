@@ -54,7 +54,7 @@ public class CommunityController {
 	private final BoardMediaService boardMediaService;
 	// [머지 충돌 해결] main에서 포털(Portal) 기능이 되돌려지면서 PortalManagementService 클래스 자체가
 	// 삭제됨 -> portalManagementService 필드도 함께 제거 (남기면 타입을 못 찾아 컴파일 실패)
-	private final UserFollowService userFollowService; // GroupFollow 통합: 사람↔사람 팔로우 (팬↔팬, 팬→아티스트 공용)
+	private final UserFollowService userFollowService; // 사람↔사람 팔로우 (팬↔팬, 팬→아티스트 공용)
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final ArtistAttendanceService artistAttendanceService;
@@ -62,7 +62,7 @@ public class CommunityController {
 	private final LiveBroadcastService liveBroadcastService;
 	
 	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
-	// SETTINGS-03 커밋3: flash로 내보내는 예외 메시지(키 또는 문장)를 현재 로케일 문구로 바꾸는 데 사용
+	// flash로 내보내는 예외 메시지(키 또는 문장)를 현재 로케일 문구로 바꾸는 데 사용
 	private final megane6.weplanet.i18n.Messages messages;
 	
 	private final CommunityArtistResolver communityArtistResolver;
@@ -355,8 +355,7 @@ public class CommunityController {
 		return "community/live";
 	}
 	
-	// "내 프로필" 버튼 - 예전엔 이 주소가 곧 "내 프로필"이었는데, FOLLOW-01에서 다른 사람 프로필도
-	// 볼 수 있게 되면서 /profile/{userId}로 일반화했다. 헤더 링크는 그대로 두고 여기서 내 id로 보낸다.
+	// "내 프로필" 버튼 - 헤더 링크는 그대로 두고 여기서 내 id의 프로필(/profile/{userId})로 보낸다.
 	@GetMapping("/community/{artistId}/profile")
 	public String myProfileRedirect(
 			@PathVariable Long artistId,
@@ -369,9 +368,8 @@ public class CommunityController {
 		return "redirect:/community/" + artistId + "/profile/" + me.getId();
 	}
 
-	// 와이어프레임 20~23번 + FOLLOW-01: 프로필 - 댓글/포스트/좋아요/북마크 히스토리.
-	// 본인이면 예전과 동일(편집 가능), 타인이면 그 사람 기준 히스토리 + 팔로우 버튼.
-	// 화면에 뜨는 이름은 계정 아이디가 아니라 populateArtistModel이 넣어준 myCommunityProfile(닉네임)을 쓴다.
+	// 와이어프레임 20~23번: 프로필 - 댓글/포스트/좋아요/북마크 히스토리. 본인이면 편집 가능, 타인이면 그 사람 기준 + 팔로우 버튼.
+	// 화면에 뜨는 이름은 계정 아이디가 아니라 커뮤니티 닉네임(populateArtistModel이 넣은 myCommunityProfile)을 쓴다.
 	@GetMapping("/community/{artistId}/profile/{userId}")
 	public String profile(
 			@PathVariable Long artistId,
@@ -389,9 +387,7 @@ public class CommunityController {
 				.orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
 
 		// 프로필 열람 = 나도 이 커뮤니티 가입 + 상대도 이 커뮤니티 가입.
-		// hasCommunityAccess에 이미 "커뮤니티 주인(아티스트 본인)은 가입 없이 항상 접근 가능" 등의 예외가
-		// 있어서, 양쪽에 그대로 재사용하면 "아티스트 본인 프로필은 가입 여부 무관하게 항상 열람 가능"도
-		// 자동으로 만족된다.
+		// hasCommunityAccess를 양쪽에 재사용해서, 아티스트 본인 프로필은 가입 여부와 무관하게 항상 열람 가능하다.
 		if (!hasCommunityAccess(me, artistId) || !hasCommunityAccess(targetUser, artistId)) {
 			model.addAttribute("gatedTab", "profile");
 			return "community/membership-required";
@@ -413,7 +409,7 @@ public class CommunityController {
 			model.addAttribute("targetArtistIntro", portalManagementService.findIntro(targetUser));
 		}
 
-		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
+		// 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
 		// 아티스트 쪽 계정은 자기 커뮤니티에 따로 가입하지 않으므로 가입 행이 없을 때 계정 생성일을
 		// 커뮤니티 활동 시작일로 사용한다. 팬은 기존처럼 community_members.joined_at만 사용한다.
 		CommunityJoinInfo communityJoinInfo = communityJoinService.joinInfoOf(targetUser, artistId);
@@ -426,8 +422,7 @@ public class CommunityController {
 		
 		boolean oldest = "oldest".equals(sort);
 
-		// 활동 목록(댓글/포스트/좋아요/북마크)은 지금 보고 있는 커뮤니티(artistId)의 글에 대한 것만 보여준다.
-		// 예전에는 커뮤니티 구분 없이 전부 보여줘서, 내가 가입하지 않은 다른 커뮤니티의 글 제목과 댓글 내용까지 보였다.
+		// 활동 목록(댓글/포스트/좋아요/북마크)은 지금 보고 있는 커뮤니티(artistId)의 글만 보여준다 (다른 커뮤니티 글 노출 방지).
 		List<Comment> myComments = (oldest
 				? commentRepository.findByAuthorOrderByCreatedAtAsc(targetUser)
 				: commentRepository.findByAuthorOrderByCreatedAtDesc(targetUser)).stream()
@@ -468,24 +463,22 @@ public class CommunityController {
 		model.addAttribute("likedPosts", likedPosts);
 		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
 		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(profileAuthors, artistId));
-		// GroupFollow 통합: 팔로우는 이 커뮤니티(artistId)에 종속되므로 항상 artistId를 함께 넘긴다.
+		// 팔로우는 이 커뮤니티(artistId)에 종속되므로 항상 artistId를 함께 넘긴다.
 		// 대상이 아티스트 본인이면 이 값들이 곧 "아티스트 팔로우" 여부/카운트가 된다(따로 attribute 안 나눔).
 		model.addAttribute("myFollowingCount", userFollowService.countFollowing(userId, artistId));
 		model.addAttribute("followerCount", userFollowService.countFollowers(userId, artistId));
 		model.addAttribute("isFollowingTarget", userFollowService.isFollowing(me, userId, artistId));
 		model.addAttribute("sort", sort);
 		// 프로필 카드(닉네임/소개/아바타/배경/숨김여부)는 항상 "대상 유저" 기준으로 그린다.
-		// isOwnProfile이면 targetUser == me라 지금까지의 myCommunityProfile(populateArtistModel이 이미
-		// 세팅함)과 값이 같다.
+		// 본인 프로필이면 populateArtistModel이 넣은 myCommunityProfile과 값이 같다.
 		model.addAttribute("targetCommunityProfile", communityJoinService.profileOf(targetUser, artistId));
 		model.addAttribute("targetUser", targetUser);
 		
 		return "community/profile";
 	}
 
-	// GroupFollow 통합: 팔로우 버튼 하나로 팬↔팬, 팬→아티스트(구 About 위젯 GroupFollow) 모두 처리.
-	// userId == artistId면 "이 커뮤니티 아티스트를 팔로우"로 취급된다(UserFollowService.toggle 내부 판단).
-	// 어디서 눌렀는지(About 위젯/프로필 화면)에 따라 되돌아갈 곳이 다르므로 Referer로 되돌려보낸다.
+	// 팔로우 버튼 하나로 팬↔팬, 팬→아티스트를 모두 처리한다 (userId == artistId면 아티스트 팔로우 - UserFollowService.toggle 판단).
+	// 누른 곳(About 위젯/프로필 화면)마다 돌아갈 곳이 달라 Referer로 되돌려 보낸다.
 	@PostMapping("/community/{artistId}/profile/{userId}/follow")
 	public String toggleFollow(
 			@PathVariable Long artistId,
@@ -501,13 +494,13 @@ public class CommunityController {
 		try {
 			userFollowService.toggle(me, userId, artistId);
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
-			// AUTH-11: 팔로우 버튼을 빠르게 두 번 눌러 같은 팔로우가 동시에 저장된 경우 - 이미 팔로우된 상태이므로 그대로 둔다
+			// 팔로우 버튼을 빠르게 두 번 눌러 같은 팔로우가 동시에 저장된 경우 - 이미 팔로우된 상태이므로 그대로 둔다
 		}
 		// 우리 사이트 주소일 때만 누른 화면으로 돌아간다 (RefererRedirects - 오픈 리다이렉트 방지)
 		return RefererRedirects.back(referer, request, "/community/" + artistId + "/profile/" + userId);
 	}
 
-	// FOLLOW-01: 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트(닉네임+아바타) - 모달에서 fetch로 불러 씀
+	// 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트(닉네임+아바타) - 모달에서 fetch로 불러 씀
 	@GetMapping("/community/{artistId}/profile/{userId}/followers")
 	public String followersFragment(
 			@PathVariable Long artistId,
@@ -545,8 +538,7 @@ public class CommunityController {
 			return "redirect:/community/" + artistId + "/highlight";
 		}
 
-		// AUTH-11: 상대가 이 커뮤니티에서 콘텐츠 숨김을 켰으면 본인이 아닌 사람에게는 목록을 보여주지 않는다.
-		// 예전에는 화면에서 숫자만 숨기고, 이 주소를 직접 부르면 팔로워/팔로잉 목록이 그대로 보였다.
+		// 상대가 이 커뮤니티에서 콘텐츠 숨김을 켰으면 본인이 아닌 사람에게는 목록을 보여주지 않는다 (주소를 직접 불러도 마찬가지).
 		CommunityMember targetProfile = communityJoinService.profileOf(targetUser, artistId);
 		boolean hiddenFromMe = !targetUser.getId().equals(me.getId())
 				&& targetProfile != null && targetProfile.isContentHidden();
@@ -638,9 +630,7 @@ public class CommunityController {
 	}
 	
 	// Fan/Artist/Media/Live/Notice 탭 접근 제어: 로그인은 각 라우트에서 먼저 체크하고,
-	// 여기서는 "이 커뮤니티에 가입(CommunityMember)했는지"만 확인함.
-	// 예전엔 Follow 기준이었는데, 검색/커뮤니티 페이지 어디서 가입하든 닉네임을 받도록 통일하면서
-	// 가입 여부의 기준도 CommunityMember로 옮겼음 (Follow는 About 위젯의 팔로우 버튼 전용으로 남김).
+	// 여기서는 "이 커뮤니티에 가입(CommunityMember)했는지"만 확인함 (Follow는 팔로우 버튼 전용이라 가입 기준이 아님).
 	// 주의: 멤버십(유료, DM 전용)과는 별개 개념 - 헷갈려서 처음엔 membershipActive로 잘못 체크했었음
 	// 프로필 활동 목록용: 이 글이 지금 보고 있는 커뮤니티(artistId)의 글인지
 	private static boolean isPostOfCommunity(Post post, Long artistId) {
