@@ -163,6 +163,7 @@ public class ChatController {
             map.put("lastMessage", item.getLastMessage());
             map.put("lastMessageTime", item.getLastMessageTime() != null ? item.getLastMessageTime().toString() : null);
             map.put("membershipExpired", item.isMembershipExpired());
+            map.put("neverSubscribed", item.isNeverSubscribed());
             return map;
         }).toList();
     }
@@ -349,6 +350,8 @@ public class ChatController {
         result.put("remaining", chatQuotaService.getRemaining(fan, artist));
         result.put("messages", messages);
         result.put("membershipExpired", chatMessageService.isMembershipExpired(fan, artist));
+        // 한 번도 가입 안 한 팬이면 배너에 "구독 만료" 대신 가입 안내 문구를 보여줌
+        result.put("neverSubscribed", chatMessageService.isNeverSubscribed(fan, artist));
         return result;
     }
 

@@ -104,6 +104,7 @@
         btn.setAttribute("data-open-room", item.artistId);
         btn.setAttribute("data-artist-id", item.artistId);
         btn.setAttribute("data-room-expired", item.membershipExpired ? "true" : "false");
+        btn.setAttribute("data-room-never-subscribed", item.neverSubscribed ? "true" : "false");
 
         const avatarWrap = document.createElement("div");
         avatarWrap.className = "dm-list-item__avatar";
@@ -308,6 +309,8 @@
                 const banner = document.getElementById("dmExpiredBanner");
                 if (banner) {
                     banner.classList.toggle("hidden", !data.membershipExpired);
+                    // 한 번도 가입 안 한 팬이면 "구독 만료" 대신 가입 안내 문구로 바꿔서 보여줌
+                    banner.classList.toggle("is-never-subscribed", !!data.neverSubscribed);
                 }
 
                 // 와이어프레임 19번: 멤버십 만료 시엔 입력창 자체가 없어야 함 (배너만 있고 메시지는 못 보냄)
@@ -432,50 +435,63 @@
         }
     });
 
-    // shell.js가 미리 만들어둔 "메시지 보내기" 폼은 실제 전송 없이 화면에만 붙이는 목업 코드라서,
-    // 노드를 통째로 복제해서 갈아끼우는 방식으로 그 목업 이벤트를 떼어내고 실제 전송 로직을 새로 닮
-    const oldComposer = document.getElementById("dmComposer");
-    if (oldComposer) {
-        const newComposer = oldComposer.cloneNode(true);
-        oldComposer.parentNode.replaceChild(newComposer, oldComposer);
-
-        newComposer.addEventListener("submit", function (e) {
-            e.preventDefault();
-            if (!fanId) {
-                window.location.href = "/login";
-                return;
-            }
-            const input = document.getElementById("dmInput");
-            const text = input.value.trim();
-            if (!text) return;
-
-            if (isArtist) {
-                // fanId를 null로 보내면 아티스트 DM. 방 번호는 커뮤니티 id, 보낸 사람은 나
-                if (!artistRoomId) return;
-                ensureSocket(function () {
-                    stompClient.send("/app/chat.send", {}, JSON.stringify({
-                        artistId: artistRoomId,
-                        fanId: null,
-                        senderId: fanId,
-                        content: text
-                    }));
-                });
-            } else {
-                if (!currentArtistId) return;
-                ensureSocket(function () {
-                    stompClient.send("/app/chat.send", {}, JSON.stringify({
-                        artistId: currentArtistId,
-                        fanId: fanId,
-                        senderId: fanId,
-                        content: text
-                    }));
-                });
-            }
-            input.value = "";
-        });
+    // shell.js는 번역 문구(/api/i18n/shell)를 받아온 뒤에 DM 위젯을 그리므로(비동기), 위젯이 다 그려졌다는
+    // 신호(weplanet:shell-ready)를 받은 뒤에 폼 교체/인박스 로딩을 시작함. 이 순서를 안 지키면 아래 #dmComposer 를
+    // 못 찾아서 목업 전송만 남음 - 메시지가 화면에만 붙고 서버로 안 가서 횟수 차감도, 아티스트 수신도 안 됐음
+    function whenShellReady(callback) {
+        if (window.WePlaNetShellReady) {
+            callback();
+        } else {
+            document.addEventListener("weplanet:shell-ready", callback, { once: true });
+        }
     }
 
-    if (!isArtist) {
-        loadInbox();
-    }
+    whenShellReady(function () {
+        // shell.js가 미리 만들어둔 "메시지 보내기" 폼은 실제 전송 없이 화면에만 붙이는 목업 코드라서,
+        // 노드를 통째로 복제해서 갈아끼우는 방식으로 그 목업 이벤트를 떼어내고 실제 전송 로직을 새로 닮
+        const oldComposer = document.getElementById("dmComposer");
+        if (oldComposer) {
+            const newComposer = oldComposer.cloneNode(true);
+            oldComposer.parentNode.replaceChild(newComposer, oldComposer);
+
+            newComposer.addEventListener("submit", function (e) {
+                e.preventDefault();
+                if (!fanId) {
+                    window.location.href = "/login";
+                    return;
+                }
+                const input = document.getElementById("dmInput");
+                const text = input.value.trim();
+                if (!text) return;
+
+                if (isArtist) {
+                    // fanId를 null로 보내면 아티스트 DM. 방 번호는 커뮤니티 id, 보낸 사람은 나
+                    if (!artistRoomId) return;
+                    ensureSocket(function () {
+                        stompClient.send("/app/chat.send", {}, JSON.stringify({
+                            artistId: artistRoomId,
+                            fanId: null,
+                            senderId: fanId,
+                            content: text
+                        }));
+                    });
+                } else {
+                    if (!currentArtistId) return;
+                    ensureSocket(function () {
+                        stompClient.send("/app/chat.send", {}, JSON.stringify({
+                            artistId: currentArtistId,
+                            fanId: fanId,
+                            senderId: fanId,
+                            content: text
+                        }));
+                    });
+                }
+                input.value = "";
+            });
+        }
+
+        if (!isArtist) {
+            loadInbox();
+        }
+    });
 })();
