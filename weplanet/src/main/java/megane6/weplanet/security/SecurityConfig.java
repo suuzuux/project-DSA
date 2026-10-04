@@ -111,8 +111,13 @@ public class SecurityConfig {
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // 관리자 로그인 화면은 누구나 접근 가능
-                        .requestMatchers("/admin/login").permitAll()
+                        // 관리자 로그인 2단계 인증은 로그인 전 요청이므로 공개한다.
+                        // 이 세 경로 외의 /admin/** 는 바로 아래 규칙에서 ADMIN 권한을 요구한다.
+                        .requestMatchers(
+                                "/admin/login",
+                                "/admin/login/code",
+                                "/admin/login/verify"
+                        ).permitAll()
                         
                         // 넓은 /chat/** 공개 규칙보다 먼저 검사해야 함
                         .requestMatchers(

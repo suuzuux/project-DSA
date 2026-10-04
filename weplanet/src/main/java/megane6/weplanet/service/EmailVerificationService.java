@@ -133,6 +133,11 @@ public class EmailVerificationService {
 
 		// 관리자 로그인은 재전송 쿨다운을 두지 않는다.
 		// (메일이 늦게 도착하거나 스팸함으로 갈 때 바로 다시 받을 수 있어야 함)
+		// 대신 새 번호를 발급하는 순간 이전 번호는 폐기해 여러 번호가 동시에 유효하지 않게 한다.
+		evr.findByUser_IdAndPurposeAndConsumedAtIsNull(
+				adminId,
+				EmailVerificationPurpose.ADMIN_LOGIN
+		).forEach(previous -> previous.invalidate(now));
 
 		String rawCode = generateCode();
 		String codeHash = pe.encode(rawCode);
@@ -251,6 +256,28 @@ public class EmailVerificationService {
 		LocalDateTime now = LocalDateTime.now();
 		verification.consume(now);
 		
+		return verification.getVerifiedAt();
+	}
+
+	// 최고관리자 로그인이 완료되면 해당 인증번호를 즉시 사용 완료 처리한다.
+	@Transactional
+	public LocalDateTime consumeAdminLoginVerification(
+			Long adminId,
+			String verificationKey
+	) {
+		EmailVerification verification =
+				findForUpdate(verificationKey);
+
+		assertTarget(
+				verification,
+				EmailVerificationPurpose.ADMIN_LOGIN,
+				adminId,
+				null
+		);
+
+		LocalDateTime now = LocalDateTime.now();
+		verification.consume(now);
+
 		return verification.getVerifiedAt();
 	}
 	
