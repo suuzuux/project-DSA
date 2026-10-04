@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
+import org.apache.tomcat.util.http.InvalidParameterException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -54,9 +55,32 @@ public class GlobalExceptionHandler {
         return respondMessage(request, status, messages.resolve(messageOrKey));
     }
 
-    // 예외를 그대로 받는 버전 - 값을 들고 다니는 예외(LocalizedMessage)의 {0} 자리까지 채워서 번역한다
+    // 예외를 그대로 받는 버전 - 값을 들고 다니는 예외(LocalizedMessage)의 {0} 자리까지 채워서 번역한다.
+    // 단, 예외 메시지를 화면에 쓰는 건 우리 코드가 사용자에게 보여주려고 던진 예외일 때만이다.
+    // Tomcat·Spring·JDK 같은 라이브러리가 던진 예외의 메시지는 내부 구현 정보라서 상태별 일반 문구로 바꾼다
+    // (예: 글자가 깨진 요청에 Tomcat 의 "Character decoding failed. Parameter [...]" 문구가 그대로 보였다).
     private Object respond(HttpServletRequest request, HttpStatus status, Throwable e) {
+        if (!isThrownByOurCode(e)) {
+            return respond(request, status, genericMessageKey(status));
+        }
         return respondMessage(request, status, messages.resolve(e));
+    }
+
+    // 메시지 키/값을 들고 다니는 예외이거나, 예외가 만들어진 곳(스택 맨 위)이 우리 패키지면 우리 코드가 던진 것
+    private static boolean isThrownByOurCode(Throwable e) {
+        if (e instanceof LocalizedMessage) {
+            return true;
+        }
+        StackTraceElement[] trace = e.getStackTrace();
+        return trace.length > 0 && trace[0].getClassName().startsWith("megane6.weplanet.");
+    }
+
+    private static String genericMessageKey(HttpStatus status) {
+        return switch (status) {
+            case BAD_REQUEST -> "error.badRequest";
+            case FORBIDDEN -> "error.forbidden";
+            default -> "error.unexpected";
+        };
     }
 
     private Object respondMessage(HttpServletRequest request, HttpStatus status, String message) {
@@ -110,6 +134,15 @@ public class GlobalExceptionHandler {
     public Object handleIllegalArgument(IllegalArgumentException e, HttpServletRequest request) {
         log.warn("잘못된 요청: {}", e.getMessage());
         return respond(request, HttpStatus.BAD_REQUEST, e);
+    }
+
+    // 요청 파라미터를 읽을 수 없는 경우 (글자 인코딩이 깨진 값 등). Tomcat 11 은 이때 IllegalStateException 의
+    // 하위 예외를 던져서, 아래 "권한/상태 위반" 처리로 들어가 403 과 Tomcat 내부 문구가 그대로 나갔다.
+    // 요청 형식 오류(400)로 따로 처리한다 (더 구체적인 예외 처리기가 우선 적용된다).
+    @ExceptionHandler(InvalidParameterException.class)
+    public Object handleInvalidParameter(InvalidParameterException e, HttpServletRequest request) {
+        log.warn("요청 파라미터를 읽을 수 없음: {} - {}", request.getRequestURI(), e.getMessage());
+        return respond(request, HttpStatus.BAD_REQUEST, "error.badRequest");
     }
 
     // 권한/상태 위반(본인 글이 아님, 이미 신고함, 관리자 아님 등)

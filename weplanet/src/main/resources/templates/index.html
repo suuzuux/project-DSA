@@ -334,6 +334,10 @@
   window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
 </script>
 <script th:src="@{/js/main.js}"></script>
+<!-- 아이디 회원가입 직후 자동 로그인으로 들어왔을 때 한 번만 뜨는 환영 알림 (AuthController.signup 의 flash 값) -->
+<script th:if="${signupWelcome}" th:inline="javascript">
+  WePlaNet.toast(/*[[#{signup.welcomeToast}]]*/ "WePlaNet에 오신 것을 환영합니다!");
+</script>
 <script th:src="@{/js/shell.js}"></script>
 <script th:src="@{/js/dm-realtime.js}"></script>
 <script th:src="@{/js/community-join.js}"></script>

@@ -36,10 +36,25 @@
       <h2 class="admin-login__title">ADMIN LOGIN</h2>
 
       <p
+              th:if="${errorMessage}"
+              class="admin-login__notice admin-login__notice--error"
+              th:text="${errorMessage}">
+        로그인 인증을 완료하지 못했습니다.
+      </p>
+
+      <p
               th:if="${param.error}"
               class="admin-login__notice admin-login__notice--error"
               th:text="#{admin.login.error.badCredentials}">
         아이디 또는 비밀번호가 올바르지 않습니다.
+      </p>
+
+      <!-- 비밀번호를 여러 번 틀려 잠시 로그인할 수 없을 때 (LoginAttemptService) -->
+      <p
+              th:if="${param.locked}"
+              class="admin-login__notice admin-login__notice--error"
+              th:text="#{login.tooManyAttempts(${T(megane6.weplanet.security.LoginAttemptService).LOCK_MINUTES})}">
+        로그인 시도가 너무 많습니다. 10분 후 다시 시도해주세요.
       </p>
 
       <p
@@ -63,9 +78,7 @@
         로그아웃되었습니다.
       </p>
 
-      <form th:action="@{/login}" method="post">
-        <input type="hidden" name="adminLogin" value="true" />
-
+      <form id="adminLoginForm" th:action="@{/admin/login}" method="post">
         <div class="form-group">
           <label class="form-label" for="adminId" th:text="#{admin.login.username}">
             관리자 아이디
@@ -76,6 +89,7 @@
                   id="adminId"
                   name="username"
                   type="text"
+                  th:value="${loginUsername}"
                   placeholder="아이디 입력"
                   th:placeholder="#{admin.login.username.placeholder}"
                   required
@@ -99,8 +113,57 @@
         </div>
 
         <button
+                type="button"
+                id="sendCodeBtn"
+                class="btn btn--ghost btn--block admin-login__send-btn"
+                th:text="#{admin.login.otp.send}">
+          인증번호 전송
+        </button>
+
+        <div class="form-group" id="codeGroup" hidden>
+          <label class="form-label" for="adminCode" th:text="#{admin.login.otp.label}">
+            보안 인증번호
+          </label>
+
+          <div class="admin-otp-row">
+            <input
+                    class="form-input"
+                    id="adminCode"
+                    name="code"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]{6}"
+                    maxlength="6"
+                    placeholder="인증번호 6자리"
+                    th:placeholder="#{admin.login.otp.placeholder}"
+                    autocomplete="one-time-code" />
+
+            <button
+                    type="button"
+                    id="verifyCodeBtn"
+                    class="btn btn--primary btn--sm"
+                    th:text="#{admin.login.otp.verify}">
+              인증하기
+            </button>
+
+            <button
+                    type="button"
+                    id="resendCodeBtn"
+                    class="btn btn--ghost btn--sm"
+                    th:text="#{admin.login.otp.resend}">
+              재전송
+            </button>
+          </div>
+        </div>
+
+        <p id="codeStatus" class="admin-otp-status" aria-live="polite"></p>
+        <input type="hidden" id="verificationKey" name="verificationKey" />
+
+        <button
                 type="submit"
+                id="adminSubmitBtn"
                 class="btn btn--primary btn--block btn--lg"
+                disabled
                 th:text="|#{admin.login.submit} →|">
           관리자 시스템 접속 →
         </button>
@@ -119,5 +182,219 @@
 
 </div>
 
+<script th:inline="javascript">
+  (function () {
+    "use strict";
+
+    const form = document.getElementById("adminLoginForm");
+    const usernameInput = document.getElementById("adminId");
+    const passwordInput = document.getElementById("adminPw");
+    const sendBtn = document.getElementById("sendCodeBtn");
+    const verifyBtn = document.getElementById("verifyCodeBtn");
+    const resendBtn = document.getElementById("resendCodeBtn");
+    const submitBtn = document.getElementById("adminSubmitBtn");
+    const codeGroup = document.getElementById("codeGroup");
+    const codeInput = document.getElementById("adminCode");
+    const status = document.getElementById("codeStatus");
+    const keyInput = document.getElementById("verificationKey");
+
+    const text = {
+      credentialsRequired: /*[[#{admin.login.otp.credentialsRequired}]]*/ "아이디와 비밀번호를 먼저 입력해주세요.",
+      sending: /*[[#{admin.login.otp.sending}]]*/ "인증번호를 보내는 중입니다...",
+      resending: /*[[#{admin.login.otp.resending}]]*/ "인증번호를 다시 보내는 중입니다...",
+      sent: /*[[#{admin.login.otp.sent}]]*/ "인증번호가 전송되었습니다.",
+      sendFailed: /*[[#{admin.login.otp.sendFailed}]]*/ "인증번호 발송에 실패했습니다.",
+      codeRequired: /*[[#{admin.login.otp.codeRequired}]]*/ "6자리 인증번호를 입력해주세요.",
+      verifying: /*[[#{admin.login.otp.verifying}]]*/ "인증번호를 확인하는 중입니다...",
+      verified: /*[[#{admin.login.otp.verified}]]*/ "인증되었습니다.",
+      verifyFailed: /*[[#{admin.login.otp.verifyFailed}]]*/ "인증에 실패했습니다.",
+      expired: /*[[#{admin.login.otp.expired}]]*/ "인증 시간이 만료되었습니다. 다시 전송해주세요.",
+      verifyFirst: /*[[#{admin.login.otp.verifyFirst}]]*/ "인증번호 확인을 완료해주세요.",
+      sendFirst: /*[[#{admin.login.otp.sendFirst}]]*/ "먼저 인증번호를 전송해주세요."
+    };
+
+    let expiresAt = 0;
+    let timerId = null;
+    let verified = false;
+
+    function setStatus(message, state) {
+      status.textContent = message || "";
+      status.className = "admin-otp-status" + (state ? " is-" + state : "");
+    }
+
+    function stopTimer() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+    }
+
+    function formatTimeLeft(milliseconds) {
+      const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return String(minutes).padStart(2, "0") + ":" + String(seconds).padStart(2, "0");
+    }
+
+    function updateTimer() {
+      const remaining = expiresAt - Date.now();
+      if (remaining <= 0) {
+        stopTimer();
+        verified = false;
+        submitBtn.disabled = true;
+        verifyBtn.disabled = true;
+        codeInput.readOnly = true;
+        setStatus(text.expired, "error");
+        return;
+      }
+      setStatus(text.sent + " " + formatTimeLeft(remaining), "success");
+    }
+
+    function startTimer() {
+      stopTimer();
+      updateTimer();
+      timerId = setInterval(updateTimer, 1000);
+    }
+
+    function resetVerification() {
+      stopTimer();
+      verified = false;
+      expiresAt = 0;
+      keyInput.value = "";
+      codeInput.value = "";
+      codeInput.readOnly = false;
+      codeInput.classList.remove("is-locked");
+      verifyBtn.disabled = false;
+      submitBtn.disabled = true;
+      codeGroup.hidden = true;
+      sendBtn.hidden = false;
+      setStatus("", null);
+    }
+
+    async function requestCode(triggerButton, pendingMessage) {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!username || !password) {
+        setStatus(text.credentialsRequired, "error");
+        return;
+      }
+
+      stopTimer();
+      triggerButton.disabled = true;
+      setStatus(pendingMessage, null);
+
+      try {
+        const body = new URLSearchParams({username: username, password: password});
+        const response = await fetch(/*[[@{/admin/login/code}]]*/ "/admin/login/code", {
+          method: "POST",
+          body: body
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+          setStatus(data.message || text.sendFailed, "error");
+          return;
+        }
+
+        keyInput.value = data.verificationKey;
+        expiresAt = new Date(data.expiresAt).getTime();
+        verified = false;
+        submitBtn.disabled = true;
+        codeInput.value = "";
+        codeInput.readOnly = false;
+        codeInput.classList.remove("is-locked");
+        verifyBtn.disabled = false;
+        codeGroup.hidden = false;
+        sendBtn.hidden = true;
+        codeInput.focus();
+        startTimer();
+      } catch (error) {
+        setStatus(text.sendFailed, "error");
+      } finally {
+        triggerButton.disabled = false;
+      }
+    }
+
+    async function verifyCode() {
+      const code = codeInput.value.trim();
+      if (!keyInput.value) {
+        setStatus(text.sendFirst, "error");
+        return;
+      }
+      if (!/^\d{6}$/.test(code)) {
+        setStatus(text.codeRequired, "error");
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      setStatus(text.verifying, null);
+
+      try {
+        const body = new URLSearchParams({
+          username: usernameInput.value.trim(),
+          password: passwordInput.value,
+          verificationKey: keyInput.value,
+          code: code
+        });
+        const response = await fetch(/*[[@{/admin/login/verify}]]*/ "/admin/login/verify", {
+          method: "POST",
+          body: body
+        });
+        const data = await response.json();
+
+        if (!data.success) {
+          setStatus(data.message || text.verifyFailed, "error");
+          verifyBtn.disabled = false;
+          return;
+        }
+
+        verified = true;
+        stopTimer();
+        codeInput.readOnly = true;
+        codeInput.classList.add("is-locked");
+        submitBtn.disabled = false;
+        setStatus(text.verified, "success");
+      } catch (error) {
+        setStatus(text.verifyFailed, "error");
+        verifyBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener("click", function () {
+      requestCode(sendBtn, text.sending);
+    });
+    resendBtn.addEventListener("click", function () {
+      requestCode(resendBtn, text.resending);
+    });
+    verifyBtn.addEventListener("click", verifyCode);
+
+    codeInput.addEventListener("input", function () {
+      codeInput.value = codeInput.value.replace(/\D/g, "");
+    });
+    codeInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (!verifyBtn.disabled) {
+          verifyCode();
+        }
+      }
+    });
+
+    usernameInput.addEventListener("input", function () {
+      if (keyInput.value) resetVerification();
+    });
+    passwordInput.addEventListener("input", function () {
+      if (keyInput.value) resetVerification();
+    });
+
+    form.addEventListener("submit", function (event) {
+      if (!verified) {
+        event.preventDefault();
+        setStatus(keyInput.value ? text.verifyFirst : text.sendFirst, "error");
+      }
+    });
+  })();
+</script>
 </body>
 </html>

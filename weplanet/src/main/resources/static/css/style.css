@@ -2022,6 +2022,27 @@ span.chip {
   color: var(--wp-brand);
 }
 
+/* ---------- 다크모드: 글쓰기 에디터(간편 편집) ---------- */
+/* 위 규칙은 본문 뷰어용인데, 글쓰기 에디터의 간편 편집 입력칸도 같은 .toastui-editor-contents 를 쓴다.
+   입력칸 배경은 라이브러리 기본 흰색 그대로라, 다크모드에서 입력한 글씨가 흰 바탕에 흰 글씨로 안 보였다.
+   에디터는 마크다운 모드/툴바처럼 다크모드에서도 밝은 종이 + 어두운 글씨로 둔다. */
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents p,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h1,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h2,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h3,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h4,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h5,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h6,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents li,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents td,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents th,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents strong,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents em,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents blockquote {
+  color: #222;
+}
+
 /* =========================================================
  * 21. Profile Image Crop (PROFILE-04)
  * - 프로필/배경 이미지 편집 패널의 배경 미리보기 박스 + 크롭 모달.

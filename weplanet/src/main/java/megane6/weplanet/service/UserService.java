@@ -76,7 +76,11 @@ public class UserService {
 		// 가입 화면에서 쓰던 언어를 계정 선호 언어로 저장한다. 안 하면 기본값(KO)이 남아
 		// 환영 메일이 한국어로 가고, 다음 로그인부터 화면도 한국어로 바뀐다.
 		user.changePreferredLanguage(PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale()));
-		
+
+		// 가입 직후 바로 로그인시키므로(AuthController.signup) 첫 로그인 시각도 함께 남긴다.
+		// 폼 로그인이면 LoginSuccessHandler 가 기록하지만 자동 로그인은 그 처리를 거치지 않는다.
+		user.recordLogin();
+
 		User saved = userRepository.save(user);
 		
 		// [광고성 정보 알림] 데모용 - 실제 운영 기능은 아니고, 이 기능이 살아있다는 걸 보여주기 위해
