@@ -22,7 +22,6 @@ class AccountRecoveryServiceTest {
 			new AccountRecoveryService(userRepository, mock(PasswordEncoder.class));
 
 	// 가입 때 Kwon@Gmail.com 으로 쓴 사람이 비밀번호 찾기에서 kwon@gmail.com 으로 입력해도 같은 계정으로 본다
-	// (예전에는 equals 로 비교해서 "일치하면 보냈습니다"만 뜨고 메일이 오지 않았다)
 	@Test
 	void resetPasswordMatchesEmailIgnoringCase() {
 		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "Kwon@Gmail.com");

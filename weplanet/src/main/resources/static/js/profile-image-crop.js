@@ -1,20 +1,11 @@
 /**
- * ============================================================
- * WePlaNet – 프로필 / 배경 이미지 크롭 모달 (PROFILE-04)
- * ------------------------------------------------------------
- * "사진첩에서 불러오기"로 이미지를 고르면, 업로드 전에 위치를 옮기고
- * 확대/축소해서 원하는 영역만 잘라낼 수 있게 하는 공용 모듈이다.
- * portal/profile.html, community/profile.html 두 화면이 같은
- * <div class="modal-backdrop" id="imageCropModal"> 마크업 + 이 스크립트를
- * 그대로 함께 쓴다 (이미지 편집 버튼/파일 인풋 id 구조가 두 화면에서 동일함).
- * ============================================================
+ * 프로필 / 배경 이미지 자르기 모달 (Cropper.js) - 업로드 전에 위치·확대를 조정해 원하는 부분만 잘라 올린다.
+ * portal/profile.html, community/profile.html 이 같은 모달 마크업과 이 스크립트를 함께 쓴다.
  */
 (function () {
   "use strict";
 
-  // 종류별 크롭 비율/마스크/출력 크기.
-  // 아바타는 카드에서 원형(border-radius:50%)으로 쓰이니 1:1 정사각형 + 원형 마스크,
-  // 배경은 profile-card__cover(가로로 넓은 커버 영역)에 맞춘 비율로 자른다.
+  // 종류별 자르기 비율/마스크/출력 크기 - 아바타는 1:1 원형, 배경은 커버 영역 비율, 헤더 이미지는 3:1.
   let KIND_CONFIG = {
     Avatar: {
       aspectRatio: 1,
@@ -119,9 +110,8 @@
     activePreviewEl = previewEl || null;
     activeLabelEl = labelEl || null;
 
-    // SETTINGS-03: portal/profile.html은 화면 언어에 맞춘 제목을 window.WEPLANET_PROFILE_CROP_TITLES로 넘겨줌.
-    // 그 값이 없으면 기존 한국어 기본값(cfg.title)을 그대로 씀.
-    // 크롭 설정(configKind, 예: 포털 배경 → HeaderImage)의 제목을 먼저 찾고, 없으면 kind 제목을 쓴다.
+    // 화면 언어에 맞춘 모달 제목은 window.WEPLANET_PROFILE_CROP_TITLES 로 받는다 (없으면 한국어 기본값).
+    // 크롭 설정(configKind)의 제목을 먼저 찾고, 없으면 kind 제목을 쓴다.
     var overrideTitles = window.WEPLANET_PROFILE_CROP_TITLES;
     modalTitle.textContent = (overrideTitles && (overrideTitles[activeConfigKind] || overrideTitles[kind])) || cfg.title;
     stage.classList.toggle("is-round", !!cfg.round);
@@ -160,11 +150,8 @@
             zoomRange.step = 0.001;
             zoomRange.value = containRatio.toFixed(3);
           } else {
-            // 아바타: 이미지마다 처음 맞춰지는 배율이 달라서, 그 배율을 기준으로 슬라이더 범위를 잡는다.
-            // Cropper.js는 크롭 프레임보다 이미지가 작아지는 축소는 자동으로 막아버려서(viewMode:1),
-            // "ratio * 0.5"처럼 임의로 하한을 잡으면 슬라이더는 움직이는데 실제로는 이미 바닥이라
-            // 화면이 안 바뀌는 상황이 생긴다. 그래서 아주 작은 값으로 실제로 줌을 시도해보고,
-            // Cropper가 실제로 적용해준 배율을 진짜 축소 하한선으로 쓴다.
+            // 아바타: 이미지마다 처음 배율이 달라서 그 배율을 기준으로 슬라이더 범위를 잡는다.
+            // Cropper 가 실제로 허용하는 최소 배율을 한 번 확대·축소해 보고 축소 하한으로 쓴다.
             let startImgData = cropper.getImageData();
             let startRatio = startImgData.naturalWidth ? startImgData.width / startImgData.naturalWidth : 1;
 
@@ -194,9 +181,7 @@
       width: cfg.outputWidth,
       height: cfg.outputHeight,
       imageSmoothingQuality: "high",
-      // 배경을 가장 축소한 상태(letterbox)로 적용하면 프레임 일부가 이미지로 안 채워질 수 있는데,
-      // 그 빈 자리를 검은색 대신 흰색으로 채운다 (배경을 아직 안 정했을 때의 패널 색과 동일).
-      // 2560x1660으로 바꾼 뒤로는 실제로 이 자리가 채워질 일이 거의 없지만 안전장치로 남겨둔다.
+      // 배경을 가장 축소한 상태(letterbox)로 자르면 빈 자리가 생길 수 있어서 흰색으로 채운다 (안전장치).
       fillColor: "#ffffff"
     });
     if (!canvas) {
@@ -232,9 +217,7 @@
           previewEl.innerHTML =
             '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">';
         } else {
-          // 배경은 background-image가 아니라 실제 <img>(width:100%;height:auto)로 채운다 -
-          // 박스 너비에 맞춰 이미지를 늘리고 높이는 원본 비율을 그대로 따라가서, 좌우가
-          // 잘리거나 흰 여백이 남는 일 없이 항상 이미지 전체가 꽉 차게 보장된다.
+          // 배경 미리보기는 실제 <img>(width:100%;height:auto)로 채운다 - 좌우가 잘리거나 여백 없이 이미지 전체가 꽉 차게 보인다.
           previewEl.innerHTML = '<img src="' + url + '" alt="">';
         }
       }

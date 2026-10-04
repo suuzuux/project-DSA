@@ -36,14 +36,12 @@ public class CommunityJoinService {
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
 	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
-	// GroupFollow 통합: 탈퇴 시 그 커뮤니티에 종속된 팔로우 관계도 함께 정리하기 위해 직접 의존한다
-	// (UserFollowService는 반대로 CommunityJoinService에 의존하고 있어서, 여기선 서비스가 아니라
-	// 리포지토리를 직접 써서 순환 의존을 피한다).
+	// 탈퇴 시 그 커뮤니티의 팔로우 관계도 함께 지우려고 리포지토리를 직접 쓴다
+	// (UserFollowService 는 이 서비스에 의존하므로, 서비스를 쓰면 순환 의존이 생긴다).
 	private final UserFollowRepository userFollowRepository;
 	
-	// EXPLORE-03: "선택한 아티스트의 커뮤니티에 가입 후 커뮤니티 프로필 생성"이 한 세트라
-	// 가입(community_members)과 프로필 생성(community_profiles)을 트랜잭션 하나로 묶음
-	// - 중간에 실패해서 "가입은 됐는데 프로필이 없는" 어중간한 상태가 안 생기게 함.
+	// 커뮤니티 가입(community_members)과 커뮤니티 프로필 생성(community_profiles)을 트랜잭션 하나로 묶는다.
+	// 중간에 실패해서 "가입은 됐는데 프로필이 없는" 상태가 생기지 않게 하기 위함.
 	@Transactional
 	public void join(User fan, Long artistId, String nickname, String bio,
 					 MultipartFile avatar, MultipartFile background) {
@@ -52,7 +50,7 @@ public class CommunityJoinService {
 		if (artist.getRole() != Role.ARTIST) {
 			throw new IllegalArgumentException("error.community.artistNotFound");
 		}
-		// AUTH-11: 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트의 커뮤니티에는 가입할 수 없다
+		// 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트의 커뮤니티에는 가입할 수 없다
 		if (!artist.isLoginable()) {
 			throw new IllegalStateException("error.community.notJoinable");
 		}
@@ -74,8 +72,8 @@ public class CommunityJoinService {
 				.artistId(artistId)
 				.build());
 		
-		// AUTH-11: 이미지 형식(jpg/png/gif/webp)·크기 검증 후 서버가 정한 확장자로 저장
-		// 가입이 취소되면(뒤이은 배경 사진 검증 실패 등) 먼저 저장한 사진 파일도 지운다
+		// 이미지 형식(jpg/png/gif/webp)·크기를 검증한 뒤 서버가 정한 확장자로 저장한다.
+		// 가입이 취소되면(뒤이은 배경 사진 검증 실패 등) 먼저 저장한 사진 파일도 지운다.
 		List<String> newFiles = new ArrayList<>();
 		cleanUpFilesAfterTransaction(List.of(), newFiles);
 		String avatarStoredName = (avatar != null && !avatar.isEmpty()) ? fileStorageService.storeImage(avatar) : null;
@@ -101,9 +99,8 @@ public class CommunityJoinService {
 	 * 이미 가입돼 있으면 아무 것도 하지 않고, 없으면 최소 프로필로 가입 처리.
 	 * 에이전시 자동 가입 등 멱등성이 필요한 경로에서 사용.
 	 */
-	// AUTH-11: 별도 트랜잭션(REQUIRES_NEW)으로 실행 - 포털 탭 두 개를 동시에 열어서 같은 가입이 동시에 들어오면
-	// 한쪽이 유니크 제약 오류로 실패하는데, 같은 트랜잭션이면 그 오류가 포털 화면 전체를 500 으로 만들었다.
-	// 따로 떼어 두면 실패한 쪽만 롤백되고, 호출한 쪽(AgencyEnrollmentService)에서 "이미 가입됨"으로 넘길 수 있다.
+	// 별도 트랜잭션(REQUIRES_NEW) - 같은 가입이 동시에 들어와 한쪽이 유니크 제약으로 실패해도 그쪽만 롤백되고,
+	// 호출한 쪽(AgencyEnrollmentService)은 "이미 가입됨"으로 넘긴다.
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void ensureJoined(User user, Long artistId, String nickname) {
 		if (user == null || artistId == null) {
@@ -112,7 +109,7 @@ public class CommunityJoinService {
 		if (communityMemberRepository.existsByFanIdAndArtistId(user.getId(), artistId)) {
 			return;
 		}
-		// AUTH-11: 아직 활성화 전인 아티스트는 자동 가입하지 않는다 (join 에서 막히므로 조용히 건너뜀)
+		// 아직 활성화 전인 아티스트는 자동 가입하지 않는다 (join 에서 막히므로 조용히 건너뜀)
 		boolean activeArtist = userRepository.findById(artistId).map(User::isLoginable).orElse(false);
 		if (!activeArtist) {
 			return;
@@ -124,9 +121,8 @@ public class CommunityJoinService {
 		join(user, artistId, safeNickname, null, null, null);
 	}
 	
-	// PROFILE-01: 커뮤니티별 프로필 편집 (닉네임 / 소개글 / 프로필 이미지 / 배경 이미지)
-	// 이미지 규칙 - 삭제 요청이 최우선이고, 그 다음이 새 파일 교체, 둘 다 없으면 기존 이미지를 그대로 둔다.
-	// (화면의 "이미지 삭제하기"가 removeAvatar/removeBackground로 넘어옴)
+	// 커뮤니티별 프로필 편집 (닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 콘텐츠 숨김).
+	// 이미지는 삭제 요청이 우선이고, 그다음 새 파일 교체, 둘 다 없으면 기존 이미지를 그대로 둔다.
 	@Transactional
 	public void editProfile(User fan, Long artistId, String nickname, String bio,
 							MultipartFile avatar, MultipartFile background,
@@ -160,7 +156,7 @@ public class CommunityJoinService {
 			}
 			profile.setAvatarStoredName(null);
 		} else if (avatar != null && !avatar.isEmpty()) {
-			// AUTH-11: 새 파일을 먼저 저장(검증)하고, 옛 파일은 저장이 확정된 뒤에 지운다 - 검증에 실패하면 기존 사진이 그대로 남도록
+			// 새 파일을 먼저 저장(검증)하고, 옛 파일은 저장이 확정된 뒤에 지운다 - 검증에 실패하면 기존 사진이 그대로 남는다
 			String newAvatar = fileStorageService.storeImage(avatar);
 			newFiles.add(newAvatar);
 			if (profile.getAvatarStoredName() != null) {
@@ -200,10 +196,8 @@ public class CommunityJoinService {
 			communityProfileRepository.delete(profile);
 		});
 		communityMemberRepository.delete(member);
-		// GroupFollow 통합: 팔로우는 특정 커뮤니티에 종속되므로, 이 커뮤니티를 탈퇴하면 다른 공유 커뮤니티가
-		// 남아있어도 상관없이 이 커뮤니티(artistId) 소속 팔로우 관계는 모두 함께 삭제한다.
-		// AUTH-11: 단, 팬→아티스트 팔로우(following_id == community_id)는 가입 여부와 무관하게 할 수 있는 것이라 남긴다.
-		// 예전에는 이것까지 지워서, 가입 없이 아티스트를 팔로우하던 팬이 가입했다가 탈퇴하면 아티스트 팔로우가 사라졌다.
+		// 이 커뮤니티 소속 팔로우 관계를 함께 지운다.
+		// 단, 팬→아티스트 팔로우(following_id == community_id)는 가입과 무관하게 할 수 있는 것이라 남긴다.
 		userFollowRepository.deleteByCommunityIdAndFollowerIdAndFollowingIdNot(artistId, fan.getId(), artistId);
 		userFollowRepository.deleteByCommunityIdAndFollowingId(artistId, fan.getId());
 	}
@@ -246,9 +240,8 @@ public class CommunityJoinService {
 				.orElse(null);
 	}
 	
-	// [닉네임 관리] 커뮤니티 화면에서 작성자 이름을 보여줄 때 공통으로 쓰는 헬퍼.
-	// 가입할 때 설정한 커뮤니티 전용 닉네임이 있으면 그걸 쓰고, 없으면(아티스트 본인, 탈퇴한 회원 등)
-	// 계정 닉네임으로 대체한다. "가입할 때 닉네임과 글 쓸 때 닉네임이 다르게 보인다"는 문제의 해결 지점.
+	// 커뮤니티 화면에서 작성자 이름을 보여줄 때 쓰는 헬퍼 - 그 커뮤니티 전용 닉네임이 있으면 그걸,
+	// 없으면(아티스트 본인, 탈퇴한 회원 등) 계정 닉네임을 쓴다.
 	public String displayNickname(User author, Long artistId) {
 		if (author == null) {
 			return null;
@@ -327,11 +320,8 @@ public class CommunityJoinService {
 		return result;
 	}
 
-	// 디스크의 사진 파일은 DB 와 달리 롤백되지 않아서, 트랜잭션 결과를 보고 정리한다.
-	//  - 저장 확정(커밋): 교체·삭제된 옛 파일(replacedFiles)을 지운다
-	//  - 저장 취소(롤백): 이번에 새로 올린 파일(newFiles)을 지운다 - DB 는 옛 파일을 계속 가리키므로 옛 파일은 남긴다
-	// 예전에는 옛 파일을 바로 지워서, 새 프로필 사진 저장 뒤에 배경 사진 저장이 실패해 DB 가 롤백되면
-	// DB 는 이미 지워진 옛 사진을 가리켜 사진이 깨졌다. 목록은 호출한 쪽이 채워 나가므로 처리 시작 전에 등록한다.
+	// 디스크의 사진 파일은 DB 와 달리 롤백되지 않아서 트랜잭션 결과를 보고 정리한다.
+	// 커밋되면 교체·삭제된 옛 파일(replacedFiles)을, 롤백되면 새로 올린 파일(newFiles)을 지운다 (목록은 호출한 쪽이 채운다).
 	private void cleanUpFilesAfterTransaction(List<String> replacedFiles, List<String> newFiles) {
 		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
 			// 트랜잭션 밖에서 불린 경우(테스트 등) - 되돌릴 저장이 없으므로 옛 파일 정리만 하던 방식 그대로
@@ -359,8 +349,7 @@ public class CommunityJoinService {
 		return "/uploads/" + value;
 	}
 
-	// 화면에 프로필 카드(닉네임/소개글/아바타/배경) 그릴 때 씀
-	// AUTH-11: 가입한 커뮤니티 수만큼 프로필을 하나씩 조회하던 것(N+1)을 JOIN FETCH 쿼리 한 번으로 바꿨다
+	// 화면에 프로필 카드(닉네임/소개글/아바타/배경)를 그릴 때 씀 - 가입한 커뮤니티의 프로필을 쿼리 한 번으로 읽는다
 	public Map<Long, CommunityProfile> joinedProfilesByArtistId(User fan) {
 		if (fan == null) return Map.of();
 		Map<Long, CommunityProfile> result = new HashMap<>();

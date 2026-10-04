@@ -47,7 +47,7 @@ public class SettingsController {
 	private final SignupEmailVerificationService emailVerificationService;
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
 	private final MessageSource messageSource;
-	// SETTINGS-03 커밋3: 이메일 인증 서비스 예외가 메시지 키로 바뀌어서 화면에 내보낼 때 해석한다
+	// 예외의 메시지 키를 화면 언어 문구로 바꿔 내보낼 때 쓴다
 	private final megane6.weplanet.i18n.Messages messages;
 	private final LocaleResolver localeResolver;
 	private final EmailChangeAuthService emailChangeAuthService;
@@ -76,7 +76,7 @@ public class SettingsController {
 								RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
 		try {
-			// AUTH-11: 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
+			// 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
 			boolean newEmailVerified = emailVerificationService.isVerified(session, VerificationPurpose.EMAIL_CHANGE, email);
 			// 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService)
 			boolean emailChangeAuthorized = emailChangeAuthService.isAuthorized(session, user);
@@ -95,8 +95,7 @@ public class SettingsController {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
-			// AUTH-11: 중복 확인과 저장 사이에 다른 계정이 같은 이메일을 먼저 쓴 경우 - DB 유니크 제약(uk_users_email)이
-			// 막아 주고, 500 화면 대신 안내 문구를 보여준다
+			// 중복 확인과 저장 사이에 다른 계정이 같은 이메일을 먼저 쓴 경우 - 500 화면 대신 안내 문구를 보여준다
 			log.warn("회원정보 수정 실패(이메일 중복 저장 충돌): {}", e.getMostSpecificCause().getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", msg("settings.email.alreadyInUse"));
 		}
@@ -132,9 +131,8 @@ public class SettingsController {
 		User user = userResolver.requireAuthenticated(principal);
 		String trimmed = newEmail == null ? "" : newEmail.trim();
 
-		// AUTH-10: "연동된 소셜 provider의 이메일이라 못 바꾼다"는 제약을 없앴다 - 제공자와 무관하게 누구나
-		// 이메일을 바꿀 수 있다.
-		// 현재 비밀번호 확인을 먼저 마쳐야 인증코드를 보낸다 (로그인된 브라우저로 남의 이메일에 코드를 보내는 것도 막음)
+		// 소셜 연동 여부와 상관없이 누구나 이메일을 바꿀 수 있다.
+		// 현재 비밀번호 확인을 먼저 마쳐야 인증코드를 보낸다 (로그인된 브라우저로 남의 이메일에 코드를 보내는 것 방지)
 		if (!emailChangeAuthService.isAuthorized(session, user)) {
 			result.put("success", false);
 			result.put("needsPassword", true);
@@ -216,8 +214,7 @@ public class SettingsController {
 			return result;
 		}
 		userService.updateLanguage(user, language);
-		// SETTINGS-03 로케일 버그#1 수정: DB에만 저장하고 끝나면, 지금 이 세션의 실제 렌더링
-		// 로케일(PreferredLocaleResolver)은 안 바뀌어서 페이지를 새로고침해도 화면 언어가 그대로였다.
+		// DB 저장과 함께 지금 세션의 화면 언어도 바로 바꾼다 (안 하면 새로고침해도 화면 언어가 그대로다)
 		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(language));
 		result.put("success", true);
 		return result;
@@ -241,9 +238,8 @@ public class SettingsController {
 		return "redirect:/login/id?withdrawn";
 	}
 
-	// AUTH-10: 연동 해제. 비밀번호가 있는 계정만 해제할 수 있다(비밀번호가 없으면 해제 즉시 이 계정에
-	// 로그인할 방법이 없어지므로 UserService에서 막는다 - 화면에서도 그 경우엔 버튼을 비활성화해둔다).
-	// 정상적으로 해제되면 로그인 수단이 하나 줄어드는 변경이라 항상 로그아웃시킨다.
+	// 소셜 연동 해제 - 비밀번호가 있는 계정만 가능하다 (없으면 로그인할 방법이 사라지므로 UserService 에서 막음).
+	// 로그인 수단이 줄어드는 변경이라 해제 후에는 항상 로그아웃시킨다.
 	@PostMapping("/settings/social/unlink")
 	public String unlinkSocial(@AuthenticationPrincipal AuthenticatedUser principal, HttpServletRequest request, HttpServletResponse response,
 								RedirectAttributes redirectAttributes) {
@@ -259,12 +255,8 @@ public class SettingsController {
 		return "redirect:/login/id?unlinked=true";
 	}
 
-	// AUTH-10: session.invalidate() 직후 바로 redirect만 하면, 브라우저가 들고 있는 이전 세션 쿠키가
-	// 그대로 다음 요청에 실려 오고 Spring Security의 invalidSessionUrl(SecurityConfig)이 이를 무효
-	// 세션으로 판단해서 원래 의도한 목적지 대신 "/login?expired=true"로 가로채 버린다.
-	// invalidate() 직후 새 세션을 열어 응답에 유효한 세션 쿠키를 실어 보내면 이 문제를 막을 수 있다
-	// (LoginSuccessHandler.clearAuthentication()과 동일한 패턴). 화면 언어도 새 세션에 이어 붙여서
-	// 탈퇴·연동 해제 직후의 로그인 화면이 한국어로 돌아가지 않게 한다.
+	// 세션을 버린 직후 새 세션을 열어 둔다 - 안 그러면 이전 세션 쿠키 때문에 /login?expired 로 튕긴다.
+	// 화면 언어도 새 세션에 이어 붙여 탈퇴·연동 해제 직후 로그인 화면이 한국어로 돌아가지 않게 한다.
 	private static void invalidateAndOpenFreshSession(HttpServletRequest request) {
 		PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 	}

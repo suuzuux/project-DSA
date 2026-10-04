@@ -16,7 +16,7 @@ public record ArtistSearchResultView(
 		String nationality,
 		String category,
 		LocalDate debutDate,
-		boolean own		// AUTH-11: 로그인한 사람의 "본인 커뮤니티"인지 (아티스트/그룹 멤버) - 화면에서 가입 버튼을 숨기는 데 씀
+		boolean own		// 로그인한 사람의 "본인 커뮤니티"인지 (아티스트/그룹 멤버) - 가입 버튼을 숨기는 데 씀
 ) {
 	public static ArtistSearchResultView of(ArtistSearchRow row) {
 		boolean solo = row.memberCount() != null && row.memberCount() == 1;

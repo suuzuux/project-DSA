@@ -6,10 +6,8 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 소셜 인증은 끝났지만 아직 위플래닛 계정이 없는 사람을 "가입하시겠습니까?" 확인 화면으로 보낼 때,
- * 확인(예/아니오)을 받기 전까지 소셜 계정 정보를 세션에 잠깐 담아두는 용도.
- * (OAuth2LoginSuccessHandler 가 담고, SocialLoginEntryController 의 가입 확인 화면이 꺼내 쓴다)
- * email 은 구글이면 실제 구글 이메일, 카카오/LINE 이면 받을 수 없는 시스템 주소(*.weplanet.local)다.
+ * 소셜 인증은 끝났지만 위플래닛 계정이 없는 사람의 소셜 정보 - "가입하시겠습니까?" 확인 전까지 세션에 담아 둔다.
+ * email 은 구글이면 실제 이메일, 카카오/LINE 이면 받을 수 없는 시스템 주소(*.weplanet.local)다.
  */
 public record PendingSocialSignup(AuthProvider provider, String providerId, String email,
 								  String realName, String suggestedNickname, LocalDateTime expiresAt)

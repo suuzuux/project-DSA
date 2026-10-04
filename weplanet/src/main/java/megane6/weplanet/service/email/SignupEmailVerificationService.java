@@ -23,18 +23,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-// [이메일 인증코드] 이메일로 6자리 코드를 보내고, 입력받은 코드가 맞는지 확인하는 서비스.
-// DB 테이블 없이 메모리(세션)에 5분짜리 코드로만 들고 있는 단순한 방식 - 서버 재시작하면 인증 상태가 초기화됨.
-// (코드는 발송 후 5분 안에 입력해야 하고, 확인에 성공하면 그때부터 30분 동안 인증 상태가 유지된다)
-// SETTINGS-03 커밋5: 가입 전(또는 로그인 전)이라 회원 선호 언어를 알 수 없으므로, 요청 시점의 로케일로 메일을 만든다.
-//
-// AUTH-11 보안 보완
-//  1) 코드 입력을 5회 틀리면 그 코드는 폐기 - 6자리(100만 가지)를 무작정 대입해 보는 공격 방지
-//  2) 같은 이메일로는 60초 안에 다시 보낼 수 없고, 하루 10회까지만 발송 - 메일 폭탄 / Gmail 발송 한도 소진 방지
-//     (+ 같은 IP 10분 5통·하루 20통, 사이트 전체 하루 400통 - reserveSend 참고)
-//  3) 인증 결과를 "세션 + 용도 + 이메일"에 묶어서 저장 - 예전에는 이메일 주소 하나로만 전역 저장해서,
-//     가입 화면에서 인증한 주소를 이메일 변경·비밀번호 찾기에 그대로 쓰거나 다른 사람 브라우저(세션)에서
-//     인증한 결과를 가져다 쓸 수 있었다.
+// 이메일 6자리 인증코드 발송·확인. 코드는 세션에 저장하고(5분 안에 입력), 확인되면 30분 동안 인증 상태가 유지된다.
+// 5회 틀리면 코드 폐기, 발송 제한(주소·IP·사이트 전체), 인증 결과는 "세션 + 용도 + 이메일"에 묶어 저장한다.
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -42,9 +32,7 @@ public class SignupEmailVerificationService {
 	
 	private static final int CODE_LENGTH = 6;
 	private static final long EXPIRE_MINUTES = 5;
-	// 코드 확인에 성공한 뒤 그 인증으로 가입·비밀번호 재설정·이메일 변경을 마칠 수 있는 시간.
-	// 예전에는 "코드 발송 후 5분"이 그대로 적용돼서, 인증을 마친 뒤 나머지 칸을 채우다 5분이 지나면
-	// 화면에는 "인증 완료"가 떠 있는데도 저장할 때 "이메일 인증이 필요합니다"로 거절됐다.
+	// 코드 확인에 성공한 뒤 그 인증으로 가입·비밀번호 재설정·이메일 변경을 마칠 수 있는 시간 (코드 입력 제한 5분과 별개)
 	static final long VERIFIED_VALID_MINUTES = 30;
 	static final int MAX_FAILED_ATTEMPTS = 5;
 	static final long RESEND_COOLDOWN_SECONDS = 60;
@@ -69,8 +57,8 @@ public class SignupEmailVerificationService {
 	private int serviceDayCount = 0;
 	
 	/**
-	 * 인증코드를 만들어 메일로 보낸다. 회원가입·이메일 변경처럼 숨길 정보가 없는 곳에서 쓰고,
-	 * 발송 실패를 화면에 바로 알려줄 수 있도록 요청 처리 중에 보낸다.
+	 * 인증코드를 만들어 메일로 보낸다 - 회원가입·이메일 변경처럼 숨길 정보가 없는 곳에서 쓰고,
+	 * 발송 실패를 화면에 바로 알릴 수 있도록 요청 처리 중에 보낸다.
 	 *
 	 * @throws VerificationRateLimitException 발송 제한(같은 주소 60초·하루, 같은 IP, 사이트 전체 하루 한도)에 걸린 경우 (메일은 보내지 않음)
 	 */
@@ -80,9 +68,8 @@ public class SignupEmailVerificationService {
 		try {
 			mailSender.send(prepareCodeMail(session, purpose, normalized, email.trim()));
 		} catch (RuntimeException e) {
-			// 메일이 실제로 나가지 않았으면 이번 발송은 없던 일로 돌린다. 예전에는 실패해도 60초 재발송 제한과 하루 횟수가
-			// 이미 기록돼서, "발송에 실패했습니다"를 보고 바로 다시 누르면 "60초 후 다시 시도" 안내가 떴다.
-			// 세션에 저장한 코드도 받은 사람이 없으니 지운다.
+			// 메일이 실제로 나가지 않았으면 발송 기록(60초 제한·하루 횟수)을 되돌리고 저장한 코드도 지운다
+			// (바로 다시 보낼 수 있게).
 			releaseSend(reservation);
 			entries(session).remove(key(purpose, normalized));
 			throw e;
@@ -91,12 +78,8 @@ public class SignupEmailVerificationService {
 	}
 
 	/**
-	 * 아이디·비밀번호 찾기·휴면 해제처럼 "계정이 있는지"가 드러나면 안 되는 곳에서 쓴다.
-	 * 대상이면 실제로 보내고, 대상이 아니면 메일은 보내지 않지만 발송 제한은 똑같이 적용한다.
-	 * → 응답 문구와 제한 동작이 같아서, 화면만 보고는 입력한 정보와 일치하는 계정이 있는지 알 수 없다. (AUTH-11)
-	 * 메일 전송(SMTP)은 백그라운드로 보낸다 - 요청 처리 중에 보내면 대상일 때만 응답이 1~2초 늦어져서
-	 * 응답 시간만 재도 계정이 있는지 알 수 있었다. (VerificationMailAsyncSender)
-	 * (백그라운드 발송은 실패해도 화면에 알릴 수 없고, 응답이 같아야 하므로 발송 기록을 되돌리지 않는다)
+	 * 아이디·비밀번호 찾기·휴면 해제처럼 계정이 있는지 드러나면 안 되는 곳에서 쓴다 - 대상일 때만 실제로 보내고,
+	 * 응답 문구·발송 제한·응답 시간(백그라운드 발송)이 같아서 화면만으로는 계정 존재를 알 수 없다.
 	 *
 	 * @param email     사용자가 입력한 주소 - 발송 제한과 인증 확인은 이 값(대소문자 무시) 기준
 	 * @param recipient 실제로 받을 주소(가입 때 등록한 주소). null 이면 대상이 아니라서 메일을 보내지 않는다
@@ -186,16 +169,8 @@ public class SignupEmailVerificationService {
 		}
 	}
 
-	// 발송 제한을 확인하고, 통과하면 발송 1회로 기록한다. 세 가지 기준을 모두 본다.
-	//  1) 받는 주소: 60초 재발송 제한, 하루 DAILY_SEND_LIMIT 통 (같은 사람에게 메일 폭탄 방지)
-	//  2) 요청한 IP: IP_WINDOW_MINUTES 분에 IP_WINDOW_LIMIT 통, 하루 IP_DAILY_LIMIT 통 (모든 용도 합산)
-	//     - 예전에는 1)만 있어서, 받는 주소를 바꿔 가며 수천 통을 보내게 할 수 있었다
-	//  3) 사이트 전체: 하루 SERVICE_DAILY_LIMIT 통 - Gmail 하루 발송 한도(개인 계정 약 500통)를 다 써서
-	//     그날 모든 인증 메일이 막히거나 스팸 발송으로 계정이 정지되는 것을 막는 마지막 안전장치
-	// willSend: 실제로 메일을 보내는지 (찾기에서 계정이 일치하지 않으면 false). 제한 확인은 똑같이 하고(응답이 같아야
-	// 계정 존재가 안 드러남), 사이트 전체 한도는 실제로 보낸 메일만 센다.
-	// 여러 기준을 한 번에 확인하고 기록해야 해서 잠금 하나로 묶는다 (동시에 요청이 와도 한도를 넘지 않게).
-	// 돌려주는 값은 발송이 실패했을 때 releaseSend 로 기록을 되돌리는 데 쓴다.
+	// 발송 제한 확인 후 발송 1회로 기록한다 - 받는 주소(60초·하루), 요청 IP(10분·하루), 사이트 전체(하루, Gmail 한도 보호).
+	// willSend=false(찾기에서 계정 불일치)여도 제한은 똑같이 센다. 돌려준 값은 발송 실패 때 releaseSend 로 되돌리는 데 쓴다.
 	private SendReservation reserveSend(String email, boolean willSend) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDate today = now.toLocalDate();

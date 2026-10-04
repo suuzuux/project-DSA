@@ -1,13 +1,6 @@
 /**
- * ============================================================
- * WePlaNet – EXPLORE-03 커뮤니티 가입(닉네임 설정) 모달
- * ------------------------------------------------------------
- * 검색 결과의 "가입" 버튼, 커뮤니티 페이지의 "커뮤니티 가입하기" 버튼이
- * 모두 이 파일 하나를 공유한다. [data-join-btn] 이 붙은 요소면 어디서 눌러도 열린다.
- * (검색 결과처럼 나중에 그려지는 요소도 잡히도록 document 레벨에서 위임 처리)
- * 모달 마크업은 community/fragments/layout.html 의 joinModal 조각 하나뿐이다.
- * 닉네임칸에서 Enter를 눌러도 "가입하기"와 동일하게 전송된다.
- * ============================================================
+ * 커뮤니티 가입(닉네임 설정) 모달 - [data-join-btn] 이 붙은 버튼이면 어디서 눌러도 열린다
+ * (검색 결과처럼 나중에 그려지는 버튼도 잡히도록 document 에서 위임 처리).
  */
 (function () {
   "use strict";
@@ -22,8 +15,7 @@
   const submitBtn = document.getElementById("communityJoinSubmitBtn");
   let selectedArtistId = null;
 
-  // SETTINGS-03 커밋3: 이 파일은 main.js보다 먼저 로드되는 화면도 있어서, 문구를 꺼내는 시점(클릭 등)에
-  // WePlaNet.t를 찾는다. main.js가 없으면 한국어 기본값을 그대로 쓴다.
+  // main.js 보다 먼저 로드되는 화면도 있어서, 문구를 꺼내는 시점(클릭 등)에 WePlaNet.t 를 찾는다. 없으면 한국어 기본값.
   const t = (key, fallback, args) =>
     (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
 
@@ -116,9 +108,8 @@
 
   submitBtn?.addEventListener("click", submitJoin);
 
-  // 닉네임 입력칸에서 Enter를 눌러도 "가입하기"와 동일하게 동작
-  // (모달 안에 form이 없어서 기본 제출이 일어나지 않으므로 직접 연결한다)
-  // 전송 중에는 버튼이 disabled라, Enter를 연타해도 중복 요청이 나가지 않는다.
+  // 닉네임 입력칸에서 Enter 를 눌러도 "가입하기"와 똑같이 동작한다 (모달에 form 이 없어서 직접 연결).
+  // 전송 중에는 버튼이 disabled 라 Enter 를 연타해도 중복 요청이 나가지 않는다.
   nicknameInput?.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
       e.preventDefault();

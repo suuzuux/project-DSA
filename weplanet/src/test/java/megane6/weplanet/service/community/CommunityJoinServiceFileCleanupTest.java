@@ -62,7 +62,6 @@ class CommunityJoinServiceFileCleanupTest {
 	}
 
 	// 새 프로필 사진은 저장됐는데 배경 사진이 실패해서 롤백되면: 옛 사진 파일은 남기고(DB 가 계속 가리킴), 새 파일만 지운다.
-	// 예전에는 옛 사진 파일을 먼저 지워서 롤백 뒤 프로필 사진이 깨졌다.
 	@Test
 	void rollbackKeepsOldAvatarAndRemovesNewFile() {
 		assertThrows(IllegalArgumentException.class, () -> service.editProfile(fan, 10L, null, null,

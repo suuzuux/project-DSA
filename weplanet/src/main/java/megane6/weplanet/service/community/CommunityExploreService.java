@@ -9,8 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
-// EXPLORE-02: 커뮤니티 검색.
-// 커뮤니티 가입/프로필 편집/탈퇴는 CommunityJoinService(EXPLORE-03)가 맡는다.
+// 커뮤니티 검색. 가입·프로필 편집·탈퇴는 CommunityJoinService 가 맡는다.
 @Service
 @RequiredArgsConstructor
 public class CommunityExploreService {

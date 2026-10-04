@@ -67,7 +67,6 @@ class AuthControllerSignupTest {
 	}
 
 	// 닉네임 중복처럼 서버에서 막혀 가입 화면이 다시 열려도, 이미 마친 아이디 중복 확인·이메일 인증은 이어간다
-	// (예전에는 둘 다 처음부터 다시 해야 했고, 이메일 인증코드를 다시 받다가 60초 제한에 걸리기도 했다)
 	@Test
 	void formShownAgainKeepsCheckedUsernameAndEmailVerification() throws Exception {
 		when(emailVerificationService.isVerified(any(), eq(VerificationPurpose.SIGNUP), eq("newfan01@weplanet.test")))

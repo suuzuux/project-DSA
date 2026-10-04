@@ -12,12 +12,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * 계정 안내 메일(가입 완료 / 커뮤니티 가입 유도 / 광고성 정보 동의 확인)을 보낸다.
- * UserService·SocialSignupService 는 메일을 직접 보내지 않고 AccountMailEvent 만 남긴다.
- * <ul>
- *   <li>AFTER_COMMIT: 가입(설정 저장)이 DB 에 확정된 뒤에만 보낸다 - 저장이 롤백됐는데 메일만 나가는 일이 없다.</li>
- *   <li>@Async: 메일 서버(SMTP) 응답을 기다리지 않고 화면은 바로 다음으로 넘어간다.</li>
- * </ul>
- * 회원 정보는 커밋된 값을 다시 읽어서 쓴다 (메일 문구는 받는 회원의 선호 언어 - MarketingConsentEmailService).
+ * 저장이 DB 에 확정된 뒤(AFTER_COMMIT) 백그라운드(@Async)로 보내고, 회원 정보는 커밋된 값을 다시 읽어 쓴다.
  */
 @Slf4j
 @Component

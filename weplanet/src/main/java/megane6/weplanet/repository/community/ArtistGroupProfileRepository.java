@@ -16,8 +16,8 @@ public interface ArtistGroupProfileRepository extends JpaRepository<ArtistGroupP
 	// artist_id는 UNIQUE(uk_agp_artist) 라서 그룹당 최대 1행
 	Optional<ArtistGroupProfile> findByArtistId(Long artistId);
 
-	// 필터는 전부 선택사항 - null로 넘기면 그 조건은 무시됨 (검색창 처음 열었을 때 = 전체 목록)
-	// AUTH-11: 활동 중(ACTIVE)인 아티스트만 검색된다 - 아직 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트 제외
+	// 필터는 모두 선택 - null 이면 그 조건은 무시한다 (검색창을 처음 열면 전체 목록).
+	// 활동 중(ACTIVE)인 아티스트만 검색된다.
 	@Query("""
 			SELECT new megane6.weplanet.domain.dto.community.ArtistSearchRow(
 				u.id, u.nickname, agp.gender, agp.memberCount, agp.nationality, agp.category, agp.debutDate)

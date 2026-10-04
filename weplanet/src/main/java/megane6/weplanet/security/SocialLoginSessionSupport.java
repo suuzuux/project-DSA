@@ -20,11 +20,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-// OAuth2LoginSuccessHandler와 소셜 로그인 관련 컨트롤러(SocialLoginEntryController 등)가
-// 공통으로 필요로 하는 "세션의 SecurityContext를 우리 서비스 계정으로 채워넣기/비우기" 로직을 모아둔 헬퍼.
-// 예전엔 OAuth2LoginSuccessHandler 안에 private 메서드로만 있었는데, 이메일 중복 확인 화면에서
-// [예, 연동합니다]를 눌렀을 때도 같은 로그인 처리가 필요해져서 재사용 가능하도록 분리했다.
-// (지금은 휴면 해제, 아티스트 멤버 프로필 로그인, 아이디 회원가입 직후 자동 로그인도 이 헬퍼를 쓴다)
+// 세션의 SecurityContext 를 우리 서비스 계정으로 채우거나(loginAs) 비우는 공용 로그인 처리.
+// 소셜 로그인, 휴면 해제, 아티스트 멤버 프로필 로그인, 아이디 가입 직후 자동 로그인이 함께 쓴다.
 @Component
 @RequiredArgsConstructor
 public class SocialLoginSessionSupport {
@@ -32,9 +29,8 @@ public class SocialLoginSessionSupport {
 	private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
 	private final SessionRegistry sessionRegistry;
 
-	// 소셜 로그인을 거부/취소할 때, Spring Security가 이미 세션에 저장해버린
-	// 소셜 플랫폼 원본 인증(OAuth2User/OidcUser principal)을 빈 컨텍스트로 덮어써서 지운다.
-	// (안 지우면 index.html 등에서 우리 서비스 계정 필드(nickname 등)가 없는 원본 principal 때문에 500 에러가 남)
+	// 소셜 로그인을 거부/취소할 때, 세션에 이미 저장된 소셜 원본 인증(OAuth2User)을 빈 컨텍스트로 덮어 지운다.
+	// (안 지우면 우리 계정 필드(nickname 등)가 없는 원본 principal 때문에 화면에서 500 오류가 난다)
 	public void clearSecurityContext(HttpServletRequest request, HttpServletResponse response) {
 		SecurityContext emptyContext = SecurityContextHolder.createEmptyContext();
 		SecurityContextHolder.setContext(emptyContext);
@@ -55,10 +51,8 @@ public class SocialLoginSessionSupport {
 		Authentication newAuth =
 				new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 
-		// AUTH-11: 폼 로그인에서 Spring Security 가 자동으로 해 주는 세션 처리를 여기서도 똑같이 한다.
-		//  - 세션 id 교체: 로그인 전에 심어 둔 세션 id 로 로그인 후 세션을 가로채는 공격(세션 고정) 방지
-		//  - 동시 로그인 제한(계정당 1개): 다른 기기의 기존 세션을 만료시키고, 이 세션을 목록에 등록
-		// 예전에는 SecurityContext 만 저장해서 휴면 해제·소셜 로그인·멤버 프로필 로그인에는 둘 다 적용되지 않았다.
+		// 폼 로그인에서 Spring Security 가 해 주는 세션 처리를 똑같이 한다.
+		// 세션 id 교체(세션 고정 공격 방지) + 계정당 동시 로그인 1개 제한(다른 기기 세션 만료, 이 세션 등록).
 		request.getSession(true);
 		sessionAuthenticationStrategy().onAuthentication(newAuth, request, response);
 

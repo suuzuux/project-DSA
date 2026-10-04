@@ -43,7 +43,7 @@ class PortalNoticeNotificationTest {
 		when(noticeRepository.save(any(PortalNotice.class))).thenAnswer(invocation -> invocation.getArgument(0));
 	}
 
-	// 임시저장(비공개)해 둔 공지를 나중에 공개하면 알림이 간다 (예전에는 가지 않았다)
+	// 임시저장(비공개)해 둔 공지를 나중에 공개하면 알림이 간다
 	@Test
 	void publishingADraftNotifiesFollowers() {
 		PortalNotice draft = PortalNotice.create(artist, "제목", "내용", false);

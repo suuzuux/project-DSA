@@ -19,9 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 /**
- * 소셜 계정으로 위플래닛 계정을 새로 만든다. "가입하시겠습니까?" 확인 화면에서 [예]를 눌렀을 때 호출된다.
- * 가입 직후 바로 로그인시키므로 최종 로그인 시각(recordLogin)도 여기서 남긴다.
- * (예전에는 OAuth2LoginSuccessHandler.createNewSocialUser 에서 소셜 인증 직후 바로 만들었다)
+ * 소셜 계정으로 위플래닛 계정을 새로 만든다 ("가입하시겠습니까?" 확인 화면에서 [예]를 눌렀을 때).
+ * 가입 직후 바로 로그인시키므로 최종 로그인 시각도 여기서 남긴다.
  */
 @Slf4j
 @Service
@@ -51,7 +50,7 @@ public class SocialSignupService {
 			throw new IllegalStateException("loginEntry.socialEmailTaken");
 		}
 
-		// AUTH-10: 신규 소셜 가입은 비밀번호를 만들지 않는다(null). 필요하면 나중에 설정 화면에서 이름/이메일/비밀번호를 고친다.
+		// 소셜 가입은 비밀번호를 만들지 않는다(null). 필요하면 나중에 설정 화면에서 등록한다.
 		String username = usernameGenerator.generate(pending.provider());
 		String nickname = resolveNickname(pending.suggestedNickname());
 		User newUser = User.createSocialFan(username, null, pending.realName(), nickname, pending.email(),
@@ -63,17 +62,14 @@ public class SocialSignupService {
 		User saved = userRepository.save(newUser);
 		saved.recordLogin(); // 가입 직후 바로 로그인시키므로 최종 로그인 시각도 함께 남긴다
 
-		// [광고성 정보 알림] 아이디 가입(UserService.signup)과 같은 규칙: 가입 완료 메일은 항상 1통,
-		// 마케팅에 동의했으면 커뮤니티 가입 유도 메일 1통 더. 카카오/LINE 은 받을 수 없는 주소라 보내지 않는다.
-		// 가입이 DB 에 확정된 뒤 백그라운드에서 보낸다 (AccountMailListener - 받을 수 없는 주소도 거기서 거른다).
+		// 아이디 가입과 같은 규칙: 가입 완료 메일 1통 + 마케팅에 동의했으면 커뮤니티 가입 유도 메일 1통.
+		// 가입이 확정된 뒤 백그라운드로 보내고, 받을 수 없는 주소(카카오/LINE)는 AccountMailListener 가 거른다.
 		eventPublisher.publishEvent(AccountMailEvent.signupWelcome(saved.getId(), marketingConsent));
 		return saved;
 	}
 
-	// 소셜 계정의 이름(구글 이름, 카카오/LINE 닉네임)을 닉네임으로 쓰되, 아이디 가입·설정 화면과 같은 닉네임 규칙
-	// (NicknamePolicy - 길이·글자)을 통과할 때만 쓴다. 예전에는 규칙 검사 없이 그대로 써서 "Hyeongjun Kwon Smith"처럼
-	// 긴 이름이 그대로 닉네임이 됐고, 50자를 넘으면 DB 오류가 "이미 가입된 이메일입니다" 안내로 잘못 나갔다.
-	// 규칙에 맞지 않거나 다른 팬이 쓰고 있으면 자동 생성 닉네임을 쓴다 (설정 화면에서 바꿀 수 있다).
+	// 소셜 이름(구글 이름, 카카오/LINE 닉네임)이 닉네임 규칙(NicknamePolicy)을 통과하고 다른 팬이 안 쓰면 그대로 쓴다.
+	// 아니면 자동 생성 닉네임을 쓴다 (설정 화면에서 바꿀 수 있다).
 	private String resolveNickname(String suggestedNickname) {
 		String candidate = suggestedNickname == null ? "" : suggestedNickname.trim();
 		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
