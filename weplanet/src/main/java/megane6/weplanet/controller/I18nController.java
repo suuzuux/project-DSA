@@ -184,6 +184,7 @@ public class I18nController {
 			"client.dm.noConversation",
 			"client.dm.loginRequired",
 			"client.dm.warningPrefix",
+			"client.dm.unreadLabel",
 			// collection.js
 			"client.collection.badgeLoadFailed",
 	};

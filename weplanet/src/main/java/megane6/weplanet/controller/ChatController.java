@@ -27,6 +27,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -167,6 +169,38 @@ public class ChatController {
             map.put("neverSubscribed", item.isNeverSubscribed());
             return map;
         }).toList();
+    }
+
+    /**
+     * 팬 화면 비행기 버튼의 "안 읽은 DM 개수" 계산용 데이터 (dm-realtime.js).
+     * 최근 7일 동안 방 주인(아티스트/멤버)이 보낸 메시지 시각을 방별로 내려주고,
+     * 브라우저가 자기가 기억하는 "마지막으로 읽은 시각"과 비교해서 개수를 센다.
+     * 시각은 브라우저 시계와 어긋나지 않게 서버 기준 밀리초(epoch)로 통일하고, 서버 현재 시각(serverNow)도 같이 준다.
+     */
+    @GetMapping("/chat/unread-source")
+    @ResponseBody
+    public Map<String, Object> unreadSource(@AuthenticationPrincipal AuthenticatedUser principal) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("serverNow", System.currentTimeMillis());
+        if (principal == null || !"ROLE_FAN".equals(principal.getRoleName())) {
+            result.put("rooms", List.of());
+            return result;
+        }
+        User fan = getUserOrThrow(principal.getId(), "팬");
+        ZoneId zone = ZoneId.systemDefault();
+        List<Map<String, Object>> rooms = chatMessageService
+                .getRecentOwnerMessageTimes(fan, LocalDateTime.now().minusDays(7))
+                .entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> room = new HashMap<>();
+                    room.put("artistId", entry.getKey());
+                    room.put("times", entry.getValue().stream()
+                            .map(time -> time.atZone(zone).toInstant().toEpochMilli())
+                            .toList());
+                    return room;
+                }).toList();
+        result.put("rooms", rooms);
+        return result;
     }
 
     /**
