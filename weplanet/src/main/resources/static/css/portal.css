@@ -1293,11 +1293,11 @@ tr.js-pinned.is-dragging {
 }
 
 .admin-otp-status.is-success {
-    color: #8fe3c0;
+    color: var(--wp-success);
 }
 
 .admin-otp-status.is-error {
-    color: #ff9d9d;
+    color: var(--wp-danger);
 }
 
 /* 남은 시간 (n분nn초) */
@@ -1308,9 +1308,19 @@ tr.js-pinned.is-dragging {
 
 /* 인증 완료된 입력칸 - 회색으로 잠금 표시 */
 .admin-login__card .form-input.is-locked {
-    background: #3a3a3a;
-    color: #8d8a82;
+    background: var(--wp-brand-soft);
+    color: var(--wp-muted);
     cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+    .admin-otp-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .admin-otp-row .form-input {
+        grid-column: 1 / -1;
+    }
 }
 
 /* ---------- ADMIN 통합 신고·제재 - 필터 바 ---------- */

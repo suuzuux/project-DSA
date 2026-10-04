@@ -30,15 +30,6 @@
           method="post" enctype="multipart/form-data" id="postForm">
 
         <div class="form-group">
-            <label class="form-label">테스트 작성자</label>
-            <select name="testUserId" class="form-select">
-                <option value="1">1번 - 팬 계정</option>
-                <option value="2">2번 - 아티스트 계정</option>
-                <option value="3">3번 - 관리자 계정</option>
-            </select>
-        </div>
-
-        <div class="form-group">
             <label class="form-label" th:text="#{feed.form.title}">제목</label>
             <input type="text" class="form-input" name="title" th:value="${post} != null ? ${post.title} : ''">
         </div>

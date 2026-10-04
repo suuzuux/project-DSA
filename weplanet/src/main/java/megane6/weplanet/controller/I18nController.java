@@ -85,6 +85,8 @@ public class I18nController {
 			"shell.dm.more",
 			"shell.dm.expiredTitle",
 			"shell.dm.expiredDesc",
+			"shell.dm.joinTitle",
+			"shell.dm.joinDesc",
 			"shell.dm.startConversation",
 			"shell.dm.attach",
 			"shell.dm.inputPlaceholder",
