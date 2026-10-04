@@ -186,8 +186,12 @@
         if (!fanId) {
             const dmBody = document.querySelector("#dmListView .dm-body");
             if (dmBody) {
-                dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;"></p>';
-                dmBody.firstChild.textContent = t("client.dm.loginRequired", "로그인 후 이용할 수 있어요.");
+                // 화면 문구(/api/i18n)를 받은 뒤에 그린다 - 페이지를 열자마자 그리면 일본어·영어 화면에도 한국어 기본값이 보였다
+                const i18nReady = (window.WePlaNet && window.WePlaNet.i18nReady) || Promise.resolve();
+                i18nReady.then(function () {
+                    dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;"></p>';
+                    dmBody.firstChild.textContent = t("client.dm.loginRequired", "로그인 후 이용할 수 있어요.");
+                });
             }
             return;
         }
