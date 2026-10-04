@@ -891,6 +891,20 @@
     // 위의 "DM 전송 목업"만 남았고, 메시지가 화면에만 붙고 서버로는 안 가서 횟수 차감/아티스트 수신이 안 됐음
     window.WePlaNetShellReady = true;
     document.dispatchEvent(new Event("weplanet:shell-ready"));
+
+    // 상점/설정/공지/프로필 등 dm-realtime.js 를 직접 불러오지 않는 화면에서는 DM 위젯이 목업 그대로라
+    // 대화 목록도 안 뜨고 메시지도 못 보냈음. 화면마다 스크립트를 넣는 대신 셸이 없으면 여기서 불러온다.
+    // dm-realtime.js 는 Stomp 전역이 필요해서 stomp.min.js 를 먼저 불러온 뒤에 붙인다.
+    if (!isAdmin && !document.querySelector('script[src*="dm-realtime.js"]')) {
+      if (window.Stomp) {
+        loadScriptOnce("dm-realtime.js");
+      } else {
+        const stomp = document.createElement("script");
+        stomp.src = "https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js";
+        stomp.onload = () => loadScriptOnce("dm-realtime.js");
+        document.body.appendChild(stomp);
+      }
+    }
   }
 
   // 현재 세션 로케일의 문구를 받아온 뒤에만 화면을 그린다. 실패해도 한국어 기본값으로 진행한다
