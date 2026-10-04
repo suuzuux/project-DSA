@@ -175,4 +175,4 @@ public class HashtagEvent {
 	void preUpdate() {
 		this.updatedAt = LocalDateTime.now();
 	}
-}
+}
