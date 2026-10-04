@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class DmInboxItem {
     private Long artistId;
     private String artistNickname;
+    private String groupName;         // 멤버별 DM: 상대가 그룹 멤버면 소속 그룹 이름, 솔로 아티스트면 null
     private String lastMessage;       // 대화 이력이 없으면 null (화면에서 "추천" 칸으로 분류됨)
     private LocalDateTime lastMessageTime;
     private boolean hasConversation;  // true면 "메시지" 칸, false면 "추천" 칸

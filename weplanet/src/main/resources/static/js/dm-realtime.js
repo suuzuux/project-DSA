@@ -7,7 +7,8 @@
  * shell.js가 먼저 화면을 그려놓은 다음에 이 스크립트가 실행되어야 하므로,
  * html에서는 반드시 shell.js보다 나중에 불러와야 함.
  *
- * 팬 쪽은 "아티스트별 1:1 DM 인박스" (CHAT-02 이하 그대로),
+ * 팬 쪽은 "아티스트별 1:1 DM 인박스" (CHAT-02 이하 그대로).
+ * 멤버별 DM: 그룹은 그룹 전체가 아니라 멤버 한 명 한 명이 각자 DM 방을 가진다 (솔로는 본인 방 그대로).
  * 아티스트 쪽은 "팬 DM 방 1개" (CHAT-02 비대칭 수신, 팬 메시지는 30%만 노출) - 이 둘은
  * 서로 다른 모델이라서 아티스트는 인박스 목록 없이 DM 버튼을 누르면 바로 자신의 방으로 들어감.
  * ============================================================
@@ -29,8 +30,8 @@
     const roleName = body.getAttribute("data-role") || "";
     const isArtist = roleName === "ROLE_ARTIST" || roleName === "ROLE_ARTIST_MEMBER";
 
-    // 아티스트 채팅방 번호(= 커뮤니티 id). 솔로 아티스트는 내 id 와 같고,
-    // 그룹 멤버는 내 id 가 아니라 소속 그룹 id 라서 서버에 한 번 물어본다
+    // 아티스트 채팅방 번호(= DM 방 주인 id). 멤버별 DM 이라 솔로도 그룹 멤버도 내 id 와 같지만,
+    // 그룹 멤버는 지금 활동 중인 멤버인지 서버가 확인해서 돌려주도록 한 번 물어본다
     let artistRoomId = roleName === "ROLE_ARTIST" ? fanId : null;
 
     function withArtistRoomId(callback) {
@@ -117,7 +118,8 @@
         const name = document.createElement("div");
         name.className = "dm-list-item__name";
         const nameText = document.createElement("span");
-        nameText.textContent = item.artistNickname || "";
+        // 멤버별 DM: 그룹 멤버면 어느 그룹 멤버인지 같이 보여줌 (이 이름이 방 헤더에도 그대로 쓰임)
+        nameText.textContent = (item.artistNickname || "") + (item.groupName ? " · " + item.groupName : "");
         const badge = document.createElement("span");
         badge.className = "badge-verified";
         badge.textContent = "✓";
