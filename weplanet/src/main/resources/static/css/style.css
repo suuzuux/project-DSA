@@ -121,16 +121,18 @@ p {
   letter-spacing: -0.02em;
 }
 
+/* 로고 마크: 브랜드 앱 아이콘(img/brand/weplanet-app-icon.png 를 128px 로 줄인 사본) 이미지로 표시.
+   템플릿 22곳의 <span class="brand__mark">W</span> 는 그대로 두고, 안의 "W" 글자만 숨긴다.
+   원본 PNG 는 모서리가 흰색이라 border-radius 로 둥근 모서리 밖을 잘라낸다(다크모드에서 흰 모서리가 보이지 않게). */
 .brand__mark {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background: linear-gradient(145deg, var(--wp-brand) 0%, var(--wp-brand-dark) 100%);
-  color: var(--wp-on-brand, #fff);
-  display: grid;
-  place-items: center;
-  font-size: 14px;
-  font-weight: 800;
+  flex-shrink: 0;
+  border-radius: 22%;
+  overflow: hidden;
+  background: var(--wp-brand) url("/img/brand/weplanet-app-icon-128.png") center / cover no-repeat;
+  color: transparent;
+  font-size: 0;
 }
 
 .brand__text span {
