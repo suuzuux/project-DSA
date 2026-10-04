@@ -2,11 +2,9 @@ package megane6.weplanet.service.community;
 
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
-import megane6.weplanet.repository.community.CommunityProfileRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.service.FileStorageService;
 import org.junit.jupiter.api.AfterEach;
@@ -32,25 +30,23 @@ import static org.mockito.Mockito.when;
 class CommunityJoinServiceFileCleanupTest {
 
 	private final CommunityMemberRepository memberRepository = mock(CommunityMemberRepository.class);
-	private final CommunityProfileRepository profileRepository = mock(CommunityProfileRepository.class);
 	private final FileStorageService fileStorageService = mock(FileStorageService.class);
-	private final CommunityJoinService service = new CommunityJoinService(memberRepository, profileRepository,
+	private final CommunityJoinService service = new CommunityJoinService(memberRepository,
 			mock(ArtistProfileRepository.class), mock(UserRepository.class), fileStorageService,
 			mock(ApplicationEventPublisher.class), mock(UserFollowRepository.class));
 
 	private final User fan = User.createFan("fan01", "encoded", "이름", "닉네임", "fan01@test.com");
 	private final MockMultipartFile newAvatar = new MockMultipartFile("avatar", "a.jpg", "image/jpeg", new byte[]{1});
 	private final MockMultipartFile badBackground = new MockMultipartFile("background", "b.heic", "image/heic", new byte[]{2});
-	private CommunityProfile profile;
+	// 가입 행(CommunityMember)이 곧 커뮤니티 프로필이다
+	private CommunityMember profile;
 
 	@BeforeEach
 	void setUp() {
 		ReflectionTestUtils.setField(fan, "id", 1L);
-		CommunityMember member = CommunityMember.builder().fanId(1L).artistId(10L).build();
-		profile = CommunityProfile.builder().communityMember(member).nickname("닉네임")
+		profile = CommunityMember.builder().fanId(1L).artistId(10L).nickname("닉네임")
 				.avatarStoredName("old-avatar.jpg").backgroundStoredName("old-bg.jpg").build();
-		when(memberRepository.findByFanIdAndArtistId(1L, 10L)).thenReturn(Optional.of(member));
-		when(profileRepository.findByCommunityMember_Id(any())).thenReturn(Optional.of(profile));
+		when(memberRepository.findByFanIdAndArtistId(1L, 10L)).thenReturn(Optional.of(profile));
 		when(fileStorageService.storeImage(newAvatar)).thenReturn("new-avatar.jpg");
 		when(fileStorageService.storeImage(badBackground)).thenThrow(new IllegalArgumentException("error.upload.imageTypeInvalid"));
 		TransactionSynchronizationManager.initSynchronization();

@@ -28,7 +28,7 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long> 
 	// 멤버로 로그인한 뒤: "이 멤버의 커뮤니티(그룹)는 어디인가" (6단계 판정 헬퍼)
 	Optional<GroupMember> findByMember_IdAndLeftAtIsNull(Long memberId);
 	
-	// 멤버 추가/탈퇴 후 탐색용 인원수(artist_group_profiles.member_count)를 맞출 때
+	// 멤버 추가/탈퇴 후 탐색용 인원수(artist_groups.member_count)를 맞출 때
 	long countByGroupIdAndLeftAtIsNull(Long groupId);
 
 	// 멤버 추가 시: 같은 그룹 안에 같은 이름의 활동 멤버가 있는지 (프로필 선택 화면에서 구분이 안 되므로)

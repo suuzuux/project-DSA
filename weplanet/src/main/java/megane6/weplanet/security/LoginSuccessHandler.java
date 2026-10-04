@@ -51,14 +51,12 @@ public class LoginSuccessHandler extends SavedRequestAwareAuthenticationSuccessH
 				? localeResolver.resolveLocale(request)
 				: null;
 
-		// 관리자 로그인 화면(adminLogin=true)은 ADMIN 계정만 통과시킨다.
-		// 역할 정보는 노출하지 않고 일반 로그인 실패와 같은 화면으로 보낸다.
+		// 관리자는 /admin/login 의 이메일 2단계 인증을 반드시 거쳐야 한다.
+		// 예전 관리자 폼처럼 /login 에 adminLogin=true 를 직접 보내더라도 비밀번호만으로 로그인되지 않게 막는다.
 		if (adminLogin) {
-			if (!"ROLE_ADMIN".equals(principal.getRoleName())) {
-				clearAuthentication(request);
-				getRedirectStrategy().sendRedirect(request, response, "/admin/login?error");
-				return;
-			}
+			clearAuthentication(request);
+			getRedirectStrategy().sendRedirect(request, response, "/admin/login?error");
+			return;
 		} else if (portalLogin) {
 			// 포털 로그인: 아티스트/에이전시 전용. 선택 탭과 실제 역할이 일치해야 함.
 			String roleName = principal.getRoleName();

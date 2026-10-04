@@ -6,7 +6,7 @@ import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.dto.live.LiveStatusView;
 import megane6.weplanet.domain.entity.*;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
+import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.BookmarkRepository;
@@ -33,6 +33,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -413,8 +414,12 @@ public class CommunityController {
 		}
 
 		// PROFILE-03: 커뮤니티 가입 당일을 D+1로 계산한다. 대상 유저 기준.
-		// 아티스트 본인이나 관리자는 가입 절차 없이 접근할 수 있으므로 joinedAt이 null일 수 있다.
+		// 아티스트 쪽 계정은 자기 커뮤니티에 따로 가입하지 않으므로 가입 행이 없을 때 계정 생성일을
+		// 커뮤니티 활동 시작일로 사용한다. 팬은 기존처럼 community_members.joined_at만 사용한다.
 		CommunityJoinInfo communityJoinInfo = communityJoinService.joinInfoOf(targetUser, artistId);
+		if (communityJoinInfo == null && targetIsArtistHere && targetUser.getCreatedAt() != null) {
+			communityJoinInfo = CommunityJoinInfo.from(targetUser.getCreatedAt(), LocalDate.now());
+		}
 		if (communityJoinInfo != null) {
 			model.addAttribute("communityJoinInfo", communityJoinInfo);
 		}
@@ -542,7 +547,7 @@ public class CommunityController {
 
 		// AUTH-11: 상대가 이 커뮤니티에서 콘텐츠 숨김을 켰으면 본인이 아닌 사람에게는 목록을 보여주지 않는다.
 		// 예전에는 화면에서 숫자만 숨기고, 이 주소를 직접 부르면 팔로워/팔로잉 목록이 그대로 보였다.
-		CommunityProfile targetProfile = communityJoinService.profileOf(targetUser, artistId);
+		CommunityMember targetProfile = communityJoinService.profileOf(targetUser, artistId);
 		boolean hiddenFromMe = !targetUser.getId().equals(me.getId())
 				&& targetProfile != null && targetProfile.isContentHidden();
 		List<User> users = hiddenFromMe ? List.of()
@@ -717,7 +722,7 @@ public class CommunityController {
 		Set<Long> followedIds = userFollowService.getFollowedArtistIds(currentUser);
 		model.addAttribute("followingCurrentArtist", followedIds.contains(artistId));
 		
-		Map<Long, CommunityProfile> joinedProfiles = currentUser != null
+		Map<Long, CommunityMember> joinedProfiles = currentUser != null
 				? communityJoinService.joinedProfilesByArtistId(currentUser)
 				: Collections.emptyMap();
 		Set<Long> joinedArtistIds = communityJoinService.joinedArtistIds(currentUser);
@@ -726,7 +731,7 @@ public class CommunityController {
 		model.addAttribute("otherCommunities",
 				communityDrawerHelper.otherCommunities(currentUser, artists));
 		model.addAttribute("communityJoined", isOwnCommunity || joinedArtistIds.contains(artistId));
-		CommunityProfile myCommunityProfile = joinedProfiles.get(artistId);
+		CommunityMember myCommunityProfile = joinedProfiles.get(artistId);
 		model.addAttribute("myCommunityProfile", myCommunityProfile);
 		// 아티스트 본인 '나' 프로필: 에이전시/포털에서 등록한 배경·사진·소개 반영
 		if (isOwnCommunity) {

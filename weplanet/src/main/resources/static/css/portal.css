@@ -745,28 +745,18 @@
   min-height: 100vh;
 }
 
-@media (max-width: 860px) {
-  .admin-login__split {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-login__visual {
-    padding: 40px 28px;
-  }
-
-  .admin-login__deco {
-    display: none;
-  }
-}
-
 .admin-login__visual {
   background: var(--wp-admin-side);
   color: #fff;
   padding: 56px 44px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 40px;
+  display: grid;
+  place-items: center;
+}
+
+.admin-login__visual-copy {
+  width: 100%;
+  max-width: 360px;
+  transform: translateX(4%);
 }
 
 .admin-login__visual-title {
@@ -783,12 +773,6 @@
   font-size: var(--wp-fs-sm);
   line-height: 1.7;
   color: rgba(255, 255, 255, 0.7);
-}
-
-.admin-login__deco {
-  width: 100%;
-  max-width: 320px;
-  color: #fff;
 }
 
 .admin-login__panel {
@@ -813,6 +797,21 @@
 
 .admin-login__visual .admin-login__eyebrow {
   color: rgba(255, 255, 255, 0.65);
+}
+
+@media (max-width: 860px) {
+  .admin-login__split {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-login__visual {
+    padding: 40px 28px;
+  }
+
+  .admin-login__visual-copy {
+    max-width: none;
+    transform: none;
+  }
 }
 
 .admin-login__title {
@@ -1294,11 +1293,11 @@ tr.js-pinned.is-dragging {
 }
 
 .admin-otp-status.is-success {
-    color: #8fe3c0;
+    color: var(--wp-success);
 }
 
 .admin-otp-status.is-error {
-    color: #ff9d9d;
+    color: var(--wp-danger);
 }
 
 /* 남은 시간 (n분nn초) */
@@ -1309,9 +1308,19 @@ tr.js-pinned.is-dragging {
 
 /* 인증 완료된 입력칸 - 회색으로 잠금 표시 */
 .admin-login__card .form-input.is-locked {
-    background: #3a3a3a;
-    color: #8d8a82;
+    background: var(--wp-brand-soft);
+    color: var(--wp-muted);
     cursor: not-allowed;
+}
+
+@media (max-width: 520px) {
+    .admin-otp-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .admin-otp-row .form-input {
+        grid-column: 1 / -1;
+    }
 }
 
 /* ---------- ADMIN 통합 신고·제재 - 필터 바 ---------- */

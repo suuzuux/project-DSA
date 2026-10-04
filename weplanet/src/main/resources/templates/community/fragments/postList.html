@@ -40,7 +40,7 @@
         </div>
 		<a th:href="@{/community/{artistId}/{tab}/{postId}(artistId=${artist.id()}, tab=${boardType.name() == 'ARTIST' ? 'artist' : 'fan'}, postId=${post.id})}"
            style="display:block;color:inherit;">
-          <p class="post-card__body" th:text="${post.title}"></p>
+          <p class="post-card__body post-card__preview" th:text="${!#strings.isEmpty(post.previewText) ? post.previewText : post.title}"></p>
           <p th:if="${post.linkUrl} != null" class="translate-link" style="display:flex;align-items:center;gap:4px;margin-top:6px;word-break:break-all;">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
             <span th:text="${post.linkUrl}"></span>

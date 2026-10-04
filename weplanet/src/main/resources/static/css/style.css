@@ -767,6 +767,11 @@ a.banner__slide--promo,
   border-color: var(--wp-brand);
 }
 
+/* "커뮤니티 가입하기"(#meetArtists)로 스크롤해 왔을 때 고정 헤더에 제목이 가리지 않도록 */
+.meet-artists {
+  scroll-margin-top: calc(var(--wp-header-h) + 16px);
+}
+
 /* 지금 바로 만나보세요 - 위버스처럼 한 줄에 2명 (동그란 사진 + 오른쪽에 굵은 이름) */
 .artist-grid {
   display: grid;
@@ -968,6 +973,33 @@ a.banner__slide--promo,
   font-size: var(--wp-fs-md);
   color: var(--wp-ink-soft);
   white-space: pre-wrap;
+}
+
+/* 게시글 상세의 본문(Toast UI 뷰어). 뷰어는 줄바꿈을 "<br>\n" 으로 그리는데, 위 pre-wrap 을 물려받으면
+   <br> 뒤의 \n 까지 줄바꿈으로 처리돼서 줄마다 빈 줄이 하나씩 더 생긴다. 뷰어 안에서는 기본값으로 되돌린다 */
+.post-card__body .toastui-editor-contents {
+  white-space: normal;
+}
+
+/* 에디터에서 빈 줄을 하나 띄우면 저장 시 문단이 나뉜다(\n\n). 상세에서도 에디터처럼 정확히 한 줄만큼 띄운다 */
+.post-card__body .toastui-editor-contents p {
+  margin: 0;
+}
+
+.post-card__body .toastui-editor-contents p + p {
+  margin-top: 1.6em;
+}
+
+/* 게시글 목록 카드의 본문 미리보기 (Post.getPreviewText) - 줄바꿈 그대로 최대 5줄, 넘치면 마지막 줄 끝에 … */
+.post-card__preview {
+  line-height: 1.6;
+  white-space: pre-line;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
 }
 
 .post-card__media {
@@ -1988,6 +2020,27 @@ span.chip {
 
 :root[data-theme="dark"] .toastui-editor-contents a {
   color: var(--wp-brand);
+}
+
+/* ---------- 다크모드: 글쓰기 에디터(간편 편집) ---------- */
+/* 위 규칙은 본문 뷰어용인데, 글쓰기 에디터의 간편 편집 입력칸도 같은 .toastui-editor-contents 를 쓴다.
+   입력칸 배경은 라이브러리 기본 흰색 그대로라, 다크모드에서 입력한 글씨가 흰 바탕에 흰 글씨로 안 보였다.
+   에디터는 마크다운 모드/툴바처럼 다크모드에서도 밝은 종이 + 어두운 글씨로 둔다. */
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents p,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h1,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h2,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h3,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h4,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h5,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h6,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents li,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents td,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents th,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents strong,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents em,
+:root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents blockquote {
+  color: #222;
 }
 
 /* =========================================================

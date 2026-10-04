@@ -5,13 +5,11 @@ import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
-import megane6.weplanet.domain.entity.community.CommunityProfile;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
-import megane6.weplanet.repository.community.CommunityProfileRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.service.FileStorageService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -31,7 +29,6 @@ import java.util.*;
 public class CommunityJoinService {
 	
 	private final CommunityMemberRepository communityMemberRepository;
-	private final CommunityProfileRepository communityProfileRepository;
 	private final ArtistProfileRepository artistProfileRepository;
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
@@ -40,8 +37,7 @@ public class CommunityJoinService {
 	// (UserFollowService 는 이 서비스에 의존하므로, 서비스를 쓰면 순환 의존이 생긴다).
 	private final UserFollowRepository userFollowRepository;
 	
-	// 커뮤니티 가입(community_members)과 커뮤니티 프로필 생성(community_profiles)을 트랜잭션 하나로 묶는다.
-	// 중간에 실패해서 "가입은 됐는데 프로필이 없는" 상태가 생기지 않게 하기 위함.
+	// 커뮤니티 가입 - 가입 정보와 커뮤니티별 프로필(닉네임·소개·사진)을 community_members 한 행으로 같이 저장한다.
 	@Transactional
 	public void join(User fan, Long artistId, String nickname, String bio,
 					 MultipartFile avatar, MultipartFile background) {
@@ -67,11 +63,6 @@ public class CommunityJoinService {
 			throw new IllegalArgumentException("error.community.bioTooLong");
 		}
 		
-		CommunityMember member = communityMemberRepository.save(CommunityMember.builder()
-				.fanId(fan.getId())
-				.artistId(artistId)
-				.build());
-		
 		// 이미지 형식(jpg/png/gif/webp)·크기를 검증한 뒤 서버가 정한 확장자로 저장한다.
 		// 가입이 취소되면(뒤이은 배경 사진 검증 실패 등) 먼저 저장한 사진 파일도 지운다.
 		List<String> newFiles = new ArrayList<>();
@@ -80,9 +71,10 @@ public class CommunityJoinService {
 		if (avatarStoredName != null) newFiles.add(avatarStoredName);
 		String backgroundStoredName = (background != null && !background.isEmpty()) ? fileStorageService.storeImage(background) : null;
 		if (backgroundStoredName != null) newFiles.add(backgroundStoredName);
-		
-		communityProfileRepository.save(CommunityProfile.builder()
-				.communityMember(member)
+
+		communityMemberRepository.save(CommunityMember.builder()
+				.fanId(fan.getId())
+				.artistId(artistId)
 				.nickname(nickname)
 				.bio(bio)
 				.avatarStoredName(avatarStoredName)
@@ -128,10 +120,9 @@ public class CommunityJoinService {
 							MultipartFile avatar, MultipartFile background,
 							boolean removeAvatar, boolean removeBackground,
 							boolean contentHidden) {
-		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
+		// 가입 행이 곧 이 커뮤니티의 프로필이다
+		CommunityMember profile = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
-		CommunityProfile profile = communityProfileRepository.findByCommunityMember_Id(member.getId())
-				.orElseThrow(() -> new IllegalStateException("error.community.profileMissing"));
 		// 바뀌는 옛 사진은 저장이 확정된 뒤에 지우고, 새로 올린 사진은 저장이 취소되면 지운다 (cleanUpFilesAfterTransaction)
 		List<String> replacedFiles = new ArrayList<>();
 		List<String> newFiles = new ArrayList<>();
@@ -180,7 +171,7 @@ public class CommunityJoinService {
 		}
 		
 		profile.setContentHidden(contentHidden);
-		communityProfileRepository.save(profile);
+		communityMemberRepository.save(profile);
 	}
 	
 	@Transactional
@@ -189,12 +180,9 @@ public class CommunityJoinService {
 				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
 		// 프로필 사진 파일은 탈퇴가 DB 에 확정된 뒤에 지운다 (탈퇴 처리가 실패하면 사진도 그대로 남도록)
 		List<String> profileFiles = new ArrayList<>();
+		if (member.getAvatarStoredName() != null) profileFiles.add(member.getAvatarStoredName());
+		if (member.getBackgroundStoredName() != null) profileFiles.add(member.getBackgroundStoredName());
 		cleanUpFilesAfterTransaction(profileFiles, List.of());
-		communityProfileRepository.findByCommunityMember_Id(member.getId()).ifPresent(profile -> {
-			if (profile.getAvatarStoredName() != null) profileFiles.add(profile.getAvatarStoredName());
-			if (profile.getBackgroundStoredName() != null) profileFiles.add(profile.getBackgroundStoredName());
-			communityProfileRepository.delete(profile);
-		});
 		communityMemberRepository.delete(member);
 		// 이 커뮤니티 소속 팔로우 관계를 함께 지운다.
 		// 단, 팬→아티스트 팔로우(following_id == community_id)는 가입과 무관하게 할 수 있는 것이라 남긴다.
@@ -224,10 +212,10 @@ public class CommunityJoinService {
 	}
 	
 	// 내 프로필 화면에 계정 아이디 대신 이 커뮤니티 전용 닉네임을 띄우기 위해 씀. 미가입이면 null.
-	public CommunityProfile profileOf(User fan, Long artistId) {
+	// 가입 행(CommunityMember)이 곧 커뮤니티별 프로필이다.
+	public CommunityMember profileOf(User fan, Long artistId) {
 		if (fan == null) return null;
 		return communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
-				.flatMap(member -> communityProfileRepository.findByCommunityMember_Id(member.getId()))
 				.orElse(null);
 	}
 
@@ -246,7 +234,7 @@ public class CommunityJoinService {
 		if (author == null) {
 			return null;
 		}
-		CommunityProfile profile = profileOf(author, artistId);
+		CommunityMember profile = profileOf(author, artistId);
 		return profile != null ? profile.getNickname() : author.getNickname();
 	}
 
@@ -283,11 +271,11 @@ public class CommunityJoinService {
 			return Map.of();
 		}
 
-		Map<Long, CommunityProfile> profilesByAuthorId = new HashMap<>();
+		Map<Long, CommunityMember> profilesByAuthorId = new HashMap<>();
 		if (artistId != null) {
-			for (CommunityProfile profile : communityProfileRepository.findForAuthorsInCommunity(
+			for (CommunityMember profile : communityMemberRepository.findByArtistIdAndFanIdIn(
 					artistId, uniqueAuthors.keySet())) {
-				profilesByAuthorId.put(profile.getCommunityMember().getFanId(), profile);
+				profilesByAuthorId.put(profile.getFanId(), profile);
 			}
 		}
 
@@ -306,7 +294,7 @@ public class CommunityJoinService {
 
 		Map<String, CommunityAuthorView> result = new LinkedHashMap<>();
 		uniqueAuthors.forEach((authorId, author) -> {
-			CommunityProfile profile = profilesByAuthorId.get(authorId);
+			CommunityMember profile = profilesByAuthorId.get(authorId);
 			String nickname = profile != null ? profile.getNickname() : author.getNickname();
 			String avatarUrl = artistAvatarUrls.get(authorId);
 			if (profile != null
@@ -350,11 +338,11 @@ public class CommunityJoinService {
 	}
 
 	// 화면에 프로필 카드(닉네임/소개글/아바타/배경)를 그릴 때 씀 - 가입한 커뮤니티의 프로필을 쿼리 한 번으로 읽는다
-	public Map<Long, CommunityProfile> joinedProfilesByArtistId(User fan) {
+	public Map<Long, CommunityMember> joinedProfilesByArtistId(User fan) {
 		if (fan == null) return Map.of();
-		Map<Long, CommunityProfile> result = new HashMap<>();
-		for (CommunityProfile profile : communityProfileRepository.findAllByFanIdWithMember(fan.getId())) {
-			result.put(profile.getCommunityMember().getArtistId(), profile);
+		Map<Long, CommunityMember> result = new HashMap<>();
+		for (CommunityMember profile : communityMemberRepository.findByFanId(fan.getId())) {
+			result.put(profile.getArtistId(), profile);
 		}
 		return result;
 	}
