@@ -7,6 +7,7 @@ import megane6.weplanet.domain.entity.Membership;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.ChatMessageRepository;
+import megane6.weplanet.repository.MembershipPeriodRepository;
 import megane6.weplanet.repository.MembershipRepository;
 import megane6.weplanet.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final MembershipRepository membershipRepository;
+    private final MembershipPeriodRepository membershipPeriodRepository;
 
     // 채팅 메시지 저장 - fan이 null이면 아티스트가 전체 팬에게 보낸 메시지
     @Transactional
@@ -75,6 +77,7 @@ public class ChatMessageService {
                     .lastMessageTime(message.getCreatedAt())
                     .hasConversation(true)
                     .membershipExpired(isMembershipExpired(fan, message.getArtist()))
+                    .neverSubscribed(isNeverSubscribed(fan, message.getArtist()))
                     .build());
         }
 
@@ -89,6 +92,7 @@ public class ChatMessageService {
                         .artistNickname(artist.getNickname())
                         .hasConversation(false)
                         .membershipExpired(isMembershipExpired(fan, artist))
+                        .neverSubscribed(isNeverSubscribed(fan, artist))
                         .build());
             }
         }
@@ -119,5 +123,13 @@ public class ChatMessageService {
         return membershipRepository.findByFanAndArtist(fan, artist)
                 .map(Membership::isExpired)
                 .orElse(true);
+    }
+
+    // DM 배너 문구 구분용 - 위 isMembershipExpired 는 "가입 안 함"과 "만료"를 똑같이 막지만,
+    // 한 번도 가입 안 한 팬에게 "구독 만료"라고 보여주는 건 맞지 않아서 가입 안내 문구를 따로 보여줌.
+    // 해지(MembershipService.cancel)하면 membership 줄이 지워지므로, 가입 이력(membership_period)까지 확인함
+    public boolean isNeverSubscribed(User fan, User artist) {
+        return membershipRepository.findByFanAndArtist(fan, artist).isEmpty()
+                && !membershipPeriodRepository.existsByFanIdAndArtistId(fan.getId(), artist.getId());
     }
 }
