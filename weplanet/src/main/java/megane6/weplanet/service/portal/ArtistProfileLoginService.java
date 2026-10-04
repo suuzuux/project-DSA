@@ -34,8 +34,7 @@ public class ArtistProfileLoginService {
 	private static final Pattern PASSWORD_PATTERN
 			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
 	
-	// AUTH-11: 개인 비밀번호를 5회 틀리면 그 프로필은 10분 동안 로그인할 수 없다.
-	// 예전에는 횟수 제한이 없어서, 그룹 비밀번호를 아는 사람이 다른 멤버의 개인 비밀번호를 무한히 대입해 볼 수 있었다.
+	// 개인 비밀번호를 5회 틀리면 그 프로필은 10분 동안 로그인할 수 없다 (다른 멤버 비밀번호 무한 대입 방지).
 	private static final int MAX_FAILED_ATTEMPTS = 5;
 	private static final long LOCK_MINUTES = 10;
 	

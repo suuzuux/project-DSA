@@ -46,7 +46,7 @@ public enum AdminActionType {
 	
 	private final String label;
 	
-	// SETTINGS-03: 화면에는 label 대신 이 키로 번역된 문구를 보여준다.
+	// 화면에는 label 대신 이 키로 번역된 문구를 보여준다.
 	public String getMessageKey() {
 		return "admin.actionType." + name();
 	}

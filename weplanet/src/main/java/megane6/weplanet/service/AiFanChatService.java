@@ -159,8 +159,7 @@ public class AiFanChatService {
         return persona.fallbacks().get(ThreadLocalRandom.current().nextInt(persona.fallbacks().size()));
     }
 
-    // AI 호출 실패는 GeminiClient.generateJson 이 null 을 돌려줘서 parseReplies 단계에서 걸러진다
-    // (예전처럼 한국어 안내 문구 "지금은 AI 응답..."을 글자로 비교하지 않는다 - 서버 언어가 바뀌면 못 알아챘다)
+    // AI 호출 실패는 GeminiClient.generateJson 이 null 을 돌려줘서 parseReplies 단계에서 걸러진다 (안내 문구를 글자로 비교하지 않음)
     private static boolean isUsableReply(String content) {
         return content != null && !content.isBlank();
     }

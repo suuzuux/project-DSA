@@ -36,9 +36,8 @@ import java.util.*;
 public class ScheduleApiController {
 
 	/**
-	 * SETTINGS-03 커밋5: 알림 문구는 코드에 6개 언어(ko/en/ja/zh/fr/es)를 직접 적어 두던 방식에서
-	 * MessageSource(messages*.properties) 기반으로 바꾸고, 서비스 지원 언어(ko/ja/en)만 남겼다.
-	 * global-icons.js의 tr(obj)가 obj[현재 언어] || obj.ko || obj.en 으로 꺼내 쓰므로 응답 모양(언어별 Map)은 그대로 둔다.
+	 * 알림 문구는 MessageSource(messages*.properties)에서 서비스 지원 언어(ko/ja/en)별로 만든다.
+	 * global-icons.js의 tr(obj)가 obj[현재 언어] || obj.ko || obj.en 으로 꺼내 쓰므로 응답은 언어별 Map 모양을 유지한다.
 	 */
 	private static final Map<String, Locale> NOTIFY_LOCALES = Map.of(
 			"ko", Locale.KOREAN,

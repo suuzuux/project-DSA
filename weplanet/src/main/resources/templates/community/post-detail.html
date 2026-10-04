@@ -113,7 +113,7 @@
           <th:block th:if="${#authentication.principal.id == post.author.id}">
             <button type="button" class="translate-link" style="background:none;border:none;cursor:pointer;"
                     data-modal-open="editPostModal" th:text="#{common.edit}">수정</button>
-            <!-- SETTINGS-03 커밋3: th:onsubmit엔 문자열 표현식을 못 넣어서(Thymeleaf 제한) 확인 문구는 data-confirm으로 넘긴다 -->
+            <!-- th:onsubmit엔 문자열 표현식을 못 넣어서(Thymeleaf 제한) 확인 문구는 data-confirm으로 넘긴다 -->
             <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post"
                   th:attr="data-confirm=#{community.postDetail.deleteConfirm}"
                   onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);" style="display:inline;">

@@ -78,14 +78,14 @@ public class PortalController {
 	private final LiveBroadcastService liveBroadcastService;
 	private final GoodsService goodsService;
 	private final MessageSource messageSource;
-	// SETTINGS-03 커밋3: 서비스 예외가 메시지 키로 바뀌어서, 화면에 내보낼 때 현재 로케일 문구로 해석한다
+	// 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석한다
 	private final megane6.weplanet.i18n.Messages messages;
 	private final ArtistRegistrationService artistRegistrationService;
 	private final ArtistInvitationMailService artistInvitationMailService;
 	private final ArtistMemberService artistMemberService;
 	private final CommunityArtistResolver communityArtistResolver;
 
-	// SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
@@ -235,8 +235,7 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		
-		// AUTH-11: 폼이 보내 준 그룹(artistId)에 추가한다. 예전에는 세션의 "현재 선택 아티스트"를 썼기 때문에,
-		// 탭 A 에서 그룹 X 화면을 띄워 둔 채 탭 B 에서 그룹 Y 를 고르면 탭 A 에서 추가한 멤버가 그룹 Y 에 생겼다.
+		// 세션의 "현재 선택 아티스트"가 아니라 폼이 보내 준 그룹(artistId)에 추가한다 (탭마다 다른 그룹을 띄워도 섞이지 않음).
 		// 이 그룹을 실제로 관리하는지는 ArtistMemberService.addMember(requireManagedGroup)가 다시 확인한다.
 		Long targetGroupId = artistId != null ? artistId : artist.getId();
 		

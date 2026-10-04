@@ -15,7 +15,7 @@ public class SummaryService {
         return summarize(content, Language.KO);
     }
 
-    // SETTINGS-03 커밋3: 번역보기(TranslateService)처럼 요약도 로그인 사용자의 기본 서비스 언어로 받는다.
+    // 번역보기(TranslateService)처럼 요약도 로그인 사용자의 기본 서비스 언어로 받는다.
     public String summarize(String content, Language targetLanguage) {
         Language language = targetLanguage != null ? targetLanguage : Language.KO;
         String prompt = "다음 글을 " + language.displayNameKo() + "로 3줄 이내로 간단히 요약해줘. 요약문 외에 다른 말은 하지 마.\n\n" + content;

@@ -27,8 +27,7 @@ public class AsyncConfig {
 	}
 
 	// 아이디·비밀번호 찾기 / 휴면 해제 인증코드 메일 전용 풀 (VerificationMailAsyncSender).
-	// 메일을 요청 처리 중에 보내면 "계정이 있을 때만" 응답이 1~2초 늦어져서 계정 존재 여부가 드러나므로 백그라운드로 보낸다.
-	// 큐가 가득 차면 버리고 로그만 남긴다 - 요청 스레드에서 대신 보내면(CallerRuns) 다시 응답 시간 차이가 생기기 때문.
+	// 응답 시간 차이로 계정 존재 여부가 드러나지 않게 백그라운드로 보내고, 큐가 차면 같은 이유로 버리고 로그만 남긴다.
 	@Bean(name = "verificationMailExecutor")
 	public Executor verificationMailExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -43,8 +42,7 @@ public class AsyncConfig {
 	}
 
 	// [이벤트·혜택 알림] 게시글/공지/라이브 시작 시 팔로워에게 이메일을 보내는 작업 전용 풀.
-	// 팔로워 수가 많으면 순차 발송(JavaMailSender는 건당 SMTP 호출이라 순차 처리)이 오래 걸릴 수 있어서
-	// aiFanExecutor(AI 채팅용, 큐 20)와는 분리했다. 큐를 더 넉넉하게 잡아둠.
+	// 팔로워가 많으면 순차 발송이 오래 걸릴 수 있어 aiFanExecutor(AI 채팅용)와 분리하고 큐를 넉넉하게 잡았다.
 	@Bean(name = "communityNotifyExecutor")
 	public Executor communityNotifyExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -56,9 +54,8 @@ public class AsyncConfig {
 		return executor;
 	}
 
-	// 가입 완료 / 커뮤니티 가입 유도 / 광고성 정보 동의 확인 메일 전용 풀 (AccountMailListener).
-	// 인증코드 메일(verificationMailExecutor)과 나눠서, 안내 메일이 몰려도 인증코드가 늦게 가지 않게 한다.
-	// 큐가 가득 차면 그 메일은 보내지 않고 로그만 남긴다 - 가입 자체는 이미 끝났으므로 가입 화면에 오류를 내지 않는다.
+	// 가입 완료 / 커뮤니티 가입 유도 / 광고성 동의 확인 메일 전용 풀 (AccountMailListener) - 인증코드 메일이 밀리지 않게 분리.
+	// 큐가 차면 그 메일은 보내지 않고 로그만 남긴다 (가입은 이미 끝났으므로 화면에 오류를 내지 않음).
 	@Bean(name = "accountMailExecutor")
 	public Executor accountMailExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

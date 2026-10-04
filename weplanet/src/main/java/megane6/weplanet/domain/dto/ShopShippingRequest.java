@@ -24,7 +24,7 @@ public record ShopShippingRequest(
 	}
 
 	/**
-	 * SETTINGS-03: 예외 메시지는 메시지 키로 던지고, 화면으로 내보내는 쪽(GlobalExceptionHandler)에서
+	 * 예외 메시지는 메시지 키로 던지고, 화면으로 내보내는 쪽(GlobalExceptionHandler)에서
 	 * Messages.resolve()로 현재 로케일 문구로 바꾼다.
 	 */
 	public void requireComplete() {
@@ -49,7 +49,7 @@ public record ShopShippingRequest(
 		if (address1.length() > 255) {
 			throw new IllegalArgumentException("shop.error.addressTooLong");
 		}
-		// AUTH-11: 상세 주소 컬럼은 VARBINARY(512)(UTF-8 바이트)라 "200자" 기준으로는 한글 171자부터 DB 오류(500)가 났다.
+		// 상세 주소 컬럼은 VARBINARY(512)(UTF-8 바이트)라 글자 수(200자)만 보면 한글 171자부터 DB 오류가 난다.
 		// 글자 수와 실제 저장 크기(바이트)를 둘 다 확인한다.
 		if (address2 != null && (address2.length() > 200
 				|| address2.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 512)) {

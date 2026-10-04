@@ -12,7 +12,7 @@
   // 목록 주소는 서버가 내려준 영문 주소(/kiikii/fan)를 우선 쓴다 - 정렬/새로고침 후에도 주소창이 영문 주소로 유지됨
   const listBase = boardRoot.dataset.listBase || ("/community/" + artistId + "/" + boardTab);
 
-  // SETTINGS-03 커밋3: 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  // 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
   const t = function (key, fallback, args) {
     return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
   };
@@ -135,7 +135,7 @@
   // (예전엔 writePostContent가 그냥 평범한 textarea라 마크다운 리치 편집이 안 됐음)
   const editorEl = document.getElementById("writePostEditor");
   let postEditor = null;
-  // SETTINGS-03 커밋3: 에디터 placeholder/모드 탭 라벨이 생성 시점에 정해지므로 i18n 응답을 받은 뒤에 만든다.
+  // 에디터 placeholder/모드 탭 라벨이 생성 시점에 정해지므로 i18n 응답을 받은 뒤에 만든다.
   const i18nReady = (window.WePlaNet && window.WePlaNet.i18nReady) || Promise.resolve();
   i18nReady.then(initPostEditor);
 

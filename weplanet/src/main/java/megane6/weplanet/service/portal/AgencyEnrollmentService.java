@@ -40,7 +40,7 @@ public class AgencyEnrollmentService {
 			try {
 				communityJoinService.ensureJoined(agencyUser, artist.getId(), nickname);
 			} catch (org.springframework.dao.DataIntegrityViolationException e) {
-				// AUTH-11: 다른 요청(포털 탭 동시 열기 등)이 먼저 가입 처리한 경우 - 이미 가입된 것이므로 넘어간다
+				// 다른 요청(포털 탭 동시 열기 등)이 먼저 가입 처리한 경우 - 이미 가입된 것이므로 넘어간다
 			}
 			membershipService.join(agencyUser, artist);
 		}

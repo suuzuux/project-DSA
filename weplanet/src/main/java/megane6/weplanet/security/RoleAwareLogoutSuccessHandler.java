@@ -16,9 +16,8 @@ import java.util.Locale;
 /**
  * 관리자는 관리자 로그인으로, 아티스트/에이전시는 포털 로그인으로, 그 외는 메인홈으로 보낸다.
  *
- * 화면 언어 유지: 로그아웃은 세션을 통째로 버리므로(SecurityConfig invalidateHttpSession) 그냥 두면
- * 로그아웃 직후 화면이 한국어로 돌아간다. 그래서 LogoutHandler 로도 등록해 세션을 버리기 전에 언어를 읽어 두고(logout),
- * 로그아웃이 끝난 뒤 새 세션에 다시 넣는다(onLogoutSuccess). 관리자는 어차피 한국어 고정이라 따로 하지 않는다.
+ * 화면 언어 유지: 로그아웃은 세션을 통째로 버리므로, LogoutHandler 로도 등록해 세션을 버리기 전에 언어를 읽어 두고(logout)
+ * 로그아웃이 끝난 뒤 새 세션에 다시 넣는다(onLogoutSuccess). 관리자는 한국어 고정이라 따로 하지 않는다.
  */
 @Component
 public class RoleAwareLogoutSuccessHandler implements LogoutHandler, LogoutSuccessHandler {

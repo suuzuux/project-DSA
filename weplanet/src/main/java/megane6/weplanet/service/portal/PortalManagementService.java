@@ -62,7 +62,7 @@ public class PortalManagementService {
 
     public static final int MAX_PINNED = 5;
 
-    // SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+    // 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
     private String msg(String code) {
         return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
@@ -106,9 +106,8 @@ public class PortalManagementService {
         }
         applyPinState(artist, notice, pinned);
         PortalNotice saved = portalNoticeRepository.save(notice);
-        // [이벤트·혜택 알림] 비공개 → 공개로 바뀌는 순간에만 팔로워 알림 - 새로 쓰면서 바로 공개한 공지, 그리고
-        // 임시저장(비공개)해 둔 공지를 나중에 공개한 경우. 예전에는 "새로 쓰면서 바로 공개"만 봐서, 임시저장했다가
-        // 공개한 공지는 알림이 가지 않았다. 이미 공개된 공지의 내용 수정이나 비공개 저장 때는 보내지 않는다.
+        // [이벤트·혜택 알림] 비공개 → 공개로 바뀌는 순간에만 팔로워 알림 (새로 쓰면서 바로 공개 / 임시저장했다가 나중에 공개).
+        // 이미 공개된 공지의 내용 수정이나 비공개 저장 때는 보내지 않는다.
         if (published && !wasPublished) {
             communityActivityNotifier.notifyNewNotice(artist, saved);
         }
@@ -183,9 +182,8 @@ public class PortalManagementService {
     }
 
     // ── 생일 일정 제목/설명 다국어 표시 ──
-    // 생일 일정은 저장할 때 제목 "OO 생일", 설명 "프로필에서 등록된 생일" 이 한국어로 DB에 들어간다.
-    // DB 값은 그대로 두고, 화면에 내보낼 때 그 기본값이면 현재 언어 문구로 바꿔서 보여준다.
-    // 소속사가 직접 다른 제목/설명을 입력했으면(기본값과 다르면) 입력한 그대로 보여준다.
+    // 생일 일정은 한국어 기본값("OO 생일" / "프로필에서 등록된 생일")으로 저장되므로, 화면에 내보낼 때 그 기본값이면 현재 언어 문구로 바꾼다.
+    // 소속사가 직접 다른 제목/설명을 입력했으면 입력한 그대로 보여준다.
     static final String BIRTHDAY_DEFAULT_TITLE_SUFFIX = " 생일";
     static final String BIRTHDAY_PROFILE_DESCRIPTION = "프로필에서 등록된 생일";
 
@@ -609,7 +607,7 @@ public class PortalManagementService {
             deleteUploadedIfPresent(profile.getLogoImageUrl());
             profile.clearLogoImage();
         } else if (avatar != null && !avatar.isEmpty()) {
-            // AUTH-11: 이미지 형식·크기 검증 후 저장하고, 새 파일 저장이 끝난 뒤에 옛 파일을 지운다
+            // 이미지 형식·크기 검증 후 저장하고, 새 파일 저장이 끝난 뒤에 옛 파일을 지운다
             String newLogo = fileStorageService.storeImage(avatar);
             deleteUploadedIfPresent(profile.getLogoImageUrl());
             profile.replaceLogoImage(newLogo);

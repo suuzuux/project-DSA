@@ -218,7 +218,7 @@ public record GoodsCategoryOptionsPayload(
 		}
 	}
 
-	// SETTINGS-03 커밋5: dim(width/height/depth)별 메시지 키(error.goods.bag.{dim}.*)로 던진다
+	// dim(width/height/depth)별 메시지 키(error.goods.bag.{dim}.*)로 던진다
 	private static void requirePositiveNumber(String raw, String dim) {
 		if (raw == null || raw.isBlank()) {
 			throw new IllegalArgumentException("error.goods.bag." + dim + ".required");

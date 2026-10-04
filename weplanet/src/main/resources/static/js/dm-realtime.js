@@ -54,7 +54,7 @@
     // 관리자는 DM을 주고받을 일이 없는 계정이라(shell.js가 채팅 버튼 자체를 안 그림) 이 스크립트도 아예 동작 안 함
     if (roleName === "ROLE_ADMIN") return;
 
-    // SETTINGS-03 커밋5: main.js가 /api/i18n/client 로 받아둔 문구를 쓰고, 없으면 한국어 기본값
+    // main.js가 /api/i18n/client 로 받아둔 문구를 쓰고, 없으면 한국어 기본값
     const t = (key, ko) => (window.WePlaNet && typeof window.WePlaNet.t === "function")
         ? window.WePlaNet.t(key, ko)
         : ko;
@@ -188,7 +188,7 @@
         if (!fanId) {
             const dmBody = document.querySelector("#dmListView .dm-body");
             if (dmBody) {
-                // 화면 문구(/api/i18n)를 받은 뒤에 그린다 - 페이지를 열자마자 그리면 일본어·영어 화면에도 한국어 기본값이 보였다
+                // 화면 문구(/api/i18n)를 받은 뒤에 그린다 (바로 그리면 일본어·영어 화면에도 한국어 기본값이 보인다)
                 const i18nReady = (window.WePlaNet && window.WePlaNet.i18nReady) || Promise.resolve();
                 i18nReady.then(function () {
                     dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;"></p>';

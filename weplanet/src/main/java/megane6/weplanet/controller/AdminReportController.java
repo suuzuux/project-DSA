@@ -25,7 +25,7 @@ public class AdminReportController {
 
 	private final AdminReportService adminReportService;
 	private final AuthenticatedUserResolver userResolver;
-	// SETTINGS-03 커밋3: 게시글/댓글 서비스 예외가 메시지 키로 바뀌어서 화면에 내보낼 때 해석한다
+	// 게시글/댓글 서비스 예외(메시지 키)를 화면에 내보낼 때 번역한다
 	private final megane6.weplanet.i18n.Messages messages;
 
 	@GetMapping

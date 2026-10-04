@@ -35,7 +35,7 @@ public record ProjectDetailView(
 				project.getEventType().getDisplayName(), project.getStatus().getDisplayName());
 	}
 
-	/** SETTINGS-03 커밋3: ProjectCardView와 같은 이유로 번역된 라벨을 인자로 받는 오버로드 */
+	/** ProjectCardView와 같은 이유로 번역된 라벨을 인자로 받는 오버로드 */
 	public static ProjectDetailView from(
 			Project project,
 			String coverStoredName,

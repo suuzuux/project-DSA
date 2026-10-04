@@ -75,7 +75,7 @@
       <div class="form-group">
         <label class="form-label" for="category" th:text="#{portalArtistForm.label.category}">카테고리</label>
         <!-- 메인 화면 커뮤니티 검색 필터(index.html)와 같은 선택지. option value 는 DB 저장값(한국어)이라 그대로 두고
-             표시 문구만 번역한다 - 직접 입력하면 "Idol"/"アイドル" 처럼 저장돼 검색 필터에 걸리지 않았다 -->
+             표시 문구만 번역한다 (검색 필터가 한국어 저장값으로 찾는다) -->
         <select class="form-select" id="category" name="category" style="max-width:220px;">
           <option value="아이돌" th:selected="${form == null or form.category() == null or form.category() == '아이돌'}" th:text="#{main.search.categoryIdol}">아이돌</option>
           <option value="배우" th:selected="${form != null and form.category() == '배우'}" th:text="#{main.search.categoryActor}">배우</option>

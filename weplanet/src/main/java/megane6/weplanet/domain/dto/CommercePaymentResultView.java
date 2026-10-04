@@ -14,7 +14,7 @@ public record CommercePaymentResultView(
 		String title,
 		Long amount,
 		String bankName,
-		// SETTINGS-03 커밋5: 은행 이름 메시지 키 (목록에 없는 은행이면 null -> 화면은 bankName 사용)
+		// 은행 이름 메시지 키 (목록에 없는 은행이면 null -> 화면은 bankName 사용)
 		String bankMessageKey,
 		String accountNumber,
 		LocalDateTime dueDate,
@@ -22,7 +22,7 @@ public record CommercePaymentResultView(
 		String backUrl,
 		String backLabel
 ) {
-	// SETTINGS-03 커밋5: 레코드라 MessageSource를 직접 들 수 없어서, 호출하는 서비스가 Messages를 넘겨 현재 로케일 문구로 만든다
+	// 레코드라 MessageSource를 직접 들 수 없어서, 호출하는 서비스가 Messages를 넘겨 현재 로케일 문구로 만든다
 	public static CommercePaymentResultView fromShop(ShopOrder order, Messages messages) {
 		String title;
 		if (order.getItems().isEmpty()) {

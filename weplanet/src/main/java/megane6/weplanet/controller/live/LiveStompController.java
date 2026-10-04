@@ -42,7 +42,7 @@ public class LiveStompController {
 	private final CommunityJoinService communityJoinService;
 	private final Messages messages;
 
-	// SETTINGS-03 커밋3: STOMP 처리 스레드에는 요청 로케일(LocaleContextHolder)이 없으므로, 오류를 받을 사람의
+	// STOMP 처리 스레드에는 요청 로케일(LocaleContextHolder)이 없으므로, 오류를 받을 사람의
 	// preferredLanguage로 로케일을 정해 메시지 키(또는 아직 키가 아닌 문장)를 번역해서 보낸다.
 	private void sendError(Long userId, String codeOrText) {
 		liveRealtimePublisher.sendError(userId, messages.resolve(codeOrText, localeOf(userId)));

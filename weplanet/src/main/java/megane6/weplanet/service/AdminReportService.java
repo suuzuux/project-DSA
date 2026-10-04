@@ -37,7 +37,7 @@ public class AdminReportService {
 	private final CommentService commentService;
 	private final AdminActionLogService als;
 	private final AdminUserService aus;
-	// SETTINGS-03 커밋5: 댓글 신고 대상 제목("댓글 (원글 : ...)")을 요청 로케일로 만든다
+	// 댓글 신고 대상 제목("댓글 (원글 : ...)")을 요청 로케일로 만든다
 	private final megane6.weplanet.i18n.Messages messages;
 
 	// 대상 종류 - 게시글 신고인지 댓글 신고인지

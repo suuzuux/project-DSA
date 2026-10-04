@@ -19,7 +19,7 @@ import java.util.Map;
 public class ProjectEmailVerificationController {
 	private final EmailVerificationService evs;
 	private final ProjectService ps;
-	// SETTINGS-03 커밋3: 프로젝트 등록 모달의 이메일 인증 안내 문구 번역용
+	// 프로젝트 등록 모달의 이메일 인증 안내 문구 번역용
 	private final megane6.weplanet.i18n.Messages messages;
 	
 	// 프로젝트 등록용 인증번호 전송

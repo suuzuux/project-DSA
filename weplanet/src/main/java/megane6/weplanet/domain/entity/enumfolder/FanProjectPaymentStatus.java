@@ -31,7 +31,7 @@ public enum FanProjectPaymentStatus {
     private final String displayName;
     private final String badgeCode;
 
-    // SETTINGS-03 커밋3: 화면 라벨은 메시지 키로 번역한다(displayName은 레거시 폴백)
+    // 화면 라벨은 메시지 키로 번역한다(displayName은 레거시 폴백)
     public String getMessageKey() {
         return "project.paymentStatus." + name();
     }

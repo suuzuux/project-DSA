@@ -20,7 +20,7 @@
     const commentForm = document.getElementById("live-comment-form");
     const commentInput = document.getElementById("live-comment-input");
 
-    // SETTINGS-03 커밋5: live.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
+    // live.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
     const I18N = window.PORTAL_I18N || {};
     const t = (key, ko) => (I18N[key] != null ? I18N[key] : ko);
 

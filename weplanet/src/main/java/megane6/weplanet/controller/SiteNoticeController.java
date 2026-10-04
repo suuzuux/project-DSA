@@ -27,7 +27,7 @@ import java.util.Map;
 public class SiteNoticeController {
 
 	private final SiteNoticeService siteNoticeService;
-	// SETTINGS-03 커밋5: 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
+	// 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
 	private final megane6.weplanet.i18n.Messages messages;
 	private final AuthenticatedUserResolver userResolver;
 	

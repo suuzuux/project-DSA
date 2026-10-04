@@ -58,14 +58,14 @@ public class ChatController {
     private final megane6.weplanet.i18n.Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
-    // CHAT-03/CHAT-05/DM 웹소켓 경고 문구는 HTTP 요청이 아니라서 LocaleContextHolder(세션 로케일)를
+    // 채팅·DM 웹소켓 경고 문구는 HTTP 요청이 아니라서 LocaleContextHolder(세션 로케일)를
     // 못 쓴다 - 보낸 사람 본인의 User.preferredLanguage로 직접 로케일을 정한다.
     private String chatMsg(String code, User forUser) {
         Locale locale = PreferredLocaleResolver.toLocale(forUser.getPreferredLanguage());
         return messageSource.getMessage(code, null, locale);
     }
 
-    // SETTINGS-03 커밋5: 금칙어 관리 화면(HTTP 요청) 결과 문구 - 요청 로케일 기준
+    // 금칙어 관리 화면(HTTP 요청) 결과 문구 - 요청 로케일 기준
     private String msg(String code) {
         return messageSource.getMessage(code, null,
                 org.springframework.context.i18n.LocaleContextHolder.getLocale());
@@ -227,7 +227,7 @@ public class ChatController {
         }
 
         // 경고 문구 로케일 기준 = 보낸 사람 본인의 서비스 언어. 금칙어 검사가 artist/fan 조회보다
-        // 먼저 실행되므로, sender만 여기서 먼저 조회해둔다(기존에는 이 아래에서 다시 조회했음).
+        // 먼저 실행되므로 sender만 여기서 먼저 조회해 둔다.
         User sender = getUserOrThrow(request.getSenderId(), "보낸 사람");
 
         // CHAT-03 : 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람 본인에게만 경고를 돌려줌

@@ -189,9 +189,8 @@ public class ArtistRegistrationService {
 		return trimmed;
 	}
 	
-	// 커뮤니티 검색의 카테고리 필터(아이돌/배우)는 DB에 저장된 한국어 값으로 검색한다.
-	// 등록 화면은 선택 목록이라 항상 한국어 값이 오지만, 다른 언어 표기로 들어와도 검색에 걸리도록 한국어 값으로 맞춘다.
-	// (그 밖의 값은 지금처럼 그대로 저장)
+	// 커뮤니티 검색의 카테고리 필터(아이돌/배우)는 DB의 한국어 값으로 검색하므로, 다른 언어 표기로 들어와도 한국어 값으로 맞춘다.
+	// (그 밖의 값은 그대로 저장)
 	private static String normalizeCategory(String category) {
 		if (category == null) {
 			return null;
