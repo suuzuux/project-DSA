@@ -57,6 +57,18 @@
   gap: 16px;
 }
 
+/* 모바일: minmax(220px) 로는 한 줄에 1개만 들어가 카드가 화면을 가득 채운다 → 2열 고정 */
+@media (max-width: 560px) {
+  .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .product-card__body {
+    padding: 10px 12px 12px;
+  }
+}
+
 .product-card {
   background: var(--wp-surface);
   border: 1px solid var(--wp-hairline);
