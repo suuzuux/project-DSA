@@ -1,0 +1,2200 @@
+-- ============================================================
+-- WePlaNet 데모 데이터 (발표 / 테스트 배포용)  -  generate_demo_seed.py 로 생성됨, 직접 고치지 말고 스크립트를 고쳐서 다시 만들 것
+-- ------------------------------------------------------------
+-- 실행 순서
+--   1) weplanet_schema_full_reset_v2.sql  (전체 초기화 + 기본 시드)
+--   2) 이 파일                            (데모 데이터 추가)
+--   3) docs/demo/demo_images/* 를 서버 실행 폴더의 uploads/ 에 복사  (이미지 180개)
+--
+-- 계정 (비밀번호 공통: Test1234)
+--   최고관리자  admin_super1 ~ admin_super4   인증번호 -> admin4.wp@gmail.com 메일함 (+1 ~ +4 별칭)
+--   소속사      agency_starlight / agency_bluewave / agency_moonbeam
+--   그룹        nova_official / lumi_official / eclipse_official / prism_official
+--               -> 로그인 후 멤버 프로필 선택, 멤버 개인 비밀번호도 Test1234
+--   솔로        yuri_official / kaito_official
+--   팬          demo_fan01 ~ demo_fan15   (demo_fan15 = 모든 커뮤니티 가입 + 멤버십 보유)
+-- ============================================================
+
+USE `weplanet`;
+SET NAMES utf8mb4;
+
+-- ------------------------------------------------------------
+-- [1] 소속사 3곳 + 소속사 담당자 계정 (비밀번호 공통 Test1234)
+-- ------------------------------------------------------------
+INSERT INTO `agencies` (`id`, `name`, `business_no`, `ceo_name`, `status`, `created_at`, `updated_at`) VALUES
+  (101, '스타라이트엔터테인먼트', '101-81-10101', '윤서진', 'ACTIVE', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE)),
+  (102, '블루웨이브뮤직', '102-81-10202', '강도현', 'ACTIVE', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE)),
+  (103, '문빔컴퍼니', '103-81-10303', '한지우', 'ACTIVE', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE));
+INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
+  (1011, 'agency_starlight', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', 101, '윤서진', '스타라이트 매니저', 'agency_starlight@weplanet.test', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE)),
+  (1012, 'agency_bluewave', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', 102, '강도현', '블루웨이브 매니저', 'agency_bluewave@weplanet.test', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE)),
+  (1013, 'agency_moonbeam', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', 103, '한지우', '문빔 매니저', 'agency_moonbeam@weplanet.test', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE));
+INSERT INTO `agency_profiles` (`user_id`, `agency_id`, `department`, `position`, `is_owner`) VALUES
+  (1011, 101, '매니지먼트팀', '팀장', 1),
+  (1012, 102, '매니지먼트팀', '팀장', 1),
+  (1013, 103, '매니지먼트팀', '팀장', 1);
+
+-- ------------------------------------------------------------
+-- [2] 최고관리자 4명 - 인증번호는 전부 admin4.wp@gmail.com 메일함으로 온다 (+별칭)
+-- ------------------------------------------------------------
+INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
+  (1001, 'admin_super1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN', 'ACTIVE', NULL, '최고관리자1', '최고관리자1', 'admin4.wp+1@gmail.com', DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE)),
+  (1002, 'admin_super2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN', 'ACTIVE', NULL, '최고관리자2', '최고관리자2', 'admin4.wp+2@gmail.com', DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE)),
+  (1003, 'admin_super3', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN', 'ACTIVE', NULL, '최고관리자3', '최고관리자3', 'admin4.wp+3@gmail.com', DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE)),
+  (1004, 'admin_super4', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN', 'ACTIVE', NULL, '최고관리자4', '최고관리자4', 'admin4.wp+4@gmail.com', DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE));
+INSERT INTO `admin_profiles` (`user_id`, `admin_level`, `department`, `employee_no`) VALUES
+  (1001, 'SUPER', '플랫폼운영팀', 'WP-ADM-001'),
+  (1002, 'SUPER', '플랫폼운영팀', 'WP-ADM-002'),
+  (1003, 'SUPER', '플랫폼운영팀', 'WP-ADM-003'),
+  (1004, 'SUPER', '플랫폼운영팀', 'WP-ADM-004');
+-- 기존 시드의 admin_test 도 실제로 받을 수 있는 주소로 맞춘다
+UPDATE `users` SET `email` = 'admin4.wp@gmail.com' WHERE `username` = 'admin_test';
+
+-- ------------------------------------------------------------
+-- [3] 커뮤니티 6개 (그룹 4 + 솔로 2) - 아티스트 계정, 그룹 정보, 멤버, 포털 프로필
+-- ------------------------------------------------------------
+INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
+  (1101, 'nova_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 101, 'NOVA', 'NOVA', 'nova_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1102, 'lumi_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 101, 'LUMI', 'LUMI', 'lumi_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1103, 'eclipse_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 102, 'ECLIPSE', 'ECLIPSE', 'eclipse_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1104, 'prism_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 103, 'PRISM', 'PRISM', 'prism_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1105, 'yuri_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 102, '한유리', '한유리', 'yuri_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1106, 'kaito_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 103, 'KAITO', 'KAITO', 'kaito_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE));
+-- 그룹 멤버 계정: 그룹 계정으로 로그인 -> 프로필 선택 -> 개인 비밀번호(Test1234)
+INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
+  (1201, 'member_1101_nova1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '시온', '시온', 'member_1101_nova1@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1202, 'member_1101_nova2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '하람', '하람', 'member_1101_nova2@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1203, 'member_1101_nova3', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '유진', '유진', 'member_1101_nova3@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1204, 'member_1101_nova4', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '태오', '태오', 'member_1101_nova4@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1205, 'member_1101_nova5', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '리안', '리안', 'member_1101_nova5@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1206, 'member_1102_lumi1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '서아', '서아', 'member_1102_lumi1@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1207, 'member_1102_lumi2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '나윤', '나윤', 'member_1102_lumi2@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1208, 'member_1102_lumi3', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '채린', '채린', 'member_1102_lumi3@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1209, 'member_1102_lumi4', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '다온', '다온', 'member_1102_lumi4@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1210, 'member_1103_eclipse1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '도윤', '도윤', 'member_1103_eclipse1@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1211, 'member_1103_eclipse2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '지한', '지한', 'member_1103_eclipse2@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1212, 'member_1103_eclipse3', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '민호', '민호', 'member_1103_eclipse3@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1213, 'member_1103_eclipse4', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '카이', '카이', 'member_1103_eclipse4@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1214, 'member_1103_eclipse5', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '우진', '우진', 'member_1103_eclipse5@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1215, 'member_1104_prism1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 103, '하나', '하나', 'member_1104_prism1@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1216, 'member_1104_prism2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 103, '레오', '레오', 'member_1104_prism2@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1217, 'member_1104_prism3', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 103, '소라', '소라', 'member_1104_prism3@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (1218, 'member_1104_prism4', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 103, '진', '진', 'member_1104_prism4@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE));
+INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`, `profile_img`) VALUES
+  (1101, 101, 'NOVA', '2022-03-15', 'GROUP', '밤하늘에서 가장 밝게 빛나는 다섯 개의 별, NOVA 공식 커뮤니티입니다 ✨', '/uploads/demo_nova_logo.png'),
+  (1201, 101, '시온', '2022-03-15', 'LEADER', 'NOVA의 시온입니다!', '/uploads/demo_nova_member1.png'),
+  (1202, 101, '하람', '2022-03-15', 'VOCAL', 'NOVA의 하람입니다!', '/uploads/demo_nova_member2.png'),
+  (1203, 101, '유진', '2022-03-15', 'VOCAL', 'NOVA의 유진입니다!', '/uploads/demo_nova_member3.png'),
+  (1204, 101, '태오', '2022-03-15', 'RAP', 'NOVA의 태오입니다!', '/uploads/demo_nova_member4.png'),
+  (1205, 101, '리안', '2022-03-15', 'DANCE', 'NOVA의 리안입니다!', '/uploads/demo_nova_member5.png'),
+  (1102, 101, 'LUMI', '2023-06-01', 'GROUP', '빛을 머금은 네 소녀 LUMI 💗 루미너스와 함께하는 공간', '/uploads/demo_lumi_logo.png'),
+  (1206, 101, '서아', '2023-06-01', 'LEADER', 'LUMI의 서아입니다!', '/uploads/demo_lumi_member1.png'),
+  (1207, 101, '나윤', '2023-06-01', 'VOCAL', 'LUMI의 나윤입니다!', '/uploads/demo_lumi_member2.png'),
+  (1208, 101, '채린', '2023-06-01', 'DANCE', 'LUMI의 채린입니다!', '/uploads/demo_lumi_member3.png'),
+  (1209, 101, '다온', '2023-06-01', 'RAP', 'LUMI의 다온입니다!', '/uploads/demo_lumi_member4.png'),
+  (1103, 102, 'ECLIPSE', '2021-09-09', 'GROUP', '빛과 어둠이 겹치는 순간, ECLIPSE 🌘 코로나 여러분 환영합니다', '/uploads/demo_eclipse_logo.png'),
+  (1210, 102, '도윤', '2021-09-09', 'LEADER', 'ECLIPSE의 도윤입니다!', '/uploads/demo_eclipse_member1.png'),
+  (1211, 102, '지한', '2021-09-09', 'VOCAL', 'ECLIPSE의 지한입니다!', '/uploads/demo_eclipse_member2.png'),
+  (1212, 102, '민호', '2021-09-09', 'RAP', 'ECLIPSE의 민호입니다!', '/uploads/demo_eclipse_member3.png'),
+  (1213, 102, '카이', '2021-09-09', 'DANCE', 'ECLIPSE의 카이입니다!', '/uploads/demo_eclipse_member4.png'),
+  (1214, 102, '우진', '2021-09-09', 'VOCAL', 'ECLIPSE의 우진입니다!', '/uploads/demo_eclipse_member5.png'),
+  (1104, 103, 'PRISM', '2024-02-14', 'GROUP', '네 가지 색이 모여 만드는 무지개, 혼성그룹 PRISM 🌈', '/uploads/demo_prism_logo.png'),
+  (1215, 103, '하나', '2024-02-14', 'LEADER', 'PRISM의 하나입니다!', '/uploads/demo_prism_member1.png'),
+  (1216, 103, '레오', '2024-02-14', 'RAP', 'PRISM의 레오입니다!', '/uploads/demo_prism_member2.png'),
+  (1217, 103, '소라', '2024-02-14', 'VOCAL', 'PRISM의 소라입니다!', '/uploads/demo_prism_member3.png'),
+  (1218, 103, '진', '2024-02-14', 'DANCE', 'PRISM의 진입니다!', '/uploads/demo_prism_member4.png'),
+  (1105, 102, '한유리', '2020-05-20', 'SOLO', '싱어송라이터 한유리의 작은 방에 오신 걸 환영해요 🎹', '/uploads/demo_yuri_logo.png'),
+  (1106, 103, 'KAITO', '2022-11-11', 'SOLO', '도쿄에서 온 KAITO 입니다. 한국어 열심히 공부 중이에요! 🇯🇵🇰🇷', '/uploads/demo_kaito_logo.png');
+INSERT INTO `artist_groups` (`id`, `agency_id`, `name`, `name_en`, `fandom_name`, `debut_date`, `status`, `gender`, `member_count`, `nationality`, `category`, `created_at`, `updated_at`) VALUES
+  (1101, 101, 'NOVA', 'NOVA', '스텔라', '2022-03-15', 'ACTIVE', 'MALE', 5, 'KR', '아이돌', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1102, 101, 'LUMI', 'LUMI', '루미너스', '2023-06-01', 'ACTIVE', 'FEMALE', 4, 'KR', '아이돌', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1103, 102, 'ECLIPSE', 'ECLIPSE', '코로나', '2021-09-09', 'ACTIVE', 'MALE', 5, 'KR', '아이돌', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1104, 103, 'PRISM', 'PRISM', '스펙트럼', '2024-02-14', 'ACTIVE', 'MIXED', 4, 'KR', '아이돌', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1105, 102, '한유리', 'HAN YURI', '유리알', '2020-05-20', 'ACTIVE', 'FEMALE', 1, 'KR', '솔로가수', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
+  (1106, 103, 'KAITO', 'KAITO', '카이토모', '2022-11-11', 'ACTIVE', 'MALE', 1, 'JP', '솔로가수', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE));
+INSERT INTO `group_members` (`group_id`, `artist_id`, `is_leader`, `joined_at`) VALUES
+  (1101, 1201, 1, '2022-03-15'),
+  (1101, 1202, 0, '2022-03-15'),
+  (1101, 1203, 0, '2022-03-15'),
+  (1101, 1204, 0, '2022-03-15'),
+  (1101, 1205, 0, '2022-03-15'),
+  (1102, 1206, 1, '2023-06-01'),
+  (1102, 1207, 0, '2023-06-01'),
+  (1102, 1208, 0, '2023-06-01'),
+  (1102, 1209, 0, '2023-06-01'),
+  (1103, 1210, 1, '2021-09-09'),
+  (1103, 1211, 0, '2021-09-09'),
+  (1103, 1212, 0, '2021-09-09'),
+  (1103, 1213, 0, '2021-09-09'),
+  (1103, 1214, 0, '2021-09-09'),
+  (1104, 1215, 1, '2024-02-14'),
+  (1104, 1216, 0, '2024-02-14'),
+  (1104, 1217, 0, '2024-02-14'),
+  (1104, 1218, 0, '2024-02-14');
+INSERT INTO `artist_profile` (`artist_id`, `intro`, `header_image_url`, `logo_image_url`, `created_at`, `updated_at`) VALUES
+  (1101, '밤하늘에서 가장 밝게 빛나는 다섯 개의 별, NOVA 공식 커뮤니티입니다 ✨', 'demo_nova_header.jpg', 'demo_nova_logo.png', NOW(), NOW()),
+  (1201, 'NOVA 시온 💫', NULL, 'demo_nova_member1.png', NOW(), NOW()),
+  (1202, 'NOVA 하람 💫', NULL, 'demo_nova_member2.png', NOW(), NOW()),
+  (1203, 'NOVA 유진 💫', NULL, 'demo_nova_member3.png', NOW(), NOW()),
+  (1204, 'NOVA 태오 💫', NULL, 'demo_nova_member4.png', NOW(), NOW()),
+  (1205, 'NOVA 리안 💫', NULL, 'demo_nova_member5.png', NOW(), NOW()),
+  (1102, '빛을 머금은 네 소녀 LUMI 💗 루미너스와 함께하는 공간', 'demo_lumi_header.jpg', 'demo_lumi_logo.png', NOW(), NOW()),
+  (1206, 'LUMI 서아 💫', NULL, 'demo_lumi_member1.png', NOW(), NOW()),
+  (1207, 'LUMI 나윤 💫', NULL, 'demo_lumi_member2.png', NOW(), NOW()),
+  (1208, 'LUMI 채린 💫', NULL, 'demo_lumi_member3.png', NOW(), NOW()),
+  (1209, 'LUMI 다온 💫', NULL, 'demo_lumi_member4.png', NOW(), NOW()),
+  (1103, '빛과 어둠이 겹치는 순간, ECLIPSE 🌘 코로나 여러분 환영합니다', 'demo_eclipse_header.jpg', 'demo_eclipse_logo.png', NOW(), NOW()),
+  (1210, 'ECLIPSE 도윤 💫', NULL, 'demo_eclipse_member1.png', NOW(), NOW()),
+  (1211, 'ECLIPSE 지한 💫', NULL, 'demo_eclipse_member2.png', NOW(), NOW()),
+  (1212, 'ECLIPSE 민호 💫', NULL, 'demo_eclipse_member3.png', NOW(), NOW()),
+  (1213, 'ECLIPSE 카이 💫', NULL, 'demo_eclipse_member4.png', NOW(), NOW()),
+  (1214, 'ECLIPSE 우진 💫', NULL, 'demo_eclipse_member5.png', NOW(), NOW()),
+  (1104, '네 가지 색이 모여 만드는 무지개, 혼성그룹 PRISM 🌈', 'demo_prism_header.jpg', 'demo_prism_logo.png', NOW(), NOW()),
+  (1215, 'PRISM 하나 💫', NULL, 'demo_prism_member1.png', NOW(), NOW()),
+  (1216, 'PRISM 레오 💫', NULL, 'demo_prism_member2.png', NOW(), NOW()),
+  (1217, 'PRISM 소라 💫', NULL, 'demo_prism_member3.png', NOW(), NOW()),
+  (1218, 'PRISM 진 💫', NULL, 'demo_prism_member4.png', NOW(), NOW()),
+  (1105, '싱어송라이터 한유리의 작은 방에 오신 걸 환영해요 🎹', 'demo_yuri_header.jpg', 'demo_yuri_logo.png', NOW(), NOW()),
+  (1106, '도쿄에서 온 KAITO 입니다. 한국어 열심히 공부 중이에요! 🇯🇵🇰🇷', 'demo_kaito_header.jpg', 'demo_kaito_logo.png', NOW(), NOW());
+
+-- ------------------------------------------------------------
+-- [4] 팬 15명 + 커뮤니티 가입(커뮤니티별 프로필) + 멤버십 + 팔로우
+-- ------------------------------------------------------------
+INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
+  (1301, 'demo_fan01', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '별빛수집가', '별빛수집가', 'demo_fan01@weplanet.test', DATE_SUB(NOW(6), INTERVAL 288000 MINUTE), DATE_SUB(NOW(6), INTERVAL 288000 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1302, 'demo_fan02', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '하람바라기', '하람바라기', 'demo_fan02@weplanet.test', DATE_SUB(NOW(6), INTERVAL 280800 MINUTE), DATE_SUB(NOW(6), INTERVAL 280800 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1303, 'demo_fan03', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '루미루미', '루미루미', 'demo_fan03@weplanet.test', DATE_SUB(NOW(6), INTERVAL 273600 MINUTE), DATE_SUB(NOW(6), INTERVAL 273600 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1304, 'demo_fan04', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '새벽세시', '새벽세시', 'demo_fan04@weplanet.test', DATE_SUB(NOW(6), INTERVAL 266400 MINUTE), DATE_SUB(NOW(6), INTERVAL 266400 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1305, 'demo_fan05', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '초코우유', '초코우유', 'demo_fan05@weplanet.test', DATE_SUB(NOW(6), INTERVAL 259200 MINUTE), DATE_SUB(NOW(6), INTERVAL 259200 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1306, 'demo_fan06', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '무지개다리', '무지개다리', 'demo_fan06@weplanet.test', DATE_SUB(NOW(6), INTERVAL 252000 MINUTE), DATE_SUB(NOW(6), INTERVAL 252000 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1307, 'demo_fan07', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '피아노소녀', '피아노소녀', 'demo_fan07@weplanet.test', DATE_SUB(NOW(6), INTERVAL 244800 MINUTE), DATE_SUB(NOW(6), INTERVAL 244800 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1308, 'demo_fan08', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '도쿄여행중', '도쿄여행중', 'demo_fan08@weplanet.test', DATE_SUB(NOW(6), INTERVAL 237600 MINUTE), DATE_SUB(NOW(6), INTERVAL 237600 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1309, 'demo_fan09', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '응원봉장인', '응원봉장인', 'demo_fan09@weplanet.test', DATE_SUB(NOW(6), INTERVAL 230400 MINUTE), DATE_SUB(NOW(6), INTERVAL 230400 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1310, 'demo_fan10', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '포카교환해요', '포카교환해요', 'demo_fan10@weplanet.test', DATE_SUB(NOW(6), INTERVAL 223200 MINUTE), DATE_SUB(NOW(6), INTERVAL 223200 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1311, 'demo_fan11', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '달토끼', '달토끼', 'demo_fan11@weplanet.test', DATE_SUB(NOW(6), INTERVAL 216000 MINUTE), DATE_SUB(NOW(6), INTERVAL 216000 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1312, 'demo_fan12', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '직캠러', '직캠러', 'demo_fan12@weplanet.test', DATE_SUB(NOW(6), INTERVAL 208800 MINUTE), DATE_SUB(NOW(6), INTERVAL 208800 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1313, 'demo_fan13', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '오늘도덕질', '오늘도덕질', 'demo_fan13@weplanet.test', DATE_SUB(NOW(6), INTERVAL 201600 MINUTE), DATE_SUB(NOW(6), INTERVAL 201600 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1314, 'demo_fan14', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '콘서트가자', '콘서트가자', 'demo_fan14@weplanet.test', DATE_SUB(NOW(6), INTERVAL 194400 MINUTE), DATE_SUB(NOW(6), INTERVAL 194400 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (1315, 'demo_fan15', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, 'QA데모팬', 'QA데모팬', 'demo_fan15@weplanet.test', DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE));
+INSERT INTO `community_members` (`fan_id`, `artist_id`, `joined_at`, `nickname`, `bio`, `updated_at`) VALUES
+  (1301, 1101, DATE_SUB(NOW(6), INTERVAL 216000 MINUTE), '별빛수집가', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1301, 1102, DATE_SUB(NOW(6), INTERVAL 203040 MINUTE), '별빛수집가', '오늘도 행복한 덕질 💕', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1301, 1105, DATE_SUB(NOW(6), INTERVAL 190080 MINUTE), '별빛수집가', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1302, 1101, DATE_SUB(NOW(6), INTERVAL 210240 MINUTE), '하람바라기', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1302, 1103, DATE_SUB(NOW(6), INTERVAL 197280 MINUTE), '하람바라기', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1303, 1102, DATE_SUB(NOW(6), INTERVAL 204480 MINUTE), '루미루미', NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1303, 1104, DATE_SUB(NOW(6), INTERVAL 191520 MINUTE), '루미루미', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1303, 1106, DATE_SUB(NOW(6), INTERVAL 178560 MINUTE), '루미루미', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1304, 1101, DATE_SUB(NOW(6), INTERVAL 198720 MINUTE), '새벽세시', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1304, 1103, DATE_SUB(NOW(6), INTERVAL 185760 MINUTE), '새벽세시', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1304, 1105, DATE_SUB(NOW(6), INTERVAL 172800 MINUTE), '새벽세시', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1305, 1102, DATE_SUB(NOW(6), INTERVAL 192960 MINUTE), '초코우유', NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1305, 1106, DATE_SUB(NOW(6), INTERVAL 180000 MINUTE), '초코우유', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1306, 1104, DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), '무지개다리', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1306, 1101, DATE_SUB(NOW(6), INTERVAL 174240 MINUTE), '무지개다리', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1307, 1105, DATE_SUB(NOW(6), INTERVAL 181440 MINUTE), '피아노소녀', '오늘도 행복한 덕질 💕', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1307, 1102, DATE_SUB(NOW(6), INTERVAL 168480 MINUTE), '피아노소녀', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1308, 1106, DATE_SUB(NOW(6), INTERVAL 175680 MINUTE), '도쿄여행중', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1308, 1103, DATE_SUB(NOW(6), INTERVAL 162720 MINUTE), '도쿄여행중', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1309, 1101, DATE_SUB(NOW(6), INTERVAL 169920 MINUTE), '응원봉장인', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1309, 1102, DATE_SUB(NOW(6), INTERVAL 156960 MINUTE), '응원봉장인', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1309, 1103, DATE_SUB(NOW(6), INTERVAL 144000 MINUTE), '응원봉장인', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1309, 1104, DATE_SUB(NOW(6), INTERVAL 131040 MINUTE), '응원봉장인', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1310, 1102, DATE_SUB(NOW(6), INTERVAL 164160 MINUTE), '포카교환해요', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1310, 1103, DATE_SUB(NOW(6), INTERVAL 151200 MINUTE), '포카교환해요', '오늘도 행복한 덕질 💕', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1310, 1105, DATE_SUB(NOW(6), INTERVAL 138240 MINUTE), '포카교환해요', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1311, 1104, DATE_SUB(NOW(6), INTERVAL 158400 MINUTE), '달토끼', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1311, 1106, DATE_SUB(NOW(6), INTERVAL 145440 MINUTE), '달토끼', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1311, 1101, DATE_SUB(NOW(6), INTERVAL 132480 MINUTE), '달토끼', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1312, 1103, DATE_SUB(NOW(6), INTERVAL 152640 MINUTE), '직캠러', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1312, 1105, DATE_SUB(NOW(6), INTERVAL 139680 MINUTE), '직캠러', '오늘도 행복한 덕질 💕', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1313, 1101, DATE_SUB(NOW(6), INTERVAL 146880 MINUTE), '오늘도덕질', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1313, 1104, DATE_SUB(NOW(6), INTERVAL 133920 MINUTE), '오늘도덕질', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1313, 1106, DATE_SUB(NOW(6), INTERVAL 120960 MINUTE), '오늘도덕질', '콘서트 꼭 갈래요', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1314, 1102, DATE_SUB(NOW(6), INTERVAL 141120 MINUTE), '콘서트가자', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1314, 1103, DATE_SUB(NOW(6), INTERVAL 128160 MINUTE), '콘서트가자', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1314, 1104, DATE_SUB(NOW(6), INTERVAL 115200 MINUTE), '콘서트가자', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1314, 1105, DATE_SUB(NOW(6), INTERVAL 102240 MINUTE), '콘서트가자', NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1314, 1106, DATE_SUB(NOW(6), INTERVAL 89280 MINUTE), '콘서트가자', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1315, 1101, DATE_SUB(NOW(6), INTERVAL 135360 MINUTE), 'QA데모팬', '오늘도 행복한 덕질 💕', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1315, 1102, DATE_SUB(NOW(6), INTERVAL 122400 MINUTE), 'QA데모팬', '오늘도 행복한 덕질 💕', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1315, 1103, DATE_SUB(NOW(6), INTERVAL 109440 MINUTE), 'QA데모팬', NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1315, 1104, DATE_SUB(NOW(6), INTERVAL 96480 MINUTE), 'QA데모팬', '입덕 부정기 끝 🥹', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1315, 1105, DATE_SUB(NOW(6), INTERVAL 83520 MINUTE), 'QA데모팬', NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1315, 1106, DATE_SUB(NOW(6), INTERVAL 70560 MINUTE), 'QA데모팬', '늘 응원해요!', DATE_SUB(NOW(6), INTERVAL 4320 MINUTE));
+INSERT INTO `membership` (`created_at`, `expires_at`, `artist_id`, `fan_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 200160 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 200160 MINUTE), INTERVAL 1 YEAR), 1102, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), INTERVAL 1 YEAR), 1105, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 207360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 207360 MINUTE), INTERVAL 1 YEAR), 1101, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 188640 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 188640 MINUTE), INTERVAL 1 YEAR), 1104, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 175680 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 175680 MINUTE), INTERVAL 1 YEAR), 1106, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 182880 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 182880 MINUTE), INTERVAL 1 YEAR), 1103, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 169920 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 169920 MINUTE), INTERVAL 1 YEAR), 1105, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 190080 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 190080 MINUTE), INTERVAL 1 YEAR), 1102, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 184320 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 184320 MINUTE), INTERVAL 1 YEAR), 1104, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 171360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 171360 MINUTE), INTERVAL 1 YEAR), 1101, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 178560 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 178560 MINUTE), INTERVAL 1 YEAR), 1105, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 165600 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 165600 MINUTE), INTERVAL 1 YEAR), 1102, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 167040 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 167040 MINUTE), INTERVAL 1 YEAR), 1101, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 141120 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 141120 MINUTE), INTERVAL 1 YEAR), 1103, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 128160 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 128160 MINUTE), INTERVAL 1 YEAR), 1104, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 161280 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 161280 MINUTE), INTERVAL 1 YEAR), 1102, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 148320 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 148320 MINUTE), INTERVAL 1 YEAR), 1103, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 135360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 135360 MINUTE), INTERVAL 1 YEAR), 1105, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 155520 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 155520 MINUTE), INTERVAL 1 YEAR), 1104, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 129600 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 129600 MINUTE), INTERVAL 1 YEAR), 1101, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 149760 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 149760 MINUTE), INTERVAL 1 YEAR), 1103, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 118080 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 118080 MINUTE), INTERVAL 1 YEAR), 1106, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 138240 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 138240 MINUTE), INTERVAL 1 YEAR), 1102, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 112320 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 112320 MINUTE), INTERVAL 1 YEAR), 1104, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 99360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 99360 MINUTE), INTERVAL 1 YEAR), 1105, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 132480 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 132480 MINUTE), INTERVAL 1 YEAR), 1101, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 119520 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 119520 MINUTE), INTERVAL 1 YEAR), 1102, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 106560 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 106560 MINUTE), INTERVAL 1 YEAR), 1103, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 93600 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 93600 MINUTE), INTERVAL 1 YEAR), 1104, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 80640 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 80640 MINUTE), INTERVAL 1 YEAR), 1105, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 67680 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 67680 MINUTE), INTERVAL 1 YEAR), 1106, 1315);
+INSERT INTO `membership_period` (`fan_id`, `artist_id`, `started_at`, `expires_at`, `streak_count`, `created_at`) VALUES
+  (1301, 1102, DATE_SUB(NOW(6), INTERVAL 200160 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 200160 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 200160 MINUTE)),
+  (1301, 1105, DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 187200 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 187200 MINUTE)),
+  (1302, 1101, DATE_SUB(NOW(6), INTERVAL 207360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 207360 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 207360 MINUTE)),
+  (1303, 1104, DATE_SUB(NOW(6), INTERVAL 188640 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 188640 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 188640 MINUTE)),
+  (1303, 1106, DATE_SUB(NOW(6), INTERVAL 175680 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 175680 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 175680 MINUTE)),
+  (1304, 1103, DATE_SUB(NOW(6), INTERVAL 182880 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 182880 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 182880 MINUTE)),
+  (1304, 1105, DATE_SUB(NOW(6), INTERVAL 169920 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 169920 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 169920 MINUTE)),
+  (1305, 1102, DATE_SUB(NOW(6), INTERVAL 190080 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 190080 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 190080 MINUTE)),
+  (1306, 1104, DATE_SUB(NOW(6), INTERVAL 184320 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 184320 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 184320 MINUTE)),
+  (1306, 1101, DATE_SUB(NOW(6), INTERVAL 171360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 171360 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 171360 MINUTE)),
+  (1307, 1105, DATE_SUB(NOW(6), INTERVAL 178560 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 178560 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 178560 MINUTE)),
+  (1307, 1102, DATE_SUB(NOW(6), INTERVAL 165600 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 165600 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 165600 MINUTE)),
+  (1309, 1101, DATE_SUB(NOW(6), INTERVAL 167040 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 167040 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 167040 MINUTE)),
+  (1309, 1103, DATE_SUB(NOW(6), INTERVAL 141120 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 141120 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 141120 MINUTE)),
+  (1309, 1104, DATE_SUB(NOW(6), INTERVAL 128160 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 128160 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 128160 MINUTE)),
+  (1310, 1102, DATE_SUB(NOW(6), INTERVAL 161280 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 161280 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 161280 MINUTE)),
+  (1310, 1103, DATE_SUB(NOW(6), INTERVAL 148320 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 148320 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 148320 MINUTE)),
+  (1310, 1105, DATE_SUB(NOW(6), INTERVAL 135360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 135360 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 135360 MINUTE)),
+  (1311, 1104, DATE_SUB(NOW(6), INTERVAL 155520 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 155520 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 155520 MINUTE)),
+  (1311, 1101, DATE_SUB(NOW(6), INTERVAL 129600 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 129600 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 129600 MINUTE)),
+  (1312, 1103, DATE_SUB(NOW(6), INTERVAL 149760 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 149760 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 149760 MINUTE)),
+  (1313, 1106, DATE_SUB(NOW(6), INTERVAL 118080 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 118080 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 118080 MINUTE)),
+  (1314, 1102, DATE_SUB(NOW(6), INTERVAL 138240 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 138240 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 138240 MINUTE)),
+  (1314, 1104, DATE_SUB(NOW(6), INTERVAL 112320 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 112320 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 112320 MINUTE)),
+  (1314, 1105, DATE_SUB(NOW(6), INTERVAL 99360 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 99360 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 99360 MINUTE)),
+  (1315, 1101, DATE_SUB(NOW(6), INTERVAL 132480 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 132480 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 132480 MINUTE)),
+  (1315, 1102, DATE_SUB(NOW(6), INTERVAL 119520 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 119520 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 119520 MINUTE)),
+  (1315, 1103, DATE_SUB(NOW(6), INTERVAL 106560 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 106560 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 106560 MINUTE)),
+  (1315, 1104, DATE_SUB(NOW(6), INTERVAL 93600 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 93600 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 93600 MINUTE)),
+  (1315, 1105, DATE_SUB(NOW(6), INTERVAL 80640 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 80640 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 80640 MINUTE)),
+  (1315, 1106, DATE_SUB(NOW(6), INTERVAL 67680 MINUTE), DATE_ADD(DATE_SUB(NOW(6), INTERVAL 67680 MINUTE), INTERVAL 1 YEAR), 1, DATE_SUB(NOW(6), INTERVAL 67680 MINUTE));
+INSERT INTO `user_follows` (`follower_id`, `following_id`, `community_id`, `created_at`) VALUES
+  (1301, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 216000 MINUTE)),
+  (1301, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 203040 MINUTE)),
+  (1301, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 190080 MINUTE)),
+  (1302, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 210240 MINUTE)),
+  (1302, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 197280 MINUTE)),
+  (1303, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 204480 MINUTE)),
+  (1303, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 191520 MINUTE)),
+  (1303, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 178560 MINUTE)),
+  (1304, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 198720 MINUTE)),
+  (1304, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 185760 MINUTE)),
+  (1304, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 172800 MINUTE)),
+  (1305, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 192960 MINUTE)),
+  (1305, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 180000 MINUTE)),
+  (1306, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 187200 MINUTE)),
+  (1306, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 174240 MINUTE)),
+  (1307, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 181440 MINUTE)),
+  (1307, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 168480 MINUTE)),
+  (1308, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 175680 MINUTE)),
+  (1308, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 162720 MINUTE)),
+  (1309, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 169920 MINUTE)),
+  (1309, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 156960 MINUTE)),
+  (1309, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 144000 MINUTE)),
+  (1309, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 131040 MINUTE)),
+  (1310, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 164160 MINUTE)),
+  (1310, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 151200 MINUTE)),
+  (1310, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 138240 MINUTE)),
+  (1311, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 158400 MINUTE)),
+  (1311, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 145440 MINUTE)),
+  (1311, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 132480 MINUTE)),
+  (1312, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 152640 MINUTE)),
+  (1312, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 139680 MINUTE)),
+  (1313, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 146880 MINUTE)),
+  (1313, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 133920 MINUTE)),
+  (1313, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 120960 MINUTE)),
+  (1314, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 141120 MINUTE)),
+  (1314, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 128160 MINUTE)),
+  (1314, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 115200 MINUTE)),
+  (1314, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 102240 MINUTE)),
+  (1314, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 89280 MINUTE)),
+  (1315, 1101, 1101, DATE_SUB(NOW(6), INTERVAL 135360 MINUTE)),
+  (1315, 1102, 1102, DATE_SUB(NOW(6), INTERVAL 122400 MINUTE)),
+  (1315, 1103, 1103, DATE_SUB(NOW(6), INTERVAL 109440 MINUTE)),
+  (1315, 1104, 1104, DATE_SUB(NOW(6), INTERVAL 96480 MINUTE)),
+  (1315, 1105, 1105, DATE_SUB(NOW(6), INTERVAL 83520 MINUTE)),
+  (1315, 1106, 1106, DATE_SUB(NOW(6), INTERVAL 70560 MINUTE)),
+  (1301, 1302, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1302, 1304, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1304, 1306, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1306, 1309, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1309, 1311, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE));
+INSERT INTO `user_follows` (`follower_id`, `following_id`, `community_id`, `created_at`) VALUES
+  (1311, 1313, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1313, 1315, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1315, 1301, 1101, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1301, 1303, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1303, 1305, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1305, 1307, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1307, 1309, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1309, 1310, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1310, 1314, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1314, 1315, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1315, 1301, 1102, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1302, 1304, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1304, 1308, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1308, 1309, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1309, 1310, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1310, 1312, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1312, 1314, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1314, 1315, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1315, 1302, 1103, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1303, 1306, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1306, 1309, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1309, 1311, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1311, 1313, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1313, 1314, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1314, 1315, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1315, 1303, 1104, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1301, 1304, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1304, 1307, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1307, 1310, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1310, 1312, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1312, 1314, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1314, 1315, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1315, 1301, 1105, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1303, 1305, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1305, 1308, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1308, 1311, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1311, 1313, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1313, 1314, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1314, 1315, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (1315, 1303, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE));
+
+-- ------------------------------------------------------------
+-- [5] 게시글 (아티스트 게시판 + 팬 게시판) / 첨부 이미지 / 댓글 / 좋아요
+-- ------------------------------------------------------------
+INSERT INTO `post` (`id`, `board_type`, `artist_id`, `content`, `created_at`, `title`, `author_id`, `like_count`, `hidden_from_artist`) VALUES
+  (10001, 'FAN', 1101, '출근길에 NOVA 노래만 들어요.
+하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 393 MINUTE), '요즘 출근길 플레이리스트', 1313, 4, 0),
+  (10002, 'FAN', 1101, '입덕한 지 얼마 안 됐는데 꼭 봐야 하는 직캠 추천해 주세요!', DATE_SUB(NOW(6), INTERVAL 2583 MINUTE), '직캠 추천 부탁드려요', 1302, 8, 0),
+  (10003, 'FAN', 1101, '햇살 좋은 날 듣는 NOVA 노래 최고예요 🌤️', DATE_SUB(NOW(6), INTERVAL 4838 MINUTE), '오늘 날씨 좋아서 앨범 들고 산책', 1304, 8, 0),
+  (10004, 'FAN', 1101, '벌써 우리가 함께한 지 이렇게 됐네요.
+앞으로도 오래오래 함께해요 🫶', DATE_SUB(NOW(6), INTERVAL 7027 MINUTE), '스텔라 1주년 축하해요', 1301, 6, 0),
+  (10005, 'ARTIST', 1101, '오늘도 스텔라 생각하면서 열심히 연습했어요!
+
+새로운 안무가 정말 멋있게 나올 것 같아요. 조금만 기다려 주세요 💪', DATE_SUB(NOW(6), INTERVAL 9243 MINUTE), '오늘 연습 끝! 🕺', 1201, 5, 0),
+  (10006, 'FAN', 1101, '이번 앨범 포카 교환 구해요!
+댓글로 가지고 계신 포카 알려주세요~', DATE_SUB(NOW(6), INTERVAL 11481 MINUTE), '포카 교환 원해요 🃏', 1304, 0, 0),
+  (10007, 'FAN', 1101, '진짜 NOVA 무대는 볼 때마다 새로워요ㅠㅠ
+특히 후렴 안무 너무 좋았어요 👏', DATE_SUB(NOW(6), INTERVAL 13704 MINUTE), '오늘 무대 레전드였다', 1301, 1, 0),
+  (10008, 'FAN', 1101, '컵홀더랑 포토존 너무 예뻤어요.
+준비해주신 분들 정말 감사합니다 💐', DATE_SUB(NOW(6), INTERVAL 15922 MINUTE), '생일카페 다녀왔어요 🎂', 1311, 6, 0),
+  (10009, 'FAN', 1101, '저는 우연히 유튜브 직캠 보고 입덕했어요!
+여러분은 어떻게 스텔라 되셨나요? 🥰', DATE_SUB(NOW(6), INTERVAL 18130 MINUTE), 'NOVA 입덕 계기 공유해요', 1302, 3, 0),
+  (10010, 'FAN', 1101, '다음 팬사인회 때 드릴 편지 쓰고 있어요.
+무슨 말을 써야 할지 설레요 ㅎㅎ', DATE_SUB(NOW(6), INTERVAL 20342 MINUTE), '팬레터 쓰는 중 ✉️', 1306, 2, 0),
+  (10011, 'FAN', 1101, '신곡 응원법 정리했어요!
+
+1. 인트로: 멤버 이름 순서대로
+2. 후렴: 박수 두 번
+3. 브릿지: 다 같이 스텔라!', DATE_SUB(NOW(6), INTERVAL 22562 MINUTE), '응원법 정리해봤어요 📣', 1309, 8, 0),
+  (10012, 'ARTIST', 1101, '드디어 일주일 남았어요!!
+티저 사진 마음에 들었어요? 다음 티저도 기대해 주세요 😎', DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), '컴백 D-7 ⏰', 1201, 6, 0),
+  (10013, 'ARTIST', 1101, '신곡 녹음하다가 잠깐 쉬는 시간!
+
+**이번 곡은 진짜 자신 있어요.** 가사에 스텔라 이야기를 많이 담았어요.', DATE_SUB(NOW(6), INTERVAL 27040 MINUTE), '녹음실 비하인드 🎙️', 1203, 4, 0),
+  (10014, 'ARTIST', 1101, '한 분 한 분 얼굴 보면서 이야기 나눌 수 있어서 너무 행복했어요.
+받은 편지는 숙소 가서 하나도 빠짐없이 읽을게요!', DATE_SUB(NOW(6), INTERVAL 29224 MINUTE), '팬사인회 와줘서 고마워요 💌', 1204, 7, 0),
+  (10015, 'ARTIST', 1101, '저는 방금 김치찌개 먹었어요 🍲
+오늘 하루도 고생 많았어요. 따뜻하게 입고 다녀요!', DATE_SUB(NOW(6), INTERVAL 31478 MINUTE), '스텔라 다들 밥 챙겨 먹었어요?', 1202, 8, 0),
+  (10016, 'FAN', 1101, '응원봉 드디어 도착했어요!
+불빛 색깔이 사진보다 훨씬 예뻐요 💡', DATE_SUB(NOW(6), INTERVAL 33697 MINUTE), '굿즈 언박싱 📦', 1315, 7, 0),
+  (10017, 'FAN', 1101, '손 떨려서 죽는 줄 알았는데 성공했어요 😭
+같이 가시는 분들 현장에서 만나요!', DATE_SUB(NOW(6), INTERVAL 35894 MINUTE), '콘서트 티켓팅 성공했어요!!', 1306, 6, 0),
+  (10018, 'ARTIST', 1101, '비 오는 날엔 이 노래 꼭 들어보세요
+
+- 창밖을 보며 듣기
+- 따뜻한 차 한 잔과 함께
+
+여러분 추천곡도 댓글로 알려줘요!', DATE_SUB(NOW(6), INTERVAL 38135 MINUTE), '비 오는 날 추천곡 ☔', 1205, 5, 0),
+  (10019, 'FAN', 1102, '손 떨려서 죽는 줄 알았는데 성공했어요 😭
+같이 가시는 분들 현장에서 만나요!', DATE_SUB(NOW(6), INTERVAL 384 MINUTE), '콘서트 티켓팅 성공했어요!!', 1307, 6, 0),
+  (10020, 'FAN', 1102, '이번 앨범 포카 교환 구해요!
+댓글로 가지고 계신 포카 알려주세요~', DATE_SUB(NOW(6), INTERVAL 2621 MINUTE), '포카 교환 원해요 🃏', 1305, 2, 0),
+  (10021, 'FAN', 1102, '출근길에 LUMI 노래만 들어요.
+하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 4803 MINUTE), '요즘 출근길 플레이리스트', 1314, 2, 0),
+  (10022, 'ARTIST', 1102, '비 오는 날엔 이 노래 꼭 들어보세요
+
+- 창밖을 보며 듣기
+- 따뜻한 차 한 잔과 함께
+
+여러분 추천곡도 댓글로 알려줘요!', DATE_SUB(NOW(6), INTERVAL 7025 MINUTE), '비 오는 날 추천곡 ☔', 1206, 7, 0),
+  (10023, 'FAN', 1102, '진짜 LUMI 무대는 볼 때마다 새로워요ㅠㅠ
+특히 후렴 안무 너무 좋았어요 👏', DATE_SUB(NOW(6), INTERVAL 9285 MINUTE), '오늘 무대 레전드였다', 1301, 2, 0),
+  (10024, 'FAN', 1102, '다음 팬사인회 때 드릴 편지 쓰고 있어요.
+무슨 말을 써야 할지 설레요 ㅎㅎ', DATE_SUB(NOW(6), INTERVAL 11503 MINUTE), '팬레터 쓰는 중 ✉️', 1307, 7, 0),
+  (10025, 'FAN', 1102, '벌써 우리가 함께한 지 이렇게 됐네요.
+앞으로도 오래오래 함께해요 🫶', DATE_SUB(NOW(6), INTERVAL 13690 MINUTE), '루미너스 1주년 축하해요', 1301, 0, 0),
+  (10026, 'ARTIST', 1102, '저는 방금 김치찌개 먹었어요 🍲
+오늘 하루도 고생 많았어요. 따뜻하게 입고 다녀요!', DATE_SUB(NOW(6), INTERVAL 15926 MINUTE), '루미너스 다들 밥 챙겨 먹었어요?', 1207, 3, 0),
+  (10027, 'FAN', 1102, '컵홀더랑 포토존 너무 예뻤어요.
+준비해주신 분들 정말 감사합니다 💐', DATE_SUB(NOW(6), INTERVAL 18124 MINUTE), '생일카페 다녀왔어요 🎂', 1310, 0, 0),
+  (10028, 'ARTIST', 1102, '드디어 일주일 남았어요!!
+티저 사진 마음에 들었어요? 다음 티저도 기대해 주세요 😎', DATE_SUB(NOW(6), INTERVAL 20386 MINUTE), '컴백 D-7 ⏰', 1207, 6, 0),
+  (10029, 'FAN', 1102, '저는 우연히 유튜브 직캠 보고 입덕했어요!
+여러분은 어떻게 루미너스 되셨나요? 🥰', DATE_SUB(NOW(6), INTERVAL 22607 MINUTE), 'LUMI 입덕 계기 공유해요', 1303, 5, 0),
+  (10030, 'ARTIST', 1102, '오늘도 루미너스 생각하면서 열심히 연습했어요!
+
+새로운 안무가 정말 멋있게 나올 것 같아요. 조금만 기다려 주세요 💪', DATE_SUB(NOW(6), INTERVAL 24792 MINUTE), '오늘 연습 끝! 🕺', 1206, 6, 0),
+  (10031, 'ARTIST', 1102, '한 분 한 분 얼굴 보면서 이야기 나눌 수 있어서 너무 행복했어요.
+받은 편지는 숙소 가서 하나도 빠짐없이 읽을게요!', DATE_SUB(NOW(6), INTERVAL 27035 MINUTE), '팬사인회 와줘서 고마워요 💌', 1209, 4, 0),
+  (10032, 'FAN', 1102, '입덕한 지 얼마 안 됐는데 꼭 봐야 하는 직캠 추천해 주세요!', DATE_SUB(NOW(6), INTERVAL 29256 MINUTE), '직캠 추천 부탁드려요', 1303, 1, 0),
+  (10033, 'FAN', 1102, '응원봉 드디어 도착했어요!
+불빛 색깔이 사진보다 훨씬 예뻐요 💡', DATE_SUB(NOW(6), INTERVAL 31466 MINUTE), '굿즈 언박싱 📦', 1315, 1, 0),
+  (10034, 'FAN', 1102, '햇살 좋은 날 듣는 LUMI 노래 최고예요 🌤️', DATE_SUB(NOW(6), INTERVAL 33708 MINUTE), '오늘 날씨 좋아서 앨범 들고 산책', 1305, 1, 0),
+  (10035, 'ARTIST', 1102, '신곡 녹음하다가 잠깐 쉬는 시간!
+
+**이번 곡은 진짜 자신 있어요.** 가사에 루미너스 이야기를 많이 담았어요.', DATE_SUB(NOW(6), INTERVAL 35915 MINUTE), '녹음실 비하인드 🎙️', 1208, 1, 0),
+  (10036, 'FAN', 1102, '신곡 응원법 정리했어요!
+
+1. 인트로: 멤버 이름 순서대로
+2. 후렴: 박수 두 번
+3. 브릿지: 다 같이 루미너스!', DATE_SUB(NOW(6), INTERVAL 38137 MINUTE), '응원법 정리해봤어요 📣', 1309, 8, 0),
+  (10037, 'FAN', 1103, '출근길에 ECLIPSE 노래만 들어요.
+하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 392 MINUTE), '요즘 출근길 플레이리스트', 1314, 1, 0),
+  (10038, 'FAN', 1103, '입덕한 지 얼마 안 됐는데 꼭 봐야 하는 직캠 추천해 주세요!', DATE_SUB(NOW(6), INTERVAL 2591 MINUTE), '직캠 추천 부탁드려요', 1304, 7, 0),
+  (10039, 'ARTIST', 1103, '비 오는 날엔 이 노래 꼭 들어보세요
+
+- 창밖을 보며 듣기
+- 따뜻한 차 한 잔과 함께
+
+여러분 추천곡도 댓글로 알려줘요!', DATE_SUB(NOW(6), INTERVAL 4824 MINUTE), '비 오는 날 추천곡 ☔', 1214, 8, 0),
+  (10040, 'FAN', 1103, '손 떨려서 죽는 줄 알았는데 성공했어요 😭
+같이 가시는 분들 현장에서 만나요!', DATE_SUB(NOW(6), INTERVAL 7021 MINUTE), '콘서트 티켓팅 성공했어요!!', 1309, 5, 0),
+  (10041, 'FAN', 1103, '신곡 응원법 정리했어요!
+
+1. 인트로: 멤버 이름 순서대로
+2. 후렴: 박수 두 번
+3. 브릿지: 다 같이 코로나!', DATE_SUB(NOW(6), INTERVAL 9242 MINUTE), '응원법 정리해봤어요 📣', 1310, 5, 0),
+  (10042, 'FAN', 1103, '햇살 좋은 날 듣는 ECLIPSE 노래 최고예요 🌤️', DATE_SUB(NOW(6), INTERVAL 11495 MINUTE), '오늘 날씨 좋아서 앨범 들고 산책', 1308, 6, 0),
+  (10043, 'ARTIST', 1103, '드디어 일주일 남았어요!!
+티저 사진 마음에 들었어요? 다음 티저도 기대해 주세요 😎', DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), '컴백 D-7 ⏰', 1210, 1, 0),
+  (10044, 'FAN', 1103, '벌써 우리가 함께한 지 이렇게 됐네요.
+앞으로도 오래오래 함께해요 🫶', DATE_SUB(NOW(6), INTERVAL 15941 MINUTE), '코로나 1주년 축하해요', 1302, 2, 0),
+  (10045, 'FAN', 1103, '저는 우연히 유튜브 직캠 보고 입덕했어요!
+여러분은 어떻게 코로나 되셨나요? 🥰', DATE_SUB(NOW(6), INTERVAL 18126 MINUTE), 'ECLIPSE 입덕 계기 공유해요', 1304, 6, 0),
+  (10046, 'ARTIST', 1103, '신곡 녹음하다가 잠깐 쉬는 시간!
+
+**이번 곡은 진짜 자신 있어요.** 가사에 코로나 이야기를 많이 담았어요.', DATE_SUB(NOW(6), INTERVAL 20358 MINUTE), '녹음실 비하인드 🎙️', 1212, 5, 0),
+  (10047, 'FAN', 1103, '컵홀더랑 포토존 너무 예뻤어요.
+준비해주신 분들 정말 감사합니다 💐', DATE_SUB(NOW(6), INTERVAL 22592 MINUTE), '생일카페 다녀왔어요 🎂', 1312, 4, 0),
+  (10048, 'ARTIST', 1103, '한 분 한 분 얼굴 보면서 이야기 나눌 수 있어서 너무 행복했어요.
+받은 편지는 숙소 가서 하나도 빠짐없이 읽을게요!', DATE_SUB(NOW(6), INTERVAL 24780 MINUTE), '팬사인회 와줘서 고마워요 💌', 1213, 1, 0),
+  (10049, 'ARTIST', 1103, '저는 방금 김치찌개 먹었어요 🍲
+오늘 하루도 고생 많았어요. 따뜻하게 입고 다녀요!', DATE_SUB(NOW(6), INTERVAL 27008 MINUTE), '코로나 다들 밥 챙겨 먹었어요?', 1211, 8, 0),
+  (10050, 'FAN', 1103, '다음 팬사인회 때 드릴 편지 쓰고 있어요.
+무슨 말을 써야 할지 설레요 ㅎㅎ', DATE_SUB(NOW(6), INTERVAL 29246 MINUTE), '팬레터 쓰는 중 ✉️', 1309, 5, 0);
+INSERT INTO `post` (`id`, `board_type`, `artist_id`, `content`, `created_at`, `title`, `author_id`, `like_count`, `hidden_from_artist`) VALUES
+  (10051, 'FAN', 1103, '이번 앨범 포카 교환 구해요!
+댓글로 가지고 계신 포카 알려주세요~', DATE_SUB(NOW(6), INTERVAL 31447 MINUTE), '포카 교환 원해요 🃏', 1308, 2, 0),
+  (10052, 'FAN', 1103, '응원봉 드디어 도착했어요!
+불빛 색깔이 사진보다 훨씬 예뻐요 💡', DATE_SUB(NOW(6), INTERVAL 33672 MINUTE), '굿즈 언박싱 📦', 1315, 4, 0),
+  (10053, 'FAN', 1103, '진짜 ECLIPSE 무대는 볼 때마다 새로워요ㅠㅠ
+특히 후렴 안무 너무 좋았어요 👏', DATE_SUB(NOW(6), INTERVAL 35929 MINUTE), '오늘 무대 레전드였다', 1302, 7, 0),
+  (10054, 'ARTIST', 1103, '오늘도 코로나 생각하면서 열심히 연습했어요!
+
+새로운 안무가 정말 멋있게 나올 것 같아요. 조금만 기다려 주세요 💪', DATE_SUB(NOW(6), INTERVAL 38148 MINUTE), '오늘 연습 끝! 🕺', 1210, 1, 0),
+  (10055, 'FAN', 1104, '입덕한 지 얼마 안 됐는데 꼭 봐야 하는 직캠 추천해 주세요!', DATE_SUB(NOW(6), INTERVAL 393 MINUTE), '직캠 추천 부탁드려요', 1309, 7, 0),
+  (10056, 'FAN', 1104, '햇살 좋은 날 듣는 PRISM 노래 최고예요 🌤️', DATE_SUB(NOW(6), INTERVAL 2594 MINUTE), '오늘 날씨 좋아서 앨범 들고 산책', 1311, 5, 0),
+  (10057, 'ARTIST', 1104, '신곡 녹음하다가 잠깐 쉬는 시간!
+
+**이번 곡은 진짜 자신 있어요.** 가사에 스펙트럼 이야기를 많이 담았어요.', DATE_SUB(NOW(6), INTERVAL 4814 MINUTE), '녹음실 비하인드 🎙️', 1217, 6, 0),
+  (10058, 'FAN', 1104, '진짜 PRISM 무대는 볼 때마다 새로워요ㅠㅠ
+특히 후렴 안무 너무 좋았어요 👏', DATE_SUB(NOW(6), INTERVAL 7065 MINUTE), '오늘 무대 레전드였다', 1303, 2, 0),
+  (10059, 'FAN', 1104, '저는 우연히 유튜브 직캠 보고 입덕했어요!
+여러분은 어떻게 스펙트럼 되셨나요? 🥰', DATE_SUB(NOW(6), INTERVAL 9282 MINUTE), 'PRISM 입덕 계기 공유해요', 1306, 7, 0),
+  (10060, 'FAN', 1104, '벌써 우리가 함께한 지 이렇게 됐네요.
+앞으로도 오래오래 함께해요 🫶', DATE_SUB(NOW(6), INTERVAL 11461 MINUTE), '스펙트럼 1주년 축하해요', 1306, 2, 0),
+  (10061, 'FAN', 1104, '응원봉 드디어 도착했어요!
+불빛 색깔이 사진보다 훨씬 예뻐요 💡', DATE_SUB(NOW(6), INTERVAL 13730 MINUTE), '굿즈 언박싱 📦', 1303, 6, 0),
+  (10062, 'FAN', 1104, '신곡 응원법 정리했어요!
+
+1. 인트로: 멤버 이름 순서대로
+2. 후렴: 박수 두 번
+3. 브릿지: 다 같이 스펙트럼!', DATE_SUB(NOW(6), INTERVAL 15913 MINUTE), '응원법 정리해봤어요 📣', 1313, 2, 0),
+  (10063, 'FAN', 1104, '컵홀더랑 포토존 너무 예뻤어요.
+준비해주신 분들 정말 감사합니다 💐', DATE_SUB(NOW(6), INTERVAL 18168 MINUTE), '생일카페 다녀왔어요 🎂', 1314, 6, 0),
+  (10064, 'ARTIST', 1104, '한 분 한 분 얼굴 보면서 이야기 나눌 수 있어서 너무 행복했어요.
+받은 편지는 숙소 가서 하나도 빠짐없이 읽을게요!', DATE_SUB(NOW(6), INTERVAL 20379 MINUTE), '팬사인회 와줘서 고마워요 💌', 1218, 5, 0),
+  (10065, 'ARTIST', 1104, '드디어 일주일 남았어요!!
+티저 사진 마음에 들었어요? 다음 티저도 기대해 주세요 😎', DATE_SUB(NOW(6), INTERVAL 22599 MINUTE), '컴백 D-7 ⏰', 1216, 5, 0),
+  (10066, 'ARTIST', 1104, '비 오는 날엔 이 노래 꼭 들어보세요
+
+- 창밖을 보며 듣기
+- 따뜻한 차 한 잔과 함께
+
+여러분 추천곡도 댓글로 알려줘요!', DATE_SUB(NOW(6), INTERVAL 24815 MINUTE), '비 오는 날 추천곡 ☔', 1215, 7, 0),
+  (10067, 'FAN', 1104, '출근길에 PRISM 노래만 들어요.
+하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 27026 MINUTE), '요즘 출근길 플레이리스트', 1315, 3, 0),
+  (10068, 'FAN', 1104, '손 떨려서 죽는 줄 알았는데 성공했어요 😭
+같이 가시는 분들 현장에서 만나요!', DATE_SUB(NOW(6), INTERVAL 29231 MINUTE), '콘서트 티켓팅 성공했어요!!', 1311, 1, 0),
+  (10069, 'ARTIST', 1104, '오늘도 스펙트럼 생각하면서 열심히 연습했어요!
+
+새로운 안무가 정말 멋있게 나올 것 같아요. 조금만 기다려 주세요 💪', DATE_SUB(NOW(6), INTERVAL 31455 MINUTE), '오늘 연습 끝! 🕺', 1215, 7, 0),
+  (10070, 'FAN', 1104, '이번 앨범 포카 교환 구해요!
+댓글로 가지고 계신 포카 알려주세요~', DATE_SUB(NOW(6), INTERVAL 33662 MINUTE), '포카 교환 원해요 🃏', 1309, 4, 0),
+  (10071, 'ARTIST', 1104, '저는 방금 김치찌개 먹었어요 🍲
+오늘 하루도 고생 많았어요. 따뜻하게 입고 다녀요!', DATE_SUB(NOW(6), INTERVAL 35893 MINUTE), '스펙트럼 다들 밥 챙겨 먹었어요?', 1216, 6, 0),
+  (10072, 'FAN', 1104, '다음 팬사인회 때 드릴 편지 쓰고 있어요.
+무슨 말을 써야 할지 설레요 ㅎㅎ', DATE_SUB(NOW(6), INTERVAL 38139 MINUTE), '팬레터 쓰는 중 ✉️', 1313, 0, 0),
+  (10073, 'ARTIST', 1105, '한 분 한 분 얼굴 보면서 이야기 나눌 수 있어서 너무 행복했어요.
+받은 편지는 숙소 가서 하나도 빠짐없이 읽을게요!', DATE_SUB(NOW(6), INTERVAL 393 MINUTE), '팬사인회 와줘서 고마워요 💌', 1105, 6, 0),
+  (10074, 'FAN', 1105, '응원봉 드디어 도착했어요!
+불빛 색깔이 사진보다 훨씬 예뻐요 💡', DATE_SUB(NOW(6), INTERVAL 2590 MINUTE), '굿즈 언박싱 📦', 1301, 1, 0),
+  (10075, 'FAN', 1105, '출근길에 한유리 노래만 들어요.
+하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 4818 MINUTE), '요즘 출근길 플레이리스트', 1315, 5, 0),
+  (10076, 'FAN', 1105, '저는 우연히 유튜브 직캠 보고 입덕했어요!
+여러분은 어떻게 유리알 되셨나요? 🥰', DATE_SUB(NOW(6), INTERVAL 7039 MINUTE), '한유리 입덕 계기 공유해요', 1304, 2, 0),
+  (10077, 'FAN', 1105, '신곡 응원법 정리했어요!
+
+1. 인트로: 멤버 이름 순서대로
+2. 후렴: 박수 두 번
+3. 브릿지: 다 같이 유리알!', DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), '응원법 정리해봤어요 📣', 1312, 6, 0),
+  (10078, 'FAN', 1105, '벌써 우리가 함께한 지 이렇게 됐네요.
+앞으로도 오래오래 함께해요 🫶', DATE_SUB(NOW(6), INTERVAL 11507 MINUTE), '유리알 1주년 축하해요', 1304, 2, 0),
+  (10079, 'FAN', 1105, '손 떨려서 죽는 줄 알았는데 성공했어요 😭
+같이 가시는 분들 현장에서 만나요!', DATE_SUB(NOW(6), INTERVAL 13726 MINUTE), '콘서트 티켓팅 성공했어요!!', 1310, 6, 0),
+  (10080, 'ARTIST', 1105, '신곡 녹음하다가 잠깐 쉬는 시간!
+
+**이번 곡은 진짜 자신 있어요.** 가사에 유리알 이야기를 많이 담았어요.', DATE_SUB(NOW(6), INTERVAL 15910 MINUTE), '녹음실 비하인드 🎙️', 1105, 5, 0),
+  (10081, 'FAN', 1105, '컵홀더랑 포토존 너무 예뻤어요.
+준비해주신 분들 정말 감사합니다 💐', DATE_SUB(NOW(6), INTERVAL 18147 MINUTE), '생일카페 다녀왔어요 🎂', 1314, 1, 0),
+  (10082, 'ARTIST', 1105, '오늘도 유리알 생각하면서 열심히 연습했어요!
+
+새로운 안무가 정말 멋있게 나올 것 같아요. 조금만 기다려 주세요 💪', DATE_SUB(NOW(6), INTERVAL 20371 MINUTE), '오늘 연습 끝! 🕺', 1105, 2, 0),
+  (10083, 'FAN', 1105, '다음 팬사인회 때 드릴 편지 쓰고 있어요.
+무슨 말을 써야 할지 설레요 ㅎㅎ', DATE_SUB(NOW(6), INTERVAL 22586 MINUTE), '팬레터 쓰는 중 ✉️', 1312, 3, 0),
+  (10084, 'ARTIST', 1105, '저는 방금 김치찌개 먹었어요 🍲
+오늘 하루도 고생 많았어요. 따뜻하게 입고 다녀요!', DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), '유리알 다들 밥 챙겨 먹었어요?', 1105, 2, 0),
+  (10085, 'ARTIST', 1105, '드디어 일주일 남았어요!!
+티저 사진 마음에 들었어요? 다음 티저도 기대해 주세요 😎', DATE_SUB(NOW(6), INTERVAL 27034 MINUTE), '컴백 D-7 ⏰', 1105, 3, 0),
+  (10086, 'FAN', 1105, '입덕한 지 얼마 안 됐는데 꼭 봐야 하는 직캠 추천해 주세요!', DATE_SUB(NOW(6), INTERVAL 29240 MINUTE), '직캠 추천 부탁드려요', 1307, 7, 0),
+  (10087, 'FAN', 1105, '이번 앨범 포카 교환 구해요!
+댓글로 가지고 계신 포카 알려주세요~', DATE_SUB(NOW(6), INTERVAL 31482 MINUTE), '포카 교환 원해요 🃏', 1307, 6, 0),
+  (10088, 'ARTIST', 1105, '비 오는 날엔 이 노래 꼭 들어보세요
+
+- 창밖을 보며 듣기
+- 따뜻한 차 한 잔과 함께
+
+여러분 추천곡도 댓글로 알려줘요!', DATE_SUB(NOW(6), INTERVAL 33700 MINUTE), '비 오는 날 추천곡 ☔', 1105, 4, 0),
+  (10089, 'FAN', 1105, '진짜 한유리 무대는 볼 때마다 새로워요ㅠㅠ
+특히 후렴 안무 너무 좋았어요 👏', DATE_SUB(NOW(6), INTERVAL 35912 MINUTE), '오늘 무대 레전드였다', 1301, 4, 0),
+  (10090, 'FAN', 1105, '햇살 좋은 날 듣는 한유리 노래 최고예요 🌤️', DATE_SUB(NOW(6), INTERVAL 38140 MINUTE), '오늘 날씨 좋아서 앨범 들고 산책', 1310, 1, 0),
+  (10091, 'FAN', 1106, '손 떨려서 죽는 줄 알았는데 성공했어요 😭
+같이 가시는 분들 현장에서 만나요!', DATE_SUB(NOW(6), INTERVAL 398 MINUTE), '콘서트 티켓팅 성공했어요!!', 1311, 7, 0),
+  (10092, 'FAN', 1106, '입덕한 지 얼마 안 됐는데 꼭 봐야 하는 직캠 추천해 주세요!', DATE_SUB(NOW(6), INTERVAL 2629 MINUTE), '직캠 추천 부탁드려요', 1308, 3, 0),
+  (10093, 'ARTIST', 1106, '비 오는 날엔 이 노래 꼭 들어보세요
+
+- 창밖을 보며 듣기
+- 따뜻한 차 한 잔과 함께
+
+여러분 추천곡도 댓글로 알려줘요!', DATE_SUB(NOW(6), INTERVAL 4814 MINUTE), '비 오는 날 추천곡 ☔', 1106, 0, 0),
+  (10094, 'FAN', 1106, '신곡 응원법 정리했어요!
+
+1. 인트로: 멤버 이름 순서대로
+2. 후렴: 박수 두 번
+3. 브릿지: 다 같이 카이토모!', DATE_SUB(NOW(6), INTERVAL 7028 MINUTE), '응원법 정리해봤어요 📣', 1313, 5, 0),
+  (10095, 'FAN', 1106, '저는 우연히 유튜브 직캠 보고 입덕했어요!
+여러분은 어떻게 카이토모 되셨나요? 🥰', DATE_SUB(NOW(6), INTERVAL 9250 MINUTE), 'KAITO 입덕 계기 공유해요', 1305, 5, 0),
+  (10096, 'FAN', 1106, '다음 팬사인회 때 드릴 편지 쓰고 있어요.
+무슨 말을 써야 할지 설레요 ㅎㅎ', DATE_SUB(NOW(6), INTERVAL 11486 MINUTE), '팬레터 쓰는 중 ✉️', 1313, 1, 0),
+  (10097, 'FAN', 1106, '출근길에 KAITO 노래만 들어요.
+하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), '요즘 출근길 플레이리스트', 1315, 5, 0),
+  (10098, 'FAN', 1106, '컵홀더랑 포토존 너무 예뻤어요.
+준비해주신 분들 정말 감사합니다 💐', DATE_SUB(NOW(6), INTERVAL 15932 MINUTE), '생일카페 다녀왔어요 🎂', 1314, 2, 0),
+  (10099, 'FAN', 1106, '이번 앨범 포카 교환 구해요!
+댓글로 가지고 계신 포카 알려주세요~', DATE_SUB(NOW(6), INTERVAL 18168 MINUTE), '포카 교환 원해요 🃏', 1308, 3, 0),
+  (10100, 'ARTIST', 1106, '드디어 일주일 남았어요!!
+티저 사진 마음에 들었어요? 다음 티저도 기대해 주세요 😎', DATE_SUB(NOW(6), INTERVAL 20358 MINUTE), '컴백 D-7 ⏰', 1106, 3, 0);
+INSERT INTO `post` (`id`, `board_type`, `artist_id`, `content`, `created_at`, `title`, `author_id`, `like_count`, `hidden_from_artist`) VALUES
+  (10101, 'FAN', 1106, '벌써 우리가 함께한 지 이렇게 됐네요.
+앞으로도 오래오래 함께해요 🫶', DATE_SUB(NOW(6), INTERVAL 22586 MINUTE), '카이토모 1주년 축하해요', 1305, 6, 0),
+  (10102, 'FAN', 1106, '응원봉 드디어 도착했어요!
+불빛 색깔이 사진보다 훨씬 예뻐요 💡', DATE_SUB(NOW(6), INTERVAL 24813 MINUTE), '굿즈 언박싱 📦', 1303, 7, 0),
+  (10103, 'ARTIST', 1106, '한 분 한 분 얼굴 보면서 이야기 나눌 수 있어서 너무 행복했어요.
+받은 편지는 숙소 가서 하나도 빠짐없이 읽을게요!', DATE_SUB(NOW(6), INTERVAL 27032 MINUTE), '팬사인회 와줘서 고마워요 💌', 1106, 7, 0),
+  (10104, 'ARTIST', 1106, '오늘도 카이토모 생각하면서 열심히 연습했어요!
+
+새로운 안무가 정말 멋있게 나올 것 같아요. 조금만 기다려 주세요 💪', DATE_SUB(NOW(6), INTERVAL 29248 MINUTE), '오늘 연습 끝! 🕺', 1106, 2, 0),
+  (10105, 'ARTIST', 1106, '저는 방금 김치찌개 먹었어요 🍲
+오늘 하루도 고생 많았어요. 따뜻하게 입고 다녀요!', DATE_SUB(NOW(6), INTERVAL 31440 MINUTE), '카이토모 다들 밥 챙겨 먹었어요?', 1106, 4, 0),
+  (10106, 'FAN', 1106, '진짜 KAITO 무대는 볼 때마다 새로워요ㅠㅠ
+특히 후렴 안무 너무 좋았어요 👏', DATE_SUB(NOW(6), INTERVAL 33691 MINUTE), '오늘 무대 레전드였다', 1303, 5, 0),
+  (10107, 'ARTIST', 1106, '신곡 녹음하다가 잠깐 쉬는 시간!
+
+**이번 곡은 진짜 자신 있어요.** 가사에 카이토모 이야기를 많이 담았어요.', DATE_SUB(NOW(6), INTERVAL 35919 MINUTE), '녹음실 비하인드 🎙️', 1106, 4, 0),
+  (10108, 'FAN', 1106, '햇살 좋은 날 듣는 KAITO 노래 최고예요 🌤️', DATE_SUB(NOW(6), INTERVAL 38134 MINUTE), '오늘 날씨 좋아서 앨범 들고 산책', 1311, 1, 0);
+INSERT INTO `post_attachment` (`id`, `content_type`, `created_at`, `file_size`, `original_name`, `stored_name`, `post_id`) VALUES
+  (10001, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 7027 MINUTE), 37059, 'photo_4.jpg', 'demo_nova_post10004.jpg', 10004),
+  (10002, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 9243 MINUTE), 32822, 'photo_5.jpg', 'demo_nova_post10005.jpg', 10005),
+  (10003, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 13704 MINUTE), 34857, 'photo_7.jpg', 'demo_nova_post10007.jpg', 10007),
+  (10004, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 22562 MINUTE), 38895, 'photo_11.jpg', 'demo_nova_post10011.jpg', 10011),
+  (10005, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 27040 MINUTE), 35662, 'photo_13.jpg', 'demo_nova_post10013.jpg', 10013),
+  (10006, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 38135 MINUTE), 33873, 'photo_18.jpg', 'demo_nova_post10018.jpg', 10018),
+  (10007, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 7025 MINUTE), 36018, 'photo_4.jpg', 'demo_lumi_post10022.jpg', 10022),
+  (10008, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 9285 MINUTE), 36304, 'photo_5.jpg', 'demo_lumi_post10023.jpg', 10023),
+  (10009, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 13690 MINUTE), 36616, 'photo_7.jpg', 'demo_lumi_post10025.jpg', 10025),
+  (10010, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 24792 MINUTE), 34712, 'photo_12.jpg', 'demo_lumi_post10030.jpg', 10030),
+  (10011, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 35915 MINUTE), 33641, 'photo_17.jpg', 'demo_lumi_post10035.jpg', 10035),
+  (10012, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 38137 MINUTE), 36871, 'photo_18.jpg', 'demo_lumi_post10036.jpg', 10036),
+  (10013, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 4824 MINUTE), 33848, 'photo_3.jpg', 'demo_eclipse_post10039.jpg', 10039),
+  (10014, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 9242 MINUTE), 40029, 'photo_5.jpg', 'demo_eclipse_post10041.jpg', 10041),
+  (10015, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 15941 MINUTE), 39856, 'photo_8.jpg', 'demo_eclipse_post10044.jpg', 10044),
+  (10016, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 20358 MINUTE), 37462, 'photo_10.jpg', 'demo_eclipse_post10046.jpg', 10046),
+  (10017, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 35929 MINUTE), 38962, 'photo_17.jpg', 'demo_eclipse_post10053.jpg', 10053),
+  (10018, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 38148 MINUTE), 34334, 'photo_18.jpg', 'demo_eclipse_post10054.jpg', 10054),
+  (10019, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 4814 MINUTE), 34328, 'photo_3.jpg', 'demo_prism_post10057.jpg', 10057),
+  (10020, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 7065 MINUTE), 35821, 'photo_4.jpg', 'demo_prism_post10058.jpg', 10058),
+  (10021, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 11461 MINUTE), 32344, 'photo_6.jpg', 'demo_prism_post10060.jpg', 10060),
+  (10022, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 15913 MINUTE), 35327, 'photo_8.jpg', 'demo_prism_post10062.jpg', 10062),
+  (10023, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 24815 MINUTE), 32743, 'photo_12.jpg', 'demo_prism_post10066.jpg', 10066),
+  (10024, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 31455 MINUTE), 35208, 'photo_15.jpg', 'demo_prism_post10069.jpg', 10069),
+  (10025, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), 36697, 'photo_5.jpg', 'demo_yuri_post10077.jpg', 10077),
+  (10026, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 11507 MINUTE), 35604, 'photo_6.jpg', 'demo_yuri_post10078.jpg', 10078),
+  (10027, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 15910 MINUTE), 35670, 'photo_8.jpg', 'demo_yuri_post10080.jpg', 10080),
+  (10028, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 20371 MINUTE), 30252, 'photo_10.jpg', 'demo_yuri_post10082.jpg', 10082),
+  (10029, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 33700 MINUTE), 33025, 'photo_16.jpg', 'demo_yuri_post10088.jpg', 10088),
+  (10030, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 35912 MINUTE), 33951, 'photo_17.jpg', 'demo_yuri_post10089.jpg', 10089),
+  (10031, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 4814 MINUTE), 33600, 'photo_3.jpg', 'demo_kaito_post10093.jpg', 10093),
+  (10032, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 7028 MINUTE), 36968, 'photo_4.jpg', 'demo_kaito_post10094.jpg', 10094),
+  (10033, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 22586 MINUTE), 36444, 'photo_11.jpg', 'demo_kaito_post10101.jpg', 10101),
+  (10034, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 29248 MINUTE), 33723, 'photo_14.jpg', 'demo_kaito_post10104.jpg', 10104),
+  (10035, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 33691 MINUTE), 33834, 'photo_16.jpg', 'demo_kaito_post10106.jpg', 10106),
+  (10036, 'image/jpeg', DATE_SUB(NOW(6), INTERVAL 35919 MINUTE), 35219, 'photo_17.jpg', 'demo_kaito_post10107.jpg', 10107);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20001, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 383 MINUTE), 1309, 10001, NULL),
+  (20002, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 376 MINUTE), 1313, 10001, NULL),
+  (20003, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 369 MINUTE), 1306, 10001, NULL),
+  (20004, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 362 MINUTE), 1311, 10001, NULL),
+  (20005, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 2573 MINUTE), 1304, 10002, NULL),
+  (20006, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 2566 MINUTE), 1311, 10002, NULL),
+  (20007, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 4828 MINUTE), 1315, 10003, NULL),
+  (20008, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 4821 MINUTE), 1315, 10003, NULL),
+  (20009, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 4814 MINUTE), 1304, 10003, NULL),
+  (20010, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 7017 MINUTE), 1309, 10004, NULL),
+  (20011, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 7010 MINUTE), 1306, 10004, NULL),
+  (20012, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 9233 MINUTE), 1304, 10005, NULL),
+  (20013, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 9226 MINUTE), 1309, 10005, NULL),
+  (20014, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 9203 MINUTE), 1201, 10005, 20012),
+  (20015, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 11471 MINUTE), 1302, 10006, NULL),
+  (20016, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 11464 MINUTE), 1306, 10006, NULL),
+  (20017, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 11457 MINUTE), 1304, 10006, NULL),
+  (20018, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 13694 MINUTE), 1309, 10007, NULL),
+  (20019, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 13687 MINUTE), 1309, 10007, NULL),
+  (20020, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 13680 MINUTE), 1309, 10007, NULL),
+  (20021, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 13673 MINUTE), 1309, 10007, NULL),
+  (20022, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 15912 MINUTE), 1302, 10008, NULL),
+  (20023, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 15905 MINUTE), 1301, 10008, NULL),
+  (20024, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 15898 MINUTE), 1301, 10008, NULL),
+  (20025, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 15891 MINUTE), 1311, 10008, NULL),
+  (20026, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 18120 MINUTE), 1302, 10009, NULL),
+  (20027, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 18113 MINUTE), 1301, 10009, NULL),
+  (20028, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 18106 MINUTE), 1313, 10009, NULL),
+  (20029, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 18099 MINUTE), 1313, 10009, NULL),
+  (20030, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 20332 MINUTE), 1311, 10010, NULL),
+  (20031, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 22552 MINUTE), 1309, 10011, NULL),
+  (20032, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 22545 MINUTE), 1315, 10011, NULL),
+  (20033, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 22538 MINUTE), 1306, 10011, NULL),
+  (20034, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 22531 MINUTE), 1302, 10011, NULL),
+  (20035, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 24798 MINUTE), 1315, 10012, NULL),
+  (20036, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 24768 MINUTE), 1201, 10012, 20035),
+  (20037, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 27030 MINUTE), 1311, 10013, NULL),
+  (20038, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 27000 MINUTE), 1203, 10013, 20037),
+  (20039, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 29214 MINUTE), 1315, 10014, NULL),
+  (20040, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 29184 MINUTE), 1204, 10014, 20039),
+  (20041, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 31468 MINUTE), 1304, 10015, NULL),
+  (20042, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 31461 MINUTE), 1311, 10015, NULL),
+  (20043, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 31454 MINUTE), 1309, 10015, NULL),
+  (20044, '스텔라 최고 👍', DATE_SUB(NOW(6), INTERVAL 31438 MINUTE), 1202, 10015, 20041),
+  (20045, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 33687 MINUTE), 1302, 10016, NULL),
+  (20046, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 35884 MINUTE), 1301, 10017, NULL),
+  (20047, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 35877 MINUTE), 1309, 10017, NULL),
+  (20048, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 35870 MINUTE), 1311, 10017, NULL),
+  (20049, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 38125 MINUTE), 1313, 10018, NULL),
+  (20050, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 38118 MINUTE), 1311, 10018, NULL);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20051, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 38095 MINUTE), 1205, 10018, 20049),
+  (20052, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 374 MINUTE), 1309, 10019, NULL),
+  (20053, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 2611 MINUTE), 1305, 10020, NULL),
+  (20054, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 2604 MINUTE), 1310, 10020, NULL),
+  (20055, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 2597 MINUTE), 1307, 10020, NULL),
+  (20056, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 4793 MINUTE), 1314, 10021, NULL),
+  (20057, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 4786 MINUTE), 1315, 10021, NULL),
+  (20058, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 4779 MINUTE), 1303, 10021, NULL),
+  (20059, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 4772 MINUTE), 1310, 10021, NULL),
+  (20060, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 7015 MINUTE), 1315, 10022, NULL),
+  (20061, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 7008 MINUTE), 1309, 10022, NULL),
+  (20062, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 7001 MINUTE), 1305, 10022, NULL),
+  (20063, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 6994 MINUTE), 1310, 10022, NULL),
+  (20064, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 6985 MINUTE), 1206, 10022, 20060),
+  (20065, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 9275 MINUTE), 1305, 10023, NULL),
+  (20066, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 11493 MINUTE), 1310, 10024, NULL),
+  (20067, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 11486 MINUTE), 1309, 10024, NULL),
+  (20068, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 11479 MINUTE), 1303, 10024, NULL),
+  (20069, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 11472 MINUTE), 1310, 10024, NULL),
+  (20070, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 13680 MINUTE), 1305, 10025, NULL),
+  (20071, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 13673 MINUTE), 1315, 10025, NULL),
+  (20072, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 15916 MINUTE), 1301, 10026, NULL),
+  (20073, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 15909 MINUTE), 1314, 10026, NULL),
+  (20074, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 15902 MINUTE), 1307, 10026, NULL),
+  (20075, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 15895 MINUTE), 1301, 10026, NULL),
+  (20076, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 15886 MINUTE), 1207, 10026, 20072),
+  (20077, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 18114 MINUTE), 1305, 10027, NULL),
+  (20078, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 18107 MINUTE), 1303, 10027, NULL),
+  (20079, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 20376 MINUTE), 1309, 10028, NULL),
+  (20080, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 20369 MINUTE), 1309, 10028, NULL),
+  (20081, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 20362 MINUTE), 1307, 10028, NULL),
+  (20082, '루미너스 최고 👍', DATE_SUB(NOW(6), INTERVAL 20346 MINUTE), 1207, 10028, 20079),
+  (20083, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 22597 MINUTE), 1315, 10029, NULL),
+  (20084, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 24782 MINUTE), 1310, 10030, NULL),
+  (20085, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 24775 MINUTE), 1309, 10030, NULL),
+  (20086, '루미너스 최고 👍', DATE_SUB(NOW(6), INTERVAL 24752 MINUTE), 1206, 10030, 20084),
+  (20087, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 27025 MINUTE), 1309, 10031, NULL),
+  (20088, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 27018 MINUTE), 1314, 10031, NULL),
+  (20089, '루미너스 최고 👍', DATE_SUB(NOW(6), INTERVAL 26995 MINUTE), 1209, 10031, 20087),
+  (20090, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 29246 MINUTE), 1303, 10032, NULL),
+  (20091, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 29239 MINUTE), 1315, 10032, NULL),
+  (20092, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 29232 MINUTE), 1305, 10032, NULL),
+  (20093, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 29225 MINUTE), 1314, 10032, NULL),
+  (20094, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 31456 MINUTE), 1310, 10033, NULL),
+  (20095, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 31449 MINUTE), 1315, 10033, NULL),
+  (20096, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 31442 MINUTE), 1301, 10033, NULL),
+  (20097, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 31435 MINUTE), 1301, 10033, NULL),
+  (20098, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 33698 MINUTE), 1305, 10034, NULL),
+  (20099, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 35905 MINUTE), 1314, 10035, NULL),
+  (20100, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 35898 MINUTE), 1309, 10035, NULL);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20101, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 35891 MINUTE), 1301, 10035, NULL),
+  (20102, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 35884 MINUTE), 1314, 10035, NULL),
+  (20103, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 35875 MINUTE), 1208, 10035, 20099),
+  (20104, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 38127 MINUTE), 1309, 10036, NULL),
+  (20105, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 38120 MINUTE), 1305, 10036, NULL),
+  (20106, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 38113 MINUTE), 1301, 10036, NULL),
+  (20107, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 382 MINUTE), 1314, 10037, NULL),
+  (20108, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 375 MINUTE), 1310, 10037, NULL),
+  (20109, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 2581 MINUTE), 1304, 10038, NULL),
+  (20110, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 2574 MINUTE), 1315, 10038, NULL),
+  (20111, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 2567 MINUTE), 1314, 10038, NULL),
+  (20112, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 2560 MINUTE), 1302, 10038, NULL),
+  (20113, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 4814 MINUTE), 1314, 10039, NULL),
+  (20114, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 4807 MINUTE), 1315, 10039, NULL),
+  (20115, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 4784 MINUTE), 1214, 10039, 20113),
+  (20116, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 7011 MINUTE), 1314, 10040, NULL),
+  (20117, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 7004 MINUTE), 1304, 10040, NULL),
+  (20118, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 6997 MINUTE), 1304, 10040, NULL),
+  (20119, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 6990 MINUTE), 1315, 10040, NULL),
+  (20120, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 9232 MINUTE), 1302, 10041, NULL),
+  (20121, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 9225 MINUTE), 1315, 10041, NULL),
+  (20122, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 9218 MINUTE), 1315, 10041, NULL),
+  (20123, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 11485 MINUTE), 1315, 10042, NULL),
+  (20124, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 11478 MINUTE), 1302, 10042, NULL),
+  (20125, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 11471 MINUTE), 1308, 10042, NULL),
+  (20126, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 11464 MINUTE), 1310, 10042, NULL),
+  (20127, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 13715 MINUTE), 1302, 10043, NULL),
+  (20128, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 13708 MINUTE), 1309, 10043, NULL),
+  (20129, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 13701 MINUTE), 1308, 10043, NULL),
+  (20130, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 13694 MINUTE), 1315, 10043, NULL),
+  (20131, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 13685 MINUTE), 1210, 10043, 20127),
+  (20132, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 15931 MINUTE), 1315, 10044, NULL),
+  (20133, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 15924 MINUTE), 1315, 10044, NULL),
+  (20134, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 18116 MINUTE), 1310, 10045, NULL),
+  (20135, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 20348 MINUTE), 1309, 10046, NULL),
+  (20136, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 20341 MINUTE), 1308, 10046, NULL),
+  (20137, '코로나 최고 👍', DATE_SUB(NOW(6), INTERVAL 20318 MINUTE), 1212, 10046, 20135),
+  (20138, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 22582 MINUTE), 1310, 10047, NULL),
+  (20139, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 22575 MINUTE), 1304, 10047, NULL),
+  (20140, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 22568 MINUTE), 1304, 10047, NULL),
+  (20141, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 24770 MINUTE), 1312, 10048, NULL),
+  (20142, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 24763 MINUTE), 1308, 10048, NULL),
+  (20143, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 24756 MINUTE), 1309, 10048, NULL),
+  (20144, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 24740 MINUTE), 1213, 10048, 20141),
+  (20145, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 26998 MINUTE), 1308, 10049, NULL),
+  (20146, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 26991 MINUTE), 1304, 10049, NULL),
+  (20147, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 26984 MINUTE), 1302, 10049, NULL),
+  (20148, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 26977 MINUTE), 1310, 10049, NULL),
+  (20149, '코로나 최고 👍', DATE_SUB(NOW(6), INTERVAL 26968 MINUTE), 1211, 10049, 20145),
+  (20150, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 29236 MINUTE), 1314, 10050, NULL);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20151, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 29229 MINUTE), 1314, 10050, NULL),
+  (20152, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 31437 MINUTE), 1309, 10051, NULL),
+  (20153, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 31430 MINUTE), 1312, 10051, NULL),
+  (20154, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 31423 MINUTE), 1314, 10051, NULL),
+  (20155, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 33662 MINUTE), 1304, 10052, NULL),
+  (20156, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 33655 MINUTE), 1308, 10052, NULL),
+  (20157, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 33648 MINUTE), 1302, 10052, NULL),
+  (20158, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 33641 MINUTE), 1302, 10052, NULL),
+  (20159, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 35919 MINUTE), 1310, 10053, NULL),
+  (20160, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 35912 MINUTE), 1310, 10053, NULL),
+  (20161, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 35905 MINUTE), 1315, 10053, NULL),
+  (20162, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 38138 MINUTE), 1302, 10054, NULL),
+  (20163, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 38131 MINUTE), 1310, 10054, NULL),
+  (20164, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 38124 MINUTE), 1314, 10054, NULL),
+  (20165, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 38117 MINUTE), 1314, 10054, NULL),
+  (20166, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 38108 MINUTE), 1210, 10054, 20162),
+  (20167, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 383 MINUTE), 1306, 10055, NULL),
+  (20168, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 2584 MINUTE), 1309, 10056, NULL),
+  (20169, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 4804 MINUTE), 1314, 10057, NULL),
+  (20170, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 4797 MINUTE), 1306, 10057, NULL),
+  (20171, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 4790 MINUTE), 1313, 10057, NULL),
+  (20172, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 4774 MINUTE), 1217, 10057, 20169),
+  (20173, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 7055 MINUTE), 1306, 10058, NULL),
+  (20174, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 7048 MINUTE), 1309, 10058, NULL),
+  (20175, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 7041 MINUTE), 1314, 10058, NULL),
+  (20176, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 9272 MINUTE), 1303, 10059, NULL),
+  (20177, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 11451 MINUTE), 1313, 10060, NULL),
+  (20178, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 11444 MINUTE), 1309, 10060, NULL),
+  (20179, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 11437 MINUTE), 1303, 10060, NULL),
+  (20180, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 13720 MINUTE), 1315, 10061, NULL),
+  (20181, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 13713 MINUTE), 1303, 10061, NULL),
+  (20182, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 13706 MINUTE), 1313, 10061, NULL),
+  (20183, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 13699 MINUTE), 1306, 10061, NULL),
+  (20184, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 15903 MINUTE), 1311, 10062, NULL),
+  (20185, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 15896 MINUTE), 1309, 10062, NULL),
+  (20186, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 15889 MINUTE), 1313, 10062, NULL),
+  (20187, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 15882 MINUTE), 1314, 10062, NULL),
+  (20188, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 18158 MINUTE), 1313, 10063, NULL),
+  (20189, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 18151 MINUTE), 1313, 10063, NULL),
+  (20190, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 18144 MINUTE), 1311, 10063, NULL),
+  (20191, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 18137 MINUTE), 1306, 10063, NULL),
+  (20192, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 20369 MINUTE), 1306, 10064, NULL),
+  (20193, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 20362 MINUTE), 1303, 10064, NULL),
+  (20194, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 20355 MINUTE), 1315, 10064, NULL),
+  (20195, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 20348 MINUTE), 1315, 10064, NULL),
+  (20196, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 20339 MINUTE), 1218, 10064, 20192),
+  (20197, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 22589 MINUTE), 1311, 10065, NULL),
+  (20198, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 22582 MINUTE), 1311, 10065, NULL),
+  (20199, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 22575 MINUTE), 1311, 10065, NULL),
+  (20200, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 22559 MINUTE), 1216, 10065, 20197);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20201, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 24805 MINUTE), 1309, 10066, NULL),
+  (20202, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 24798 MINUTE), 1313, 10066, NULL),
+  (20203, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 24791 MINUTE), 1313, 10066, NULL),
+  (20204, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 24784 MINUTE), 1314, 10066, NULL),
+  (20205, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 24775 MINUTE), 1215, 10066, 20201),
+  (20206, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 27016 MINUTE), 1309, 10067, NULL),
+  (20207, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 29221 MINUTE), 1314, 10068, NULL),
+  (20208, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 29214 MINUTE), 1314, 10068, NULL),
+  (20209, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 29207 MINUTE), 1311, 10068, NULL),
+  (20210, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 29200 MINUTE), 1315, 10068, NULL),
+  (20211, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 31445 MINUTE), 1303, 10069, NULL),
+  (20212, '스펙트럼 최고 👍', DATE_SUB(NOW(6), INTERVAL 31415 MINUTE), 1215, 10069, 20211),
+  (20213, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 33652 MINUTE), 1313, 10070, NULL),
+  (20214, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 33645 MINUTE), 1309, 10070, NULL),
+  (20215, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 35883 MINUTE), 1306, 10071, NULL),
+  (20216, '스펙트럼 최고 👍', DATE_SUB(NOW(6), INTERVAL 35853 MINUTE), 1216, 10071, 20215),
+  (20217, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 38129 MINUTE), 1303, 10072, NULL),
+  (20218, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 38122 MINUTE), 1309, 10072, NULL),
+  (20219, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 383 MINUTE), 1315, 10073, NULL),
+  (20220, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 376 MINUTE), 1304, 10073, NULL),
+  (20221, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 369 MINUTE), 1304, 10073, NULL),
+  (20222, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 362 MINUTE), 1307, 10073, NULL),
+  (20223, '유리알 최고 👍', DATE_SUB(NOW(6), INTERVAL 353 MINUTE), 1105, 10073, 20219),
+  (20224, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 2580 MINUTE), 1301, 10074, NULL),
+  (20225, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 2573 MINUTE), 1304, 10074, NULL),
+  (20226, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 2566 MINUTE), 1315, 10074, NULL),
+  (20227, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 2559 MINUTE), 1304, 10074, NULL),
+  (20228, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 4808 MINUTE), 1310, 10075, NULL),
+  (20229, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 7029 MINUTE), 1314, 10076, NULL),
+  (20230, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 1314, 10076, NULL),
+  (20231, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 7015 MINUTE), 1307, 10076, NULL),
+  (20232, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 7008 MINUTE), 1314, 10076, NULL),
+  (20233, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 9235 MINUTE), 1310, 10077, NULL),
+  (20234, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 9228 MINUTE), 1301, 10077, NULL),
+  (20235, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 9221 MINUTE), 1304, 10077, NULL),
+  (20236, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 9214 MINUTE), 1312, 10077, NULL),
+  (20237, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 11497 MINUTE), 1304, 10078, NULL),
+  (20238, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 1312, 10078, NULL),
+  (20239, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 11483 MINUTE), 1304, 10078, NULL),
+  (20240, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 13716 MINUTE), 1312, 10079, NULL),
+  (20241, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 13709 MINUTE), 1310, 10079, NULL),
+  (20242, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 15900 MINUTE), 1312, 10080, NULL),
+  (20243, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 15870 MINUTE), 1105, 10080, 20242),
+  (20244, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 18137 MINUTE), 1310, 10081, NULL),
+  (20245, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 18130 MINUTE), 1315, 10081, NULL),
+  (20246, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 18123 MINUTE), 1307, 10081, NULL),
+  (20247, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 18116 MINUTE), 1312, 10081, NULL),
+  (20248, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 20361 MINUTE), 1310, 10082, NULL),
+  (20249, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 20331 MINUTE), 1105, 10082, 20248),
+  (20250, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 22576 MINUTE), 1312, 10083, NULL);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20251, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 22569 MINUTE), 1310, 10083, NULL),
+  (20252, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 22562 MINUTE), 1304, 10083, NULL),
+  (20253, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 24793 MINUTE), 1307, 10084, NULL),
+  (20254, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 24786 MINUTE), 1312, 10084, NULL),
+  (20255, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 24779 MINUTE), 1315, 10084, NULL),
+  (20256, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 24763 MINUTE), 1105, 10084, 20253),
+  (20257, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 27024 MINUTE), 1310, 10085, NULL),
+  (20258, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 27017 MINUTE), 1312, 10085, NULL),
+  (20259, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 26994 MINUTE), 1105, 10085, 20257),
+  (20260, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 29230 MINUTE), 1310, 10086, NULL),
+  (20261, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 29223 MINUTE), 1307, 10086, NULL),
+  (20262, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 29216 MINUTE), 1304, 10086, NULL),
+  (20263, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 29209 MINUTE), 1304, 10086, NULL),
+  (20264, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 31472 MINUTE), 1315, 10087, NULL),
+  (20265, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 31465 MINUTE), 1304, 10087, NULL),
+  (20266, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 31458 MINUTE), 1315, 10087, NULL),
+  (20267, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 33690 MINUTE), 1315, 10088, NULL),
+  (20268, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 33683 MINUTE), 1307, 10088, NULL),
+  (20269, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 33676 MINUTE), 1314, 10088, NULL),
+  (20270, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 33660 MINUTE), 1105, 10088, 20267),
+  (20271, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 35902 MINUTE), 1304, 10089, NULL),
+  (20272, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 35895 MINUTE), 1301, 10089, NULL),
+  (20273, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 38130 MINUTE), 1304, 10090, NULL),
+  (20274, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 1308, 10091, NULL),
+  (20275, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 381 MINUTE), 1305, 10091, NULL),
+  (20276, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 2619 MINUTE), 1314, 10092, NULL),
+  (20277, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 4804 MINUTE), 1313, 10093, NULL),
+  (20278, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 4797 MINUTE), 1305, 10093, NULL),
+  (20279, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 4790 MINUTE), 1315, 10093, NULL),
+  (20280, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 4783 MINUTE), 1305, 10093, NULL),
+  (20281, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 4774 MINUTE), 1106, 10093, 20277),
+  (20282, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 7018 MINUTE), 1311, 10094, NULL),
+  (20283, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 7011 MINUTE), 1305, 10094, NULL),
+  (20284, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 7004 MINUTE), 1308, 10094, NULL),
+  (20285, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 6997 MINUTE), 1303, 10094, NULL),
+  (20286, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 1314, 10095, NULL),
+  (20287, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 11476 MINUTE), 1303, 10096, NULL),
+  (20288, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 11469 MINUTE), 1308, 10096, NULL),
+  (20289, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 11462 MINUTE), 1315, 10096, NULL),
+  (20290, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 13711 MINUTE), 1313, 10097, NULL),
+  (20291, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 13704 MINUTE), 1313, 10097, NULL),
+  (20292, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 13697 MINUTE), 1315, 10097, NULL),
+  (20293, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 13690 MINUTE), 1313, 10097, NULL),
+  (20294, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 15922 MINUTE), 1308, 10098, NULL),
+  (20295, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 15915 MINUTE), 1314, 10098, NULL),
+  (20296, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 15908 MINUTE), 1305, 10098, NULL),
+  (20297, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 18158 MINUTE), 1303, 10099, NULL),
+  (20298, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 18151 MINUTE), 1303, 10099, NULL),
+  (20299, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 18144 MINUTE), 1305, 10099, NULL),
+  (20300, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 20348 MINUTE), 1303, 10100, NULL);
+INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`) VALUES
+  (20301, '이거 보려고 하루 버텼어요', DATE_SUB(NOW(6), INTERVAL 20341 MINUTE), 1303, 10100, NULL),
+  (20302, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 20334 MINUTE), 1308, 10100, NULL),
+  (20303, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 20327 MINUTE), 1305, 10100, NULL),
+  (20304, '다음에 또 만나요 😊', DATE_SUB(NOW(6), INTERVAL 20318 MINUTE), 1106, 10100, 20300),
+  (20305, '와 진짜 최고예요 😍', DATE_SUB(NOW(6), INTERVAL 22576 MINUTE), 1314, 10101, NULL),
+  (20306, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 22569 MINUTE), 1311, 10101, NULL),
+  (20307, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 22562 MINUTE), 1311, 10101, NULL),
+  (20308, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 1305, 10102, NULL),
+  (20309, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 24796 MINUTE), 1305, 10102, NULL),
+  (20310, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 24789 MINUTE), 1314, 10102, NULL),
+  (20311, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 27022 MINUTE), 1305, 10103, NULL),
+  (20312, '다음에도 꼭 올려주세요!', DATE_SUB(NOW(6), INTERVAL 27015 MINUTE), 1314, 10103, NULL),
+  (20313, '정보 감사합니다 🙏', DATE_SUB(NOW(6), INTERVAL 27008 MINUTE), 1315, 10103, NULL),
+  (20314, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 27001 MINUTE), 1303, 10103, NULL),
+  (20315, '댓글 다 읽고 있어요!', DATE_SUB(NOW(6), INTERVAL 26992 MINUTE), 1106, 10103, 20311),
+  (20316, '오늘도 힐링하고 갑니다 💕', DATE_SUB(NOW(6), INTERVAL 29238 MINUTE), 1315, 10104, NULL),
+  (20317, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 29231 MINUTE), 1315, 10104, NULL),
+  (20318, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 29224 MINUTE), 1315, 10104, NULL),
+  (20319, '눈물 나요ㅠㅠ', DATE_SUB(NOW(6), INTERVAL 29217 MINUTE), 1303, 10104, NULL),
+  (20320, '카이토모 최고 👍', DATE_SUB(NOW(6), INTERVAL 29208 MINUTE), 1106, 10104, 20316),
+  (20321, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 31430 MINUTE), 1303, 10105, NULL),
+  (20322, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 31423 MINUTE), 1314, 10105, NULL),
+  (20323, '저도 갈 거예요!!', DATE_SUB(NOW(6), INTERVAL 31416 MINUTE), 1315, 10105, NULL),
+  (20324, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 31400 MINUTE), 1106, 10105, 20321),
+  (20325, '역시 믿고 보는 무대', DATE_SUB(NOW(6), INTERVAL 33681 MINUTE), 1313, 10106, NULL),
+  (20326, '응원합니다!! 화이팅 🔥', DATE_SUB(NOW(6), INTERVAL 33674 MINUTE), 1305, 10106, NULL),
+  (20327, '완전 공감해요!! 👍', DATE_SUB(NOW(6), INTERVAL 33667 MINUTE), 1303, 10106, NULL),
+  (20328, '저도 같은 생각이에요ㅋㅋ', DATE_SUB(NOW(6), INTERVAL 35909 MINUTE), 1308, 10107, NULL),
+  (20329, '고마워요 💕', DATE_SUB(NOW(6), INTERVAL 35879 MINUTE), 1106, 10107, 20328),
+  (20330, '사진 너무 예뻐요 📸', DATE_SUB(NOW(6), INTERVAL 38124 MINUTE), 1313, 10108, NULL);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10001, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10001, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10001, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10001, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 2578 MINUTE), 10002, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 4833 MINUTE), 10003, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 10004, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 10004, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 10004, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 10004, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 10004, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 7022 MINUTE), 10004, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 9238 MINUTE), 10005, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 9238 MINUTE), 10005, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 9238 MINUTE), 10005, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9238 MINUTE), 10005, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 9238 MINUTE), 10005, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 13699 MINUTE), 10007, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 15917 MINUTE), 10008, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 15917 MINUTE), 10008, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 15917 MINUTE), 10008, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 15917 MINUTE), 10008, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 15917 MINUTE), 10008, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 15917 MINUTE), 10008, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 18125 MINUTE), 10009, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 18125 MINUTE), 10009, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 18125 MINUTE), 10009, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 20337 MINUTE), 10010, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 20337 MINUTE), 10010, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1302);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 22557 MINUTE), 10011, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 10012, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 10012, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 10012, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 10012, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 10012, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 24803 MINUTE), 10012, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 27035 MINUTE), 10013, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 27035 MINUTE), 10013, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 27035 MINUTE), 10013, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 27035 MINUTE), 10013, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 29219 MINUTE), 10014, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 31473 MINUTE), 10015, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 33692 MINUTE), 10016, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 35889 MINUTE), 10017, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 35889 MINUTE), 10017, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 35889 MINUTE), 10017, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 35889 MINUTE), 10017, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 35889 MINUTE), 10017, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 35889 MINUTE), 10017, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 38130 MINUTE), 10018, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 38130 MINUTE), 10018, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 38130 MINUTE), 10018, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 38130 MINUTE), 10018, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 38130 MINUTE), 10018, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 379 MINUTE), 10019, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 379 MINUTE), 10019, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 379 MINUTE), 10019, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 379 MINUTE), 10019, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 379 MINUTE), 10019, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 379 MINUTE), 10019, 1314);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 2616 MINUTE), 10020, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 2616 MINUTE), 10020, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 4798 MINUTE), 10021, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 4798 MINUTE), 10021, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 7020 MINUTE), 10022, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9280 MINUTE), 10023, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 9280 MINUTE), 10023, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 11498 MINUTE), 10024, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 15921 MINUTE), 10026, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 15921 MINUTE), 10026, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 15921 MINUTE), 10026, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 20381 MINUTE), 10028, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 20381 MINUTE), 10028, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 20381 MINUTE), 10028, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 20381 MINUTE), 10028, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 20381 MINUTE), 10028, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 20381 MINUTE), 10028, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 22602 MINUTE), 10029, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 22602 MINUTE), 10029, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 22602 MINUTE), 10029, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 22602 MINUTE), 10029, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 22602 MINUTE), 10029, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24787 MINUTE), 10030, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 24787 MINUTE), 10030, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 24787 MINUTE), 10030, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 24787 MINUTE), 10030, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24787 MINUTE), 10030, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 24787 MINUTE), 10030, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 27030 MINUTE), 10031, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 27030 MINUTE), 10031, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 27030 MINUTE), 10031, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 27030 MINUTE), 10031, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 29251 MINUTE), 10032, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 31461 MINUTE), 10033, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 33703 MINUTE), 10034, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 35910 MINUTE), 10035, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1307);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 38132 MINUTE), 10036, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 387 MINUTE), 10037, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 2586 MINUTE), 10038, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 4819 MINUTE), 10039, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 7016 MINUTE), 10040, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 7016 MINUTE), 10040, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 7016 MINUTE), 10040, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 7016 MINUTE), 10040, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 7016 MINUTE), 10040, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 9237 MINUTE), 10041, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 9237 MINUTE), 10041, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9237 MINUTE), 10041, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 9237 MINUTE), 10041, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 9237 MINUTE), 10041, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 10042, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 10042, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 10042, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 10042, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 10042, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 11490 MINUTE), 10042, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 13720 MINUTE), 10043, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 15936 MINUTE), 10044, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 15936 MINUTE), 10044, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 18121 MINUTE), 10045, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 18121 MINUTE), 10045, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 18121 MINUTE), 10045, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 18121 MINUTE), 10045, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 18121 MINUTE), 10045, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 18121 MINUTE), 10045, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10046, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10046, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10046, 1312);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10046, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10046, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 22587 MINUTE), 10047, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 22587 MINUTE), 10047, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 22587 MINUTE), 10047, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 22587 MINUTE), 10047, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 24775 MINUTE), 10048, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 27003 MINUTE), 10049, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 29241 MINUTE), 10050, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 29241 MINUTE), 10050, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 29241 MINUTE), 10050, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 29241 MINUTE), 10050, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 29241 MINUTE), 10050, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 31442 MINUTE), 10051, 1302),
+  (DATE_SUB(NOW(6), INTERVAL 31442 MINUTE), 10051, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 33667 MINUTE), 10052, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 33667 MINUTE), 10052, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 33667 MINUTE), 10052, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 33667 MINUTE), 10052, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 35924 MINUTE), 10053, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 38143 MINUTE), 10054, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10055, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 2589 MINUTE), 10056, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 2589 MINUTE), 10056, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 2589 MINUTE), 10056, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 2589 MINUTE), 10056, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 2589 MINUTE), 10056, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 4809 MINUTE), 10057, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 4809 MINUTE), 10057, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 4809 MINUTE), 10057, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 4809 MINUTE), 10057, 1306);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 4809 MINUTE), 10057, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 4809 MINUTE), 10057, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 7060 MINUTE), 10058, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 7060 MINUTE), 10058, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 9277 MINUTE), 10059, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 11456 MINUTE), 10060, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 11456 MINUTE), 10060, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), 10061, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), 10061, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), 10061, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), 10061, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), 10061, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 13725 MINUTE), 10061, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 15908 MINUTE), 10062, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 15908 MINUTE), 10062, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10063, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10063, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10063, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10063, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10063, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10063, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 20374 MINUTE), 10064, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 20374 MINUTE), 10064, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 20374 MINUTE), 10064, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 20374 MINUTE), 10064, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 20374 MINUTE), 10064, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 22594 MINUTE), 10065, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 22594 MINUTE), 10065, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 22594 MINUTE), 10065, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 22594 MINUTE), 10065, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 22594 MINUTE), 10065, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 24810 MINUTE), 10066, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 27021 MINUTE), 10067, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 27021 MINUTE), 10067, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 27021 MINUTE), 10067, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 29226 MINUTE), 10068, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1311);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 31450 MINUTE), 10069, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 33657 MINUTE), 10070, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 33657 MINUTE), 10070, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 33657 MINUTE), 10070, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 33657 MINUTE), 10070, 1306),
+  (DATE_SUB(NOW(6), INTERVAL 35888 MINUTE), 10071, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 35888 MINUTE), 10071, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 35888 MINUTE), 10071, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 35888 MINUTE), 10071, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 35888 MINUTE), 10071, 1309),
+  (DATE_SUB(NOW(6), INTERVAL 35888 MINUTE), 10071, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10073, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10073, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10073, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10073, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10073, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 388 MINUTE), 10073, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 2585 MINUTE), 10074, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 4813 MINUTE), 10075, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 4813 MINUTE), 10075, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 4813 MINUTE), 10075, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 4813 MINUTE), 10075, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 4813 MINUTE), 10075, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 7034 MINUTE), 10076, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 7034 MINUTE), 10076, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 10077, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 10077, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 10077, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 10077, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 10077, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 9240 MINUTE), 10077, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 11502 MINUTE), 10078, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 11502 MINUTE), 10078, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), 10079, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), 10079, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), 10079, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), 10079, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), 10079, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 13721 MINUTE), 10079, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 15905 MINUTE), 10080, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 15905 MINUTE), 10080, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 15905 MINUTE), 10080, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 15905 MINUTE), 10080, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 15905 MINUTE), 10080, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 18142 MINUTE), 10081, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 20366 MINUTE), 10082, 1301);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 20366 MINUTE), 10082, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10083, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10083, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10083, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24798 MINUTE), 10084, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 24798 MINUTE), 10084, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 27029 MINUTE), 10085, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 27029 MINUTE), 10085, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 27029 MINUTE), 10085, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 29235 MINUTE), 10086, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 31477 MINUTE), 10087, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 31477 MINUTE), 10087, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 31477 MINUTE), 10087, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 31477 MINUTE), 10087, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 31477 MINUTE), 10087, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 31477 MINUTE), 10087, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 33695 MINUTE), 10088, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 33695 MINUTE), 10088, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 33695 MINUTE), 10088, 1312),
+  (DATE_SUB(NOW(6), INTERVAL 33695 MINUTE), 10088, 1301),
+  (DATE_SUB(NOW(6), INTERVAL 35907 MINUTE), 10089, 1310),
+  (DATE_SUB(NOW(6), INTERVAL 35907 MINUTE), 10089, 1304),
+  (DATE_SUB(NOW(6), INTERVAL 35907 MINUTE), 10089, 1307),
+  (DATE_SUB(NOW(6), INTERVAL 35907 MINUTE), 10089, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 38135 MINUTE), 10090, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 393 MINUTE), 10091, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 2624 MINUTE), 10092, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 2624 MINUTE), 10092, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 2624 MINUTE), 10092, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 7023 MINUTE), 10094, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 7023 MINUTE), 10094, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 7023 MINUTE), 10094, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 7023 MINUTE), 10094, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 7023 MINUTE), 10094, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), 10095, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), 10095, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), 10095, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), 10095, 1305);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 9245 MINUTE), 10095, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 11481 MINUTE), 10096, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 13716 MINUTE), 10097, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 13716 MINUTE), 10097, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 13716 MINUTE), 10097, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 13716 MINUTE), 10097, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 13716 MINUTE), 10097, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 15927 MINUTE), 10098, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 15927 MINUTE), 10098, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10099, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10099, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 18163 MINUTE), 10099, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10100, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10100, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 20353 MINUTE), 10100, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10101, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10101, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10101, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10101, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10101, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 22581 MINUTE), 10101, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 24808 MINUTE), 10102, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 27027 MINUTE), 10103, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 29243 MINUTE), 10104, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 29243 MINUTE), 10104, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 31435 MINUTE), 10105, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 31435 MINUTE), 10105, 1308),
+  (DATE_SUB(NOW(6), INTERVAL 31435 MINUTE), 10105, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 31435 MINUTE), 10105, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 33686 MINUTE), 10106, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 33686 MINUTE), 10106, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 33686 MINUTE), 10106, 1314),
+  (DATE_SUB(NOW(6), INTERVAL 33686 MINUTE), 10106, 1303),
+  (DATE_SUB(NOW(6), INTERVAL 33686 MINUTE), 10106, 1305),
+  (DATE_SUB(NOW(6), INTERVAL 35914 MINUTE), 10107, 1311),
+  (DATE_SUB(NOW(6), INTERVAL 35914 MINUTE), 10107, 1315),
+  (DATE_SUB(NOW(6), INTERVAL 35914 MINUTE), 10107, 1313),
+  (DATE_SUB(NOW(6), INTERVAL 35914 MINUTE), 10107, 1314);
+INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
+  (DATE_SUB(NOW(6), INTERVAL 38129 MINUTE), 10108, 1313);
+
+-- ------------------------------------------------------------
+-- [6] 미디어 게시판 (소속사 업로드) / 이미지 / 좋아요
+-- ------------------------------------------------------------
+INSERT INTO `board_media` (`id`, `group_id`, `uploader_id`, `title`, `content`, `created_at`, `updated_at`, `like_count`, `membership_only`) VALUES
+  (3001, 1101, 1011, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1469 MINUTE), DATE_SUB(NOW(6), INTERVAL 1469 MINUTE), 1, 0),
+  (3002, 1101, 1011, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7289 MINUTE), DATE_SUB(NOW(6), INTERVAL 7289 MINUTE), 5, 0),
+  (3003, 1101, 1011, '앨범 재킷 촬영 현장', '새 앨범 재킷 촬영 현장 스케치 📷', DATE_SUB(NOW(6), INTERVAL 13028 MINUTE), DATE_SUB(NOW(6), INTERVAL 13028 MINUTE), 6, 0),
+  (3004, 1101, 1011, '[MEMBERSHIP] 미공개 셀카', '멤버십 회원에게만 공개하는 미공개 셀카 💌', DATE_SUB(NOW(6), INTERVAL 18849 MINUTE), DATE_SUB(NOW(6), INTERVAL 18849 MINUTE), 2, 1),
+  (3005, 1101, 1011, '팬미팅 현장 스케치', '함께해 주신 모든 분들께 감사드려요!', DATE_SUB(NOW(6), INTERVAL 24594 MINUTE), DATE_SUB(NOW(6), INTERVAL 24594 MINUTE), 8, 0),
+  (3006, 1102, 1011, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1649 MINUTE), DATE_SUB(NOW(6), INTERVAL 1649 MINUTE), 2, 0),
+  (3007, 1102, 1011, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7392 MINUTE), DATE_SUB(NOW(6), INTERVAL 7392 MINUTE), 1, 0),
+  (3008, 1102, 1011, '앨범 재킷 촬영 현장', '새 앨범 재킷 촬영 현장 스케치 📷', DATE_SUB(NOW(6), INTERVAL 12975 MINUTE), DATE_SUB(NOW(6), INTERVAL 12975 MINUTE), 6, 0),
+  (3009, 1102, 1011, '[MEMBERSHIP] 미공개 셀카', '멤버십 회원에게만 공개하는 미공개 셀카 💌', DATE_SUB(NOW(6), INTERVAL 18976 MINUTE), DATE_SUB(NOW(6), INTERVAL 18976 MINUTE), 1, 1),
+  (3010, 1102, 1011, '팬미팅 현장 스케치', '함께해 주신 모든 분들께 감사드려요!', DATE_SUB(NOW(6), INTERVAL 24708 MINUTE), DATE_SUB(NOW(6), INTERVAL 24708 MINUTE), 8, 0),
+  (3011, 1103, 1012, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1519 MINUTE), DATE_SUB(NOW(6), INTERVAL 1519 MINUTE), 4, 0),
+  (3012, 1103, 1012, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7451 MINUTE), DATE_SUB(NOW(6), INTERVAL 7451 MINUTE), 4, 0),
+  (3013, 1103, 1012, '앨범 재킷 촬영 현장', '새 앨범 재킷 촬영 현장 스케치 📷', DATE_SUB(NOW(6), INTERVAL 13113 MINUTE), DATE_SUB(NOW(6), INTERVAL 13113 MINUTE), 6, 0),
+  (3014, 1103, 1012, '[MEMBERSHIP] 미공개 셀카', '멤버십 회원에게만 공개하는 미공개 셀카 💌', DATE_SUB(NOW(6), INTERVAL 18937 MINUTE), DATE_SUB(NOW(6), INTERVAL 18937 MINUTE), 4, 1),
+  (3015, 1103, 1012, '팬미팅 현장 스케치', '함께해 주신 모든 분들께 감사드려요!', DATE_SUB(NOW(6), INTERVAL 24708 MINUTE), DATE_SUB(NOW(6), INTERVAL 24708 MINUTE), 7, 0),
+  (3016, 1104, 1013, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1537 MINUTE), DATE_SUB(NOW(6), INTERVAL 1537 MINUTE), 4, 0),
+  (3017, 1104, 1013, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7445 MINUTE), DATE_SUB(NOW(6), INTERVAL 7445 MINUTE), 4, 0),
+  (3018, 1104, 1013, '앨범 재킷 촬영 현장', '새 앨범 재킷 촬영 현장 스케치 📷', DATE_SUB(NOW(6), INTERVAL 12987 MINUTE), DATE_SUB(NOW(6), INTERVAL 12987 MINUTE), 1, 0),
+  (3019, 1104, 1013, '[MEMBERSHIP] 미공개 셀카', '멤버십 회원에게만 공개하는 미공개 셀카 💌', DATE_SUB(NOW(6), INTERVAL 19015 MINUTE), DATE_SUB(NOW(6), INTERVAL 19015 MINUTE), 1, 1),
+  (3020, 1104, 1013, '팬미팅 현장 스케치', '함께해 주신 모든 분들께 감사드려요!', DATE_SUB(NOW(6), INTERVAL 24739 MINUTE), DATE_SUB(NOW(6), INTERVAL 24739 MINUTE), 3, 0),
+  (3021, 1105, 1012, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1709 MINUTE), DATE_SUB(NOW(6), INTERVAL 1709 MINUTE), 3, 0),
+  (3022, 1105, 1012, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7305 MINUTE), DATE_SUB(NOW(6), INTERVAL 7305 MINUTE), 1, 0),
+  (3023, 1105, 1012, '앨범 재킷 촬영 현장', '새 앨범 재킷 촬영 현장 스케치 📷', DATE_SUB(NOW(6), INTERVAL 13144 MINUTE), DATE_SUB(NOW(6), INTERVAL 13144 MINUTE), 1, 0),
+  (3024, 1105, 1012, '[MEMBERSHIP] 미공개 셀카', '멤버십 회원에게만 공개하는 미공개 셀카 💌', DATE_SUB(NOW(6), INTERVAL 18899 MINUTE), DATE_SUB(NOW(6), INTERVAL 18899 MINUTE), 4, 1),
+  (3025, 1105, 1012, '팬미팅 현장 스케치', '함께해 주신 모든 분들께 감사드려요!', DATE_SUB(NOW(6), INTERVAL 24566 MINUTE), DATE_SUB(NOW(6), INTERVAL 24566 MINUTE), 2, 0),
+  (3026, 1106, 1013, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1694 MINUTE), DATE_SUB(NOW(6), INTERVAL 1694 MINUTE), 6, 0),
+  (3027, 1106, 1013, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7378 MINUTE), DATE_SUB(NOW(6), INTERVAL 7378 MINUTE), 5, 0),
+  (3028, 1106, 1013, '앨범 재킷 촬영 현장', '새 앨범 재킷 촬영 현장 스케치 📷', DATE_SUB(NOW(6), INTERVAL 13009 MINUTE), DATE_SUB(NOW(6), INTERVAL 13009 MINUTE), 2, 0),
+  (3029, 1106, 1013, '[MEMBERSHIP] 미공개 셀카', '멤버십 회원에게만 공개하는 미공개 셀카 💌', DATE_SUB(NOW(6), INTERVAL 18971 MINUTE), DATE_SUB(NOW(6), INTERVAL 18971 MINUTE), 5, 1),
+  (3030, 1106, 1013, '팬미팅 현장 스케치', '함께해 주신 모든 분들께 감사드려요!', DATE_SUB(NOW(6), INTERVAL 24653 MINUTE), DATE_SUB(NOW(6), INTERVAL 24653 MINUTE), 6, 0);
+INSERT INTO `board_media_files` (`id`, `board_id`, `original_name`, `stored_name`, `content_type`, `media_type`, `file_size`, `sort_order`, `created_at`) VALUES
+  (3001, 3001, 'nova_1_1.jpg', 'demo_nova_media3001_1.jpg', 'image/jpeg', 'IMAGE', 32132, 0, DATE_SUB(NOW(6), INTERVAL 1469 MINUTE)),
+  (3002, 3001, 'nova_1_2.jpg', 'demo_nova_media3001_2.jpg', 'image/jpeg', 'IMAGE', 31688, 1, DATE_SUB(NOW(6), INTERVAL 1469 MINUTE)),
+  (3003, 3001, 'nova_1_3.jpg', 'demo_nova_media3001_3.jpg', 'image/jpeg', 'IMAGE', 31899, 2, DATE_SUB(NOW(6), INTERVAL 1469 MINUTE)),
+  (3004, 3002, 'nova_2_1.jpg', 'demo_nova_media3002_1.jpg', 'image/jpeg', 'IMAGE', 31064, 0, DATE_SUB(NOW(6), INTERVAL 7289 MINUTE)),
+  (3005, 3002, 'nova_2_2.jpg', 'demo_nova_media3002_2.jpg', 'image/jpeg', 'IMAGE', 28241, 1, DATE_SUB(NOW(6), INTERVAL 7289 MINUTE)),
+  (3006, 3003, 'nova_3_1.jpg', 'demo_nova_media3003_1.jpg', 'image/jpeg', 'IMAGE', 29998, 0, DATE_SUB(NOW(6), INTERVAL 13028 MINUTE)),
+  (3007, 3003, 'nova_3_2.jpg', 'demo_nova_media3003_2.jpg', 'image/jpeg', 'IMAGE', 30940, 1, DATE_SUB(NOW(6), INTERVAL 13028 MINUTE)),
+  (3008, 3003, 'nova_3_3.jpg', 'demo_nova_media3003_3.jpg', 'image/jpeg', 'IMAGE', 31129, 2, DATE_SUB(NOW(6), INTERVAL 13028 MINUTE)),
+  (3009, 3004, 'nova_4_1.jpg', 'demo_nova_media3004_1.jpg', 'image/jpeg', 'IMAGE', 31401, 0, DATE_SUB(NOW(6), INTERVAL 18849 MINUTE)),
+  (3010, 3004, 'nova_4_2.jpg', 'demo_nova_media3004_2.jpg', 'image/jpeg', 'IMAGE', 30402, 1, DATE_SUB(NOW(6), INTERVAL 18849 MINUTE)),
+  (3011, 3005, 'nova_5_1.jpg', 'demo_nova_media3005_1.jpg', 'image/jpeg', 'IMAGE', 31377, 0, DATE_SUB(NOW(6), INTERVAL 24594 MINUTE)),
+  (3012, 3005, 'nova_5_2.jpg', 'demo_nova_media3005_2.jpg', 'image/jpeg', 'IMAGE', 30841, 1, DATE_SUB(NOW(6), INTERVAL 24594 MINUTE)),
+  (3013, 3006, 'lumi_1_1.jpg', 'demo_lumi_media3006_1.jpg', 'image/jpeg', 'IMAGE', 31008, 0, DATE_SUB(NOW(6), INTERVAL 1649 MINUTE)),
+  (3014, 3006, 'lumi_1_2.jpg', 'demo_lumi_media3006_2.jpg', 'image/jpeg', 'IMAGE', 30924, 1, DATE_SUB(NOW(6), INTERVAL 1649 MINUTE)),
+  (3015, 3006, 'lumi_1_3.jpg', 'demo_lumi_media3006_3.jpg', 'image/jpeg', 'IMAGE', 31265, 2, DATE_SUB(NOW(6), INTERVAL 1649 MINUTE)),
+  (3016, 3007, 'lumi_2_1.jpg', 'demo_lumi_media3007_1.jpg', 'image/jpeg', 'IMAGE', 30591, 0, DATE_SUB(NOW(6), INTERVAL 7392 MINUTE)),
+  (3017, 3007, 'lumi_2_2.jpg', 'demo_lumi_media3007_2.jpg', 'image/jpeg', 'IMAGE', 28989, 1, DATE_SUB(NOW(6), INTERVAL 7392 MINUTE)),
+  (3018, 3008, 'lumi_3_1.jpg', 'demo_lumi_media3008_1.jpg', 'image/jpeg', 'IMAGE', 33361, 0, DATE_SUB(NOW(6), INTERVAL 12975 MINUTE)),
+  (3019, 3008, 'lumi_3_2.jpg', 'demo_lumi_media3008_2.jpg', 'image/jpeg', 'IMAGE', 32913, 1, DATE_SUB(NOW(6), INTERVAL 12975 MINUTE)),
+  (3020, 3008, 'lumi_3_3.jpg', 'demo_lumi_media3008_3.jpg', 'image/jpeg', 'IMAGE', 33245, 2, DATE_SUB(NOW(6), INTERVAL 12975 MINUTE)),
+  (3021, 3009, 'lumi_4_1.jpg', 'demo_lumi_media3009_1.jpg', 'image/jpeg', 'IMAGE', 37306, 0, DATE_SUB(NOW(6), INTERVAL 18976 MINUTE)),
+  (3022, 3009, 'lumi_4_2.jpg', 'demo_lumi_media3009_2.jpg', 'image/jpeg', 'IMAGE', 33105, 1, DATE_SUB(NOW(6), INTERVAL 18976 MINUTE)),
+  (3023, 3010, 'lumi_5_1.jpg', 'demo_lumi_media3010_1.jpg', 'image/jpeg', 'IMAGE', 31445, 0, DATE_SUB(NOW(6), INTERVAL 24708 MINUTE)),
+  (3024, 3010, 'lumi_5_2.jpg', 'demo_lumi_media3010_2.jpg', 'image/jpeg', 'IMAGE', 29837, 1, DATE_SUB(NOW(6), INTERVAL 24708 MINUTE)),
+  (3025, 3011, 'eclipse_1_1.jpg', 'demo_eclipse_media3011_1.jpg', 'image/jpeg', 'IMAGE', 33410, 0, DATE_SUB(NOW(6), INTERVAL 1519 MINUTE)),
+  (3026, 3011, 'eclipse_1_2.jpg', 'demo_eclipse_media3011_2.jpg', 'image/jpeg', 'IMAGE', 31730, 1, DATE_SUB(NOW(6), INTERVAL 1519 MINUTE)),
+  (3027, 3011, 'eclipse_1_3.jpg', 'demo_eclipse_media3011_3.jpg', 'image/jpeg', 'IMAGE', 34773, 2, DATE_SUB(NOW(6), INTERVAL 1519 MINUTE)),
+  (3028, 3012, 'eclipse_2_1.jpg', 'demo_eclipse_media3012_1.jpg', 'image/jpeg', 'IMAGE', 32071, 0, DATE_SUB(NOW(6), INTERVAL 7451 MINUTE)),
+  (3029, 3012, 'eclipse_2_2.jpg', 'demo_eclipse_media3012_2.jpg', 'image/jpeg', 'IMAGE', 32085, 1, DATE_SUB(NOW(6), INTERVAL 7451 MINUTE)),
+  (3030, 3013, 'eclipse_3_1.jpg', 'demo_eclipse_media3013_1.jpg', 'image/jpeg', 'IMAGE', 37378, 0, DATE_SUB(NOW(6), INTERVAL 13113 MINUTE)),
+  (3031, 3013, 'eclipse_3_2.jpg', 'demo_eclipse_media3013_2.jpg', 'image/jpeg', 'IMAGE', 36934, 1, DATE_SUB(NOW(6), INTERVAL 13113 MINUTE)),
+  (3032, 3013, 'eclipse_3_3.jpg', 'demo_eclipse_media3013_3.jpg', 'image/jpeg', 'IMAGE', 37493, 2, DATE_SUB(NOW(6), INTERVAL 13113 MINUTE)),
+  (3033, 3014, 'eclipse_4_1.jpg', 'demo_eclipse_media3014_1.jpg', 'image/jpeg', 'IMAGE', 36164, 0, DATE_SUB(NOW(6), INTERVAL 18937 MINUTE)),
+  (3034, 3014, 'eclipse_4_2.jpg', 'demo_eclipse_media3014_2.jpg', 'image/jpeg', 'IMAGE', 36884, 1, DATE_SUB(NOW(6), INTERVAL 18937 MINUTE)),
+  (3035, 3015, 'eclipse_5_1.jpg', 'demo_eclipse_media3015_1.jpg', 'image/jpeg', 'IMAGE', 34599, 0, DATE_SUB(NOW(6), INTERVAL 24708 MINUTE)),
+  (3036, 3015, 'eclipse_5_2.jpg', 'demo_eclipse_media3015_2.jpg', 'image/jpeg', 'IMAGE', 34058, 1, DATE_SUB(NOW(6), INTERVAL 24708 MINUTE)),
+  (3037, 3016, 'prism_1_1.jpg', 'demo_prism_media3016_1.jpg', 'image/jpeg', 'IMAGE', 31803, 0, DATE_SUB(NOW(6), INTERVAL 1537 MINUTE)),
+  (3038, 3016, 'prism_1_2.jpg', 'demo_prism_media3016_2.jpg', 'image/jpeg', 'IMAGE', 34638, 1, DATE_SUB(NOW(6), INTERVAL 1537 MINUTE)),
+  (3039, 3016, 'prism_1_3.jpg', 'demo_prism_media3016_3.jpg', 'image/jpeg', 'IMAGE', 33815, 2, DATE_SUB(NOW(6), INTERVAL 1537 MINUTE)),
+  (3040, 3017, 'prism_2_1.jpg', 'demo_prism_media3017_1.jpg', 'image/jpeg', 'IMAGE', 31736, 0, DATE_SUB(NOW(6), INTERVAL 7445 MINUTE)),
+  (3041, 3017, 'prism_2_2.jpg', 'demo_prism_media3017_2.jpg', 'image/jpeg', 'IMAGE', 30850, 1, DATE_SUB(NOW(6), INTERVAL 7445 MINUTE)),
+  (3042, 3018, 'prism_3_1.jpg', 'demo_prism_media3018_1.jpg', 'image/jpeg', 'IMAGE', 32283, 0, DATE_SUB(NOW(6), INTERVAL 12987 MINUTE)),
+  (3043, 3018, 'prism_3_2.jpg', 'demo_prism_media3018_2.jpg', 'image/jpeg', 'IMAGE', 34052, 1, DATE_SUB(NOW(6), INTERVAL 12987 MINUTE)),
+  (3044, 3018, 'prism_3_3.jpg', 'demo_prism_media3018_3.jpg', 'image/jpeg', 'IMAGE', 30951, 2, DATE_SUB(NOW(6), INTERVAL 12987 MINUTE)),
+  (3045, 3019, 'prism_4_1.jpg', 'demo_prism_media3019_1.jpg', 'image/jpeg', 'IMAGE', 36311, 0, DATE_SUB(NOW(6), INTERVAL 19015 MINUTE)),
+  (3046, 3019, 'prism_4_2.jpg', 'demo_prism_media3019_2.jpg', 'image/jpeg', 'IMAGE', 32459, 1, DATE_SUB(NOW(6), INTERVAL 19015 MINUTE)),
+  (3047, 3020, 'prism_5_1.jpg', 'demo_prism_media3020_1.jpg', 'image/jpeg', 'IMAGE', 30009, 0, DATE_SUB(NOW(6), INTERVAL 24739 MINUTE)),
+  (3048, 3020, 'prism_5_2.jpg', 'demo_prism_media3020_2.jpg', 'image/jpeg', 'IMAGE', 30924, 1, DATE_SUB(NOW(6), INTERVAL 24739 MINUTE)),
+  (3049, 3021, 'yuri_1_1.jpg', 'demo_yuri_media3021_1.jpg', 'image/jpeg', 'IMAGE', 31407, 0, DATE_SUB(NOW(6), INTERVAL 1709 MINUTE)),
+  (3050, 3021, 'yuri_1_2.jpg', 'demo_yuri_media3021_2.jpg', 'image/jpeg', 'IMAGE', 32153, 1, DATE_SUB(NOW(6), INTERVAL 1709 MINUTE));
+INSERT INTO `board_media_files` (`id`, `board_id`, `original_name`, `stored_name`, `content_type`, `media_type`, `file_size`, `sort_order`, `created_at`) VALUES
+  (3051, 3021, 'yuri_1_3.jpg', 'demo_yuri_media3021_3.jpg', 'image/jpeg', 'IMAGE', 32028, 2, DATE_SUB(NOW(6), INTERVAL 1709 MINUTE)),
+  (3052, 3022, 'yuri_2_1.jpg', 'demo_yuri_media3022_1.jpg', 'image/jpeg', 'IMAGE', 30935, 0, DATE_SUB(NOW(6), INTERVAL 7305 MINUTE)),
+  (3053, 3022, 'yuri_2_2.jpg', 'demo_yuri_media3022_2.jpg', 'image/jpeg', 'IMAGE', 30395, 1, DATE_SUB(NOW(6), INTERVAL 7305 MINUTE)),
+  (3054, 3023, 'yuri_3_1.jpg', 'demo_yuri_media3023_1.jpg', 'image/jpeg', 'IMAGE', 31459, 0, DATE_SUB(NOW(6), INTERVAL 13144 MINUTE)),
+  (3055, 3023, 'yuri_3_2.jpg', 'demo_yuri_media3023_2.jpg', 'image/jpeg', 'IMAGE', 34106, 1, DATE_SUB(NOW(6), INTERVAL 13144 MINUTE)),
+  (3056, 3023, 'yuri_3_3.jpg', 'demo_yuri_media3023_3.jpg', 'image/jpeg', 'IMAGE', 31567, 2, DATE_SUB(NOW(6), INTERVAL 13144 MINUTE)),
+  (3057, 3024, 'yuri_4_1.jpg', 'demo_yuri_media3024_1.jpg', 'image/jpeg', 'IMAGE', 34398, 0, DATE_SUB(NOW(6), INTERVAL 18899 MINUTE)),
+  (3058, 3024, 'yuri_4_2.jpg', 'demo_yuri_media3024_2.jpg', 'image/jpeg', 'IMAGE', 33807, 1, DATE_SUB(NOW(6), INTERVAL 18899 MINUTE)),
+  (3059, 3025, 'yuri_5_1.jpg', 'demo_yuri_media3025_1.jpg', 'image/jpeg', 'IMAGE', 31639, 0, DATE_SUB(NOW(6), INTERVAL 24566 MINUTE)),
+  (3060, 3025, 'yuri_5_2.jpg', 'demo_yuri_media3025_2.jpg', 'image/jpeg', 'IMAGE', 29813, 1, DATE_SUB(NOW(6), INTERVAL 24566 MINUTE)),
+  (3061, 3026, 'kaito_1_1.jpg', 'demo_kaito_media3026_1.jpg', 'image/jpeg', 'IMAGE', 31763, 0, DATE_SUB(NOW(6), INTERVAL 1694 MINUTE)),
+  (3062, 3026, 'kaito_1_2.jpg', 'demo_kaito_media3026_2.jpg', 'image/jpeg', 'IMAGE', 31700, 1, DATE_SUB(NOW(6), INTERVAL 1694 MINUTE)),
+  (3063, 3026, 'kaito_1_3.jpg', 'demo_kaito_media3026_3.jpg', 'image/jpeg', 'IMAGE', 31189, 2, DATE_SUB(NOW(6), INTERVAL 1694 MINUTE)),
+  (3064, 3027, 'kaito_2_1.jpg', 'demo_kaito_media3027_1.jpg', 'image/jpeg', 'IMAGE', 31546, 0, DATE_SUB(NOW(6), INTERVAL 7378 MINUTE)),
+  (3065, 3027, 'kaito_2_2.jpg', 'demo_kaito_media3027_2.jpg', 'image/jpeg', 'IMAGE', 28605, 1, DATE_SUB(NOW(6), INTERVAL 7378 MINUTE)),
+  (3066, 3028, 'kaito_3_1.jpg', 'demo_kaito_media3028_1.jpg', 'image/jpeg', 'IMAGE', 32291, 0, DATE_SUB(NOW(6), INTERVAL 13009 MINUTE)),
+  (3067, 3028, 'kaito_3_2.jpg', 'demo_kaito_media3028_2.jpg', 'image/jpeg', 'IMAGE', 32641, 1, DATE_SUB(NOW(6), INTERVAL 13009 MINUTE)),
+  (3068, 3028, 'kaito_3_3.jpg', 'demo_kaito_media3028_3.jpg', 'image/jpeg', 'IMAGE', 31963, 2, DATE_SUB(NOW(6), INTERVAL 13009 MINUTE)),
+  (3069, 3029, 'kaito_4_1.jpg', 'demo_kaito_media3029_1.jpg', 'image/jpeg', 'IMAGE', 34025, 0, DATE_SUB(NOW(6), INTERVAL 18971 MINUTE)),
+  (3070, 3029, 'kaito_4_2.jpg', 'demo_kaito_media3029_2.jpg', 'image/jpeg', 'IMAGE', 33250, 1, DATE_SUB(NOW(6), INTERVAL 18971 MINUTE)),
+  (3071, 3030, 'kaito_5_1.jpg', 'demo_kaito_media3030_1.jpg', 'image/jpeg', 'IMAGE', 32513, 0, DATE_SUB(NOW(6), INTERVAL 24653 MINUTE)),
+  (3072, 3030, 'kaito_5_2.jpg', 'demo_kaito_media3030_2.jpg', 'image/jpeg', 'IMAGE', 33194, 1, DATE_SUB(NOW(6), INTERVAL 24653 MINUTE));
+INSERT INTO `board_media_like` (`board_id`, `user_id`, `created_at`) VALUES
+  (3001, 1302, DATE_SUB(NOW(6), INTERVAL 1439 MINUTE)),
+  (3002, 1302, DATE_SUB(NOW(6), INTERVAL 7259 MINUTE)),
+  (3002, 1313, DATE_SUB(NOW(6), INTERVAL 7259 MINUTE)),
+  (3002, 1304, DATE_SUB(NOW(6), INTERVAL 7259 MINUTE)),
+  (3002, 1306, DATE_SUB(NOW(6), INTERVAL 7259 MINUTE)),
+  (3002, 1311, DATE_SUB(NOW(6), INTERVAL 7259 MINUTE)),
+  (3003, 1306, DATE_SUB(NOW(6), INTERVAL 12998 MINUTE)),
+  (3003, 1313, DATE_SUB(NOW(6), INTERVAL 12998 MINUTE)),
+  (3003, 1311, DATE_SUB(NOW(6), INTERVAL 12998 MINUTE)),
+  (3003, 1309, DATE_SUB(NOW(6), INTERVAL 12998 MINUTE)),
+  (3003, 1304, DATE_SUB(NOW(6), INTERVAL 12998 MINUTE)),
+  (3003, 1315, DATE_SUB(NOW(6), INTERVAL 12998 MINUTE)),
+  (3004, 1309, DATE_SUB(NOW(6), INTERVAL 18819 MINUTE)),
+  (3004, 1302, DATE_SUB(NOW(6), INTERVAL 18819 MINUTE)),
+  (3005, 1301, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1302, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1311, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1315, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1304, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1306, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1309, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3005, 1313, DATE_SUB(NOW(6), INTERVAL 24564 MINUTE)),
+  (3006, 1301, DATE_SUB(NOW(6), INTERVAL 1619 MINUTE)),
+  (3006, 1314, DATE_SUB(NOW(6), INTERVAL 1619 MINUTE)),
+  (3007, 1303, DATE_SUB(NOW(6), INTERVAL 7362 MINUTE)),
+  (3008, 1307, DATE_SUB(NOW(6), INTERVAL 12945 MINUTE)),
+  (3008, 1303, DATE_SUB(NOW(6), INTERVAL 12945 MINUTE)),
+  (3008, 1301, DATE_SUB(NOW(6), INTERVAL 12945 MINUTE)),
+  (3008, 1314, DATE_SUB(NOW(6), INTERVAL 12945 MINUTE)),
+  (3008, 1310, DATE_SUB(NOW(6), INTERVAL 12945 MINUTE)),
+  (3008, 1309, DATE_SUB(NOW(6), INTERVAL 12945 MINUTE)),
+  (3009, 1310, DATE_SUB(NOW(6), INTERVAL 18946 MINUTE)),
+  (3010, 1310, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1315, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1307, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1309, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1314, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1305, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1303, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3010, 1301, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3011, 1309, DATE_SUB(NOW(6), INTERVAL 1489 MINUTE)),
+  (3011, 1302, DATE_SUB(NOW(6), INTERVAL 1489 MINUTE)),
+  (3011, 1312, DATE_SUB(NOW(6), INTERVAL 1489 MINUTE)),
+  (3011, 1304, DATE_SUB(NOW(6), INTERVAL 1489 MINUTE)),
+  (3012, 1304, DATE_SUB(NOW(6), INTERVAL 7421 MINUTE)),
+  (3012, 1310, DATE_SUB(NOW(6), INTERVAL 7421 MINUTE)),
+  (3012, 1302, DATE_SUB(NOW(6), INTERVAL 7421 MINUTE)),
+  (3012, 1308, DATE_SUB(NOW(6), INTERVAL 7421 MINUTE)),
+  (3013, 1312, DATE_SUB(NOW(6), INTERVAL 13083 MINUTE)),
+  (3013, 1314, DATE_SUB(NOW(6), INTERVAL 13083 MINUTE));
+INSERT INTO `board_media_like` (`board_id`, `user_id`, `created_at`) VALUES
+  (3013, 1304, DATE_SUB(NOW(6), INTERVAL 13083 MINUTE)),
+  (3013, 1308, DATE_SUB(NOW(6), INTERVAL 13083 MINUTE)),
+  (3013, 1310, DATE_SUB(NOW(6), INTERVAL 13083 MINUTE)),
+  (3013, 1302, DATE_SUB(NOW(6), INTERVAL 13083 MINUTE)),
+  (3014, 1302, DATE_SUB(NOW(6), INTERVAL 18907 MINUTE)),
+  (3014, 1308, DATE_SUB(NOW(6), INTERVAL 18907 MINUTE)),
+  (3014, 1304, DATE_SUB(NOW(6), INTERVAL 18907 MINUTE)),
+  (3014, 1312, DATE_SUB(NOW(6), INTERVAL 18907 MINUTE)),
+  (3015, 1309, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3015, 1312, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3015, 1310, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3015, 1304, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3015, 1314, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3015, 1315, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3015, 1302, DATE_SUB(NOW(6), INTERVAL 24678 MINUTE)),
+  (3016, 1314, DATE_SUB(NOW(6), INTERVAL 1507 MINUTE)),
+  (3016, 1303, DATE_SUB(NOW(6), INTERVAL 1507 MINUTE)),
+  (3016, 1313, DATE_SUB(NOW(6), INTERVAL 1507 MINUTE)),
+  (3016, 1306, DATE_SUB(NOW(6), INTERVAL 1507 MINUTE)),
+  (3017, 1309, DATE_SUB(NOW(6), INTERVAL 7415 MINUTE)),
+  (3017, 1306, DATE_SUB(NOW(6), INTERVAL 7415 MINUTE)),
+  (3017, 1314, DATE_SUB(NOW(6), INTERVAL 7415 MINUTE)),
+  (3017, 1303, DATE_SUB(NOW(6), INTERVAL 7415 MINUTE)),
+  (3018, 1311, DATE_SUB(NOW(6), INTERVAL 12957 MINUTE)),
+  (3019, 1311, DATE_SUB(NOW(6), INTERVAL 18985 MINUTE)),
+  (3020, 1315, DATE_SUB(NOW(6), INTERVAL 24709 MINUTE)),
+  (3020, 1314, DATE_SUB(NOW(6), INTERVAL 24709 MINUTE)),
+  (3020, 1303, DATE_SUB(NOW(6), INTERVAL 24709 MINUTE)),
+  (3021, 1312, DATE_SUB(NOW(6), INTERVAL 1679 MINUTE)),
+  (3021, 1310, DATE_SUB(NOW(6), INTERVAL 1679 MINUTE)),
+  (3021, 1304, DATE_SUB(NOW(6), INTERVAL 1679 MINUTE)),
+  (3022, 1301, DATE_SUB(NOW(6), INTERVAL 7275 MINUTE)),
+  (3023, 1312, DATE_SUB(NOW(6), INTERVAL 13114 MINUTE)),
+  (3024, 1307, DATE_SUB(NOW(6), INTERVAL 18869 MINUTE)),
+  (3024, 1314, DATE_SUB(NOW(6), INTERVAL 18869 MINUTE)),
+  (3024, 1310, DATE_SUB(NOW(6), INTERVAL 18869 MINUTE)),
+  (3024, 1304, DATE_SUB(NOW(6), INTERVAL 18869 MINUTE)),
+  (3025, 1315, DATE_SUB(NOW(6), INTERVAL 24536 MINUTE)),
+  (3025, 1310, DATE_SUB(NOW(6), INTERVAL 24536 MINUTE)),
+  (3026, 1308, DATE_SUB(NOW(6), INTERVAL 1664 MINUTE)),
+  (3026, 1305, DATE_SUB(NOW(6), INTERVAL 1664 MINUTE)),
+  (3026, 1311, DATE_SUB(NOW(6), INTERVAL 1664 MINUTE)),
+  (3026, 1315, DATE_SUB(NOW(6), INTERVAL 1664 MINUTE)),
+  (3026, 1314, DATE_SUB(NOW(6), INTERVAL 1664 MINUTE)),
+  (3026, 1313, DATE_SUB(NOW(6), INTERVAL 1664 MINUTE)),
+  (3027, 1311, DATE_SUB(NOW(6), INTERVAL 7348 MINUTE)),
+  (3027, 1313, DATE_SUB(NOW(6), INTERVAL 7348 MINUTE)),
+  (3027, 1308, DATE_SUB(NOW(6), INTERVAL 7348 MINUTE)),
+  (3027, 1305, DATE_SUB(NOW(6), INTERVAL 7348 MINUTE)),
+  (3027, 1315, DATE_SUB(NOW(6), INTERVAL 7348 MINUTE));
+INSERT INTO `board_media_like` (`board_id`, `user_id`, `created_at`) VALUES
+  (3028, 1305, DATE_SUB(NOW(6), INTERVAL 12979 MINUTE)),
+  (3028, 1311, DATE_SUB(NOW(6), INTERVAL 12979 MINUTE)),
+  (3029, 1311, DATE_SUB(NOW(6), INTERVAL 18941 MINUTE)),
+  (3029, 1313, DATE_SUB(NOW(6), INTERVAL 18941 MINUTE)),
+  (3029, 1305, DATE_SUB(NOW(6), INTERVAL 18941 MINUTE)),
+  (3029, 1315, DATE_SUB(NOW(6), INTERVAL 18941 MINUTE)),
+  (3029, 1314, DATE_SUB(NOW(6), INTERVAL 18941 MINUTE)),
+  (3030, 1311, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE)),
+  (3030, 1315, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE)),
+  (3030, 1303, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE)),
+  (3030, 1305, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE)),
+  (3030, 1314, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE)),
+  (3030, 1308, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE));
+
+-- ------------------------------------------------------------
+-- [7] 굿즈샵 - 커뮤니티마다 6개 (멤버십 전용 1개 포함)
+-- ------------------------------------------------------------
+INSERT INTO `shop_goods` (`id`, `artist_id`, `name`, `description`, `price`, `thumbnail_url`, `official_url`, `status`, `sort_order`, `membership_only`, `shop_category`, `created_at`, `updated_at`) VALUES
+  (4001, 1101, 'NOVA 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
+
+- 블루투스 연동으로 공연장 연출과 함께 빛나요
+- AAA 건전지 3개 (별도 구매)
+- 전용 스트랩 포함', 45000, 'demo_nova_goods_lightstick.jpg', NULL, 'ON_SALE', 0, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 43200 MINUTE), DATE_SUB(NOW(6), INTERVAL 43200 MINUTE)),
+  (4002, 1101, 'NOVA 로고 후드티', '## 로고 후드티
+
+도톰한 기모 원단으로 겨울까지 따뜻하게!
+
+- 소재: 면 80%, 폴리 20%
+- 오버핏', 69000, 'demo_nova_goods_hoodie.jpg', NULL, 'ON_SALE', 1, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 41760 MINUTE), DATE_SUB(NOW(6), INTERVAL 41760 MINUTE)),
+  (4003, 1101, 'NOVA 포토카드 세트 (8종)', '## 포토카드 세트
+
+멤버별 미공개 사진이 담긴 포토카드 8종 세트입니다.', 15000, 'demo_nova_goods_photocard.jpg', NULL, 'ON_SALE', 2, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 40320 MINUTE), DATE_SUB(NOW(6), INTERVAL 40320 MINUTE)),
+  (4004, 1101, 'NOVA 아크릴 키링', '## 아크릴 키링
+
+가방에 달기 좋은 귀여운 캐릭터 키링 🔑', 12000, 'demo_nova_goods_keyring.jpg', NULL, 'ON_SALE', 3, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 38880 MINUTE), DATE_SUB(NOW(6), INTERVAL 38880 MINUTE)),
+  (4005, 1101, 'NOVA 캔버스 에코백', '## 캔버스 에코백
+
+노트북까지 들어가는 넉넉한 사이즈의 에코백', 25000, 'demo_nova_goods_ecobag.jpg', NULL, 'ON_SALE', 4, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 37440 MINUTE), DATE_SUB(NOW(6), INTERVAL 37440 MINUTE)),
+  (4006, 1101, 'NOVA 2027 시즌그리팅 (멤버십 전용)', '## 2027 시즌그리팅
+
+**멤버십 회원만 구매할 수 있는 한정 상품입니다.**
+
+- 탁상 달력
+- 다이어리
+- 포토북', 38000, 'demo_nova_goods_season.jpg', NULL, 'ON_SALE', 5, 1, 'MEMBERSHIP', DATE_SUB(NOW(6), INTERVAL 36000 MINUTE), DATE_SUB(NOW(6), INTERVAL 36000 MINUTE)),
+  (4007, 1102, 'LUMI 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
+
+- 블루투스 연동으로 공연장 연출과 함께 빛나요
+- AAA 건전지 3개 (별도 구매)
+- 전용 스트랩 포함', 45000, 'demo_lumi_goods_lightstick.jpg', NULL, 'ON_SALE', 1, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 43200 MINUTE), DATE_SUB(NOW(6), INTERVAL 43200 MINUTE)),
+  (4008, 1102, 'LUMI 로고 후드티', '## 로고 후드티
+
+도톰한 기모 원단으로 겨울까지 따뜻하게!
+
+- 소재: 면 80%, 폴리 20%
+- 오버핏', 69000, 'demo_lumi_goods_hoodie.jpg', NULL, 'ON_SALE', 2, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 41760 MINUTE), DATE_SUB(NOW(6), INTERVAL 41760 MINUTE)),
+  (4009, 1102, 'LUMI 포토카드 세트 (8종)', '## 포토카드 세트
+
+멤버별 미공개 사진이 담긴 포토카드 8종 세트입니다.', 15000, 'demo_lumi_goods_photocard.jpg', NULL, 'ON_SALE', 3, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 40320 MINUTE), DATE_SUB(NOW(6), INTERVAL 40320 MINUTE)),
+  (4010, 1102, 'LUMI 아크릴 키링', '## 아크릴 키링
+
+가방에 달기 좋은 귀여운 캐릭터 키링 🔑', 12000, 'demo_lumi_goods_keyring.jpg', NULL, 'ON_SALE', 4, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 38880 MINUTE), DATE_SUB(NOW(6), INTERVAL 38880 MINUTE)),
+  (4011, 1102, 'LUMI 캔버스 에코백', '## 캔버스 에코백
+
+노트북까지 들어가는 넉넉한 사이즈의 에코백', 25000, 'demo_lumi_goods_ecobag.jpg', NULL, 'ON_SALE', 5, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 37440 MINUTE), DATE_SUB(NOW(6), INTERVAL 37440 MINUTE)),
+  (4012, 1102, 'LUMI 2027 시즌그리팅 (멤버십 전용)', '## 2027 시즌그리팅
+
+**멤버십 회원만 구매할 수 있는 한정 상품입니다.**
+
+- 탁상 달력
+- 다이어리
+- 포토북', 38000, 'demo_lumi_goods_season.jpg', NULL, 'ON_SALE', 0, 1, 'MEMBERSHIP', DATE_SUB(NOW(6), INTERVAL 36000 MINUTE), DATE_SUB(NOW(6), INTERVAL 36000 MINUTE)),
+  (4013, 1103, 'ECLIPSE 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
+
+- 블루투스 연동으로 공연장 연출과 함께 빛나요
+- AAA 건전지 3개 (별도 구매)
+- 전용 스트랩 포함', 45000, 'demo_eclipse_goods_lightstick.jpg', NULL, 'ON_SALE', 2, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 43200 MINUTE), DATE_SUB(NOW(6), INTERVAL 43200 MINUTE)),
+  (4014, 1103, 'ECLIPSE 로고 후드티', '## 로고 후드티
+
+도톰한 기모 원단으로 겨울까지 따뜻하게!
+
+- 소재: 면 80%, 폴리 20%
+- 오버핏', 69000, 'demo_eclipse_goods_hoodie.jpg', NULL, 'ON_SALE', 3, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 41760 MINUTE), DATE_SUB(NOW(6), INTERVAL 41760 MINUTE)),
+  (4015, 1103, 'ECLIPSE 포토카드 세트 (8종)', '## 포토카드 세트
+
+멤버별 미공개 사진이 담긴 포토카드 8종 세트입니다.', 15000, 'demo_eclipse_goods_photocard.jpg', NULL, 'ON_SALE', 4, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 40320 MINUTE), DATE_SUB(NOW(6), INTERVAL 40320 MINUTE)),
+  (4016, 1103, 'ECLIPSE 아크릴 키링', '## 아크릴 키링
+
+가방에 달기 좋은 귀여운 캐릭터 키링 🔑', 12000, 'demo_eclipse_goods_keyring.jpg', NULL, 'ON_SALE', 5, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 38880 MINUTE), DATE_SUB(NOW(6), INTERVAL 38880 MINUTE)),
+  (4017, 1103, 'ECLIPSE 캔버스 에코백', '## 캔버스 에코백
+
+노트북까지 들어가는 넉넉한 사이즈의 에코백', 25000, 'demo_eclipse_goods_ecobag.jpg', NULL, 'ON_SALE', 0, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 37440 MINUTE), DATE_SUB(NOW(6), INTERVAL 37440 MINUTE)),
+  (4018, 1103, 'ECLIPSE 2027 시즌그리팅 (멤버십 전용)', '## 2027 시즌그리팅
+
+**멤버십 회원만 구매할 수 있는 한정 상품입니다.**
+
+- 탁상 달력
+- 다이어리
+- 포토북', 38000, 'demo_eclipse_goods_season.jpg', NULL, 'ON_SALE', 1, 1, 'MEMBERSHIP', DATE_SUB(NOW(6), INTERVAL 36000 MINUTE), DATE_SUB(NOW(6), INTERVAL 36000 MINUTE)),
+  (4019, 1104, 'PRISM 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
+
+- 블루투스 연동으로 공연장 연출과 함께 빛나요
+- AAA 건전지 3개 (별도 구매)
+- 전용 스트랩 포함', 45000, 'demo_prism_goods_lightstick.jpg', NULL, 'ON_SALE', 3, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 43200 MINUTE), DATE_SUB(NOW(6), INTERVAL 43200 MINUTE)),
+  (4020, 1104, 'PRISM 로고 후드티', '## 로고 후드티
+
+도톰한 기모 원단으로 겨울까지 따뜻하게!
+
+- 소재: 면 80%, 폴리 20%
+- 오버핏', 69000, 'demo_prism_goods_hoodie.jpg', NULL, 'ON_SALE', 4, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 41760 MINUTE), DATE_SUB(NOW(6), INTERVAL 41760 MINUTE)),
+  (4021, 1104, 'PRISM 포토카드 세트 (8종)', '## 포토카드 세트
+
+멤버별 미공개 사진이 담긴 포토카드 8종 세트입니다.', 15000, 'demo_prism_goods_photocard.jpg', NULL, 'ON_SALE', 5, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 40320 MINUTE), DATE_SUB(NOW(6), INTERVAL 40320 MINUTE)),
+  (4022, 1104, 'PRISM 아크릴 키링', '## 아크릴 키링
+
+가방에 달기 좋은 귀여운 캐릭터 키링 🔑', 12000, 'demo_prism_goods_keyring.jpg', NULL, 'ON_SALE', 0, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 38880 MINUTE), DATE_SUB(NOW(6), INTERVAL 38880 MINUTE)),
+  (4023, 1104, 'PRISM 캔버스 에코백', '## 캔버스 에코백
+
+노트북까지 들어가는 넉넉한 사이즈의 에코백', 25000, 'demo_prism_goods_ecobag.jpg', NULL, 'ON_SALE', 1, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 37440 MINUTE), DATE_SUB(NOW(6), INTERVAL 37440 MINUTE)),
+  (4024, 1104, 'PRISM 2027 시즌그리팅 (멤버십 전용)', '## 2027 시즌그리팅
+
+**멤버십 회원만 구매할 수 있는 한정 상품입니다.**
+
+- 탁상 달력
+- 다이어리
+- 포토북', 38000, 'demo_prism_goods_season.jpg', NULL, 'ON_SALE', 2, 1, 'MEMBERSHIP', DATE_SUB(NOW(6), INTERVAL 36000 MINUTE), DATE_SUB(NOW(6), INTERVAL 36000 MINUTE)),
+  (4025, 1105, '한유리 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
+
+- 블루투스 연동으로 공연장 연출과 함께 빛나요
+- AAA 건전지 3개 (별도 구매)
+- 전용 스트랩 포함', 45000, 'demo_yuri_goods_lightstick.jpg', NULL, 'ON_SALE', 4, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 43200 MINUTE), DATE_SUB(NOW(6), INTERVAL 43200 MINUTE)),
+  (4026, 1105, '한유리 로고 후드티', '## 로고 후드티
+
+도톰한 기모 원단으로 겨울까지 따뜻하게!
+
+- 소재: 면 80%, 폴리 20%
+- 오버핏', 69000, 'demo_yuri_goods_hoodie.jpg', NULL, 'ON_SALE', 5, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 41760 MINUTE), DATE_SUB(NOW(6), INTERVAL 41760 MINUTE)),
+  (4027, 1105, '한유리 포토카드 세트 (8종)', '## 포토카드 세트
+
+멤버별 미공개 사진이 담긴 포토카드 8종 세트입니다.', 15000, 'demo_yuri_goods_photocard.jpg', NULL, 'ON_SALE', 0, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 40320 MINUTE), DATE_SUB(NOW(6), INTERVAL 40320 MINUTE)),
+  (4028, 1105, '한유리 아크릴 키링', '## 아크릴 키링
+
+가방에 달기 좋은 귀여운 캐릭터 키링 🔑', 12000, 'demo_yuri_goods_keyring.jpg', NULL, 'ON_SALE', 1, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 38880 MINUTE), DATE_SUB(NOW(6), INTERVAL 38880 MINUTE)),
+  (4029, 1105, '한유리 캔버스 에코백', '## 캔버스 에코백
+
+노트북까지 들어가는 넉넉한 사이즈의 에코백', 25000, 'demo_yuri_goods_ecobag.jpg', NULL, 'ON_SALE', 2, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 37440 MINUTE), DATE_SUB(NOW(6), INTERVAL 37440 MINUTE)),
+  (4030, 1105, '한유리 2027 시즌그리팅 (멤버십 전용)', '## 2027 시즌그리팅
+
+**멤버십 회원만 구매할 수 있는 한정 상품입니다.**
+
+- 탁상 달력
+- 다이어리
+- 포토북', 38000, 'demo_yuri_goods_season.jpg', NULL, 'ON_SALE', 3, 1, 'MEMBERSHIP', DATE_SUB(NOW(6), INTERVAL 36000 MINUTE), DATE_SUB(NOW(6), INTERVAL 36000 MINUTE)),
+  (4031, 1106, 'KAITO 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
+
+- 블루투스 연동으로 공연장 연출과 함께 빛나요
+- AAA 건전지 3개 (별도 구매)
+- 전용 스트랩 포함', 45000, 'demo_kaito_goods_lightstick.jpg', NULL, 'ON_SALE', 5, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 43200 MINUTE), DATE_SUB(NOW(6), INTERVAL 43200 MINUTE)),
+  (4032, 1106, 'KAITO 로고 후드티', '## 로고 후드티
+
+도톰한 기모 원단으로 겨울까지 따뜻하게!
+
+- 소재: 면 80%, 폴리 20%
+- 오버핏', 69000, 'demo_kaito_goods_hoodie.jpg', NULL, 'ON_SALE', 0, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 41760 MINUTE), DATE_SUB(NOW(6), INTERVAL 41760 MINUTE)),
+  (4033, 1106, 'KAITO 포토카드 세트 (8종)', '## 포토카드 세트
+
+멤버별 미공개 사진이 담긴 포토카드 8종 세트입니다.', 15000, 'demo_kaito_goods_photocard.jpg', NULL, 'ON_SALE', 1, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 40320 MINUTE), DATE_SUB(NOW(6), INTERVAL 40320 MINUTE)),
+  (4034, 1106, 'KAITO 아크릴 키링', '## 아크릴 키링
+
+가방에 달기 좋은 귀여운 캐릭터 키링 🔑', 12000, 'demo_kaito_goods_keyring.jpg', NULL, 'ON_SALE', 2, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 38880 MINUTE), DATE_SUB(NOW(6), INTERVAL 38880 MINUTE)),
+  (4035, 1106, 'KAITO 캔버스 에코백', '## 캔버스 에코백
+
+노트북까지 들어가는 넉넉한 사이즈의 에코백', 25000, 'demo_kaito_goods_ecobag.jpg', NULL, 'ON_SALE', 3, 0, 'MD', DATE_SUB(NOW(6), INTERVAL 37440 MINUTE), DATE_SUB(NOW(6), INTERVAL 37440 MINUTE)),
+  (4036, 1106, 'KAITO 2027 시즌그리팅 (멤버십 전용)', '## 2027 시즌그리팅
+
+**멤버십 회원만 구매할 수 있는 한정 상품입니다.**
+
+- 탁상 달력
+- 다이어리
+- 포토북', 38000, 'demo_kaito_goods_season.jpg', NULL, 'ON_SALE', 4, 1, 'MEMBERSHIP', DATE_SUB(NOW(6), INTERVAL 36000 MINUTE), DATE_SUB(NOW(6), INTERVAL 36000 MINUTE));
+INSERT INTO `shop_goods_category` (`goods_id`, `category`) VALUES
+  (4001, 'OTHER'),
+  (4002, 'CLOTHING'),
+  (4003, 'OTHER'),
+  (4004, 'ACCESSORY'),
+  (4005, 'BAG'),
+  (4006, 'OTHER'),
+  (4007, 'OTHER'),
+  (4008, 'CLOTHING'),
+  (4009, 'OTHER'),
+  (4010, 'ACCESSORY'),
+  (4011, 'BAG'),
+  (4012, 'OTHER'),
+  (4013, 'OTHER'),
+  (4014, 'CLOTHING'),
+  (4015, 'OTHER'),
+  (4016, 'ACCESSORY'),
+  (4017, 'BAG'),
+  (4018, 'OTHER'),
+  (4019, 'OTHER'),
+  (4020, 'CLOTHING'),
+  (4021, 'OTHER'),
+  (4022, 'ACCESSORY'),
+  (4023, 'BAG'),
+  (4024, 'OTHER'),
+  (4025, 'OTHER'),
+  (4026, 'CLOTHING'),
+  (4027, 'OTHER'),
+  (4028, 'ACCESSORY'),
+  (4029, 'BAG'),
+  (4030, 'OTHER'),
+  (4031, 'OTHER'),
+  (4032, 'CLOTHING'),
+  (4033, 'OTHER'),
+  (4034, 'ACCESSORY'),
+  (4035, 'BAG'),
+  (4036, 'OTHER');
+INSERT INTO `shop_goods_variant` (`goods_id`, `option_key`, `option_value`, `stock_quantity`) VALUES
+  (4001, 'DEFAULT', '', 80),
+  (4002, 'SIZE', 'S', 50),
+  (4002, 'SIZE', 'M', 50),
+  (4002, 'SIZE', 'L', 80),
+  (4002, 'SIZE', 'XL', 80),
+  (4003, 'DEFAULT', '', 120),
+  (4004, 'DEFAULT', '', 80),
+  (4005, 'DEFAULT', '', 80),
+  (4006, 'DEFAULT', '', 80),
+  (4007, 'DEFAULT', '', 30),
+  (4008, 'SIZE', 'S', 30),
+  (4008, 'SIZE', 'M', 120),
+  (4008, 'SIZE', 'L', 50),
+  (4008, 'SIZE', 'XL', 80),
+  (4009, 'DEFAULT', '', 30),
+  (4010, 'DEFAULT', '', 120),
+  (4011, 'DEFAULT', '', 30),
+  (4012, 'DEFAULT', '', 30),
+  (4013, 'DEFAULT', '', 30),
+  (4014, 'SIZE', 'S', 30),
+  (4014, 'SIZE', 'M', 30),
+  (4014, 'SIZE', 'L', 50),
+  (4014, 'SIZE', 'XL', 30),
+  (4015, 'DEFAULT', '', 80),
+  (4016, 'DEFAULT', '', 120),
+  (4017, 'DEFAULT', '', 80),
+  (4018, 'DEFAULT', '', 50),
+  (4019, 'DEFAULT', '', 30),
+  (4020, 'SIZE', 'S', 80),
+  (4020, 'SIZE', 'M', 80),
+  (4020, 'SIZE', 'L', 120),
+  (4020, 'SIZE', 'XL', 50),
+  (4021, 'DEFAULT', '', 120),
+  (4022, 'DEFAULT', '', 50),
+  (4023, 'DEFAULT', '', 30),
+  (4024, 'DEFAULT', '', 120),
+  (4025, 'DEFAULT', '', 120),
+  (4026, 'SIZE', 'S', 30),
+  (4026, 'SIZE', 'M', 30),
+  (4026, 'SIZE', 'L', 80),
+  (4026, 'SIZE', 'XL', 50),
+  (4027, 'DEFAULT', '', 80),
+  (4028, 'DEFAULT', '', 30),
+  (4029, 'DEFAULT', '', 80),
+  (4030, 'DEFAULT', '', 30),
+  (4031, 'DEFAULT', '', 50),
+  (4032, 'SIZE', 'S', 50),
+  (4032, 'SIZE', 'M', 80),
+  (4032, 'SIZE', 'L', 50),
+  (4032, 'SIZE', 'XL', 120);
+INSERT INTO `shop_goods_variant` (`goods_id`, `option_key`, `option_value`, `stock_quantity`) VALUES
+  (4033, 'DEFAULT', '', 120),
+  (4034, 'DEFAULT', '', 30),
+  (4035, 'DEFAULT', '', 120),
+  (4036, 'DEFAULT', '', 80);
+
+-- ------------------------------------------------------------
+-- [8] 아티스트 일정 / 커뮤니티 공지(포털) / 홈페이지 공지
+-- ------------------------------------------------------------
+INSERT INTO `artist_schedule` (`artist_id`, `category`, `title`, `description`, `location`, `ticket_url`, `schedule_at`, `created_at`, `updated_at`) VALUES
+  (1101, 'TV_BROADCAST', 'NOVA 음악중심 출연', '스텔라 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL -2 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1101, 'YOUTUBE', 'NOVA 공식 유튜브 자체 콘텐츠 공개', '스텔라 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 0 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1101, 'RADIO', 'NOVA 라디오 게스트 출연', '스텔라 여러분 많은 관심 부탁드려요!', 'SBS 목동', NULL, DATE_ADD(DATE(NOW()), INTERVAL 2 DAY) + INTERVAL 20 HOUR, NOW(), NOW()),
+  (1101, 'CONCERT', 'NOVA 단독 콘서트', '스텔라 여러분 많은 관심 부탁드려요!', '올림픽공원 KSPO DOME', NULL, DATE_ADD(DATE(NOW()), INTERVAL 12 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1101, 'PHOTO_MAGAZINE', 'NOVA 패션 매거진 화보 공개', '스텔라 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 20 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1102, 'TV_BROADCAST', 'LUMI 음악중심 출연', '루미너스 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL -1 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1102, 'YOUTUBE', 'LUMI 공식 유튜브 자체 콘텐츠 공개', '루미너스 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 1 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1102, 'RADIO', 'LUMI 라디오 게스트 출연', '루미너스 여러분 많은 관심 부탁드려요!', 'SBS 목동', NULL, DATE_ADD(DATE(NOW()), INTERVAL 3 DAY) + INTERVAL 20 HOUR, NOW(), NOW()),
+  (1102, 'CONCERT', 'LUMI 단독 콘서트', '루미너스 여러분 많은 관심 부탁드려요!', '올림픽공원 KSPO DOME', NULL, DATE_ADD(DATE(NOW()), INTERVAL 13 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1102, 'PHOTO_MAGAZINE', 'LUMI 패션 매거진 화보 공개', '루미너스 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 21 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1103, 'TV_BROADCAST', 'ECLIPSE 음악중심 출연', '코로나 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL 0 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1103, 'YOUTUBE', 'ECLIPSE 공식 유튜브 자체 콘텐츠 공개', '코로나 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 2 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1103, 'RADIO', 'ECLIPSE 라디오 게스트 출연', '코로나 여러분 많은 관심 부탁드려요!', 'SBS 목동', NULL, DATE_ADD(DATE(NOW()), INTERVAL 4 DAY) + INTERVAL 20 HOUR, NOW(), NOW()),
+  (1103, 'CONCERT', 'ECLIPSE 단독 콘서트', '코로나 여러분 많은 관심 부탁드려요!', '올림픽공원 KSPO DOME', NULL, DATE_ADD(DATE(NOW()), INTERVAL 14 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1103, 'PHOTO_MAGAZINE', 'ECLIPSE 패션 매거진 화보 공개', '코로나 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 22 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1104, 'TV_BROADCAST', 'PRISM 음악중심 출연', '스펙트럼 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL -2 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1104, 'YOUTUBE', 'PRISM 공식 유튜브 자체 콘텐츠 공개', '스펙트럼 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 0 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1104, 'RADIO', 'PRISM 라디오 게스트 출연', '스펙트럼 여러분 많은 관심 부탁드려요!', 'SBS 목동', NULL, DATE_ADD(DATE(NOW()), INTERVAL 2 DAY) + INTERVAL 20 HOUR, NOW(), NOW()),
+  (1104, 'CONCERT', 'PRISM 단독 콘서트', '스펙트럼 여러분 많은 관심 부탁드려요!', '올림픽공원 KSPO DOME', NULL, DATE_ADD(DATE(NOW()), INTERVAL 12 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1104, 'PHOTO_MAGAZINE', 'PRISM 패션 매거진 화보 공개', '스펙트럼 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 20 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1105, 'TV_BROADCAST', '한유리 음악중심 출연', '유리알 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL -1 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1105, 'YOUTUBE', '한유리 공식 유튜브 자체 콘텐츠 공개', '유리알 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 1 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1105, 'RADIO', '한유리 라디오 게스트 출연', '유리알 여러분 많은 관심 부탁드려요!', 'SBS 목동', NULL, DATE_ADD(DATE(NOW()), INTERVAL 3 DAY) + INTERVAL 20 HOUR, NOW(), NOW()),
+  (1105, 'CONCERT', '한유리 단독 콘서트', '유리알 여러분 많은 관심 부탁드려요!', '올림픽공원 KSPO DOME', NULL, DATE_ADD(DATE(NOW()), INTERVAL 13 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1105, 'PHOTO_MAGAZINE', '한유리 패션 매거진 화보 공개', '유리알 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 21 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1106, 'TV_BROADCAST', 'KAITO 음악중심 출연', '카이토모 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL 0 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1106, 'YOUTUBE', 'KAITO 공식 유튜브 자체 콘텐츠 공개', '카이토모 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 2 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
+  (1106, 'RADIO', 'KAITO 라디오 게스트 출연', '카이토모 여러분 많은 관심 부탁드려요!', 'SBS 목동', NULL, DATE_ADD(DATE(NOW()), INTERVAL 4 DAY) + INTERVAL 20 HOUR, NOW(), NOW()),
+  (1106, 'CONCERT', 'KAITO 단독 콘서트', '카이토모 여러분 많은 관심 부탁드려요!', '올림픽공원 KSPO DOME', NULL, DATE_ADD(DATE(NOW()), INTERVAL 14 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
+  (1106, 'PHOTO_MAGAZINE', 'KAITO 패션 매거진 화보 공개', '카이토모 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 22 DAY) + INTERVAL 19 HOUR, NOW(), NOW());
+INSERT INTO `portal_notice` (`artist_id`, `title`, `content`, `published`, `pinned`, `pin_order`, `created_at`, `updated_at`) VALUES
+  (1101, '[공지] NOVA 커뮤니티 이용 안내', '스텔라 여러분 안녕하세요!
+
+서로를 존중하는 따뜻한 커뮤니티를 만들어 주세요.
+- 비방, 욕설 금지
+- 개인정보 공유 금지
+- 불법 촬영물 공유 금지', 1, 1, 1, NOW(), NOW()),
+  (1101, '[이벤트] 컴백 기념 응원 댓글 이벤트', '컴백을 기념해 응원 댓글을 남겨주신 분들 중 추첨을 통해 사인 앨범을 드립니다 🎁', 1, 0, NULL, NOW(), NOW()),
+  (1102, '[공지] LUMI 커뮤니티 이용 안내', '루미너스 여러분 안녕하세요!
+
+서로를 존중하는 따뜻한 커뮤니티를 만들어 주세요.
+- 비방, 욕설 금지
+- 개인정보 공유 금지
+- 불법 촬영물 공유 금지', 1, 1, 1, NOW(), NOW()),
+  (1102, '[이벤트] 컴백 기념 응원 댓글 이벤트', '컴백을 기념해 응원 댓글을 남겨주신 분들 중 추첨을 통해 사인 앨범을 드립니다 🎁', 1, 0, NULL, NOW(), NOW()),
+  (1103, '[공지] ECLIPSE 커뮤니티 이용 안내', '코로나 여러분 안녕하세요!
+
+서로를 존중하는 따뜻한 커뮤니티를 만들어 주세요.
+- 비방, 욕설 금지
+- 개인정보 공유 금지
+- 불법 촬영물 공유 금지', 1, 1, 1, NOW(), NOW()),
+  (1103, '[이벤트] 컴백 기념 응원 댓글 이벤트', '컴백을 기념해 응원 댓글을 남겨주신 분들 중 추첨을 통해 사인 앨범을 드립니다 🎁', 1, 0, NULL, NOW(), NOW()),
+  (1104, '[공지] PRISM 커뮤니티 이용 안내', '스펙트럼 여러분 안녕하세요!
+
+서로를 존중하는 따뜻한 커뮤니티를 만들어 주세요.
+- 비방, 욕설 금지
+- 개인정보 공유 금지
+- 불법 촬영물 공유 금지', 1, 1, 1, NOW(), NOW()),
+  (1104, '[이벤트] 컴백 기념 응원 댓글 이벤트', '컴백을 기념해 응원 댓글을 남겨주신 분들 중 추첨을 통해 사인 앨범을 드립니다 🎁', 1, 0, NULL, NOW(), NOW()),
+  (1105, '[공지] 한유리 커뮤니티 이용 안내', '유리알 여러분 안녕하세요!
+
+서로를 존중하는 따뜻한 커뮤니티를 만들어 주세요.
+- 비방, 욕설 금지
+- 개인정보 공유 금지
+- 불법 촬영물 공유 금지', 1, 1, 1, NOW(), NOW()),
+  (1105, '[이벤트] 컴백 기념 응원 댓글 이벤트', '컴백을 기념해 응원 댓글을 남겨주신 분들 중 추첨을 통해 사인 앨범을 드립니다 🎁', 1, 0, NULL, NOW(), NOW()),
+  (1106, '[공지] KAITO 커뮤니티 이용 안내', '카이토모 여러분 안녕하세요!
+
+서로를 존중하는 따뜻한 커뮤니티를 만들어 주세요.
+- 비방, 욕설 금지
+- 개인정보 공유 금지
+- 불법 촬영물 공유 금지', 1, 1, 1, NOW(), NOW()),
+  (1106, '[이벤트] 컴백 기념 응원 댓글 이벤트', '컴백을 기념해 응원 댓글을 남겨주신 분들 중 추첨을 통해 사인 앨범을 드립니다 🎁', 1, 0, NULL, NOW(), NOW());
+INSERT INTO `site_notice` (`author_id`, `title`, `category`, `content`, `published`, `pinned`, `pin_order`, `created_at`, `updated_at`) VALUES
+  (1001, 'WePlaNet 정식 오픈 안내 🎉', 'GENERAL', '아티스트와 팬이 함께하는 공간, WePlaNet 이 정식 오픈했습니다!
+
+많은 이용 부탁드립니다.', 1, 1, 1, DATE_SUB(NOW(6), INTERVAL 28800 MINUTE), DATE_SUB(NOW(6), INTERVAL 28800 MINUTE)),
+  (1001, '가을맞이 굿즈 기획전 오픈', 'EVENT', '커뮤니티별 신상 굿즈를 만나보세요. 기간 한정 무료배송 이벤트도 진행 중입니다.', 1, 0, NULL, DATE_SUB(NOW(6), INTERVAL 8640 MINUTE), DATE_SUB(NOW(6), INTERVAL 8640 MINUTE)),
+  (1002, '서비스 점검 안내 (새벽 2시~4시)', 'MAINTENANCE', '보다 안정적인 서비스를 위해 서버 점검을 진행합니다.
+점검 시간에는 접속이 원활하지 않을 수 있습니다.', 1, 0, NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE), DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
+  (1003, 'DM 기능 업데이트: 멤버별 1:1 대화', 'GENERAL', '이제 그룹 멤버 한 명 한 명과 DM 을 나눌 수 있어요 💌', 1, 0, NULL, DATE_SUB(NOW(6), INTERVAL 1440 MINUTE), DATE_SUB(NOW(6), INTERVAL 1440 MINUTE));
+
+-- ------------------------------------------------------------
+-- [9] 메인 배너 4개 (커뮤니티 홍보 2 + 상품 홍보 2)
+-- ------------------------------------------------------------
+INSERT INTO `main_banner` (`banner_type`, `artist_id`, `goods_id`, `title`, `body`, `image_stored_name`, `bg_color`, `text_color`, `active`, `sort_order`, `created_by`, `created_at`, `updated_at`) VALUES
+  ('COMMUNITY', 1101, NULL, 'NOVA 정규 2집 컴백', '스텔라와 함께하는 새로운 여정', 'demo_banner_1_nova.jpg', '#4F46E5', '#FFFFFF', 1, 0, 1001, NOW(6), NOW(6)),
+  ('COMMUNITY', 1105, NULL, '한유리 단독 콘서트', '작은 방에서 큰 무대로', 'demo_banner_2_yuri.jpg', '#F59E0B', '#1F2937', 1, 1, 1001, NOW(6), NOW(6)),
+  ('PRODUCT', 1102, 4008, 'LUMI 로고 후드티', '가을 신상 굿즈 오픈', 'demo_banner_3_lumi.jpg', '#EC4899', '#FFFFFF', 1, 2, 1001, NOW(6), NOW(6)),
+  ('PRODUCT', 1103, 4013, 'ECLIPSE 응원봉 Ver.2', '공연장을 밝히는 단 하나의 빛', 'demo_banner_4_eclipse.jpg', '#1E293B', '#FFFFFF', 1, 3, 1001, NOW(6), NOW(6));
+
+-- ------------------------------------------------------------
+-- [10] 팬 프로젝트 2개 (모금 중) + 모의 결제(MOCK) 후원 내역. 정산 계좌는 앱 암호화가 필요해 시드에서 제외
+-- ------------------------------------------------------------
+INSERT INTO `fan_project` (`id`, `artist_id`, `creator_id`, `title`, `event_type`, `goal_amount`, `funding_start_at`, `funding_end_at`, `description`, `status`, `special_badge_count_at_apply`, `basic_badge_count_at_apply`, `identity_verified_at`, `reviewed_by`, `reviewed_at`, `created_at`, `updated_at`) VALUES
+  (501, 1101, 1301, 'NOVA 데뷔 4주년 지하철광고', 'BILLBOARD', 1500000, DATE_SUB(NOW(6), INTERVAL 7200 MINUTE), DATE_ADD(NOW(6), INTERVAL 28800 MINUTE), '스텔라가 함께 준비하는 NOVA 데뷔 4주년 지하철 광고 프로젝트입니다 🚇
+모인 금액은 광고 제작 및 게재 비용으로 사용됩니다.', 'FUNDING', 1, 5, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE), 1001, DATE_SUB(NOW(6), INTERVAL 8640 MINUTE), DATE_SUB(NOW(6), INTERVAL 10080 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
+  (502, 1102, 1303, '서아 생일카페 프로젝트', 'BIRTHDAY_CAFE', 800000, DATE_SUB(NOW(6), INTERVAL 7200 MINUTE), DATE_ADD(NOW(6), INTERVAL 28800 MINUTE), 'LUMI 서아의 생일을 맞아 생일카페를 엽니다 🎂
+컵홀더, 포토존, 특전 굿즈를 준비할 예정이에요.', 'FUNDING', 1, 5, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE), 1001, DATE_SUB(NOW(6), INTERVAL 8640 MINUTE), DATE_SUB(NOW(6), INTERVAL 10080 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE));
+INSERT INTO `fan_project_cover_image` (`project_id`, `original_name`, `stored_name`, `content_type`, `file_size`, `created_at`) VALUES
+  (501, 'cover_501.jpg', 'demo_project_501.jpg', 'image/jpeg', 23437, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
+  (502, 'cover_502.jpg', 'demo_project_502.jpg', 'image/jpeg', 26067, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE));
+INSERT INTO `fan_project_contribution` (`project_id`, `contributor_id`, `order_no`, `idempotency_key`, `payment_provider`, `amount`, `is_anonymous`, `refund_policy_agreed_at`, `payment_status`, `paid_at`, `created_at`, `updated_at`) VALUES
+  (501, 1302, 'DEMO-501-001', 'demo-501-001', 'MOCK', 20000, 1, DATE_SUB(NOW(6), INTERVAL 6000 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 6000 MINUTE), DATE_SUB(NOW(6), INTERVAL 6000 MINUTE), DATE_SUB(NOW(6), INTERVAL 6000 MINUTE)),
+  (501, 1306, 'DEMO-501-002', 'demo-501-002', 'MOCK', 20000, 0, DATE_SUB(NOW(6), INTERVAL 5220 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 5220 MINUTE), DATE_SUB(NOW(6), INTERVAL 5220 MINUTE), DATE_SUB(NOW(6), INTERVAL 5220 MINUTE)),
+  (501, 1309, 'DEMO-501-003', 'demo-501-003', 'MOCK', 10000, 0, DATE_SUB(NOW(6), INTERVAL 4440 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 4440 MINUTE), DATE_SUB(NOW(6), INTERVAL 4440 MINUTE), DATE_SUB(NOW(6), INTERVAL 4440 MINUTE)),
+  (501, 1311, 'DEMO-501-004', 'demo-501-004', 'MOCK', 20000, 1, DATE_SUB(NOW(6), INTERVAL 3660 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 3660 MINUTE), DATE_SUB(NOW(6), INTERVAL 3660 MINUTE), DATE_SUB(NOW(6), INTERVAL 3660 MINUTE)),
+  (501, 1315, 'DEMO-501-005', 'demo-501-005', 'MOCK', 50000, 0, DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (502, 1301, 'DEMO-502-001', 'demo-502-001', 'MOCK', 10000, 1, DATE_SUB(NOW(6), INTERVAL 6000 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 6000 MINUTE), DATE_SUB(NOW(6), INTERVAL 6000 MINUTE), DATE_SUB(NOW(6), INTERVAL 6000 MINUTE)),
+  (502, 1305, 'DEMO-502-002', 'demo-502-002', 'MOCK', 100000, 0, DATE_SUB(NOW(6), INTERVAL 5220 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 5220 MINUTE), DATE_SUB(NOW(6), INTERVAL 5220 MINUTE), DATE_SUB(NOW(6), INTERVAL 5220 MINUTE)),
+  (502, 1307, 'DEMO-502-003', 'demo-502-003', 'MOCK', 100000, 0, DATE_SUB(NOW(6), INTERVAL 4440 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 4440 MINUTE), DATE_SUB(NOW(6), INTERVAL 4440 MINUTE), DATE_SUB(NOW(6), INTERVAL 4440 MINUTE)),
+  (502, 1310, 'DEMO-502-004', 'demo-502-004', 'MOCK', 50000, 1, DATE_SUB(NOW(6), INTERVAL 3660 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 3660 MINUTE), DATE_SUB(NOW(6), INTERVAL 3660 MINUTE), DATE_SUB(NOW(6), INTERVAL 3660 MINUTE)),
+  (502, 1314, 'DEMO-502-005', 'demo-502-005', 'MOCK', 50000, 0, DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
+  (502, 1315, 'DEMO-502-006', 'demo-502-006', 'MOCK', 100000, 0, DATE_SUB(NOW(6), INTERVAL 2100 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 2100 MINUTE), DATE_SUB(NOW(6), INTERVAL 2100 MINUTE), DATE_SUB(NOW(6), INTERVAL 2100 MINUTE));
+
+-- ------------------------------------------------------------
+-- [11] DM - 멤버별 방송 메시지 + 멤버십 팬이 보낸 1:1 메시지 (멤버별 DM 코드와 짝)
+-- ------------------------------------------------------------
+INSERT INTO `chat_message` (`content`, `created_at`, `artist_id`, `fan_id`, `sender_id`, `visible_to_artist`) VALUES
+  ('스텔라 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1804 MINUTE), 1201, NULL, 1201, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1504 MINUTE), 1201, NULL, 1201, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1201 MINUTE), 1201, 1302, 1302, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1021 MINUTE), 1201, 1306, 1306, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 841 MINUTE), 1201, 1315, 1315, 0),
+  ('스텔라 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1805 MINUTE), 1202, NULL, 1202, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1505 MINUTE), 1202, NULL, 1202, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1202 MINUTE), 1202, 1302, 1302, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1022 MINUTE), 1202, 1306, 1306, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 842 MINUTE), 1202, 1315, 1315, 0),
+  ('스텔라 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1806 MINUTE), 1203, NULL, 1203, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1506 MINUTE), 1203, NULL, 1203, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1203 MINUTE), 1203, 1302, 1302, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1023 MINUTE), 1203, 1306, 1306, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 843 MINUTE), 1203, 1315, 1315, 0),
+  ('스텔라 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1800 MINUTE), 1204, NULL, 1204, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1500 MINUTE), 1204, NULL, 1204, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1204 MINUTE), 1204, 1302, 1302, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1024 MINUTE), 1204, 1306, 1306, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 844 MINUTE), 1204, 1315, 1315, 0),
+  ('스텔라 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1801 MINUTE), 1205, NULL, 1205, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1501 MINUTE), 1205, NULL, 1205, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1200 MINUTE), 1205, 1302, 1302, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1020 MINUTE), 1205, 1306, 1306, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 840 MINUTE), 1205, 1315, 1315, 0),
+  ('루미너스 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1802 MINUTE), 1206, NULL, 1206, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1502 MINUTE), 1206, NULL, 1206, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1201 MINUTE), 1206, 1301, 1301, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1021 MINUTE), 1206, 1305, 1305, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 841 MINUTE), 1206, 1315, 1315, 0),
+  ('루미너스 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1803 MINUTE), 1207, NULL, 1207, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1503 MINUTE), 1207, NULL, 1207, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1202 MINUTE), 1207, 1301, 1301, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1022 MINUTE), 1207, 1305, 1305, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 842 MINUTE), 1207, 1315, 1315, 0),
+  ('루미너스 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1804 MINUTE), 1208, NULL, 1208, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1504 MINUTE), 1208, NULL, 1208, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1203 MINUTE), 1208, 1301, 1301, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1023 MINUTE), 1208, 1305, 1305, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 843 MINUTE), 1208, 1315, 1315, 0),
+  ('루미너스 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1805 MINUTE), 1209, NULL, 1209, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1505 MINUTE), 1209, NULL, 1209, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1204 MINUTE), 1209, 1301, 1301, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1024 MINUTE), 1209, 1305, 1305, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 844 MINUTE), 1209, 1315, 1315, 0),
+  ('코로나 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1806 MINUTE), 1210, NULL, 1210, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1506 MINUTE), 1210, NULL, 1210, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1200 MINUTE), 1210, 1304, 1304, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1020 MINUTE), 1210, 1309, 1309, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 840 MINUTE), 1210, 1315, 1315, 0);
+INSERT INTO `chat_message` (`content`, `created_at`, `artist_id`, `fan_id`, `sender_id`, `visible_to_artist`) VALUES
+  ('코로나 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1800 MINUTE), 1211, NULL, 1211, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1500 MINUTE), 1211, NULL, 1211, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1201 MINUTE), 1211, 1304, 1304, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1021 MINUTE), 1211, 1309, 1309, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 841 MINUTE), 1211, 1315, 1315, 0),
+  ('코로나 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1801 MINUTE), 1212, NULL, 1212, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1501 MINUTE), 1212, NULL, 1212, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1202 MINUTE), 1212, 1304, 1304, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1022 MINUTE), 1212, 1309, 1309, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 842 MINUTE), 1212, 1315, 1315, 0),
+  ('코로나 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1802 MINUTE), 1213, NULL, 1213, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1502 MINUTE), 1213, NULL, 1213, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1203 MINUTE), 1213, 1304, 1304, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1023 MINUTE), 1213, 1309, 1309, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 843 MINUTE), 1213, 1315, 1315, 0),
+  ('코로나 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1803 MINUTE), 1214, NULL, 1214, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1503 MINUTE), 1214, NULL, 1214, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1204 MINUTE), 1214, 1304, 1304, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1024 MINUTE), 1214, 1309, 1309, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 844 MINUTE), 1214, 1315, 1315, 0),
+  ('스펙트럼 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1804 MINUTE), 1215, NULL, 1215, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1504 MINUTE), 1215, NULL, 1215, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1200 MINUTE), 1215, 1303, 1303, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1020 MINUTE), 1215, 1306, 1306, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 840 MINUTE), 1215, 1315, 1315, 0),
+  ('스펙트럼 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1805 MINUTE), 1216, NULL, 1216, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1505 MINUTE), 1216, NULL, 1216, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1201 MINUTE), 1216, 1303, 1303, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1021 MINUTE), 1216, 1306, 1306, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 841 MINUTE), 1216, 1315, 1315, 0),
+  ('스펙트럼 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1806 MINUTE), 1217, NULL, 1217, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1506 MINUTE), 1217, NULL, 1217, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1202 MINUTE), 1217, 1303, 1303, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1022 MINUTE), 1217, 1306, 1306, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 842 MINUTE), 1217, 1315, 1315, 0),
+  ('스펙트럼 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1800 MINUTE), 1218, NULL, 1218, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1500 MINUTE), 1218, NULL, 1218, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1203 MINUTE), 1218, 1303, 1303, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1023 MINUTE), 1218, 1306, 1306, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 843 MINUTE), 1218, 1315, 1315, 0),
+  ('유리알 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1806 MINUTE), 1105, NULL, 1105, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1506 MINUTE), 1105, NULL, 1105, 1),
+  ('밥 꼭 챙겨 먹어요!', DATE_SUB(NOW(6), INTERVAL 1200 MINUTE), 1105, 1301, 1301, 1),
+  ('다음 콘서트 꼭 갈게요 💜', DATE_SUB(NOW(6), INTERVAL 1020 MINUTE), 1105, 1304, 1304, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 840 MINUTE), 1105, 1315, 1315, 0),
+  ('카이토모 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1800 MINUTE), 1106, NULL, 1106, 1),
+  ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1500 MINUTE), 1106, NULL, 1106, 1),
+  ('답장해줘서 고마워요 😭', DATE_SUB(NOW(6), INTERVAL 1201 MINUTE), 1106, 1303, 1303, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1021 MINUTE), 1106, 1313, 1313, 1),
+  ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 841 MINUTE), 1106, 1315, 1315, 0);
+
+-- ------------------------------------------------------------
+-- [확인] 데모 데이터 개수
+-- ------------------------------------------------------------
+SELECT
+  (SELECT COUNT(*) FROM `users` WHERE `id` >= 1001)       AS demo_users,
+  (SELECT COUNT(*) FROM `artist_groups` WHERE `id` >= 1101) AS communities,
+  (SELECT COUNT(*) FROM `post` WHERE `id` >= 10001)       AS posts,
+  (SELECT COUNT(*) FROM `shop_goods` WHERE `id` >= 4001)  AS goods,
+  (SELECT COUNT(*) FROM `board_media` WHERE `id` >= 3001) AS media;

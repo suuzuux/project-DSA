@@ -159,6 +159,7 @@ public class ChatController {
             Map<String, Object> map = new HashMap<>();
             map.put("artistId", item.getArtistId());
             map.put("artistNickname", item.getArtistNickname());
+            map.put("groupName", item.getGroupName());
             map.put("hasConversation", item.isHasConversation());
             map.put("lastMessage", item.getLastMessage());
             map.put("lastMessageTime", item.getLastMessageTime() != null ? item.getLastMessageTime().toString() : null);
@@ -240,7 +241,13 @@ public class ChatController {
             return;
         }
 
-        User artist = getUserOrThrow(request.getArtistId(), "아티스트");
+        // 멤버별 DM: artistId 는 DM 방 주인 - 솔로 아티스트 본인 또는 그룹의 멤버 한 명.
+        // 그룹 계정 자체로 오는 방(예전 그룹 단위 DM)은 더 이상 받지 않는다
+        User artist = getUserOrThrow(request.getArtistId(), "DM 방 주인");
+        if (!communityArtistResolver.isDmRoomOwner(artist)) {
+            log.warn("DM 방 주인이 아닌 계정으로 전송 시도: artistId={}", artist.getId());
+            return;
+        }
         User fan = request.getFanId() != null
                 ? getUserOrThrow(request.getFanId(), "팬")
                 : null;
@@ -251,10 +258,11 @@ public class ChatController {
         // 아티스트가 멤버십 만료된 팬에게 답장하거나, 그 팬의 한도를 대신 소진시켜버리는 문제가 있었음
         boolean sentByFan = fan != null && sender.getId().equals(fan.getId());
         
-        // 팬 본인이 보낸 게 아니면 "이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)"가 보낸 것이어야 한다.
+        // 팬 본인이 보낸 게 아니면 DM 방 주인(솔로 본인/그 멤버 본인)이 보낸 것이어야 한다.
         // 예전엔 이 확인이 없어서, 로그인만 하면 fanId 를 비워 보내는 것만으로
-        // 아티스트 방송 채널에 메시지를 뿌리거나 남의 DM 방에 끼어들 수 있었음
-        if (!sentByFan && !communityArtistResolver.isArtistOf(sender, artist.getId())) {
+        // 아티스트 방송 채널에 메시지를 뿌리거나 남의 DM 방에 끼어들 수 있었음.
+        // 멤버별 DM 이라 같은 그룹의 다른 멤버도 남의 방에는 보낼 수 없다
+        if (!sentByFan && !sender.getId().equals(artist.getId())) {
             log.warn("아티스트가 아닌 계정의 아티스트 채널 전송 시도: senderId={}, artistId={}",
                     sender.getId(), artist.getId());
             return;
@@ -310,7 +318,7 @@ public class ChatController {
             broadcast("/topic/chat." + artist.getId(), payload);
 
             // 아티스트 본인이 DM을 보낸 경우에만 가상 팬 5명이 백그라운드에서 답장한다
-            if (communityArtistResolver.isArtistOf(sender, artist.getId())) {
+            if (sender.getId().equals(artist.getId())) {
                 aiFanChatService.replyToArtistDm(artist.getId(), saved.getContent());
             }
         } else {
@@ -489,16 +497,17 @@ public class ChatController {
         return "redirect:/chat/admin/keywords";
     }
     
-    // 아티스트 쪽 계정이 채팅할 "내 커뮤니티(방)" 번호. 솔로는 본인 id, 그룹 멤버는 소속 그룹 id.
-    // dm-realtime.js 가 멤버로 로그인했을 때 방 번호를 알아내려고 호출한다.
+    // 아티스트 쪽 계정이 채팅할 "내 DM 방" 번호. 멤버별 DM 이라 솔로도 그룹 멤버도 본인 id 다.
+    // (예전엔 그룹 멤버면 소속 그룹 id 를 돌려줘서 멤버 전원이 방 하나를 같이 썼음)
+    // dm-realtime.js 가 멤버로 로그인했을 때 방 번호를 알아내려고 호출한다. 방 주인이 아니면 null.
     @GetMapping("/chat/my-artist-room")
     @ResponseBody
     public Map<String, Object> myArtistRoom(@AuthenticationPrincipal AuthenticatedUser principal) {
         User me = requireLoginUser(principal);
-        
-        // Map.of 는 null 값을 넣으면 에러가 나서, 커뮤니티가 없을 수도 있는 값은 HashMap 에 담는다
+
+        // Map.of 는 null 값을 넣으면 에러가 나서, 방이 없을 수도 있는 값은 HashMap 에 담는다
         Map<String, Object> result = new HashMap<>();
-        result.put("artistId", communityArtistResolver.ownCommunityId(me));
+        result.put("artistId", communityArtistResolver.isDmRoomOwner(me) ? me.getId() : null);
         return result;
     }
 
@@ -514,7 +523,7 @@ public class ChatController {
         // 그동안 인증 확인이 없어서 비로그인 상태로 반복 호출하면 API 한도를 소진시킬 수 있었음.
         // 채팅방을 쓰는 아티스트 본인만 호출할 수 있도록 제한함
         User requester = requireLoginUser(principal);
-        if (!communityArtistResolver.isArtistOf(requester, artistId)) {
+        if (!requester.getId().equals(artistId) || !communityArtistResolver.isDmRoomOwner(requester)) {
             throw new IllegalStateException("error.chat.ownRoomOnly");
         }
 
