@@ -269,6 +269,9 @@ public class ChatController {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
             warning.put("message", chatMsg("chat.warning.bannedWord", sender));
+            // 경고 종류 - 화면(dm-realtime.js)은 DAILY_LIMIT 일 때만 "남은 횟수 0"으로 바꾼다
+            // (예전엔 금칙어 경고에도 0으로 바꿔서, 횟수가 그대로인데 0회로 보였음)
+            warning.put("reason", "BANNED_WORD");
 
             // "/topic/chat.error.보낸사람ID" 채널은 그 사람만 구독하고 있으므로, 본인에게만 경고가 도착함
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
@@ -310,6 +313,7 @@ public class ChatController {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
             warning.put("message", chatMsg("chat.warning.membershipRequired", sender));
+            warning.put("reason", "MEMBERSHIP_REQUIRED");
 
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
 
@@ -321,6 +325,8 @@ public class ChatController {
             Map<String, Object> warning = new HashMap<>();
             warning.put("error", true);
             warning.put("message", chatMsg("chat.warning.dailyLimitExceeded", sender));
+            warning.put("reason", "DAILY_LIMIT");
+            warning.put("remaining", 0);
 
             broadcast("/topic/chat.error." + request.getSenderId(), warning);
 

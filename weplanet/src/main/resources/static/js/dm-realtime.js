@@ -372,9 +372,14 @@
                     subscriptions.push(stompClient.subscribe(errorTopic, function (frame) {
                         // 예전엔 브라우저 기본 alert을 띄웠는데, 팬 채팅방 화면(fanChatRoom.html)은
                         // 화면 안 배너를 쓰고 있어서 방식이 서로 달랐음 -> 배너로 통일
-                        showWarning(JSON.parse(frame.body).message);
-                        // 한도 초과로 거부된 경우라면 남은 횟수는 0
-                        updateQuota(0);
+                        const warning = JSON.parse(frame.body);
+                        showWarning(warning.message);
+                        // 한도 초과로 거부된 경우에만 남은 횟수를 0으로 표시.
+                        // 금칙어·멤버십 경고는 횟수가 차감되지 않으므로 표시를 그대로 둔다
+                        // (예전엔 경고 종류와 상관없이 0으로 바꿔서, 금칙어에 걸리면 "남은 메시지 0회"로 보였음)
+                        if (warning.reason === "DAILY_LIMIT") {
+                            updateQuota(0);
+                        }
                     }));
                 });
             });
