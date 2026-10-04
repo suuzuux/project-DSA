@@ -27,9 +27,7 @@ public class User {
 	@Column(nullable = false, unique = true, length = 50)
 	private String username;	// 로그인 아이디
 	
-	// AUTH-10: 소셜 전용 가입자는 비밀번호를 안 만들 수 있다. 이 컬럼의 NOT NULL 제약(및 DB 마이그레이션)은
-	// 사용자가 직접 마지막에 정리하기로 해서, 이 어노테이션은 일부러 그대로 두었다 - 코드상으로는
-	// password가 null일 수 있다는 전제로 모든 로직을 작성했다. hasPassword() 참고.
+	// 소셜 전용 가입자는 비밀번호가 없을 수 있다(null) - 비밀번호 로그인 가능 여부는 hasPassword() 로 판단한다.
 	@Column(nullable = true, length = 60)
 	private String password;	// 암호화(BCrypt)된 비밀번호. 소셜 전용 가입자는 null일 수 있음.
 	
@@ -52,8 +50,7 @@ public class User {
 	@Column(nullable = false, length = 50)
 	private String nickname;	// 가입자 닉네임
 	
-	// AUTH-11: DB 에는 처음부터 UNIQUE KEY uk_users_email 이 있다(docs/weplanet_schema_full_reset.sql).
-	// 엔티티에도 같은 사실을 적어 둔다 - ddl-auto=validate 라 스키마를 바꾸지는 않는다.
+	// DB 에 UNIQUE KEY uk_users_email 이 있다 (ddl-auto=validate 라 스키마는 그대로, 엔티티에 같은 사실만 적어 둠)
 	@Column(nullable = false, length = 255, unique = true)
 	private String email;		// 가입자 이메일
 	
@@ -99,9 +96,7 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;		// 탈퇴(소프트 삭제) 처리 시각
 	
-	// AUTH-10: 더 이상 "가입 경로"가 아니라 "지금 이 계정에 연동된 소셜 provider"를 뜻한다.
-	// 연동이 없는 계정(로컬 비밀번호만 있거나, 연동을 해제한 계정)은 null. 이 컬럼의 NOT NULL 제약(및 DB
-	// 마이그레이션)도 password와 마찬가지로 사용자가 직접 마지막에 정리하기로 해서 어노테이션은 그대로 두었다.
+	// 지금 이 계정에 연동된 소셜 provider. 연동이 없거나 해제한 계정은 null.
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = true, length = 20)
 	private AuthProvider provider;		// 연동된 소셜 provider (GOOGLE/KAKAO/LINE), 연동 없으면 null
@@ -109,18 +104,13 @@ public class User {
 	@Column(name = "provider_id", length = 255)
 	private String providerId;		// 소셜 플랫폼 고유 ID (연동 없으면 null)
 
-	// [설정 - 이벤트·혜택 알림] 광고성 정보(이벤트/혜택/신상품 등) 수신 동의. 기본값 false(미동의).
-	// 회원가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스와 같은 값을 공유한다 - 가입 때 정한 값이
-	// 곧바로 설정 화면에 반영되고, 설정 화면에서 바꾸면 그게 최종값이 된다.
+	// 광고성 정보 수신 동의 (기본 false).
+	// 가입 화면의 "(선택) 광고 및 마케팅 활용 동의"와 설정 화면 토글이 같은 값을 쓴다.
 	@Column(name = "marketing_consent", nullable = false)
 	private boolean marketingConsent;
 
-	// [설정 - 이벤트·혜택 알림] 내가 가입(CommunityMember)한 커뮤니티 아티스트의 새 게시글/공지/라이브 시작을
-	// 이메일로 받을지. marketingConsent(광고 동의)와는 별개의 값 - 이건 광고가 아니라 가입한 아티스트의
-	// 실제 활동 소식이라 독립적으로 켜고 끌 수 있게 했다. 기본값 false.
-	// GroupFollow/UserFollow 통합 이후: CommunityActivityNotifier의 발송 대상은 "가입 + 이 아티스트
-	// 팔로우"를 함께 보도록 바뀌었다 - 이 값(communityActivityEmailEnabled)은 그중 "이메일 알림 자체를
-	// 켰는지"만 담당하고, 가입/팔로우 여부는 CommunityActivityNotifier가 따로 확인한다.
+	// 가입·팔로우한 아티스트의 새 글/공지/라이브 시작을 이메일로 받을지 (기본 false, 광고 동의와 별개).
+	// 받을 사람 선별(가입 + 팔로우)은 CommunityActivityNotifier 가 따로 확인한다.
 	@Column(name = "community_activity_email_enabled", nullable = false)
 	private boolean communityActivityEmailEnabled;
 
@@ -129,8 +119,7 @@ public class User {
 	@Column(name = "night_notification_allowed", nullable = false)
 	private boolean nightNotificationAllowed;
 
-	// [설정 - 언어 설정] SETTINGS-02: "기본 서비스 언어". 게시글/댓글 AI 번역(TranslateService)의
-	// 대상 언어로도 그대로 재사용된다 (PostController.translatePost/translateComment 참고). 기본값 KO.
+	// 기본 서비스 언어 (기본 KO). 화면 언어이자 게시글/댓글 AI 번역 대상 언어로 함께 쓴다.
 	@Enumerated(EnumType.STRING)
 	@Column(name = "preferred_language", nullable = false, length = 10)
 	private Language preferredLanguage = Language.KO;
@@ -151,7 +140,7 @@ public class User {
 		this(username, password, realName, nickname, email, role, null, null);
 	}
 	
-	// AUTH-10: 소셜 신규 가입은 비밀번호를 요구하지 않는다 - encodedPassword가 null로 들어올 수 있다.
+	// 소셜 가입은 비밀번호 없이 만든다 - encodedPassword 가 null 일 수 있다.
 	public static User createSocialFan(String username, String encodedPassword, String realName, String nickname, String email, AuthProvider provider, String providerId) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.FAN, provider, providerId);
 	}
@@ -225,25 +214,24 @@ public class User {
 		this.emailVerifiedAt = verifiedAt;
 	}
 	
-	// AUTH-10: 비밀번호는 건드리지 않는다 - 로컬 비밀번호와 소셜 연동은 이제 서로 독립적으로 공존한다.
+	// 비밀번호는 건드리지 않는다 - 로컬 비밀번호와 소셜 연동은 따로 공존한다.
 	public void linkSocialProvider(AuthProvider provider, String providerId) {
 		this.provider = provider;
 		this.providerId = providerId;
 	}
 
-	// AUTH-10 신설: 설정 화면에서 "연결 해제"를 누르면 호출. 비밀번호는 손대지 않는다.
+	// 설정 화면에서 "연결 해제"를 누르면 호출. 비밀번호는 손대지 않는다.
 	public void unlinkSocialProvider() {
 		this.provider = null;
 		this.providerId = null;
 	}
 
-	// AUTH-10: 비밀번호가 설정돼 있는지 여부. provider(LOCAL) 대신 이 값으로 "로컬 로그인이 가능한 계정인지"를 판단한다.
+	// 비밀번호가 설정돼 있는지 - 아이디·비밀번호 로그인이 가능한 계정인지를 이 값으로 판단한다.
 	public boolean hasPassword() {
 		return this.password != null;
 	}
 
-	// AUTH-11: 실제로 메일을 받을 수 없는 시스템용 이메일인지 (카카오/LINE 가입자, 그룹 멤버, 탈퇴 익명화 주소 -
-	// 모두 *.weplanet.local 로 만든다). 이 주소로는 인증코드·안내 메일을 보내도 받을 수 없다.
+	// 메일을 받을 수 없는 시스템용 주소인지 (카카오/LINE 가입자, 그룹 멤버, 탈퇴 익명화 주소 - 모두 *.weplanet.local)
 	public boolean hasPlaceholderEmail() {
 		return this.email != null && this.email.toLowerCase().endsWith(".weplanet.local");
 	}
@@ -265,7 +253,7 @@ public class User {
 		this.realName = realName;
 	}
 
-	// AUTH-11: 설정 화면의 "전화번호 (선택)" - 비우면 null 로 지운다. 굿즈 주문서 연락처 기본값으로도 쓰인다.
+	// 설정 화면의 "전화번호 (선택)" - 비우면 null 로 지운다. 굿즈 주문서 연락처 기본값으로도 쓰인다.
 	public void changePhone(String phone) {
 		this.phone = phone;
 	}
@@ -338,10 +326,8 @@ public class User {
 		anonymizePersonalInfo();
 	}
 	
-	// id(PK)는 이미 전역 유일하므로 별도 타임스탬프 없이 이 값만으로 충돌 없는 고유 식별자를 만들 수 있다.
-	// email/username/providerId는 재사용 가능하도록 다른 값으로 치환하고,
-	// realName은 컬럼이 NOT NULL이라 null 대신 고정 문구로 치환, phone/address2는 nullable이라 null로 지운다.
-	// 탈퇴는 영구 처리라 이 값들은 되돌리지 않는다 (복구 기능 없음).
+	// 탈퇴 시 개인정보 익명 처리 - email/username/providerId 는 withdrawn_{id} 로 바꿔 다시 쓸 수 있게 하고,
+	// 실명은 고정 문구로, 나머지 개인 정보는 null 로 지운다 (탈퇴는 되돌리지 않는다).
 	private void anonymizePersonalInfo() {
 		String suffix = "withdrawn_" + this.id;
 		this.username = suffix;
@@ -352,8 +338,7 @@ public class User {
 		this.realName = "탈퇴한 회원";
 		this.phone = null;
 		this.address2 = null;
-		// AUTH-11: 개인정보처리방침("탈퇴 시 개인정보 익명 처리, 선택 항목 삭제")과 맞추기 위해 나머지 개인 정보도 지운다.
-		// 예전에는 전화번호·상세주소만 지우고 기본 주소·우편번호·생년월일·성별은 그대로 남았다.
+		// 개인정보처리방침("탈퇴 시 개인정보 익명 처리, 선택 항목 삭제")에 맞춰 주소·생년월일·성별도 지운다.
 		this.phoneHash = null;
 		this.zipcode = null;
 		this.address1 = null;

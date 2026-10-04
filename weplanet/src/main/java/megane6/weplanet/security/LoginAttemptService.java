@@ -10,18 +10,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 아이디·비밀번호 로그인(/login - 팬·포털·관리자 공통)의 비밀번호 대입 방어.
- * <p>
- * 예전에는 비밀번호를 몇 번을 틀려도 아무 제한이 없어서, 프로그램으로 흔한 비밀번호를 끝없이 넣어 볼 수 있었다.
- * <ul>
- *   <li>아이디 기준: {@value #WINDOW_MINUTES}분 안에 {@value #MAX_FAILED_ATTEMPTS}회 틀리면 {@value #LOCK_MINUTES}분 동안
- *       그 아이디로 로그인할 수 없다 (잠긴 동안에는 비밀번호가 맞아도 거절). 로그인에 성공하면 처음부터 다시 센다.</li>
- *   <li>IP 기준: 같은 IP 에서 {@value #WINDOW_MINUTES}분 안에 {@value #IP_MAX_FAILURES}회 틀리면 {@value #LOCK_MINUTES}분 동안
- *       그 IP 의 로그인을 막는다 (아이디를 바꿔 가며 대입하는 것 방지).</li>
- * </ul>
- * 멤버 개인 비밀번호(ArtistProfileLoginService)·이메일 변경 재확인(EmailChangeAuthService) 잠금과 같은 방식으로
- * 서버 메모리에 들고 있어서, 서버를 재시작하면 초기화된다.
- * 남이 내 아이디로 일부러 틀려서 잠글 수 있지만, 짧은 시간(10분)이라 감수한다.
+ * 아이디·비밀번호 로그인(팬·포털·관리자 공통)의 비밀번호 대입 방어. 서버 메모리에 기록한다(재시작하면 초기화).
+ * {@value #WINDOW_MINUTES}분 안에 아이디는 {@value #MAX_FAILED_ATTEMPTS}회, IP 는 {@value #IP_MAX_FAILURES}회 틀리면 {@value #LOCK_MINUTES}분 동안 로그인을 막는다.
  */
 @Slf4j
 @Service

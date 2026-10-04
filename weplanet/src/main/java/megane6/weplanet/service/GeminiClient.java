@@ -32,7 +32,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GeminiClient {
 
-    // SETTINGS-03 커밋3: AI 요약/번역 실패 안내 문구를 요청 로케일로 돌려준다
+    // AI 요약/번역 실패 안내 문구를 요청 로케일로 돌려준다
     private final Messages messages;
 
     // application.properties에 적어둔 gemini.api.key 값을 이 필드에 자동으로 넣어줌
@@ -60,8 +60,7 @@ public class GeminiClient {
     }
 
     // AI 팬 5명의 답장을 한 번에 JSON으로 받을 때 사용.
-    // 실패하면 안내 문구 대신 null 을 돌려준다 - 호출부(AiFanChatService)가 언어와 상관없이 실패를 알아채고
-    // 자기 대체 문구(페르소나 fallback)를 쓰게 하기 위함 (예전엔 한국어 안내 문구를 글자로 비교해서 다른 언어에선 못 알아챘다)
+    // 실패하면 null 을 돌려줘서 호출부(AiFanChatService)가 언어와 상관없이 실패를 알아채고 페르소나 fallback 문구를 쓰게 한다.
     public String generateJson(String prompt) {
         return generate(prompt, true);
     }

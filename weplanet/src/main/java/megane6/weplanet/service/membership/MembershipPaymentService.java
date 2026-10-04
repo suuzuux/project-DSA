@@ -38,7 +38,7 @@ public class MembershipPaymentService {
 	private final CommunityJoinService communityJoinService;
 	private final TossPaymentsProperties tossProperties;
 	private final TossPaymentsClient tossClient;
-	// SETTINGS-03 커밋5: 결제창 주문명/구매자명, 결과 화면 문구를 요청 로케일로 만든다
+	// 결제창 주문명/구매자명, 결과 화면 문구를 요청 로케일로 만든다
 	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;
 

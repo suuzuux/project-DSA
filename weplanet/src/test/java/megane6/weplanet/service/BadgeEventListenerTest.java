@@ -39,7 +39,7 @@ class BadgeEventListenerTest {
 		verify(awardService).award(11L, 22L, BadgeCode.SPECIAL_MEMBERSHIP_1);
 	}
 
-	// GroupFollow/UserFollow 통합 이후: 아티스트 팔로우(following_id == community_id == artistId)
+	// 아티스트 팔로우(following_id == community_id == artistId)
 	// 관계가 있을 때만 BASIC_FOLLOW_ARTIST 배지가 나가는지 확인.
 	@Test
 	void artistFollowedAwardsFollowBadgeWhenFollowRelationExists() {

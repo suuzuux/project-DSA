@@ -26,10 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// AUTH-10: 로컬 로그인 시도 중 휴면계정을 만난 경우와 소셜 로그인 시도 중 만난 경우를 화면(socialFlow)으로
-// 구분하던 걸 없앴다. 이제 어느 쪽으로 들어와도 항상 같은 화면 - 아이디를 입력하면 가입 시 등록된 이메일로
-// 인증코드를 보내주는 방식 - 하나로 통일한다. 소셜 로그인 콜백(OAuth2LoginSuccessHandler)도 더 이상
-// 세션에 대상 유저를 미리 심어두지 않고 그냥 이 화면으로 보내기만 한다.
+// 휴면 계정 해제 - 아이디를 입력하면 가입 때 등록한 이메일로 인증코드를 보내고, 확인되면 해제 후 바로 로그인시킨다.
+// 로컬·소셜 로그인 어느 쪽에서 휴면 계정을 만나도 이 화면 하나로 처리한다.
 @Slf4j
 @Controller
 @RequestMapping("/login/reactivate")
@@ -61,14 +59,12 @@ public class DormantAccountReactivationController {
             result.put("message", msg("reactivate.usernameRequired"));
             return result;
         }
-        // 휴면 계정이 아니어도 같은 문구로 응답한다 - 예전에는 "휴면 계정을 찾을 수 없습니다"와 "코드를 보냈습니다"로
-        // 답이 달라서, 아이디만 넣어 보고 휴면 계정인지 알 수 있었다 (로그인 화면은 비밀번호가 맞기 전까지 숨기는 정보).
-        // 아이디·비밀번호 찾기와 같은 방식: 대상일 때만 실제로 보내고(백그라운드), 발송 제한은 똑같이 적용한다.
-        // 대상이 아니면 받을 주소가 없으므로 아이디로 만든 자리표시 값으로 제한만 센다.
+        // 휴면 계정이 아니어도 같은 문구로 응답해 휴면 여부가 드러나지 않게 한다.
+        // 대상일 때만 실제로 보내고(백그라운드), 대상이 아니면 아이디로 만든 자리표시 값으로 발송 제한만 센다.
         Optional<User> target = resolveTarget(username);
         try {
             emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.REACTIVATE,
-                    target.map(User::getEmail).orElse("reactivate:" + username.trim()), target.isPresent());
+                    target.map(User::getEmail).orElse("reactivate:" + username.trim()), target.map(User::getEmail).orElse(null));
             result.put("success", true);
             result.put("message", msg("reactivate.codeSent"));
         } catch (VerificationRateLimitException e) {
@@ -106,9 +102,7 @@ public class DormantAccountReactivationController {
         emailVerificationService.clear(request.getSession(false), VerificationPurpose.REACTIVATE, user.getEmail());
         user.reactivate();
         socialLoginSessionSupport.loginAs(user, request, response);
-        // SETTINGS-03 로케일 버그#2 유형 수정: 휴면계정 해제도 로그인을 새로 여는 지점이라, 다른
-        // 로그인 성공 핸들러들과 동일하게 세션 로케일을 DB에 저장된 선호 언어로 맞춰준다. 이게 없으면
-        // 재활성화 직후 화면이 재로그인 전까지 계속 한국어로 나온다.
+        // 휴면 해제도 새로 로그인하는 지점이라, 화면 언어를 계정의 선호 언어로 맞춘다.
         localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
         return "redirect:/";
     }

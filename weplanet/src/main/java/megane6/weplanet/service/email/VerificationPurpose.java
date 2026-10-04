@@ -1,6 +1,6 @@
 package megane6.weplanet.service.email;
 
-// AUTH-11: 이메일 인증을 "어디에 쓰려고" 받은 것인지. 인증 결과는 용도별로 따로 저장해서,
+// 이메일 인증을 어디에 쓰려고 받은 것인지 - 인증 결과를 용도별로 따로 저장해서
 // 한 화면에서 받은 인증을 다른 기능(예: 가입 → 이메일 변경·비밀번호 찾기)에 재사용하지 못하게 한다.
 public enum VerificationPurpose {
 	SIGNUP,          // 회원가입

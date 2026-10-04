@@ -14,11 +14,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
-// [설정 - 이벤트·혜택 알림] 가입한 아티스트의 새 게시글/공지/라이브 시작을 팬에게 이메일로 알려주는 발송기.
-// DormantAccountNoticeService와 같은 패턴 - JavaMailSender를 직접 주입받아 SimpleMailMessage로 보낸다.
-// 실제 대상 선별(동의 여부/야간 알림 체크)과 비동기 처리는 CommunityActivityNotifier가 담당하고,
-// 이 클래스는 "메일 한 통 보내기"만 책임진다.
-// SETTINGS-03 커밋5: 메일 문구는 받는 팬의 선호 언어(User.preferredLanguage)로 만든다.
+// 가입·팔로우한 아티스트의 새 게시글/공지/라이브 시작을 팬에게 알리는 메일 한 통을 보낸다 (문구는 받는 팬의 선호 언어).
+// 받을 사람 선별과 비동기 처리는 CommunityActivityNotifier 가 맡는다.
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -40,14 +40,12 @@ public class AuthenticatedUserResolver {
 		return getAuthenticatedUserOrThrow(principal.getId()).isArtistSide();
 	}
 
-	// 세션에 남아있는 로그인 principal 기준 조회 - 계정이 DB에서 지워졌는데 세션엔 아직 로그인 상태로
-	// 남아있는 경우(관리자가 직접 계정을 삭제한 경우 등)를 구분해서 던진다. GlobalExceptionHandler가
-	// 이 예외를 받으면 세션 자체를 정리해주기 때문에, "홈으로" 버튼을 눌러도 같은 에러가 무한 반복되는 걸 막는다.
+	// 계정이 DB에서 지워졌는데 세션은 로그인 상태로 남은 경우(관리자가 삭제한 경우 등)를 구분해서 던진다.
+	// GlobalExceptionHandler가 이 예외를 받으면 세션을 정리해서, "홈으로"를 눌러도 같은 오류가 반복되지 않는다.
 	private User getAuthenticatedUserOrThrow(Long userId) {
 		User user = userRepository.findOneById(userId)
 				.orElseThrow(() -> new StaleSessionException("유저(id=" + userId + ")를 찾을 수 없습니다."));
-		// AUTH-11: 로그인해 있는 동안 관리자가 정지했거나 탈퇴 처리된 계정이면 세션을 정리한다.
-		// 예전에는 정지해도 이미 로그인해 있던 세션은 만료될 때까지 글쓰기·결제 등을 계속할 수 있었다.
+		// 로그인해 있는 동안 관리자가 정지했거나 탈퇴 처리된 계정이면 세션을 정리한다 (남은 세션으로 글쓰기·결제 등을 막음).
 		if (!user.isLoginable()) {
 			throw new InactiveAccountSessionException("유저(id=" + userId + ")가 " + user.getStatus() + " 상태라 세션을 정리합니다.");
 		}

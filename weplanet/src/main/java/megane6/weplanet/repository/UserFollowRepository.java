@@ -32,15 +32,13 @@ public interface UserFollowRepository extends JpaRepository<UserFollow, UserFoll
     // 커뮤니티 탈퇴 시, 그 커뮤니티에 종속된 팔로우 관계를 정리하기 위해 씀 (양방향 모두 확인 필요)
     void deleteByCommunityIdAndFollowerId(Long communityId, Long userId);
 
-    // AUTH-11: 커뮤니티 탈퇴 시 팬→아티스트 팔로우(followingId == communityId)는 남기고 나머지만 지울 때 씀
+    // 커뮤니티 탈퇴 시 팬→아티스트 팔로우(followingId == communityId)는 남기고 나머지만 지울 때 씀
     void deleteByCommunityIdAndFollowerIdAndFollowingIdNot(Long communityId, Long followerId, Long followingId);
 
     void deleteByCommunityIdAndFollowingId(Long communityId, Long userId);
 
-    // [회원탈퇴] 계정을 통째로 탈퇴 처리할 때, 커뮤니티 구분 없이 이 사람이 걸려 있는 팔로우 관계를 전부
-    // 정리하기 위해 씀. 가입해뒀던 커뮤니티 안의 팔로우는 CommunityJoinService.leave()가 위 두 메서드로
-    // 이미 지우지만, (1) 가입 없이 팔로우만 해둔 아티스트 팔로우, (2) 아티스트 본인은 자기 커뮤니티에
-    // CommunityMember가 없어서 leave() 루프에 안 걸리는 "나를 팔로우하는 팬들" 관계는 이 두 메서드로 마저 정리한다.
+    // 회원 탈퇴 때 커뮤니티와 상관없이 이 사람이 걸린 팔로우 관계를 전부 지운다.
+    // (가입 없이 한 아티스트 팔로우, 아티스트 본인을 팔로우하는 팬들처럼 leave() 로 안 지워지는 관계까지)
     void deleteByFollowerId(Long userId);
 
     void deleteByFollowingId(Long userId);

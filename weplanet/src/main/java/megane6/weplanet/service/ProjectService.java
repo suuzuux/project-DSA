@@ -49,7 +49,7 @@ public class ProjectService {
 
 	private final AdminActionLogService actionLogService;
 
-	// SETTINGS-03 커밋3: 카드/상세의 상태·유형 라벨과 등록 자격 안내 문구를 현재 로케일로 만든다.
+	// 카드/상세의 상태·유형 라벨과 등록 자격 안내 문구를 현재 로케일로 만든다.
 	// (예외 메시지는 키로 던지고 GlobalExceptionHandler / ProjectController가 번역)
 	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;

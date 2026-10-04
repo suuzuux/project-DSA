@@ -28,7 +28,7 @@ class CommunityJoinServiceTest {
 		CommunityMemberRepository memberRepository = mock(CommunityMemberRepository.class);
 		CommunityJoinService service = new CommunityJoinService(
 				memberRepository,
-				mock(ArtistProfileRepository.class),	// 아티스트 작성자의 포털 프로필 사진 조회용으로 서비스에 추가된 의존성
+				mock(ArtistProfileRepository.class),	// 아티스트 작성자의 포털 프로필 사진 조회용
 				mock(UserRepository.class),
 				mock(FileStorageService.class),
 				mock(ApplicationEventPublisher.class),

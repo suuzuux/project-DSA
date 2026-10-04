@@ -25,10 +25,8 @@ public class DormantAccountScheduler {
     private final DormantAccountNoticeService noticeService;
     private final PlatformTransactionManager transactionManager;
 
-    // ProjectStatusScheduler(매분)와 달리 하루 단위 판정이라 새벽 3시에 한 번만 돈다.
-    // AUTH-11: 예전에는 배치 전체가 트랜잭션 하나(@Transactional)라서, 대상자 전원에게 메일을 다 보낸 뒤 마지막 커밋이
-    // 실패하면 "안내 완료" 기록만 롤백되고 메일은 이미 나간 상태가 되어 다음 날 같은 메일이 또 나갔다. 대상이 많으면
-    // DB 커넥션도 배치가 끝날 때까지 붙잡고 있었다. 이제 한 명씩 짧은 트랜잭션으로 처리하고 바로 커밋한다.
+    // 새벽 3시에 하루 한 번 - 휴면 전환 30일 전 안내 메일, 그다음 휴면 전환.
+    // 한 명씩 짧은 트랜잭션으로 처리하고 바로 커밋한다 (한 명이 실패해도 다른 사람 기록은 남는다).
     @Scheduled(cron = "0 0 3 * * *")
     public void processDormantAccounts() {
         LocalDateTime now = LocalDateTime.now();
@@ -48,17 +46,15 @@ public class DormantAccountScheduler {
         if (!targetIds.isEmpty()) log.info("[휴면계정] 사전 안내 대상 {}건 중 {}건 처리", targetIds.size(), done);
     }
 
-    // 한 명 = 트랜잭션 하나. 발송에 성공했을 때만 "안내 완료"로 기록하고 곧바로 커밋한다.
-    // (발송 실패 시 기록하지 않음 → 다음 날 다시 시도 / AUTH-11 에서 finally 기록을 없앤 것과 같은 규칙)
+    // 한 명 = 트랜잭션 하나. 발송에 성공했을 때만 "안내 완료"로 기록한다 (실패하면 다음 날 다시 시도).
     private boolean sendNotice(Long userId) {
         Boolean result = new TransactionTemplate(transactionManager).execute(status -> {
             User user = userRepository.findById(userId).orElse(null);
             if (user == null || user.getDormantNoticeSentAt() != null) {
                 return false;
             }
-            // AUTH-11: 카카오/LINE 가입자처럼 받을 수 없는 시스템 주소(*.weplanet.local)는 메일을 보내지 않고
-            // 안내한 것으로만 기록한다. 기록하지 않으면 30일 조건 때문에 영원히 휴면 전환이 안 된다.
-            // (이 사람들은 소셜로 다시 로그인하면 코드 없이 바로 휴면이 풀린다 - OAuth2LoginSuccessHandler 참고)
+            // 받을 수 없는 시스템 주소(카카오/LINE 가입자 등)는 메일 없이 안내한 것으로만 기록한다 (안 그러면 휴면 전환이 안 된다).
+            // 이 사람들은 소셜로 다시 로그인하면 코드 없이 바로 휴면이 풀린다 (OAuth2LoginSuccessHandler).
             if (!user.hasPlaceholderEmail()) {
                 try {
                     noticeService.sendDormantNotice(user);

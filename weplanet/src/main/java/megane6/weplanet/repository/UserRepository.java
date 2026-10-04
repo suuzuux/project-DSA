@@ -95,9 +95,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("role") Role role,
             @Param("status") UserStatus status,
             @Param("provider") AuthProvider provider,
-            // AUTH-10: provider 컬럼에서 LOCAL이 없어지면서, "비밀번호만 있는 일반 가입 계정만" 필터링하려면
-            // provider IS NULL을 따로 표현해야 한다. provider 파라미터(특정 소셜 필터)와는 배타적으로 쓴다
-            // - AdminUserController#users 에서 둘 중 하나만 세팅해서 넘긴다.
+            // localOnly: 소셜 연동이 없는 계정(provider IS NULL)만. provider(특정 소셜) 필터와는 둘 중 하나만 쓴다 (AdminUserController#users).
             @Param("localOnly") boolean localOnly,
             @Param("keyword") String keyword
     );
@@ -154,11 +152,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     """)
     List<User> findActiveUsersDueForDormantNotice(@Param("threshold") LocalDateTime threshold);
 
-    // [휴면계정] 팬(FAN) 계정만 대상. 최근 로그인 기록(없으면 가입일) 기준으로
-    // 휴면 전환 대상인 ACTIVE 유저 조회
-    // AUTH-11: 사전 안내 메일을 보낸 지 30일(noticeThreshold)이 지난 사람만 전환한다.
-    // 예전에는 안내 발송일을 보지 않아서, 첫 배포일이나 서버가 꺼져 있다 켜진 날에는 안내 메일과
-    // 휴면 전환이 같은 실행 안에서 한꺼번에 일어났다.
+    // 휴면 전환 대상: 팬 계정 중 최근 로그인(없으면 가입일)이 1년 지났고,
+    // 사전 안내 메일을 보낸 지 30일(noticeThreshold)이 지난 ACTIVE 회원
     @Query("""
         SELECT u FROM User u
         WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE

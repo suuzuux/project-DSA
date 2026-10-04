@@ -3,7 +3,7 @@
 
   var ADD_URL = "/shop/cart/add";
   var isCartPage = document.querySelector("[data-shop-cart-page]");
-  // SETTINGS-03: shop.html/shop-detail.html/shop-cart.html이 th:inline 스크립트로 넘겨주는
+  // shop.html/shop-detail.html/shop-cart.html이 th:inline 스크립트로 넘겨주는
   // 화면 언어 문구(shop-checkout.html 포함). 이 값을 안 넘겨주는 화면에서 로드될 가능성에 대비해 한국어 기본값을 항상 씀
   var MSG = window.__SHOP_MSG__ || {};
 

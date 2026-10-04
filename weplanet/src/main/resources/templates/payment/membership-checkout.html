@@ -6,7 +6,7 @@
   <title th:text="#{membershipCheckout.pageTitle}">멤버십 결제 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}"/>
   <script src="https://js.tosspayments.com/v2/standard"></script>
-  <!--/* SETTINGS-03 커밋5: commerce-toss.js 오류 문구 */-->
+  <!--/* commerce-toss.js 오류 문구 */-->
   <script th:replace="~{fragments/toss-i18n :: tossI18n}"></script>
   <script th:src="@{/js/commerce-toss.js}"></script>
 </head>
@@ -42,7 +42,7 @@
     const failUrl = window.location.origin + "/payments/membership/fail";
     const hint = document.getElementById("payHint");
     const button = document.getElementById("payButton");
-    // SETTINGS-03 커밋5: 화면 언어에 맞춘 문구 (원래 한국어는 fallback)
+    // 화면 언어에 맞춘 문구 (한국어는 fallback)
     const MSG = {
       creatingOrder: /*[[#{community.project.js.creatingOrder}]]*/ "주문을 만들고 있습니다.",
       openingPayment: /*[[#{community.project.js.openingPayment}]]*/ "결제창을 여는 중입니다.",

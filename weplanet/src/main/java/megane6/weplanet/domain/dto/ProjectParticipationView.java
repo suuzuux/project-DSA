@@ -19,7 +19,7 @@ public record ProjectParticipationView(
 		String projectTitle,
 		Long amount,
 		String statusLabel,
-		// SETTINGS-03 커밋5: 화면은 이 키로 번역한다(statusLabel은 레거시 폴백)
+		// 화면은 이 키로 번역한다(statusLabel은 레거시 폴백)
 		String statusMessageKey,
 		String statusCode,
 		boolean waitingForDeposit,

@@ -52,7 +52,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				? (SocialLoginIntent) session.getAttribute(SocialLoginEntryController.SESSION_KEY_SOCIAL_LOGIN_INTENT)
 				: null;
 
-		// AUTH-10 신설: 로그인된 계정에 소셜을 "연결하기"로 추가하는 흐름은 로그인/가입과 완전히 다르게 처리한다.
+		// 설정 화면 "연결하기"로 로그인된 계정에 소셜을 추가하는 흐름은 로그인/가입과 따로 처리한다.
 		if (intent == SocialLoginIntent.LINK) {
 			handleLink(provider, profile, session, request, response);
 			return;
@@ -71,35 +71,36 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 			user = existingUser.get();
 
 			if (user.getStatus() == UserStatus.WITHDRAWN || user.getStatus() == UserStatus.SUSPENDED) {
-				// AUTH-11: 예전엔 /login?error 로만 보내서 로그인 화면에 아무 안내도 뜨지 않았다
+				// 로그인 화면에 "이용할 수 없는 계정" 안내를 띄운다
 				socialLoginSessionSupport.clearSecurityContext(request, response);
 				response.sendRedirect("/login?accountUnavailable=true");
 				return;
 			}
+			// 소셜 로그인은 팬 계정만 - 아이디 로그인의 역할별 화면 분리(LoginSuccessHandler)와 같은 규칙.
+			// 관리자·아티스트·소속사가 소셜로 들어와 관리자 로그인이나 멤버 프로필 선택을 건너뛰지 못하게 한다.
+			if (user.getRole() != Role.FAN) {
+				socialLoginSessionSupport.clearSecurityContext(request, response);
+				response.sendRedirect("/login?socialFanOnly=true");
+				return;
+			}
 			if (user.getStatus() == UserStatus.DORMANT && user.hasPlaceholderEmail()) {
-				// AUTH-11: 카카오/LINE 가입자는 이메일이 받을 수 없는 시스템 주소(*.weplanet.local)라서 이메일 인증코드
-				// 방식으로는 휴면을 풀 수 없었다(아이디도 자동 생성이라 본인이 모름). 방금 소셜 인증을 통과한 것 자체가
-				// 본인 확인이므로, 이 경우는 코드 없이 바로 휴면을 해제하고 로그인시킨다.
+				// 카카오/LINE 가입자는 메일을 받을 수 없는 주소라 인증코드로는 휴면을 풀 수 없다.
+				// 방금 소셜 인증을 통과한 것이 본인 확인이므로 코드 없이 바로 휴면을 해제한다.
 				user.reactivate();
 				log.info("[휴면계정] 소셜 재로그인으로 휴면 해제: userId={}, provider={}", user.getId(), provider);
 			} else if (user.getStatus() == UserStatus.DORMANT) {
-				// 소셜 인증은 됐지만, 로컬 로그인과 동일하게 이메일 코드 인증을 한 번 더 거치게 한다.
-				// AUTH-10: 로컬/소셜 진입 구분 없이 항상 같은 화면(아이디 입력 → 인증코드)으로 통일했으므로,
-				// 여기서 더 이상 세션에 대상 유저를 미리 심어두지 않는다 - DormantAccountReactivationController 참고.
+				// 그 밖의 휴면 계정은 로컬 로그인과 같이 휴면 해제 화면(아이디 입력 → 이메일 인증코드)으로 보낸다.
 				socialLoginSessionSupport.clearSecurityContext(request, response);
 				response.sendRedirect("/login/reactivate");
 				return;
 			}
 		} else {
-			// 가입된 계정이 없는 소셜 계정. 예전에는 로그인 화면에서 온 경우 "가입된 계정이 없습니다" 안내만 띄우고,
-			// 회원가입 화면에서 온 경우 바로 계정을 만들었다. 이제 어느 쪽에서 왔든 "이 계정으로 가입하시겠습니까?"
-			// 확인 화면(약관 동의 포함)으로 보내고, [예]를 누르면 그때 계정을 만든다 (SocialLoginEntryController).
-			// 소셜 인증은 이미 끝났으므로 받은 소셜 정보를 세션에 잠깐 담아두고, 구글/카카오 화면을 다시 거치지 않는다.
+			// 가입된 계정이 없는 소셜 계정 - "이 계정으로 가입하시겠습니까?" 확인 화면(약관 동의 포함)으로 보내고 [예]를 누르면 만든다.
+			// 받은 소셜 정보는 세션에 잠깐 담아 두어 구글/카카오 화면을 다시 거치지 않는다.
 			socialLoginSessionSupport.clearSecurityContext(request, response);
 			boolean fromSignup = intent == SocialLoginIntent.SIGNUP;
 			if (userRepository.existsByEmail(profile.email())) {
-				// AUTH-10: 이메일이 겹치면 자동으로 연동하지 않는다. 이미 가입된 이메일이라는 것만 안내하고,
-				// 연동 자체는 로그인 후 설정 화면에서 능동적으로 하게 한다.
+				// 이메일이 겹치면 자동으로 연동하지 않고 안내만 한다 - 연동은 로그인 후 설정 화면에서 직접 한다.
 				response.sendRedirect(fromSignup ? "/signup?socialEmailTaken=true" : "/login?socialEmailTaken=true");
 				return;
 			}
@@ -118,8 +119,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
 		user.recordLogin();
 		socialLoginSessionSupport.loginAs(user, request, response);
-		// SETTINGS-03 로케일 버그#2 수정: 소셜 로그인도 로컬 로그인과 동일하게, 세션 로케일을
-		// DB에 저장된 선호 언어로 맞춰준 뒤 리다이렉트한다.
+		// 로컬 로그인과 같이 화면 언어를 계정의 선호 언어로 맞춘 뒤 이동한다.
 		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
 		response.sendRedirect("/");
 	}

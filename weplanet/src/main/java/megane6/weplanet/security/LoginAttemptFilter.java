@@ -9,9 +9,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// 아이디·비밀번호 로그인(POST /login)을 처리하기 직전에, 잠긴 아이디나 IP 인지 먼저 확인한다 (LoginAttemptService).
-// 잠겨 있으면 비밀번호를 확인하지 않고 바로 로그인 실패 처리기로 넘긴다 - 잠긴 동안에는 비밀번호가 맞아도 들어올 수 없다.
-// SecurityConfig 에서 UsernamePasswordAuthenticationFilter 바로 앞에 끼운다 (빈으로 등록하지 않음 - 모든 요청에 붙지 않게).
+// 아이디·비밀번호 로그인(POST /login) 직전에 잠긴 아이디·IP 인지 확인한다 - 잠겨 있으면 비밀번호를 보지 않고 실패 처리.
+// SecurityConfig 에서 UsernamePasswordAuthenticationFilter 앞에 직접 끼운다 (빈으로 등록하면 모든 요청에 붙는다).
 public class LoginAttemptFilter extends OncePerRequestFilter {
 
 	private final LoginAttemptService loginAttemptService;

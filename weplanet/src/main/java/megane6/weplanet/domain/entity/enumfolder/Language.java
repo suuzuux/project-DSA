@@ -1,8 +1,6 @@
 package megane6.weplanet.domain.entity.enumfolder;
 
-// [설정 - 언어 설정] SETTINGS-02: 서비스에서 지원하는 언어.
-// User.preferredLanguage("기본 서비스 언어")의 값이자, 게시글/댓글 AI 번역(TranslateService)의
-// 대상 언어로도 그대로 재사용된다 - UI 언어랑 번역 언어를 따로 두지 않는다.
+// 서비스에서 지원하는 언어 - 회원의 기본 서비스 언어(화면 언어)이자 게시글/댓글 AI 번역 대상 언어.
 public enum Language {
 	KO, JA, EN;
 

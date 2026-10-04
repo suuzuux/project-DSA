@@ -45,7 +45,7 @@ public class ProjectController {
 	private final ArtistAttendanceService artistAttendanceService;
 	private final CommunityDrawerHelper communityDrawerHelper;
 	private final PortalManagementService portalManagementService;
-	// SETTINGS-03 커밋3: flash 문구와 등록 실패 사유(예외 메시지 키) 번역용
+	// flash 문구와 등록 실패 사유(예외 메시지 키) 번역용
 	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;
 

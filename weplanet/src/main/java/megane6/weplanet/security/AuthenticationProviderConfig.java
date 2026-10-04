@@ -10,13 +10,8 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-// AUTH-11: 아이디/비밀번호 로그인 인증 방식을 직접 등록한다.
-// 스프링 기본값은 "비밀번호를 확인하기 전에" 계정 사용 가능 여부(enabled)를 먼저 검사해서, 비밀번호를 아무렇게나
-// 넣어도 휴면 계정이면 DisabledException → 로그인 화면에 "휴면 계정입니다" 안내가 떴다. 그래서 아이디만 알면
-// 그 계정이 휴면인지 알 수 있었다(휴면 해제 공격 대상 수집에 쓰일 수 있음).
-// 여기서는 비밀번호가 맞은 뒤에(postAuthenticationChecks) enabled 를 검사하도록 순서를 바꾼다.
-// 단, 비밀번호가 아직 없는 계정(입점 승인 후 초대 링크로 비밀번호를 정하기 전인 소속사/아티스트)은 비교할 비밀번호가
-// 없으므로 예전처럼 먼저 DisabledException 을 던져서 "활성화 메일을 확인하세요" 안내가 그대로 나오게 한다.
+// 아이디/비밀번호 로그인 인증 설정 - 비밀번호가 맞은 뒤에 계정 상태(휴면 등)를 검사해서, 아이디만으로 휴면 여부가 드러나지 않게 한다.
+// 단, 비밀번호가 아직 없는 계정(초대 링크로 비밀번호를 정하기 전)은 먼저 "활성화 메일 확인" 안내를 띄운다.
 @Configuration
 public class AuthenticationProviderConfig {
 	

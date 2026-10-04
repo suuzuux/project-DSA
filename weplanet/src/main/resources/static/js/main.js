@@ -393,8 +393,9 @@
         get msg() { return t("signup.validation.emailFormat", "올바른 이메일 형식으로 입력해주세요."); },
       },
       nickname: {
-        test: (v) => v.trim() === "" || (v.length >= 3 && v.length <= 10),
-        get msg() { return t("client.signup.nicknameLength", "닉네임은 3~10자로 입력해주세요."); },
+        // 서버 닉네임 규칙(NicknamePolicy - 2~15자)과 같은 범위
+        test: (v) => v.trim() === "" || (v.length >= 2 && v.length <= 15),
+        get msg() { return t("client.signup.nicknameLength", "닉네임은 2~15자로 입력해주세요."); },
       },
     };
 

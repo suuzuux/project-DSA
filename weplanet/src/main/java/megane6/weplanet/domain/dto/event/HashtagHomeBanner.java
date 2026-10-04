@@ -5,7 +5,7 @@ import megane6.weplanet.i18n.Messages;
 /**
  * 홈 캐러셀 맨 앞에 자동으로 붙는 해시태그 총공 슬라이드
  * 관리자가 배너를 따로 등록하지 않아도, 총공 상태에 맞는 문구로 알아서 바뀐다
- * SETTINGS-03 다국어: 고정 문구는 메시지 키(hashtagBanner.*)로 현재 언어에 맞춰 만든다. 이벤트 제목/아티스트명은 입력값 그대로
+ * 고정 문구는 메시지 키(hashtagBanner.*)로 현재 언어에 맞춰 만든다. 이벤트 제목/아티스트명은 입력값 그대로
  */
 public record HashtagHomeBanner(
 		String kicker,		// 작은 윗줄 (예 : 지금 진행 중 · 종료까지 1일 4시간 12분)

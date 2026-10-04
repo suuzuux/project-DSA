@@ -18,7 +18,7 @@ public enum FanProjectEventType {
 
     private final String displayName;
 
-    /** SETTINGS-03 커밋3: 사용자 화면용 메시지 키. displayName은 레거시 폴백으로 유지 */
+    /** 사용자 화면용 메시지 키. displayName은 레거시 폴백으로 유지 */
     public String getMessageKey() {
         return "project.eventType." + name();
     }

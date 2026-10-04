@@ -48,11 +48,11 @@ public class ShopController {
 	private final CommunityJoinService communityJoinService;
 	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
 	private final MessageSource messageSource;
-	// SETTINGS-03 커밋5: 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
+	// 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
 	private final megane6.weplanet.i18n.Messages messages;
 	private final megane6.weplanet.service.community.CommunityUrls communityUrls;
 
-	// SETTINGS-03: 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
+	// 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}

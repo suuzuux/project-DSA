@@ -19,14 +19,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// [설정 - 이벤트·혜택 알림] 게시글/공지/라이브 시작을 "누구에게" 보낼지 골라서 CommunityActivityEmailService로
-// 한 명씩 보내는 역할. @Async라서 호출한 쪽(PostService 등)의 요청/응답 흐름을 막지 않는다.
-// 대상 선별 기준(GroupFollow/UserFollow 통합 이후 변경): 이 아티스트 커뮤니티에 가입(CommunityMember) +
-// 이 아티스트를 팔로우(UserFollow) + communityActivityEmailEnabled(이메일 알림) 켜짐 + 지금이
-// 야간(21:00~08:00 KST)이면 nightNotificationAllowed까지 켜져 있어야 함.
-// 원래는 "가입"(CommunityMember) 기준만 봤는데, "가입=열람 권한 / 팔로우=업데이트 받고 싶다는 의사표시"로
-// 역할을 나누기로 하면서 팔로우 여부도 함께 보게 됐다. 백필 없이 바로 적용했으므로, 가입만 하고 아직
-// 팔로우는 안 한 기존 회원은 이 시점부터 알림을 받지 못한다(사용자 확인된 결정).
+// 새 게시글/공지/라이브 시작 알림 메일을 받을 팬을 골라 한 명씩 보낸다 (@Async - 호출한 쪽을 기다리게 하지 않음).
+// 대상: 커뮤니티 가입 + 아티스트 팔로우 + 이메일 알림 켬 (+ 야간 21~08시면 야간 알림 허용까지).
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -81,10 +75,8 @@ public class CommunityActivityNotifier {
 		if (memberIds.isEmpty()) {
 			return List.of();
 		}
-		// GroupFollow/UserFollow 통합: 가입자 중에서도 이 아티스트를 팔로우(following_id == community_id
-		// == artist.getId())하는 사람만 후보로 남긴다.
-		// AUTH-11: 가입자 한 명마다 팔로우 여부를 따로 조회하던 것(N+1)을, 이 아티스트의 팔로워 목록을 한 번 가져와
-		// 가입자 목록과 겹치는 사람만 남기는 방식으로 바꿨다.
+		// 가입자 중에서 이 아티스트를 팔로우하는 사람만 남긴다
+		// (팔로워 목록을 한 번에 읽어 가입자와 겹치는 사람만 - 가입자마다 따로 조회하지 않는다).
 		java.util.Set<Long> artistFollowerIds = userFollowRepository
 				.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(artist.getId(), artist.getId()).stream()
 				.map(UserFollow::getFollowerId)
@@ -97,7 +89,7 @@ public class CommunityActivityNotifier {
 		}
 		boolean night = isNightNow();
 		return userRepository.findAllById(followerIds).stream()
-				// AUTH-11: 휴면·정지·탈퇴 회원과, 받을 수 없는 시스템 주소(*.weplanet.local - 카카오/LINE 가입자 등)는 제외
+				// 휴면·정지·탈퇴 회원과 받을 수 없는 시스템 주소(*.weplanet.local - 카카오/LINE 가입자 등)는 제외
 				.filter(User::isLoginable)
 				.filter(fan -> !fan.hasPlaceholderEmail())
 				.filter(User::isCommunityActivityEmailEnabled)
