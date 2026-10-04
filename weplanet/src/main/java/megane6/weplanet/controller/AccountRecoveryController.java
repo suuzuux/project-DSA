@@ -52,10 +52,10 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendFindIdCode(@RequestParam String realName, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		boolean eligible = accountRecoveryService.matchesRealNameAndEmail(realName, email)
-				&& accountRecoveryService.isEligibleForRecovery(email);
+		// 일치하는 계정이 있으면 가입 때 등록한 주소로 보낸다 (없으면 null - 메일은 안 보내고 응답만 같게)
+		String recipient = accountRecoveryService.findIdRecipient(realName, email).orElse(null);
 		try {
-			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, eligible);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, recipient);
 			result.put("success", true);
 			result.put("message", msg("recovery.codeSentIfMatched"));
 		} catch (VerificationRateLimitException e) {
@@ -101,10 +101,10 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendResetCode(@RequestParam String username, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		boolean eligible = accountRecoveryService.matchesUsernameAndEmail(username, email)
-				&& accountRecoveryService.isEligibleForRecovery(email);
+		// 아이디 + 이메일(대소문자 무시)이 맞으면 가입 때 등록한 주소로 보낸다
+		String recipient = accountRecoveryService.resetPasswordRecipient(username, email).orElse(null);
 		try {
-			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, eligible);
+			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, email, recipient);
 			result.put("success", true);
 			result.put("message", msg("recovery.codeSentIfMatched"));
 		} catch (VerificationRateLimitException e) {

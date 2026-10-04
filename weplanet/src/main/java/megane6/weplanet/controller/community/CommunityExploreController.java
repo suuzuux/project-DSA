@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 // EXPLORE-02: 커뮤니티 검색. CommunityController.java와 겹치지 않는 /community/search만 사용.
-// join/leave는 EXPLORE-03에서 CommunityMember가 생긴 뒤 다시 추가.
+// 커뮤니티 가입/프로필 편집/탈퇴는 CommunityJoinController(EXPLORE-03)가 맡는다.
 @RestController
 @RequiredArgsConstructor
 public class CommunityExploreController {

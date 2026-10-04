@@ -99,14 +99,17 @@ public class PortalManagementService {
         PortalNotice notice = isNew
                 ? PortalNotice.create(artist, title.trim(), content.trim(), published)
                 : getNotice(artist, noticeId);
+        // 수정 전에 이미 공개돼 있던 공지인지 (새 공지는 공개 전으로 본다)
+        boolean wasPublished = !isNew && notice.isPublished();
         if (noticeId != null) {
             notice.update(title, content, published);
         }
         applyPinState(artist, notice, pinned);
         PortalNotice saved = portalNoticeRepository.save(notice);
-        // [이벤트·혜택 알림] 새로 작성 + 바로 공개(published)한 공지에만 팔로워 알림. 기존 공지 수정이거나
-        // 아직 비공개(임시저장) 상태면 대상이 아님 - 수정할 때마다, 또는 공개 전에 메일이 가면 안 됨.
-        if (isNew && published) {
+        // [이벤트·혜택 알림] 비공개 → 공개로 바뀌는 순간에만 팔로워 알림 - 새로 쓰면서 바로 공개한 공지, 그리고
+        // 임시저장(비공개)해 둔 공지를 나중에 공개한 경우. 예전에는 "새로 쓰면서 바로 공개"만 봐서, 임시저장했다가
+        // 공개한 공지는 알림이 가지 않았다. 이미 공개된 공지의 내용 수정이나 비공개 저장 때는 보내지 않는다.
+        if (published && !wasPublished) {
             communityActivityNotifier.notifyNewNotice(artist, saved);
         }
         return saved;

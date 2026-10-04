@@ -4,12 +4,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.event.AccountMailEvent;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.PendingSocialSignup;
-import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.util.NicknameGenerator;
+import megane6.weplanet.util.NicknamePolicy;
 import megane6.weplanet.util.UsernameGenerator;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,10 +31,12 @@ public class SocialSignupService {
 	private final UserRepository userRepository;
 	private final UsernameGenerator usernameGenerator;
 	private final NicknameGenerator nicknameGenerator;
-	private final MarketingConsentEmailService marketingConsentEmailService;
+	// 가입 완료 안내 메일 요청 (AccountMailEvent → AccountMailListener)
+	private final ApplicationEventPublisher eventPublisher;
 
 	/**
-	 * @throws IllegalStateException 소셜 이메일이 이미 다른 계정에 쓰이고 있는 경우 (화면에 그대로 보여줄 문구)
+	 * @throws IllegalStateException 소셜 이메일이 이미 다른 계정에 쓰이고 있는 경우. 메시지는 다른 예외들과 같이 메시지 키이고,
+	 *                               컨트롤러는 로그인 화면(/login?socialEmailTaken)에서 같은 키의 안내를 보여준다
 	 */
 	@Transactional
 	public User signup(PendingSocialSignup pending, boolean marketingConsent) {
@@ -44,7 +48,7 @@ public class SocialSignupService {
 			return already.get();
 		}
 		if (userRepository.existsByEmail(pending.email())) {
-			throw new IllegalStateException("이미 가입된 이메일입니다. 먼저 로그인한 뒤, 설정 화면에서 소셜 계정을 연동해주세요.");
+			throw new IllegalStateException("loginEntry.socialEmailTaken");
 		}
 
 		// AUTH-10: 신규 소셜 가입은 비밀번호를 만들지 않는다(null). 필요하면 나중에 설정 화면에서 이름/이메일/비밀번호를 고친다.
@@ -61,28 +65,21 @@ public class SocialSignupService {
 
 		// [광고성 정보 알림] 아이디 가입(UserService.signup)과 같은 규칙: 가입 완료 메일은 항상 1통,
 		// 마케팅에 동의했으면 커뮤니티 가입 유도 메일 1통 더. 카카오/LINE 은 받을 수 없는 주소라 보내지 않는다.
-		if (!saved.hasPlaceholderEmail()) {
-			try {
-				marketingConsentEmailService.sendSignupWelcomeEmail(saved, marketingConsent);
-			} catch (Exception e) {
-				log.error("[광고성 정보 알림] 소셜 회원가입 환영 메일 발송 실패: user={}", saved.getId(), e);
-			}
-			if (marketingConsent) {
-				try {
-					marketingConsentEmailService.sendCommunityInviteEmail(saved);
-				} catch (Exception e) {
-					log.error("[광고성 정보 알림] 소셜 회원가입 커뮤니티 가입 유도 메일 발송 실패: user={}", saved.getId(), e);
-				}
-			}
-		}
+		// 가입이 DB 에 확정된 뒤 백그라운드에서 보낸다 (AccountMailListener - 받을 수 없는 주소도 거기서 거른다).
+		eventPublisher.publishEvent(AccountMailEvent.signupWelcome(saved.getId(), marketingConsent));
 		return saved;
 	}
 
+	// 소셜 계정의 이름(구글 이름, 카카오/LINE 닉네임)을 닉네임으로 쓰되, 아이디 가입·설정 화면과 같은 닉네임 규칙
+	// (NicknamePolicy - 길이·글자)을 통과할 때만 쓴다. 예전에는 규칙 검사 없이 그대로 써서 "Hyeongjun Kwon Smith"처럼
+	// 긴 이름이 그대로 닉네임이 됐고, 50자를 넘으면 DB 오류가 "이미 가입된 이메일입니다" 안내로 잘못 나갔다.
+	// 규칙에 맞지 않거나 다른 팬이 쓰고 있으면 자동 생성 닉네임을 쓴다 (설정 화면에서 바꿀 수 있다).
 	private String resolveNickname(String suggestedNickname) {
+		String candidate = suggestedNickname == null ? "" : suggestedNickname.trim();
 		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
-		if (suggestedNickname != null && !suggestedNickname.isBlank()
-				&& !userRepository.existsByNicknameAndRoleNotIn(suggestedNickname, Role.ARTIST_SIDE)) {
-			return suggestedNickname;
+		if (NicknamePolicy.isAllowed(candidate)
+				&& !userRepository.existsByNicknameAndRoleNotIn(candidate, Role.ARTIST_SIDE)) {
+			return candidate;
 		}
 		return nicknameGenerator.generate();
 	}

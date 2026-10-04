@@ -68,7 +68,7 @@ public class DormantAccountReactivationController {
         Optional<User> target = resolveTarget(username);
         try {
             emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.REACTIVATE,
-                    target.map(User::getEmail).orElse("reactivate:" + username.trim()), target.isPresent());
+                    target.map(User::getEmail).orElse("reactivate:" + username.trim()), target.map(User::getEmail).orElse(null));
             result.put("success", true);
             result.put("message", msg("reactivate.codeSent"));
         } catch (VerificationRateLimitException e) {

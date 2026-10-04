@@ -5,7 +5,7 @@ import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 import java.time.LocalDate;
 
 // 검색 결과 카드 하나 - 로고/솔로 여부까지 계산해서 화면에 그대로 뿌릴 수 있게 함.
-// "가입했는지 여부(joined)"는 EXPLORE-03(CommunityMember)이 생기면 다시 추가할 예정.
+// "가입했는지 여부"는 여기 담지 않는다 - 화면(community-explore.js)이 드로어용으로 이미 받은 가입 커뮤니티 목록으로 판단한다.
 public record ArtistSearchResultView(
 		Long artistId,
 		String nickname,

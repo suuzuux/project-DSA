@@ -81,8 +81,8 @@
       <!-- 닉네임 -->
       <div class="form-group" th:classappend="${#fields.hasErrors('nickname')} ? ' is-invalid'">
         <label class="form-label" for="nickname" th:text="#{signup.nicknameLabel}">닉네임</label>
-        <input class="form-input" id="nickname" th:field="*{nickname}" type="text" th:placeholder="#{signup.nicknamePlaceholderExample}" placeholder="상큼한고양이331" maxlength="10" />
-        <p class="form-hint" th:text="#{signup.nicknameHint}">원하는 닉네임을 설정하세요. 비워두면 자동 생성됩니다. (3~10자)</p>
+        <input class="form-input" id="nickname" th:field="*{nickname}" type="text" th:placeholder="#{signup.nicknamePlaceholderExample}" placeholder="상큼한고양이331" maxlength="15" />
+        <p class="form-hint" th:text="#{signup.nicknameHint}">원하는 닉네임을 설정하세요. 비워두면 자동 생성됩니다. (2~15자)</p>
         <p class="form-error" th:if="${#fields.hasErrors('nickname')}" th:errors="*{nickname}"></p>
         <p class="form-error" th:unless="${#fields.hasErrors('nickname')}"></p>
       </div>
@@ -136,13 +136,17 @@
         emailChangedResetVerify: /*[[#{signup.emailChangedResetVerify}]]*/ "이메일이 변경되어 인증이 초기화되었습니다. 다시 인증해주세요.",
         emailCodeExpired: /*[[#{signup.emailCodeExpired}]]*/ "인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.",
         emailVerifyRequired: /*[[#{signup.error.emailNotVerified}]]*/ "이메일 인증을 먼저 완료해주세요.",
-        usernameCheckError: /*[[#{signup.usernameCheckError}]]*/ "중복 확인 중 오류가 발생했습니다."
+        usernameCheckError: /*[[#{signup.usernameCheckError}]]*/ "중복 확인 중 오류가 발생했습니다.",
+        usernameAvailable: /*[[#{signup.usernameCheck.available}]]*/ "사용 가능한 아이디입니다.",
+        emailVerifiedDone: /*[[#{signup.email.verifySuccess}]]*/ "이메일 인증이 완료되었습니다."
       };
       var usernameInput = document.getElementById("userId");
       var checkUsernameBtn = document.getElementById("checkUsernameBtn");
       var usernameMsg = document.getElementById("usernameCheckMsg");
-      var usernameChecked = false;
-      var checkedUsername = "";
+      // 검증 실패로 화면이 다시 열렸을 때는 이미 마친 중복 확인을 이어간다 (AuthController.showSignupFormAgain).
+      // 처음 열린 화면이면 서버가 값을 넘기지 않으므로 빈 값 = 확인 전
+      var checkedUsername = /*[[${checkedUsername != null ? checkedUsername : ''}]]*/ "";
+      var usernameChecked = checkedUsername !== "";
 
       var emailInput = document.getElementById("email");
       var sendBtn = document.getElementById("sendEmailCodeBtn");
@@ -152,8 +156,9 @@
       var timerEl = document.getElementById("emailCodeTimer");
       var msg = document.getElementById("emailVerifyMsg");
       var form = document.getElementById("signupForm");
-      var emailVerified = false;
-      var verifiedEmail = "";
+      // 이메일 인증도 마찬가지 - 이 세션에서 이 이메일로 인증을 마쳤으면(서버 확인, 30분 유효) 다시 받지 않는다
+      var emailVerified = /*[[${emailVerified == true}]]*/ false;
+      var verifiedEmail = emailVerified ? emailInput.value.trim() : "";
       var timerInterval = null;
       var CODE_VALID_SECONDS = 5 * 60; // 서버 EmailVerificationService의 EXPIRE_MINUTES(5분)와 맞춤
 
@@ -165,6 +170,13 @@
       function setMsg(text, ok) {
         msg.textContent = text;
         msg.style.color = ok ? "#63704a" : "#c45c26";
+      }
+
+      if (usernameChecked && usernameInput.value.trim() === checkedUsername) {
+        setUsernameMsg(MSG.usernameAvailable, true);
+      }
+      if (emailVerified) {
+        setMsg(MSG.emailVerifiedDone, true);
       }
 
       checkUsernameBtn.addEventListener("click", function () {

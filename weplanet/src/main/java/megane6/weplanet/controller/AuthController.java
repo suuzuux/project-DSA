@@ -42,6 +42,8 @@ public class AuthController {
 	public static final int LOGIN_NOT_FOUND_ASK_AT = 5;
 	// 회원가입 직후 자동 로그인으로 메인에 들어왔을 때 환영 토스트를 한 번 띄우는 표시 (index.html)
 	public static final String FLASH_SIGNUP_WELCOME = "signupWelcome";
+	// 아이디 형식 (SignupRequestDto 의 @Pattern 과 같은 규칙)
+	private static final String USERNAME_PATTERN = "^[a-zA-Z0-9]{4,20}$";
 
 	private final UserService userService;
 	private final SignupEmailVerificationService emailVerificationService;
@@ -60,7 +62,7 @@ public class AuthController {
 	public Map<String, Object> checkUsername(@RequestParam String username) {
 		Map<String, Object> result = new HashMap<>();
 		String trimmed = username == null ? "" : username.trim();
-		if (!trimmed.matches("^[a-zA-Z0-9]{4,20}$")) {
+		if (!trimmed.matches(USERNAME_PATTERN)) {
 			result.put("available", false);
 			result.put("message", msg("signup.validation.usernamePattern"));
 			return result;
@@ -71,7 +73,7 @@ public class AuthController {
 		return result;
 	}
 	
-	// 회원가입 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택하는 목업 화면)
+	// 회원가입 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택)
 	@GetMapping("/signup")
 	public String signupEntry() {
 		return "signup-wireframe";
@@ -84,7 +86,7 @@ public class AuthController {
 		Object notFoundUsername = session.getAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
 		if (notFoundUsername instanceof String username) {
 			session.removeAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
-			if (username.matches("^[a-zA-Z0-9]{4,20}$")) {
+			if (username.matches(USERNAME_PATTERN)) {
 				dto.setUsername(username);
 			}
 		}
@@ -105,14 +107,12 @@ public class AuthController {
 						 HttpServletResponse response,
 						 RedirectAttributes redirectAttributes) {
 		if (bindingResult.hasErrors()) {
-			fillNicknameIfBlank(signupRequestDto);
-			return "signup-id";
+			return showSignupFormAgain(signupRequestDto, session, model);
 		}
 		// 화면(JS)에서 인증코드 확인을 막아두지만, 직접 POST를 보내는 우회를 막기 위해 서버에서도 확인한다
 		if (!emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail())) {
 			model.addAttribute("errorMessage", msg("signup.error.emailNotVerified"));
-			fillNicknameIfBlank(signupRequestDto);
-			return "signup-id";
+			return showSignupFormAgain(signupRequestDto, session, model);
 		}
 		User user;
 		try {
@@ -120,15 +120,13 @@ public class AuthController {
 			emailVerificationService.clear(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail());
 		} catch (IllegalArgumentException e) {
 			model.addAttribute("errorMessage", messages.resolve(e));
-			fillNicknameIfBlank(signupRequestDto);
-			return "signup-id";
+			return showSignupFormAgain(signupRequestDto, session, model);
 		} catch (DataIntegrityViolationException e) {
 			// AUTH-11: 중복 확인(existsBy...)과 저장 사이에 같은 아이디나 이메일로 다른 가입이 먼저 끝난 경우(동시 가입).
 			// DB 의 유니크 제약(uk_users_username / uk_users_email)이 두 번째 저장을 막는데, 예전에는 그 오류가
 			// 그대로 500 화면으로 나갔다.
 			model.addAttribute("errorMessage", msg("signup.error.concurrentSignup"));
-			fillNicknameIfBlank(signupRequestDto);
-			return "signup-id";
+			return showSignupFormAgain(signupRequestDto, session, model);
 		}
 		// 가입이 끝나면 로그인 화면을 거치지 않고 바로 로그인시켜서 메인으로 보낸다 (소셜 회원가입과 같은 흐름).
 		// 이메일 인증을 마쳤고 방금 본인이 정한 비밀번호로 만든 계정이라 다시 입력받을 이유가 없다.
@@ -139,6 +137,21 @@ public class AuthController {
 		return "redirect:/";
 	}
 
+	// 검증에 실패해서(닉네임 중복 등) 회원가입 화면을 다시 보여줄 때, 이미 마친 확인은 그대로 이어간다.
+	// 예전에는 화면 JS 가 항상 "중복 확인 전 / 이메일 미인증"으로 시작해서, 닉네임 하나만 고치려 해도 아이디 중복 확인과
+	// 이메일 인증(코드 재발송 - 60초 제한에 걸리기도 함)을 처음부터 다시 해야 했다. 이메일 인증은 서버 세션에 30분 동안 남아 있다.
+	//  - checkedUsername: 형식이 맞고 지금도 쓸 수 있는 아이디면 그 값 (중복 확인을 다시 하지 않아도 됨)
+	//  - emailVerified: 이 세션에서 그 이메일로 가입 인증을 마쳤는지
+	private String showSignupFormAgain(SignupRequestDto dto, HttpSession session, Model model) {
+		fillNicknameIfBlank(dto);
+		String username = dto.getUsername() == null ? "" : dto.getUsername().trim();
+		boolean usernameUsable = username.matches(USERNAME_PATTERN) && userService.isUsernameAvailable(username);
+		model.addAttribute("checkedUsername", usernameUsable ? username : "");
+		model.addAttribute("emailVerified",
+				emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, dto.getEmail()));
+		return "signup-id";
+	}
+
 	// 다른 항목(비밀번호 등) 검증에 실패해서 회원가입 화면을 다시 보여줄 때, 닉네임 칸을 비워둔 채 왔으면
 	// 다시 하나 뽑아 채워준다. 사용자가 직접 입력한 닉네임은 그대로 두고 건드리지 않는다.
 	private void fillNicknameIfBlank(SignupRequestDto dto) {
@@ -147,7 +160,7 @@ public class AuthController {
 		}
 	}
 	
-	// 로그인 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택하는 목업 화면)
+	// 로그인 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택)
 	@GetMapping("/login")
 	public String loginEntry(@AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal != null) {

@@ -18,6 +18,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -73,8 +75,13 @@ public class CommunityJoinService {
 				.build());
 		
 		// AUTH-11: 이미지 형식(jpg/png/gif/webp)·크기 검증 후 서버가 정한 확장자로 저장
+		// 가입이 취소되면(뒤이은 배경 사진 검증 실패 등) 먼저 저장한 사진 파일도 지운다
+		List<String> newFiles = new ArrayList<>();
+		cleanUpFilesAfterTransaction(List.of(), newFiles);
 		String avatarStoredName = (avatar != null && !avatar.isEmpty()) ? fileStorageService.storeImage(avatar) : null;
+		if (avatarStoredName != null) newFiles.add(avatarStoredName);
 		String backgroundStoredName = (background != null && !background.isEmpty()) ? fileStorageService.storeImage(background) : null;
+		if (backgroundStoredName != null) newFiles.add(backgroundStoredName);
 		
 		communityProfileRepository.save(CommunityProfile.builder()
 				.communityMember(member)
@@ -129,7 +136,11 @@ public class CommunityJoinService {
 				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
 		CommunityProfile profile = communityProfileRepository.findByCommunityMember_Id(member.getId())
 				.orElseThrow(() -> new IllegalStateException("error.community.profileMissing"));
-		
+		// 바뀌는 옛 사진은 저장이 확정된 뒤에 지우고, 새로 올린 사진은 저장이 취소되면 지운다 (cleanUpFilesAfterTransaction)
+		List<String> replacedFiles = new ArrayList<>();
+		List<String> newFiles = new ArrayList<>();
+		cleanUpFilesAfterTransaction(replacedFiles, newFiles);
+
 		if (nickname != null && !nickname.isBlank()) {
 			if (nickname.length() > 10) {
 				throw new IllegalArgumentException("error.community.nicknameTooLong");
@@ -145,27 +156,29 @@ public class CommunityJoinService {
 		
 		if (removeAvatar) {
 			if (profile.getAvatarStoredName() != null) {
-				fileStorageService.delete(profile.getAvatarStoredName());
+				replacedFiles.add(profile.getAvatarStoredName());
 			}
 			profile.setAvatarStoredName(null);
 		} else if (avatar != null && !avatar.isEmpty()) {
-			// AUTH-11: 새 파일을 먼저 저장(검증)하고 나서 옛 파일을 지운다 - 검증에 실패하면 기존 사진이 그대로 남도록
+			// AUTH-11: 새 파일을 먼저 저장(검증)하고, 옛 파일은 저장이 확정된 뒤에 지운다 - 검증에 실패하면 기존 사진이 그대로 남도록
 			String newAvatar = fileStorageService.storeImage(avatar);
+			newFiles.add(newAvatar);
 			if (profile.getAvatarStoredName() != null) {
-				fileStorageService.delete(profile.getAvatarStoredName());
+				replacedFiles.add(profile.getAvatarStoredName());
 			}
 			profile.setAvatarStoredName(newAvatar);
 		}
-		
+
 		if (removeBackground) {
 			if (profile.getBackgroundStoredName() != null) {
-				fileStorageService.delete(profile.getBackgroundStoredName());
+				replacedFiles.add(profile.getBackgroundStoredName());
 			}
 			profile.setBackgroundStoredName(null);
 		} else if (background != null && !background.isEmpty()) {
 			String newBackground = fileStorageService.storeImage(background);
+			newFiles.add(newBackground);
 			if (profile.getBackgroundStoredName() != null) {
-				fileStorageService.delete(profile.getBackgroundStoredName());
+				replacedFiles.add(profile.getBackgroundStoredName());
 			}
 			profile.setBackgroundStoredName(newBackground);
 		}
@@ -178,9 +191,12 @@ public class CommunityJoinService {
 	public void leave(User fan, Long artistId) {
 		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
+		// 프로필 사진 파일은 탈퇴가 DB 에 확정된 뒤에 지운다 (탈퇴 처리가 실패하면 사진도 그대로 남도록)
+		List<String> profileFiles = new ArrayList<>();
+		cleanUpFilesAfterTransaction(profileFiles, List.of());
 		communityProfileRepository.findByCommunityMember_Id(member.getId()).ifPresent(profile -> {
-			if (profile.getAvatarStoredName() != null) fileStorageService.delete(profile.getAvatarStoredName());
-			if (profile.getBackgroundStoredName() != null) fileStorageService.delete(profile.getBackgroundStoredName());
+			if (profile.getAvatarStoredName() != null) profileFiles.add(profile.getAvatarStoredName());
+			if (profile.getBackgroundStoredName() != null) profileFiles.add(profile.getBackgroundStoredName());
 			communityProfileRepository.delete(profile);
 		});
 		communityMemberRepository.delete(member);
@@ -241,19 +257,10 @@ public class CommunityJoinService {
 		return profile != null ? profile.getNickname() : author.getNickname();
 	}
 
-	// 게시글/댓글 목록을 한 번에 그릴 때 작성자마다 profileOf를 반복 조회하지 않도록 미리 맵으로 계산.
-	// Thymeleaf 맵 키 접근 이슈를 피하려고 Long/String 키를 둘 다 넣는다.
-	public Map<Long, String> displayNicknamesByAuthorId(Collection<User> authors, Long artistId) {
-		Map<Long, String> result = new HashMap<>();
-		for (User author : authors) {
-			if (author != null) {
-				result.putIfAbsent(author.getId(), displayNickname(author, artistId));
-			}
-		}
-		return result;
-	}
-
-	/** 템플릿에서 안전하게 쓰기 위한 String 키 맵 */
+	/**
+	 * 게시글/댓글 목록을 한 번에 그릴 때 쓰는 "작성자 id → 커뮤니티 닉네임" 맵.
+	 * Thymeleaf 맵 키 접근 이슈를 피하려고 String 키로 만든다 (작성자 프로필은 한 쿼리로 읽는다 - authorViewsByAuthorIdKey).
+	 */
 	public Map<String, String> displayNicknamesByAuthorIdKey(Collection<User> authors, Long artistId) {
 		Map<String, String> result = new LinkedHashMap<>();
 		authorViewsByAuthorIdKey(authors, artistId).forEach(
@@ -318,6 +325,29 @@ public class CommunityJoinService {
 			result.put(String.valueOf(authorId), new CommunityAuthorView(nickname, avatarUrl));
 		});
 		return result;
+	}
+
+	// 디스크의 사진 파일은 DB 와 달리 롤백되지 않아서, 트랜잭션 결과를 보고 정리한다.
+	//  - 저장 확정(커밋): 교체·삭제된 옛 파일(replacedFiles)을 지운다
+	//  - 저장 취소(롤백): 이번에 새로 올린 파일(newFiles)을 지운다 - DB 는 옛 파일을 계속 가리키므로 옛 파일은 남긴다
+	// 예전에는 옛 파일을 바로 지워서, 새 프로필 사진 저장 뒤에 배경 사진 저장이 실패해 DB 가 롤백되면
+	// DB 는 이미 지워진 옛 사진을 가리켜 사진이 깨졌다. 목록은 호출한 쪽이 채워 나가므로 처리 시작 전에 등록한다.
+	private void cleanUpFilesAfterTransaction(List<String> replacedFiles, List<String> newFiles) {
+		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+			// 트랜잭션 밖에서 불린 경우(테스트 등) - 되돌릴 저장이 없으므로 옛 파일 정리만 하던 방식 그대로
+			replacedFiles.forEach(fileStorageService::delete);
+			return;
+		}
+		TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+			@Override
+			public void afterCompletion(int status) {
+				if (status == STATUS_COMMITTED) {
+					replacedFiles.forEach(fileStorageService::delete);
+				} else if (status == STATUS_ROLLED_BACK) {
+					newFiles.forEach(fileStorageService::delete);
+				}
+			}
+		});
 	}
 
 	// 포털 프로필 이미지는 업로드 파일명 또는 외부 URL 로 저장된다 (PortalManagementService.toPublicImageUrl 과 같은 규칙)

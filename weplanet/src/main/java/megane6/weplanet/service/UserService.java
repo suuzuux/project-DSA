@@ -6,15 +6,15 @@ import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.event.AccountMailEvent;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserFollowRepository;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
-import megane6.weplanet.service.email.MarketingConsentEmailService;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.NicknamePolicy;
-import org.springframework.context.MessageSource;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,27 +32,25 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
-	private final MarketingConsentEmailService marketingConsentEmailService;
+	// 가입 완료·광고성 정보 동의 안내 메일 요청 (AccountMailEvent → AccountMailListener)
+	private final ApplicationEventPublisher eventPublisher;
 	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
 	private final CommunityJoinService communityJoinService;
 	private final UserFollowRepository userFollowRepository;
-	private final MessageSource messageSource;
 
-	// SETTINGS-03: 회원가입(signup-id.html) 화면에서만 쓰이는 예외 메시지를 현재 세션 로케일로 번역한다.
-	private String msg(String code) {
-		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
-	}
+	// 예외 메시지는 메시지 키로 던지고, 화면에 내보내는 컨트롤러가 Messages.resolve(e)로 번역한다 (AuthController, SettingsController).
+	// (예전에는 회원가입 쪽만 여기서 번역된 문장을 던졌다 - 화면에 보이는 결과는 같다)
 
 	@Transactional
 	public User signup(SignupRequestDto dto) {
 		if (!dto.isPasswordConfirmed()) {
-			throw new IllegalArgumentException(msg("signup.error.passwordMismatch"));
+			throw new IllegalArgumentException("signup.error.passwordMismatch");
 		}
 		if (userRepository.existsByUsername(dto.getUsername())) {
-			throw new IllegalArgumentException(msg("signup.error.usernameTaken"));
+			throw new IllegalArgumentException("signup.error.usernameTaken");
 		}
 		if (userRepository.existsByEmail(dto.getEmail())) {
-			throw new IllegalArgumentException(msg("signup.error.emailTaken"));
+			throw new IllegalArgumentException("signup.error.emailTaken");
 		}
 		
 		String nickname = resolveNickname(dto.getNickname());
@@ -66,7 +64,7 @@ public class UserService {
 				dto.getEmail()
 		);
 		
-		// 실제 회원가입 이메일 인증을 구현하기 전까지 사용하는 모의 인증 처리
+		// 가입 화면에서 이메일 인증코드 확인을 마친 경우에만 여기까지 온다 (AuthController.signup 이 먼저 확인) - 인증 완료 시각을 남긴다
 		user.markEmailVerified(LocalDateTime.now());
 		
 		// [설정 - 이벤트·혜택 알림] 가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스 값을 그대로 반영.
@@ -82,26 +80,15 @@ public class UserService {
 		user.recordLogin();
 
 		User saved = userRepository.save(user);
-		
+
 		// [광고성 정보 알림] 데모용 - 실제 운영 기능은 아니고, 이 기능이 살아있다는 걸 보여주기 위해
 		// 인증된 이메일로 가입 완료 메일을 무조건 1통 보낸다 (광고·마케팅 동의 체크 여부와 무관).
-		try {
-			marketingConsentEmailService.sendSignupWelcomeEmail(saved, saved.isMarketingConsent());
-		} catch (Exception e) {
-			log.error("[광고성 정보 알림] 회원가입 환영 메일 발송 실패: user={}", saved.getId(), e);
-		}
-		
-		// 그중 "(선택) 광고 및 마케팅 활용 동의"까지 체크한 사람에게는 곧바로 커뮤니티 가입 유도 메일을
-		// 1통 더 보낸다. 체크 안 했으면(기본값) 여기서 끝 - 나중에 설정 화면에서 토글을 켜면 그때 별도로
-		// 동의 확인 메일 1통만 보낸다 (아래 updateNotificationPreference 참고).
-		if (saved.isMarketingConsent()) {
-			try {
-				marketingConsentEmailService.sendCommunityInviteEmail(saved);
-			} catch (Exception e) {
-				log.error("[광고성 정보 알림] 커뮤니티 가입 유도 메일 발송 실패: user={}", saved.getId(), e);
-			}
-		}
-		
+		// 그중 "(선택) 광고 및 마케팅 활용 동의"까지 체크한 사람에게는 커뮤니티 가입 유도 메일을 1통 더 보낸다.
+		// 체크 안 했으면(기본값) 여기서 끝 - 나중에 설정 화면에서 토글을 켜면 그때 별도로 동의 확인 메일 1통만 보낸다
+		// (아래 updateNotificationPreference 참고).
+		// 메일은 가입이 DB 에 확정된 뒤 백그라운드에서 보낸다 (AccountMailListener) - 가입 화면이 메일 발송을 기다리지 않는다.
+		eventPublisher.publishEvent(AccountMailEvent.signupWelcome(saved.getId(), saved.isMarketingConsent()));
+
 		return saved;
 	}
 	
@@ -249,12 +236,9 @@ public class UserService {
 				// [광고성 정보 알림] 데모용 - 가입 때 체크를 안 했거나 소셜 계정으로 가입해서 동의값이
 				// 없던 사람이, 여기 설정 화면에서 토글을 켜는 순간(=enabled) 동의 확인 메일 1통만 보낸다.
 				// (가입 때 이미 체크해서 signup()에서 메일을 보낸 경우는 이 메서드를 타지 않으므로 안 겹침)
+				// 저장이 끝난 뒤 백그라운드로 보낸다 - 토글 응답이 메일 발송을 기다리지 않는다 (AccountMailListener)
 				if (enabled) {
-					try {
-						marketingConsentEmailService.sendMarketingConsentConfirmedEmail(user);
-					} catch (Exception e) {
-						log.error("[광고성 정보 알림] 설정 화면 동의 확인 메일 발송 실패: user={}", user.getId(), e);
-					}
+					eventPublisher.publishEvent(AccountMailEvent.marketingConsentConfirmed(user.getId()));
 				}
 			}
 			case "email" -> user.changeCommunityActivityEmailEnabled(enabled);
@@ -291,11 +275,11 @@ public class UserService {
 			return nicknameGenerator.generate();
 		}
 		if (!NicknamePolicy.isAllowed(requestedNickname)) {
-			throw new IllegalArgumentException(msg("signup.error.nicknameInvalid"));
+			throw new IllegalArgumentException("signup.error.nicknameInvalid");
 		}
 		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
 		if (userRepository.existsByNicknameAndRoleNotIn(requestedNickname, Role.ARTIST_SIDE)) {
-			throw new IllegalArgumentException(msg("signup.error.nicknameTaken"));
+			throw new IllegalArgumentException("signup.error.nicknameTaken");
 		}
 		return requestedNickname;
 	}

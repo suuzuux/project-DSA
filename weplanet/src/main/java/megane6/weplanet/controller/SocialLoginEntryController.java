@@ -129,6 +129,11 @@ public class SocialLoginEntryController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
+		// 소셜 연결은 팬 계정만 - 소셜 로그인 자체가 팬 전용이라(OAuth2LoginSuccessHandler) 다른 역할이 연결해도 쓸 데가 없다.
+		// 설정 화면에서도 팬에게만 "연결된 계정" 칸을 보여준다.
+		if (!"ROLE_FAN".equals(principal.getRoleName())) {
+			return "redirect:/settings";
+		}
 		session.setAttribute(SESSION_KEY_SOCIAL_LOGIN_INTENT, SocialLoginIntent.LINK);
 		session.setAttribute(SESSION_KEY_LINK_TARGET_USER_ID, principal.getId());
 		return "redirect:/oauth2/authorization/" + provider;

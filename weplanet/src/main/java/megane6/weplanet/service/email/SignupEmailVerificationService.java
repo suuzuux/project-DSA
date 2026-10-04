@@ -75,8 +75,19 @@ public class SignupEmailVerificationService {
 	 * @throws VerificationRateLimitException 발송 제한(같은 주소 60초·하루, 같은 IP, 사이트 전체 하루 한도)에 걸린 경우 (메일은 보내지 않음)
 	 */
 	public void sendVerificationCode(HttpSession session, VerificationPurpose purpose, String email) {
-		mailSender.send(prepareCodeMail(session, purpose, email));
-		log.debug("이메일 인증코드 발송: purpose={}, to={}", purpose, normalize(email));
+		String normalized = normalize(email);
+		SendReservation reservation = reserveSend(normalized, true);
+		try {
+			mailSender.send(prepareCodeMail(session, purpose, normalized, email.trim()));
+		} catch (RuntimeException e) {
+			// 메일이 실제로 나가지 않았으면 이번 발송은 없던 일로 돌린다. 예전에는 실패해도 60초 재발송 제한과 하루 횟수가
+			// 이미 기록돼서, "발송에 실패했습니다"를 보고 바로 다시 누르면 "60초 후 다시 시도" 안내가 떴다.
+			// 세션에 저장한 코드도 받은 사람이 없으니 지운다.
+			releaseSend(reservation);
+			entries(session).remove(key(purpose, normalized));
+			throw e;
+		}
+		log.debug("이메일 인증코드 발송: purpose={}, to={}", purpose, normalized);
 	}
 
 	/**
@@ -85,33 +96,34 @@ public class SignupEmailVerificationService {
 	 * → 응답 문구와 제한 동작이 같아서, 화면만 보고는 입력한 정보와 일치하는 계정이 있는지 알 수 없다. (AUTH-11)
 	 * 메일 전송(SMTP)은 백그라운드로 보낸다 - 요청 처리 중에 보내면 대상일 때만 응답이 1~2초 늦어져서
 	 * 응답 시간만 재도 계정이 있는지 알 수 있었다. (VerificationMailAsyncSender)
+	 * (백그라운드 발송은 실패해도 화면에 알릴 수 없고, 응답이 같아야 하므로 발송 기록을 되돌리지 않는다)
 	 *
+	 * @param email     사용자가 입력한 주소 - 발송 제한과 인증 확인은 이 값(대소문자 무시) 기준
+	 * @param recipient 실제로 받을 주소(가입 때 등록한 주소). null 이면 대상이 아니라서 메일을 보내지 않는다
 	 * @throws VerificationRateLimitException 발송 제한에 걸린 경우
 	 */
-	public void sendVerificationCodeIfEligible(HttpSession session, VerificationPurpose purpose, String email, boolean eligible) {
-		if (eligible) {
-			asyncMailSender.send(prepareCodeMail(session, purpose, email));
+	public void sendVerificationCodeIfEligible(HttpSession session, VerificationPurpose purpose, String email, String recipient) {
+		String normalized = normalize(email);
+		reserveSend(normalized, recipient != null);
+		if (recipient != null) {
+			asyncMailSender.send(prepareCodeMail(session, purpose, normalized, recipient));
 			log.debug("이메일 인증코드 발송(백그라운드): purpose={}", purpose);
 			return;
 		}
-		String normalized = normalize(email);
-		reserveSend(normalized, false);
 		entries(session).remove(key(purpose, normalized));
 		log.debug("인증코드 발송 대상 아님(계정 불일치) - 메일은 보내지 않음: purpose={}", purpose);
 	}
 
-	// 발송 제한 확인 → 코드 생성 → 세션에 저장 → 메일 제목/본문 작성(현재 요청의 언어)까지 하고, 보낼 메일을 돌려준다
-	private SimpleMailMessage prepareCodeMail(HttpSession session, VerificationPurpose purpose, String email) {
-		String normalized = normalize(email);
-		reserveSend(normalized, true);
-
+	// 코드 생성 → 세션에 저장 → 메일 제목/본문 작성(현재 요청의 언어)까지 하고, 보낼 메일을 돌려준다 (발송 제한은 호출한 쪽에서 확인)
+	private SimpleMailMessage prepareCodeMail(HttpSession session, VerificationPurpose purpose, String normalizedEmail,
+											  String recipient) {
 		String code = generateCode();
-		entries(session).put(key(purpose, normalized),
+		entries(session).put(key(purpose, normalizedEmail),
 				new VerificationEntry(code, LocalDateTime.now().plusMinutes(EXPIRE_MINUTES), false, 0));
 
 		Locale locale = LocaleContextHolder.getLocale();
 		SimpleMailMessage message = new SimpleMailMessage();
-		message.setTo(email.trim());
+		message.setTo(recipient);
 		message.setSubject(messageSource.getMessage("mail.signupCode.subject", null, locale));
 		message.setText(messageSource.getMessage("mail.signupCode.body", new Object[]{code, EXPIRE_MINUTES}, locale));
 		return message;
@@ -183,7 +195,8 @@ public class SignupEmailVerificationService {
 	// willSend: 실제로 메일을 보내는지 (찾기에서 계정이 일치하지 않으면 false). 제한 확인은 똑같이 하고(응답이 같아야
 	// 계정 존재가 안 드러남), 사이트 전체 한도는 실제로 보낸 메일만 센다.
 	// 여러 기준을 한 번에 확인하고 기록해야 해서 잠금 하나로 묶는다 (동시에 요청이 와도 한도를 넘지 않게).
-	private void reserveSend(String email, boolean willSend) {
+	// 돌려주는 값은 발송이 실패했을 때 releaseSend 로 기록을 되돌리는 데 쓴다.
+	private SendReservation reserveSend(String email, boolean willSend) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDate today = now.toLocalDate();
 		String ip = currentClientIp();
@@ -214,10 +227,38 @@ public class SignupEmailVerificationService {
 				throw new VerificationRateLimitException("verification.error.serviceLimit");
 			}
 
-			sendHistory.put(email, new SendHistory(today, todayCount + 1, now));
-			ipSendHistory.put(ip, ipHistory.counted());
+			SendHistory reservedEmail = new SendHistory(today, todayCount + 1, now);
+			IpSendHistory reservedIp = ipHistory.counted();
+			SendReservation reservation = new SendReservation(email, history, reservedEmail,
+					ip, ipSendHistory.get(ip), reservedIp, willSend ? today : null);
+			sendHistory.put(email, reservedEmail);
+			ipSendHistory.put(ip, reservedIp);
 			if (willSend) {
 				serviceDayCount++;
+			}
+			return reservation;
+		}
+	}
+
+	// reserveSend 로 남긴 기록을 되돌린다. 그 사이에 같은 주소·IP 로 다른 발송이 기록됐으면 그 기록은 건드리지 않는다.
+	private void releaseSend(SendReservation reservation) {
+		synchronized (sendLock) {
+			if (sendHistory.get(reservation.email()) == reservation.reservedEmail()) {
+				if (reservation.previousEmail() == null) {
+					sendHistory.remove(reservation.email());
+				} else {
+					sendHistory.put(reservation.email(), reservation.previousEmail());
+				}
+			}
+			if (ipSendHistory.get(reservation.ip()) == reservation.reservedIp()) {
+				if (reservation.previousIp() == null) {
+					ipSendHistory.remove(reservation.ip());
+				} else {
+					ipSendHistory.put(reservation.ip(), reservation.previousIp());
+				}
+			}
+			if (reservation.serviceDay() != null && reservation.serviceDay().equals(serviceDay) && serviceDayCount > 0) {
+				serviceDayCount--;
 			}
 		}
 	}
@@ -295,6 +336,11 @@ public class SignupEmailVerificationService {
 	}
 	
 	private record SendHistory(LocalDate date, int count, LocalDateTime lastSentAt) {
+	}
+
+	// 발송 1회로 기록하기 전/후의 값. serviceDay: 사이트 전체 횟수를 센 날 (실제로 보내지 않는 경우 null)
+	private record SendReservation(String email, SendHistory previousEmail, SendHistory reservedEmail,
+								   String ip, IpSendHistory previousIp, IpSendHistory reservedIp, LocalDate serviceDay) {
 	}
 
 	// IP 별 발송 기록: 최근 IP_WINDOW_MINUTES 분 묶음의 횟수 + 오늘 횟수

@@ -76,6 +76,14 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 				response.sendRedirect("/login?accountUnavailable=true");
 				return;
 			}
+			// 소셜 로그인은 팬 계정만 - 아이디 로그인이 팬/포털/관리자 화면을 역할별로 나누는 것(LoginSuccessHandler)과 같은 규칙.
+			// 예전에는 관리자·아티스트·소속사 계정도 설정 화면에서 소셜을 연결하면 팬 소셜 로그인으로 바로 들어와서,
+			// 관리자 로그인 화면이나 그룹 멤버 프로필 선택을 거치지 않았다. (연결 자체도 이제 팬만 할 수 있다 - SocialLoginEntryController.startLink)
+			if (user.getRole() != Role.FAN) {
+				socialLoginSessionSupport.clearSecurityContext(request, response);
+				response.sendRedirect("/login?socialFanOnly=true");
+				return;
+			}
 			if (user.getStatus() == UserStatus.DORMANT && user.hasPlaceholderEmail()) {
 				// AUTH-11: 카카오/LINE 가입자는 이메일이 받을 수 없는 시스템 주소(*.weplanet.local)라서 이메일 인증코드
 				// 방식으로는 휴면을 풀 수 없었다(아이디도 자동 생성이라 본인이 모름). 방금 소셜 인증을 통과한 것 자체가
