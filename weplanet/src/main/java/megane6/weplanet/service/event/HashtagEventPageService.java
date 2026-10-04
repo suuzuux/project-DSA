@@ -109,4 +109,4 @@ public class HashtagEventPageService {
 				? messages.get("hashtagEvent.remainingWithDays", days, left.toHoursPart(), left.toMinutesPart())
 				: messages.get("hashtagEvent.remaining", left.toHoursPart(), left.toMinutesPart());
 	}
-}
+}

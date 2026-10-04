@@ -196,4 +196,4 @@
   endInput.addEventListener("change", refreshPeriodHint);
   refreshPeriodHint();
   refreshCount();
-})();
+})();

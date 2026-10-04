@@ -271,4 +271,4 @@ public class HashtagEventAdminService {
 			event.putTarget(artist, hashtag);
 		}
 	}
-}
+}
