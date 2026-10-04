@@ -16,7 +16,9 @@ import megane6.weplanet.service.community.CommunityArtistResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +96,33 @@ public class ChatMessageService {
             }
         }
 
+        return result;
+    }
+
+    /**
+     * 팬 화면 비행기(DM) 버튼에 "안 읽은 DM 개수"를 띄우기 위한 데이터.
+     * 지금 멤버십이 살아 있는(=DM을 주고받을 수 있는) 방만 골라서, 방 주인이 since 이후에 보낸 메시지 시각을 방별로 묶어 돌려준다.
+     * "어디까지 읽었는지"는 DB에 저장하지 않고 브라우저(localStorage)가 기억한다 - 스키마를 바꾸지 않기 위함.
+     * 메시지가 없는 방도 빈 목록으로 넣어서, 화면이 그 방들의 실시간 채널을 구독할 수 있게 한다.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, List<LocalDateTime>> getRecentOwnerMessageTimes(User fan, LocalDateTime since) {
+        Map<Long, Boolean> activeByCommunity = new HashMap<>();
+        Map<Long, List<LocalDateTime>> result = new LinkedHashMap<>();
+        for (DmRoomOwner owner : dmRoomOwners().values()) {
+            User community = owner.community();
+            boolean active = activeByCommunity.computeIfAbsent(community.getId(),
+                    id -> !isCommunityMembershipExpired(fan, community));
+            if (active) {
+                result.put(owner.user().getId(), new ArrayList<>());
+            }
+        }
+        if (result.isEmpty()) {
+            return result;
+        }
+        for (ChatMessage message : chatMessageRepository.findOwnerMessagesSince(result.keySet(), fan, since)) {
+            result.get(message.getArtist().getId()).add(message.getCreatedAt());
+        }
         return result;
     }
 

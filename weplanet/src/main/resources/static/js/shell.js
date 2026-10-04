@@ -235,6 +235,12 @@
       ? `<a href="${root}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> ${t("shell.nav.keyword")}</a>`
       : "";
 
+    // 나의 컬렉션(배지)은 팬 활동 보상이라 아티스트·멤버 계정에는 메뉴 자체를 보여주지 않는다.
+    // (배지 지급도 BadgeAwardService 에서 FAN 만 받도록 막혀 있고, /collection 주소는 컨트롤러에서 막는다)
+    const collectionLink = isArtist
+      ? ""
+      : `<a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> ${t("shell.nav.collection")}</a>`;
+
     // 비로그인 상태에서는 커뮤니티 목록·메뉴를 감추고 가입 유도 문구만 보여준다.
     // (로그인해야 쓸 수 있는 메뉴들이라, 눌러봤자 로그인 화면으로 튕기기만 했음)
     const menuBody = isAuthenticated
@@ -242,7 +248,7 @@
   <div id="drawerCommunities">${communitiesBlock}</div>
 
   <nav class="drawer-menu__nav">
-    <a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> ${t("shell.nav.collection")}</a>
+    ${collectionLink}
     <a href="${isAdmin ? root + "admin/notices" : root + "notices"}" data-site-notice-link>
       <span class="nav-ico">${ICONS.notice}</span> ${t("shell.nav.notice")}
       <span class="drawer-menu__badge" data-site-notice-badge hidden aria-hidden="true"></span>

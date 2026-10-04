@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
@@ -29,4 +31,18 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
             ORDER BY m.createdAt ASC
             """)
     List<ChatMessage> findConversationWithBroadcast(@Param("artist") User artist, @Param("fan") User fan);
+
+    // 팬 화면 DM 안 읽은 개수용 - 방 주인(솔로 아티스트 또는 그룹 멤버)이 "직접" 보낸 메시지만 조회.
+    // 전체 방송(fan IS NULL)과 이 팬 개인 채널 둘 다 포함하고, AI 가상 팬·다른 팬이 보낸 건 빼려고 sender = artist 로 거른다
+    @Query("""
+            SELECT m FROM ChatMessage m
+            WHERE m.artist.id IN :roomIds
+              AND m.sender.id = m.artist.id
+              AND (m.fan IS NULL OR m.fan = :fan)
+              AND m.createdAt > :since
+            ORDER BY m.createdAt ASC
+            """)
+    List<ChatMessage> findOwnerMessagesSince(@Param("roomIds") Collection<Long> roomIds,
+                                             @Param("fan") User fan,
+                                             @Param("since") LocalDateTime since);
 }

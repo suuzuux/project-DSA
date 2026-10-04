@@ -6,6 +6,7 @@ import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.BadgePeriodService;
 import megane6.weplanet.service.CollectionService;
 import megane6.weplanet.service.ProjectContributionService;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,6 +34,10 @@ public class CollectionController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
+		// 아티스트·멤버 계정은 배지를 받지 않으므로 컬렉션 화면을 쓰지 않는다 (메뉴도 shell.js 에서 숨김)
+		if (isArtistAccount(principal)) {
+			return "redirect:/";
+		}
 		// 기간 배지는 스케줄러가 새벽에 확인하지만, 화면에 들어올 때 한 번 더 확인해서
 		// 조건을 채운 배지가 바로 보이게 한다 (본인 것만 확인)
 		bps.checkForFan(principal.getId());
@@ -59,6 +64,14 @@ public class CollectionController {
 		if (principal == null) {
 			throw new IllegalStateException("common.error.loginRequired");
 		}
+		if (isArtistAccount(principal)) {
+			throw new AccessDeniedException("error.forbidden");
+		}
 		return cs.getBadgeCollection(principal.getId(), artistId);
+	}
+
+	private boolean isArtistAccount(AuthenticatedUser principal) {
+		String role = principal.getRoleName();
+		return "ROLE_ARTIST".equals(role) || "ROLE_ARTIST_MEMBER".equals(role);
 	}
 }
