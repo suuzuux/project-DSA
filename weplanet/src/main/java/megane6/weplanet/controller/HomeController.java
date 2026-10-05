@@ -38,6 +38,7 @@ public class HomeController {
 	private final ArtistAttendanceService artistAttendanceService;
 	private final PortalManagementService portalManagementService;
 	private final megane6.weplanet.service.MainBannerService mainBannerService;
+	private final megane6.weplanet.service.MainBannerTranslator mainBannerTranslator; // 배너 제목·본문을 화면 언어로 (AI 번역)
 	private final HashtagEventPageService hashtagEventPageService; // [해시태그 총공] 홈 캐러셀 맨 앞 자동 슬라이드
 	
 	@GetMapping({"", "/"})
@@ -50,7 +51,9 @@ public class HomeController {
 		List<ArtistCardView> artists = portalManagementService.toArtistCards(artistUsers);
 		model.addAttribute("artists", artists);
 		// 상단 배너 - 최고관리자가 [배너 영역 관리]에서 노출 중으로 둔 배너. 비어 있으면 화면이 기본 배너를 보여준다
-		model.addAttribute("mainBanners", mainBannerService.activeSlides());
+		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides());
+		model.addAttribute("mainBanners", mainBanners.slides());
+		model.addAttribute("mainBannersPending", mainBanners.pending()); // true 면 화면이 번역문을 다시 받아 바꿔 끼운다
 		// [해시태그 총공] 진행 중(또는 예정·결과 발표) 총공이 있으면 캐러셀 맨 앞에 붙는 슬라이드. 없으면 null
 		model.addAttribute("hashtagBanner", hashtagEventPageService.getHomeBanner().orElse(null));
 		

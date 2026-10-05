@@ -31,7 +31,7 @@ public interface ArtistGroupRepository extends JpaRepository<ArtistGroup, Long> 
 			FROM ArtistGroup g
 			JOIN User u ON u.id = g.id
 			WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
-			  AND (:keyword IS NULL OR u.nickname LIKE CONCAT('%', :keyword, '%'))
+			  AND (:keyword IS NULL OR u.nickname LIKE CONCAT('%', :keyword, '%') OR g.nameEn LIKE CONCAT('%', :keyword, '%'))
 			  AND (:gender IS NULL OR g.gender = :gender)
 			  AND (:nationality IS NULL OR g.nationality = :nationality)
 			  AND (:category IS NULL OR g.category = :category)

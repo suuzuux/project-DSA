@@ -34,6 +34,7 @@ public class SiteNoticeController {
 	private final ShopImageStorage shopImageStorage; // 에디터 이미지 저장 (굿즈 에디터와 같은 검사 규칙 재사용)
 	
 	private final HashtagEventAdminService hashtagEventAdminService; // [해시태그 총공] 결과 공지 초안
+	private final megane6.weplanet.service.ContentTranslationService contentTranslationService; // 공지 번역보기 (AI)
 
 	@GetMapping("/notices")
 	public String publicList(
@@ -52,6 +53,19 @@ public class SiteNoticeController {
 	public String publicDetail(@PathVariable Long noticeId, Model model) {
 		model.addAttribute("notice", siteNoticeService.getPublished(noticeId));
 		return "notice-detail";
+	}
+
+	// 공지 번역보기 (게시글 "번역보기"와 같은 방식) - 로그인한 사람의 기본 서비스 언어로 제목·본문을 AI 번역한다
+	@PostMapping("/notices/{noticeId}/translate")
+	@ResponseBody
+	public Map<String, Object> translatePublic(@PathVariable Long noticeId,
+											   @AuthenticationPrincipal AuthenticatedUser principal) {
+		if (principal == null) {
+			return Map.of("success", false, "message", messages.get("common.error.loginRequired"));
+		}
+		User user = userResolver.requireAuthenticated(principal);
+		var notice = siteNoticeService.getPublished(noticeId);
+		return contentTranslationService.noticeResponse(notice.getTitle(), notice.getContent(), user.getPreferredLanguage());
 	}
 
 	@GetMapping("/admin/notices")

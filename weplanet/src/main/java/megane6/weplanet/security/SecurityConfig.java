@@ -53,7 +53,9 @@ public class SecurityConfig {
             "/api/schedules",
             "/api/notifications",
             "/api/site-notices",
-            // SETTINGS-03: shell.js(공통 헤더/사이드바)가 로그인 여부와 무관하게 fetch로 받아가는
+            // 메인 배너 번역문 - 메인 화면(비로그인 포함)이 번역이 늦게 끝난 배너 글자를 받아 바꿔 끼운다
+            "/api/main-banners",
+            // shell.js(공통 헤더/사이드바)가 로그인 여부와 무관하게 fetch로 받아가는
             // 다국어 문자열 API - 비로그인 화면(메인 등)에서도 셸이 그려지므로 공개해야 한다
             "/api/i18n/**",
             // 햄버거 메뉴 커뮤니티 목록 - 비로그인도 전체 커뮤니티는 볼 수 있다
@@ -97,7 +99,7 @@ public class SecurityConfig {
     private final SocialSignupReauthAuthorizationRequestResolver socialSignupReauthAuthorizationRequestResolver;
     private final UserRepository userRepository;
     private final CommunitySlugForwardFilter communitySlugForwardFilter;
-    private final SessionRegistry sessionRegistry; // AUTH-11: SessionRegistryConfig 참고
+    private final SessionRegistry sessionRegistry; // SessionRegistryConfig 참고
     private final LoginAttemptService loginAttemptService; // 로그인 비밀번호 대입 방어
 
     @Bean
@@ -172,10 +174,8 @@ public class SecurityConfig {
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {
         return (request, response, exception) -> {
-            // 로그인 비밀번호 대입 방어 (LoginAttemptService): 비밀번호가 틀린 경우만 센다.
-            // 휴면·활성화 전처럼 비밀번호가 맞았는데 막힌 경우나, 이미 잠겨서 막힌 경우는 세지 않는다.
-            // 없는 아이디는 지킬 계정이 없으므로 IP 횟수만 센다 - 아이디까지 잠그면 아래 "가입된 아이디가 없습니다"
-            // 안내(5회째 회원가입 확인창) 대신 잠금 안내가 떠 버린다.
+            // 로그인 비밀번호 대입 방어(LoginAttemptService): 비밀번호가 틀린 경우만 센다 (휴면·활성화 전·이미 잠긴 경우는 세지 않음).
+            // 없는 아이디는 IP 횟수만 센다 - 아이디까지 잠그면 아래 "가입된 아이디가 없습니다" 안내 대신 잠금 안내가 뜬다.
             String attemptedUsername = request.getParameter("username");
             if (exception instanceof BadCredentialsException) {
                 boolean accountExists = attemptedUsername != null && !attemptedUsername.isBlank()
@@ -232,12 +232,8 @@ public class SecurityConfig {
                 }
                 // WITHDRAWN/SUSPENDED는 구분 안 하고 일반 에러로 - 탈퇴 여부를 로그인 화면에서 노출 안 하려는 의도
             }
-            // 입력한 아이디로 가입된 계정이 아예 없으면 회원가입을 권한다 (팬 로그인 화면만).
-            // 오타일 수도 있어서 바로 가입 화면으로 보내지 않는다. 1~4회째는 로그인 폼 아래에 "가입된 아이디가 없습니다.
-            // 회원가입하시겠습니까?" 안내만 보여주고, 5회째에 확인창(예/아니오)을 띄운 뒤 횟수를 다시 센다.
-            // 회원가입으로 넘어가면 입력한 아이디가 채워진 가입 화면이 열린다(AuthController.signupForm).
-            // 아이디는 URL 대신 세션에 잠깐 담는다.
-            // (아이디 존재 여부는 가입 화면의 "중복 확인"으로도 알 수 있는 정보라 여기서 알려줘도 새로 드러나는 것은 없다)
+            // 없는 아이디로 실패하면 회원가입을 권한다 (팬 로그인 화면만): 1~4회째는 안내만, 5회째에 확인창을 띄우고 다시 센다.
+            // 가입으로 넘어가면 입력한 아이디가 채워진 가입 화면이 열린다(AuthController.signupForm) - 아이디는 URL 대신 세션에 담는다.
             if (exception instanceof BadCredentialsException) {
                 String username = request.getParameter("username");
                 String trimmed = username == null ? "" : username.trim();

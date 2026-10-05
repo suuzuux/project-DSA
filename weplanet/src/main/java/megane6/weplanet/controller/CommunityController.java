@@ -64,6 +64,7 @@ public class CommunityController {
 	private final ApplicationEventPublisher eventPublisher; // [배지] 시청 알림 발행용
 	// flash로 내보내는 예외 메시지(키 또는 문장)를 현재 로케일 문구로 바꾸는 데 사용
 	private final megane6.weplanet.i18n.Messages messages;
+	private final megane6.weplanet.service.ContentTranslationService contentTranslationService; // 공지 번역보기 (AI)
 	
 	private final CommunityArtistResolver communityArtistResolver;
 
@@ -275,6 +276,26 @@ public class CommunityController {
 		}
 		model.addAttribute("notice", portalManagementService.getPublishedNotice(artist, noticeId));
 		return "community/notice-detail";
+	}
+
+	// 커뮤니티 공지 번역보기 - 상세 화면과 같은 권한(로그인 + 이 커뮤니티 열람 가능)으로, 기본 서비스 언어로 AI 번역한다
+	@PostMapping("/community/{artistId}/notice/{noticeId}/translate")
+	@ResponseBody
+	public Map<String, Object> translateNotice(@PathVariable Long artistId,
+											   @PathVariable Long noticeId,
+											   @AuthenticationPrincipal AuthenticatedUser principal) {
+		if (principal == null) {
+			return Map.of("success", false, "message", messages.get("common.error.loginRequired"));
+		}
+		User me = userResolver.resolve(principal, 1L);
+		if (!hasCommunityAccess(me, artistId)) {
+			return Map.of("success", false, "message", messages.get("error.forbidden"));
+		}
+		User artist = userRepository.findOneById(artistId)
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
+		var notice = portalManagementService.getPublishedNotice(artist, noticeId);
+		return contentTranslationService.noticeResponse(notice.getTitle(), notice.getContent(), me.getPreferredLanguage());
 	}
 	
 	@GetMapping("/community/{artistId}/media")

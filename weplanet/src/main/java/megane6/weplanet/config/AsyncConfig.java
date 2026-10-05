@@ -68,4 +68,17 @@ public class AsyncConfig {
 		executor.initialize();
 		return executor;
 	}
+
+	// 메인 배너 AI 번역 전용 풀 (ContentTranslationService) - 배너 여러 장을 동시에 번역해 메인 화면이 오래 기다리지 않게 한다.
+	// 큐가 차면 그 배너는 이번에는 원문으로 보여준다 (호출부가 거절을 받아 처리).
+	@Bean(name = "contentTranslationExecutor")
+	public Executor contentTranslationExecutor() {
+		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+		executor.setCorePoolSize(4);
+		executor.setMaxPoolSize(4);
+		executor.setQueueCapacity(50);
+		executor.setThreadNamePrefix("content-translate-");
+		executor.initialize();
+		return executor;
+	}
 }

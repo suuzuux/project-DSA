@@ -38,7 +38,7 @@ public class BoardMediaService {
     private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
     private final MessageSource messageSource;
 
-    // SETTINGS-03: 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+    // 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
     private String msg(String code, Object... args) {
         return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
     }
