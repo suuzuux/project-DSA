@@ -1,6 +1,7 @@
 package megane6.weplanet.domain.dto;
 
 import megane6.weplanet.domain.entity.FanBadge;
+import megane6.weplanet.i18n.Messages;
 
 public record BadgeView (
 		String badgeCode,
@@ -13,13 +14,14 @@ public record BadgeView (
 	// 배지 이미지 폴더. 획득 = color, 미획득 = grayscale (두 폴더의 파일명은 같다)
 	private static final String IMAGE_BASE = "/img/badges/";
 
-	public static BadgeView of (FanBadge badge, boolean earned) {
+	// 이름·설명은 배지 코드로 화면 언어 문구(badge.{코드}.name / .description)를 찾고, 없으면 DB 값(한국어)을 쓴다
+	public static BadgeView of (FanBadge badge, boolean earned, Messages messages) {
 		return new BadgeView(
 				badge.getBadgeCode(),
-				badge.getBadgeName(),
+				messages.getOrDefault("badge." + badge.getBadgeCode() + ".name", badge.getBadgeName()),
 				badge.getIcon(),
 				toImageUrl(badge.getImageUrl(), earned),
-				badge.getDescription(),
+				messages.getOrDefault("badge." + badge.getBadgeCode() + ".description", badge.getDescription()),
 				earned
 		);
 	}

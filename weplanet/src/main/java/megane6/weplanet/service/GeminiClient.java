@@ -40,6 +40,10 @@ public class GeminiClient {
     @Value("${gemini.api.key}")
     private String apiKey;
 
+    // 메인 배너·공지 번역 전용 키 (선택) - 비어 있으면 위 공용 키를 쓴다
+    @Value("${gemini.translation.api.key:}")
+    private String translationApiKey;
+
     // 외부 서버에 HTTP 요청을 보낼 때 쓰는 스프링 제공 도구
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -65,7 +69,18 @@ public class GeminiClient {
         return generate(prompt, true);
     }
 
+    // 메인 배너·공지 번역(ContentTranslationService) 전용. 번역 전용 키가 있으면 그 키로 보내서
+    // 다른 AI 기능과 하루 한도를 나눠 쓰지 않게 한다. 실패하면 generateJson 과 같이 null
+    public String generateTranslationJson(String prompt) {
+        boolean hasTranslationKey = translationApiKey != null && !translationApiKey.isBlank();
+        return generate(prompt, true, hasTranslationKey ? translationApiKey : apiKey);
+    }
+
     private String generate(String prompt, boolean jsonResponse) {
+        return generate(prompt, jsonResponse, apiKey);
+    }
+
+    private String generate(String prompt, boolean jsonResponse, String key) {
         try {
             // Gemini가 요구하는 JSON 형식에 맞춰서 요청 내용을 만듦
             Map<String, Object> requestBody = new HashMap<>();
@@ -80,7 +95,7 @@ public class GeminiClient {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-goog-api-key", apiKey); // 이 요청이 우리 서비스에서 보낸 게 맞다는 걸 증명하는 열쇠
+            headers.set("x-goog-api-key", key); // 이 요청이 우리 서비스에서 보낸 게 맞다는 걸 증명하는 열쇠
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 

@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-// GroupFollow 통합: 사람↔사람 팔로우. 팔로우는 특정 커뮤니티(communityId)에 종속된다.
+// 사람↔사람 팔로우. 팔로우는 특정 커뮤니티(communityId)에 종속된다.
 public interface UserFollowRepository extends JpaRepository<UserFollow, UserFollow.Pk> {
 
     boolean existsByFollowerIdAndFollowingIdAndCommunityId(Long followerId, Long followingId, Long communityId);

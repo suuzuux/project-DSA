@@ -27,6 +27,11 @@ public class Messages {
 		);
 	}
 
+	/** 현재 요청 로케일로 키를 해석하고, 등록된 문구가 없으면 defaultText 를 돌려준다 (DB 기본값을 함께 쓰는 곳). */
+	public String getOrDefault(String code, String defaultText) {
+		return messageSource.getMessage(code, null, defaultText, LocaleContextHolder.getLocale());
+	}
+
 	/**
 	 * 예외 메시지처럼 "메시지 키 또는 완성된 문장"인 값을 현재 로케일 문구로 바꾼다.
 	 * 키가 아니면(=등록된 메시지가 없으면) 입력값을 그대로 돌려준다.

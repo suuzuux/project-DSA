@@ -4,20 +4,14 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <!--
-      [와이어프레임 23~24번] 커뮤니티 – 내 프로필
-      Grid 2단 구성.
-        1행 2열 : 탭(댓글·포스트·좋아요·북마크)
-        2행 1열 : 세로형 프로필 카드 (탭 아래 라인부터 시작)
-        2행 2열 : 히스토리 목록
-        편집 시 : 오른쪽(탭 줄 포함) 영역을 프로필 편집 패널이 통째로 차지
+      [와이어프레임 23~24번] 커뮤니티 프로필 - Grid 2단: 오른쪽 위 탭(댓글·포스트·좋아요·북마크), 왼쪽 프로필 카드, 오른쪽 아래 히스토리 목록.
+      편집 시에는 오른쪽(탭 줄 포함) 영역을 프로필 편집 패널이 통째로 차지한다.
       이름·소개글·아바타·배경은 모두 이 커뮤니티 전용(community_members 의 프로필 컬럼) 값을 쓴다.
-      PROFILE-01 범위: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
-      공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다.
-      단 편집 패널에는 실제 설정값이 그대로 보여서 언제든 수정할 수 있다.
+      편집 항목: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
+      공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다 (편집 패널에는 실제 설정값이 그대로 보임).
       D-DAY와 가입일은 팬은 community_members.joined_at, 가입 행이 없는 아티스트는 users.created_at을 기준으로 표시한다.
-      FOLLOW-01: 이제 이 화면은 "내 프로필"뿐 아니라 다른 사람 프로필도 보여준다(/profile/{userId}).
-      isOwnProfile이면 예전처럼 편집 버튼, 아니면 팔로우 버튼. 팔로워/팔로잉 숫자는 콘텐츠 숨김이면
-      이미지·소개글과 함께 가려지고, 댓글·포스트·좋아요·북마크 탭은 본인이거나 숨김이 아닐 때만 보인다.
+      내 프로필과 다른 사람 프로필(/profile/{userId})을 함께 보여준다 - 본인이면 편집 버튼, 아니면 팔로우 버튼.
+      콘텐츠 숨김이면 팔로워/팔로잉 숫자도 가려지고, 활동 탭은 본인이거나 숨김이 아닐 때만 보인다.
     -->
     <title th:text="#{community.profile.pageTitle}">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
@@ -52,7 +46,7 @@
         /* 높이를 줄여서 아바타(아래로 겹침)가 안내 문구를 가리지 않도록 문구를 위쪽 절반에 둔다 */
         .profile-edit .pe-cover-preview__hint { bottom: 96px; }
 
-        /* FOLLOW-01: 다른 사람이 콘텐츠 숨김 상태인 프로필을 볼 때, 탭+목록 자리에 대신 뜨는 안내 */
+        /* 다른 사람이 콘텐츠 숨김 상태인 프로필을 볼 때, 탭+목록 자리에 대신 뜨는 안내 */
         .profile-layout > .profile-hidden-notice { grid-column: 2; grid-row: 1 / span 2; }
         .profile-hidden-notice {
             display: flex;
@@ -65,7 +59,7 @@
             font-size: var(--wp-fs-sm);
         }
 
-        /* FOLLOW-01: 팔로워/팔로잉 숫자를 버튼처럼 클릭 가능하게 */
+        /* 팔로워/팔로잉 숫자를 버튼처럼 클릭 가능하게 */
         .profile-follow-counts { display: flex; gap: 16px; justify-content: center; }
         .profile-follow-counts button {
             border: 0; background: none; cursor: pointer; color: inherit; font-family: inherit;
@@ -289,7 +283,7 @@
             <!-- 북마크는 본인만 보는 정보라 내 프로필에서만 보여준다 (CommunityController.profile) -->
             <a href="#" data-tab="bookmarks" th:if="${isOwnProfile}" th:text="#{community.profile.tabBookmarks(${#lists.size(bookmarkedPosts)})}">북마크</a>
         </nav>
-        <!-- FOLLOW-01: 상대가 콘텐츠를 숨긴 경우, 탭 자리에 이 안내만 뜬다 -->
+        <!-- 상대가 콘텐츠를 숨긴 경우, 탭 자리에 이 안내만 뜬다 -->
         <div class="profile-hidden-notice" th:unless="${contentVisible}"
              th:text="#{community.profile.privateProfile}">비공개로 설정한 프로필입니다.</div>
 
@@ -344,7 +338,7 @@
                    th:if="${!contentHidden and communityJoinInfo != null}"
                    th:text="|D + ${communityJoinInfo.dayNumber}|">D + 1</p>
 
-                <!-- FOLLOW-01: 팔로워/팔로잉 숫자 - 콘텐츠 숨김이면 함께 가려진다. 클릭하면 리스트 모달 -->
+                <!-- 팔로워/팔로잉 숫자 - 콘텐츠 숨김이면 함께 가려진다. 클릭하면 리스트 모달 -->
                 <!-- 아티스트(솔로 본인/그룹 멤버) 프로필에는 팔로워/팔로잉 숫자·목록을 보여주지 않는다 -->
                 <p class="profile-follow-counts" style="margin:16px 0;" th:unless="${contentHidden or artistSide}">
                     <button type="button" data-modal-open="followersModal"
@@ -364,9 +358,8 @@
                         data-profile-edit-open
                         th:if="${canEditProfile}" th:text="#{community.profile.edit}">프로필 편집</button>
 
-                <!-- GroupFollow/UserFollow 통합: 팬↔팬, 팬→아티스트 팔로우 버튼을 하나로 합쳤다.
-                     팬↔팬은 상대가 콘텐츠 숨김이면 팔로우 자체가 막히므로(UserFollowService) 버튼도
-                     같이 숨기고, 아티스트 대상은 그런 제약이 없어 항상 보여준다. -->
+                <!-- 팔로우 버튼 하나로 팬↔팬, 팬→아티스트를 처리한다. 팬↔팬은 상대가 콘텐츠 숨김이면 팔로우가 막히므로(UserFollowService)
+                     버튼도 숨기고, 아티스트 대상은 항상 보여준다. -->
                 <!-- 그룹 멤버 개인 팔로우는 아직 지원하지 않아 멤버 프로필에서는 숨긴다 (커뮤니티 주인 팔로우만) -->
                 <form th:if="${!isOwnProfile and (isTargetArtist or (!artistSide and !contentHidden))}"
                       th:action="@{/community/{artistId}/profile/{userId}/follow(artistId=${artist.id()}, userId=${profileUserId})}"
@@ -602,8 +595,7 @@
                 <p class="text-xs text-muted" style="text-align:center;" data-file-name-for="profileEditAvatar"></p>
                 <p class="text-xs text-muted" style="text-align:center;margin-bottom:20px;" data-file-name-for="profileEditBackground"></p>
 
-                <!-- PROFILE-01: 프로필 공개범위 (콘텐츠 숨기기)
-                     보이는 스위치는 .toggle-managed(내가 상태를 직접 관리하는 스타일)이고,
+                <!-- 프로필 공개범위(콘텐츠 숨기기) - 보이는 스위치는 .toggle-managed 스타일이고,
                      실제로 서버에 전송되는 건 아래 감춰둔 체크박스다. -->
                 <input type="checkbox" name="contentHidden" id="profileEditHidden" value="true"
                        th:aria-label="#{community.profile.hideContent}"
@@ -628,7 +620,7 @@
 </main>
 
 
-<!-- FOLLOW-01: 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트 모달. 내용은 열릴 때 fetch로 채운다. -->
+<!-- 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트 모달. 내용은 열릴 때 fetch로 채운다. -->
 <div class="modal-backdrop" id="followersModal">
     <div class="modal" style="width:min(100%, 400px);">
         <div class="modal__head">
@@ -675,7 +667,7 @@
 <script th:src="@{/js/shell.js}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script th:inline="javascript">
-    // SETTINGS-03 커밋3: 크롭 모달 제목 - portal/profile.html과 같은 방식/같은 키를 재사용한다
+    // 크롭 모달 제목 - portal/profile.html과 같은 방식/같은 키를 재사용한다
     window.WEPLANET_PROFILE_CROP_TITLES = {
       Avatar: /*[[#{portalProfile.js.avatarEditTitle}]]*/ "프로필 이미지 편집",
       Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집"
@@ -686,7 +678,7 @@
     (function () {
       "use strict";
 
-      // SETTINGS-03 커밋3: 인라인 스크립트 문구. 이미지 삭제 안내는 포털 프로필과 같은 키를 재사용한다.
+      // 인라인 스크립트 문구. 이미지 삭제 안내는 포털 프로필과 같은 키를 재사용한다.
       var MSG = {
         avatarLabel: /*[[#{portalProfile.js.avatarLabel}]]*/ "프로필 이미지",
         backgroundLabel: /*[[#{portalProfile.js.backgroundLabel}]]*/ "배경 이미지",
@@ -880,7 +872,7 @@
         hiddenToggle.setAttribute("aria-checked", String(hiddenInput.checked));
       }
 
-      // FOLLOW-01: 팔로워/팔로잉 모달 - 열릴 때마다 최신 목록을 fetch해서 채운다
+      // 팔로워/팔로잉 모달 - 열릴 때마다 최신 목록을 fetch해서 채운다
       function loadUserList(containerId, url) {
         var container = document.getElementById(containerId);
         if (!container || !url) return;
@@ -904,8 +896,7 @@
         });
       });
 
-      // 내 댓글 삭제 - 예전에는 일반 폼 제출이라 지우고 나면 프로필이 아니라 게시글 상세 화면으로 이동했다.
-      // fetch 로 보내고(서버는 X-Requested-With: fetch 면 화면 이동 없이 응답) 성공하면 프로필을 새로고침한다.
+      // 내 댓글 삭제 - fetch로 보내고(서버는 X-Requested-With: fetch 면 화면 이동 없이 응답) 성공하면 프로필을 새로고침한다.
       document.querySelectorAll(".profile-comment-delete-form").forEach(function (form) {
         form.addEventListener("submit", function (e) {
           e.preventDefault();

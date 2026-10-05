@@ -9,6 +9,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.FanBadgeType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.repository.FanBadgeOwnershipRepository;
 import megane6.weplanet.repository.FanBadgeRepository;
 import megane6.weplanet.repository.UserRepository;
@@ -34,6 +35,7 @@ public class CollectionService {
 	private final FanBadgeOwnershipRepository ownershipRepository;
 	private final UserRepository userRepository;
 	private final CommunityMemberRepository communityMemberRepository;
+	private final Messages messages; // 배지 이름·설명을 화면 언어로 (badge.{코드}.name / .description)
 	
 	// 카드에 미리보기로 띄울 배지 개수
 	private static final int PREVIEW_SIZE = 3;
@@ -89,7 +91,7 @@ public class CollectionService {
 		
 		List<BadgeView> earnedBadges = catalog.stream()
 				.filter(badge -> earnedCodes.contains(badge.getBadgeCode()))
-				.map(badge -> BadgeView.of(badge, true))
+				.map(badge -> BadgeView.of(badge, true, messages))
 				.toList();
 		
 		long basicCount = countByType(earnedBadges, catalog, FanBadgeType.BASIC);
@@ -127,7 +129,7 @@ public class CollectionService {
 	private List<BadgeView> toBadgeViews(List<FanBadge> catalog, Set<String> earnedCodes, FanBadgeType type) {
 		return catalog.stream()
 				.filter(badge -> badge.getBadgeType() == type)
-				.map(badge -> BadgeView.of(badge, earnedCodes.contains(badge.getBadgeCode())))
+				.map(badge -> BadgeView.of(badge, earnedCodes.contains(badge.getBadgeCode()), messages))
 				.toList();
 	}
 	

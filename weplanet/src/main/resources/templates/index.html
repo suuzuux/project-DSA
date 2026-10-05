@@ -35,7 +35,7 @@
     <th:block sec:authorize="hasRole('AGENCY')">
       <a class="btn btn--ghost btn--sm" th:href="@{/portal/dashboard}" data-admin-page-link="1" th:text="#{common.adminPageLink}">관리자 페이지로</a>
     </th:block>
-    <!-- SETTINGS-03 커밋3: aria-label이 번역되므로 global-icons.js가 문구 대신 data-icon으로 언어 버튼을 찾게 한다 -->
+    <!-- aria-label이 번역되므로 global-icons.js가 문구 대신 data-icon으로 언어 버튼을 찾게 한다 -->
     <button type="button" class="icon-btn" data-icon="language" th:aria-label="#{layout.header.languageLabel}">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
     </button>
@@ -63,7 +63,7 @@
 
   <!-- ===== 로그인 전 ===== -->
   <th:block sec:authorize="isAnonymous()">
-    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}">
+    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}" th:data-banners-pending="${mainBannersPending}">
       <div class="banner__track">
         <!-- [해시태그 총공] 진행 중·예정·결과 발표 총공이 있으면 맨 앞에 자동으로 붙는 슬라이드 -->
         <a class="banner__slide hashtag-home-slide" th:if="${hashtagBanner != null}"
@@ -123,7 +123,7 @@
       <a class="btn btn--primary btn--sm" href="#meetArtists" th:text="#{community.join.button}">커뮤니티 가입하기</a>
     </div>
 
-    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}">
+    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}" th:data-banners-pending="${mainBannersPending}">
       <div class="banner__track">
         <!-- [해시태그 총공] 진행 중·예정·결과 발표 총공이 있으면 맨 앞에 자동으로 붙는 슬라이드 -->
         <a class="banner__slide hashtag-home-slide" th:if="${hashtagBanner != null}"
@@ -252,7 +252,7 @@
   </th:block>
 </main>
 
-<!-- ========== EXPLORE-02/05: 커뮤니티 검색 및 목록 모달 ========== -->
+<!-- ========== 커뮤니티 검색 및 목록 모달 ========== -->
 <div class="modal-backdrop" id="communitySearchModal">
   <div class="modal">
     <div class="modal__head">
@@ -289,7 +289,7 @@
   </div>
 </div>
 
-<!-- ========== EXPLORE-03: 커뮤니티 가입(닉네임 설정) 모달 ==========
+<!-- ========== 커뮤니티 가입(닉네임 설정) 모달 ==========
      커뮤니티 페이지(community/fragments/layout.html)와 같은 조각을 공유한다.
      마크업이 두 군데로 갈라지면 id가 어긋날 수 있어 한 곳에서만 관리함 -->
 <div th:replace="~{community/fragments/layout :: joinModal}"></div>
@@ -309,7 +309,7 @@
       <a th:href="@{/partnership}" class="text-muted" th:text="#{footer.partnership}">입점 신청</a>
       <a href="#" class="text-muted" th:text="#{footer.support}">고객센터</a>
     </nav>
-    <!-- 사업자 정보/통신판매중개자 고지는 법적 문구라 번역본(JA/EN)은 커밋5 법무 검수 대상이다 -->
+    <!-- 사업자 정보/통신판매중개자 고지는 법적 문구라 번역본(JA/EN)은 법무 검수가 필요하다 -->
     <p class="text-xs text-muted" style="line-height:1.6;" th:utext="#{footer.businessInfo}">
       상호 WePlaNet Inc. | 대표자 정휘원 | 전자우편주소 support@weplanet.io<br />
       WePlaNet Shop에서 판매되는 상품 중에는 WePlaNet Shop에 입점한 개별 판매자가 판매하는 상품이 포함되어 있습니다.
@@ -334,6 +334,8 @@
   window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
 </script>
 <script th:src="@{/js/main.js}"></script>
+<!-- 메인 배너 번역이 늦게 끝나면 번역문을 받아 글자만 바꿔 끼운다 (언어를 바꾼 직후 새로고침 없이) -->
+<script th:src="@{/js/main-banner-translate.js}"></script>
 <!-- 아이디 회원가입 직후 자동 로그인으로 들어왔을 때 한 번만 뜨는 환영 알림 (AuthController.signup 의 flash 값) -->
 <script th:if="${signupWelcome}" th:inline="javascript">
   WePlaNet.toast(/*[[#{signup.welcomeToast}]]*/ "WePlaNet에 오신 것을 환영합니다!");

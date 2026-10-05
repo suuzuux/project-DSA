@@ -4,11 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!--
-    회원정보 및 설정
-    - 언어 / 알림 / 약관 / 탈퇴
-    - 수정 버튼 → 모달로 회원정보 수정 (실제 서버 반영: SettingsController)
-    - AUTH-10: 로컬 비밀번호와 소셜 연동(최대 1개)이 이제 서로 독립적으로 공존한다.
-      user.provider(연동된 소셜, 없으면 null)와 user.hasPassword()를 각각 따로 본다.
+    회원정보 및 설정 - 언어 / 알림 / 약관 / 탈퇴, 회원정보 수정은 모달 (SettingsController)
+    비밀번호와 소셜 연동(최대 1개)은 따로 공존한다 - user.hasPassword()와 user.provider(없으면 null)를 각각 본다.
   -->
   <title th:text="#{settings.pageTitle}">WePlaNet – 회원정보 및 설정</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
@@ -56,7 +53,7 @@
             <span th:text="#{settings.profile.usernameLabel}">아이디</span>
             <span th:text="${user.username}">abcd1234</span>
           </p>
-          <!-- AUTH-10: 비밀번호 유무와 소셜 연동 여부는 이제 서로 독립적인 값이라 따로 보여준다. -->
+          <!-- 비밀번호 유무와 소셜 연동 여부는 서로 독립적인 값이라 따로 보여준다. -->
           <span th:if="${user.hasPassword()}" class="tag mt-8"
                 style="background:var(--wp-brand-soft);color:var(--wp-brand-dark);"
                 th:text="#{settings.profile.passwordLoginAvailable}">비밀번호 로그인 가능</span>
@@ -74,14 +71,10 @@
     </div>
   </section>
 
-  <!-- AUTH-10 신설: 소셜 계정 연동 관리 - 로그인된 상태에서 능동적으로 연결/해제한다.
-       계정당 소셜 연동은 최대 1개까지만 가능해서, 이미 다른 provider가 연동돼 있으면 "연결하기"를 눌러도
-       바로 연동되지 않고 "연동 계정을 바꾸시겠습니까?" 확인 화면(social-link-confirm.html)을 거친다. -->
-  <!-- 비밀번호가 없는 계정(소셜 전용 가입)은 이 박스 전체를 잠근다(.is-locked, style.css 참고) - 지금
-       연동된 소셜이 유일한 로그인 수단이라, 여기서 연동을 더 바꾸게 두면(다른 소셜로 교체/해제) 계정에
-       다시 로그인할 방법이 없어질 수 있다. 비밀번호를 설정해서 로그인 수단을 하나 더 확보해야만
-       (user.hasPassword() true) 이 박스를 다시 조작할 수 있다. 실제 위험한 동작인 "연결 해제"는
-       서버(UserService.unlinkSocialProvider)에서도 같은 조건으로 한 번 더 막는다. -->
+  <!-- 소셜 계정 연동 관리 - 계정당 1개까지라, 이미 다른 소셜이 연동돼 있으면
+       "연동 계정을 바꾸시겠습니까?" 확인 화면(social-link-confirm.html)을 거친다. -->
+  <!-- 비밀번호가 없는 계정(소셜 전용 가입)은 박스 전체를 잠근다(.is-locked) - 연동된 소셜이 유일한 로그인 수단이라
+       비밀번호를 설정해야 바꿀 수 있다. 연결 해제는 서버(UserService.unlinkSocialProvider)에서도 막는다. -->
   <!-- 소셜 로그인·연결은 팬 계정만 쓸 수 있어서(OAuth2LoginSuccessHandler, SocialLoginEntryController.startLink) 팬에게만 보여준다 -->
   <section class="settings-block" th:if="${user.role.name() == 'FAN'}" th:classappend="${user.hasPassword()} ? '' : 'is-locked'">
     <h2 class="settings-block__title" th:text="#{settings.social.heading}">연결된 계정</h2>
@@ -104,9 +97,7 @@
   </section>
 
   <!-- 언어 -->
-  <!-- SETTINGS-02: "기본 서비스 언어" 하나로 통합. 원래 있던 "번역 언어" 드롭다운은 없앴음 -
-       UI 언어랑 번역 대상 언어를 따로 고를 이유가 없어서(둘 다 같은 값을 쓰면 됨), 이 값 하나가
-       나중에 ① 게시글/댓글 AI 번역 대상 언어, ② 사이트 UI 언어 둘 다에 재사용될 예정. -->
+  <!-- "기본 서비스 언어" 하나로 화면 언어와 게시글/댓글 AI 번역 대상 언어를 함께 정한다 -->
   <section class="settings-block">
     <h2 class="settings-block__title" th:text="#{settings.language.heading}">언어 설정</h2>
     <div class="settings-row">
@@ -169,13 +160,13 @@
     </a>
   </section>
 
-  <!-- AUTH-11: 탈퇴는 모달에서 진행 - 비밀번호가 있는 계정은 현재 비밀번호를 다시 확인한다 -->
+  <!-- 탈퇴는 모달에서 진행 - 비밀번호가 있는 계정은 현재 비밀번호를 다시 확인한다 -->
   <button type="button" class="btn btn--ghost btn--block text-danger" data-modal-open="withdrawModal" th:text="#{settings.withdraw.button}">
     위플래닛 계정 탈퇴하기
   </button>
 </main>
 
-<!-- 회원탈퇴 모달 (AUTH-11) -->
+<!-- 회원탈퇴 모달 -->
 <div class="modal-backdrop" id="withdrawModal">
   <div class="modal">
     <div class="modal__head">
@@ -221,7 +212,7 @@
       </div>
       <div class="form-group">
         <label class="form-label" th:text="#{settings.modal.emailLabel}">이메일</label>
-        <!-- AUTH-10: 연동된 provider와 무관하게 누구나 이메일을 바꿀 수 있다 - 잠금 예외(구글 등) 없앴음. -->
+        <!-- 연동된 소셜과 무관하게 누구나 이메일을 바꿀 수 있다. -->
         <div class="form-row">
           <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
           <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit"
@@ -246,7 +237,7 @@
         <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>
 
-      <!-- AUTH-10: "비밀번호가 있는지"로 갈린다 (예전엔 provider == LOCAL 기준). -->
+      <!-- "비밀번호가 있는지"로 갈린다. -->
       <div th:if="${user.hasPassword()}">
         <div class="form-group">
           <label class="form-label" th:text="#{settings.modal.currentPasswordLabel}">현재 비밀번호</label>
@@ -265,7 +256,7 @@
           <p class="text-xs" id="passwordMismatchMsg" style="display:none;color:#c45c26;margin-top:4px;" th:text="#{settings.modal.passwordMismatch}">새 비밀번호가 일치하지 않습니다.</p>
         </div>
       </div>
-      <!-- AUTH-10 신설: 비밀번호가 아직 없는 계정(소셜 전용 가입)이 새로 등록하는 흐름 - 현재 비밀번호 확인이
+      <!-- 비밀번호가 아직 없는 계정(소셜 전용 가입)이 새로 등록하는 흐름 - 현재 비밀번호 확인이
            필요 없다(UserService.updatePortalAccount 참고). -->
       <div th:unless="${user.hasPassword()}">
         <p class="text-xs text-muted mb-8" th:text="#{settings.modal.noPasswordNotice}">아직 비밀번호가 설정되어 있지 않아요. 등록하면 아이디/비밀번호로도 로그인할 수 있어요.</p>
@@ -278,8 +269,7 @@
           <input class="form-input" type="password" name="confirmPassword" autocomplete="new-password" />
         </div>
       </div>
-      <!-- AUTH-11: 전화번호는 users.phone 에 저장(굿즈 주문서 연락처 기본값으로도 쓰임).
-           거주 국가/지역은 저장할 컬럼이 없어서 입력칸을 없앴다. -->
+      <!-- 전화번호는 users.phone 에 저장한다 (굿즈 주문서 연락처 기본값으로도 쓰임). -->
       <div class="form-group">
         <label class="form-label" th:text="#{settings.modal.phoneLabel}">전화번호 (선택)</label>
         <input class="form-input" name="phone" th:value="${user.phone}" placeholder="예) 010-1234-5678"
@@ -291,7 +281,7 @@
     <script th:inline="javascript">
       (function () {
         "use strict";
-        // SETTINGS-03: 이메일 인증 흐름에서 쓰는 문구를 서버 로케일 기준으로 미리 받아온다.
+        // 이메일 인증 흐름에서 쓰는 문구를 서버 로케일 기준으로 미리 받아온다.
         var MSG = {
           editAction: /*[[#{common.editAction}]]*/ "수정하기",
           emailSendCodeBtn: /*[[#{settings.modal.emailSendCodeBtn}]]*/ "인증코드 받기",
@@ -563,8 +553,7 @@
 <script src="../js/shell.js"></script>
 <script th:inline="javascript">
   // [이벤트·혜택 알림 설정] 광고성 정보/이메일 알림/야간 알림 토글 - 클릭 즉시 서버에 저장.
-  // 전역 .toggle 자동 바인딩(main.js initToggles)은 저장을 안 하는 순수 목업이라, 여기 토글들은
-  // 그걸 타지 않는 .toggle-managed 클래스를 쓰고 별도로 클릭을 처리한다.
+  // 저장하지 않는 전역 .toggle(main.js initToggles) 대신 .toggle-managed 클래스를 쓰고 클릭을 따로 처리한다.
   (function () {
     "use strict";
     var SAVE_FAILED = /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다.";
@@ -604,7 +593,7 @@
   })();
 </script>
 <script th:inline="javascript">
-  // [설정 - 언어 설정] SETTINGS-02: "기본 서비스 언어" 드롭다운 - 선택 즉시 서버에 저장.
+  // [설정 - 언어 설정] "기본 서비스 언어" 드롭다운 - 선택 즉시 서버에 저장.
   // 이 값이 게시글/댓글 "번역보기"(TranslateService)의 번역 대상 언어로도 그대로 쓰인다.
   (function () {
     "use strict";

@@ -12,12 +12,8 @@
  *   <script src="../js/main.js"></script>
  *   <script src="../js/shell.js"></script>
  *
- * SETTINGS-03: 좌측 메뉴 드로어/헤더 보강 부분의 한국어 문구는 서버 렌더링이 아니라
- * 이 파일이 직접 DOM에 그려 넣는 거라 Thymeleaf #{...}를 쓸 수 없다. 그래서 페이지 로드 시
- * /api/i18n/shell 을 한 번 fetch해서 현재 로케일의 문구를 받아온 뒤 화면을 그린다.
- * SETTINGS-03 커밋5: DM 패널 / 멤버십 가입·상세 모달도 같은 방식(/api/i18n/shell)으로 번역한다.
- * SETTINGS-03 커밋3: 드로어에서 만들어 넣는 커뮤니티 검색·가입 모달도 같은 방식으로 번역한다
- * (index.html / layout.html :: joinModal 과 같은 키를 /api/i18n/shell 로 함께 받는다).
+ * 드로어/헤더 보강, DM 패널·멤버십 모달, 커뮤니티 검색·가입 모달은 이 파일이 직접 그려서 Thymeleaf #{...}를 쓸 수 없다.
+ * 그래서 페이지를 열 때 /api/i18n/shell 로 현재 화면 언어 문구를 받아온 뒤 그린다 (joinModal 과 같은 키 공유).
  * ============================================================
  */
 (function () {
@@ -68,7 +64,7 @@
     "shell.fab.chatDm": "채팅 (DM)",
     "shell.fab.chatOpen": "채팅 열기",
     "shell.admin.pageLink": "관리자 페이지로 이동",
-    // SETTINGS-03 커밋3: 커뮤니티 검색·가입 모달 (ensureExploreUi)
+    // 커뮤니티 검색·가입 모달 (ensureExploreUi)
     "layout.header.searchTitle": "커뮤니티 검색",
     "main.search.placeholder": "아티스트/그룹명 검색",
     "main.search.gender": "성별",
@@ -87,7 +83,7 @@
     "community.join.nicknamePlaceholder": "최대 10자",
     "community.join.help": "커뮤니티에 가입하고 포스트 쓰기, 알림 설정 등 더 많은 서비스를 이용하세요.",
     "community.join.submit": "가입하기",
-    // SETTINGS-03 커밋5: DM 패널 / 멤버십 모달
+    // DM 패널 / 멤버십 모달
     "shell.artistFallback": "아티스트",
     "shell.dm.panelLabel": "DM 채팅",
     "shell.dm.addFriend": "친구 추가",
