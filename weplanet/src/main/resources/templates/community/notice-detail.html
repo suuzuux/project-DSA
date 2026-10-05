@@ -32,6 +32,13 @@
         <h1 class="notice-article__title" th:text="${notice.title}">공지 제목</h1>
         <p class="notice-article__date"
            th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31 16:00</p>
+        <!-- 번역보기 (게시글과 같은 방식) - 내 기본 서비스 언어로 제목·본문을 AI 번역해 원문 위에 보여준다 -->
+        <a href="#" class="translate-link" data-notice-translate data-target="noticeTranslated"
+           th:data-url="@{/community/{artistId}/notice/{noticeId}/translate(artistId=${artist.id()},noticeId=${notice.id})}"
+           th:data-label-show="#{community.translate.show}" th:data-label-loading="#{client.translate.loading}"
+           th:data-label-original="#{client.translate.original}" th:data-label-failed="#{error.ai.unavailable}"
+           th:text="#{community.translate.show}">번역보기</a>
+        <div id="noticeTranslated" class="text-sm" style="display:none;margin:8px 0 16px;color:var(--wp-ink-soft);white-space:pre-wrap;"></div>
         <div class="notice-article__body" th:text="${notice.content}">공지 내용</div>
       </article>
     </div>
@@ -42,5 +49,6 @@
   <script th:src="@{/js/main.js}"></script>
   <script th:src="@{/js/shell.js}"></script>
   <script th:src="@{/js/dm-realtime.js}"></script>
+  <script th:src="@{/js/notice-translate.js}"></script>
 </body>
 </html>

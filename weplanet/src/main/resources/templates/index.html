@@ -63,7 +63,7 @@
 
   <!-- ===== 로그인 전 ===== -->
   <th:block sec:authorize="isAnonymous()">
-    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}">
+    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}" th:data-banners-pending="${mainBannersPending}">
       <div class="banner__track">
         <!-- [해시태그 총공] 진행 중·예정·결과 발표 총공이 있으면 맨 앞에 자동으로 붙는 슬라이드 -->
         <a class="banner__slide hashtag-home-slide" th:if="${hashtagBanner != null}"
@@ -123,7 +123,7 @@
       <a class="btn btn--primary btn--sm" href="#meetArtists" th:text="#{community.join.button}">커뮤니티 가입하기</a>
     </div>
 
-    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}">
+    <div class="banner mb-24" data-carousel th:aria-label="#{main.banner.ariaLabel}" th:data-banners-pending="${mainBannersPending}">
       <div class="banner__track">
         <!-- [해시태그 총공] 진행 중·예정·결과 발표 총공이 있으면 맨 앞에 자동으로 붙는 슬라이드 -->
         <a class="banner__slide hashtag-home-slide" th:if="${hashtagBanner != null}"
@@ -334,6 +334,8 @@
   window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
 </script>
 <script th:src="@{/js/main.js}"></script>
+<!-- 메인 배너 번역이 늦게 끝나면 번역문을 받아 글자만 바꿔 끼운다 (언어를 바꾼 직후 새로고침 없이) -->
+<script th:src="@{/js/main-banner-translate.js}"></script>
 <!-- 아이디 회원가입 직후 자동 로그인으로 들어왔을 때 한 번만 뜨는 환영 알림 (AuthController.signup 의 flash 값) -->
 <script th:if="${signupWelcome}" th:inline="javascript">
   WePlaNet.toast(/*[[#{signup.welcomeToast}]]*/ "WePlaNet에 오신 것을 환영합니다!");
