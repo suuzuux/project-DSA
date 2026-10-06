@@ -376,17 +376,20 @@ public class CommunityController {
 		return "community/live";
 	}
 	
-	// "내 프로필" 버튼 - 헤더 링크는 그대로 두고 여기서 내 id의 프로필(/profile/{userId})로 보낸다.
+	// "내 프로필" 버튼
+	// 영문 주소 (/kiikii/profile)로 돌아오면 필터가 forward만 하므로, 주소창도 그대로 남음
 	@GetMapping("/community/{artistId}/profile")
-	public String myProfileRedirect(
+	public String myProfile(
 			@PathVariable Long artistId,
-			@AuthenticationPrincipal AuthenticatedUser principal
+			@RequestParam(defaultValue = "latest") String sort,
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
 	) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
 		User me = userResolver.resolve(principal, 1L);
-		return "redirect:/community/" + artistId + "/profile/" + me.getId();
+		return profile(artistId, me.getId(), sort, principal, model);
 	}
 
 	// 와이어프레임 20~23번: 프로필 - 댓글/포스트/좋아요/북마크 히스토리. 본인이면 편집 가능, 타인이면 그 사람 기준 + 팔로우 버튼.
