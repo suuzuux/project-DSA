@@ -5,12 +5,14 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <!-- 와이어프레임/weverse 참고: 멤버십 미가입 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
-    <title th:text="${artist.nickname()} + ' – WePlaNet'">WePlaNet</title>
+    <title th:text="${artist.nickname()} + ' | WePlaNet'">WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <link rel="stylesheet" th:href="@{/css/community.css}"/>
     <link rel="stylesheet" th:href="@{/css/shell.css}"/>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/theme.css}" />
+    <script th:src="@{/js/theme-init.js}"></script>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},

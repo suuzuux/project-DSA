@@ -7,9 +7,11 @@
     회원정보 및 설정 - 언어 / 알림 / 약관 / 탈퇴, 회원정보 수정은 모달 (SettingsController)
     비밀번호와 소셜 연동(최대 1개)은 따로 공존한다 - user.hasPassword()와 user.provider(없으면 null)를 각각 본다.
   -->
-  <title th:text="#{settings.pageTitle}">WePlaNet – 회원정보 및 설정</title>
+  <title th:text="#{settings.pageTitle}">회원정보 및 설정 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" th:href="@{/css/theme.css}" />
+  <script th:src="@{/js/theme-init.js}"></script>
 </head>
 <body data-shell="fan" data-base=""
       th:attr="data-authenticated=true,

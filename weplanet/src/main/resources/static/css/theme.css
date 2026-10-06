@@ -1,0 +1,838 @@
+/**
+ * ============================================================
+ * WePlaNet – Theme Layer (팬 메인 사이트 전용)
+ * ------------------------------------------------------------
+ * 라이트: 맑은 아침 낮빛 (차가운 무채색 + 일출 버밀리언 하나)
+ * 다크:   밤 (푸른 기가 도는 흑색 + 같은 버밀리언을 밝힌 톤)
+ *
+ * 규칙
+ * - 포인트 색은 버밀리언 하나만. 주요 버튼은 잉크색이다.
+ * - 회색은 차가운 계열 하나로 통일한다.
+ * - 모서리: 버튼·입력 8px / 카드 12px / 아티스트 썸네일 14px 사각 / 필터 칩·태그만 알약.
+ * - 그림자·그라데이션 버튼·유리 효과 없음. 깊이는 여백과 1px 선으로 낸다.
+ *
+ * style.css·variables.css 는 포털·관리자도 함께 쓰므로 건드리지 않고,
+ * 메인 사이트 템플릿에만 이 파일을 "마지막 stylesheet" 로 링크한다.
+ * ============================================================
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400..800&display=swap");
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+/* =========================================================
+ * 1. Tokens – Morning (light)
+ * ========================================================= */
+:root {
+  --wp-ink: #121417;
+  --wp-ink-soft: #454b55;
+  --wp-muted: #747b87;
+  --wp-faint: #aeb4be;
+  --wp-paper: #f5f6f8;
+  --wp-surface: #ffffff;
+  --wp-hairline: #e5e8ec;
+  --wp-line: #d5d9e0;
+
+  /* 일출 버밀리언: 흰 바탕 글자 대비 4.75:1 */
+  --wp-brand: #cf3f25;
+  --wp-brand-dark: #a8301a;
+  --wp-brand-soft: #fcefeb;
+  --wp-brand-tint: #f5cdc3;
+  --wp-on-brand: #ffffff;
+  --wp-accent: #121417;
+  --wp-accent-soft: #eef0f3;
+  --wp-on-accent: #ffffff;
+
+  --wp-danger: #c0331f;
+  --wp-danger-soft: #fcecea;
+  --wp-success: #2f6f4e;
+  --wp-success-soft: #e6f1eb;
+  --wp-live: #d4322c;
+
+  /* 라틴 문자는 Geist, 한글은 Pretendard 로 떨어진다 */
+  --wp-font: "Geist", "Pretendard Variable", "Pretendard", "Apple SD Gothic Neo",
+    "Noto Sans KR", sans-serif;
+  --wp-font-display: var(--wp-font);
+
+  --wp-radius: 12px;
+  --wp-radius-sm: 8px;
+  --sky-radius-thumb: 14px;
+
+  --wp-shadow: none;
+  --wp-shadow-modal: 0 24px 48px -20px rgba(18, 20, 23, 0.28);
+
+  --sky-hover: #f1f3f5;
+  --sky-placeholder: #eceef2;
+  --sky-press: #2a2e35;
+  /* 화면 위쪽에 아주 옅게 드는 아침 빛 */
+  --sky-ambient: radial-gradient(90vmax 50vmax at 85% -20%, rgba(255, 168, 120, 0.12), transparent 60%);
+  --sky-panel:
+    radial-gradient(120% 160% at 100% 0%, rgba(255, 160, 110, 0.18), transparent 55%),
+    #eceef2;
+  --sky-panel-ink: #121417;
+}
+
+/* =========================================================
+ * 2. Tokens – Night (dark)
+ * ========================================================= */
+:root[data-theme="dark"] {
+  --wp-ink: #e8eaef;
+  --wp-ink-soft: #a7adb9;
+  --wp-muted: #737a88;
+  --wp-faint: #4a505d;
+  --wp-paper: #0b0d12;
+  --wp-surface: #12151c;
+  --wp-hairline: #1e222b;
+  --wp-line: #2b303b;
+
+  --wp-brand: #ff7a5e;
+  --wp-brand-dark: #ff9b84;
+  --wp-brand-soft: #26140f;
+  --wp-brand-tint: #4a2219;
+  --wp-on-brand: #160a07;
+  --wp-accent: #e8eaef;
+  --wp-accent-soft: #161a22;
+  --wp-on-accent: #0b0d12;
+
+  --wp-danger: #ff8a7a;
+  --wp-danger-soft: #2a1513;
+  --wp-success: #8fcaa6;
+  --wp-success-soft: #13221a;
+  --wp-live: #ff6b62;
+
+  --wp-shadow: none;
+  --wp-shadow-modal: 0 24px 56px -16px rgba(0, 0, 0, 0.7);
+
+  --sky-hover: #171b23;
+  --sky-placeholder: #1a1e27;
+  --sky-press: #c9cdd6;
+  /* 밤: 위쪽에 아주 옅게 남은 푸른 빛 */
+  --sky-ambient: radial-gradient(90vmax 50vmax at 50% -25%, rgba(84, 116, 196, 0.14), transparent 60%);
+  --sky-panel:
+    radial-gradient(120% 160% at 100% 0%, rgba(84, 116, 196, 0.22), transparent 55%),
+    #141821;
+  --sky-panel-ink: #e8eaef;
+}
+
+/* =========================================================
+ * 3. Base
+ * ========================================================= */
+html {
+  background: var(--wp-paper);
+}
+
+body {
+  background: var(--sky-ambient) no-repeat, var(--wp-paper);
+  line-height: 1.6;
+  letter-spacing: -0.006em;
+  font-feature-settings: "tnum" 0;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+::selection {
+  background: var(--wp-brand-tint);
+  color: var(--wp-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--wp-brand);
+  outline-offset: 2px;
+}
+
+/* 날짜·숫자는 자릿수를 맞춘다 */
+.post-card__time,
+.notice-list__date,
+.week-day__label,
+.rising-card__info span,
+.dm-list-item__time,
+.pagination a,
+.pagination span {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 아이콘 선을 조금 가늘게 */
+svg.icon,
+.tab-ico {
+  stroke-width: 1.75;
+}
+
+/* 대문자 + 넓은 자간 소제목을 일반 표기로 */
+.settings-block__title,
+.community-shortcuts__title,
+.drawer-menu__section-title,
+.dm-section-label,
+.data-table th,
+.banner__kicker,
+.sitemap-group h2,
+.widget__title {
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-size: var(--wp-fs-sm);
+}
+
+/* =========================================================
+ * 4. Header
+ * ========================================================= */
+.site-header,
+.community-top {
+  background: color-mix(in srgb, var(--wp-paper) 94%, transparent);
+  border-bottom-color: var(--wp-hairline);
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.brand__text span {
+  color: var(--wp-brand);
+}
+
+.icon-btn,
+.menu-toggle,
+.community-top__left a.home-link {
+  transition: background var(--wp-fast), color var(--wp-fast);
+}
+
+.icon-btn:hover,
+.menu-toggle:hover,
+.community-top__right .icon-btn:hover,
+.community-top__left a.home-link:hover {
+  background: var(--sky-hover);
+  color: var(--wp-ink);
+}
+
+.community-top__left a.home-link {
+  background: transparent;
+}
+
+.community-top__name {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* =========================================================
+ * 5. Buttons
+ * ========================================================= */
+.btn {
+  border-radius: var(--wp-radius-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: background var(--wp-fast), color var(--wp-fast), border-color var(--wp-fast),
+    transform 120ms var(--wp-ease);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn--primary {
+  background: var(--wp-ink);
+  color: var(--wp-paper);
+}
+
+.btn--primary:hover {
+  background: var(--sky-press);
+}
+
+.btn--accent {
+  background: var(--wp-brand);
+  color: var(--wp-on-brand);
+}
+
+.btn--accent:hover {
+  filter: none;
+  background: var(--wp-brand-dark);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--wp-line);
+}
+
+.btn--ghost:hover {
+  background: var(--sky-hover);
+  border-color: var(--wp-line);
+}
+
+.btn--soft {
+  background: var(--sky-hover);
+  color: var(--wp-ink);
+}
+
+.btn--sns {
+  background: var(--wp-surface);
+}
+
+.btn--sns:hover {
+  background: var(--wp-surface);
+  border-color: var(--wp-ink-soft);
+}
+
+/* 포인트색 위 글자 (다크에선 밝은 버밀리언 위라 어두운 글자) */
+.badge-verified,
+.dm-composer .send-btn,
+.board-select:hover .board-select__trigger,
+.board-select.is-open .board-select__trigger,
+.board-select:hover .board-select__ico,
+.board-select.is-open .board-select__ico,
+.board-select__menu [role="option"]:hover,
+.board-select__menu [role="option"].is-active,
+.wp-noti-filter__chip.is-active,
+.wp-cal-chip.is-active,
+.wp-cal-day__num.is-selected,
+.month-cal__cell.is-today .month-cal__date {
+  color: var(--wp-on-brand);
+}
+
+/* 선택 칩·페이지 번호·내 말풍선은 잉크색 */
+.chip.is-active,
+.chip.is-selected,
+.chip:has(input:checked),
+.pagination .is-active,
+.dm-msg--me .dm-msg__bubble {
+  background: var(--wp-ink);
+  border-color: var(--wp-ink);
+  color: var(--wp-paper);
+}
+
+.chip {
+  transition: background var(--wp-fast), border-color var(--wp-fast), color var(--wp-fast);
+}
+
+.chip:hover:not(.is-active):not(.is-selected):not(:has(input:checked)) {
+  background: var(--sky-hover);
+  border-color: var(--wp-line);
+  color: var(--wp-ink);
+}
+
+/* =========================================================
+ * 6. Forms
+ * ========================================================= */
+.form-input,
+.form-select,
+.form-textarea,
+.dm-composer input {
+  background: var(--wp-surface);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--wp-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--wp-ink) 10%, transparent);
+}
+
+.form-label {
+  color: var(--wp-ink);
+  font-weight: 500;
+}
+
+/* =========================================================
+ * 7. Surfaces
+ * ========================================================= */
+.post-card,
+.widget,
+.membership-card,
+.notice-list,
+.notice-article,
+.settings-block,
+.collection-card,
+.side-panel,
+.project-card,
+.media-tile,
+.live-replay-card,
+.profile-panel,
+.table-wrap,
+.product-card,
+.live-watch__chat,
+.week-day {
+  background: var(--wp-surface);
+  border-color: var(--wp-hairline);
+  box-shadow: none;
+}
+
+.post-card,
+.project-card,
+.product-card,
+.media-tile,
+.live-replay-card {
+  transition: border-color var(--wp-fast), box-shadow 200ms var(--wp-ease);
+}
+
+.post-card:hover,
+.project-card:hover,
+.product-card:hover,
+.media-tile:hover,
+.live-replay-card:hover {
+  transform: none;
+  border-color: var(--wp-line);
+  box-shadow: 0 2px 8px rgba(18, 20, 23, 0.04);
+}
+
+.widget__title {
+  font-weight: 600;
+  color: var(--wp-ink);
+}
+
+.membership-card--joined {
+  border-color: var(--wp-line);
+  background: var(--wp-surface);
+}
+
+.notice-list__item:hover,
+.dm-list-item:hover,
+.data-table tbody tr:hover {
+  background: var(--sky-hover);
+}
+
+/* =========================================================
+ * 8. Avatars & placeholders
+ * ========================================================= */
+.avatar,
+.post-author-avatar {
+  background: var(--sky-placeholder);
+  color: var(--wp-ink-soft);
+}
+
+/* 아티스트·커뮤니티 썸네일은 둥근 사각형 (사용자 아바타는 원형 유지) */
+.artist-chip__logo,
+.artist-tile__thumb,
+.rising-card > .avatar,
+.community-top__left > a.avatar,
+.widget .flex-center > .avatar--lg {
+  border-radius: var(--sky-radius-thumb);
+  background: var(--sky-placeholder);
+  color: var(--wp-ink-soft);
+  border: 0;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wp-ink) 6%, transparent);
+}
+
+.community-top__left > a.avatar {
+  border-radius: 9px;
+}
+
+.artist-tile:hover .artist-tile__thumb,
+.artist-chip:hover .artist-chip__logo {
+  transform: none;
+}
+
+.media-ph,
+.project-card__cover,
+.product-card__thumb,
+.shop-marquee-card__thumb,
+.product-detail__gallery,
+.badge-icon {
+  background: var(--sky-placeholder);
+}
+
+.media-tile__thumb {
+  background: #1b1e25;
+}
+
+/* =========================================================
+ * 9. Typography & rhythm
+ * ========================================================= */
+.section__title,
+.marquee-block__title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.section__head {
+  margin-bottom: 16px;
+}
+
+.section__link {
+  color: var(--wp-ink-soft);
+  font-weight: 500;
+}
+
+/* 홈: 섹션 사이 여백을 넉넉하게 */
+.home {
+  padding-top: 28px;
+  padding-bottom: 72px;
+}
+
+.home > section,
+.home > .banner,
+.home > .cta-banner {
+  margin-bottom: 56px;
+}
+
+.home > section.section {
+  padding: 0;
+}
+
+/* =========================================================
+ * 10. Banner – 기본 슬라이드는 옅은 빛이 드는 면 + 글자
+ * ========================================================= */
+.banner {
+  border-radius: var(--wp-radius);
+}
+
+.banner__slide--sky {
+  color: var(--sky-panel-ink);
+  background: var(--sky-panel);
+  justify-content: flex-end;
+}
+
+.banner__slide--sky.banner__slide--alt {
+  background:
+    radial-gradient(120% 160% at 0% 100%, color-mix(in srgb, var(--wp-brand) 10%, transparent), transparent 55%),
+    var(--sky-placeholder);
+}
+
+.banner__slide--sky .banner__kicker {
+  color: var(--wp-muted);
+  opacity: 1;
+  font-weight: 500;
+}
+
+.banner__title {
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+  max-width: 18em;
+  word-break: keep-all;
+}
+
+.hashtag-home-slide {
+  background: #1c1f26;
+}
+
+:root[data-theme="dark"] .hashtag-home-slide {
+  background: #1a1f2b;
+}
+
+.banner__nav .icon-btn {
+  background: color-mix(in srgb, var(--wp-surface) 80%, transparent);
+  color: var(--wp-ink);
+  backdrop-filter: none;
+}
+
+.banner__dots {
+  color: var(--sky-panel-ink);
+}
+
+.banner__dot {
+  background: color-mix(in srgb, currentColor 28%, transparent);
+  box-shadow: none;
+  transition: width var(--wp-med) var(--wp-ease), background var(--wp-fast);
+}
+
+.banner__dot.is-active {
+  background: currentColor;
+}
+
+/* =========================================================
+ * 11. Home – 상단 안내 / 인기 포스트 / 급상승 / 만나보세요
+ * ========================================================= */
+/* 상단 안내: 박스 대신 한 줄 */
+.cta-banner {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--wp-hairline);
+  border-radius: 0;
+  padding: 4px 0 20px;
+}
+
+.cta-banner p {
+  color: var(--wp-ink);
+  font-weight: 600;
+}
+
+.cta-banner p.text-muted {
+  color: var(--wp-muted);
+  font-weight: 400;
+}
+
+/* 인기 포스트: 똑같은 카드 격자 대신 가로로 넘기는 한 줄 */
+.feed--grid {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(260px, calc((100% - 28px) / 3.15));
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--wp-line) transparent;
+}
+
+.feed--grid > * {
+  scroll-snap-align: start;
+}
+
+@media (max-width: 768px) {
+  .feed--grid {
+    grid-auto-columns: 78%;
+  }
+}
+
+/* 급상승 커뮤니티: 카드 대신 순위가 붙은 목록 */
+main .rising-grid {
+  counter-reset: rising;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 40px;
+}
+
+main .rising-card {
+  counter-increment: rising;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--wp-hairline);
+  border-radius: 0;
+  padding: 14px 0;
+  gap: 16px;
+}
+
+main .rising-card::before {
+  content: counter(rising);
+  width: 1.5em;
+  flex-shrink: 0;
+  font-size: var(--wp-fs-md);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--wp-muted);
+}
+
+main .rising-card:hover {
+  transform: none;
+  border-color: var(--wp-hairline);
+}
+
+main .rising-card:hover strong {
+  color: var(--wp-brand);
+}
+
+main .rising-card > .avatar {
+  width: 52px;
+  height: 52px;
+  font-size: var(--wp-fs-sm);
+}
+
+main .rising-card__info strong {
+  font-size: var(--wp-fs-md);
+  font-weight: 600;
+  transition: color var(--wp-fast);
+}
+
+@media (max-width: 768px) {
+  main .rising-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 지금 바로 만나보세요: 바깥 박스 없이 */
+.artist-grid {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  gap: 24px 40px;
+}
+
+.artist-tile__name {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  transition: color var(--wp-fast);
+}
+
+.artist-tile:hover .artist-tile__name {
+  color: var(--wp-brand);
+}
+
+/* 커뮤니티 하단 가입 유도 띠 (인라인 색을 덮는다) */
+.community-teaser {
+  background: var(--wp-surface) !important;
+  color: var(--wp-ink) !important;
+  border-top: 1px solid var(--wp-hairline);
+}
+
+.community-teaser .btn {
+  background: var(--wp-ink) !important;
+  color: var(--wp-paper) !important;
+}
+
+/* =========================================================
+ * 12. Community hero / profile cover (이미지 없을 때)
+ * ========================================================= */
+.community-hero:not([style*="url("]),
+.profile-cover {
+  background: var(--sky-panel);
+  color: var(--sky-panel-ink);
+}
+
+.community-hero:not([style*="url("]) .community-hero__viewers {
+  background: color-mix(in srgb, var(--wp-ink) 7%, transparent);
+  color: var(--wp-ink-soft);
+}
+
+/* =========================================================
+ * 13. Tabs / tags / calendar
+ * ========================================================= */
+.tabs a.is-active,
+.tabs button.is-active,
+.profile-tabs a.is-active {
+  color: var(--wp-ink);
+  border-bottom-color: var(--wp-ink);
+}
+
+.tag--private {
+  background: var(--wp-hairline);
+}
+
+.week-event {
+  border-radius: 6px;
+}
+
+.week-event--alt {
+  background: var(--wp-accent-soft);
+  color: var(--wp-ink-soft);
+}
+
+.tag--member {
+  color: var(--wp-brand-dark);
+}
+
+.mini-cal__grid .day.is-selected {
+  outline-color: var(--wp-ink-soft);
+  background: var(--sky-hover);
+  color: var(--wp-ink);
+}
+
+/* =========================================================
+ * 14. Modal / toast
+ * ========================================================= */
+.modal-backdrop,
+.shell-backdrop {
+  background: rgba(18, 20, 23, 0.42);
+}
+
+:root[data-theme="dark"] .modal-backdrop,
+:root[data-theme="dark"] .shell-backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.modal,
+.wp-dialog {
+  border: 1px solid var(--wp-hairline);
+}
+
+.wp-toast {
+  background: var(--wp-ink);
+  color: var(--wp-paper);
+}
+
+/* =========================================================
+ * 15. Shell – drawer / FAB / DM
+ * ========================================================= */
+.drawer-menu {
+  box-shadow: none;
+}
+
+.drawer-menu__communities a:hover,
+.drawer-menu__nav a:hover {
+  background: var(--sky-hover);
+  color: var(--wp-ink);
+}
+
+.fab {
+  background: var(--wp-ink);
+  color: var(--wp-paper);
+  box-shadow: 0 6px 16px -8px rgba(18, 20, 23, 0.45);
+}
+
+.fab:hover {
+  transform: none;
+  background: var(--sky-press);
+}
+
+.fab--secondary {
+  background: var(--wp-surface);
+  color: var(--wp-ink-soft);
+  border-color: var(--wp-line);
+  box-shadow: none;
+}
+
+.fab--secondary:hover {
+  background: var(--sky-hover);
+  color: var(--wp-ink);
+}
+
+.dm-body {
+  background: var(--wp-paper);
+}
+
+.dm-promo {
+  background: var(--wp-surface);
+  border-color: var(--wp-hairline);
+}
+
+.dm-list-item__avatar .online-dot {
+  border-color: var(--wp-surface);
+}
+
+.membership-hero__badge {
+  background: var(--wp-ink);
+  color: var(--wp-paper);
+}
+
+.post-scroll-top {
+  box-shadow: none;
+}
+
+/* =========================================================
+ * 16. Auth (로그인 화면은 항상 라이트)
+ * ========================================================= */
+.auth-page {
+  background: var(--sky-ambient) no-repeat, var(--wp-paper);
+}
+
+.auth-card {
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.auth-card__title {
+  letter-spacing: -0.04em;
+}
+
+/* =========================================================
+ * 17. Page-specific color fixes (shop / live)
+ * ========================================================= */
+.membership-notice {
+  border-color: var(--wp-line);
+}
+
+.product-card__cart-btn {
+  background: var(--wp-surface);
+  color: var(--wp-ink);
+}
+
+:root[data-theme="dark"] .cart-remove-btn,
+:root[data-theme="dark"] .alert--error {
+  background: var(--wp-danger-soft);
+  color: var(--wp-danger);
+}
+
+:root[data-theme="dark"] .live-now {
+  background: #221514;
+  border-color: #3d2220;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active {
+    transform: none;
+  }
+}

@@ -7,6 +7,8 @@
   <title th:text="#{notices.pageTitle}">공지사항 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
+  <link rel="stylesheet" th:href="@{/css/theme.css}" />
+  <script th:src="@{/js/theme-init.js}"></script>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},

@@ -16,6 +16,8 @@
   <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (mainHome.html과 동일, dm-realtime.js가 필요로 함) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+  <link rel="stylesheet" th:href="@{/css/theme.css}" />
+  <script th:src="@{/js/theme-init.js}"></script>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
@@ -59,7 +61,7 @@
   </div>
 </header>
 
-<main class="container section">
+<main class="container section home">
 
   <!-- ===== 로그인 전 ===== -->
   <th:block sec:authorize="isAnonymous()">
@@ -85,11 +87,11 @@
           </div>
         </a>
         <th:block th:if="${#lists.isEmpty(mainBanners)}">
-          <div class="banner__slide">
+          <div class="banner__slide banner__slide--sky">
             <p class="banner__kicker">WePlaNet</p>
             <h2 class="banner__title" th:text="#{main.banner.guest1}">아티스트와 팬이 함께하는 커뮤니티 플랫폼</h2>
           </div>
-          <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#8a5a66 60%,#f7c8d3);">
+          <div class="banner__slide banner__slide--sky banner__slide--alt">
             <p class="banner__kicker">Community</p>
             <h2 class="banner__title" th:text="#{main.banner.guest2}">좋아하는 아티스트 커뮤니티에 가입해보세요</h2>
           </div>
@@ -145,11 +147,11 @@
           </div>
         </a>
         <th:block th:if="${#lists.isEmpty(mainBanners)}">
-          <div class="banner__slide">
+          <div class="banner__slide banner__slide--sky">
             <p class="banner__kicker">Event &amp; Schedule</p>
             <h2 class="banner__title" th:text="#{main.banner.member1}">이벤트 및 광고 배너 영역 · 가입 커뮤니티 스케줄</h2>
           </div>
-          <div class="banner__slide" style="background:linear-gradient(120deg,#2d3a47,#a85d67 70%,#f7c8d3);">
+          <div class="banner__slide banner__slide--sky banner__slide--alt">
             <p class="banner__kicker">Membership</p>
             <h2 class="banner__title" th:text="#{main.banner.member2}">멤버십 전용 콘텐츠 · DM 구독권</h2>
           </div>
@@ -295,7 +297,7 @@
 <div th:replace="~{community/fragments/layout :: joinModal}"></div>
 
 <!-- 와이어프레임 10번: 하단 푸터 (약관/정책 링크, 사업자 정보, SNS, 저작권) -->
-<footer style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
+<footer class="site-footer" style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
   <div class="container" style="display:flex;flex-direction:column;gap:16px;">
     <nav style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--wp-fs-xs);">
       <a href="#" class="text-muted" th:text="#{footer.terms}">이용약관</a>

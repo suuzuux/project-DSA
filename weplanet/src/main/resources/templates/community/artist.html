@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title th:text="${artist.nickname()} + ' – Artist | WePlaNet'">Artist | WePlaNet</title>
+  <title th:text="${artist.nickname()} + ' | Artist | WePlaNet'">Artist | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
@@ -14,6 +14,8 @@
   <!-- Toast UI Editor: 포스트 작성 모달의 마크다운 리치 에디터 (예전엔 뷰어만 붙어있고 작성용은 빠져있었음) -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+  <link rel="stylesheet" th:href="@{/css/theme.css}" />
+  <script th:src="@{/js/theme-init.js}"></script>
 </head>
 <body data-shell="fan" data-base="/"
       th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
