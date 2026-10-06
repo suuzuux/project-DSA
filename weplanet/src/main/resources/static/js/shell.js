@@ -877,13 +877,15 @@
         return;
       }
       // 우리가 붙인 모달의 닫기 / 배경 클릭
-      var closeBtn = e.target.closest("#communitySearchModal [data-modal-close], #communityJoinModal [data-modal-close]");
+      // (#weplanet-shell 안의 멤버십 가입·상세 모달도 셸이 비동기로 그려서 initModals() 가 못 잡음)
+      var closeBtn = e.target.closest("#weplanet-shell [data-modal-close], #communitySearchModal [data-modal-close], #communityJoinModal [data-modal-close]");
       if (closeBtn) {
         var back = closeBtn.closest(".modal-backdrop");
         if (back) back.classList.remove("is-open");
         return;
       }
-      if (e.target.id === "communitySearchModal" || e.target.id === "communityJoinModal") {
+      if (e.target.id === "communitySearchModal" || e.target.id === "communityJoinModal"
+          || (e.target.classList.contains("modal-backdrop") && e.target.closest("#weplanet-shell"))) {
         e.target.classList.remove("is-open");
       }
     });
