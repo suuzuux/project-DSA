@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * 팬 공개 이벤트 페이지 (로그인 없이도 볼 수 있음 - SecurityConfig PUBLIC_URLS 에 /events/** 추가)
+ * 해시태그 총공 이벤트 페이지 (로그인 회원만 - 비회원은 SecurityConfig 규칙에 따라 /login 으로 이동)
  *   GET /events/hashtag            홈 배너 → 지금 대표 이벤트
  *   GET /events/hashtag/{id}       결과 공지 링크 → 그 회차 이벤트
  *   ?all=true                      전체 순위 펼치기 (주소에 남아서 30초 새로고침 후에도 펼친 상태 유지)
