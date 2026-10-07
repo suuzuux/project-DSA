@@ -2,7 +2,7 @@
 -- [v2 간소화본] 2026-10-03 정휘원
 --   원본 weplanet_schema_full_reset.sql 에서 테이블 60개 -> 56개로 줄였다.
 --   ※ main-details 의 엔티티 코드 변경과 짝이다. 이 파일만 적용하고 예전 코드로 서버를 켜면
---     시작할 때 DB 구조 검사(ddl-auto=validate)에서 실패한다.
+--  '   시작할 때 DB 구조 검사(ddl-auto=validate)에서 실패한다.
 --   ※ 전체 초기화용이라 실행하면 기존 데이터가 모두 지워진다.
 --   1) 코드에서 쓰지 않는 테이블 삭제 (엔티티·참조 없음)
 --      - group_schedule        : 일정 기능은 artist_schedule 을 쓴다
