@@ -46,10 +46,13 @@ public class GeminiClient {
 
     // 외부 서버에 HTTP 요청을 보낼 때 쓰는 스프링 제공 도구
     private final RestTemplate restTemplate = new RestTemplate();
+    private final ThreadLocal<String> lastFailure = new ThreadLocal<>();
 
-    // Gemini AI 서버의 주소(엔드포인트)
+    // 요약·번역·DM. 라이브 댓글은 더 싼 Flash-Lite를 쓴다 (무료 한도도 모델마다 따로다).
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+    private static final String GEMINI_LIVE_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 
     /**
      * 프롬프트(질문/지시문) 하나를 Gemini에게 보내고, 답변 텍스트만 뽑아서 돌려줌.
@@ -69,6 +72,25 @@ public class GeminiClient {
         return generate(prompt, true);
     }
 
+    // 라이브 댓글과 AI 팬 DM. 한도가 남은 Flash-Lite를 쓰고, 공용 키가 거절되면 번역 전용 키로 한 번 더 시도한다.
+    public String generateLiveJson(String prompt) {
+        String text = generate(prompt, true, apiKey, false, GEMINI_LIVE_URL);
+        if (text != null && !text.isBlank()) {
+            return text;
+        }
+        boolean otherKey = translationApiKey != null && !translationApiKey.isBlank() && !translationApiKey.equals(apiKey);
+        if (!otherKey) {
+            return text;
+        }
+        log.warn("라이브 댓글 Gemini를 번역 전용 키로 재시도");
+        return generate(prompt, true, translationApiKey, false, GEMINI_LIVE_URL);
+    }
+
+    public String lastFailure() {
+        String value = lastFailure.get();
+        return value == null ? "" : value;
+    }
+
     // 메인 배너·공지 번역(ContentTranslationService) 전용. 번역 전용 키가 있으면 그 키로 보내서
     // 다른 AI 기능과 하루 한도를 나눠 쓰지 않게 한다. 실패하면 generateJson 과 같이 null
     public String generateTranslationJson(String prompt) {
@@ -81,6 +103,15 @@ public class GeminiClient {
     }
 
     private String generate(String prompt, boolean jsonResponse, String key) {
+        return generate(prompt, jsonResponse, key, false);
+    }
+
+    private String generate(String prompt, boolean jsonResponse, String key, boolean minimalThinking) {
+        return generate(prompt, jsonResponse, key, minimalThinking, GEMINI_URL);
+    }
+
+    private String generate(String prompt, boolean jsonResponse, String key, boolean minimalThinking, String url) {
+        lastFailure.remove();
         try {
             // Gemini가 요구하는 JSON 형식에 맞춰서 요청 내용을 만듦
             Map<String, Object> requestBody = new HashMap<>();
@@ -90,7 +121,12 @@ public class GeminiClient {
                     ))
             ));
             if (jsonResponse) {
-                requestBody.put("generationConfig", Map.of("responseMimeType", "application/json"));
+                Map<String, Object> config = new HashMap<>();
+                config.put("responseMimeType", "application/json");
+                if (minimalThinking) {
+                    config.put("thinkingConfig", Map.of("thinkingLevel", "MINIMAL", "includeThoughts", false));
+                }
+                requestBody.put("generationConfig", config);
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -100,29 +136,78 @@ public class GeminiClient {
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
             // 실제로 Gemini 서버에 요청을 보내고, 응답(JSON)을 받아옴
-            Map<String, Object> response = restTemplate.postForObject(GEMINI_URL, request, Map.class);
+            Map<String, Object> response = restTemplate.postForObject(url, request, Map.class);
 
-            return extractText(response);
+            String text = extractText(response);
+            if (text == null || text.isBlank()) {
+                lastFailure.set("응답 본문이 비었습니다");
+            }
+            return text;
+        } catch (org.springframework.web.client.RestClientResponseException e) {
+            // 4xx/5xx 본문(모델명 오류, 쿼터 초과 이유)까지 남긴다
+            String detail = e.getStatusCode().value() == 429
+                    ? "사용 한도를 초과했습니다. 잠시 후 다시 시도하거나 다른 API 키를 넣어 주세요."
+                    : e.getStatusCode().value() + " " + abbreviate(e.getResponseBodyAsString());
+            lastFailure.set(detail);
+            log.warn("Gemini API 호출 실패: {}", detail);
+            return jsonResponse ? null : messages.get("error.ai.unavailable");
         } catch (RestClientException e) {
             // Gemini API 하루 사용 한도 초과(HTTP 429), 네트워크 오류 등 - 서비스 전체가 죽지 않고 안내 문구로 대체
+            lastFailure.set(abbreviate(e.getMessage()));
             log.warn("Gemini API 호출 실패: {}", e.getMessage());
             return jsonResponse ? null : messages.get("error.ai.unavailable");
         } catch (RuntimeException e) {
             // 안전성 필터로 candidates가 비어 오는 등 응답 구조가 예상과 다른 경우.
             // RestClientException으로는 안 잡혀서 그대로 두면 NPE가 500 에러로 터졌음
+            lastFailure.set(abbreviate(e.toString()));
             log.warn("Gemini 응답 해석 실패: {}", e.toString());
             return jsonResponse ? null : messages.get("error.ai.unavailable");
         }
+    }
+
+    private static String abbreviate(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String text = raw.strip().replaceAll("\\s+", " ");
+        return text.length() <= 180 ? text : text.substring(0, 180);
     }
 
     // Gemini의 응답은 { candidates: [ { content: { parts: [ { text: "..." } ] } } ] } 같은
     // 복잡한 중첩 구조로 옴. 그 안에서 우리가 진짜 필요한 텍스트 한 줄만 꺼내는 메서드
     @SuppressWarnings("unchecked") // Map<String,Object>를 강제로 형변환할 때 뜨는 경고를 무시함 (Gemini 응답 구조가 고정돼 있어서 안전함)
     private String extractText(Map<String, Object> response) {
+        if (response == null) {
+            return null;
+        }
         List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-        Map<String, Object> firstCandidate = candidates.get(0);
-        Map<String, Object> contentMap = (Map<String, Object>) firstCandidate.get("content");
+        if (candidates == null || candidates.isEmpty()) {
+            log.warn("Gemini 응답에 candidates 없음: {}", response.get("promptFeedback"));
+            return null;
+        }
+        Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
+        if (contentMap == null) {
+            log.warn("Gemini candidate에 content 없음. finishReason={}", candidates.get(0).get("finishReason"));
+            return null;
+        }
         List<Map<String, Object>> parts = (List<Map<String, Object>>) contentMap.get("parts");
-        return (String) parts.get(0).get("text");
+        if (parts == null || parts.isEmpty()) {
+            return null;
+        }
+        // 추론 part가 앞에 오면 그걸 답으로 쓰면 JSON 파싱이 실패한다. 답 텍스트가 없을 때만 추론 텍스트를 쓴다.
+        String answer = null;
+        String thought = null;
+        for (Map<String, Object> part : parts) {
+            Object text = part.get("text");
+            if (!(text instanceof String value) || value.isBlank()) {
+                continue;
+            }
+            if (Boolean.TRUE.equals(part.get("thought"))) {
+                thought = value;
+            } else {
+                answer = value;
+            }
+        }
+        return answer != null ? answer : thought;
     }
 }

@@ -86,7 +86,7 @@ public class AiFanChatService {
 
     private List<String> generateReplies(String artistNickname, String artistMessage) {
         String prompt = buildPrompt(artistNickname, artistMessage);
-        String raw = geminiClient.generateJson(prompt);
+        String raw = geminiClient.generateLiveJson(prompt);
         return parseReplies(raw);
     }
 
@@ -109,27 +109,48 @@ public class AiFanChatService {
         return sb.toString();
     }
 
-    private List<String> parseReplies(String raw) {
+    // 라이브 AI 댓글(AiLiveCommentService)도 같은 JSON 형식을 쓰므로 공개한다
+    public List<String> parseReplies(String raw) {
         if (raw == null || raw.isBlank()) {
             return List.of();
         }
         String json = stripMarkdownFence(raw.strip());
         try {
             var root = jsonMapper.readTree(json);
+            if (root.isObject() && root.hasNonNull("content")) {
+                String content = root.path("content").asText("").strip();
+                return content.isBlank() ? List.of() : List.of(content);
+            }
             var array = root.isArray() ? root : root.get("replies");
+            if ((array == null || !array.isArray()) && root.isObject()) {
+                for (var field : root.properties()) {
+                    if (field.getValue().isArray()) {
+                        array = field.getValue();
+                        break;
+                    }
+                }
+            }
             if (array == null || !array.isArray()) {
+                log.warn("AI 팬 답장 JSON에 배열이 없음: {}", abbreviate(raw));
                 return List.of();
             }
             List<String> contents = new ArrayList<>();
             array.forEach(node -> {
-                var content = node.path("content").asText("");
+                String content = node.isTextual()
+                        ? node.asText("")
+                        : node.path("content").asText("");
                 contents.add(content.strip());
             });
             return contents;
         } catch (Exception e) {
-            log.warn("AI 팬 답장 JSON 파싱 실패: {}", e.getMessage());
+            log.warn("AI 팬 답장 JSON 파싱 실패: {} / 원문={}", e.getMessage(), abbreviate(raw));
             return List.of();
         }
+    }
+
+    private static String abbreviate(String raw) {
+        String text = raw == null ? "" : raw.strip();
+        return text.length() <= 300 ? text : text.substring(0, 300);
     }
 
     private static String stripMarkdownFence(String raw) {
