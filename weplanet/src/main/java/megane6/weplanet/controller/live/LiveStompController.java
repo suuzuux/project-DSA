@@ -13,6 +13,7 @@ import megane6.weplanet.i18n.PreferredLocaleResolver;
 import megane6.weplanet.repository.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.live.AiLiveCommentService;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.live.LiveConnectionRegistry;
 import megane6.weplanet.service.live.LiveRealtimePublisher;
@@ -41,6 +42,7 @@ public class LiveStompController {
 	private final UserRepository userRepository;
 	private final CommunityJoinService communityJoinService;
 	private final Messages messages;
+	private final AiLiveCommentService aiLiveCommentService;
 
 	// STOMP 처리 스레드에는 요청 로케일(LocaleContextHolder)이 없으므로, 오류를 받을 사람의
 	// preferredLanguage로 로케일을 정해 메시지 키(또는 아직 키가 아닌 문장)를 번역해서 보낸다.
@@ -172,6 +174,27 @@ public class LiveStompController {
 			liveRealtimePublisher.publishComment(request.getArtistId(), saved);
 		} catch (RuntimeException e) {
 			log.warn("live.comment 실패: {}", e.getMessage());
+			sendError(me.getId(), e);
+		}
+	}
+
+	// 호스트 브라우저의 음성 인식 결과. 인식 실패는 방송 화면에 오류로 띄우지 않고 로그만 남긴다.
+	@MessageMapping("/live.speech")
+	public void speech(LiveCommentRequest request, Authentication authentication) {
+		AuthenticatedUser me = principalOf(authentication);
+		if (me == null || request == null || request.getArtistId() == null
+				|| request.getContent() == null || request.getContent().isBlank()) {
+			return;
+		}
+		try {
+			User host = userRepository.findById(me.getId()).orElseThrow();
+			if (!liveBroadcastService.isCurrentHost(request.getArtistId(), host)) {
+				sendError(me.getId(), "이 방송의 진행자가 아니라서 AI 댓글을 만들지 못했습니다.");
+				return;
+			}
+			aiLiveCommentService.onArtistSpeech(request.getArtistId(), request.getContent());
+		} catch (RuntimeException e) {
+			log.warn("live.speech 실패: {}", e.getMessage());
 			sendError(me.getId(), e);
 		}
 	}
