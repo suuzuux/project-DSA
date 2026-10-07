@@ -27,7 +27,7 @@
     <div class="community-main">
     <a class="section__link mb-16" style="display:inline-block;"
        th:href="@{/community/{id}/{tab}(id=${artist.id()}, tab=${boardTab})}"
-       th:text="${boardTab == 'artist'} ? #{community.postDetail.backArtist} : #{community.postDetail.backFan}">← 게시판</a>
+       th:text="${boardTab == 'artist'} ? #{community.postDetail.backArtist} : #{community.postDetail.backFan}">← 목록으로 돌아가기</a>
 
     <article class="post-card">
       <div class="post-card__head">
@@ -65,6 +65,9 @@
         </div>
       </div>
 
+      <!-- Hide from Artists 로 쓴 글 표시 (아티스트에겐 애초에 안 보이므로 팬 화면에서만 보인다) -->
+      <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
+            th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
       <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" th:text="#{community.translate.show}">번역보기</a>
       <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
       <div id="contentViewer" class="post-card__body"></div>

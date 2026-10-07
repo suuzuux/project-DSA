@@ -24,7 +24,7 @@
     <div class="community-main">
       <a class="section__link mb-16" style="display:inline-block;"
          th:href="${mediaPost.liveReplay} ? @{${artist.homeUrl() + '/live'}} : @{${artist.homeUrl() + '/media'}}"
-         th:text="${mediaPost.liveReplay} ? #{community.media.backLive} : #{community.media.back}">← Media 게시판</a>
+         th:text="${mediaPost.liveReplay} ? #{community.media.backLive} : #{community.media.back}">← 목록으로 돌아가기</a>
 
       <article class="post-card">
         <div class="post-card__head">

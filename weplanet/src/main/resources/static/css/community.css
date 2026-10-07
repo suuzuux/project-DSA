@@ -679,7 +679,8 @@
 }
 
 .comment-replies .comment-item {
-  padding: 10px 0 0;
+  /* 왼쪽 여백: 답글 세로줄과 아이콘 사이 간격 (padding 단축 속성이 .comment-item--reply 의 padding-left 를 덮어쓰지 않게 여기서 지정) */
+  padding: 10px 0 0 12px;
   border-bottom: 0;
 }
 
@@ -1367,6 +1368,30 @@
   width: 23px;
   height: 23px;
   color: var(--wp-brand-dark);
+}
+
+/* 댓글처럼 작은 아바타(28px) 안에서는 아이콘도 비율 맞춰 줄임 */
+.avatar--sm .avatar__placeholder {
+  width: 17px;
+  height: 17px;
+}
+
+/* Hide from Artists 글 표시 - 본문 바로 위에 한 줄로 놓는 둥근 알약 모양 배지 */
+.badge-only-fan {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: var(--wp-brand-soft);
+  color: var(--wp-brand-dark);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .post-comment {

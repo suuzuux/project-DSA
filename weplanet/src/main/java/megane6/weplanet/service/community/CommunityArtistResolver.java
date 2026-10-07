@@ -7,6 +7,9 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.repository.GroupMemberRepository;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 @RequiredArgsConstructor
 public class CommunityArtistResolver {
@@ -33,6 +36,16 @@ public class CommunityArtistResolver {
 	
 	public boolean isArtistOf(User user, Long communityId) {
 		return communityId != null && communityId.equals(ownCommunityId(user));
+	}
+
+	// 이 커뮤니티의 "아티스트 쪽" 계정 id 전부 - 커뮤니티(그룹/솔로) 계정 + 활동 중인 멤버 계정
+	// (하이라이트 "Comments by 아티스트" 위젯처럼 멤버가 쓴 댓글까지 함께 모을 때 씀)
+	public List<Long> artistSideUserIds(Long communityId) {
+		List<Long> ids = new ArrayList<>();
+		ids.add(communityId);
+		gmr.findByGroupIdAndLeftAtIsNullOrderByIdAsc(communityId)
+				.forEach(groupMember -> ids.add(groupMember.getMember().getId()));
+		return ids;
 	}
 
 	// 멤버별 DM: 팬이 1:1 로 대화하는 상대(DM 방 주인)가 될 수 있는 계정인지.

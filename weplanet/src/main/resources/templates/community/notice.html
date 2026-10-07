@@ -29,6 +29,15 @@
         <a class="notice-list__item"
            th:each="item : ${notices}"
            th:href="@{/community/{id}/notice/{nid}(id=${artist.id()}, nid=${item.id})}">
+          <!-- 상단 고정 공지 표시 (전체 공지사항 페이지와 같은 핀 아이콘). 항목 간격(gap 14px)이 넓어 margin 으로 8px 로 줄임 -->
+          <svg th:if="${item.pinned}" viewBox="0 0 24 24" width="16" height="16"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               role="img" th:aria-label="#{admin.notices.stat.pinned}"
+               style="color:var(--wp-brand);align-self:center;flex-shrink:0;margin-right:-6px;">
+            <title th:text="#{admin.notices.stat.pinned}">상단 고정</title>
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+          </svg>
           <span class="notice-list__title"
                 th:classappend="${item.pinned} ? ' is-pinned'"
                 th:text="${item.title}">공지 제목</span>

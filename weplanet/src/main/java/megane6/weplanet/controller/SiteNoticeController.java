@@ -36,16 +36,32 @@ public class SiteNoticeController {
 	private final HashtagEventAdminService hashtagEventAdminService; // [해시태그 총공] 결과 공지 초안
 	private final megane6.weplanet.service.ContentTranslationService contentTranslationService; // 공지 번역보기 (AI)
 
+	// 공지사항 목록 한 페이지에 보여줄 개수
+	private static final int NOTICE_PAGE_SIZE = 15;
+
 	@GetMapping("/notices")
 	public String publicList(
 			@RequestParam(required = false) String category,
+			@RequestParam(defaultValue = "1") int page,
 			Model model
 	) {
 		NoticeCategory categoryFilter = (category == null || category.isBlank())
 				? null : NoticeCategory.valueOf(category);
-		model.addAttribute("notices", siteNoticeService.listPublished(categoryFilter));
-		model.addAttribute("selectedCategory", category);
-		
+		List<megane6.weplanet.domain.entity.SiteNotice> all = siteNoticeService.listPublished(categoryFilter);
+
+		// 15개씩 페이지 나누기 (page 는 1부터). 공지는 많아야 수십 개라 전체를 읽어 자른다.
+		// 고정 공지가 맨 앞에 오는 정렬은 그대로라 고정 공지는 1페이지에 보인다
+		int totalPages = Math.max(1, (all.size() + NOTICE_PAGE_SIZE - 1) / NOTICE_PAGE_SIZE);
+		int currentPage = Math.min(Math.max(page, 1), totalPages);
+		int from = (currentPage - 1) * NOTICE_PAGE_SIZE;
+		int to = Math.min(from + NOTICE_PAGE_SIZE, all.size());
+
+		model.addAttribute("notices", all.subList(from, to));
+		// 빈 문자열(?category=)로 와도 "전체" 칩이 선택돼 보이도록 null 로 맞춘다
+		model.addAttribute("selectedCategory", categoryFilter == null ? null : category);
+		model.addAttribute("currentPage", currentPage);
+		model.addAttribute("totalPages", totalPages);
+
 		return "notices";
 	}
 
