@@ -40,8 +40,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Slice<Post> findByBoardTypeAndArtistAndHiddenFromArtistFalse(
             BoardType boardType, User artist, Pageable pageable);
 
-    // 하이라이트 "Fan Posts" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 4개
-    List<Post> findTop4ByBoardTypeAndArtistOrderByCreatedAtDesc(BoardType boardType, User artist);
+    // 하이라이트 "Fan Posts" / "From 아티스트" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 6개 (3개씩 두 줄)
+    List<Post> findTop6ByBoardTypeAndArtistOrderByCreatedAtDesc(BoardType boardType, User artist);
 
     List<Post> findTop20ByBoardTypeAndArtist_IdInOrderByCreatedAtDesc(BoardType boardType,
                                                                         Collection<Long> artistIds);

@@ -74,7 +74,7 @@ public class CommunityController {
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		User artist = populateArtistModel(artistId, principal, model);
 		
-		// "Fan Posts" 위젯 - 이 커뮤니티 팬 게시판 최신 게시글 상위 4개 + 댓글 수/대표 이미지
+		// "Fan Posts" 위젯 - 이 커뮤니티 팬 게시판 최신 게시글 상위 6개 + 댓글 수/대표 이미지
 		List<Post> fanPosts = postService.getRecentPosts(BoardType.FAN, artist);
 		Map<Long, Long> fanPostCommentCounts = new HashMap<>();
 		Map<Long, String> fanPostThumbnails = new HashMap<>();
@@ -92,13 +92,13 @@ public class CommunityController {
 		model.addAttribute("fanPostAuthorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(
 				fanPosts.stream().map(Post::getAuthor).toList(), artistId));
 		
-		// "Comments by 아티스트" 위젯 - 그룹 계정 + 멤버 계정이 이 커뮤니티에 쓴 댓글·답글 최신 4개
+		// "Comments by 아티스트" 위젯 - 그룹 계정 + 멤버 계정이 이 커뮤니티에 쓴 댓글·답글 최신 6개
 		List<Comment> artistComments = commentRepository
-				.findTop4ByAuthor_IdInAndPost_Artist_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
+				.findTop6ByAuthor_IdInAndPost_Artist_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
 						communityArtistResolver.artistSideUserIds(artistId), artistId);
 		model.addAttribute("artistCommentsWidget", artistComments);
 		
-		// "From 아티스트" 위젯 - 이 커뮤니티 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지
+		// "From 아티스트" 위젯 - 이 커뮤니티 아티스트 게시판 최신 게시글 상위 6개 + 대표 이미지
 		List<Post> artistPosts = postService.getRecentPosts(BoardType.ARTIST, artist);
 		Map<Long, String> artistPostThumbnails = new HashMap<>();
 		for (Post post : artistPosts) {
@@ -109,6 +109,14 @@ public class CommunityController {
 		}
 		model.addAttribute("artistPosts", artistPosts);
 		model.addAttribute("artistPostThumbnails", artistPostThumbnails);
+
+		// "Lives" 위젯 - 한 줄 최대 3칸. 방송 중이면 LIVE 카드가 첫 칸, 나머지는 영상이 있는 라이브 다시보기 최신순
+		boolean liveNow = liveBroadcastService.status(artistId).live();
+		model.addAttribute("liveNow", liveNow);
+		model.addAttribute("highlightReplays", boardMediaService.listLiveReplays(artistId).stream()
+				.filter(replay -> replay.getFirstVideoFileId() != null)
+				.limit(liveNow ? 2 : 3)
+				.toList());
 
 		Set<Long> likedPostIds = Collections.emptySet();
 		if (principal != null) {
