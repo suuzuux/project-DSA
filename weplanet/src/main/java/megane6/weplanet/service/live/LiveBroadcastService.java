@@ -161,6 +161,27 @@ public class LiveBroadcastService {
 		return LiveCommentView.of(saved, communityJoinService.displayNickname(author, artistId), artistId);
 	}
 
+	// AI 팬 계정은 커뮤니티 가입 여부와 상관없이 댓글을 남긴다. 방송이 끝났거나 금칙어가 걸리면 조용히 건너뛴다.
+	@Transactional
+	public Optional<LiveCommentView> addAiFanComment(User fan, Long artistId, String content) {
+		if (fan == null || content == null || content.isBlank()) {
+			return Optional.empty();
+		}
+		String trimmed = content.trim();
+		if (trimmed.length() > 500) {
+			trimmed = trimmed.substring(0, 500);
+		}
+		if (chatFilterService.containsBannedWord(trimmed)) {
+			return Optional.empty();
+		}
+		Optional<LiveSession> session = findLive(artistId);
+		if (session.isEmpty()) {
+			return Optional.empty();
+		}
+		LiveComment saved = liveCommentRepository.save(LiveComment.create(session.get(), fan, trimmed));
+		return Optional.of(LiveCommentView.of(saved, communityJoinService.displayNickname(fan, artistId), artistId));
+	}
+
 	@Transactional
 	public void deleteCommentForArtistCommunity(Long commentId, User artist) {
 		LiveComment comment = liveCommentRepository.findById(commentId)
@@ -183,6 +204,11 @@ public class LiveBroadcastService {
 			throw new IllegalArgumentException("error.live.notThisArtistChat");
 		}
 		return comment;
+	}
+
+	@Transactional(readOnly = true)
+	public boolean isCurrentHost(Long artistId, User user) {
+		return findLive(artistId).map(session -> session.isHost(user)).orElse(false);
 	}
 
 	@Transactional(readOnly = true)
