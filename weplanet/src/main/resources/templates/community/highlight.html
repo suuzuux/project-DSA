@@ -35,8 +35,10 @@
         <div class="section__head">
           <h2 class="section__title" th:text="|From ${artist.nickname()}|">From Artist</h2>
         </div>
-        <div th:if="${!artistPosts.isEmpty()}" th:with="post=${artistPosts[0]}">
-          <article class="post-card">
+        <!-- 아티스트 게시판 최신 글 2개 (위아래로) -->
+        <div th:if="${!artistPosts.isEmpty()}">
+          <article class="post-card" th:each="post, st : ${artistPosts}" th:if="${st.index < 2}"
+                   th:classappend="${st.index > 0} ? ' mt-8'">
             <div class="post-card__head">
               <a th:if="${post.author != null}"
                  th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
