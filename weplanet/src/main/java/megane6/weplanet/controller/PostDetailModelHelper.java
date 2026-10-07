@@ -50,10 +50,14 @@ public class PostDetailModelHelper {
 						c -> String.valueOf(c.getParent().getId()),
 						HashMap::new,
 						Collectors.toList()));
+		// 답글도 최신순(새 답글이 맨 위)
+		repliesByParentId.values().forEach(Collections::reverse);
 
-		List<Comment> rootComments = comments.stream()
+		// 원댓글은 최신순(새 댓글이 맨 위). 조회 결과가 오래된 순이라 뒤집기만 한다.
+		List<Comment> rootComments = new ArrayList<>(comments.stream()
 				.filter(c -> c.getParent() == null)
-				.toList();
+				.toList());
+		Collections.reverse(rootComments);
 		List<Comment> artistComments = rootComments.stream()
 				.filter(c -> c.getAuthor().isArtistSide())
 				.toList();

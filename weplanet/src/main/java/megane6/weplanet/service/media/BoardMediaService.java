@@ -11,6 +11,7 @@ import megane6.weplanet.domain.entity.media.BoardMediaLike;
 import megane6.weplanet.repository.media.BoardMediaFileRepository;
 import megane6.weplanet.repository.media.BoardMediaLikeRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
+import megane6.weplanet.service.ChatFilterService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.Resource;
@@ -37,6 +38,7 @@ public class BoardMediaService {
     private final BoardMediaLikeRepository boardMediaLikeRepository;
     private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
     private final MessageSource messageSource;
+    private final ChatFilterService chatFilterService; // 관리자가 등록한 금칙어 검사 (작성·수정 차단)
 
     // 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
     private String msg(String code, Object... args) {
@@ -60,6 +62,9 @@ public class BoardMediaService {
 
     public Long create(Long groupId, Long uploaderId, String title, String content,
                        List<MultipartFile> files, boolean membershipOnly) {
+
+        // 파일을 디스크에 저장하기 전에 먼저 검사 (막힐 글인데 파일만 남는 일이 없게)
+        chatFilterService.rejectIfContainsBannedWord(title, content);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -114,6 +119,7 @@ public class BoardMediaService {
     // ── 수정 : 제목/내용 변경 (+ 새 파일이 오면 뒤에 추가) ──
     public void edit(Long id, Long communityGroupId, String title, String content, List<MultipartFile> files) {
         BoardMediaEntity post = getActivePostInCommunity(id, communityGroupId);
+        chatFilterService.rejectIfContainsBannedWord(title, content);
         post.setTitle(title);
         post.setContent(content);
         post.setUpdatedAt(LocalDateTime.now());

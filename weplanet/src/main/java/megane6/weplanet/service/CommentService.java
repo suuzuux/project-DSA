@@ -26,6 +26,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final CommentReportRepository commentReportRepository;
     private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
+    private final ChatFilterService chatFilterService; // 관리자가 등록한 금칙어 검사 (작성·수정 차단)
 
     // 댓글 목록 조회
     public List<Comment> getComments(Post post) {
@@ -50,6 +51,8 @@ public class CommentService {
 
     // [대댓글] 답글 작성 - parent가 null이면 일반 댓글과 완전히 동일하게 동작함
     public Comment createComment(Post post, User author, String content, Comment parent) {
+        chatFilterService.rejectIfContainsBannedWord(content);
+
         if (parent != null) {
             // 다른 게시글의 댓글 id를 폼에 끼워 넣어도 답글이 달리지 않도록 확인
             if (!parent.getPost().getId().equals(post.getId())) {
@@ -161,6 +164,8 @@ public class CommentService {
         if (comment.isDeleted()) {
             throw new IllegalStateException("error.comment.editDeleted");
         }
+
+        chatFilterService.rejectIfContainsBannedWord(content);
 
         comment.setContent(content);
         return commentRepository.save(comment);

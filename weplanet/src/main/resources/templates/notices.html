@@ -56,6 +56,15 @@
     <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
       <div class="post-card__head">
         <div class="post-card__meta">
+          <!-- 상단 고정 공지 표시 (핀 아이콘). 문구 키는 관리자 화면의 "상단 고정"과 같은 것을 씀 -->
+          <svg th:if="${notice.pinned}" viewBox="0 0 24 24" width="16" height="16"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               role="img" th:aria-label="#{admin.notices.stat.pinned}"
+               style="color:var(--wp-brand);vertical-align:middle;margin-right:4px;flex-shrink:0;">
+            <title th:text="#{admin.notices.stat.pinned}">상단 고정</title>
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+          </svg>
           <span class="tag tag--member" th:text="#{${'siteNotice.category.' + notice.category.name()}}">일반</span>
           <strong class="post-card__title"
                   th:classappend="${notice.pinned} ? ' is-pinned'"
@@ -67,6 +76,18 @@
       </div>
     </a>
   </article>
+
+  <!-- 페이지 이동 (15개씩). 분류 필터를 고른 상태면 그 분류를 유지한 채 넘어간다 -->
+  <nav class="pagination" th:if="${totalPages > 1}" th:aria-label="#{notices.pagination}">
+    <span th:if="${currentPage == 1}" aria-hidden="true">‹</span>
+    <a th:unless="${currentPage == 1}" th:href="@{/notices(category=${selectedCategory}, page=${currentPage - 1})}" aria-label="Previous">‹</a>
+    <th:block th:each="p : ${#numbers.sequence(1, totalPages)}">
+      <span th:if="${p == currentPage}" class="is-active" aria-current="page" th:text="${p}">1</span>
+      <a th:unless="${p == currentPage}" th:href="@{/notices(category=${selectedCategory}, page=${p})}" th:text="${p}">2</a>
+    </th:block>
+    <span th:if="${currentPage == totalPages}" aria-hidden="true">›</span>
+    <a th:unless="${currentPage == totalPages}" th:href="@{/notices(category=${selectedCategory}, page=${currentPage + 1})}" aria-label="Next">›</a>
+  </nav>
 </main>
 
 <script th:src="@{/js/main.js}"></script>

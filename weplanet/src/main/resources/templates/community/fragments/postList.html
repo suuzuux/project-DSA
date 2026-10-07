@@ -40,6 +40,9 @@
         </div>
 		<a th:href="@{/community/{artistId}/{tab}/{postId}(artistId=${artist.id()}, tab=${boardType.name() == 'ARTIST' ? 'artist' : 'fan'}, postId=${post.id})}"
            style="display:block;color:inherit;">
+          <!-- Hide from Artists 로 쓴 글 표시 (아티스트에겐 애초에 안 보이므로 팬 화면에서만 보인다) -->
+          <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
+                th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
           <p class="post-card__body post-card__preview" th:text="${!#strings.isEmpty(post.previewText) ? post.previewText : post.title}"></p>
           <p th:if="${post.linkUrl} != null" class="translate-link" style="display:flex;align-items:center;gap:4px;margin-top:6px;word-break:break-all;">
             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>

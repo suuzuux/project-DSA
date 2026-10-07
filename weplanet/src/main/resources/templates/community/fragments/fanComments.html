@@ -60,10 +60,19 @@
        th:style="${artistStyle and not comment.deleted} ? 'background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;'">
     <!-- 삭제된 댓글은 작성자를 드러내지 않으므로 프로필 링크도 걸지 않는다 -->
     <div th:if="${comment.deleted}" class="avatar avatar--sm">—</div>
+    <!-- 커뮤니티 프로필 사진이 있으면 사진, 없으면 사람 모양 아이콘 (게시글 작성자 아바타와 같은 방식) -->
     <a th:unless="${comment.deleted}"
        th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
-       class="avatar avatar--sm" th:aria-label="#{community.post.authorProfileAria}"
-       th:text="${#strings.substring(authorNicknames.get('' + comment.author.id),0,1)}"></a>
+       class="avatar avatar--sm" th:aria-label="#{community.post.authorProfileAria}">
+      <img th:if="${authorAvatarUrls.get('' + comment.author.id) != null}"
+           th:src="${authorAvatarUrls.get('' + comment.author.id)}" alt="" />
+      <svg th:unless="${authorAvatarUrls.get('' + comment.author.id) != null}"
+           class="avatar__placeholder" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="8" r="4"></circle>
+        <path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path>
+      </svg>
+    </a>
     <div class="comment-item__body">
 
       <!-- 삭제된 원댓글: 답글을 살려두기 위해 행은 남기고 문구만 보여준다 -->

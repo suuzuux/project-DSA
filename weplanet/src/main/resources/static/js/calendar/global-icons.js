@@ -476,7 +476,7 @@
       loadSchedulesFromApi().then(function () {
         persistReadState();
         renderNotiPanel();
-        updateBadge();
+        updateNotiBadges(); // 예전엔 없는 함수(updateBadge)를 불러서 자정 갱신 때 에러가 났음
       });
       scheduleMidnightRefresh();
     }, delay);
@@ -524,9 +524,18 @@
     if (changed) saveReadIds(ids);
   }
 
+  /**
+   * 헤더 빨간 점이 세는 알림 범위.
+   * 커뮤니티 페이지에서는 패널에 보이는 알림(그 커뮤니티 + 내 글 댓글)과 같게 맞춘다.
+   * 예전엔 항상 전체 기준이라, 패널의 알림을 다 읽어도 다른 커뮤니티 알림 때문에 점이 남았음.
+   * 메인 등 그 밖의 페이지는 전체 기준 (패널 칩 필터와 무관).
+   */
+  function badgeScopeNotifications() {
+    return isCommunityPage() ? notificationsForPanel() : allNotifications();
+  }
+
   function unreadCount() {
-    // 헤더 뱃지는 전체 알림 기준 (커뮤니티 필터와 무관)
-    return allNotifications().filter(function (n) { return !n.read; }).length;
+    return badgeScopeNotifications().filter(function (n) { return !n.read; }).length;
   }
 
   function artistLogo(name) {
@@ -1102,7 +1111,12 @@
   }
 
   function markAllRead() {
-    saveReadIds(loadReadIds().concat(notificationsForPanel().map(function (n) { return n.id; })));
+    // 빨간 점이 세는 범위 전체를 읽음 처리 → 누르면 점이 바로 사라진다 (메인에서 칩 필터를 골라 둔 상태여도 마찬가지)
+    var ids = loadReadIds();
+    badgeScopeNotifications().forEach(function (n) {
+      if (ids.indexOf(n.id) === -1) ids.push(n.id);
+    });
+    saveReadIds(ids);
     renderNotiPanel();
     updateNotiBadges();
   }

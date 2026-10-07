@@ -414,6 +414,8 @@
                               ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
                               : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
                        style="display:block;color:inherit;">
+                        <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
+                              th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
                         <p class="post-card__body" th:text="${post.title}"></p>
                         <p class="text-xs text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
                     </a>
@@ -452,6 +454,8 @@
                               ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
                               : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
                        style="display:block;color:inherit;">
+                        <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
+                              th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
                         <p class="post-card__body" th:text="${post.title}"></p>
                     </a>
                 </article>
@@ -479,6 +483,8 @@
                               ? @{/community/{artistId}/fan/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}
                               : @{/community/{artistId}/artist/{postId}(artistId=${post.artist != null ? post.artist.id : 0}, postId=${post.id})}"
                        style="display:block;color:inherit;">
+                        <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
+                              th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
                         <p class="post-card__body" th:text="${post.title}"></p>
                     </a>
                 </article>

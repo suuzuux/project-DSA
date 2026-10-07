@@ -92,8 +92,10 @@ public class CommunityController {
 		model.addAttribute("fanPostAuthorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(
 				fanPosts.stream().map(Post::getAuthor).toList(), artistId));
 		
-		// "Comments by 아티스트" 위젯 - 이 아티스트가 작성한 댓글 최신 4개
-		List<Comment> artistComments = commentRepository.findTop4ByAuthorOrderByCreatedAtDesc(artist);
+		// "Comments by 아티스트" 위젯 - 그룹 계정 + 멤버 계정이 이 커뮤니티에 쓴 댓글·답글 최신 4개
+		List<Comment> artistComments = commentRepository
+				.findTop4ByAuthor_IdInAndPost_Artist_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
+						communityArtistResolver.artistSideUserIds(artistId), artistId);
 		model.addAttribute("artistCommentsWidget", artistComments);
 		
 		// "From 아티스트" 위젯 - 이 커뮤니티 아티스트 게시판 최신 게시글 상위 4개 + 대표 이미지

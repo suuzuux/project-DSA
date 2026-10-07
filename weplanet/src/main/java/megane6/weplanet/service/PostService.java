@@ -41,6 +41,7 @@ public class PostService {
     private final PostAttachmentRepository postAttachmentRepository;
     private final FileStorageService fileStorageService;
     private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
+    private final ChatFilterService chatFilterService; // 관리자가 등록한 금칙어 검사 (작성·수정 차단)
 
     // 게시판 종류별 목록 조회 - sort 값에 따라 최신순/인기순 중 하나를 골라서 리포지토리에 위임
     public List<Post> getPostsByBoardType(BoardType boardType, String sort) {
@@ -110,6 +111,8 @@ public class PostService {
     // 36번: 팬 게시판 글쓰기 모달의 🔗 링크 첨부, "Hide from Artists" 토글까지 받는 오버로드
     public Post createPost(BoardType boardType, String title, String content, User author, User artist,
                             String linkUrl, boolean hiddenFromArtist) {
+        chatFilterService.rejectIfContainsBannedWord(title, content);
+
         Post post = Post.builder()
                 .boardType(boardType)
                 .title(deriveTitle(title, content))
@@ -298,6 +301,8 @@ public class PostService {
         if (!isAuthor && !isAdmin) {
             throw new IllegalStateException("error.post.editNoPermission");
         }
+
+        chatFilterService.rejectIfContainsBannedWord(title, content);
 
         // post 객체의 값만 바꿔주면, 트랜잭션이 끝날 때 JPA(Hibernate)가 알아서 변경된 부분만 UPDATE 쿼리로 반영해줌
         // (이런 방식을 "더티 체킹"이라고 부름 - 굳이 save()를 다시 안 불러도 됨. 여기선 명확하게 save도 호출함)
