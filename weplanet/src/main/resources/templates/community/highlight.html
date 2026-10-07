@@ -35,10 +35,13 @@
         <div class="section__head">
           <h2 class="section__title" th:text="|From ${artist.nickname()}|">From Artist</h2>
         </div>
-        <!-- 아티스트 게시판 최신 글 2개 (위아래로) -->
-        <div th:if="${!artistPosts.isEmpty()}">
-          <article class="post-card" th:each="post, st : ${artistPosts}" th:if="${st.index < 2}"
-                   th:classappend="${st.index > 0} ? ' mt-8'">
+        <!-- 아티스트 게시판 최신 글 2개 - 한 줄에 두 칸 (좁은 화면에선 한 칸씩)
+             텍스트 글 + 사진 글이 섞이면 텍스트 카드가 사진 카드 높이만큼 늘어나지 않게 --mixed (본문은 원래 5줄까지 + …) -->
+        <div class="feed feed--grid-2" th:if="${!artistPosts.isEmpty()}"
+             th:with="m0=${artistPostThumbnails.get(artistPosts[0].id) != null},
+                      m1=${artistPosts.size() > 1 and artistPostThumbnails.get(artistPosts[1].id) != null}"
+             th:classappend="${artistPosts.size() > 1 and m0 != m1} ? ' feed--grid-2--mixed'">
+          <article class="post-card" th:each="post, st : ${artistPosts}" th:if="${st.index < 2}">
             <div class="post-card__head">
               <a th:if="${post.author != null}"
                  th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${post.author.id})}"
@@ -64,7 +67,7 @@
               <p class="post-card__body post-card__preview" th:text="${!#strings.isEmpty(post.previewText) ? post.previewText : post.title}"></p>
               <div th:if="${artistPostThumbnails.get(post.id)} != null" class="post-card__media">
                 <img th:src="@{'/uploads/' + ${artistPostThumbnails.get(post.id)}}" alt=""
-                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:320px;object-fit:cover;">
+                     style="width:100%;border-radius:var(--wp-radius-sm);max-height:220px;object-fit:cover;">
               </div>
             </a>
             <div class="post-card__actions">
@@ -120,7 +123,6 @@
       <section class="mb-16">
         <div class="section__head">
           <h2 class="section__title">Fan Posts</h2>
-          <a class="section__link" th:href="@{${artist.homeUrl() + '/fan'}}" th:text="#{community.common.more}">더보기</a>
         </div>
         <div class="feed feed--grid" th:if="${!fanPosts.isEmpty()}">
           <article class="post-card" th:each="post : ${fanPosts}">
@@ -168,13 +170,14 @@
           </article>
         </div>
         <p class="list-empty" th:if="${fanPosts.isEmpty()}" th:text="#{community.highlight.emptyFanPosts}">표시할 팬 게시글이 없습니다.</p>
+        <!-- 더보기는 From 아티스트 영역과 같은 하단 전체 너비 버튼 -->
+        <a class="btn btn--ghost btn--block mt-8" th:href="@{${artist.homeUrl() + '/fan'}}" th:text="#{community.common.more}">더보기</a>
       </section>
 
       <!-- Lives preview -->
       <section>
         <div class="section__head">
           <h2 class="section__title">Lives</h2>
-          <a class="section__link" th:href="@{${artist.homeUrl() + '/live'}}" th:text="#{community.common.more}">더보기</a>
         </div>
         <!-- 한 줄 최대 3칸: 방송 중이면 LIVE 카드가 첫 칸, 나머지는 라이브 다시보기 (라이브 탭 카드와 같은 모양) -->
         <div class="live-replay-grid" th:if="${liveNow or !highlightReplays.isEmpty()}">
@@ -207,6 +210,7 @@
           </a>
         </div>
         <p class="list-empty" th:unless="${liveNow or !highlightReplays.isEmpty()}" th:text="#{community.highlight.emptyLives}">표시할 라이브가 없습니다.</p>
+        <a class="btn btn--ghost btn--block mt-8" th:href="@{${artist.homeUrl() + '/live'}}" th:text="#{community.common.more}">더보기</a>
       </section>
     </div>
 

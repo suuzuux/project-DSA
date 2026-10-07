@@ -75,7 +75,9 @@
     <div class="post-list-more" th:if="${hasMorePosts}">
       <button type="button" class="btn btn--soft post-list-more__button"
               data-view-more
-              th:attr="data-more-url=@{${artist.homeUrl() + (boardType.name() == 'ARTIST' ? '/artist' : '/fan')}(sort=${sort}, page=${postPage + 1})}">
+              th:attr="data-more-url=${boardFilter == 'media'}
+                  ? @{${artist.homeUrl() + '/artist'}(filter='media', sort=${sort}, page=${postPage + 1})}
+                  : @{${artist.homeUrl() + (boardType.name() == 'ARTIST' ? '/artist' : '/fan')}(sort=${sort}, page=${postPage + 1})}">
         <th:block th:text="#{community.common.more}">더보기</th:block> <span aria-hidden="true">∨</span>
       </button>
     </div>

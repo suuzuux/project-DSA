@@ -170,6 +170,36 @@
     refreshEditState();
   }
 
+  // 게시글 수정 저장 - fetch 로 보내서, 금칙어 등으로 막히면 에러 페이지로 넘어가지 않고 경고창만 띄운다
+  const editPostForm = document.getElementById("editPostForm");
+  if (editPostForm) {
+    editPostForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (editPostEditor) editContentEl.value = editPostEditor.getMarkdown();
+      if (editSubmitBtn) editSubmitBtn.disabled = true;
+      fetch(editPostForm.action, {
+        method: "POST",
+        headers: { "X-Requested-With": "fetch" },
+        body: new URLSearchParams(new FormData(editPostForm)),
+      })
+        .then(function (response) {
+          if (response.ok) {
+            // 저장 성공 - 서버가 상세 페이지로 리다이렉트하므로 새로고침해서 바뀐 내용을 보여줌
+            window.location.reload();
+            return;
+          }
+          return response.json().then(function (data) {
+            WePlaNet.alert(data.message || t("client.request.failed", "요청에 실패했습니다."));
+            if (editSubmitBtn) editSubmitBtn.disabled = false;
+          });
+        })
+        .catch(function () {
+          WePlaNet.alert(t("client.request.failed", "요청에 실패했습니다."));
+          if (editSubmitBtn) editSubmitBtn.disabled = false;
+        });
+    });
+  }
+
   const summarizeButton = document.getElementById("summarizeButton");
   if (summarizeButton) {
     summarizeButton.addEventListener("click", function () {

@@ -181,6 +181,8 @@ public class CommunityController {
 			@PathVariable Long artistId,
 			@RequestParam(defaultValue = "latest") String sort,
 			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(required = false) String filter, // "media" 면 사진/미디어 첨부 글만
+
 			@RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
@@ -194,9 +196,12 @@ public class CommunityController {
 			model.addAttribute("gatedTab", "artist");
 			return "community/membership-required";
 		}
+		boolean mediaOnly = "media".equals(filter);
 		postListModelHelper.populateCommunityPage(
-				model, BoardType.ARTIST, sort, artist, false, me, page);
-		
+				model, BoardType.ARTIST, sort, artist, false, me, page, mediaOnly);
+		// 화면의 "전체 / 사진·미디어" 칩 선택 표시 + 정렬·더보기 주소에 필터 유지용
+		model.addAttribute("boardFilter", mediaOnly ? "media" : null);
+
 		if ("fetch".equals(requestedWith)) {
 			return "community/fragments/postList :: postListFragment";
 		}

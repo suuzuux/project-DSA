@@ -68,11 +68,26 @@ public class PostService {
             int page,
             boolean hideFromArtists
     ) {
+        return getCommunityPostSlice(boardType, artist, sort, page, hideFromArtists, false);
+    }
+
+    // mediaOnly: 아티스트 게시판 "사진/미디어" 필터 - 사진·영상 첨부가 있는 글만
+    public Slice<Post> getCommunityPostSlice(
+            BoardType boardType,
+            User artist,
+            String sort,
+            int page,
+            boolean hideFromArtists,
+            boolean mediaOnly
+    ) {
         Sort postSort = "popular".equals(sort)
                 ? Sort.by(Sort.Order.desc("likeCount"), Sort.Order.desc("createdAt"), Sort.Order.desc("id"))
                 : Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
         PageRequest pageable = PageRequest.of(Math.max(page, 0), COMMUNITY_PAGE_SIZE, postSort);
 
+        if (mediaOnly) {
+            return postRepository.findMediaPostsByBoardTypeAndArtist(boardType, artist, pageable);
+        }
         if (hideFromArtists) {
             return postRepository.findByBoardTypeAndArtistAndHiddenFromArtistFalse(
                     boardType, artist, pageable);

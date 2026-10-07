@@ -1376,6 +1376,24 @@
   height: 17px;
 }
 
+/* 하이라이트 "From 아티스트" - 게시글 카드 한 줄에 두 칸 (Comments by 위젯과 같은 카드 간격) */
+.feed--grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* 텍스트 글 + 사진 글이 섞인 경우: 카드마다 제 높이만 쓰게 (기본은 같은 줄 카드 높이를 맞춰 늘림) */
+.feed--grid-2--mixed {
+  align-items: start;
+}
+
+@media (max-width: 560px) {
+  .feed--grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Hide from Artists 글 표시 - 본문 바로 위에 한 줄로 놓는 둥근 알약 모양 배지 */
 .badge-only-fan {
   display: flex;
