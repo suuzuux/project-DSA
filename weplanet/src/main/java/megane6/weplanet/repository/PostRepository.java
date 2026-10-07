@@ -35,6 +35,30 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @EntityGraph(attributePaths = {"author", "artist"})
     Slice<Post> findByBoardTypeAndArtist(BoardType boardType, User artist, Pageable pageable);
 
+    // 아티스트 게시판 "사진/미디어" 필터 - 사진·영상 첨부가 하나라도 있는 글만 10개 단위 Slice로 조회.
+    // contentType 이 애매하게(application/octet-stream) 저장되는 경우가 있어 파일 확장자로도 한 번 더 판별한다
+    // (PostAttachment.isImage() 와 같은 이유)
+    @EntityGraph(attributePaths = {"author", "artist"})
+    @Query("""
+            SELECT p FROM Post p
+            WHERE p.boardType = :boardType
+              AND p.artist = :artist
+              AND EXISTS (
+                  SELECT 1 FROM PostAttachment a
+                  WHERE a.post = p
+                    AND (a.contentType LIKE 'image/%' OR a.contentType LIKE 'video/%'
+                         OR LOWER(a.storedName) LIKE '%.png' OR LOWER(a.storedName) LIKE '%.jpg'
+                         OR LOWER(a.storedName) LIKE '%.jpeg' OR LOWER(a.storedName) LIKE '%.gif'
+                         OR LOWER(a.storedName) LIKE '%.webp' OR LOWER(a.storedName) LIKE '%.bmp'
+                         OR LOWER(a.storedName) LIKE '%.mp4' OR LOWER(a.storedName) LIKE '%.webm'
+                         OR LOWER(a.storedName) LIKE '%.mov')
+              )
+            """)
+    Slice<Post> findMediaPostsByBoardTypeAndArtist(
+            @Param("boardType") BoardType boardType,
+            @Param("artist") User artist,
+            Pageable pageable);
+
     // 아티스트 계정으로 팬 게시판을 볼 때 Hide from Artists 글은 DB 조회 단계에서 제외한다.
     @EntityGraph(attributePaths = {"author", "artist"})
     Slice<Post> findByBoardTypeAndArtistAndHiddenFromArtistFalse(

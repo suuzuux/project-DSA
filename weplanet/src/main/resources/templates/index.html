@@ -307,7 +307,9 @@
       <a href="#" class="text-muted" th:text="#{footer.cookiePolicy}">쿠키 정책</a>
       <a href="#" class="text-muted" th:text="#{footer.cookieSettings}">쿠키 설정</a>
       <a th:href="@{/partnership}" class="text-muted" th:text="#{footer.partnership}">입점 신청</a>
-      <a href="#" class="text-muted" th:text="#{footer.support}">고객센터</a>
+      <!-- 고객센터 = 발표용 모의 이용 후기 구글폼 (칭찬해요/불편해요/개선해주세요). 사이트가 남도록 새 탭으로 연다 -->
+      <a href="https://forms.gle/EEdsPYB7iCPNzoTF8" target="_blank" rel="noopener noreferrer"
+         class="text-muted" th:text="#{footer.support}">고객센터</a>
     </nav>
     <!-- 사업자 정보/통신판매중개자 고지는 법적 문구라 번역본(JA/EN)은 법무 검수가 필요하다 -->
     <p class="text-xs text-muted" style="line-height:1.6;" th:utext="#{footer.businessInfo}">

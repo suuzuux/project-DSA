@@ -305,10 +305,8 @@
         }
         if (contentType.indexOf("application/json") !== -1) {
           return response.json().then(function (data) {
-            if (errorEl) {
-              errorEl.textContent = data.message || t("client.posts.submitFailed", "등록에 실패했습니다.");
-              errorEl.style.display = "block";
-            }
+            // 금칙어 등으로 막힌 경우 - 모달은 그대로 두고(작성 내용 유지) 경고창으로 알림
+            WePlaNet.alert(data.message || t("client.posts.submitFailed", "등록에 실패했습니다."));
             submitBtn.disabled = false;
           });
         }

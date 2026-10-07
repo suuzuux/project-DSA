@@ -66,8 +66,22 @@ public class PostListModelHelper {
 			User currentUser,
 			int page
 	) {
+		populateCommunityPage(model, boardType, sort, artist, hideFromArtists, currentUser, page, false);
+	}
+
+	// mediaOnly: 아티스트 게시판 "사진/미디어" 필터 (사진·영상 첨부가 있는 글만)
+	public void populateCommunityPage(
+			Model model,
+			BoardType boardType,
+			String sort,
+			User artist,
+			boolean hideFromArtists,
+			User currentUser,
+			int page,
+			boolean mediaOnly
+	) {
 		Slice<Post> slice = postService.getCommunityPostSlice(
-				boardType, artist, sort, page, hideFromArtists);
+				boardType, artist, sort, page, hideFromArtists, mediaOnly);
 		populateModel(model, boardType, sort, artist, currentUser, slice.getContent());
 		model.addAttribute("postPage", Math.max(page, 0));
 		model.addAttribute("hasMorePosts", slice.hasNext());
