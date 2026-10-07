@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -39,5 +40,21 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
         """)
 	List<ArtistCount> countMembersByArtistIds(
 			@Param("artistIds") Collection<Long> artistIds
+	);
+
+	// 급상승 커뮤니티: since 이후 새로 가입한 사람 수 (커뮤니티별). 신규 가입자가 없는 커뮤니티는 결과에 안 나온다
+	@Query("""
+        select new megane6.weplanet.domain.dto.ArtistCount(
+            member.artistId,
+            count(member)
+        )
+        from CommunityMember member
+        where member.artistId in :artistIds
+          and member.joinedAt >= :since
+        group by member.artistId
+        """)
+	List<ArtistCount> countNewMembersByArtistIds(
+			@Param("artistIds") Collection<Long> artistIds,
+			@Param("since") LocalDateTime since
 	);
 }
