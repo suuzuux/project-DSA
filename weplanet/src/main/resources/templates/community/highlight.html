@@ -174,7 +174,37 @@
           <h2 class="section__title">Lives</h2>
           <a class="section__link" th:href="@{${artist.homeUrl() + '/live'}}" th:text="#{community.common.more}">더보기</a>
         </div>
-        <p class="list-empty" th:text="#{community.highlight.emptyLives}">표시할 라이브가 없습니다.</p>
+        <!-- 한 줄 최대 3칸: 방송 중이면 LIVE 카드가 첫 칸, 나머지는 라이브 다시보기 (라이브 탭 카드와 같은 모양) -->
+        <div class="live-replay-grid" th:if="${liveNow or !highlightReplays.isEmpty()}">
+          <a th:if="${liveNow}" class="live-replay-card live-replay-card--live"
+             th:href="@{${artist.homeUrl() + '/live'}}" style="text-decoration:none;">
+            <div class="live-replay-card__thumb">
+              <span class="tag tag--live live-replay-card__badge">LIVE</span>
+              <span class="live-replay-card__logo" th:text="${artist.logo()}">WP</span>
+              <span class="live-replay-card__play">▶</span>
+            </div>
+            <div class="live-replay-card__body">
+              <div class="live-replay-card__title" th:text="#{community.live.featuredTitle(${artist.nickname()})}">라이브</div>
+              <div class="live-replay-card__meta" th:text="#{community.live.featuredMeta}">방송 중 · 클릭해서 시청</div>
+            </div>
+          </a>
+          <!-- 다시보기는 미디어 상세(라이브 다시보기 화면)로 이동. 멤버십 확인은 상세 화면에서 그대로 한다 -->
+          <a class="live-replay-card" th:each="replay : ${highlightReplays}"
+             th:href="@{/community/{artistId}/media/{mediaId}(artistId=${artist.id()}, mediaId=${replay.id})}" style="text-decoration:none;">
+            <div class="live-replay-card__thumb">
+              <video muted playsinline preload="metadata"
+                     th:src="@{|/board/media/file/${replay.firstVideoFileId}#t=0.1|}"></video>
+              <span class="live-replay-card__play">▶</span>
+            </div>
+            <div class="live-replay-card__body">
+              <div class="live-replay-card__title" th:text="${replay.title != null and #strings.startsWith(replay.title, '라이브 다시보기 · ')} ? #{community.media.replayTitle(${#strings.substring(replay.title, 11)})} : ${replay.title}">라이브 다시보기</div>
+              <div class="live-replay-card__meta"
+                   th:with="y=${#temporals.year(replay.createdAt)}, curY=${#temporals.year(#temporals.createNow())}"
+                   th:text="${y == curY} ? ${#temporals.format(replay.createdAt, 'MM-dd HH:mm')} : ${#temporals.format(replay.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</div>
+            </div>
+          </a>
+        </div>
+        <p class="list-empty" th:unless="${liveNow or !highlightReplays.isEmpty()}" th:text="#{community.highlight.emptyLives}">표시할 라이브가 없습니다.</p>
       </section>
     </div>
 

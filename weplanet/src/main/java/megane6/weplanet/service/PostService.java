@@ -93,9 +93,9 @@ public class PostService {
         return postRepository.findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType.ARTIST);
     }
 
-    // 하이라이트 "Fan Posts" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 4개
+    // 하이라이트 "Fan Posts" / "From 아티스트" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 6개
     public List<Post> getRecentPosts(BoardType boardType, User artist) {
-        return postRepository.findTop4ByBoardTypeAndArtistOrderByCreatedAtDesc(boardType, artist);
+        return postRepository.findTop6ByBoardTypeAndArtistOrderByCreatedAtDesc(boardType, artist);
     }
 
     // 게시글 작성 - Post 객체를 만들어서 DB에 저장하고, 저장된(id가 채워진) 결과를 돌려줌

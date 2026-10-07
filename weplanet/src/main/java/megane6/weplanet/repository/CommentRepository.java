@@ -32,8 +32,8 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     void deleteByPostAndParentIsNotNull(Post post);
 
     // 하이라이트 "Comments by 아티스트" 위젯용 - 이 커뮤니티 글에 아티스트 쪽 계정(그룹 계정 + 멤버)이 쓴
-    // 댓글·답글 중 최신 4개 (삭제된 댓글 제외)
-    List<Comment> findTop4ByAuthor_IdInAndPost_Artist_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
+    // 댓글·답글 중 최신 6개 (삭제된 댓글 제외)
+    List<Comment> findTop6ByAuthor_IdInAndPost_Artist_IdAndDeletedAtIsNullOrderByCreatedAtDesc(
             Collection<Long> authorIds, Long artistId);
 
     // 내 프로필 "댓글 히스토리" 탭 - 내가 쓴 댓글 전체를 최신순/오래된순으로
