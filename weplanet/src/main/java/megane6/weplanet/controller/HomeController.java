@@ -76,7 +76,10 @@ public class HomeController {
 		model.addAttribute("otherCommunities",
 				communityDrawerHelper.otherCommunities(viewer, artists));
 		
-		// 급상승 커뮤니티 카드의 가입자 수는 Follow가 아니라 실제 CommunityMember 기준
+		// 급상승 커뮤니티: 최근 7일 신규 가입자가 많은 순으로 상위 5개 (같으면 전체 가입자 많은 순)
+		// 카드에 보이는 가입자 수는 Follow가 아니라 실제 CommunityMember 기준 전체 인원
+		Map<Long, Long> newMemberCounts = communityJoinService.countNewMembers(
+				artistUsers.stream().map(User::getId).toList(), 7);
 		List<RisingCommunityCardView> risingCommunities = artistUsers.stream()
 				.map(user -> {
 					var debutDate = artistGroupRepository.findById(user.getId())
@@ -85,6 +88,11 @@ public class HomeController {
 					long memberCount = communityJoinService.countMembers(user.getId());
 					return RisingCommunityCardView.of(user, debutDate, memberCount);
 				})
+				.sorted(Comparator
+						.comparingLong((RisingCommunityCardView card) -> newMemberCounts.getOrDefault(card.id(), 0L))
+						.thenComparingLong(RisingCommunityCardView::followerCount)
+						.reversed())
+				.limit(5)
 				.toList();
 		model.addAttribute("risingCommunities", risingCommunities);
 		// 급상승 카드 링크용 커뮤니티 주소(영문 주소 우선). Thymeleaf에서 Long 키 조회가 어긋나지 않게 문자열 키로 둔다

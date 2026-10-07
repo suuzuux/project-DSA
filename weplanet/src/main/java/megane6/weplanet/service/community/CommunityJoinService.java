@@ -1,6 +1,7 @@
 package megane6.weplanet.service.community;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.ArtistCount;
 import megane6.weplanet.domain.dto.community.CommunityAuthorView;
 import megane6.weplanet.domain.dto.community.CommunityJoinInfo;
 import megane6.weplanet.domain.entity.User;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -349,5 +351,14 @@ public class CommunityJoinService {
 
 	public long countMembers(Long artistId) {
 		return communityMemberRepository.countByArtistId(artistId);
+	}
+
+	// 급상승 커뮤니티 정렬용: 최근 days일 동안 새로 가입한 사람 수 (artistId → 명)
+	public Map<Long, Long> countNewMembers(Collection<Long> artistIds, int days) {
+		if (artistIds.isEmpty()) return Map.of();
+		return communityMemberRepository
+				.countNewMembersByArtistIds(artistIds, LocalDateTime.now().minusDays(days))
+				.stream()
+				.collect(Collectors.toMap(ArtistCount::artistId, ArtistCount::count));
 	}
 }
