@@ -1,4 +1,5 @@
 package megane6.weplanet.domain.entity;
+import megane6.weplanet.service.artist.ArtistMemberService;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

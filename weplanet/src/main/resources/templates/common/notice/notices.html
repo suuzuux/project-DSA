@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="#{notices.pageTitle}">공지사항 | WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+</head>
+<body data-shell="fan" data-base="/"
+      th:attr="data-authenticated=${#authentication.name != 'anonymousUser'},
+               data-nickname=${#authentication.name != 'anonymousUser' ? #authentication.principal.nickname : null},
+               data-role=${#authentication.name != 'anonymousUser' ? #authentication.principal.roleName : null},
+               data-fan-id=${#authentication.name != 'anonymousUser' ? #authentication.principal.id : null}">
+
+<header class="site-header">
+  <div class="header-left">
+    <button type="button" class="menu-toggle" data-shell-open="menu" th:aria-label="#{shell.menu.open}" aria-label="메뉴 열기">☰</button>
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+  <div class="header-actions">
+    <th:block sec:authorize="isAnonymous()">
+      <a class="btn btn--ghost btn--sm" th:href="@{/signup}" th:text="#{shell.guest.signup}">회원가입</a>
+      <a class="btn btn--primary btn--sm" th:href="@{/login}" th:text="#{common.login}">로그인</a>
+    </th:block>
+    <th:block sec:authorize="isAuthenticated()">
+      <form th:action="@{/logout}" method="post" style="display:inline;">
+        <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.logout}">로그아웃</button>
+      </form>
+    </th:block>
+  </div>
+</header>
+
+<main class="container section">
+  <div class="flex-between mb-16">
+    <h1 class="section__title" style="font-size:var(--wp-fs-xl);" th:text="#{notices.heading}">공지사항</h1>
+    <a class="btn btn--ghost btn--sm" th:href="@{/}" th:text="#{collection.home}">← 홈</a>
+  </div>
+
+  <!-- 분류 필터 - 제목 아래 줄에서 왼쪽 정렬 -->
+  <div class="chip-row mb-24">
+    <a th:href="@{/notices}" class="chip" th:classappend="${selectedCategory == null} ? ' is-active'" th:text="#{community.media.filterAll}">전체</a>
+    <a th:href="@{/notices(category='GENERAL')}" class="chip" th:classappend="${selectedCategory == 'GENERAL'} ? ' is-active'" th:text="#{siteNotice.category.GENERAL}">일반</a>
+    <a th:href="@{/notices(category='EVENT')}" class="chip" th:classappend="${selectedCategory == 'EVENT'} ? ' is-active'" th:text="#{siteNotice.category.EVENT}">이벤트</a>
+    <a th:href="@{/notices(category='MAINTENANCE')}" class="chip" th:classappend="${selectedCategory == 'MAINTENANCE'} ? ' is-active'" th:text="#{siteNotice.category.MAINTENANCE}">점검</a>
+    <a th:href="@{/notices(category='UPDATE')}" class="chip" th:classappend="${selectedCategory == 'UPDATE'} ? ' is-active'" th:text="#{siteNotice.category.UPDATE}">업데이트</a>
+  </div>
+
+  <p th:if="${#lists.isEmpty(notices)}" class="list-empty" th:text="#{portal.notices.empty}">등록된 공지가 없습니다.</p>
+  <article th:each="notice : ${notices}" class="post-card mb-16"
+           th:classappend="${notice.pinned} ? ' is-pinned'">
+    <a th:href="@{/notices/{id}(id=${notice.id})}" style="display:block;color:inherit;">
+      <div class="post-card__head">
+        <div class="post-card__meta">
+          <!-- 상단 고정 공지 표시 (핀 아이콘). 문구 키는 관리자 화면의 "상단 고정"과 같은 것을 씀 -->
+          <svg th:if="${notice.pinned}" viewBox="0 0 24 24" width="16" height="16"
+               fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+               role="img" th:aria-label="#{admin.notices.stat.pinned}"
+               style="color:var(--wp-brand);vertical-align:middle;margin-right:4px;flex-shrink:0;">
+            <title th:text="#{admin.notices.stat.pinned}">상단 고정</title>
+            <line x1="12" y1="17" x2="12" y2="22"></line>
+            <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path>
+          </svg>
+          <span class="tag tag--member" th:text="#{${'siteNotice.category.' + notice.category.name()}}">일반</span>
+          <strong class="post-card__title"
+                  th:classappend="${notice.pinned} ? ' is-pinned'"
+                  th:style="${notice.pinned} ? 'font-weight:700;' : 'font-weight:400;'"
+                  th:text="${notice.title}">공지 제목</strong>
+          <span class="text-xs text-muted"
+                th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2026.08.31</span>
+        </div>
+      </div>
+    </a>
+  </article>
+
+  <!-- 페이지 이동 (15개씩). 분류 필터를 고른 상태면 그 분류를 유지한 채 넘어간다 -->
+  <nav class="pagination" th:if="${totalPages > 1}" th:aria-label="#{notices.pagination}">
+    <span th:if="${currentPage == 1}" aria-hidden="true">‹</span>
+    <a th:unless="${currentPage == 1}" th:href="@{/notices(category=${selectedCategory}, page=${currentPage - 1})}" aria-label="Previous">‹</a>
+    <th:block th:each="p : ${#numbers.sequence(1, totalPages)}">
+      <span th:if="${p == currentPage}" class="is-active" aria-current="page" th:text="${p}">1</span>
+      <a th:unless="${p == currentPage}" th:href="@{/notices(category=${selectedCategory}, page=${p})}" th:text="${p}">2</a>
+    </th:block>
+    <span th:if="${currentPage == totalPages}" aria-hidden="true">›</span>
+    <a th:unless="${currentPage == totalPages}" th:href="@{/notices(category=${selectedCategory}, page=${currentPage + 1})}" aria-label="Next">›</a>
+  </nav>
+</main>
+
+<script th:src="@{/js/common/main.js}"></script>
+<script th:src="@{/js/common/shell.js}"></script>
+</body>
+</html>

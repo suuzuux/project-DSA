@@ -9,10 +9,10 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
-import megane6.weplanet.repository.ArtistAccountProfileRepository;
-import megane6.weplanet.repository.GroupMemberRepository;
-import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.service.AdminUserService;
+import megane6.weplanet.repository.artist.ArtistAccountProfileRepository;
+import megane6.weplanet.repository.artist.GroupMemberRepository;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.service.admin.AdminUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

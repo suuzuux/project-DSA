@@ -2,7 +2,7 @@ package megane6.weplanet.controller.admin;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.event.HashtagArtistOption;
 import megane6.weplanet.domain.dto.event.HashtagEventForm;
 import megane6.weplanet.domain.entity.User;

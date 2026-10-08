@@ -9,8 +9,8 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.UserFollow;
 import megane6.weplanet.domain.entity.live.LiveSession;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
-import megane6.weplanet.repository.UserFollowRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.fan.UserFollowRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 

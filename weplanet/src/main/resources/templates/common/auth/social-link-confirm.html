@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- 이미 다른 소셜이 연동된 계정에서 "연결하기"를 눌렀을 때의 확인 화면 (계정당 소셜 연동은 1개).
+       "예"면 기존 연동을 새 소셜 계정으로 바꾸고, "아니오"면 그대로 설정 화면으로 돌아간다. -->
+  <title th:text="#{socialLink.pageTitle}">WePlaNet – 연동 계정 변경 확인</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+</head>
+<body class="auth-page">
+<div class="auth-card">
+  <a class="auth-card__back" th:href="@{/settings}" th:text="#{socialLink.backToSettings}">← 설정으로</a>
+  <p class="auth-card__brand" style="margin:0;">We<span>Pla</span>Net</p>
+
+  <h1 class="auth-card__title mt-16" th:text="#{socialLink.heading}">연동 계정을 바꾸시겠습니까?</h1>
+
+  <!-- provider 이름을 <strong> 으로 강조한 채 문장 전체를 번역해야 해서 th:utext 로 그린다
+       (값은 AuthProvider enum 이름이라 안전하다). -->
+  <p class="text-sm text-muted mt-16">
+    <span th:text="#{socialLink.desc}">이 계정은 비밀번호와 별개로 소셜 계정 하나만 추가로 연결할 수 있어요.</span>
+    <span th:if="${currentProvider}" th:utext="#{socialLink.currentlyLinkedNotice(${currentProvider})}">
+      이미 <strong>GOOGLE</strong> 계정이 연동되어 있어서,
+    </span>
+    <span th:utext="#{socialLink.switchNotice(${newProvider})}">
+      계속 진행하면 기존 연동은 끊어지고 <strong>KAKAO</strong> 계정으로 바뀝니다.
+    </span>
+  </p>
+
+  <div class="stack mt-24">
+    <form th:action="@{/social-login/link-confirm/confirm}" method="post" style="margin:0;">
+      <button type="submit" class="btn btn--primary btn--block btn--lg" th:utext="#{socialLink.confirmButton(${newProvider})}">
+        예, <span>KAKAO</span> 계정으로 바꿀게요
+      </button>
+    </form>
+    <form th:action="@{/social-login/link-confirm/cancel}" method="post" style="margin:0;">
+      <button type="submit" class="btn btn--ghost btn--block btn--lg" th:text="#{socialLink.cancelButton}">아니오, 그대로 둘게요</button>
+    </form>
+  </div>
+</div>
+<script th:src="@{/js/common/main.js}"></script>
+</body>
+</html>

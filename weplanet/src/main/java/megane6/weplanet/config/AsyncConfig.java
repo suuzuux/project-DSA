@@ -1,4 +1,5 @@
 package megane6.weplanet.config;
+import megane6.weplanet.service.main.ContentTranslationService;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

@@ -1,17 +1,17 @@
 package megane6.weplanet.controller.calendar;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.entity.*;
 import megane6.weplanet.domain.entity.enumfolder.LiveSessionStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.live.LiveSession;
 import megane6.weplanet.domain.entity.portal.PortalNotice;
-import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.PostRepository;
-import megane6.weplanet.repository.SiteNoticeRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.comment.CommentRepository;
+import megane6.weplanet.repository.fan.PostRepository;
+import megane6.weplanet.repository.notice.SiteNoticeRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.repository.live.LiveSessionRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
 import megane6.weplanet.security.AuthenticatedUser;

@@ -1,4 +1,6 @@
 package megane6.weplanet.domain.event;
+import megane6.weplanet.service.fan.BadgeEventListener;
+import megane6.weplanet.service.fan.PostService;
 
 /**
  * "배지 조건에 영향을 줄 수 있는 활동이 일어났다"는 알림.

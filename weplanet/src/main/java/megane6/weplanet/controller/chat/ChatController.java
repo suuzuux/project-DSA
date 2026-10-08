@@ -1,0 +1,578 @@
+package megane6.weplanet.controller.chat;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.dto.ChatMessageRequest;
+import megane6.weplanet.domain.dto.DmInboxItem;
+import megane6.weplanet.domain.entity.ChatMessage;
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.exception.AuthenticationRequiredException;
+import megane6.weplanet.i18n.PreferredLocaleResolver;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.chat.AiFanChatService;
+import megane6.weplanet.service.chat.ChatFilterService;
+import megane6.weplanet.service.chat.ChatMessageService;
+import megane6.weplanet.service.chat.ChatQuotaService;
+import org.springframework.context.MessageSource;
+import megane6.weplanet.service.community.CommunityArtistResolver;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * 실시간 채팅(CHAT) 관련 화면과 메시지 처리를 담당하는 컨트롤러.
+ * <p>
+ * 이 컨트롤러는 두 가지 종류의 메서드가 섞여 있음.
+ * ① @GetMapping/@PostMapping 메서드들 : 지금까지 배운 것과 똑같은 일반 HTTP 요청/응답
+ * (채팅방 화면 보여주기, 금칙어 관리 화면 등)
+ * ② @MessageMapping 메서드(send) : 일반 HTTP가 아니라, 웹소켓(WebSocketConfig 참고)을 통해
+ * 실시간으로 오가는 메시지를 처리하는 부분. 브라우저가 fetch()가 아니라
+ * stompClient.send(...)로 보낸 메시지가 여기로 들어옴.
+ */
+@Controller
+@RequiredArgsConstructor
+@Slf4j
+public class ChatController {
+
+    private final ChatMessageService chatMessageService;
+    private final UserRepository userRepository;
+    // 실시간으로 연결된 브라우저들에게 메시지를 "방송"할 때 쓰는 도구
+    private final SimpMessagingTemplate messagingTemplate;
+    private final ChatFilterService chatFilterService;
+    private final ChatQuotaService chatQuotaService;
+    private final AiFanChatService aiFanChatService;
+    private final MessageSource messageSource;
+    private final megane6.weplanet.i18n.Messages messages;
+    private final CommunityArtistResolver communityArtistResolver;
+
+    // 채팅·DM 웹소켓 경고 문구는 HTTP 요청이 아니라서 LocaleContextHolder(세션 로케일)를
+    // 못 쓴다 - 보낸 사람 본인의 User.preferredLanguage로 직접 로케일을 정한다.
+    private String chatMsg(String code, User forUser) {
+        Locale locale = PreferredLocaleResolver.toLocale(forUser.getPreferredLanguage());
+        return messageSource.getMessage(code, null, locale);
+    }
+
+    // 금칙어 관리 화면(HTTP 요청) 결과 문구 - 요청 로케일 기준
+    private String msg(String code) {
+        return messageSource.getMessage(code, null,
+                org.springframework.context.i18n.LocaleContextHolder.getLocale());
+    }
+
+    // 유저 조회 공통 헬퍼 - label은 로그/디버깅용 대상 이름 (화면 문구는 error.community.userNotFound 키로 번역)
+    private User getUserOrThrow(Long userId, String label) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("error.community.userNotFound"));
+    }
+
+    // 관리자 권한 체크 공통 헬퍼 - 관리자가 아니면 예외
+    private void requireAdmin(User requester) {
+        if (requester.getRole() != Role.ADMIN) {
+            throw new IllegalStateException("error.admin.adminOnly");
+        }
+    }
+
+    // 로그인한 실제 사용자를 꺼냄 - 비로그인이면 GlobalExceptionHandler가 /login으로 보내줌
+    private User requireLoginUser(AuthenticatedUser principal) {
+        if (principal == null) {
+            throw new AuthenticationRequiredException();
+        }
+        return getUserOrThrow(principal.getId(), "로그인 사용자");
+    }
+
+    /**
+     * 웹소켓으로 연결된 브라우저들에게 실시간 메시지를 보내는 공통 헬퍼.
+     * <p>
+     * destination : 어느 채널로 보낼지 (예: "/topic/chat.2" - 2번 아티스트 채널을 구독 중인 모두에게 감)
+     * payload : 보낼 내용물(누가, 무슨 말을, 언제 했는지 등을 담은 자료 상자)
+     */
+    private void broadcast(String destination, Map<String, Object> payload) {
+        messagingTemplate.convertAndSend(destination, (Object) payload);
+    }
+
+    // 팬 전용 채팅방 화면 (CHAT-02) - 이 팬의 개인 채널 + 아티스트 방송 채널을 화면에서 구독하게 됨
+    @GetMapping("/chat/room/fan")
+    public String fanRoom(
+            @RequestParam Long artistId,
+            @RequestParam Long fanId,
+            Model model
+    ) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+        User fan = getUserOrThrow(fanId, "팬");
+
+        model.addAttribute("artistId", artistId);
+        model.addAttribute("fanId", fanId);
+        model.addAttribute("remaining", chatQuotaService.getRemaining(fan, artist));
+
+        return "chat/fanChatRoom";
+    }
+
+    // 아티스트 전용 채팅방 화면 (CHAT-02) - 방송 채널 + 팬 메시지 중 랜덤으로 추려진 피드만 구독하게 됨
+    @GetMapping("/chat/room/artist")
+    public String artistRoom(
+            @RequestParam Long artistId,
+            Model model
+    ) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+
+        // 지난 대화 이력 - 예전엔 웹소켓 구독만 하고 이력을 안 내려줘서,
+        // 새로고침하면 그전까지 오간 메시지가 전부 사라져 보였음
+        List<Map<String, Object>> history = chatMessageService.getArtistRoomHistory(artist).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
+        model.addAttribute("artistId", artistId);
+        model.addAttribute("history", history);
+        return "chat/artistChatRoom";
+    }
+
+    /**
+     * DM 인박스 목록 (와이어프레임 13번) - 이 팬이 대화 나눈 아티스트들 + 아직 대화 안 나눈 아티스트("추천").
+     * 메인 페이지 우측 하단 플로팅 위젯(shell.js)이 열릴 때 이 API를 호출해서 실제 데이터로 채움.
+     */
+    @GetMapping("/chat/inbox")
+    @ResponseBody
+    public List<Map<String, Object>> inbox(@RequestParam Long fanId) {
+        User fan = getUserOrThrow(fanId, "팬");
+
+        List<DmInboxItem> items = chatMessageService.getInboxForFan(fan);
+
+        return items.stream().map(item -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("artistId", item.getArtistId());
+            map.put("artistNickname", item.getArtistNickname());
+            map.put("groupName", item.getGroupName());
+            map.put("hasConversation", item.isHasConversation());
+            map.put("lastMessage", item.getLastMessage());
+            map.put("lastMessageTime", item.getLastMessageTime() != null ? item.getLastMessageTime().toString() : null);
+            map.put("membershipExpired", item.isMembershipExpired());
+            map.put("neverSubscribed", item.isNeverSubscribed());
+            return map;
+        }).toList();
+    }
+
+    /**
+     * 팬 화면 비행기 버튼의 "안 읽은 DM 개수" 계산용 데이터 (dm-realtime.js).
+     * 최근 7일 동안 방 주인(아티스트/멤버)이 보낸 메시지 시각을 방별로 내려주고,
+     * 브라우저가 자기가 기억하는 "마지막으로 읽은 시각"과 비교해서 개수를 센다.
+     * 시각은 브라우저 시계와 어긋나지 않게 서버 기준 밀리초(epoch)로 통일하고, 서버 현재 시각(serverNow)도 같이 준다.
+     */
+    @GetMapping("/chat/unread-source")
+    @ResponseBody
+    public Map<String, Object> unreadSource(@AuthenticationPrincipal AuthenticatedUser principal) {
+        Map<String, Object> result = new HashMap<>();
+        result.put("serverNow", System.currentTimeMillis());
+        if (principal == null || !"ROLE_FAN".equals(principal.getRoleName())) {
+            result.put("rooms", List.of());
+            return result;
+        }
+        User fan = getUserOrThrow(principal.getId(), "팬");
+        ZoneId zone = ZoneId.systemDefault();
+        List<Map<String, Object>> rooms = chatMessageService
+                .getRecentOwnerMessageTimes(fan, LocalDateTime.now().minusDays(7))
+                .entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> room = new HashMap<>();
+                    room.put("artistId", entry.getKey());
+                    room.put("times", entry.getValue().stream()
+                            .map(time -> time.atZone(zone).toInstant().toEpochMilli())
+                            .toList());
+                    return room;
+                }).toList();
+        result.put("rooms", rooms);
+        return result;
+    }
+
+    /**
+     * 아티스트 자신의 채팅방(1대다 방송) 데이터를 JSON으로 내려줌 - DM 모달 안에서 쓰기 위함.
+     * 화면(chat/artistChatRoom.html)과 같은 데이터(getArtistRoomHistory)를 쓰지만,
+     * 페이지 이동 없이 모달에서 fetch로 채워야 해서 JSON 버전을 따로 둠.
+     */
+    @GetMapping("/chat/room-data/artist")
+    @ResponseBody
+    public Map<String, Object> artistRoomData(@RequestParam Long artistId) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+
+        List<Map<String, Object>> messages = chatMessageService.getArtistRoomHistory(artist).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("messages", messages);
+        return result;
+    }
+
+    /**
+     * 브라우저가 웹소켓의 "/app/chat.send" 채널로 보낸 메시지를 처리함.
+     * <p>
+     *
+     * @MessageMapping("/chat.send") : @PostMapping과 비슷한 역할이지만, HTTP 요청이 아니라
+     * 웹소켓으로 온 메시지를 받을 때 씀. WebSocketConfig에서 "/app"을 접두사로 정해뒀기 때문에,
+     * 실제로는 "/app/chat.send"로 온 메시지가 이 메서드로 연결됨.
+     * <p>
+     * 이 메서드는 return 값이 없음(void). 일반 컨트롤러처럼 "화면을 보여주는" 게 목적이 아니라,
+     * 메시지를 검사하고 저장한 뒤 broadcast(...)로 관련된 사람들에게 실시간으로 뿌려주는 게 목적이기 때문.
+     */
+    @MessageMapping("/chat.send")
+    public void send(ChatMessageRequest request, Authentication authentication) {
+
+        // 빈 메시지나 잘못된 요청은 조용히 무시 (금칙어 검사에서 content가 null이면 NPE 나는 것 방지)
+        if (request.getContent() == null || request.getContent().isBlank()) {
+            return;
+        }
+
+        // 비로그인 상태로 온 메시지는 무시함 (예전엔 프론트가 fanId를 못 구하면 1번으로 기본값 처리해서,
+        // 로그인 안 해도 1번 유저 명의로 메시지가 보내지는 문제가 있었음)
+        if (authentication == null || !(authentication.getPrincipal() instanceof AuthenticatedUser me)) {
+            log.warn("비로그인 상태로 채팅 전송 시도 - 무시함 (artistId={})", request.getArtistId());
+            return;
+        }
+
+        // 로그인한 사람과 요청에 담긴 senderId가 다르면(다른 사람 명의로 보내려는 시도) 거부
+        if (!me.getId().equals(request.getSenderId())) {
+            log.warn("senderId 위조 시도 감지: 로그인한 사용자={}, 요청 senderId={}", me.getId(), request.getSenderId());
+            return;
+        }
+
+        // 경고 문구 로케일 기준 = 보낸 사람 본인의 서비스 언어. 금칙어 검사가 artist/fan 조회보다
+        // 먼저 실행되므로 sender만 여기서 먼저 조회해 둔다.
+        User sender = getUserOrThrow(request.getSenderId(), "보낸 사람");
+
+        // CHAT-03 : 금칙어가 포함되어 있으면 저장/방송하지 않고, 보낸 사람 본인에게만 경고를 돌려줌
+        if (chatFilterService.containsBannedWord(request.getContent())) {
+            Map<String, Object> warning = new HashMap<>();
+            warning.put("error", true);
+            warning.put("message", chatMsg("chat.warning.bannedWord", sender));
+            // 경고 종류 - 화면(dm-realtime.js)은 DAILY_LIMIT 일 때만 "남은 횟수 0"으로 바꾼다
+            // (예전엔 금칙어 경고에도 0으로 바꿔서, 횟수가 그대로인데 0회로 보였음)
+            warning.put("reason", "BANNED_WORD");
+
+            // "/topic/chat.error.보낸사람ID" 채널은 그 사람만 구독하고 있으므로, 본인에게만 경고가 도착함
+            broadcast("/topic/chat.error." + request.getSenderId(), warning);
+
+            return;
+        }
+
+        // 멤버별 DM: artistId 는 DM 방 주인 - 솔로 아티스트 본인 또는 그룹의 멤버 한 명.
+        // 그룹 계정 자체로 오는 방(예전 그룹 단위 DM)은 더 이상 받지 않는다
+        User artist = getUserOrThrow(request.getArtistId(), "DM 방 주인");
+        if (!communityArtistResolver.isDmRoomOwner(artist)) {
+            log.warn("DM 방 주인이 아닌 계정으로 전송 시도: artistId={}", artist.getId());
+            return;
+        }
+        User fan = request.getFanId() != null
+                ? getUserOrThrow(request.getFanId(), "팬")
+                : null;
+
+        // 이 메시지가 "팬 본인이 보낸 것"인지 여부. 아티스트가 특정 팬과의 DM 방에서 답장을 보낼 때도
+        // fan 필드는 채워져 있지만(어느 팬과의 대화인지 구분용), 실제로 보낸 사람은 아티스트이므로
+        // 팬 전용 제약(멤버십/하루 한도)을 걸면 안 됨. 그동안 fan != null만 보고 체크해서,
+        // 아티스트가 멤버십 만료된 팬에게 답장하거나, 그 팬의 한도를 대신 소진시켜버리는 문제가 있었음
+        boolean sentByFan = fan != null && sender.getId().equals(fan.getId());
+        
+        // 팬 본인이 보낸 게 아니면 DM 방 주인(솔로 본인/그 멤버 본인)이 보낸 것이어야 한다.
+        // 예전엔 이 확인이 없어서, 로그인만 하면 fanId 를 비워 보내는 것만으로
+        // 아티스트 방송 채널에 메시지를 뿌리거나 남의 DM 방에 끼어들 수 있었음.
+        // 멤버별 DM 이라 같은 그룹의 다른 멤버도 남의 방에는 보낼 수 없다
+        if (!sentByFan && !sender.getId().equals(artist.getId())) {
+            log.warn("아티스트가 아닌 계정의 아티스트 채널 전송 시도: senderId={}, artistId={}",
+                    sender.getId(), artist.getId());
+            return;
+        }
+
+        // 와이어프레임 19번: 멤버십이 없거나 만료된 팬은 DM을 보낼 수 없음.
+        // 그동안 프론트(dm-realtime.js)에서 입력창만 숨기고 서버 검증이 없어서,
+        // 웹소켓으로 직접 쏘면 미가입자도 전송이 됐음
+        if (sentByFan && chatMessageService.isMembershipExpired(fan, artist)) {
+            Map<String, Object> warning = new HashMap<>();
+            warning.put("error", true);
+            warning.put("message", chatMsg("chat.warning.membershipRequired", sender));
+            warning.put("reason", "MEMBERSHIP_REQUIRED");
+
+            broadcast("/topic/chat.error." + request.getSenderId(), warning);
+
+            return;
+        }
+
+        // CHAT-05 : 팬이 보낸 메시지인 경우에만 하루 전송 한도를 체크함 (아티스트 방송/답장은 한도 없음)
+        if (sentByFan && !chatQuotaService.tryConsume(fan, artist)) {
+            Map<String, Object> warning = new HashMap<>();
+            warning.put("error", true);
+            warning.put("message", chatMsg("chat.warning.dailyLimitExceeded", sender));
+            warning.put("reason", "DAILY_LIMIT");
+            warning.put("remaining", 0);
+
+            broadcast("/topic/chat.error." + request.getSenderId(), warning);
+
+            return;
+        }
+
+        // CHAT-02 비대칭 수신 : 팬 메시지는 30% 확률로만 아티스트 화면에 노출됨(도배 방지).
+        // 실시간 전송과 새로고침 후 히스토리가 어긋나지 않도록, 여기서 한 번 정한 값을
+        // 그대로 DB에 저장해두고 아티스트 화면 히스토리도 이 값을 기준으로 걸러냄
+        boolean visibleToArtist = (fan == null) || (Math.random() < 0.3);
+
+        ChatMessage saved = chatMessageService.saveMessage(artist, fan, sender, request.getContent(), visibleToArtist);
+
+        // 엔티티(ChatMessage)를 그대로 방송하지 않고, 화면에 필요한 값만 뽑아서 새 자료 상자(payload)에 담아 보냄
+        // (User 엔티티 안에는 비밀번호 등 민감한 정보가 들어있어서, 그걸 그대로 브라우저에 보내면 안 되기 때문)
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("senderId", sender.getId());
+        payload.put("senderNickname", sender.getNickname());
+        payload.put("fanId", fan != null ? fan.getId() : null);
+        payload.put("content", saved.getContent());
+        payload.put("createdAt", saved.getCreatedAt().toString());
+
+        if (fan != null) {
+            payload.put("remaining", chatQuotaService.getRemaining(fan, artist));
+        }
+
+        // CHAT-02 비대칭 수신 : 방송이냐 개인 메시지냐에 따라 어느 채널로 보낼지가 달라짐
+        if (fan == null) {
+            // 아티스트가 보낸 메시지 - 아티스트 채널을 구독한 모든 팬에게 전달
+            broadcast("/topic/chat." + artist.getId(), payload);
+
+            // 아티스트 본인이 DM을 보낸 경우에만 가상 팬 5명이 백그라운드에서 답장한다
+            if (sender.getId().equals(artist.getId())) {
+                aiFanChatService.replyToArtistDm(artist.getId(), saved.getContent());
+            }
+        } else {
+            // 팬이 보낸 개인 메시지 - 그 팬 개인 채널(본인+아티스트만 구독)에는 무조건 전달됨
+            broadcast("/topic/chat." + artist.getId() + ".fan." + fan.getId(), payload);
+
+            // 위에서 정해둔 노출 여부에 따라, 아티스트가 보는 "추천 피드" 채널에도 추가로 보냄
+            if (visibleToArtist) {
+                broadcast("/topic/chat." + artist.getId() + ".artistFeed", payload);
+            }
+        }
+    }
+
+    /**
+     * DM 방 하나를 열 때 필요한 데이터(지난 대화 이력 + 오늘 남은 전송 횟수)를 한 번에 내려줌.
+     * 플로팅 위젯(shell.js)이 DM 목록에서 아티스트를 클릭하면 이 API로 방 데이터를 채운 뒤 화면을 그림.
+     */
+    @GetMapping("/chat/room-data")
+    @ResponseBody
+    public Map<String, Object> roomData(@RequestParam Long artistId, @RequestParam Long fanId) {
+        User artist = getUserOrThrow(artistId, "아티스트");
+        User fan = getUserOrThrow(fanId, "팬");
+
+        List<Map<String, Object>> messages = chatMessageService.getConversation(artist, fan).stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("senderId", m.getSender().getId());
+                    map.put("senderNickname", m.getSender().getNickname());
+                    map.put("content", m.getContent());
+                    map.put("createdAt", m.getCreatedAt().toString());
+                    return (Map<String, Object>) map;
+                }).toList();
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("artistNickname", artist.getNickname());
+        result.put("remaining", chatQuotaService.getRemaining(fan, artist));
+        result.put("messages", messages);
+        result.put("membershipExpired", chatMessageService.isMembershipExpired(fan, artist));
+        // 한 번도 가입 안 한 팬이면 배너에 "구독 만료" 대신 가입 안내 문구를 보여줌
+        result.put("neverSubscribed", chatMessageService.isNeverSubscribed(fan, artist));
+        return result;
+    }
+
+    // 금칙어 관리 화면 (CHAT-04) - 관리자만 접근 가능
+    // 예전엔 testUserId 파라미터로 관리자 여부를 판단해서, ?testUserId=3 만 붙이면
+    // 로그인하지 않은 사람도 금칙어를 등록/삭제할 수 있었음 -> 실제 로그인 계정 기준으로 변경
+    @GetMapping("/chat/admin/keywords")
+    public String keywordList(@AuthenticationPrincipal AuthenticatedUser principal,
+                             Model model) {
+        requireAdmin(requireLoginUser(principal));
+        
+        model.addAttribute("keywords", chatFilterService.getAllKeywords());
+        
+        return "chat/keywordManage";
+    }
+    
+    // 금칙어 등록
+    @PostMapping("/chat/admin/keywords")
+    public String addKeyword(
+            @RequestParam String keyword,
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            HttpServletRequest request,
+            @RequestHeader(
+                    value = "X-Requested-With",
+                    required = false
+            ) String requestedWith,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        requireAdmin(requireLoginUser(principal));
+        
+        return handleKeywordMutation(
+                () -> chatFilterService.addKeyword(
+                        keyword,
+                        principal.getId(),
+                        request.getRemoteAddr()
+                ),
+                msg("chat.keyword.added"),
+                requestedWith,
+                model,
+                redirectAttributes
+        );
+    }
+    
+    // 금칙어 수정
+    @PostMapping("/chat/admin/keywords/{id}/update")
+    public String updateKeyword(
+            @PathVariable Long id,
+            @RequestParam String keyword,
+            @AuthenticationPrincipal AuthenticatedUser principal,
+            HttpServletRequest request,
+            @RequestHeader(
+                    value = "X-Requested-With",
+                    required = false
+            ) String requestedWith,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        requireAdmin(requireLoginUser(principal));
+        
+        return handleKeywordMutation(
+                () -> chatFilterService.updateKeyword(
+                        id,
+                        keyword,
+                        principal.getId(),
+                        request.getRemoteAddr()
+                ),
+                msg("chat.keyword.updated"),
+                requestedWith,
+                model,
+                redirectAttributes
+        );
+    }
+    
+    // 금칙어 삭제
+    @PostMapping("/chat/admin/keywords/{id}/delete")
+    public String deleteKeyword(@PathVariable Long id,
+                                @AuthenticationPrincipal AuthenticatedUser principal,
+                                HttpServletRequest request,
+                                @RequestHeader(
+                                        value = "X-Requested-With",
+                                        required = false
+                                ) String requestedWith,
+                                Model model,
+                                RedirectAttributes redirectAttributes) {
+        requireAdmin(requireLoginUser(principal));
+        
+        return handleKeywordMutation(
+                () -> chatFilterService.deleteKeyword(
+                        id, principal.getId(), request.getRemoteAddr()),
+                msg("chat.keyword.deleted"),
+                requestedWith,
+                model,
+                redirectAttributes);
+    }
+    
+    // 등록·수정·삭제 결과를 AJAX 또는 일반 요청에 맞게 반환
+    private String handleKeywordMutation(Runnable action,
+                                         String successMessage,
+                                         String requestedWith,
+                                         Model model,
+                                         RedirectAttributes redirectAttributes) {
+        String errorMessage = null;
+        try {
+            action.run();
+        } catch (IllegalArgumentException e) {
+            // 다른 컨트롤러와 같은 공통 번역 방식 (값을 들고 다니는 예외도 {0}이 빠지지 않는다)
+            errorMessage = messages.resolve(e);
+        }
+        
+        if ("fetch".equals(requestedWith)) {
+            model.addAttribute(
+                    "keywords",
+                    chatFilterService.getAllKeywords()
+            );
+            
+            if (errorMessage == null) {
+                model.addAttribute(
+                        "keywordMessage",
+                        successMessage
+                );
+            } else {
+                model.addAttribute(
+                        "keywordError",
+                        errorMessage
+                );
+            }
+            
+            return "chat/keywordManage :: keywordListFragment";
+        }
+        
+        if (errorMessage == null) {
+            redirectAttributes.addFlashAttribute("keywordMessage", successMessage);
+        } else {
+            redirectAttributes.addFlashAttribute("keywordError", errorMessage);
+        }
+        
+        return "redirect:/chat/admin/keywords";
+    }
+    
+    // 아티스트 쪽 계정이 채팅할 "내 DM 방" 번호. 멤버별 DM 이라 솔로도 그룹 멤버도 본인 id 다.
+    // (예전엔 그룹 멤버면 소속 그룹 id 를 돌려줘서 멤버 전원이 방 하나를 같이 썼음)
+    // dm-realtime.js 가 멤버로 로그인했을 때 방 번호를 알아내려고 호출한다. 방 주인이 아니면 null.
+    @GetMapping("/chat/my-artist-room")
+    @ResponseBody
+    public Map<String, Object> myArtistRoom(@AuthenticationPrincipal AuthenticatedUser principal) {
+        User me = requireLoginUser(principal);
+
+        // Map.of 는 null 값을 넣으면 에러가 나서, 방이 없을 수도 있는 값은 HashMap 에 담는다
+        Map<String, Object> result = new HashMap<>();
+        result.put("artistId", communityArtistResolver.isDmRoomOwner(me) ? me.getId() : null);
+        return result;
+    }
+
+    // AI 팬 메시지 생성 (CHAT-06, 시연용) - 아티스트 채팅방이 비어 있을 때
+    // 가상 팬 5명이 먼저 인사하도록 수동으로 돌릴 수 있는 버튼용. 웹소켓이 아니라 fetch로 호출됨
+    @PostMapping("/chat/room/artist/ai-fan")
+    @ResponseBody
+    public Map<String, Object> generateAiFan(
+            @RequestParam Long artistId,
+            @AuthenticationPrincipal AuthenticatedUser principal
+    ) {
+        // 이 엔드포인트는 호출될 때마다 Gemini API가 실제로 돌고 chat_message에 저장까지 됨.
+        // 그동안 인증 확인이 없어서 비로그인 상태로 반복 호출하면 API 한도를 소진시킬 수 있었음.
+        // 채팅방을 쓰는 아티스트 본인만 호출할 수 있도록 제한함
+        User requester = requireLoginUser(principal);
+        if (!requester.getId().equals(artistId) || !communityArtistResolver.isDmRoomOwner(requester)) {
+            throw new IllegalStateException("error.chat.ownRoomOnly");
+        }
+
+        getUserOrThrow(artistId, "아티스트");
+        aiFanChatService.replyToArtistDm(artistId, null);
+
+        return Map.of("success", true);
+    }
+}

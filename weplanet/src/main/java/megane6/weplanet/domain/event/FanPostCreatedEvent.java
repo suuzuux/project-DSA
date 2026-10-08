@@ -1,4 +1,5 @@
 package megane6.weplanet.domain.event;
+import megane6.weplanet.service.fan.PostService;
 
 /**
  * "팬 게시판에 새 글이 올라왔다"는 알림. (BadgeActivityEvent 와 같은 방식)

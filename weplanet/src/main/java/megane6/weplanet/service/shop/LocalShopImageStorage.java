@@ -1,6 +1,6 @@
 package megane6.weplanet.service.shop;
 
-import megane6.weplanet.service.FileStorageService;
+import megane6.weplanet.service.main.FileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 

@@ -2,7 +2,7 @@ package megane6.weplanet.controller.media;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.media.BoardMediaViewDTO;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.media.BoardMediaFileEntity;

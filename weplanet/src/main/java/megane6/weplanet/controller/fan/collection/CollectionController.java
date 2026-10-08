@@ -1,0 +1,77 @@
+package megane6.weplanet.controller.fan.collection;
+
+import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.BadgeCollectionView;
+import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.fan.BadgePeriodService;
+import megane6.weplanet.service.fan.CollectionService;
+import megane6.weplanet.service.project.ProjectContributionService;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequiredArgsConstructor
+public class CollectionController {
+	/**
+	 * 나의 컬렉션(배지) 화면
+	 * 로그인한 본인의 배지만 보는 화면이라 url > fanId 받지 X
+	 * 항상 고르인 정보(principal)에서 꺼내 씀
+	 */
+	private final CollectionService cs;
+	private final ProjectContributionService pcs;
+	private final BadgePeriodService bps;
+	
+	@GetMapping("/collection")
+	public String collection(
+			@AuthenticationPrincipal AuthenticatedUser principal,
+			Model model
+	) {
+		if (principal == null) {
+			return "redirect:/login";
+		}
+		// 아티스트·멤버 계정은 배지를 받지 않으므로 컬렉션 화면을 쓰지 않는다 (메뉴도 shell.js 에서 숨김)
+		if (isArtistAccount(principal)) {
+			return "redirect:/";
+		}
+		// 기간 배지는 스케줄러가 새벽에 확인하지만, 화면에 들어올 때 한 번 더 확인해서
+		// 조건을 채운 배지가 바로 보이게 한다 (본인 것만 확인)
+		bps.checkForFan(principal.getId());
+		
+		model.addAttribute("cards", cs.getMyCollection(principal.getId()));
+		model.addAttribute(
+				"projectParticipations",
+				pcs.getMyParticipationHistory(principal.getId())
+		);
+		
+		return "fan/collection/collection";
+	}
+	
+	/**
+	 * 전체보기 모달 내용. 화면 전체를 새로 그리지 않고 이 부분만 받아간다.
+	 * JS가 fetch로 받아서 모달을 채움
+	 */
+	@GetMapping("/collection/{artistId}")
+	@ResponseBody
+	public BadgeCollectionView badgeCollection(
+			@PathVariable Long artistId,
+			@AuthenticationPrincipal AuthenticatedUser principal
+	) {
+		if (principal == null) {
+			throw new IllegalStateException("common.error.loginRequired");
+		}
+		if (isArtistAccount(principal)) {
+			throw new AccessDeniedException("error.forbidden");
+		}
+		return cs.getBadgeCollection(principal.getId(), artistId);
+	}
+
+	private boolean isArtistAccount(AuthenticatedUser principal) {
+		String role = principal.getRoleName();
+		return "ROLE_ARTIST".equals(role) || "ROLE_ARTIST_MEMBER".equals(role);
+	}
+}

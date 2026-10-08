@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.GroupMemberRepository;
+import megane6.weplanet.repository.artist.GroupMemberRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
