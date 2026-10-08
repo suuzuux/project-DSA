@@ -1,4 +1,4 @@
-/* 해시태그 총공 공개 페이지 (/events/hashtag) */
+/* 해시태그 총공 공개 페이지 */
 
 .hashtag-event {
   max-width: 880px;
@@ -176,7 +176,7 @@
   line-height: 1.7;
 }
 
-/* 휴대폰: 카드는 한 줄에 하나, 순위표는 막대 칸을 숨긴다 */
+/* 휴대폰: 카드는 한 줄에 하나, 순위표 막대 칸 숨김 */
 @media (max-width: 640px) {
   .hashtag-event__timer {
     text-align: left;

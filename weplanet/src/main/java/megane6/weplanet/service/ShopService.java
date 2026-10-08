@@ -45,14 +45,12 @@ public class ShopService {
 		this.messageSource = messageSource;
 	}
 
-	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어 에러 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
 
-	/**
-	 * 멤버십 전용 상품은 노출은 하되, 담기/구매는 활성 멤버만 허용.
-	 */
+	/** 멤버십 전용 상품은 활성 멤버만 담기·구매할 수 있다. */
 	public void requirePurchasable(User buyer, ShopProductView product) {
 		if (product == null || !product.membershipOnly()) {
 			return;
@@ -135,8 +133,7 @@ public class ShopService {
 						v.displayLabel(),
 						v.getStockQuantity()))
 				.toList();
-		// GoodsCategoryType.getLabel()은 하드코딩된 한국어라서, 화면 로케일에 맞는
-		// 문구는 messageKey로 MessageSource에서 조회한다.
+		// 카테고리 라벨은 messageKey 로 현재 로케일 문구를 조회한다.
 		List<String> labels = goods.getCategories().stream()
 				.map(c -> msg(c.getMessageKey()))
 				.toList();

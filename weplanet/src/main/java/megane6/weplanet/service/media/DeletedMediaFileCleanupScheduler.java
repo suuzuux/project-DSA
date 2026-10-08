@@ -12,10 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 삭제된 미디어 게시물의 업로드 파일 정리 - 삭제(소프트 삭제) 후 30일이 지나면
- * 디스크 파일과 파일 기록(board_media_files)만 지운다. 게시물 기록(board_media)은 남는다.
- */
+/** 소프트 삭제 30일 후 디스크 파일과 파일 기록만 지운다 (게시물 기록은 유지). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -26,7 +23,7 @@ public class DeletedMediaFileCleanupScheduler {
 	private final BoardMediaRepository boardMediaRepository;
 	private final FileStorageService fileStorageService;
 	
-	// 휴면계정 배치(03:00)와 겹치지 않게 새벽 4시에 하루 한 번
+	// 휴면 배치(03:00)와 겹치지 않게 매일 04:00
 	@Scheduled(cron = "0 0 4 * * *")
 	@Transactional
 	public void cleanUpDeletedMediaFiles() {
@@ -38,7 +35,7 @@ public class DeletedMediaFileCleanupScheduler {
 				fileStorageService.delete(file.getStoredName());
 				fileCount++;
 			}
-			// orphanRemoval = true 라서 목록을 비우면 board_media_files 행도 함께 지워진다
+			// orphanRemoval 로 파일 행도 함께 삭제된다.
 			post.getFiles().clear();
 		}
 		if (!posts.isEmpty()) {

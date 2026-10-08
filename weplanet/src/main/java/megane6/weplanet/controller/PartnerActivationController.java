@@ -12,10 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/*
-	입점 승인 메일의 활성화 링크를 받아 비밀번호를 설정하는 화면.
-	아직 로그인할 수 없는 사용자가 들어오므로 SecurityConfig에서 공개 url로 열어둠
- */
+// 입점 승인 메일의 활성화 링크로 비밀번호를 설정하는 화면 (공개 URL).
 @Controller
 @RequestMapping("/partner/activate")
 @RequiredArgsConstructor
@@ -54,8 +51,7 @@ public class PartnerActivationController {
 		try {
 			activated = aas.activate(key, token, newPassword, confirmPassword);
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			// 비밀번호 형식 오류 같은 경우 다시 입력할 수 있도록 같은 화면을 돌려준다.
-			// redirect로 돌리면 토큰을 다시 url에 붙여야 해서, 여기서는 바로 화면을 그린다.
+			// 형식 오류면 토큰을 유지하도록 리다이렉트 없이 같은 화면을 다시 그린다.
 			model.addAttribute("formError", messages.resolve(e));
 			
 			try {

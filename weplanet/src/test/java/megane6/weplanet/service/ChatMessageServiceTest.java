@@ -55,7 +55,7 @@ class ChatMessageServiceTest {
 	private final User memberB = user(MEMBER_B, Role.ARTIST_MEMBER, "B");
 	private final User solo = user(SOLO, Role.ARTIST, "SOLO");
 
-	// 인박스: 그룹 계정 대신 멤버들이 각자 한 줄씩, 솔로는 본인 그대로. 예전 그룹 단위 방 메시지는 안 보인다
+	// 인박스: 그룹 대신 멤버별 한 줄, 솔로는 본인 그대로
 	@Test
 	void inboxListsGroupMembersInsteadOfGroupAccount() {
 		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(group, solo));
@@ -76,7 +76,7 @@ class ChatMessageServiceTest {
 		assertNull(inbox.get(2).getGroupName());
 	}
 
-	// 멤버와의 DM 도 멤버십은 소속 그룹 기준으로 확인한다 (멤버 id 로 찾으면 기록이 없어 항상 만료로 막힘)
+	// 멤버 DM 의 멤버십은 소속 그룹 기준으로 확인한다
 	@Test
 	void membershipForMemberRoomIsCheckedAgainstGroup() {
 		when(groupMemberRepository.findByMember_IdAndLeftAtIsNull(MEMBER_A))
@@ -122,7 +122,7 @@ class ChatMessageServiceTest {
 		assertFalse(service.isNeverSubscribed(fan, solo));
 	}
 
-	// 해지하면 membership 줄은 지워지지만 가입 이력이 남아 있으므로 처음 온 사람으로 보지 않는다
+	// 해지 후에도 가입 이력이 남아 처음 온 사람으로 보지 않는다
 	@Test
 	void cancelledFanWithHistoryIsShownAsExpired() {
 		when(membershipRepository.findByFanAndArtist(fan, solo)).thenReturn(Optional.empty());

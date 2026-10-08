@@ -13,8 +13,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
-// 사람과 사람(팬↔팬, 팬→아티스트) 사이의 팔로우 하나. communityId(그 커뮤니티 아티스트의 User.id) 커뮤니티에 속하고,
-// 그 커뮤니티를 탈퇴하면 함께 지워진다. 팬→아티스트 팔로우는 following_id == community_id 다.
+// 커뮤니티별 팔로우 (팬↔팬, 팬→아티스트, 커뮤니티 탈퇴 시 함께 삭제).
 @Entity
 @Table(name = "user_follows")
 @IdClass(UserFollow.Pk.class)

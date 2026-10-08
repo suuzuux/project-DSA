@@ -50,7 +50,7 @@ public class LocalFileStorageService implements FileStorageService {
 			}
 			return storedName;
 		} catch (IOException e) {
-			// 화면에는 메시지 키(번역된 "저장에 실패했습니다")만 보이고, 원인은 로그에 남긴다
+			// 화면엔 번역된 실패 문구만 보이고 원인은 로그에 남긴다.
 			log.warn("파일 저장 실패", e);
 			throw new IllegalStateException("common.error.saveFailed", e);
 		}
@@ -62,7 +62,7 @@ public class LocalFileStorageService implements FileStorageService {
 			Path file = root.resolve(storedName).normalize();
 			Resource resource = new UrlResource(file.toUri());
 			if (resource.exists() && resource.isReadable()) return resource;
-			// 내부 저장 파일명은 화면에 보이지 않게 로그에만 남긴다
+			// 저장 파일명은 로그에만 남긴다.
 			log.warn("파일을 찾을 수 없음: {}", storedName);
 			throw new IllegalArgumentException("error.media.fileNotFound");
 		} catch (MalformedURLException e) {

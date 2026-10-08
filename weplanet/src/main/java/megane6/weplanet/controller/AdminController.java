@@ -51,7 +51,7 @@ public class AdminController {
 		return RoleHomeRedirects.redirectFor(principal);
 	}
 
-	/** 아이디/비밀번호를 확인한 뒤 관리자 계정 이메일로 2차 인증번호를 보낸다. */
+	/** 아이디·비밀번호 확인 후 관리자 이메일로 2차 인증번호를 보낸다. */
 	@PostMapping("/login/code")
 	@ResponseBody
 	public Map<String, Object> sendLoginCode(
@@ -75,13 +75,13 @@ public class AdminController {
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			return failed(resolveLoginFailure(username, request, e));
 		} catch (Exception e) {
-			// 메일 발송 실패 등의 내부 정보와 관리자 아이디는 응답에 포함하지 않는다.
+			// 내부 오류 정보와 관리자 아이디는 응답에 포함하지 않는다.
 			log.error("[관리자 로그인] 인증번호 발송 실패", e);
 			return failed(messages.get("admin.login.otp.sendFailed"));
 		}
 	}
 
-	/** 입력한 인증번호를 미리 확인한다. 실제 로그인은 아직 수행하지 않는다. */
+	/** 인증번호만 미리 확인한다 (로그인은 아직 하지 않음). */
 	@PostMapping("/login/verify")
 	@ResponseBody
 	public Map<String, Object> verifyLoginCode(
@@ -103,7 +103,7 @@ public class AdminController {
 		}
 	}
 
-	/** 아이디/비밀번호와 이메일 인증을 모두 확인한 뒤 관리자 세션을 만든다. */
+	/** 아이디·비밀번호와 이메일 인증을 모두 확인한 뒤 관리자 세션을 만든다. */
 	@PostMapping("/login")
 	public String completeLogin(
 			@RequestParam String username,
@@ -179,8 +179,7 @@ public class AdminController {
 		return "admin/dashboard";
 	}
 	
-	// 스프링 기본 로그아웃처럼 세션 무효화 + 인증 정보 삭제 + 세션 쿠키(JSESSIONID) 삭제까지 해서
-	// 팬 로그인 화면(만료 세션 처리)으로 튕기지 않고 관리자 로그인 화면(/admin/login?logout)으로 이동한다.
+	// 세션·인증·쿠키를 모두 지우고 관리자 로그인 화면으로 이동한다.
 	@PostMapping("/logout")
 	public String logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
 		new SecurityContextLogoutHandler().logout(request, response, authentication);

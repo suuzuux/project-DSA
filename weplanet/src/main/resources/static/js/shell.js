@@ -1,21 +1,4 @@
-/**
- * ============================================================
- * WePlaNet – Shell (메뉴 / 채팅 / 멤버십) Injector & Controllers
- * ------------------------------------------------------------
- * body에 data-shell="fan" 이 있으면 공통 오버레이를 삽입한다.
- *
- * data-base       : 상대경로 prefix (예: "" | "../" | "../../")
- * data-dm-expired : "true" 이면 DM 방에 구독 만료 배너 표시 (P19)
- *
- * 사용 예)
- *   <body data-shell="fan" data-base="../">
- *   <script src="../js/main.js"></script>
- *   <script src="../js/shell.js"></script>
- *
- * 드로어/헤더 보강, DM 패널·멤버십 모달, 커뮤니티 검색·가입 모달은 이 파일이 직접 그려서 Thymeleaf #{...}를 쓸 수 없다.
- * 그래서 페이지를 열 때 /api/i18n/shell 로 현재 화면 언어 문구를 받아온 뒤 그린다 (joinModal 과 같은 키 공유).
- * ============================================================
- */
+/** 공통 셸(메뉴·DM·멤버십 모달) 삽입 - data-shell="fan" 이면 그리고, 문구는 /api/i18n/shell 로 받는다. */
 (function () {
   "use strict";
 
@@ -26,20 +9,18 @@
   const root = base.endsWith("/") ? base : (base ? base + "/" : "/");
   const dmExpired = body.getAttribute("data-dm-expired") === "true";
   const isAuthenticated = body.getAttribute("data-authenticated") === "true";
-  // 관리자에게만 드로어 메뉴에 "금칙어 관리" 항목을 보여주기 위함.
-  // (각 화면 <body>에서 data-role="ROLE_ADMIN" 형태로 내려줌. 없으면 빈 문자열)
+  // 관리자에게만 금칙어 관리 메뉴 표시
   const roleName = body.getAttribute("data-role") || "";
   const isAdmin = roleName === "ROLE_ADMIN";
-    // 아티스트는 팬용 DM 위젯이 아니라 전용 채팅방(/chat/room/artist)을 써야 함.
+    // 아티스트는 전용 채팅방을 쓴다.
   const isArtist = roleName === "ROLE_ARTIST" || roleName === "ROLE_ARTIST_MEMBER";
   const isAgency = roleName === "ROLE_AGENCY";
-  // 로그인한 본인 id (아티스트일 땐 곧 artistId)
+  // 로그인한 본인 id
   const myId = body.getAttribute("data-fan-id") || "";
   const nickname = body.getAttribute("data-nickname") || "";
   const artists = Array.isArray(window.__WEPLANET_ARTISTS__) ? window.__WEPLANET_ARTISTS__ : [];
 
-  // /api/i18n/shell 요청이 실패하거나 아직 안 끝났을 때를 대비한 한국어 기본값.
-  // 실제 문구는 항상 messages*.properties(서버) 값이 우선이고, 이건 네트워크 오류 시의 안전망이다.
+  // 문구 요청 실패 시 쓰는 한국어 기본값
   const DEFAULT_I18N = {
     "shell.menu.title": "메뉴",
     "shell.menu.close": "메뉴 닫기",
@@ -64,7 +45,7 @@
     "shell.fab.chatDm": "채팅 (DM)",
     "shell.fab.chatOpen": "채팅 열기",
     "shell.admin.pageLink": "관리자 페이지로 이동",
-    // 커뮤니티 검색·가입 모달 (ensureExploreUi)
+    // 커뮤니티 검색·가입 모달
     "layout.header.searchTitle": "커뮤니티 검색",
     "main.search.placeholder": "아티스트/그룹명 검색",
     "main.search.gender": "성별",
@@ -133,8 +114,7 @@
     return (I18N && I18N[key] != null) ? I18N[key] : DEFAULT_I18N[key];
   }
 
-  // 이모지 대신 쓰는 line-icon 모음 (24x24, currentColor). 이모지는 폰트/OS마다 그림체가 달라져서
-  // "AI가 대충 넣은 느낌"이 났는데, 선 아이콘으로 통일하면 한 톤으로 정리됨.
+  // 이모지 대신 쓰는 선 아이콘 (24x24, currentColor)
   const ICONS = {
     calendar: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
     send: '<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>',
@@ -172,7 +152,7 @@
           const img = a.profileImageUrl
             ? `<img src="${escapeHtml(a.profileImageUrl)}" alt="">`
             : logo;
-          // homeUrl = 영문 주소(/kiikii). 서버가 못 채운 목록이면 예전 숫자 주소로
+          // 영문 주소 우선, 없으면 숫자 주소
           const href = a.homeUrl ? escapeHtml(a.homeUrl) : `${root}community/${a.id}`;
           return `<a href="${href}"><span class="avatar avatar--sm">${img}</span> ${name}</a>`;
         })
@@ -191,7 +171,7 @@
   <div class="drawer-menu__communities">${linksHtml(allList)}</div>`;
     }
 
-    // 가입 여부와 상관없이 목록 아래에 늘 두는 탐색 링크
+    // 목록 아래 탐색 링크
     const exploreLink =
       `<a href="#" data-community-search style="color:var(--wp-brand);font-weight:600;font-size:var(--wp-fs-xs);">${t("shell.community.explore")}</a>`;
 
@@ -210,13 +190,11 @@
   </div>`;
     }
 
-    // "모든 커뮤니티" 목록은 메뉴가 길어지기만 해서 뺐다. 탐색은 검색 모달로.
+    // 전체 커뮤니티 목록 대신 검색 모달을 쓴다.
     return html;
   }
 
-  /* ---------------------------------------------------------
-   * HTML 템플릿
-   * --------------------------------------------------------- */
+  // HTML 템플릿
   function shellHTML() {
     const greetName = `<em>${escapeHtml(nickname)}</em>`;
     const greetBlock = isAuthenticated && nickname
@@ -225,20 +203,17 @@
 
     const communitiesBlock = communitiesBlockHtml();
 
-    // 금칙어 관리(CHAT-04)는 관리자 전용 화면이라, ADMIN 계정으로 로그인했을 때만 메뉴에 노출함.
-    // (예전엔 메뉴가 없어서 /chat/admin/keywords 주소를 직접 쳐야만 들어갈 수 있었음)
+    // 금칙어 관리는 관리자에게만 노출
     const adminBlock = isAdmin
       ? `<a href="${root}chat/admin/keywords"><span class="nav-ico">${ICONS.shield}</span> ${t("shell.nav.keyword")}</a>`
       : "";
 
-    // 나의 컬렉션(배지)은 팬 활동 보상이라 아티스트·멤버 계정에는 메뉴 자체를 보여주지 않는다.
-    // (배지 지급도 BadgeAwardService 에서 FAN 만 받도록 막혀 있고, /collection 주소는 컨트롤러에서 막는다)
+    // 나의 컬렉션은 아티스트·멤버 계정에 숨긴다.
     const collectionLink = isArtist
       ? ""
       : `<a href="${root}collection"><span class="nav-ico">${ICONS.collection}</span> ${t("shell.nav.collection")}</a>`;
 
-    // 비로그인 상태에서는 커뮤니티 목록·메뉴를 감추고 가입 유도 문구만 보여준다.
-    // (로그인해야 쓸 수 있는 메뉴들이라, 눌러봤자 로그인 화면으로 튕기기만 했음)
+    // 비로그인이면 메뉴 대신 가입 안내만 보여준다.
     const menuBody = isAuthenticated
       ? `${greetBlock}
   <div id="drawerCommunities">${communitiesBlock}</div>
@@ -259,7 +234,7 @@
     <a href="${root}signup">${t("shell.guest.signup")}</a>
   </nav>`;
 
-    // 관리자는 DM을 주고받을 일이 없는 계정이라(메시지 발신/수신 대상이 아님) 채팅 버튼 자체를 노출하지 않음
+    // 관리자는 채팅 버튼을 노출하지 않는다.
     const chatFabHtml = isAdmin
       ? ""
       : `<button type="button" class="fab" id="fabChat" title="${isArtist ? t("shell.fab.chatFan") : t("shell.fab.chatDm")}" aria-label="${t("shell.fab.chatOpen")}">${ICONS.send}</button>`;
@@ -402,9 +377,7 @@
   }
 
   function init() {
-    /* ---------------------------------------------------------
-     * Inject
-     * --------------------------------------------------------- */
+    // 삽입
     const wrap = document.createElement("div");
     wrap.id = "weplanet-shell";
     wrap.innerHTML = shellHTML();
@@ -414,10 +387,7 @@
     ensureMenuToggle();
     ensureAdminPageLink();
 
-    /* ---------------------------------------------------------
-     * 시스템 공지 뱃지 (햄버거 → 공지사항)
-     * 헤더 알림에는 넣지 않고, 메뉴 공지사항 링크에만 미읽음 점을 띄운다.
-     * --------------------------------------------------------- */
+    // 시스템 공지 뱃지 - 메뉴 공지사항 링크에 미읽음 점 표시
     (function siteNoticeBadge() {
       const READ_KEY = "weplanet.site-notice.read";
       const link = document.querySelector("[data-site-notice-link]");
@@ -476,11 +446,7 @@
         .catch(function () { /* ignore */ });
     })();
 
-    /* ---------------------------------------------------------
-     * 커뮤니티 목록 보충
-     * 페이지가 window.__WEPLANET_*__ 를 안 심어준 경우(공지사항 등)
-     * 서버에서 받아와 메뉴를 다시 그린다. 심어준 페이지는 그대로 둔다.
-     * --------------------------------------------------------- */
+    // 페이지가 커뮤니티 목록을 안 넣었으면 서버에서 받아 메뉴를 다시 그린다.
     (function fillCommunitiesIfEmpty() {
       const joined = window.__WEPLANET_JOINED_ARTISTS__;
       const others = window.__WEPLANET_OTHER_ARTISTS__;
@@ -499,13 +465,11 @@
           if (box) box.innerHTML = communitiesBlockHtml();
         })
         .catch(() => {
-          /* 목록을 못 받아와도 메뉴 나머지는 그대로 쓸 수 있어야 함 */
+          // 목록을 못 받아도 메뉴는 그대로 쓴다.
         });
     })();
 
-    // 지금 보고 있는 커뮤니티 번호.
-    // 영문 주소(/kiikii/fan)로 들어오면 URL에 번호가 없으므로, 커뮤니티 헤더(layout.html)의
-    // data-artist-id를 먼저 보고, 없으면 예전처럼 /community/{id} 주소에서 뽑는다.
+    // 현재 커뮤니티 번호 (헤더 data-artist-id 우선, 없으면 주소에서)
     function currentCommunityId() {
       const header = document.querySelector(".community-top__name[data-artist-id]");
       if (header && header.dataset.artistId) return header.dataset.artistId;
@@ -513,8 +477,7 @@
       return artistMatch ? artistMatch[1] : null;
     }
 
-    // 멤버십 가입 모달(P27)의 실제 가입 폼 action을 현재 커뮤니티 아티스트로 채움
-    // (모달 자체는 페이지 공통 삽입이라 서버 쪽 artist.id()를 직접 못 씀)
+    // 멤버십 가입 폼 action 을 현재 커뮤니티로 채운다.
     const membershipJoinForm = document.getElementById("membershipJoinForm");
     if (membershipJoinForm) {
       const communityId = currentCommunityId();
@@ -523,8 +486,7 @@
       }
     }
 
-    // [머지 충돌 해결] 해지 엔드포인트를 유지했으므로 HEAD 유지
-    // 멤버십 해지 폼도 같은 방식으로 action 채움
+    // 멤버십 해지 폼 action 도 같은 방식으로 채운다.
     const membershipCancelForm = document.getElementById("membershipCancelForm");
     if (membershipCancelForm) {
       const communityId = currentCommunityId();
@@ -533,9 +495,7 @@
       }
     }
 
-    // 멤버십 상세 모달(P33) - "Membership 상세보기" 버튼을 누른 시점에 실제 가입일/만료일/연락처를 받아와 채움.
-    // (예전엔 홍길동/2025.11.27 같은 고정값이 항상 떠 있었음 - 백엔드(/membership/detail)는 이미 실데이터를
-    //  내려주고 있었는데 프론트에서 그걸 부르는 코드가 없었던 것)
+    // 멤버십 상세 모달 - 버튼을 누를 때 실제 가입일·만료일·연락처를 받아 채운다.
     document.addEventListener("click", (e) => {
       if (!e.target.closest('[data-modal-open="membershipDetailModal"]')) return;
       const communityId = currentCommunityId();
@@ -551,9 +511,7 @@
         });
     });
 
-    /* ---------------------------------------------------------
-     * Controllers
-     * --------------------------------------------------------- */
+    // 컨트롤러
     const backdrop = document.getElementById("shellBackdrop");
     const drawer = document.getElementById("drawerMenu");
     const dmPanel = document.getElementById("dmPanel");
@@ -595,8 +553,7 @@
     function openDm() {
       dmPanel.classList.add("is-open");
       dmPanel.setAttribute("aria-hidden", "false");
-      // 아티스트는 인박스 목록이 없고 자신의 팬 DM 방 하나뿐이라, 목록 화면 없이 바로 방을 보여줌
-      // (실제 데이터 채우기는 dm-realtime.js의 openArtistBroadcastRoom이 #fabChat 클릭 시 처리함)
+      // 아티스트는 목록 없이 자기 DM 방을 바로 보여준다.
       if (isArtist) {
         showRoom(nickname || t("shell.dm.fanDm"), false);
       } else {
@@ -627,8 +584,7 @@
     }
 
     function ensureAdminPageLink() {
-      // 에이전시는 운영 대시보드(포털)로, 관리자는 관리자 화면으로 상단바에서 바로 돌아간다
-      // (관리자는 관리자 화면 사이드바의 "메인 페이지 이동"으로 로그인 상태 그대로 메인에 들어올 수 있다)
+      // 에이전시는 포털로, 관리자는 관리자 화면으로 돌아가는 버튼
       if (!isAgency && !isAdmin) return;
       if (document.querySelector("[data-admin-page-link]")) return;
 
@@ -640,7 +596,7 @@
       link.className = "btn btn--ghost btn--sm";
       link.setAttribute("data-admin-page-link", "1");
       link.textContent = t("shell.admin.pageLink");
-      // 로그아웃 버튼 바로 왼쪽에 둔다. 로그아웃이 없는 커뮤니티 상단은 global-icons.js 가 아이콘들을 앞으로 모아서 "내 프로필" 바로 왼쪽이 된다
+      // 로그아웃 버튼 바로 왼쪽에 둔다.
       const logoutForm = actions.querySelector('form[action$="/logout"]');
       actions.insertBefore(link, logoutForm || actions.firstChild);
     }
@@ -648,7 +604,7 @@
     function ensureMenuToggle() {
       // 이미 data-shell-open="menu" 버튼이 있으면 스킵
       if (document.querySelector('[data-shell-open="menu"]')) return;
-      // 소속 에이전시용 최소 헤더(community/fragments/layout.html)에는 햄버거를 넣지 않는다
+      // 에이전시 최소 헤더에는 햄버거를 넣지 않는다.
       if (document.querySelector("[data-header-minimal]")) return;
 
       const header = document.querySelector(".site-header, .community-top");
@@ -710,11 +666,11 @@
     });
 
     document.getElementById("fabChat")?.addEventListener("click", () => {
-      // 아티스트도 일반 사용자와 동일하게 DM 모달을 연다 (페이지 이동 X).
+      // 아티스트도 DM 모달을 연다.
       openDm();
     });
     document.getElementById("dmBackBtn")?.addEventListener("click", () => {
-      // 아티스트는 자신의 방송 채팅방 하나뿐이라 "목록으로 돌아가기"가 없음 - 뒤로가기는 그냥 패널을 닫음
+      // 아티스트는 뒤로가기가 패널 닫기
       if (isArtist) {
         closeDm();
       } else {
@@ -750,7 +706,7 @@
       box.scrollTop = box.scrollHeight;
     });
 
-    // URL ?dm=1 이면 자동 오픈 (chat.html 데모용) - 관리자는 DM 자체가 없는 계정이라 이 파라미터를 무시함
+    // ?dm=1 이면 자동으로 연다 (관리자 제외).
     const params = new URLSearchParams(location.search);
     if (!isAdmin && params.get("dm") === "1") openDm();
     if (!isAdmin && params.get("dm") === "expired") {
@@ -759,7 +715,7 @@
     }
     if (params.get("menu") === "1") openMenu();
 
-    // 스케줄 캘린더 CSS + global-icons (주간 스케줄 / FAB 캘린더 / 커뮤니티 미니캘린더)
+    // 스케줄 캘린더 CSS 와 global-icons 로드
     (function loadScheduleAssets() {
       if (!document.querySelector('link[href*="schedule-calendar.css"]')) {
         var link = document.createElement("link");
@@ -778,12 +734,7 @@
       document.body.appendChild(s);
     })();
 
-    /* ---------------------------------------------------------
-     * 커뮤니티 찾아보기
-     * 예전엔 ?openSearch=1 로 메인에 다시 들어가는 링크였다. 주소가 바뀌고
-     * 페이지가 통째로 새로 뜨니 메뉴도 닫혀버려서, 메인 돋보기와 똑같이
-     * 그 자리에서 모달만 띄우도록 바꿨다. 모달이 없는 페이지에는 만들어 넣는다.
-     * --------------------------------------------------------- */
+    // 커뮤니티 찾아보기 - 페이지 이동 없이 검색 모달을 띄운다 (없으면 만들어 넣음).
     function scriptUrl(name) {
       var current = document.querySelector('script[src*="shell.js"]');
       return current && current.src
@@ -839,7 +790,7 @@
 </div>`);
       }
 
-      // 검색 결과에서 바로 가입하려면 닉네임 모달도 있어야 한다
+      // 검색 결과에서 가입하려면 닉네임 모달도 필요하다.
       if (!document.getElementById("communityJoinModal")) {
         appendHtml(`
 <div class="modal-backdrop" id="communityJoinModal">
@@ -867,7 +818,7 @@
     }
 
     document.addEventListener("click", function (e) {
-      // 드로어에서 만든 모달은 main.js 의 initModals() 가 못 잡으므로 여기서 직접 연다
+      // 드로어에서 만든 모달은 여기서 직접 연다.
       if (e.target.closest("[data-community-search]")) {
         e.preventDefault();
         closeMenu();
@@ -876,8 +827,7 @@
         if (modal) modal.classList.add("is-open");
         return;
       }
-      // 우리가 붙인 모달의 닫기 / 배경 클릭
-      // (#weplanet-shell 안의 멤버십 가입·상세 모달도 셸이 비동기로 그려서 initModals() 가 못 잡음)
+      // 셸이 비동기로 그린 모달의 닫기·배경 클릭 처리
       var closeBtn = e.target.closest("#weplanet-shell [data-modal-close], #communitySearchModal [data-modal-close], #communityJoinModal [data-modal-close]");
       if (closeBtn) {
         var back = closeBtn.closest(".modal-backdrop");
@@ -890,15 +840,11 @@
       }
     });
 
-    // 셸은 /api/i18n/shell 응답을 받은 뒤에야 그려지므로(비동기), 셸이 그린 DM 위젯에 실제 기능을 붙이는
-    // dm-realtime.js 는 이 신호를 받은 뒤에 시작해야 함. 예전엔 로드되자마자 #dmComposer 를 찾다가 못 찾아서
-    // 위의 "DM 전송 목업"만 남았고, 메시지가 화면에만 붙고 서버로는 안 가서 횟수 차감/아티스트 수신이 안 됐음
+    // dm-realtime.js 가 셸이 다 그려진 뒤 시작하도록 신호를 보낸다.
     window.WePlaNetShellReady = true;
     document.dispatchEvent(new Event("weplanet:shell-ready"));
 
-    // 상점/설정/공지/프로필 등 dm-realtime.js 를 직접 불러오지 않는 화면에서는 DM 위젯이 목업 그대로라
-    // 대화 목록도 안 뜨고 메시지도 못 보냈음. 화면마다 스크립트를 넣는 대신 셸이 없으면 여기서 불러온다.
-    // dm-realtime.js 는 Stomp 전역이 필요해서 stomp.min.js 를 먼저 불러온 뒤에 붙인다.
+    // dm-realtime.js 가 없는 화면이면 stomp.min.js 와 함께 불러온다.
     if (!isAdmin && !document.querySelector('script[src*="dm-realtime.js"]')) {
       if (window.Stomp) {
         loadScriptOnce("dm-realtime.js");
@@ -911,8 +857,7 @@
     }
   }
 
-  // 현재 세션 로케일의 문구를 받아온 뒤에만 화면을 그린다. 실패해도 한국어 기본값으로 진행한다
-  // (셸이 아예 안 그려지는 것보다는 한국어로라도 그려지는 게 낫다).
+  // 문구를 받은 뒤 그린다 (실패해도 한국어로 진행).
   fetch("/api/i18n/shell", { headers: { Accept: "application/json" } })
     .then(function (res) { return res.ok ? res.json() : null; })
     .then(function (data) {

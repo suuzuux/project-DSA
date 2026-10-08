@@ -3,11 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    [와이어프레임] 아이디로 로그인
-    - 아이디 찾기: 이름+이메일 인증 후 아이디 표시 (/find-id)
-    - 비밀번호 찾기: 아이디+이메일 인증 후 새 비밀번호 설정 (/find-password)
-  -->
+  <!-- 아이디로 로그인 (아이디·비밀번호 찾기 링크 포함) -->
   <title th:text="#{login.pageTitle}">WePlaNet – 아이디로 로그인</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
@@ -41,9 +37,8 @@
       <a th:href="@{/find-id}" th:text="#{login.forgotUsername}">아이디를 까먹었어요</a>
       <a th:href="@{/find-password}" th:text="#{login.forgotPassword}">비밀번호를 까먹었어요</a>
     </div>
-    <!-- 입력한 아이디로 가입된 계정이 없을 때 (1~4회째): 안내만 보여준다. 5회째에는 아래 확인창이 뜬다.
-         회원가입으로 넘어가면 입력했던 아이디가 채워진 가입 화면이 열린다 (SecurityConfig 로그인 실패 처리, AuthController) -->
-    <!-- 로그인 실패 안내는 모두 이 자리(찾기 링크 아래, 로그인 버튼 위)에 모은다 -->
+    <!-- 없는 아이디로 1~4회 실패하면 안내만, 5회째는 회원가입 확인창을 띄운다. -->
+    <!-- 로그인 실패 안내는 모두 이 자리에 모은다. -->
     <!-- 비밀번호를 여러 번 틀려 잠시 로그인할 수 없을 때 (LoginAttemptService) -->
     <p th:if="${param.locked}" class="text-sm" style="color:#c45c26;margin:-4px 0 12px;"
        th:text="#{login.tooManyAttempts(${T(megane6.weplanet.security.LoginAttemptService).LOCK_MINUTES})}">
@@ -61,7 +56,7 @@
   </form>
 
 </div>
-<!-- 가입된 아이디가 없어서 5회 실패했을 때 뜨는 확인창. [예] → 회원가입 화면, [아니오] → 로그인 화면 그대로 -->
+<!-- 없는 아이디로 5회 실패 시 회원가입 확인창 -->
 <div class="modal-backdrop" id="signupSuggestModal" th:classappend="${param.ask} ? ' is-open'">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="signupSuggestTitle">
     <div class="modal__head">
@@ -77,7 +72,7 @@
 </div>
 <script th:src="@{/js/main.js}"></script>
 <script>
-  // [아니오]로 확인창을 닫으면 주소의 ask 를 지워서, 새로고침해도 확인창이 다시 뜨지 않게 한다
+  // [아니오]로 닫으면 주소의 ask 를 지워 다시 뜨지 않게 한다.
   document.querySelectorAll("#signupSuggestModal [data-modal-close]").forEach(function (btn) {
     btn.addEventListener("click", function () {
       history.replaceState(null, "", location.pathname + "?notFound");

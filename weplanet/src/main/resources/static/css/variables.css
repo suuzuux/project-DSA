@@ -1,19 +1,8 @@
-/**
- * ============================================================
- * WePlaNet – Design Tokens (CSS Variables)
- * ------------------------------------------------------------
- * 와이어프레임(FAN / ARTIST·AGENCY / ADMIN) 공통 색·간격·타이포.
- * 모든 컴포넌트는 여기 토큰을 우선 사용한다.
- * ============================================================
- */
+/* 디자인 토큰 (색·간격·타이포) */
 
 :root {
-  /* ---------- Brand & Surface ----------
-   * Vanilla Cream 팔레트 기반.
-   * 바닐라(#fff7e6)는 페이지 배경으로 쓰면 노란기가 강해서, 배경은 거의 흰색으로
-   * 맑게 두고 바닐라는 CTA 같은 포인트 영역(--wp-accent-soft)에만 남겼다.
-   */
-  --wp-ink: #2d3a47;           /* 본문·헤더 기본 글자 (Midnight Lagoon) */
+  /* Brand & Surface (배경은 거의 흰색, 바닐라는 포인트 영역에만) */
+  --wp-ink: #2d3a47;           /* 본문·헤더 기본 글자 */
   --wp-ink-soft: #5a6773;      /* 보조 본문 */
   --wp-muted: #94a0ac;         /* 힌트·메타 정보 */
   --wp-faint: #b3bcc5;         /* 플레이스홀더 */
@@ -22,20 +11,20 @@
   --wp-hairline: #e8e4dc;      /* 얇은 구분선 */
   --wp-line: #d9d3c8;          /* 기본 테두리 */
 
-  /* 브랜드 액센트: 로즈우드 (보라/인디고 그라데이션 금지) */
-  --wp-brand: #a85d67;         /* 원색(#b46a72)은 흰 글씨 대비가 4.0:1이라 반 톤 내림 */
+  /* 브랜드 액센트: 로즈우드 */
+  --wp-brand: #a85d67;         /* 흰 글씨 대비를 위해 원색보다 반 톤 낮춤 */
   --wp-brand-dark: #8c4a54;
   --wp-brand-soft: #fbeef1;      /* 연한 배경·hover */
-  --wp-brand-tint: #f7c8d3;      /* 밝은 포인트: 뱃지·탭·테두리 (Blush Petal) */
+  --wp-brand-tint: #f7c8d3;      /* 뱃지·탭·테두리 포인트 */
   --wp-on-brand: #fff7e6;        /* 브랜드색 위에 얹는 글자 */
-  --wp-accent: #2d3a47;        /* CTA·강조 (Midnight Lagoon) */
-  --wp-accent-soft: #fff3df;   /* CTA 배경 (Vanilla Cream) */
+  --wp-accent: #2d3a47;        /* CTA·강조 */
+  --wp-accent-soft: #fff3df;   /* CTA 배경 */
   --wp-on-accent: #fff7e6;
 
   /* 상태 */
   --wp-danger: #b42318;
   --wp-danger-soft: #fef3f2;
-  --wp-success: #63704a;       /* Sage Leaf 를 글자용으로 진하게 */
+  --wp-success: #63704a;       /* 글자용 성공 색 */
   --wp-success-soft: #a8b58a;  /* 성공 뱃지 배경 */
   --wp-live: #c2415a;          /* LIVE 뱃지 */
 
@@ -56,7 +45,7 @@
   --wp-header-h: 64px;
   --wp-sidebar-w: 280px;
   --wp-max: 1120px;
-  --wp-radius: 10px;           /* 와이어프레임은 각진 편 → 약한 라운드만 */
+  --wp-radius: 10px;           /* 약한 라운드 */
   --wp-radius-sm: 6px;
 
   /* ---------- Motion ---------- */
@@ -64,22 +53,16 @@
   --wp-fast: 160ms;
   --wp-med: 280ms;
 
-  /* ---------- Elevation (그림자 최소화) ---------- */
+  /* Elevation */
   --wp-shadow: 0 1px 0 rgba(20, 24, 31, 0.06);
   --wp-shadow-modal: 0 16px 48px rgba(20, 24, 31, 0.18);
 
   color-scheme: light;
 }
 
-/* ============================================================
- * 다크 모드
- * ------------------------------------------------------------
- * <html data-theme="dark"> 가 붙으면 위 토큰 값만 갈아끼운다.
- * 토큰을 쓰는 화면은 자동으로 따라오고, 색을 직접 박아넣은 곳은
- * 개별로 손봐야 한다.
- * ============================================================ */
+/* 다크 모드 - data-theme="dark" 면 토큰 값만 바꾼다. */
 :root[data-theme="dark"] {
-  /* Midnight Lagoon 을 배경으로 뒤집고, 바닐라 크림을 글자색으로 쓴다 */
+  /* 배경과 글자색을 뒤집는다. */
   --wp-ink: #f2efe7;
   --wp-ink-soft: #c9c3b6;
   --wp-muted: #97a0a9;
@@ -89,7 +72,7 @@
   --wp-hairline: #3a4754;
   --wp-line: #4a5765;
 
-  /* 로즈우드를 한 단계 밝혀 어두운 배경에서도 또렷하게 */
+  /* 어두운 배경에서 브랜드색을 한 단계 밝힌다. */
   --wp-brand: #e0969e;
   --wp-brand-dark: #eeb0b7;
   --wp-brand-soft: #3a2e33;
@@ -101,7 +84,7 @@
 
   --wp-danger: #ef8279;
   --wp-danger-soft: #331e1c;
-  --wp-success: #a8b58a;       /* 다크에선 Sage 원색이 잘 읽힌다 */
+  --wp-success: #a8b58a;       /* 다크에선 원색이 잘 읽힌다 */
   --wp-success-soft: #3a4230;
   --wp-live: #e8798d;
 

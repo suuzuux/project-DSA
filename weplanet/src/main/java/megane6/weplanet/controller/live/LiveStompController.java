@@ -44,14 +44,12 @@ public class LiveStompController {
 	private final Messages messages;
 	private final AiLiveCommentService aiLiveCommentService;
 
-	// STOMP 처리 스레드에는 요청 로케일(LocaleContextHolder)이 없으므로, 오류를 받을 사람의
-	// preferredLanguage로 로케일을 정해 메시지 키(또는 아직 키가 아닌 문장)를 번역해서 보낸다.
+	// STOMP 스레드엔 요청 로케일이 없어 받는 사람의 선호 언어로 오류 문구를 번역한다.
 	private void sendError(Long userId, String codeOrText) {
 		liveRealtimePublisher.sendError(userId, messages.resolve(codeOrText, localeOf(userId)));
 	}
 
-	// catch 블록용: 예외를 통째로 번역한다(값을 들고 다니는 LocalizedMessage 예외도 {0}이 빠지지 않게).
-	// 메시지가 없거나 orElseThrow() 의 "No value present" 같은 내부 문구는 공통 오류 문구로 바꿔 보낸다.
+	// 예외를 번역해 보내고, 내부 메시지는 공통 오류 문구로 바꾼다.
 	private void sendError(Long userId, RuntimeException e) {
 		Locale locale = localeOf(userId);
 		String text = e instanceof NoSuchElementException ? null : messages.resolve(e, locale);
@@ -178,7 +176,7 @@ public class LiveStompController {
 		}
 	}
 
-	// 호스트 브라우저의 음성 인식 결과. 인식 실패는 방송 화면에 오류로 띄우지 않고 로그만 남긴다.
+	// 음성 인식 결과 (인식 실패는 로그만 남김).
 	@MessageMapping("/live.speech")
 	public void speech(LiveCommentRequest request, Authentication authentication) {
 		AuthenticatedUser me = principalOf(authentication);

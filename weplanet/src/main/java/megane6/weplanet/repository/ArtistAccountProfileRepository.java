@@ -21,7 +21,7 @@ public interface ArtistAccountProfileRepository
 	
 	List<ArtistAccountProfile> findByAgency_Id(Long agencyId);
 
-	// 멤버(ARTIST_MEMBER)도 artist_profiles 행을 가지므로, 그룹 계정 프로필만 셀 때 역할로 거른다
+	// 그룹 계정 프로필만 셀 때 역할로 거른다 (멤버도 행을 가짐).
 	long countByUser_Role(Role role);
 
 	@Query("""

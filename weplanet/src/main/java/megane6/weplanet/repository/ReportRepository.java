@@ -28,7 +28,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
 
     long countByPost_Artist(User artist);
 
-    // 관리자 "통합 신고 및 제재" 목록 - 특정 상태(예 : 대기중)인 신고만 최신순으로
+    // 관리자 신고 목록 - 상태별 최신순
     @Query("""
         SELECT r FROM Report r
         WHERE r.status = :status
@@ -60,7 +60,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("status") ReportStatus status
     );
     
-    // 해당 커뮤니티 처리 대기 게시글 신고를 최신순으로 10개 가져옴
+    // 커뮤니티 대기 신고 최신 10개
     @EntityGraph(attributePaths = {"post", "reporter"})
     List<Report> findTop10ByPost_ArtistAndStatusOrderByCreatedAtDesc(
             User artist,

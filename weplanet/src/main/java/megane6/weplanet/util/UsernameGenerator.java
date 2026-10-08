@@ -17,7 +17,7 @@ public class UsernameGenerator {
 	
 	private final UserRepository userRepository;
 	
-	// 소셜 가입 때 username(로그인 아이디)을 자동 생성한다 - 아이디 규칙(영문/숫자 4~20자)에 맞게 provider + 6자리 숫자.
+	// 소셜 가입 아이디 자동 생성 (provider + 6자리 숫자)
 	public String generate(AuthProvider provider) {
 		for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			String candidate = randomCandidate(provider);

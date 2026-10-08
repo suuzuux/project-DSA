@@ -1,15 +1,8 @@
-/**
- * ============================================================
- * WePlaNet – Global Styles
- * ------------------------------------------------------------
- * 팬 메인 / 커뮤니티 / 포털 / 관리자에서 공통으로 쓰는 레이아웃·
- * 컴포넌트. 페이지 전용 스타일은 community.css, portal.css 참고.
- * ============================================================
- */
+/* 공통 레이아웃·컴포넌트 (페이지 전용 스타일은 community.css, portal.css) */
 
 @import url("./variables.css");
 
-/* 이모지 대신 쓰는 line-icon 공용 스타일. 폰트 크기에 맞춰 같이 커지도록 em 단위 사용 */
+/* 선 아이콘 공용 스타일 (em 단위) */
 .icon {
   width: 1em;
   height: 1em;
@@ -18,9 +11,7 @@
   flex-shrink: 0;
 }
 
-/* =========================================================
- * 0. Reset & Base
- * ========================================================= */
+/* 0. Reset & Base */
 *,
 *::before,
 *::after {
@@ -94,9 +85,7 @@ p {
   border: 0;
 }
 
-/* =========================================================
- * 1. App Shell – Header
- * ========================================================= */
+/* 1. Header */
 .site-header {
   position: sticky;
   top: 0;
@@ -121,9 +110,7 @@ p {
   letter-spacing: -0.02em;
 }
 
-/* 로고 마크: 브랜드 앱 아이콘(img/brand/weplanet-app-icon.png 를 128px 로 줄인 사본) 이미지로 표시.
-   템플릿 22곳의 <span class="brand__mark">W</span> 는 그대로 두고, 안의 "W" 글자만 숨긴다.
-   원본 PNG 는 모서리가 흰색이라 border-radius 로 둥근 모서리 밖을 잘라낸다(다크모드에서 흰 모서리가 보이지 않게). */
+/* 로고 마크 - 브랜드 앱 아이콘 이미지 (안의 "W" 글자는 숨기고 둥근 모서리로 자름). */
 .brand__mark {
   width: 32px;
   height: 32px;
@@ -188,9 +175,7 @@ p {
   display: none;
 }
 
-/* =========================================================
- * 2. Buttons
- * ========================================================= */
+/* 2. Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -240,8 +225,7 @@ p {
   border-color: var(--wp-ink);
 }
 
-/* 잠긴 버튼 (예: 비밀번호 없는 계정의 소셜 연동 해제) - .form-input:disabled와 같은 톤으로
-   "클릭할 수 없다"는 걸 색으로 표시한다 */
+/* 잠긴 버튼은 비활성 입력칸과 같은 톤으로 표시 */
 .btn--ghost:disabled,
 .btn--ghost:disabled:hover {
   background: var(--wp-paper);
@@ -301,9 +285,7 @@ p {
 .sns-icon--kakao { background: #3c1e1e; color: #fee500; }
 .sns-icon--line { background: #06c755; }
 
-/* =========================================================
- * 3. Forms
- * ========================================================= */
+/* 3. Forms */
 .form-group {
   margin-bottom: 18px;
 }
@@ -346,7 +328,7 @@ p {
   color: var(--wp-faint);
 }
 
-/* 잠긴 입력칸 (아이디, 잠금 상태의 이메일 등) - 클릭할 수 없다는 걸 색으로 표시 */
+/* 잠긴 입력칸 표시 */
 .form-input:disabled,
 .form-select:disabled,
 .form-textarea:disabled {
@@ -356,7 +338,7 @@ p {
   cursor: not-allowed;
 }
 
-/* 유효성 에러 (와이어프레임: 박스 밑 빨간 글씨) */
+/* 유효성 오류 (박스 아래 빨간 글씨) */
 .form-error {
   margin-top: 6px;
   font-size: var(--wp-fs-xs);
@@ -421,9 +403,7 @@ p {
   color: var(--wp-ink);
 }
 
-/* =========================================================
- * 4. Layout Helpers
- * ========================================================= */
+/* 4. Layout Helpers */
 .page {
   min-height: calc(100vh - var(--wp-header-h));
 }
@@ -496,9 +476,7 @@ p {
   }
 }
 
-/* =========================================================
- * 5. Banner Carousel
- * ========================================================= */
+/* 5. Banner Carousel */
 .banner {
   position: relative;
   overflow: hidden;
@@ -552,7 +530,7 @@ p {
 
 .banner__nav .icon-btn {
   pointer-events: auto;
-  /* 관리자 배너는 배경이 밝을 수도 있어서, 흰 반투명 대신 어두운 반투명으로 어디서나 보이게 */
+  /* 밝은 배너에서도 보이도록 어두운 반투명 */
   background: rgba(20, 20, 20, 0.28);
   color: #fff;
   backdrop-filter: blur(4px);
@@ -581,8 +559,7 @@ p {
   border-radius: 999px;
 }
 
-/* 관리자가 등록한 메인 배너 (최고관리자 > 배너 영역 관리)
-   위버스처럼 왼쪽에 영문명/대제목/본문, 오른쪽에 이미지. 배경색·글자색은 배너마다 inline style로 들어온다 */
+/* 관리자 등록 메인 배너 (왼쪽 글, 오른쪽 이미지, 색은 배너별 inline style) */
 a.banner__slide--promo,
 .banner__slide--promo {
   padding: 0;
@@ -598,7 +575,7 @@ a.banner__slide--promo,
   height: 100%;
 }
 
-/* 글 영역 - 위버스처럼 왼쪽 가장자리에서 한참 들어온 곳에서 시작 */
+/* 글 영역 */
 .banner-promo__text {
   flex: 1 1 52%;
   min-width: 0;
@@ -610,7 +587,7 @@ a.banner__slide--promo,
   padding: 24px 24px 24px 12%;
 }
 
-/* 아티스트 영문명 - 알약 모양 태그. 배경/테두리는 글자색을 옅게 섞어서 어떤 배경색에서도 어울리게 */
+/* 아티스트 영문명 태그 (글자색을 옅게 섞어 배경과 어울림) */
 .banner-promo__label {
   display: inline-flex;
   align-items: center;
@@ -625,7 +602,7 @@ a.banner__slide--promo,
   margin-bottom: 2px;
 }
 
-/* 대제목·본문은 관리자가 넣은 줄바꿈 그대로 (최대 두 줄) */
+/* 대제목·본문은 입력한 줄바꿈 그대로 (최대 두 줄) */
 .banner-promo__title {
   font-size: clamp(20px, 2.4vw, 32px);
   font-weight: 800;
@@ -643,7 +620,7 @@ a.banner__slide--promo,
   word-break: keep-all;
 }
 
-/* 이미지 영역 - 오른쪽 가장자리에서 한참 들어온 곳에 둥근 카드(4:3)로 */
+/* 이미지 영역 (둥근 4:3 카드) */
 .banner-promo__media {
   flex: 1 1 48%;
   min-width: 0;
@@ -659,12 +636,12 @@ a.banner__slide--promo,
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 16px;
-  /* 투명 배경 이미지면 배경색보다 살짝 밝은 판이 비친다 */
+  /* 투명 이미지 뒤에 비치는 밝은 판 */
   background: rgba(255, 255, 255, 0.18);
 }
 
 @media (max-width: 768px) {
-  /* 좁은 화면에서는 좌우 화살표가 글자를 가려서 숨긴다 (아래 점 + 자동 넘김으로 이동) */
+  /* 좁은 화면에서는 좌우 화살표를 숨긴다. */
   .banner__nav {
     display: none;
   }
@@ -697,9 +674,7 @@ a.banner__slide--promo,
   }
 }
 
-/* =========================================================
- * 6. Artist Marquee (지금 바로 만나보세요)
- * ========================================================= */
+/* 6. Artist Marquee */
 .marquee-block {
   margin-top: 28px;
 }
@@ -722,7 +697,7 @@ a.banner__slide--promo,
   animation: marquee-ltr 28s linear infinite;
 }
 
-/* 와이어프레임: 오른쪽→왼쪽 모션 */
+/* 오른쪽→왼쪽 모션 */
 @keyframes marquee-ltr {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -769,12 +744,12 @@ a.banner__slide--promo,
   border-color: var(--wp-brand);
 }
 
-/* "커뮤니티 가입하기"(#meetArtists)로 스크롤해 왔을 때 고정 헤더에 제목이 가리지 않도록 */
+/* 앵커 이동 시 고정 헤더에 제목이 가리지 않게 */
 .meet-artists {
   scroll-margin-top: calc(var(--wp-header-h) + 16px);
 }
 
-/* 지금 바로 만나보세요 - 위버스처럼 한 줄에 2명 (동그란 사진 + 오른쪽에 굵은 이름) */
+/* 한 줄에 2명 (사진 + 이름) */
 .artist-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -852,16 +827,14 @@ a.banner__slide--promo,
   }
 }
 
-/* =========================================================
- * 7. Feed / Post Cards
- * ========================================================= */
+/* 7. Feed / Post Cards */
 .feed {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-/* 메인 페이지 "최신 인기 포스트" 위젯처럼 가로로 여러 장 나열할 때 사용 */
+/* 가로로 여러 장 나열하는 그리드 */
 .feed--grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -977,13 +950,12 @@ a.banner__slide--promo,
   white-space: pre-wrap;
 }
 
-/* 게시글 상세의 본문(Toast UI 뷰어). 뷰어는 줄바꿈을 "<br>\n" 으로 그리는데, 위 pre-wrap 을 물려받으면
-   <br> 뒤의 \n 까지 줄바꿈으로 처리돼서 줄마다 빈 줄이 하나씩 더 생긴다. 뷰어 안에서는 기본값으로 되돌린다 */
+/* Toast UI 뷰어 안에서는 pre-wrap 을 기본값으로 되돌린다 (줄마다 빈 줄 방지). */
 .post-card__body .toastui-editor-contents {
   white-space: normal;
 }
 
-/* 에디터에서 빈 줄을 하나 띄우면 저장 시 문단이 나뉜다(\n\n). 상세에서도 에디터처럼 정확히 한 줄만큼 띄운다 */
+/* 문단 간격을 에디터처럼 한 줄로 맞춘다. */
 .post-card__body .toastui-editor-contents p {
   margin: 0;
 }
@@ -992,7 +964,7 @@ a.banner__slide--promo,
   margin-top: 1.6em;
 }
 
-/* 게시글 목록 카드의 본문 미리보기 (Post.getPreviewText) - 줄바꿈 그대로 최대 5줄, 넘치면 마지막 줄 끝에 … */
+/* 목록 본문 미리보기 - 최대 5줄, 넘치면 … */
 .post-card__preview {
   line-height: 1.6;
   white-space: pre-line;
@@ -1067,7 +1039,7 @@ a.banner__slide--promo,
   min-height: 1.25em;
 }
 
-/* 카운트 유무와 무관하게 하트 크기 고정 (0→1 전환 시 커짐/작아짐 방지) */
+/* 카운트와 무관하게 하트 크기 고정 */
 .post-like .icon {
   width: 16px;
   height: 16px;
@@ -1098,9 +1070,7 @@ a.banner__slide--promo,
   display: inline-block;
 }
 
-/* =========================================================
- * 8. Rising Community Cards
- * ========================================================= */
+/* 8. Rising Community Cards */
 .rising-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1134,9 +1104,7 @@ a.banner__slide--promo,
   color: var(--wp-muted);
 }
 
-/* =========================================================
- * 9. Side Panel (로그인 후 / 드로어)
- * ========================================================= */
+/* 9. Side Panel */
 .side-panel {
   background: var(--wp-surface);
   border: 1px solid var(--wp-hairline);
@@ -1210,9 +1178,7 @@ a.banner__slide--promo,
   background: var(--wp-paper);
 }
 
-/* =========================================================
- * 10. Week Schedule (로그인 후 메인)
- * ========================================================= */
+/* 10. Week Schedule */
 .week-nav {
   display: flex;
   align-items: center;
@@ -1260,9 +1226,7 @@ a.banner__slide--promo,
   color: #8a3d14;
 }
 
-/* =========================================================
- * 11. Auth Screens (로그인/회원가입)
- * ========================================================= */
+/* 11. Auth Screens */
 .auth-page {
   min-height: 100vh;
   display: grid;
@@ -1355,9 +1319,7 @@ a.banner__slide--promo,
   text-decoration: underline;
 }
 
-/* =========================================================
- * 12. Modal
- * ========================================================= */
+/* 12. Modal */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1413,9 +1375,7 @@ a.banner__slide--promo,
   color: var(--wp-ink);
 }
 
-/* =========================================================
- * 13. Tabs / Chips
- * ========================================================= */
+/* 13. Tabs / Chips */
 .tabs {
   display: flex;
   flex-wrap: wrap;
@@ -1494,9 +1454,7 @@ span.chip {
   pointer-events: none;
 }
 
-/* =========================================================
- * 14. Empty / CTA boxes
- * ========================================================= */
+/* 14. Empty / CTA boxes */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -1515,7 +1473,7 @@ span.chip {
   margin-bottom: 6px;
 }
 
-/* 게시글/미디어/공지 등 목록 비었을 때 — 해당 란 중앙 */
+/* 빈 목록 안내 (가운데) */
 .list-empty {
   display: flex;
   align-items: center;
@@ -1552,9 +1510,7 @@ span.chip {
   color: var(--wp-brand-dark);
 }
 
-/* =========================================================
- * 15. Settings / Collection
- * ========================================================= */
+/* 15. Settings / Collection */
 .settings-block {
   background: var(--wp-surface);
   border: 1px solid var(--wp-hairline);
@@ -1563,8 +1519,7 @@ span.chip {
   margin-bottom: 16px;
 }
 
-/* 비밀번호가 없는 계정(소셜 전용 가입)은 "연결된 계정" 박스 전체를 잠근다 - 연동된 소셜이 유일한 로그인 수단이라
-   비밀번호를 먼저 설정해야(hasPassword() true) 연결/해제를 할 수 있다. 박스 전체를 흐리게 + 클릭 불가로 만든다. */
+/* 비밀번호 없는 계정은 연결된 계정 박스 전체를 잠근다. */
 .settings-block.is-locked {
   opacity: .5;
   pointer-events: none;
@@ -1661,9 +1616,7 @@ span.chip {
   font-size: 18px;
 }
 
-/* =========================================================
- * 16. Tables (포털/관리자)
- * ========================================================= */
+/* 16. Tables */
 .table-wrap {
   overflow-x: auto;
   border: 1px solid var(--wp-hairline);
@@ -1724,9 +1677,7 @@ span.chip {
   letter-spacing: 0.04em;
 }
 
-/* =========================================================
- * 17. Pagination
- * ========================================================= */
+/* 17. Pagination */
 .pagination {
   display: flex;
   justify-content: center;
@@ -1756,9 +1707,7 @@ span.chip {
   color: #fff;
 }
 
-/* =========================================================
- * 18. Utility
- * ========================================================= */
+/* 18. Utility */
 .mt-8 { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
@@ -1799,9 +1748,7 @@ span.chip {
   border-radius: inherit;
 }
 
-/* =========================================================
- * 19. Sitemap landing (루트 index)
- * ========================================================= */
+/* 19. Sitemap landing */
 .sitemap-hero {
   padding: 56px 0 32px;
 }
@@ -1862,9 +1809,7 @@ span.chip {
   color: var(--wp-brand);
 }
 
-/* =========================================================
- * 20. Responsive
- * ========================================================= */
+/* 20. Responsive */
 @media (max-width: 768px) {
   .site-header {
     padding: 0 14px;
@@ -1889,8 +1834,7 @@ span.chip {
 }
 
 
-/* Toast UI 에디터 하단 모드 전환 탭 - 기본 라벨(Markdown/WYSIWYG)을 한글로 바꾸면서
-   글자가 길어져 두 줄로 깨지는 것 방지 (community-posts.js의 relabelEditorModeTabs와 한 쌍) */
+/* Toast UI 모드 전환 탭 라벨이 두 줄로 깨지지 않게 */
 .toastui-editor-mode-switch .tab-item {
   width: auto;
   min-width: 88px;
@@ -1900,7 +1844,7 @@ span.chip {
 
 
 
-/* ===== 공용 알림/확인 다이얼로그 (브라우저 alert/confirm 대체) ===== */
+/* 공용 알림·확인 다이얼로그 */
 .wp-dialog-backdrop {
   position: fixed;
   inset: 0;
@@ -1964,13 +1908,11 @@ span.chip {
   transform: translateY(6px);
 }
 
-/* 팬 댓글 목록 - 댓글이 수십 개 달려도 페이지 전체가 늘어나지 않도록
-   이 영역 안에서만 스크롤되게 함. 아티스트 댓글은 이 박스 밖(위쪽)에 고정 */
+/* 팬 댓글 목록은 이 영역 안에서만 스크롤 (아티스트 댓글은 위에 고정) */
 .comment-scroll {
   max-height: 420px;
   overflow-y: auto;
-  /* 아티스트 댓글은 margin:0 -8px 로 좌우가 컨테이너보다 넓어서
-     가로 스크롤바가 생겼음. 세로만 스크롤되게 명시적으로 잠금 */
+  /* 가로 스크롤바가 생기지 않게 세로만 스크롤 */
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 4px;
@@ -1983,21 +1925,19 @@ span.chip {
   border-radius: 3px;
 }
 
-/* 아티스트 댓글도 수십 개가 달릴 수 있어서 별도 스크롤 영역으로 둠.
-   최상단 고정은 유지하되, 팬 댓글이 화면 밖으로 밀려나지 않도록 높이를 팬 댓글보다 낮게 잡음 */
+/* 아티스트 댓글 영역도 별도 스크롤 (팬 댓글보다 낮은 높이) */
 .comment-scroll--artist {
   max-height: 240px;
 }
 
-/* ---------- 테마 토글 ---------- */
+/* 테마 토글 */
 /* 라이트일 땐 해, 다크일 땐 달만 보이게 */
 [data-theme-icon="dark"] { display: none; }
 :root[data-theme="dark"] [data-theme-icon="dark"] { display: block; }
 :root[data-theme="dark"] [data-theme-icon="light"] { display: none; }
 
-/* ---------- 다크모드: 게시글 본문 ---------- */
-/* 본문은 toastui 뷰어로 그려지는데, 라이브러리 CSS가 요소마다 어두운 글자색을
-   직접 박아둬서 다크 배경에서 글씨가 묻힌다. 토큰 색으로 되돌린다. */
+/* 다크모드: 게시글 본문 */
+/* Toast UI 뷰어가 박아 둔 글자색을 토큰 색으로 되돌린다. */
 :root[data-theme="dark"] .toastui-editor-contents,
 :root[data-theme="dark"] .toastui-editor-contents p,
 :root[data-theme="dark"] .toastui-editor-contents h1,
@@ -2023,10 +1963,8 @@ span.chip {
   color: var(--wp-brand);
 }
 
-/* ---------- 다크모드: 글쓰기 에디터(간편 편집) ---------- */
-/* 위 규칙은 본문 뷰어용인데, 글쓰기 에디터의 간편 편집 입력칸도 같은 .toastui-editor-contents 를 쓴다.
-   입력칸 배경은 라이브러리 기본 흰색 그대로라, 다크모드에서 입력한 글씨가 흰 바탕에 흰 글씨로 안 보였다.
-   에디터는 마크다운 모드/툴바처럼 다크모드에서도 밝은 종이 + 어두운 글씨로 둔다. */
+/* 다크모드: 글쓰기 에디터 */
+/* 에디터 입력칸은 다크모드에서도 밝은 바탕 + 어두운 글씨로 둔다. */
 :root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents,
 :root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents p,
 :root[data-theme="dark"] .toastui-editor-ww-container .toastui-editor-contents h1,
@@ -2044,11 +1982,7 @@ span.chip {
   color: #222;
 }
 
-/* =========================================================
- * 21. Profile Image Crop
- * - 프로필/배경 이미지 편집 패널의 배경 미리보기 박스 + 크롭 모달.
- *   portal/profile.html, community/profile.html이 함께 쓴다.
- * ========================================================= */
+/* 21. Profile Image Crop (포털·커뮤니티 프로필 공용) */
 .pe-cover-preview {
   position: relative;
   aspect-ratio: 2560 / 1660;
@@ -2062,16 +1996,14 @@ span.chip {
   height: auto;
 }
 
-/* 배경 이미지를 아직 안 골랐을 때 - 그냥 빈 흰 박스면 여기에 사진을 넣을 수 있다는 게
-   전혀 안 보여서, 옅은 배경 + 점선 테두리 + 안내 문구로 "업로드 영역"임을 표시한다 */
+/* 빈 배경 미리보기는 업로드 영역임을 점선으로 표시한다. */
 .pe-cover-preview.is-empty {
   background: var(--wp-paper);
   border-top: 1px dashed var(--wp-hairline, #e5e5e5);
   border-bottom: 1px dashed var(--wp-hairline, #e5e5e5);
 }
 
-/* 포털 헤더 이미지 미리보기 비율 - 커뮤니티 히어로 배너와 동일한 3:1.
-   community/profile.html의 개인 프로필 커버는 기본값(2560:1660)을 그대로 쓴다. */
+/* 포털 헤더 이미지 미리보기 3:1 */
 .pe-cover-preview--header {
   aspect-ratio: 3 / 1;
 }
@@ -2096,7 +2028,7 @@ span.chip {
 }
 
 
-/* 이미지 크롭 모달의 편집 영역 최대 높이 */
+/* 크롭 편집 영역 최대 높이 */
 .crop-stage {
   position: relative;
   max-height: 520px;
@@ -2110,8 +2042,7 @@ span.chip {
   max-width: 100%;
 }
 
-/* 아바타 크롭용 원형 마스크 - 실제로 잘리는 영역은 그대로 두고, Cropper.js의
-   크롭박스/뷰박스만 둥글게 보이게 해서 "원 안에 들어올 부분"을 미리 보여준다 */
+/* 아바타 크롭 원형 마스크 (실제 잘리는 영역은 그대로) */
 .crop-stage.is-round .cropper-view-box,
 .crop-stage.is-round .cropper-face {
   border-radius: 50%;
@@ -2139,7 +2070,7 @@ span.chip {
 }
 
 
-/* [해시태그 총공] 홈 캐러셀 맨 앞 자동 슬라이드 (index.html) */
+/* 홈 캐러셀 해시태그 총공 슬라이드 */
 .hashtag-home-slide {
   color: #fff;
   text-decoration: none;
@@ -2155,8 +2086,7 @@ span.chip {
   opacity: 0.9;
 }
 
-/* 모바일: 입력칸 글자가 16px 보다 작으면 iOS Safari 가 입력할 때 화면을 자동 확대한다.
-   입력칸마다 클래스로 크기를 따로 주고 있어서 !important 로 한 번에 맞춘다. */
+/* 모바일: 16px 미만 입력칸은 iOS 가 확대하므로 16px 로 맞춘다. */
 @media (max-width: 560px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
   select,

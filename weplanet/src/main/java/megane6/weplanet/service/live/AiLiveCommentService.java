@@ -23,10 +23,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * 라이브 방송 중 아티스트가 한 말(브라우저 음성 인식 결과)을 모아서, AI 팬이 라이브 채팅에 댓글을 단다.
- * 말할 때마다 Gemini를 부르면 한도가 금방 차므로, 아티스트별로 말을 모아 두었다가 COOLDOWN 간격으로 한 번씩만 부른다.
- */
+/** 라이브 중 아티스트 발화를 모아 AI 팬 댓글을 단다 (COOLDOWN 간격으로만 호출). */
 @Slf4j
 @Service
 @RequiredArgsConstructor

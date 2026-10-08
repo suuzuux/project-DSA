@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * 최고관리자 > 통합 대시보드 > 배너 영역 관리.
- * 메인 페이지(/) 상단 배너를 등록/수정/노출 전환/삭제한다.
- */
+/** 최고관리자 메인 배너 등록·수정·노출 전환·삭제. */
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/admin/banners")

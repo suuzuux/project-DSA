@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    회원정보 및 설정 - 언어 / 알림 / 약관 / 탈퇴, 회원정보 수정은 모달 (SettingsController)
-    비밀번호와 소셜 연동(최대 1개)은 따로 공존한다 - user.hasPassword()와 user.provider(없으면 null)를 각각 본다.
-  -->
+  <!-- 회원정보 및 설정 - 언어·알림·약관·탈퇴, 회원정보 수정은 모달 -->
   <title th:text="#{settings.pageTitle}">WePlaNet – 회원정보 및 설정</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
@@ -53,12 +50,11 @@
             <span th:text="#{settings.profile.usernameLabel}">아이디</span>
             <span th:text="${user.username}">abcd1234</span>
           </p>
-          <!-- 비밀번호 유무와 소셜 연동 여부는 서로 독립적인 값이라 따로 보여준다. -->
+          <!-- 비밀번호 유무와 소셜 연동은 따로 표시한다. -->
           <span th:if="${user.hasPassword()}" class="tag mt-8"
                 style="background:var(--wp-brand-soft);color:var(--wp-brand-dark);"
                 th:text="#{settings.profile.passwordLoginAvailable}">비밀번호 로그인 가능</span>
-          <!-- 비밀번호가 없으면(소셜 전용 가입) 이 계정의 로그인 수단은 이 소셜뿐이라 "연동됨"이 아니라
-               "로그인함"으로 표시한다. 비밀번호가 있으면(로컬 계정에 추가로 연결한 경우) "연동됨"을 유지. -->
+          <!-- 비밀번호 없는 소셜 전용 계정은 "로그인함", 로컬 계정에 연결한 경우 "연동됨" -->
           <span th:if="${user.provider != null and user.hasPassword()}" class="tag mt-8"
                 style="background:#eaf3ff;color:#2563eb;"
                 th:text="#{settings.profile.linkedWithProvider(${user.provider.name()})}">GOOGLE 계정과 연동됨</span>
@@ -71,11 +67,9 @@
     </div>
   </section>
 
-  <!-- 소셜 계정 연동 관리 - 계정당 1개까지라, 이미 다른 소셜이 연동돼 있으면
-       "연동 계정을 바꾸시겠습니까?" 확인 화면(social-link-confirm.html)을 거친다. -->
-  <!-- 비밀번호가 없는 계정(소셜 전용 가입)은 박스 전체를 잠근다(.is-locked) - 연동된 소셜이 유일한 로그인 수단이라
-       비밀번호를 설정해야 바꿀 수 있다. 연결 해제는 서버(UserService.unlinkSocialProvider)에서도 막는다. -->
-  <!-- 소셜 로그인·연결은 팬 계정만 쓸 수 있어서(OAuth2LoginSuccessHandler, SocialLoginEntryController.startLink) 팬에게만 보여준다 -->
+  <!-- 소셜 계정 연동 관리 (계정당 1개, 교체 시 확인 화면) -->
+  <!-- 비밀번호 없는 계정은 연동 박스를 잠근다 (해제는 서버에서도 막음). -->
+  <!-- 소셜 연동은 팬 계정만 -->
   <section class="settings-block" th:if="${user.role.name() == 'FAN'}" th:classappend="${user.hasPassword()} ? '' : 'is-locked'">
     <h2 class="settings-block__title" th:text="#{settings.social.heading}">연결된 계정</h2>
     <p th:if="${user.hasPassword()}" class="text-sm text-muted mb-16" th:text="#{settings.social.desc}">비밀번호와 별개로, 소셜 계정 하나를 추가로 연결해서 로그인 수단으로 쓸 수 있어요.</p>
@@ -97,7 +91,7 @@
   </section>
 
   <!-- 언어 -->
-  <!-- "기본 서비스 언어" 하나로 화면 언어와 게시글/댓글 AI 번역 대상 언어를 함께 정한다 -->
+  <!-- 기본 서비스 언어 = 화면 언어 + AI 번역 대상 언어 -->
   <section class="settings-block">
     <h2 class="settings-block__title" th:text="#{settings.language.heading}">언어 설정</h2>
     <div class="settings-row">
@@ -160,7 +154,7 @@
     </a>
   </section>
 
-  <!-- 탈퇴는 모달에서 진행 - 비밀번호가 있는 계정은 현재 비밀번호를 다시 확인한다 -->
+  <!-- 탈퇴는 모달에서 (비밀번호 계정은 비밀번호 재확인) -->
   <button type="button" class="btn btn--ghost btn--block text-danger" data-modal-open="withdrawModal" th:text="#{settings.withdraw.button}">
     위플래닛 계정 탈퇴하기
   </button>
@@ -177,7 +171,7 @@
           th:attr="data-confirm=#{settings.withdraw.confirm}"
           onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
       <p class="text-sm mb-16" th:text="#{settings.withdraw.modalDesc}">탈퇴하면 가입한 커뮤니티와 팔로우 정보가 모두 정리되고, 이 계정으로 다시 로그인할 수 없습니다.</p>
-      <!-- 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어서 확인창만 거친다 -->
+      <!-- 소셜 전용 계정은 비밀번호 없이 확인창만 -->
       <div class="form-group" th:if="${user.hasPassword()}">
         <label class="form-label" for="withdrawPasswordInput" th:text="#{settings.modal.currentPasswordLabel}">현재 비밀번호</label>
         <input class="form-input" type="password" id="withdrawPasswordInput" name="currentPassword" required
@@ -212,7 +206,7 @@
       </div>
       <div class="form-group">
         <label class="form-label" th:text="#{settings.modal.emailLabel}">이메일</label>
-        <!-- 연동된 소셜과 무관하게 누구나 이메일을 바꿀 수 있다. -->
+        <!-- 이메일은 누구나 변경 가능 -->
         <div class="form-row">
           <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
           <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit"
@@ -221,8 +215,7 @@
         <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
         <p class="form-hint" th:text="#{settings.modal.emailHint}">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
 
-        <!-- 이메일 변경 전 본인 확인: 비밀번호가 있는 계정은 "수정하기"를 누르면 먼저 현재 비밀번호를 확인하고,
-             맞으면 잠긴 이메일 칸이 열린다 (EmailChangeAuthService). 아래 "현재 비밀번호" 칸과는 별개 - 폼으로 제출하지 않는다 -->
+        <!-- 이메일 변경 전 현재 비밀번호 확인 (폼 제출과 별개) -->
         <div class="form-row mt-8" id="emailPwRow" style="display:none;align-items:center;gap:8px;">
           <input class="form-input" type="password" id="emailPwInput" placeholder="본인 확인을 위해 현재 비밀번호를 입력하세요"
                  th:placeholder="#{settings.verifyPasswordPlaceholder}" autocomplete="current-password" />
@@ -237,7 +230,7 @@
         <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
       </div>
 
-      <!-- "비밀번호가 있는지"로 갈린다. -->
+      <!-- 비밀번호 유무로 분기 -->
       <div th:if="${user.hasPassword()}">
         <div class="form-group">
           <label class="form-label" th:text="#{settings.modal.currentPasswordLabel}">현재 비밀번호</label>
@@ -256,8 +249,7 @@
           <p class="text-xs" id="passwordMismatchMsg" style="display:none;color:#c45c26;margin-top:4px;" th:text="#{settings.modal.passwordMismatch}">새 비밀번호가 일치하지 않습니다.</p>
         </div>
       </div>
-      <!-- 비밀번호가 아직 없는 계정(소셜 전용 가입)이 새로 등록하는 흐름 - 현재 비밀번호 확인이
-           필요 없다(UserService.updatePortalAccount 참고). -->
+      <!-- 비밀번호가 없는 계정은 현재 비밀번호 없이 새로 등록한다. -->
       <div th:unless="${user.hasPassword()}">
         <p class="text-xs text-muted mb-8" th:text="#{settings.modal.noPasswordNotice}">아직 비밀번호가 설정되어 있지 않아요. 등록하면 아이디/비밀번호로도 로그인할 수 있어요.</p>
         <div class="form-group">
@@ -269,7 +261,7 @@
           <input class="form-input" type="password" name="confirmPassword" autocomplete="new-password" />
         </div>
       </div>
-      <!-- 전화번호는 users.phone 에 저장한다 (굿즈 주문서 연락처 기본값으로도 쓰임). -->
+      <!-- 전화번호 (굿즈 주문서 연락처 기본값) -->
       <div class="form-group">
         <label class="form-label" th:text="#{settings.modal.phoneLabel}">전화번호 (선택)</label>
         <input class="form-input" name="phone" th:value="${user.phone}" placeholder="예) 010-1234-5678"
@@ -281,7 +273,7 @@
     <script th:inline="javascript">
       (function () {
         "use strict";
-        // 이메일 인증 흐름에서 쓰는 문구를 서버 로케일 기준으로 미리 받아온다.
+        // 이메일 인증 문구를 미리 받아 둔다.
         var MSG = {
           editAction: /*[[#{common.editAction}]]*/ "수정하기",
           emailSendCodeBtn: /*[[#{settings.modal.emailSendCodeBtn}]]*/ "인증코드 받기",
@@ -327,7 +319,7 @@
           });
         }
 
-        // ===== 이메일 잠금 → 수정 → 인증 (회원가입 화면과 같은 6자리 코드 방식) =====
+        // 이메일 잠금 → 수정 → 인증 (6자리 코드)
         var emailInput = document.getElementById("emailInput");
         var emailHidden = document.getElementById("emailHidden");
         var emailEditBtn = document.getElementById("emailEditBtn");
@@ -339,7 +331,7 @@
         var originalEmail = emailInput.value;
         var pendingEmail = "";
         var emailTimerInterval = null;
-        var EMAIL_CODE_VALID_SECONDS = 5 * 60; // 서버 SignupEmailVerificationService의 EXPIRE_MINUTES(5분)와 맞춤
+        var EMAIL_CODE_VALID_SECONDS = 5 * 60; // 서버 인증코드 유효시간(5분)과 맞춤
 
         function setEmailMsg(text, ok) {
           emailMsg.textContent = text;
@@ -386,7 +378,7 @@
           hideEmailPwRow();
         }
 
-        // 이메일 변경 전 현재 비밀번호 확인 (비밀번호가 있는 계정만). 맞으면 서버 세션에 10분 동안 확인 완료가 남는다
+        // 이메일 변경 전 현재 비밀번호 확인 (확인 후 10분 유효)
         var emailNeedsPassword = emailEditBtn.dataset.needsPassword === "true";
         var emailPwRow = document.getElementById("emailPwRow");
         var emailPwInput = document.getElementById("emailPwInput");
@@ -446,7 +438,7 @@
         }
 
         emailPwCheckBtn.addEventListener("click", checkEmailPassword);
-        // 비밀번호 칸에서 Enter 를 누르면 회원정보 폼이 제출되지 않고 비밀번호 확인만 한다
+        // 비밀번호 칸 Enter 는 폼 제출 대신 비밀번호 확인
         emailPwInput.addEventListener("keydown", function (e) {
           if (e.key === "Enter") {
             e.preventDefault();
@@ -473,7 +465,7 @@
             return;
           }
 
-          // mode === "send" - 인증코드 받기
+          // 인증코드 받기
           var newEmail = emailInput.value.trim();
           if (!newEmail) {
             setEmailMsg(MSG.emailRequired, false);
@@ -495,7 +487,7 @@
             .then(function (data) {
               setEmailMsg(data.message, data.success);
               if (data.needsPassword) {
-                // 확인한 지 10분이 지나 서버의 본인 확인이 만료된 경우 - 다시 비밀번호부터
+                // 본인 확인이 만료되면 비밀번호부터 다시
                 showEmailPwRow();
                 return;
               }
@@ -513,7 +505,7 @@
             })
             .finally(function () {
               emailEditBtn.disabled = false;
-              // 비밀번호 재확인으로 돌아간 경우("취소" 버튼)는 문구를 덮어쓰지 않는다
+              // 비밀번호 재확인으로 돌아간 경우는 문구를 덮어쓰지 않는다.
               if (emailEditBtn.dataset.mode === "send") emailEditBtn.textContent = MSG.emailSendCodeBtn;
             });
         });
@@ -552,8 +544,7 @@
 <script src="../js/main.js"></script>
 <script src="../js/shell.js"></script>
 <script th:inline="javascript">
-  // [이벤트·혜택 알림 설정] 광고성 정보/이메일 알림/야간 알림 토글 - 클릭 즉시 서버에 저장.
-  // 저장하지 않는 전역 .toggle(main.js initToggles) 대신 .toggle-managed 클래스를 쓰고 클릭을 따로 처리한다.
+  // 이벤트·혜택 알림 토글 - 클릭 즉시 저장 (.toggle-managed 로 전역 토글과 분리)
   (function () {
     "use strict";
     var SAVE_FAILED = /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다.";
@@ -593,8 +584,7 @@
   })();
 </script>
 <script th:inline="javascript">
-  // [설정 - 언어 설정] "기본 서비스 언어" 드롭다운 - 선택 즉시 서버에 저장.
-  // 이 값이 게시글/댓글 "번역보기"(TranslateService)의 번역 대상 언어로도 그대로 쓰인다.
+  // 기본 서비스 언어 - 선택 즉시 저장 (번역보기 대상 언어로도 쓰임)
   (function () {
     "use strict";
     var SAVE_FAILED = /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다.";

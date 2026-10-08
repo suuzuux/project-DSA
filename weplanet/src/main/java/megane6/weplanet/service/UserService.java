@@ -32,13 +32,13 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NicknameGenerator nicknameGenerator;
-	// 가입 완료·광고성 정보 동의 안내 메일 요청 (AccountMailEvent → AccountMailListener)
+	// 계정 안내 메일 이벤트 발행
 	private final ApplicationEventPublisher eventPublisher;
-	// [회원탈퇴] 탈퇴 시 가입해둔 커뮤니티/팔로우 관계까지 함께 정리하기 위해 의존한다.
+	// 회원 탈퇴 시 커뮤니티·팔로우 정리용
 	private final CommunityJoinService communityJoinService;
 	private final UserFollowRepository userFollowRepository;
 
-	// 예외 메시지는 메시지 키로 던지고, 화면에 내보내는 컨트롤러가 Messages.resolve(e)로 번역한다 (AuthController, SettingsController).
+	// 예외는 메시지 키로 던지고 컨트롤러가 번역한다.
 
 	@Transactional
 	public User signup(SignupRequestDto dto) {
@@ -63,45 +63,39 @@ public class UserService {
 				dto.getEmail()
 		);
 		
-		// 가입 화면에서 이메일 인증코드 확인을 마친 경우에만 여기까지 온다 (AuthController.signup 이 먼저 확인) - 인증 완료 시각을 남긴다
+		// 이메일 인증을 마친 경우에만 오므로 인증 완료 시각을 남긴다.
 		user.markEmailVerified(LocalDateTime.now());
 		
-		// [설정 - 이벤트·혜택 알림] 가입 화면의 "(선택) 광고 및 마케팅 활용 동의" 체크박스 값을 그대로 반영.
-		// 이후 설정 화면의 "광고성 정보 알림 받기" 토글과 같은 값을 공유한다.
+		// 가입 화면의 광고·마케팅 동의 (설정 토글과 같은 값)
 		user.changeMarketingConsent(dto.isMarketingConsent());
 		
-		// 가입 화면에서 쓰던 언어를 계정 선호 언어로 저장한다. 안 하면 기본값(KO)이 남아
-		// 환영 메일이 한국어로 가고, 다음 로그인부터 화면도 한국어로 바뀐다.
+		// 가입 화면 언어를 선호 언어로 저장한다.
 		user.changePreferredLanguage(PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale()));
 
-		// 가입 직후 바로 로그인시키므로(AuthController.signup) 첫 로그인 시각도 함께 남긴다.
-		// 폼 로그인이면 LoginSuccessHandler 가 기록하지만 자동 로그인은 그 처리를 거치지 않는다.
+		// 가입 직후 자동 로그인하므로 첫 로그인 시각도 남긴다.
 		user.recordLogin();
 
 		User saved = userRepository.save(user);
 
-		// 가입 완료 메일 1통(데모용, 동의 여부와 무관) + "(선택) 광고 및 마케팅 활용 동의"까지 했으면 커뮤니티 가입 유도 메일 1통.
-		// 메일은 가입이 확정된 뒤 백그라운드로 보낸다 (AccountMailListener).
+		// 가입 완료 메일 (동의 시 커뮤니티 가입 유도 메일 추가, 커밋 후 백그라운드).
 		eventPublisher.publishEvent(AccountMailEvent.signupWelcome(saved.getId(), saved.isMarketingConsent()));
 
 		return saved;
 	}
 	
-	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
+	// 비밀번호 규칙 (영문·숫자 포함 8~20자)
 	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
-	// 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
+	// 전화번호 (숫자·하이픈·+, 최대 20자)
 	private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-]{1,20}$");
 
-	// 회원가입 화면의 "중복 확인" 버튼용 - 실제로 DB를 조회해서 사용 가능 여부를 알려준다.
+	// 아이디 중복 확인
 	public boolean isUsernameAvailable(String username) {
 		return !userRepository.existsByUsername(username);
 	}
 
-	// 회원정보 수정 - 닉네임/이름/이메일/전화번호, 비밀번호(입력했을 때만)를 바꾼다 (아이디는 바꾸지 않음).
-	// 반환한 AuthenticatedUser 로 컨트롤러가 SecurityContext 를 바로 갱신한다 (헤더 닉네임이 즉시 바뀌도록).
+	// 회원정보 수정 (아이디 제외) - 반환값으로 SecurityContext 를 바로 갱신한다.
 	@Transactional
-	// newEmailVerified: 이 세션에서 이메일 변경 용도로 인증을 마쳤는지
-	// emailChangeAuthorized: 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (소셜 전용 계정은 항상 true)
+	// newEmailVerified: 이메일 변경 인증 완료 / emailChangeAuthorized: 현재 비밀번호 확인 완료
 	public AuthenticatedUser updatePortalAccount(User user, String nickname, String realName, String email,
 												  boolean newEmailVerified, boolean emailChangeAuthorized, String phone,
 												  String currentPassword, String newPassword, String confirmPassword) {
@@ -117,20 +111,18 @@ public class UserService {
 			if (!NicknamePolicy.isAllowed(trimmedNickname)) {
 				throw new IllegalArgumentException("signup.error.nicknameInvalid");
 			}
-			// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
+			// 팬 쪽 계정끼리만 닉네임 중복 검사
 			if (userRepository.existsByNicknameAndRoleNotIn(trimmedNickname, Role.ARTIST_SIDE)) {
 				throw new IllegalArgumentException("signup.error.nicknameTaken");
 			}
 		}
 		boolean emailChanged = !trimmedEmail.equals(user.getEmail());
 		if (emailChanged) {
-			// 이메일은 "수정하기" → 인증코드 확인을 거쳐야만 바뀐다 (소셜 연동 여부와 무관).
-			// 화면(JS)을 우회해 바로 제출하는 경우를 막으려고 서버에서도 인증 여부를 확인한다.
+			// 이메일은 인증코드 확인을 거쳐야만 바뀐다 (서버에서도 확인).
 			if (!newEmailVerified) {
 				throw new IllegalArgumentException("signup.error.emailNotVerified");
 			}
-			// 비밀번호가 있는 계정은 이메일을 바꾸기 전에 현재 비밀번호를 다시 확인한다 (EmailChangeAuthService).
-			// 로그인된 브라우저를 잠깐 쓴 사람이 이메일을 바꿔 계정을 가져가는 것을 막기 위함.
+			// 비밀번호가 있는 계정은 이메일 변경 전에 비밀번호를 다시 확인한다.
 			if (!emailChangeAuthorized) {
 				throw new IllegalArgumentException("settings.email.passwordCheckRequired");
 			}
@@ -141,24 +133,23 @@ public class UserService {
 		} else {
 			user.changePortalProfile(trimmedNickname, user.getEmail());
 		}
-		// real_name 은 VARBINARY(255)(UTF-8 바이트) - 가입 화면과 같은 50자 제한
+		// real_name 은 VARBINARY(255) 라 50자 제한
 		if (trimmedRealName.length() > 50) {
 			throw new IllegalArgumentException("signup.validation.realNameTooLong");
 		}
 		user.changeRealName(trimmedRealName);
 
-		// 전화번호(선택) - 비우면 지운다
+		// 전화번호 (비우면 삭제)
 		String trimmedPhone = phone == null ? "" : phone.trim();
 		if (!trimmedPhone.isEmpty() && !PHONE_PATTERN.matcher(trimmedPhone).matches()) {
 			throw new IllegalArgumentException("settings.error.phoneInvalid");
 		}
 		user.changePhone(trimmedPhone.isEmpty() ? null : trimmedPhone);
 
-		// 비밀번호 칸 중 하나라도 입력했으면 비밀번호 변경/등록을 시도한 것으로 본다.
-		// 화면(JS)에서도 막지만, 직접 요청을 보내는 경우를 위해 서버에서 한 번 더 검증한다.
+		// 비밀번호 칸을 하나라도 입력했으면 변경 시도로 본다 (서버에서도 검증).
 		boolean wantsPasswordChange = hasText(currentPassword) || hasText(newPassword) || hasText(confirmPassword);
 		if (wantsPasswordChange) {
-			// 비밀번호가 이미 있는 계정만 현재 비밀번호를 확인한다 (소셜 전용 계정은 새로 등록하는 것이라 생략).
+			// 비밀번호가 있는 계정만 현재 비밀번호를 확인한다.
 			if (user.hasPassword()
 					&& (!hasText(currentPassword) || !passwordEncoder.matches(currentPassword, user.getPassword()))) {
 				throw new IllegalArgumentException("error.user.currentPasswordMismatch");
@@ -185,8 +176,7 @@ public class UserService {
 				.build();
 	}
 
-	// 회원 탈퇴 - 비밀번호가 있는 계정은 현재 비밀번호가 맞아야 한다 (소셜 전용 계정은 생략).
-	// 상태 변경·개인정보 익명화는 User.withdraw(), 가입한 커뮤니티와 팔로우 관계는 여기서 정리한다.
+	// 회원 탈퇴 - 비밀번호 확인 후 익명화하고 커뮤니티·팔로우를 정리한다.
 	@Transactional
 	public void withdraw(User user, String currentPassword) {
 		if (user.hasPassword()
@@ -197,26 +187,23 @@ public class UserService {
 		}
 		user.withdraw();
 
-		// 가입한 커뮤니티는 leave() 로 하나씩 탈퇴 처리한다 (프로필·사진·그 커뮤니티의 팔로우까지 정리).
-		// 순회 중 삭제로 ConcurrentModificationException 이 나지 않게 목록을 복사해서 돈다.
+		// 가입 커뮤니티를 하나씩 탈퇴 처리한다 (목록을 복사해 순회).
 		for (Long artistId : Set.copyOf(communityJoinService.joinedArtistIds(user))) {
 			communityJoinService.leave(user, artistId);
 		}
 
-		// 팬→아티스트 팔로우는 커뮤니티 가입 여부와 무관하게 가능했고, 아티스트 본인은 자기 커뮤니티에
-		// CommunityMember가 없어 위 루프를 안 타므로, 남아있을 수 있는 팔로우 관계를 방향 상관없이 마저 정리한다.
+		// 남아 있을 수 있는 팔로우 관계를 방향과 상관없이 정리한다.
 		userFollowRepository.deleteByFollowerId(user.getId());
 		userFollowRepository.deleteByFollowingId(user.getId());
 	}
 
-	// [설정 - 이벤트·혜택 알림] type: marketing(광고성 정보) / email(커뮤니티 활동 이메일) / night(야간 알림)
+	// 알림 설정 - marketing / email / night
 	@Transactional
 	public void updateNotificationPreference(User user, String type, boolean enabled) {
 		switch (type) {
 			case "marketing" -> {
 				user.changeMarketingConsent(enabled);
-				// 데모용 - 설정 화면에서 광고성 정보 알림을 켜는 순간 동의 확인 메일 1통을 보낸다.
-				// 저장이 끝난 뒤 백그라운드로 보내서 토글 응답이 메일 발송을 기다리지 않는다 (AccountMailListener).
+				// 광고성 알림을 켜면 동의 확인 메일을 백그라운드로 보낸다.
 				if (enabled) {
 					eventPublisher.publishEvent(AccountMailEvent.marketingConsentConfirmed(user.getId()));
 				}
@@ -227,14 +214,13 @@ public class UserService {
 		}
 	}
 
-	// 기본 서비스 언어 저장 - 화면 언어이자 게시글/댓글 AI 번역 대상 언어로 쓰인다.
+	// 기본 서비스 언어 저장 (AI 번역 대상 언어로도 사용)
 	@Transactional
 	public void updateLanguage(User user, Language language) {
 		user.changePreferredLanguage(language);
 	}
 
-	// 소셜 연동 해제 (비밀번호는 그대로). 비밀번호가 없는 계정은 이 소셜이 유일한 로그인 수단이라 막는다.
-	// 화면에서도 버튼을 막아 두지만, 직접 요청을 보내는 경우를 위해 서버에서 한 번 더 확인한다.
+	// 소셜 연동 해제 - 비밀번호가 없으면 유일한 로그인 수단이라 막는다.
 	@Transactional
 	public void unlinkSocialProvider(User user) {
 		if (!user.hasPassword()) {
@@ -254,7 +240,7 @@ public class UserService {
 		if (!NicknamePolicy.isAllowed(requestedNickname)) {
 			throw new IllegalArgumentException("signup.error.nicknameInvalid");
 		}
-		// 아티스트(멤버) 닉네임과는 겹쳐도 된다 - 팬 쪽 계정끼리만 중복 검사
+		// 팬 쪽 계정끼리만 닉네임 중복 검사
 		if (userRepository.existsByNicknameAndRoleNotIn(requestedNickname, Role.ARTIST_SIDE)) {
 			throw new IllegalArgumentException("signup.error.nicknameTaken");
 		}

@@ -23,16 +23,14 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/**
- * 최고관리자 > 이벤트 > 해시태그 총공 : 이벤트 목록 / 등록 / 수정 / 삭제 / 참여 아티스트 검색
- */
+/** 관리자 해시태그 총공 목록·등록·수정·삭제·참여 아티스트 검색 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class HashtagEventAdminService {
 	
-	private static final int SEARCH_LIMIT = 20;  // 검색 결과는 20팀까지만 (아티스트가 수백 명이어도 화면이 안 길어지게)
-	private static final int MIN_TARGETS = 2;    // 순위 경쟁이라 최소 2팀
+	private static final int SEARCH_LIMIT = 20;  // 검색 결과 최대 20팀
+	private static final int MIN_TARGETS = 2;    // 최소 2팀
 	
 	private final HashtagEventRepository her;
 	private final HashtagEventTargetRepository hetr;
@@ -49,7 +47,7 @@ public class HashtagEventAdminService {
 				.toList();
 	}
 	
-	// 수정 폼에 채울 값. targets 는 LAZY 라서 트랜잭션 안(이 메서드 안)에서 꺼내 폼 객체로 옮겨 담는다
+	// 수정 폼 값 (LAZY targets 를 트랜잭션 안에서 폼으로 옮김)
 	public HashtagEventForm getEditForm(Long eventId) {
 		HashtagEvent event = requireEvent(eventId);
 		event.requireEditable(LocalDateTime.now());
@@ -80,7 +78,7 @@ public class HashtagEventAdminService {
 		);
 	}
 	
-	// 폼의 "참여 아티스트" 줄들. 입력 오류로 폼을 다시 보여줄 때도 입력했던 값이 그대로 남게 한다
+	// 오류로 폼을 다시 보여줄 때도 참여 아티스트 입력값을 유지한다.
 	public List<HashtagEventTargetRow> toTargetRows(HashtagEventForm form) {
 		if (form.getArtistIds().isEmpty()) {
 			return List.of();
@@ -127,7 +125,7 @@ public class HashtagEventAdminService {
 		HashtagEvent event = requireEvent(eventId);
 		LocalDateTime now = LocalDateTime.now();
 		
-		// 여기서 예외가 나면 트랜잭션이 롤백돼서, 이미 바꾼 값도 DB에 반영되지 않는다
+		// 예외가 나면 롤백되어 바꾼 값도 반영되지 않는다.
 		event.update(form.getTitle(), form.getStartDate(), form.getEndDate(), now);
 		validateSchedule(event, eventId, now);
 		applyTargets(event, form);
@@ -148,7 +146,7 @@ public class HashtagEventAdminService {
 		event.requireEditable(LocalDateTime.now());
 		
 		String title = event.getTitle();
-		her.delete(event);  // 참여 아티스트(targets)는 cascade 로 같이 삭제
+		her.delete(event);  // 참여 아티스트는 cascade 로 함께 삭제
 		
 		als.recordAction(
 				admin.getId(),
@@ -164,8 +162,7 @@ public class HashtagEventAdminService {
 		return hess.getDashboard(requireEvent(eventId));
 	}
 	
-	// 종료 후 "집계 확정": 지금 순위를 참여팀마다 final_* 컬럼에 고정한다.
-	// 확정 뒤엔 가입/탈퇴·글 삭제가 있어도 공지한 숫자와 페이지 숫자가 달라지지 않는다
+	// 집계 확정 - 현재 순위를 final_* 에 고정한다.
 	@Transactional
 	public void finalizeEvent(Long eventId, User admin, String ipAddress) {
 		HashtagEvent event = requireEvent(eventId);
@@ -198,8 +195,7 @@ public class HashtagEventAdminService {
 		);
 	}
 	
-	// 결과 공지 초안 (모니터링 [결과 공지 작성] → 공지 글쓰기 폼에 미리 채움).
-	// 확정된 숫자로만 만든다
+	// 결과 공지 초안 (확정된 숫자로만)
 	public HashtagResultNoticeDraft buildResultNotice(Long eventId) {
 		HashtagEvent event = requireEvent(eventId);
 		if (event.getFinalizedAt() == null) {
@@ -214,8 +210,7 @@ public class HashtagEventAdminService {
 				new IllegalArgumentException("hashtagEvent.error.notFound"));
 	}
 	
-	// 시작일은 오늘 이후 + 다른 이벤트와 기간이 겹치면 안 됨 (동시 진행 1개)
-	// 오늘 시작도 허용: 등록하는 순간 바로 "진행 중"이 되고 그때부터 쓴 글이 집계된다 (시연할 때 편함)
+	// 시작일은 오늘 이후, 다른 이벤트와 기간이 겹치면 안 된다 (오늘 시작 허용).
 	private void validateSchedule(HashtagEvent event, Long selfId, LocalDateTime now) {
 		if (event.getStartAt().toLocalDate().isBefore(now.toLocalDate())) {
 			throw new IllegalArgumentException("adminHashtag.error.startInPast");
@@ -247,7 +242,7 @@ public class HashtagEventAdminService {
 				.stream()
 				.collect(Collectors.toMap(User::getId, Function.identity()));
 		
-		// 체크가 풀린 아티스트부터 빼고, 남은/새 아티스트는 putTarget 으로 추가하거나 해시태그만 고친다
+		// 빠진 아티스트를 지우고 나머지는 추가하거나 해시태그만 고친다.
 		event.retainTargets(artistIds);
 		
 		Set<String> usedHashtags = new HashSet<>();
@@ -263,7 +258,7 @@ public class HashtagEventAdminService {
 			}
 			
 			String hashtag = HashtagEventTarget.normalize(rawHashtag);
-			// 대소문자만 다른 태그는 같은 태그로 본다 (#STELLA = #stella → 집계할 때도 대소문자 무시)
+			// 대소문자만 다른 태그는 같은 태그로 본다.
 			if (!usedHashtags.add(hashtag.toLowerCase(Locale.ROOT))) {
 				throw new LocalizedIllegalArgumentException("adminHashtag.error.duplicateHashtag", hashtag);
 			}

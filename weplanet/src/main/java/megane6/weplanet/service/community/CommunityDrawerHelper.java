@@ -8,31 +8,21 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Set;
 
-/**
- * 햄버거(드로어) 커뮤니티 목록.
- * <ul>
- *   <li>비로그인: 모든 커뮤니티</li>
- *   <li>로그인(팬 등): 가입한 커뮤니티(상단) + 모든 커뮤니티(하단, 중복 허용)</li>
- *   <li>아티스트: 본인 커뮤니티(상단) + 모든 커뮤니티(하단, 중복 허용)</li>
- * </ul>
- */
+/** 햄버거 커뮤니티 목록 (비로그인: 전체 / 로그인: 가입 또는 본인 커뮤니티 + 전체). */
 @Component
 @RequiredArgsConstructor
 public class CommunityDrawerHelper {
 	
 	private final CommunityArtistResolver communityArtistResolver;
 
-	/**
-	 * 드로어 상단.
-	 * 아티스트 = 본인 커뮤니티, 그 외 로그인 = community_members 가입 목록.
-	 */
+	/** 드로어 상단 (아티스트는 본인 커뮤니티, 그 외는 가입 목록). */
 	public List<ArtistCardView> joined(User viewer,
 									   List<ArtistCardView> allArtists,
 									   Set<Long> joinedArtistIds) {
 		if (viewer == null || allArtists == null || allArtists.isEmpty()) {
 			return List.of();
 		}
-		// 아티스트 쪽 계정: "가입한 커뮤니티" 칸에는 본인이 아티스트로 있는 커뮤니티 하나만 보여준다
+		// 아티스트 쪽 계정은 본인 커뮤니티 하나만
 		if (viewer.isArtistSide()) {
 			Long ownCommunityId = communityArtistResolver.ownCommunityId(viewer);
 			return allArtists.stream()
@@ -47,7 +37,7 @@ public class CommunityDrawerHelper {
 				.toList();
 	}
 
-	/** 드로어 하단(및 비로그인 전체): 모든 커뮤니티 */
+	/** 드로어 하단: 모든 커뮤니티 */
 	public List<ArtistCardView> otherCommunities(User viewer, List<ArtistCardView> allArtists) {
 		if (allArtists == null || allArtists.isEmpty()) {
 			return List.of();

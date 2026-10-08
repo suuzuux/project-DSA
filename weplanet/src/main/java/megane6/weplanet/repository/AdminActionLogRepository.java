@@ -17,7 +17,7 @@ public interface AdminActionLogRepository
 		extends JpaRepository<AdminActionLog, Long> {
 	
 	
-	// 대시보드 "최근 관리자 주요 활동" - 옆 패널(심각 신고 대기 3건)과 높이를 맞추려고 3건만
+	// 대시보드 최근 관리자 활동 3건
 	@EntityGraph(attributePaths = "actor")
 	List<AdminActionLog> findTop3ByOrderByCreatedAtDescIdDesc();
 	

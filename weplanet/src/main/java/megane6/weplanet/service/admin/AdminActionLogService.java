@@ -66,7 +66,7 @@ public class AdminActionLogService {
 		validateDateRange(fromDate, toDate);
 		LocalDateTime fromDateTime = fromDate == null ? null : fromDate.atStartOfDay();
 		
-		// 종료일 다음날 00:00 미만으로 조회하여 종료일 하루 전체 포함
+		// 종료일 다음날 00:00 미만으로 조회해 종료일 전체를 포함한다.
 		LocalDateTime toDateTime = toDate == null ? null : toDate.plusDays(1).atStartOfDay();
 		
 		String normalizedKeyword = normalizeKeyword(keyword);

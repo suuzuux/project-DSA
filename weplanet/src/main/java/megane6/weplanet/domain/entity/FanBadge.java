@@ -17,7 +17,7 @@ public class FanBadge {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	// 배지를 구분하는 고정 문자열. Ownership 과 이어주는 열쇠라 값이 바뀌면 안 된다.
+	// 배지 고유 코드 (Ownership 연결 키라 변경 금지)
 	@Column(name = "badge_code", nullable = false, unique = true, length = 50)
 	private String badgeCode;
 	
@@ -28,16 +28,15 @@ public class FanBadge {
 	@Column(name = "badge_type", nullable = false, length = 20)
 	private FanBadgeType badgeType;
 	
-	// 표시용 이모지. image_url 이 없을 때 대신 보여줌
+	// 표시용 이모지 (이미지가 없을 때)
 	@Column(nullable = false, length = 8)
 	private String icon;
 	
-	// 배지 이미지 파일명 (예: community-first-join.svg). 이미지 안 만든 배지 = null, icon 사용
-	// 획득/미획득에 따라 static/img/badges/color 또는 grayscale 폴더에서 같은 파일명을 쓴다 (BadgeView 참고)
+	// 배지 이미지 파일명 (없으면 null, color/grayscale 폴더에서 같은 이름 사용).
 	@Column(name = "image_url", length = 255)
 	private String imageUrl;
 	
-	// 획득 조건 안내 (미획득(흑백)에는 "어떻게 얻는지"보여줄 때)
+	// 획득 조건 안내
 	@Column(length = 200)
 	private String description;
 	

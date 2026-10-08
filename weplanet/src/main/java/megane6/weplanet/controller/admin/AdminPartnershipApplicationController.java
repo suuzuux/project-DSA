@@ -80,7 +80,7 @@ public class AdminPartnershipApplicationController {
 	public String approve(
 			@PathVariable Long applicationId,
 			
-			// 승인 화면에서 관리자가 고친 소속사명 (비우면 신청서 이름 그대로)
+			// 관리자가 고친 소속사명 (비우면 신청서 이름 그대로).
 			@RequestParam(required = false)
 			String agencyName,
 			
@@ -117,8 +117,7 @@ public class AdminPartnershipApplicationController {
 			AgencyAccountProvisioningService.ProvisionedAccount account =
 					result.account();
 			
-			// 메일은 승인 트랜잭션이 커밋된 뒤에 보낸다.
-			// 메일이 실패해도 승인과 계정은 이미 저장된 상태라, 재발송으로 복구할 수 있다.
+			// 메일은 승인 커밋 뒤에 보내며, 실패해도 재발송으로 복구할 수 있다.
 			try {
 				inquiryEmailService.sendApprovalNotice(
 						result.application(),
@@ -150,7 +149,7 @@ public class AdminPartnershipApplicationController {
 					messages.resolve(e)
 			);
 		} catch (DataAccessException e) {
-			// DB 제약 위반 같은 예상 못 한 저장 오류. 트랜잭션은 이미 롤백됐다
+			// DB 제약 위반 등 예상 못 한 저장 오류 (트랜잭션은 롤백됨).
 			log.error(
 					"등록 신청 승인 중 DB 오류: applicationId={}",
 					applicationId, e
@@ -192,7 +191,7 @@ public class AdminPartnershipApplicationController {
 							principal.getId(),
 							request.getRemoteAddr()
 					);
-			// 승인 메일과 내용이 같아서 (아이디 + 새 링크) 같은 메서드를 보낸다.
+			// 승인 메일과 내용이 같아 같은 메서드로 보낸다.
 			try {
 				inquiryEmailService.sendApprovalNotice(
 						result.application(),

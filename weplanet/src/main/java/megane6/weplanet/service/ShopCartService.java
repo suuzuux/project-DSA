@@ -30,7 +30,7 @@ public class ShopCartService {
 	private final ShopCheckoutService shopCheckoutService;
 	private final MessageSource messageSource;
 
-	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어 에러 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
@@ -104,7 +104,7 @@ public class ShopCartService {
 		try {
 			goodsService.ensureVariantStock(variantId, quantity);
 		} catch (IllegalArgumentException e) {
-			// GoodsService가 이미 현재 로케일로 번역한 재고 부족 문구와 비교 (한국어 '재고' 포함 여부로 판단하면 다른 언어에서 안 맞음)
+			// 번역된 재고 부족 문구와 비교한다 (언어와 무관하게 판단).
 			if (msg("shop.error.outOfStock").equals(e.getMessage())) {
 				throw new IllegalArgumentException(msg("shop.error.noStock"));
 			}

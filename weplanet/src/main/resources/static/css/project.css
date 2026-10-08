@@ -1,9 +1,4 @@
-/* ============================================================
-   팬 프로젝트 목록 카드
-   ------------------------------------------------------------
-   community/project.html 전용. 팀 공용 style.css를 건드리지 않으려고
-   별도 파일로 뺐다. 색/폰트/모서리 값은 variables.css의 --wp-* 를 그대로 쓴다.
-   ============================================================ */
+/* 팬 프로젝트 화면 (community/project.html 전용, --wp-* 토큰 사용) */
 
 .project-grid {
     display: grid;
@@ -44,7 +39,7 @@
     display: block;
 }
 
-/* 대표 이미지가 없을 때 자리를 채우는 기본 표시 */
+/* 대표 이미지가 없을 때 기본 표시 */
 .project-card__thumb-empty {
     display: flex;
     align-items: center;
@@ -71,7 +66,7 @@
     backdrop-filter: blur(2px);
 }
 
-/* FanProjectStatus.badgeCode 와 짝을 이룸 */
+/* FanProjectStatus.badgeCode 와 짝 */
 .project-badge--pending {
     background: #8a6d3b;
 }
@@ -121,7 +116,7 @@
     font-size: var(--wp-fs-md);
     line-height: 1.35;
 
-    /* 제목이 길어도 카드 높이가 들쭉날쭉하지 않게 두 줄로 자름 */
+    /* 제목은 두 줄로 자른다. */
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
@@ -168,7 +163,7 @@
     color: var(--wp-muted);
 }
 
-/* ---------- 카드가 <a>로 바뀌면서 필요한 정리 ---------- */
+/* 카드 링크(<a>) 스타일 정리 */
 
 .project-card {
     text-decoration: none;
@@ -263,7 +258,7 @@
     word-break: break-word;
 }
 
-/* ---------- ADMIN 프로젝트 심사 ---------- */
+/* 관리자 프로젝트 심사 */
 
 .project-review {
     display: grid;
@@ -393,7 +388,7 @@
     text-align: right;
 }
 
-/* ---------- 와이어프레임 43: 펀딩 참여 단계 ---------- */
+/* 펀딩 참여 단계 */
 
 .project-contribution[hidden],
 .project-participation-modal .project-detail[hidden] {

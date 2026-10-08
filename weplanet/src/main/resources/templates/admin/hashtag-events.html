@@ -17,7 +17,7 @@
         </div>
 
         <nav class="portal-sidebar__nav">
-            <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+            <!-- 하위 메뉴 묶음 (details/summary) -->
             <details class="portal-sidebar__group">
                 <summary>
                     <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -120,7 +120,7 @@
                                     <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.delete}">삭제</button>
                                 </form>
                             </div>
-                            <!-- 시작 후: 모니터링 (4단계에서 페이지를 만든다) -->
+                            <!-- 시작 후: 모니터링 -->
                             <a class="btn btn--primary btn--sm" th:unless="${event.editable()}"
                                th:href="@{/admin/events/hashtag/{id}(id=${event.id()})}" th:text="#{adminHashtag.monitor}">모니터링</a>
                         </td>

@@ -10,7 +10,7 @@ import megane6.weplanet.domain.entity.enumfolder.ReportStatus;
 
 import java.time.LocalDateTime;
 
-// Report(게시글 신고)와 똑같은 구조인데, 대상이 Post가 아니라 Comment인 버전
+// 댓글 신고 (게시글 신고와 같은 구조)
 @Entity
 @Table(
         name = "comment_report",

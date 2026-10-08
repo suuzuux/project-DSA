@@ -1,42 +1,11 @@
--- ============================================================
--- WePlaNet 데모 데이터 4 - 아티스트·커뮤니티 추가, 공지글, 미디어, 일정
--- ------------------------------------------------------------
--- 실행 순서
---   1) weplanet_schema_full_reset_v2.sql / weplanet_demo_seed.sql  ※ 이미 돌린 DB면 생략
---   2) weplanet_demo_seed_2_시연보강.sql / weplanet_demo_seed_3_계정게시글추가.sql  ※ 이미 돌린 DB면 생략
---      (2·3 을 안 돌렸어도 이 파일은 돌아감 - 그 파일들의 계정·커뮤니티가 필요한 행만 자동으로 빠진다)
---   3) 이 파일 - 여러 번 돌려도 된다 (맨 앞에서 이 파일이 넣은 행을 지우고 다시 넣음)
---   4) docs/demo/demo_images 의 새 이미지 42개(demo_vela_*, demo_siwoo_*, demo_pastel_*, demo_nebula_media*, demo_harin_media*)를
---      서버 실행 폴더의 uploads/ 에 복사
---
--- 추가 계정 (비밀번호 공통 Test1234)
---   vela_official   그룹 VELA (보이그룹 4인, 블루웨이브뮤직) -> 멤버 준서·이안·도하·시현
---   siwoo_official  솔로 윤시우 (문빔컴퍼니)
---   pastel_official 그룹 PASTEL (걸그룹 듀오, 스타라이트엔터테인먼트) -> 멤버 지유·아린
---
--- 넣는 것
---   [1] 새 커뮤니티 3개 (아티스트 계정·그룹 정보·멤버·포털 프로필)
---   [2] 새 커뮤니티 가입·팔로우(기존 팬들) + 멤버십 (demo_fan15 는 3곳 모두 가입 + 멤버십)
---   [3] 새 커뮤니티 게시글 18개 + 댓글·아티스트 답글·좋아요 (자동 생성)
---   [4] 커뮤니티 공지 21개 - 새 커뮤니티 5곳(NEBULA·서하린 포함) 3개씩 + 기존 6곳 1개씩
---   [5] 홈페이지 공지 5개
---   [6] 미디어 20개(사진 30장) - 새 커뮤니티 5곳 4개씩 (멤버십 전용 1개씩) + 좋아요
---   [7] 아티스트 일정 15개 - 새 커뮤니티 5곳 3개씩
---   [8] 배지 - 새 커뮤니티 활동에 맞춰 지급
---
--- ※ MySQL Workbench 는 자동 커밋이 꺼져 있을 수 있어 맨 끝에 COMMIT 을 넣어 두었다
--- ============================================================
+-- WePlaNet 데모 데이터 4 - 아티스트·커뮤니티, 공지, 미디어, 일정 추가 (재실행 가능, 새 이미지는 uploads/ 에 복사).
 
 USE `weplanet`;
 SET NAMES utf8mb4;
 SET @old_safe_updates := @@SQL_SAFE_UPDATES;
 SET SQL_SAFE_UPDATES = 0;
 
--- ------------------------------------------------------------
--- [0] 재실행 대비: 이 파일이 넣는 행을 먼저 지운다
---     users 1109~1111(아티스트), 1223~1228(멤버) / post 14001~14199 / comment 24001~24999
---     board_media 3101~3199 / board_media_files 3201~3299 / portal_notice 101~199 / site_notice 101~120 / artist_schedule 101~199
--- ------------------------------------------------------------
+-- [0] 재실행 대비: 이 파일이 넣는 행을 먼저 지운다.
 DELETE FROM `board_media_like` WHERE `board_id` BETWEEN 3101 AND 3199;
 DELETE FROM `board_media_files` WHERE `id` BETWEEN 3201 AND 3299 OR `board_id` BETWEEN 3101 AND 3199;
 DELETE FROM `board_media` WHERE `id` BETWEEN 3101 AND 3199;
@@ -65,14 +34,12 @@ DELETE FROM `artist_groups` WHERE `id` IN (1109, 1110, 1111);
 DELETE FROM `users` WHERE `id` BETWEEN 1223 AND 1228;
 DELETE FROM `users` WHERE `id` IN (1109, 1110, 1111);
 
--- ------------------------------------------------------------
 -- [1] 새 커뮤니티 3개 - VELA (보이그룹 4인) / 윤시우 (솔로) / PASTEL (걸그룹 듀오)
--- ------------------------------------------------------------
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1109, 'vela_official',   '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 102, 'VELA',   'VELA',   'vela_official@weplanet.test',   DATE_SUB(NOW(6), INTERVAL 160 DAY), DATE_SUB(NOW(6), INTERVAL 160 DAY), DATE_SUB(NOW(6), INTERVAL 2 DAY)),
   (1110, 'siwoo_official',  '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 103, '윤시우', '윤시우', 'siwoo_official@weplanet.test',  DATE_SUB(NOW(6), INTERVAL 150 DAY), DATE_SUB(NOW(6), INTERVAL 150 DAY), DATE_SUB(NOW(6), INTERVAL 2 DAY)),
   (1111, 'pastel_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 101, 'PASTEL', 'PASTEL', 'pastel_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 140 DAY), DATE_SUB(NOW(6), INTERVAL 140 DAY), DATE_SUB(NOW(6), INTERVAL 2 DAY));
--- 그룹 멤버 계정: 그룹 계정으로 로그인 -> 프로필 선택 -> 개인 비밀번호(Test1234)
+-- 그룹 멤버 계정 (그룹 로그인 후 프로필 선택, 개인 비밀번호 Test1234)
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1223, 'member_1109_vela1',   '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '준서', '준서', 'member_1109_vela1@member.weplanet.local',   DATE_SUB(NOW(6), INTERVAL 160 DAY), DATE_SUB(NOW(6), INTERVAL 160 DAY), DATE_SUB(NOW(6), INTERVAL 2 DAY)),
   (1224, 'member_1109_vela2',   '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 102, '이안', '이안', 'member_1109_vela2@member.weplanet.local',   DATE_SUB(NOW(6), INTERVAL 160 DAY), DATE_SUB(NOW(6), INTERVAL 160 DAY), DATE_SUB(NOW(6), INTERVAL 2 DAY)),
@@ -112,10 +79,7 @@ INSERT INTO `artist_profile` (`artist_id`, `intro`, `header_image_url`, `logo_im
   (1227, 'PASTEL 지유 🎨', NULL, 'demo_pastel_member1.png', NOW(), NOW()),
   (1228, 'PASTEL 아린 🎨', NULL, 'demo_pastel_member2.png', NOW(), NOW());
 
--- ------------------------------------------------------------
--- [2] 새 커뮤니티 가입·팔로우 (days_ago 일 전, 단 회원가입 10분 뒤보다 이르지 않게) + 멤버십
---     없는 팬 계정(데모 2·3 을 안 돌린 DB)은 자동으로 빠진다
--- ------------------------------------------------------------
+-- [2] 새 커뮤니티 가입·팔로우 + 멤버십 (없는 팬 계정은 자동으로 빠진다)
 DROP TEMPORARY TABLE IF EXISTS `tmp_joins`;
 CREATE TEMPORARY TABLE `tmp_joins` (`fan_id` bigint, `artist_id` bigint, `days_ago` int, `bio` varchar(30), PRIMARY KEY (`fan_id`, `artist_id`));
 INSERT INTO `tmp_joins` VALUES
@@ -163,9 +127,7 @@ SELECT m.fan_id, m.artist_id, m.created_at, m.expires_at, 1, m.created_at
 FROM `membership` m
 WHERE m.artist_id IN (1109, 1110, 1111);
 
--- ------------------------------------------------------------
--- [3] 새 커뮤니티 게시글 18개 (mins_ago 분 전) + 댓글·답글·좋아요 자동 생성
--- ------------------------------------------------------------
+-- [3] 새 커뮤니티 게시글 18개 + 댓글·답글·좋아요 자동 생성
 DROP TEMPORARY TABLE IF EXISTS `tmp_posts`;
 CREATE TEMPORARY TABLE `tmp_posts` (
   `id` bigint PRIMARY KEY, `board_type` varchar(10), `artist_id` bigint, `author_id` bigint, `mins_ago` int,
@@ -243,10 +205,7 @@ UPDATE `post` p
 SET p.like_count = (SELECT COUNT(*) FROM `post_like` l WHERE l.post_id = p.id)
 WHERE p.id BETWEEN 14001 AND 14199;
 
--- ------------------------------------------------------------
--- [4] 커뮤니티 공지 (포털에서 소속사·아티스트가 쓰는 공지)
---     새 커뮤니티 5곳: 이용 안내(상단 고정) + 일정 + 멤버십 / 기존 6곳: 이벤트·일정 공지 1개씩 (고정 안 함)
--- ------------------------------------------------------------
+-- [4] 커뮤니티 공지 (새 커뮤니티 5곳 3개씩, 기존 6곳 1개씩)
 INSERT INTO `portal_notice` (`id`, `artist_id`, `title`, `content`, `published`, `pinned`, `pin_order`, `created_at`, `updated_at`)
 SELECT x.id, x.artist_id, x.title, x.content, 1, x.pinned, x.pin_order,
        DATE_SUB(NOW(), INTERVAL x.mins_ago MINUTE), DATE_SUB(NOW(), INTERVAL x.mins_ago MINUTE)
@@ -298,9 +257,7 @@ FROM (
 ) x
 JOIN `users` u ON u.id = x.artist_id;
 
--- ------------------------------------------------------------
 -- [5] 홈페이지 공지 (최고관리자 작성)
--- ------------------------------------------------------------
 INSERT INTO `site_notice` (`id`, `author_id`, `title`, `category`, `content`, `published`, `publish_at`, `pinned`, `pin_order`, `created_at`, `updated_at`) VALUES
   (101, 1001, '신규 아티스트 입점 안내 - NEBULA · 서하린 · VELA · 윤시우 · PASTEL', 'GENERAL',
    'WePlaNet 에 다섯 아티스트의 공식 커뮤니티가 새로 열렸습니다 🎉\n\n· NEBULA (문빔컴퍼니)\n· 서하린 (스타라이트엔터테인먼트)\n· VELA (블루웨이브뮤직)\n· 윤시우 (문빔컴퍼니)\n· PASTEL (스타라이트엔터테인먼트)\n\n지금 커뮤니티 둘러보기에서 가입해 보세요!',
@@ -318,9 +275,7 @@ INSERT INTO `site_notice` (`id`, `author_id`, `title`, `category`, `content`, `p
    '휴대폰에서도 편하게 쓸 수 있도록 화면을 개선했어요.\n\n· 헤더와 커뮤니티 레이아웃 정리\n· 굿즈샵 목록 한 줄 두 개 보기\n· 글쓰기 에디터 다크 모드 글자색 수정',
    1, NULL, 0, NULL, DATE_SUB(NOW(6), INTERVAL 1 DAY), DATE_SUB(NOW(6), INTERVAL 1 DAY));
 
--- ------------------------------------------------------------
--- [6] 미디어 (소속사 담당자가 업로드) - 새 커뮤니티 5곳 × 4개, 4번째는 멤버십 전용
--- ------------------------------------------------------------
+-- [6] 미디어 - 새 커뮤니티 5곳 × 4개 (4번째는 멤버십 전용)
 DROP TEMPORARY TABLE IF EXISTS `tmp_media_comm`;
 CREATE TEMPORARY TABLE `tmp_media_comm` (`base_id` bigint, `artist_id` bigint, `uploader_id` bigint, `name` varchar(50), `day_shift` int);
 INSERT INTO `tmp_media_comm` VALUES
@@ -383,7 +338,7 @@ FROM (
 ) x
 JOIN `board_media` m ON m.id = x.board_id;
 
--- 미디어 좋아요: 공개 미디어는 가입자 중 일부, 멤버십 전용은 멤버십 회원만
+-- 미디어 좋아요 (멤버십 전용은 멤버십 회원만)
 INSERT INTO `board_media_like` (`board_id`, `user_id`, `created_at`)
 SELECT m.id, cm.fan_id, LEAST(DATE_SUB(NOW(6), INTERVAL 1 MINUTE), DATE_ADD(m.created_at, INTERVAL 10 + MOD(m.id * 7 + cm.fan_id * 13, 700) MINUTE))
 FROM `board_media` m
@@ -400,9 +355,7 @@ UPDATE `board_media` m
 SET m.like_count = (SELECT COUNT(*) FROM `board_media_like` l WHERE l.board_id = m.id)
 WHERE m.id BETWEEN 3101 AND 3199;
 
--- ------------------------------------------------------------
--- [7] 아티스트 일정 - 새 커뮤니티 5곳 × 3개 (지난 일정 1 + 다가오는 일정 2)
--- ------------------------------------------------------------
+-- [7] 아티스트 일정 - 새 커뮤니티 5곳 × 3개
 INSERT INTO `artist_schedule` (`id`, `artist_id`, `category`, `title`, `description`, `location`, `ticket_url`, `schedule_at`, `created_at`, `updated_at`)
 SELECT x.id, x.artist_id, x.category, x.title, x.description, x.location, NULL,
        DATE_ADD(TIMESTAMP(CURDATE()), INTERVAL x.day_offset * 24 + x.hour_at HOUR), NOW(), NOW()
@@ -425,9 +378,7 @@ FROM (
 ) x
 JOIN `users` u ON u.id = x.artist_id;
 
--- ------------------------------------------------------------
--- [8] 배지 - 새 커뮤니티(VELA·윤시우·PASTEL) 활동 기준
--- ------------------------------------------------------------
+-- [8] 배지 - 새 커뮤니티 활동 기준
 INSERT IGNORE INTO `fan_badge_ownership` (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
 SELECT cm.fan_id, cm.artist_id, b.badge_code, b.badge_name, b.badge_type, cm.joined_at, cm.joined_at
 FROM `community_members` cm
@@ -471,9 +422,7 @@ WHERE m.artist_id IN (1109, 1110, 1111);
 COMMIT;
 SET SQL_SAFE_UPDATES = @old_safe_updates;
 
--- ------------------------------------------------------------
 -- [확인] 넣은 데이터 개수
--- ------------------------------------------------------------
 SELECT '새 아티스트 커뮤니티' AS 항목, COUNT(*) AS 개수 FROM `users` WHERE `id` IN (1109, 1110, 1111)
 UNION ALL SELECT '새 커뮤니티 가입자', COUNT(*) FROM `community_members` WHERE `artist_id` IN (1109, 1110, 1111)
 UNION ALL SELECT '추가 게시글', COUNT(*) FROM `post` WHERE `id` BETWEEN 14001 AND 14199

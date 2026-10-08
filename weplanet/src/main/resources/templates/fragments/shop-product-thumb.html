@@ -1,12 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org">
 <body>
-<!--
-  유저 굿즈샵 공통 썸네일 + SOLD OUT 오버레이.
-  product: ShopProductView, linkHref: String|null (null이면 링크 없음)
-  thumbClass: product-card__thumb | shop-marquee-card__thumb | product-detail__gallery
-  compact: true면 SOLD OUT 글자 크기 축소
--->
+<!-- 굿즈 공통 썸네일 + SOLD OUT 오버레이 (linkHref 가 null 이면 링크 없음, compact 면 글자 축소) -->
 <th:block th:fragment="shopThumb(product, linkHref, thumbClass, compact)">
   <th:block th:if="${linkHref != null}">
     <a th:href="${linkHref}"

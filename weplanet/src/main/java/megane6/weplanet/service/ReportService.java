@@ -24,7 +24,7 @@ public class ReportService {
     private final CommentReportRepository commentReportRepository;
     private final LiveCommentReportRepository liveCommentReportRepository;
 
-    // 게시글 신고 - 같은 사람이 같은 글을 두 번 신고하면 예외
+    // 게시글 신고 (중복 신고 예외)
     public void reportPost(Post post, User reporter, ReportReason reason) {
         Optional<Report> existing = reportRepository.findByPostAndReporter(post, reporter);
 
@@ -41,7 +41,7 @@ public class ReportService {
         reportRepository.save(report);
     }
 
-    // 댓글 신고 - 게시글 신고와 완전히 같은 규칙 (중복 신고 차단)
+    // 댓글 신고 (중복 신고 예외)
     public void reportComment(Comment comment, User reporter, ReportReason reason) {
         Optional<CommentReport> existing = commentReportRepository.findByCommentAndReporter(comment, reporter);
 
@@ -58,7 +58,7 @@ public class ReportService {
         commentReportRepository.save(commentReport);
     }
 
-    // 라이브 채팅 신고 - 같은 사람이 같은 채팅을 중복 신고하면 예외
+    // 라이브 채팅 신고 (중복 신고 예외)
     public void reportLiveComment(LiveComment comment, User reporter, ReportReason reason) {
         Optional<LiveCommentReport> existing = liveCommentReportRepository.findByCommentAndReporter(comment, reporter);
 

@@ -3,23 +3,14 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <!--
-      [와이어프레임 23~24번] 커뮤니티 프로필 - Grid 2단: 오른쪽 위 탭(댓글·포스트·좋아요·북마크), 왼쪽 프로필 카드, 오른쪽 아래 히스토리 목록.
-      편집 시에는 오른쪽(탭 줄 포함) 영역을 프로필 편집 패널이 통째로 차지한다.
-      이름·소개글·아바타·배경은 모두 이 커뮤니티 전용(community_members 의 프로필 컬럼) 값을 쓴다.
-      편집 항목: 닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 공개범위(콘텐츠 숨기기).
-      공개범위를 켜면 카드에는 닉네임만 남고 이미지·소개글·팔로잉이 가려진다 (편집 패널에는 실제 설정값이 그대로 보임).
-      D-DAY와 가입일은 팬은 community_members.joined_at, 가입 행이 없는 아티스트는 users.created_at을 기준으로 표시한다.
-      내 프로필과 다른 사람 프로필(/profile/{userId})을 함께 보여준다 - 본인이면 편집 버튼, 아니면 팔로우 버튼.
-      콘텐츠 숨김이면 팔로워/팔로잉 숫자도 가려지고, 활동 탭은 본인이거나 숨김이 아닐 때만 보인다.
-    -->
+    <!-- 커뮤니티 프로필 - 왼쪽 카드, 오른쪽 탭·이력 (본인이면 편집, 아니면 팔로우, 숨김이면 활동·팔로워 가림). -->
     <title th:text="#{community.profile.pageTitle}">내 프로필 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <link rel="stylesheet" th:href="@{/css/community.css}"/>
     <link rel="stylesheet" th:href="@{/css/shell.css}"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css"/>
     <style>
-        /* 프로필 화면 전용 2단 배치 - 왼쪽 카드가 탭 아래 라인에서 시작하도록 행을 나눔 */
+        /* 프로필 2단 배치 */
         .profile-layout {
             display: grid;
             grid-template-columns: 300px 1fr;
@@ -30,23 +21,21 @@
         .profile-layout > .profile-tabs { grid-column: 2; grid-row: 1; margin: 0; }
         .profile-layout > .profile-side { grid-column: 1; grid-row: 2; }
         .profile-layout > .profile-body { grid-column: 2; grid-row: 2; }
-        /* 편집 패널은 목록(댓글/포스트/좋아요/북마크)과 같은 칸에 뜬다.
-           예전엔 탭 줄까지 두 줄에 걸쳐 있어서, 패널이 길면 탭 줄이 늘어나며 왼쪽 카드가 아래로 밀렸다. */
+        /* 편집 패널은 목록과 같은 칸에 뜬다. */
         .profile-layout > .profile-edit { grid-column: 2; grid-row: 2; display: none; }
 
-        /* 편집 모드 - 탭은 자리를 유지한 채 감추고(카드가 위로 튀지 않게), 목록 대신 편집 패널을 띄움 */
+        /* 편집 모드: 탭은 자리만 유지하고 목록 대신 편집 패널 */
         .profile-layout.is-editing > .profile-tabs { visibility: hidden; }
         .profile-layout.is-editing > .profile-body { display: none; }
         .profile-layout.is-editing > .profile-edit { display: block; }
 
-        /* 편집 패널의 배경 미리보기 - 기본 비율(2560:1660)이면 칸 너비만큼 커져서 패널이 갑자기 길어진다.
-           왼쪽 카드 커버와 비슷한 높이로 고정하고 이미지는 가운데 기준으로 채운다. */
+        /* 편집 패널 배경 미리보기 높이 고정 */
         .profile-edit .pe-cover-preview { aspect-ratio: auto; height: 220px; }
         .profile-edit .pe-cover-preview img { height: 100%; object-fit: cover; }
-        /* 높이를 줄여서 아바타(아래로 겹침)가 안내 문구를 가리지 않도록 문구를 위쪽 절반에 둔다 */
+        /* 아바타에 가리지 않게 안내 문구를 위쪽에 둔다. */
         .profile-edit .pe-cover-preview__hint { bottom: 96px; }
 
-        /* 다른 사람이 콘텐츠 숨김 상태인 프로필을 볼 때, 탭+목록 자리에 대신 뜨는 안내 */
+        /* 콘텐츠 숨김 프로필의 안내 */
         .profile-layout > .profile-hidden-notice { grid-column: 2; grid-row: 1 / span 2; }
         .profile-hidden-notice {
             display: flex;
@@ -59,7 +48,7 @@
             font-size: var(--wp-fs-sm);
         }
 
-        /* 팔로워/팔로잉 숫자를 버튼처럼 클릭 가능하게 */
+        /* 팔로워·팔로잉 숫자 클릭 가능 */
         .profile-follow-counts { display: flex; gap: 16px; justify-content: center; }
         .profile-follow-counts button {
             border: 0; background: none; cursor: pointer; color: inherit; font-family: inherit;
@@ -85,12 +74,11 @@
             background-size: cover;
             background-position: center;
         }
-        /* 상태메시지(소개글) 말풍선 - 커버 위, 아바타 바로 위에 뜬다.
-           배경 이미지 위에 얹히므로 테마(라이트/다크)와 무관하게 흰 배경 + 검은 글자로 고정한다. */
+        /* 소개글 말풍선 (배경 위라 테마와 무관하게 흰 바탕 + 검은 글자) */
         .profile-card__status {
             position: absolute;
             left: 50%;
-            bottom: 70px;               /* 아래 기준으로 붙여서, 줄이 늘면 위로 자란다 */
+            bottom: 70px;               /* 아래 기준 (줄이 늘면 위로 자람) */
             transform: translateX(-50%);
             z-index: 1;
             width: max-content;
@@ -106,13 +94,12 @@
             line-height: 1.45;
             text-align: center;
             white-space: normal;
-            /* 상태메시지는 최대 30자 - 자르지 않고 줄바꿈해서 전부 보여준다.
-               한글은 단어(띄어쓰기) 단위로 줄을 바꾸고, 띄어쓰기 없이 긴 문자열만 중간에서 끊는다 */
+            /* 최대 30자, 단어 단위 줄바꿈 */
             word-break: keep-all;
             overflow-wrap: anywhere;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
         }
-        /* 말풍선 꼬리 - 아래(아바타 쪽)를 가리킨다 */
+        /* 말풍선 꼬리 */
         .profile-card__status::after {
             content: "";
             position: absolute;
@@ -123,7 +110,7 @@
             border-top-color: #ffffff;
             border-bottom: 0;
         }
-        /* D-day - 닉네임 아래. 카드 흰 영역 위라 테마 글자색(--wp-ink)을 그대로 따른다 */
+        /* D-day (테마 글자색) */
         .profile-card__dday {
             margin-top: 8px;
             color: var(--wp-ink, #202020);
@@ -143,7 +130,7 @@
             padding: 20px 24px 0;
         }
 
-        /* 편집 패널의 인라인 입력 - 라벨 없이 가운데 정렬, 밑줄만 그리고 오른쪽에 지우기 버튼 */
+        /* 편집 패널 인라인 입력 (밑줄 + 지우기 버튼) */
         .pe-field {
             position: relative;
             border-bottom: 1px solid var(--wp-hairline, #e5e5e5);
@@ -180,7 +167,7 @@
             line-height: 1;
             cursor: pointer;
         }
-        /* 닉네임 왼쪽 자물쇠 - 오른쪽 ✕ 버튼과 좌우 대칭 위치 */
+        /* 닉네임 자물쇠 (✕ 버튼과 대칭) */
         .pe-lock {
             position: absolute;
             left: 0;
@@ -202,7 +189,7 @@
             margin: 4px 0 18px;
         }
 
-        /* 이미지 편집 버튼 - 누르면 "사진첩에서 불러오기 / 이미지 삭제하기" 메뉴가 열림 */
+        /* 이미지 편집 메뉴 버튼 */
         .pe-imgbtn { position: relative; }
         .pe-menu {
             position: absolute;
@@ -250,14 +237,7 @@
 
 <header th:replace="~{community/fragments/layout :: header}"></header>
 
-<!--
-  avatarName/backgroundName : 실제 저장값 (편집 패널이 씀 - 숨김 중에도 내 설정은 보여야 함)
-  cardAvatar/cardBackground : 카드 표시용 (숨김이면 null이 되어 기본 그라데이션 + 첫 글자로 나옴)
-  artistSide : 이 프로필 주인이 이 커뮤니티의 아티스트(솔로 본인/그룹 멤버)인지.
-               아티스트는 가입 프로필이 없으므로 카드/편집 패널을 계정별 포털 프로필(targetArtist*)로 그린다.
-  isTargetArtist : 커뮤니티 주인(솔로 계정) 프로필인지 - 이름 표시와 팔로우 버튼에만 쓴다.
-                   아티스트 프로필은 팬 프로필과 같은 화면이고(팔로우 여부와 무관하게 공개), 팔로워/팔로잉만 숨긴다.
--->
+<!-- avatar/backgroundName 은 실제 저장값, card* 는 표시용(숨김이면 null), artistSide 면 포털 프로필로 그린다. -->
 <main class="container section" style="max-width:1080px;"
       th:with="isTargetArtist=${isCommunityOwnerProfile == true},
                artistSide=${isTargetArtistSide == true},
@@ -275,27 +255,27 @@
 
     <div class="profile-layout" data-tabs>
 
-        <!-- ==================== 1행 2열: 탭 ==================== -->
+        <!-- 1행 2열: 탭 -->
         <nav class="profile-tabs" th:if="${contentVisible}" style="border-top:0;border-bottom:1px solid var(--wp-hairline, #e5e5e5);">
             <a href="#" class="is-active" data-tab="comments" th:text="#{community.profile.tabComments(${#lists.size(myComments)})}">댓글</a>
             <a href="#" data-tab="posts" th:text="#{community.profile.tabPosts(${#lists.size(myPosts)})}">포스트</a>
             <a href="#" data-tab="likes" th:text="#{community.profile.tabLikes(${#lists.size(likedPosts)})}">좋아요</a>
-            <!-- 북마크는 본인만 보는 정보라 내 프로필에서만 보여준다 (CommunityController.profile) -->
+            <!-- 북마크는 내 프로필에서만 -->
             <a href="#" data-tab="bookmarks" th:if="${isOwnProfile}" th:text="#{community.profile.tabBookmarks(${#lists.size(bookmarkedPosts)})}">북마크</a>
         </nav>
-        <!-- 상대가 콘텐츠를 숨긴 경우, 탭 자리에 이 안내만 뜬다 -->
+        <!-- 콘텐츠 숨김 안내 -->
         <div class="profile-hidden-notice" th:unless="${contentVisible}"
              th:text="#{community.profile.privateProfile}">비공개로 설정한 프로필입니다.</div>
 
-        <!-- ==================== 2행 1열: 세로형 프로필 카드 ==================== -->
+        <!-- 2행 1열: 프로필 카드 -->
         <aside class="profile-side profile-card">
 
-            <!-- 프로필 배경 이미지 영역 - 숨김이거나 등록한 배경이 없으면 기본 그라데이션 -->
+            <!-- 배경 이미지 (숨김이거나 없으면 기본 그라데이션) -->
             <div class="profile-card__cover"
                  th:style="${cardBackgroundUrl != null}
                            ? |background-image:url('${cardBackgroundUrl}');|
                            : 'background:linear-gradient(160deg,#3d5a5a,#8b6040);'">
-                <!-- 상태메시지(소개글) 말풍선 - 아티스트 본인은 포털 intro -->
+                <!-- 소개글 말풍선 (아티스트는 포털 intro) -->
                 <p class="profile-card__status"
                    th:if="${cardIntro != null and !#strings.isEmpty(cardIntro)}"
                    th:text="${cardIntro}">상태메시지</p>
@@ -303,7 +283,7 @@
 
             <div style="padding:0 20px 24px;text-align:center;">
 
-                <!-- 프로필(아바타) 이미지 - 배경과 흰 영역의 경계에 걸치도록 위로 끌어올림 -->
+                <!-- 아바타 (배경 경계에 걸침) -->
                 <div class="avatar"
                      style="width:104px;height:104px;margin:-52px auto 0;
                             border:4px solid var(--wp-surface, #fff);font-size:36px;position:relative;">
@@ -314,7 +294,7 @@
                           th:text="${#strings.substring(displayName, 0, 1)}">나</span>
                 </div>
 
-                <!-- 닉네임 - 숨김 중이면 옆에 자물쇠가 붙는다(본인에게만 보이는 표시) -->
+                <!-- 닉네임 (숨김 중이면 본인에게만 자물쇠) -->
                 <h2 style="margin-top:14px;font-size:var(--wp-fs-lg);font-weight:800;word-break:break-all;
                            display:flex;align-items:center;justify-content:center;gap:6px;">
                     <span th:text="${displayName}">닉네임</span>
@@ -327,19 +307,18 @@
                     </svg>
                 </h2>
 
-                <!-- 가입일 - 팬은 커뮤니티 가입일, 가입 절차가 없는 아티스트는 계정 생성일이다.
-                     본인에게는 숨김 설정과 무관하게 항상 보여주고, 다른 사람에게는 숨김이면 감춘다. -->
+                <!-- 가입일 (팬은 커뮤니티 가입일, 아티스트는 계정 생성일, 숨김이면 타인에게 가림) -->
                 <p class="profile-card__joined-date"
                    th:if="${communityJoinInfo != null and contentVisible}"
                    th:text="#{community.profile.joinedAt(${#temporals.format(communityJoinInfo.joinedDate, 'yyyy.MM.dd')})}">2026.09.01 가입</p>
 
-                <!-- 커뮤니티 가입 D-day (가입 당일 = D+1) -->
+                <!-- 가입 D-day (당일 = D+1) -->
                 <p class="profile-card__dday"
                    th:if="${!contentHidden and communityJoinInfo != null}"
                    th:text="|D + ${communityJoinInfo.dayNumber}|">D + 1</p>
 
-                <!-- 팔로워/팔로잉 숫자 - 콘텐츠 숨김이면 함께 가려진다. 클릭하면 리스트 모달 -->
-                <!-- 아티스트(솔로 본인/그룹 멤버) 프로필에는 팔로워/팔로잉 숫자·목록을 보여주지 않는다 -->
+                <!-- 팔로워·팔로잉 (숨김이면 가림, 클릭 시 목록 모달) -->
+                <!-- 아티스트 프로필에는 팔로워·팔로잉을 보여주지 않는다. -->
                 <p class="profile-follow-counts" style="margin:16px 0;" th:unless="${contentHidden or artistSide}">
                     <button type="button" data-modal-open="followersModal"
                             th:attr="data-list-url=@{/community/{artistId}/profile/{userId}/followers(artistId=${artist.id()}, userId=${profileUserId})}">
@@ -353,14 +332,13 @@
                     </button>
                 </p>
 
-                <!-- 가입한 커뮤니티에서만 편집 가능 (community_members 가입 행이 있어야 수정할 수 있음), 본인만 -->
+                <!-- 가입한 본인만 편집 가능 -->
                 <button type="button" class="btn btn--ghost btn--sm btn--block"
                         data-profile-edit-open
                         th:if="${canEditProfile}" th:text="#{community.profile.edit}">프로필 편집</button>
 
-                <!-- 팔로우 버튼 하나로 팬↔팬, 팬→아티스트를 처리한다. 팬↔팬은 상대가 콘텐츠 숨김이면 팔로우가 막히므로(UserFollowService)
-                     버튼도 숨기고, 아티스트 대상은 항상 보여준다. -->
-                <!-- 그룹 멤버 개인 팔로우는 아직 지원하지 않아 멤버 프로필에서는 숨긴다 (커뮤니티 주인 팔로우만) -->
+                <!-- 팔로우 버튼 (팬↔팬은 상대가 숨김이면 숨기고, 아티스트 대상은 항상 표시) -->
+                <!-- 멤버 개인 팔로우는 지원하지 않아 숨긴다. -->
                 <form th:if="${!isOwnProfile and (isTargetArtist or (!artistSide and !contentHidden))}"
                       th:action="@{/community/{artistId}/profile/{userId}/follow(artistId=${artist.id()}, userId=${profileUserId})}"
                       method="post">
@@ -371,10 +349,10 @@
             </div>
         </aside>
 
-        <!-- ==================== 2행 2열: 히스토리 목록 ==================== -->
+        <!-- 2행 2열: 이력 목록 -->
         <div class="profile-body" th:if="${contentVisible}">
 
-            <!-- 정렬 - 선택된 쪽을 브랜드색 버튼으로 채워서 지금 어느 순서인지 바로 보이게 한다 -->
+            <!-- 정렬 버튼 (선택된 쪽 강조) -->
             <div class="mb-16" style="display:flex;gap:8px;">
                 <a style="text-decoration:none;" th:href="@{''(sort='latest')}"
                    th:class="${sort != 'oldest'} ? 'btn btn--sm btn--primary' : 'btn btn--sm btn--ghost'" th:text="#{community.board.sortLatest}">최신순</a>
@@ -390,8 +368,7 @@
                         원글</p>
                     <p class="post-card__body" th:text="${comment.content}"></p>
                     <p class="text-xs text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
-                    <!-- 삭제는 내 프로필에서만 (남의 댓글은 서버가 어차피 막는다). 지운 뒤에도 프로필에 머물도록
-                         화면 이동 없이 fetch 로 보내고 새로고침한다 - 아래 스크립트의 profile-comment-delete-form 처리 -->
+                    <!-- 내 댓글 삭제 (fetch 후 새로고침) -->
                     <div class="post-card__actions" th:if="${isOwnProfile}">
                         <form class="profile-comment-delete-form"
                               th:action="@{/posts/detail/{id}/comment/{cid}/delete(id=${comment.post.id}, cid=${comment.id})}"
@@ -536,13 +513,13 @@
 
                 <!-- 닉네임 -->
                 <div class="pe-field">
-                    <!-- 콘텐츠 숨기기가 켜져 있을 때만 보이는 표시. 아래 토글과 연동된다. -->
+                    <!-- 콘텐츠 숨기기 상태 자물쇠 -->
                     <span class="pe-lock" id="profileEditLockIcon" th:title="#{community.profile.hiddenLockShort}"
                           th:classappend="${contentHidden and !artistSide} ? '' : ' hidden'">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                     </span>
-                    <!-- 아티스트 이름은 커뮤니티 이름/멤버 구분에 쓰여 소속사가 관리 - 여기서는 읽기 전용 -->
+                    <!-- 아티스트 이름은 소속사 관리라 읽기 전용 -->
                     <input type="text" id="profileEditNickname" name="nickname"
                            maxlength="10" autocomplete="off" required
                            th:aria-label="#{community.join.nicknameLabel}"
@@ -569,10 +546,10 @@
                 </div>
                 <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
 
-                <!-- 파일 입력은 감춰두고, 메뉴의 "사진첩에서 불러오기"로 연다 -->
+                <!-- 파일 입력은 숨기고 메뉴로 연다. -->
                 <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>
                 <input type="file" id="profileEditBackground" name="background" accept="image/*" class="hidden"/>
-                <!-- "이미지 삭제하기"를 확인하면 true로 바뀌고, 저장할 때 반영된다 -->
+                <!-- 이미지 삭제 확인 시 true (저장할 때 반영) -->
                 <input type="hidden" name="removeAvatar" id="removeAvatarFlag" value="false"/>
                 <input type="hidden" name="removeBackground" id="removeBackgroundFlag" value="false"/>
 
@@ -597,16 +574,15 @@
                         </div>
                     </div>
                 </div>
-                <!-- 파일을 고른 뒤에만 파일명이 나타남 -->
+                <!-- 파일 선택 후에만 파일명 표시 -->
                 <p class="text-xs text-muted" style="text-align:center;" data-file-name-for="profileEditAvatar"></p>
                 <p class="text-xs text-muted" style="text-align:center;margin-bottom:20px;" data-file-name-for="profileEditBackground"></p>
 
-                <!-- 프로필 공개범위(콘텐츠 숨기기) - 보이는 스위치는 .toggle-managed 스타일이고,
-                     실제로 서버에 전송되는 건 아래 감춰둔 체크박스다. -->
+                <!-- 공개범위 토글 (실제 전송은 숨긴 체크박스) -->
                 <input type="checkbox" name="contentHidden" id="profileEditHidden" value="true"
                        th:aria-label="#{community.profile.hideContent}"
                        class="hidden" th:checked="${contentHidden}"/>
-                <!-- 콘텐츠 숨기기는 팬 프로필 전용 (아티스트 프로필은 항상 공개) -->
+                <!-- 콘텐츠 숨기기는 팬 프로필 전용 -->
                 <div style="border-top:1px solid var(--wp-hairline, #e5e5e5);padding:18px 0 6px;text-align:left;"
                      th:unless="${artistSide}">
                     <div class="flex-between" style="align-items:center;gap:12px;">
@@ -626,7 +602,7 @@
 </main>
 
 
-<!-- 팔로워/팔로잉 숫자 클릭 시 뜨는 리스트 모달. 내용은 열릴 때 fetch로 채운다. -->
+<!-- 팔로워·팔로잉 목록 모달 (열 때 fetch) -->
 <div class="modal-backdrop" id="followersModal">
     <div class="modal" style="width:min(100%, 400px);">
         <div class="modal__head">
@@ -646,7 +622,7 @@
     </div>
 </div>
 
-<!-- 이미지 크롭 모달 (아바타/배경 이미지 편집 공통) -->
+<!-- 이미지 크롭 모달 -->
 <div class="modal-backdrop" id="imageCropModal">
     <div class="modal" style="width:min(100%, 760px);">
         <div class="modal__head">
@@ -673,7 +649,7 @@
 <script th:src="@{/js/shell.js}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script th:inline="javascript">
-    // 크롭 모달 제목 - portal/profile.html과 같은 방식/같은 키를 재사용한다
+    // 크롭 모달 제목 (포털 프로필과 같은 키)
     window.WEPLANET_PROFILE_CROP_TITLES = {
       Avatar: /*[[#{portalProfile.js.avatarEditTitle}]]*/ "프로필 이미지 편집",
       Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집"
@@ -684,7 +660,7 @@
     (function () {
       "use strict";
 
-      // 인라인 스크립트 문구. 이미지 삭제 안내는 포털 프로필과 같은 키를 재사용한다.
+      // 인라인 스크립트 문구
       var MSG = {
         avatarLabel: /*[[#{portalProfile.js.avatarLabel}]]*/ "프로필 이미지",
         backgroundLabel: /*[[#{portalProfile.js.backgroundLabel}]]*/ "배경 이미지",
@@ -706,7 +682,7 @@
 
       var layout = document.querySelector(".profile-layout");
 
-      // "프로필 편집" -> 오른쪽 영역(탭 줄 포함)을 편집 패널로 교체
+      // 프로필 편집 - 오른쪽 영역을 편집 패널로 교체
       document.querySelectorAll("[data-profile-edit-open]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           layout.classList.add("is-editing");
@@ -716,12 +692,12 @@
       document.querySelectorAll("[data-profile-edit-close]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           layout.classList.remove("is-editing");
-          // 저장하지 않고 닫았으므로 예약해둔 삭제와 고른 파일, 토글 상태를 모두 되돌린다
+          // 저장하지 않고 닫으면 모든 변경을 되돌린다.
           location.reload();
         });
       });
 
-      // 글자 수 카운터 (와이어프레임의 "3 / 10", "0 / 30")
+      // 글자 수 카운터
       document.querySelectorAll("[data-count-for]").forEach(function (label) {
         var input = document.getElementById(label.getAttribute("data-count-for"));
         if (!input) return;
@@ -733,7 +709,7 @@
         render();
       });
 
-      // 입력칸 오른쪽 ✕ - 값 비우기
+      // 입력칸 ✕ - 값 비우기
       document.querySelectorAll("[data-clear-for]").forEach(function (btn) {
         var input = document.getElementById(btn.getAttribute("data-clear-for"));
         if (!input) return;
@@ -744,7 +720,7 @@
         });
       });
 
-      // 이미지 편집 버튼 -> 메뉴 열고 닫기 (다른 곳을 누르면 닫힘)
+      // 이미지 편집 메뉴 열고 닫기
       function closeAllMenus() {
         document.querySelectorAll(".pe-menu").forEach(function (m) {
           m.classList.add("hidden");
@@ -764,7 +740,7 @@
         menu.addEventListener("click", function (e) { e.stopPropagation(); });
       });
 
-      // "사진첩에서 불러오기" -> 내 PC에서 파일 선택
+      // 사진첩에서 불러오기
       document.querySelectorAll("[data-file-trigger]").forEach(function (btn) {
         var input = document.getElementById(btn.getAttribute("data-file-trigger"));
         if (!input) return;
@@ -774,14 +750,14 @@
         });
       });
 
-      // "이미지 삭제하기" -> 삭제를 예약만 하고, 실제 반영은 "저장"을 눌렀을 때
+      // 이미지 삭제하기 - 저장할 때 반영
       document.querySelectorAll("[data-image-remove]").forEach(function (btn) {
         btn.addEventListener("click", function () {
           var kind = btn.getAttribute("data-image-remove"); // "Avatar" | "Background"
           var label = kind === "Avatar" ? MSG.avatarLabel : MSG.backgroundLabel;
           var notice = document.querySelector('[data-file-name-for="profileEdit' + kind + '"]');
 
-          // 아직 등록된 이미지가 없으면 지울 것도 없음
+          // 등록된 이미지가 없으면 지울 것도 없다.
           if (btn.getAttribute("data-has-image") !== "true") {
             closeAllMenus();
             alert(fmt(MSG.noImageToDelete, [label]));
@@ -791,14 +767,14 @@
           if (!confirm(fmt(MSG.confirmDelete, [label]))) return;
 
           closeAllMenus();
-          // 새로 고른 파일이 있으면 취소하고 삭제를 우선한다
+          // 새로 고른 파일은 취소하고 삭제를 우선한다.
           var fileInput = document.getElementById("profileEdit" + kind);
           if (fileInput) fileInput.value = "";
           document.getElementById("remove" + kind + "Flag").value = "true";
 
           if (notice) notice.textContent = fmt(MSG.deletedPending, [label]);
 
-          // 미리보기도 기본 상태로 되돌려 보여줌
+          // 미리보기를 기본 상태로 되돌린다.
           if (kind === "Avatar") {
             var preview = document.getElementById("profileEditAvatarPreview");
             if (preview) {
@@ -814,7 +790,7 @@
                 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
                 '<path d="M3 7h3l2-2h8l2 2h3v13H3z"></path><circle cx="12" cy="13" r="4"></circle></svg>' +
                 '<span></span></div>';
-              // 번역 문구는 textContent로 넣는다(HTML 문자열에 섞지 않음)
+              // 문구는 textContent 로 넣는다.
               bgPreview.querySelector(".pe-cover-preview__hint span").textContent = MSG.coverEmptyHint;
             }
           }
@@ -856,7 +832,7 @@
         });
       });
 
-      // 공개범위 토글 - 보이는 스위치와 실제로 전송되는 체크박스를 동기화
+      // 공개범위 토글과 체크박스 동기화
       var hiddenToggle = document.getElementById("profileEditHiddenToggle");
       var hiddenInput = document.getElementById("profileEditHidden");
       var lockIcon = document.getElementById("profileEditLockIcon");
@@ -865,7 +841,7 @@
           var on = hiddenToggle.classList.toggle("is-on");
           hiddenInput.checked = on;
           hiddenToggle.setAttribute("aria-checked", String(on));
-          // 설명문 대신 닉네임 옆 자물쇠로 현재 상태를 보여준다
+          // 자물쇠로 현재 상태 표시
           if (lockIcon) lockIcon.classList.toggle("hidden", !on);
         };
         hiddenToggle.addEventListener("click", syncHidden);
@@ -878,7 +854,7 @@
         hiddenToggle.setAttribute("aria-checked", String(hiddenInput.checked));
       }
 
-      // 팔로워/팔로잉 모달 - 열릴 때마다 최신 목록을 fetch해서 채운다
+      // 팔로워·팔로잉 목록을 열 때마다 fetch
       function loadUserList(containerId, url) {
         var container = document.getElementById(containerId);
         if (!container || !url) return;
@@ -902,7 +878,7 @@
         });
       });
 
-      // 내 댓글 삭제 - fetch로 보내고(서버는 X-Requested-With: fetch 면 화면 이동 없이 응답) 성공하면 프로필을 새로고침한다.
+      // 내 댓글 삭제 (fetch 후 새로고침)
       document.querySelectorAll(".profile-comment-delete-form").forEach(function (form) {
         form.addEventListener("submit", function (e) {
           e.preventDefault();

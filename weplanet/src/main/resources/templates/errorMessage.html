@@ -27,7 +27,7 @@
     <p class="text-muted" style="font-size:15px;line-height:1.7;margin-bottom:8px;"
        th:text="${message}">잠시 후 다시 시도해주세요.</p>
 
-    <!-- status는 정수라 MessageFormat이 1,000 같은 자리 구분을 넣지 않도록 문자열로 넘긴다 -->
+    <!-- 숫자 쉼표가 붙지 않게 문자열로 넘긴다. -->
     <p class="text-xs text-muted" th:if="${status != null}"
        th:text="#{error.page.statusCode(${'' + status})}">오류 코드</p>
 

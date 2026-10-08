@@ -1,13 +1,8 @@
-/**
- * 최고관리자 > 배너 영역 관리 > 등록/수정 폼
- *  - 입력값이 바뀌면 위 미리보기 배너에 바로 반영
- *  - 이미지를 고르면 이미지의 평균색을 배경 색상에 자동으로 채움 (서버의 MainBannerService.averageColorOf 와 같은 방식)
- *  - 상품 홍보일 때만 상품 선택칸을 보여주고, 고른 아티스트의 상품만 남김
- */
+/** 관리자 배너 폼 - 미리보기 즉시 반영, 이미지 평균색으로 배경색 자동 채움, 상품 홍보일 때만 상품 선택. */
 (function () {
   "use strict";
 
-  // 다국어 문구 - banner-form.html 이 window.ADMIN_I18N 에 넣어 준다. 없으면 한국어 기본값
+  // 다국어 문구 (없으면 한국어 기본값)
   const I18N = window.ADMIN_I18N || {};
   function t(key, ko) { return I18N[key] != null ? I18N[key] : ko; }
 
@@ -35,7 +30,7 @@
     return checked ? checked.value : "COMMUNITY";
   }
 
-  // 배경이 밝으면 차콜 글자, 어두우면 흰 글자 (서버 textColorFor 와 같은 기준)
+  // 배경이 밝으면 차콜, 어두우면 흰 글자 (서버와 같은 기준)
   function textColorFor(hex) {
     const r = parseInt(hex.substr(1, 2), 16);
     const g = parseInt(hex.substr(3, 2), 16);
@@ -61,7 +56,7 @@
     previewBody.textContent = bodyInput.value.trim();
   }
 
-  // 상품 홍보일 때만 상품칸을 보이고, 선택한 아티스트의 상품만 남긴다
+  // 상품 홍보일 때만 상품칸을 보이고 선택 아티스트 상품만 남긴다.
   function renderGoods() {
     const isProduct = selectedType() === "PRODUCT";
     goodsGroup.hidden = !isProduct;
@@ -84,7 +79,7 @@
         : t("adminBanner.form.goodsHint", "선택한 아티스트의 판매 중 상품만 보입니다.");
   }
 
-  // 이미지 평균색 (가로세로 60칸 정도로 듬성듬성, 투명 픽셀 제외)
+  // 이미지 평균색 (듬성듬성 샘플링, 투명 픽셀 제외)
   function averageColor(img) {
     const canvas = document.createElement("canvas");
     const w = (canvas.width = 60);

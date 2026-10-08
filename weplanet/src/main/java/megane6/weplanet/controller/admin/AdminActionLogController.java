@@ -56,7 +56,7 @@ public class AdminActionLogController {
 			);
 		} catch (IllegalArgumentException e) {
 			model.addAttribute("error", messages.resolve(e));
-			// 날짜 범위가 잘못되어도 페이지는 표시 (날짜 필터만 제외하고 다시 조회)
+			// 날짜 범위가 잘못되면 날짜 필터만 빼고 다시 조회한다.
 			logs = service.getLogs(
 					actionFilter,
 					targetTypeFilter,

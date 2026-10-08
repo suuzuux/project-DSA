@@ -2,10 +2,7 @@ package megane6.weplanet.service;
 
 import java.util.List;
 
-/**
- * 아티스트 DM에 답장하는 가상 AI 팬 한 명의 설정.
- * username은 users 테이블과 맞춰야 하고, personality는 Gemini 프롬프트에 넣는다.
- */
+/** 아티스트 DM 에 답장하는 가상 팬 설정 (personality 는 Gemini 프롬프트용). */
 public record AiFanPersona(
         String username,
         String nickname,

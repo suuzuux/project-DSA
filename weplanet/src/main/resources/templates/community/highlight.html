@@ -4,16 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--
-    [와이어프레임] 커뮤니티 – Highlight
-    탭: Highlight | Notice | Fan | Artist | Media | Live
-    우측: Membership / About (Calendar는 우하단 플로팅 버튼)
-  -->
+  <!-- 커뮤니티 Highlight (우측: Membership / About) -->
   <title th:text="${artist.nickname()} + ' – Highlight | WePlaNet'">Highlight | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+  <!-- SockJS / Stomp (dm-realtime.js 용) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
@@ -35,8 +31,7 @@
         <div class="section__head">
           <h2 class="section__title" th:text="|From ${artist.nickname()}|">From Artist</h2>
         </div>
-        <!-- 아티스트 게시판 최신 글 2개 - 한 줄에 두 칸 (좁은 화면에선 한 칸씩)
-             텍스트 글 + 사진 글이 섞이면 텍스트 카드가 사진 카드 높이만큼 늘어나지 않게 --mixed (본문은 원래 5줄까지 + …) -->
+        <!-- 아티스트 게시판 최신 글 2개 (한 줄 두 칸, 텍스트·사진 글이 섞이면 --mixed). -->
         <div class="feed feed--grid-2" th:if="${!artistPosts.isEmpty()}"
              th:with="m0=${artistPostThumbnails.get(artistPosts[0].id) != null},
                       m1=${artistPosts.size() > 1 and artistPostThumbnails.get(artistPosts[1].id) != null}"
@@ -170,7 +165,7 @@
           </article>
         </div>
         <p class="list-empty" th:if="${fanPosts.isEmpty()}" th:text="#{community.highlight.emptyFanPosts}">표시할 팬 게시글이 없습니다.</p>
-        <!-- 더보기는 From 아티스트 영역과 같은 하단 전체 너비 버튼 -->
+        <!-- 하단 전체 너비 더보기 버튼 -->
         <a class="btn btn--ghost btn--block mt-8" th:href="@{${artist.homeUrl() + '/fan'}}" th:text="#{community.common.more}">더보기</a>
       </section>
 
@@ -179,7 +174,7 @@
         <div class="section__head">
           <h2 class="section__title">Lives</h2>
         </div>
-        <!-- 한 줄 최대 3칸: 방송 중이면 LIVE 카드가 첫 칸, 나머지는 라이브 다시보기 (라이브 탭 카드와 같은 모양) -->
+        <!-- 최대 3칸 (방송 중이면 LIVE 카드 + 다시보기) -->
         <div class="live-replay-grid" th:if="${liveNow or !highlightReplays.isEmpty()}">
           <a th:if="${liveNow}" class="live-replay-card live-replay-card--live"
              th:href="@{${artist.homeUrl() + '/live'}}" style="text-decoration:none;">
@@ -193,7 +188,7 @@
               <div class="live-replay-card__meta" th:text="#{community.live.featuredMeta}">방송 중 · 클릭해서 시청</div>
             </div>
           </a>
-          <!-- 다시보기는 미디어 상세(라이브 다시보기 화면)로 이동. 멤버십 확인은 상세 화면에서 그대로 한다 -->
+          <!-- 다시보기는 미디어 상세로 이동 (멤버십 확인은 상세에서) -->
           <a class="live-replay-card" th:each="replay : ${highlightReplays}"
              th:href="@{/community/{artistId}/media/{mediaId}(artistId=${artist.id()}, mediaId=${replay.id})}" style="text-decoration:none;">
             <div class="live-replay-card__thumb">

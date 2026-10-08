@@ -9,10 +9,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * 아이디·비밀번호 로그인(팬·포털·관리자 공통)의 비밀번호 대입 방어. 서버 메모리에 기록한다(재시작하면 초기화).
- * {@value #WINDOW_MINUTES}분 안에 아이디는 {@value #MAX_FAILED_ATTEMPTS}회, IP 는 {@value #IP_MAX_FAILURES}회 틀리면 {@value #LOCK_MINUTES}분 동안 로그인을 막는다.
- */
+/** 비밀번호 대입 방어 - 일정 시간 안에 아이디·IP 별 실패가 한도를 넘으면 잠근다 (메모리 기록). */
 @Slf4j
 @Service
 public class LoginAttemptService {
@@ -33,7 +30,7 @@ public class LoginAttemptService {
 		return (user != null && user.isLocked(now)) || (client != null && client.isLocked(now));
 	}
 
-	/** 비밀번호가 틀렸을 때 (없는 아이디 포함) */
+	/** 비밀번호 실패 기록 (없는 아이디 포함) */
 	public void recordFailure(String username, String ip) {
 		LocalDateTime now = LocalDateTime.now();
 		if (username != null && !username.isBlank()) {
@@ -52,19 +49,19 @@ public class LoginAttemptService {
 		}
 	}
 
-	/** 로그인 성공 - 그 아이디의 실패 횟수를 지운다 */
+	/** 로그인 성공 시 실패 횟수 삭제 */
 	public void recordSuccess(String username) {
 		if (username != null) {
 			byUsername.remove(key(username));
 		}
 	}
 
-	/** 비밀번호를 재설정했을 때 - 본인이 계정을 되찾았으니 잠금을 푼다 */
+	/** 비밀번호 재설정 시 잠금 해제 */
 	public void reset(String username) {
 		recordSuccess(username);
 	}
 
-	// 잠금이 풀렸거나 집계 시간이 지난 기록은 쌓이지 않게 정리한다
+	// 만료된 기록 정리
 	@Scheduled(fixedDelay = 60 * 60 * 1000L)
 	public void purgeExpired() {
 		LocalDateTime now = LocalDateTime.now();
@@ -72,15 +69,12 @@ public class LoginAttemptService {
 		byIp.values().removeIf(a -> a.isExpired(now));
 	}
 
-	// 아이디는 DB 에서 대소문자를 구분하지 않고 찾으므로 횟수도 같은 아이디로 묶는다
+	// 아이디는 대소문자 구분 없이 같은 키로 센다.
 	private static String key(String username) {
 		return username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
 	}
 
-	/**
-	 * 실패 기록. 첫 실패부터 WINDOW_MINUTES 안의 횟수만 센다.
-	 * 한도(limit)째 실패에 잠금 시각이 정해지고, 잠금 시각이 지나면 처음부터 다시 센다.
-	 */
+	/** 실패 기록 (WINDOW_MINUTES 안의 횟수만, 한도째에 잠금 시각 설정). */
 	private record Attempts(int count, int limit, LocalDateTime firstFailedAt, LocalDateTime lockedUntil) {
 
 		static Attempts first(int limit, LocalDateTime now) {

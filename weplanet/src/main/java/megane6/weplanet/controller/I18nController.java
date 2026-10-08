@@ -13,10 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-/**
- * shell.js 등 순수 JS 화면이 쓰는 다국어 문구 API.
- * JS 는 #{...} 를 쓸 수 없어서, 페이지를 열 때 현재 화면 언어의 문구 묶음을 받아간다.
- */
+/** JS 화면에서 쓰는 다국어 문구 API (현재 화면 언어 기준). */
 @RestController
 @RequiredArgsConstructor
 public class I18nController {
@@ -47,7 +44,7 @@ public class I18nController {
 			"shell.fab.chatDm",
 			"shell.fab.chatOpen",
 			"shell.admin.pageLink",
-			// 드로어 "커뮤니티 찾아보기"에서 shell.js 가 직접 만드는 검색/가입 모달 문구 (템플릿과 같은 키 재사용)
+			// 드로어 커뮤니티 검색·가입 모달 문구
 			"layout.header.searchTitle",
 			"main.search.placeholder",
 			"main.search.gender",
@@ -111,12 +108,9 @@ public class I18nController {
 			"shell.membership.cancel",
 	};
 
-	/**
-	 * main.js 공용 다이얼로그와 커뮤니티 화면 JS(community-join/explore/posts/post-detail/live.js)가 쓰는 문구 묶음.
-	 * 각 JS 는 WePlaNet.t(key, 한국어 기본값)로 꺼내 쓰고, JS 전용 문구는 client.* 키로 둔다.
-	 */
+	/** main.js 와 커뮤니티 화면 JS 가 WePlaNet.t(key) 로 쓰는 문구 (JS 전용은 client.*). */
 	private static final String[] CLIENT_KEYS = {
-			// main.js - 공용 다이얼로그 / 배너 / 회원가입 폼 검증(signup-id.html의 #signupForm)
+			// main.js - 공용 다이얼로그 / 배너 / 회원가입 폼 검증
 			"common.cancel",
 			"common.confirm",
 			"client.carousel.slide",
@@ -194,7 +188,7 @@ public class I18nController {
 	public Map<String, String> clientMessages() {
 		Map<String, String> messages = new LinkedHashMap<>();
 		for (String key : CLIENT_KEYS) {
-			// shellMessages()와 같은 이유로 args=null - {0} 자리표시자는 JS(WePlaNet.t)가 직접 치환한다.
+			// {0} 자리표시자는 JS 가 치환하므로 args 를 null 로 넘긴다.
 			messages.put(key, messageSource.getMessage(key, null, LocaleContextHolder.getLocale()));
 		}
 		return messages;
@@ -205,17 +199,13 @@ public class I18nController {
 	public Map<String, String> shellMessages() {
 		Map<String, String> messages = new LinkedHashMap<>();
 		for (String key : SHELL_KEYS) {
-			// args=null 로 넘겨서 MessageFormat이 돌지 않게 함 - {0} 같은 자리표시자는
-			// 그대로 문자열에 남아있어야 shell.js에서 닉네임 등을 직접 치환할 수 있다.
+			// {0} 자리표시자를 그대로 남겨 shell.js 가 치환하도록 args 를 null 로 넘긴다.
 			messages.put(key, messageSource.getMessage(key, null, LocaleContextHolder.getLocale()));
 		}
 		return messages;
 	}
 
-	/**
-	 * 캘린더 위젯(global-icons.js)용 문구 - 언어 버튼을 누르면 새로고침 없이 바로 다시 그려야 해서
-	 * ko/ja/en 3개 언어를 한 번에 내려준다. 응답: { "ko": {...}, "ja": {...}, "en": {...} }
-	 */
+	/** 캘린더 위젯 문구 - 새로고침 없이 언어를 바꾸도록 ko/ja/en 을 한 번에 내려준다. */
 	private static final Map<String, String> CALENDAR_UI_KEY_MAP = new LinkedHashMap<>();
 	static {
 		CALENDAR_UI_KEY_MAP.put("notificationsTitle", "calendar.ui.notificationsTitle");
@@ -243,7 +233,7 @@ public class I18nController {
 		CALENDAR_UI_KEY_MAP.put("close", "calendar.ui.close");
 		CALENDAR_UI_KEY_MAP.put("prev", "calendar.ui.prev");
 		CALENDAR_UI_KEY_MAP.put("next", "calendar.ui.next");
-		// 헤더 언어/알림 아이콘의 aria-label과 동일한 문구라 새 키를 만들지 않고 재사용한다.
+		// 헤더 언어·알림 아이콘과 같은 문구라 기존 키를 재사용한다.
 		CALENDAR_UI_KEY_MAP.put("languageLabel", "layout.header.languageLabel");
 		CALENDAR_UI_KEY_MAP.put("notificationsLabel", "layout.header.notificationsLabel");
 	}

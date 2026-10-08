@@ -11,6 +11,6 @@ public interface PostAttachmentRepository extends JpaRepository<PostAttachment, 
     // 게시글에 달린 첨부파일들을 등록 순서대로 조회
     List<PostAttachment> findByPostOrderByIdAsc(Post post);
 
-    // 게시글 삭제 시 첨부파일 기록도 같이 지우기 위함
+    // 게시글 삭제 전 첨부파일 기록 삭제
     void deleteByPost(Post post);
 }

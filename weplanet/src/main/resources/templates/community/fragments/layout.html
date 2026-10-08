@@ -1,20 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org">
 <body>
-<!-- 소속 에이전시가 자기 아티스트 커뮤니티에 들어오면(isManagedAgency) 헤더를 최소화한다:
-     햄버거/홈/검색/언어/알림/샵/프로필을 모두 빼고 다크모드 버튼 + "관리자 페이지로"만 남긴다.
-     data-header-minimal 이 붙어 있으면 shell.js / global-icons.js 도 버튼을 자동으로 끼워 넣지 않는다. -->
+<!-- 소속 에이전시는 최소 헤더(다크모드 + 관리자 페이지)만 쓴다 (data-header-minimal 이면 버튼 자동 삽입 안 함). -->
 <header th:fragment="header" class="community-top"
         th:attr="data-header-minimal=${isManagedAgency == true} ? 'true' : null">
   <button type="button" class="menu-toggle" data-shell-open="menu" th:aria-label="#{common.menu}"
           th:unless="${isManagedAgency == true}">☰</button>
   <div class="community-top__left">
-    <!-- 아티스트(솔로/그룹 멤버)는 팬용 메인 사이트를 쓰지 않으므로 홈 링크를 숨긴다 -->
+    <!-- 아티스트는 메인 홈 링크를 숨긴다. -->
     <a class="home-link" th:href="@{/}" th:title="#{layout.header.homeTitle}" th:unless="${isManagedAgency == true}"
        sec:authorize="!hasAnyRole('ARTIST','ARTIST_MEMBER')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
     </a>
-    <!-- 아티스트 아이콘/이름을 누르면 이 커뮤니티 첫 화면(하이라이트, 영문 주소 /kiikii)으로 -->
+    <!-- 커뮤니티 첫 화면(하이라이트)으로 이동 -->
     <a class="avatar avatar--sm" th:href="@{${artist.homeUrl()}}" th:title="#{layout.header.artistHomeTitle(${artist.nickname()})}"
        th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</a>
     <a class="avatar avatar--sm" th:href="@{${artist.homeUrl()}}" th:title="#{layout.header.artistHomeTitle(${artist.nickname()})}"
@@ -53,7 +51,7 @@
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
     </a>
     <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-      <!-- 내 프로필 사진이 있으면 사진, 없으면 '나' (myAvatarUrl 은 CommunityController.populateArtistModel 이 채움) -->
+      <!-- 내 프로필 사진 (없으면 '나') -->
       <a class="icon-btn" th:href="@{${artist.homeUrl() + '/profile'}}" th:aria-label="#{layout.header.myProfileLabel}">
         <span class="avatar avatar--sm" th:if="${myAvatarUrl == null}" th:text="#{community.header.me}">나</span>
         <span class="avatar avatar--sm" th:if="${myAvatarUrl != null}">
@@ -61,8 +59,7 @@
         </span>
       </a>
     </th:block>
-    <!-- 아티스트는 메인 사이트(로그아웃 버튼이 있는 곳)로 가지 않으므로 커뮤니티 헤더에서 바로 로그아웃.
-         로그아웃 후에는 RoleAwareLogoutSuccessHandler 가 아티스트 로그인 탭으로 보낸다. -->
+    <!-- 아티스트는 커뮤니티 헤더에서 바로 로그아웃한다 (로그아웃 후 아티스트 로그인 탭). -->
     <th:block sec:authorize="hasAnyRole('ARTIST','ARTIST_MEMBER')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <form th:action="@{/logout}" method="post" style="display:inline;">
         <button type="submit" class="btn btn--ghost btn--sm" th:text="#{common.logout}">로그아웃</button>
@@ -74,7 +71,7 @@
   </div>
 </header>
 
-<!-- 커뮤니티 히어로 배너 - 배경 이미지를 3:1 비율로 꽉 채운다. -->
+<!-- 커뮤니티 히어로 배너 (3:1) -->
 <div th:fragment="hero" class="community-hero"
      th:style="${artistHeaderImageUrl != null and !#strings.isEmpty(artistHeaderImageUrl)}
                 ? |background-image:linear-gradient(180deg, transparent 30%, rgba(20, 24, 31, 0.55)), url('${artistHeaderImageUrl}'); background-size:cover; background-position:center;|
@@ -117,12 +114,10 @@
   </a>
 </nav>
 
-<!-- 커뮤니티 가입 = CommunityMember(닉네임 필수) 기준으로 통일.
-     Follow는 About 위젯의 "다른 아티스트 팔로우"에만 쓰는 별개 개념으로 남겨둠.
-     아티스트 본인 커뮤니티에서는 가입/팔로우 UI를 숨기고, 타 커뮤니티에서는 팬과 동일하게 가입·팔로우 가능. -->
+<!-- 커뮤니티 가입은 CommunityMember 기준 (본인 커뮤니티에서는 가입·팔로우 UI 숨김). -->
 <aside th:fragment="sidebarAside(showWriteButton, showAbout)" class="community-aside">
   <th:block th:if="${!isOwnCommunity}" sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-    <!-- 가입한 상태: 내 커뮤니티 닉네임 + 가입 취소 -->
+    <!-- 가입 상태: 커뮤니티 닉네임 + 가입 취소 -->
     <div th:if="${communityJoined}" class="widget" style="padding:12px 16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <div style="min-width:0;">
@@ -137,7 +132,7 @@
       </div>
     </div>
 
-    <!-- 미가입 상태: 검색에서와 동일하게 닉네임 설정 모달로 -->
+    <!-- 미가입: 닉네임 설정 모달 -->
     <div th:unless="${communityJoined}" class="widget" style="padding:12px 16px;">
       <p class="text-xs text-muted" style="margin-bottom:8px;line-height:1.5;" th:text="#{community.aside.joinPrompt}">
         가입하고 이 커뮤니티에서 쓸 닉네임을 정해보세요.
@@ -181,8 +176,7 @@
       </div>
       <div th:unless="${membershipActive}">
         <p class="membership-card__desc" th:text="#{community.membership.desc}">지금 바로 멤버십에 가입하고, 특별한 혜택을 누려보세요.</p>
-        <!-- 멤버십은 커뮤니티 회원만 살 수 있다. 아직 커뮤니티에 가입하지 않았으면
-             멤버십 결제창 대신 커뮤니티 가입(닉네임) 모달부터 띄운다. -->
+        <!-- 멤버십은 커뮤니티 회원만 - 미가입이면 가입 모달부터 띄운다. -->
         <button th:if="${!communityJoined}" type="button" class="btn btn--accent btn--block" data-join-btn
                 th:attr="data-artist-id=${artist.id()}, data-artist-name=${artist.nickname()}"
                 th:text="#{community.membership.join}">Membership 가입하기</button>
@@ -231,13 +225,12 @@
       </div>
     </div>
 
-    <!-- 현재 커뮤니티 아티스트 팔로우만 표시 (다른 커뮤니티 팔로잉 목록 제거) -->
+    <!-- 현재 커뮤니티 아티스트 팔로우만 표시 -->
     <th:block th:if="${!isOwnCommunity}"
               sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')"
               xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
       <div class="flex-between" style="align-items:center;">
-        <!-- 커뮤니티에 가입한 사람이면 누구나 눌러서 아티스트 자기 프로필로 이동 가능
-             (팔로우 여부와 무관 - 프로필 안에서 콘텐츠가 보이고 안 보이고는 팔로우 여부로 갈린다) -->
+        <!-- 커뮤니티 가입자는 누구나 아티스트 프로필로 이동할 수 있다. -->
         <a class="flex-center" style="gap:8px;"
            th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${artist.id()})}">
           <span class="avatar avatar--sm" th:if="${artist.profileImageUrl() == null}" th:text="${artist.logo()}">AR</span>
@@ -256,15 +249,14 @@
   </div>
 </aside>
 
-<!-- 커뮤니티 가입(닉네임 설정) 모달 - 메인 검색 화면과 커뮤니티 페이지가 이 하나를 공유한다 -->
+<!-- 커뮤니티 가입 모달 (검색 화면과 커뮤니티 페이지 공용) -->
 <div th:fragment="joinModal" class="modal-backdrop" id="communityJoinModal">
   <div class="modal">
     <div class="modal__head">
       <strong class="modal__title" th:text="#{community.join.button}">커뮤니티 가입하기</strong>
       <button type="button" class="modal__close" data-modal-close>✕</button>
     </div>
-    <!-- 언어마다 어순이 달라("『이름』에서 …" / "… in 『name』") span 위치를 메시지 안에 둔다.
-         span 내용은 community-join.js가 textContent로 아티스트 이름으로 바꿔 넣는다. -->
+    <!-- 언어별 어순이 달라 span 위치를 메시지 안에 둔다 (이름은 JS 가 채움). -->
     <p class="mb-24" th:with="thisCommunity=#{community.join.thisCommunity}"
        th:utext="#{community.join.modalPrompt(${thisCommunity})}"><span id="communityJoinArtistName">이 커뮤니티</span>에서 사용할 닉네임을 정해주세요.</p>
     <div class="form-group" id="communityJoinNicknameGroup">
@@ -279,13 +271,13 @@
   </div>
 </div>
 
-<!-- 커뮤니티 페이지 공통 하단: 가입 모달 + 드로어용 데이터 + 가입 스크립트 -->
+<!-- 커뮤니티 공통 하단: 가입 모달, 드로어 데이터, 스크립트 -->
 <th:block th:fragment="scripts">
   <div th:replace="~{community/fragments/layout :: joinModal}"></div>
   <script th:inline="javascript">
     window.__WEPLANET_JOINED_ARTISTS__ = /*[[${joinedArtists}]]*/ [];
     window.__WEPLANET_OTHER_ARTISTS__ = /*[[${otherCommunities}]]*/ [];
-    // 탐색/가입 여부 판단용: 실제 가입 목록
+    // 가입 목록
     window.__WEPLANET_ARTISTS__ = window.__WEPLANET_JOINED_ARTISTS__;
     window.__ARTIST_ATTENDANCE__ = /*[[${artistAttendance}]]*/ {};
   </script>
@@ -294,7 +286,7 @@
   <script th:src="@{/js/community-board-select.js}"></script>
 </th:block>
 
-<!-- 커뮤니티 가입 안 한 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
+<!-- 미가입 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
 <div th:fragment="membershipGate" class="community-main" style="text-align:center;padding:96px 20px;">
   <div style="width:56px;height:56px;border-radius:50%;border:2px solid var(--wp-muted, #8a8a8a);
                 display:inline-flex;align-items:center;justify-content:center;font-size:26px;
@@ -305,7 +297,7 @@
           th:text="#{community.join.button}">커뮤니티 가입하기</button>
 </div>
 
-<!-- 하이라이트 등 개방된 탭 하단에 뜨는 가입 유도 배너 (비로그인/미가입 공통, 본인 커뮤니티 제외) -->
+<!-- 개방된 탭 하단 가입 유도 배너 (본인 커뮤니티 제외) -->
 <div th:fragment="membershipTeaser" th:if="${!communityJoined and !isOwnCommunity}"
      class="community-teaser"
      style="position:sticky;bottom:0;left:0;right:0;z-index:40;background:var(--wp-brand, #a85d67);

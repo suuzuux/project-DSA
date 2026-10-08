@@ -12,23 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * 관리자 폼 hidden JSON.
- * <pre>
- * {
- *   "categories": ["CLOTHING","BAG"],
- *   "stocks": {
- *     "CLOTHING": { "S": 150, "M": 100 },
- *     "SHOES": { "250": 10 },
- *     "DEFAULT": 30
- *   },
- *   "attributes": {
- *     "BAG": { "width": "30", "height": "40", "depth": "15" },
- *     "ACCESSORY": { "note": "..." }
- *   }
- * }
- * </pre>
- */
+/** 관리자 굿즈 폼 hidden JSON (categories, stocks, attributes). */
 public record GoodsCategoryOptionsPayload(
 		List<GoodsCategoryType> categories,
 		Map<String, Object> stocks,
@@ -218,7 +202,7 @@ public record GoodsCategoryOptionsPayload(
 		}
 	}
 
-	// dim(width/height/depth)별 메시지 키(error.goods.bag.{dim}.*)로 던진다
+	// 치수별 메시지 키로 던진다.
 	private static void requirePositiveNumber(String raw, String dim) {
 		if (raw == null || raw.isBlank()) {
 			throw new IllegalArgumentException("error.goods.bag." + dim + ".required");

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org">
 <body>
-<!-- 팔로워/팔로잉 목록 모달 내용 (닉네임+아바타, 누르면 그 사람 프로필로 이동) -->
+<!-- 팔로워·팔로잉 목록 (누르면 프로필로 이동) -->
 <div class="profile-user-list" th:fragment="userListFragment">
-    <!-- 목록의 사람은 모두 지금 커뮤니티(artistId) 안에서 맺어진 팔로우라 항상 이 커뮤니티 프로필로 링크한다. -->
+    <!-- 모두 이 커뮤니티의 팔로우라 이 커뮤니티 프로필로 연결한다. -->
     <a th:each="user : ${users}"
        th:href="@{/community/{artistId}/profile/{userId}(artistId=${artistId}, userId=${user.id})}">
         <span class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get('' + user.id),0,1)}">?</span>

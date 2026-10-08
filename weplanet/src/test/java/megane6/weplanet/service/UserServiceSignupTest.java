@@ -23,7 +23,7 @@ class UserServiceSignupTest {
 			mock(NicknameGenerator.class), mock(ApplicationEventPublisher.class),
 			mock(CommunityJoinService.class), mock(UserFollowRepository.class));
 
-	// 회원가입 예외도 다른 곳과 같이 메시지 키로 던진다 (AuthController 가 Messages.resolve 로 번역해서 보여준다)
+	// 회원가입 예외도 메시지 키로 던진다
 	@Test
 	void signupThrowsMessageKeys() {
 		SignupRequestDto mismatch = signupRequest("abcd1234", "abcd9999");

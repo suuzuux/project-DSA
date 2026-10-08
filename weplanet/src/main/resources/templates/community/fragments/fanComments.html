@@ -22,7 +22,7 @@
     </div>
 
     <div class="comment-list">
-      <!-- 아티스트 댓글은 최상단에 고정. 스크롤 영역 밖에 둬서 팬 댓글이 많아져도 항상 먼저 보이게 함 -->
+      <!-- 아티스트 댓글은 스크롤 영역 밖 최상단에 고정한다. -->
       <div th:if="${not #lists.isEmpty(artistComments)}" class="comment-list__head">
         <span><th:block th:text="#{community.comment.artistComments}">아티스트 댓글</th:block> <span th:text="${#lists.size(artistComments)}">0</span></span>
       </div>
@@ -35,7 +35,7 @@
       <div class="comment-list__head" th:classappend="${not #lists.isEmpty(artistComments)} ? ' mt-16'">
         <span><th:block th:text="#{community.comment.fanComments}">팬 댓글</th:block> <span th:text="${#lists.size(otherComments)}">0</span></span>
       </div>
-      <!-- 팬 댓글은 수십 개가 달릴 수 있어서 페이지 전체가 아니라 이 영역 안에서만 스크롤되게 함 -->
+      <!-- 팬 댓글은 이 영역 안에서만 스크롤 -->
       <div class="comment-scroll">
         <div th:if="${not #lists.isEmpty(otherComments)}">
           <th:block th:each="comment : ${otherComments}">
@@ -47,20 +47,15 @@
     </div>
   </aside>
 
-  <!--
-    댓글 한 칸. 원댓글과 답글이 마크업이 같아서 하나의 조각으로 합쳐 쓴다.
-      comment     : 그릴 댓글
-      artistStyle : 아티스트 댓글 영역이면 true (배경색만 달라짐)
-      isReply     : 답글이면 true. 답글에는 "답글" 링크와 답글 목록을 그리지 않는다(1단계까지만 허용)
-  -->
+  <!-- 댓글 한 칸 (원댓글·답글 공용) - comment, artistStyle(배경색), isReply(답글이면 답글 링크·목록 없음) -->
   <div th:fragment="commentNode(comment, artistStyle, isReply)" class="comment-item"
        th:classappend="${(isReply ? ' comment-item--reply' : '')
                        + (comment.deleted ? ' comment-item--deleted' : '')
                        + ((reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)) ? ' comment-item--reported' : '')}"
        th:style="${artistStyle and not comment.deleted} ? 'background:var(--wp-brand-soft);margin:0 -8px;padding:14px 8px;border-radius:8px;'">
-    <!-- 삭제된 댓글은 작성자를 드러내지 않으므로 프로필 링크도 걸지 않는다 -->
+    <!-- 삭제된 댓글은 작성자 링크를 걸지 않는다. -->
     <div th:if="${comment.deleted}" class="avatar avatar--sm">—</div>
-    <!-- 커뮤니티 프로필 사진이 있으면 사진, 없으면 사람 모양 아이콘 (게시글 작성자 아바타와 같은 방식) -->
+    <!-- 프로필 사진이 있으면 사진, 없으면 사람 아이콘 -->
     <a th:unless="${comment.deleted}"
        th:href="@{/community/{artistId}/profile/{userId}(artistId=${artist.id()}, userId=${comment.author.id})}"
        class="avatar avatar--sm" th:aria-label="#{community.post.authorProfileAria}">
@@ -75,7 +70,7 @@
     </a>
     <div class="comment-item__body">
 
-      <!-- 삭제된 원댓글: 답글을 살려두기 위해 행은 남기고 문구만 보여준다 -->
+      <!-- 삭제된 원댓글은 답글을 위해 행을 남기고 문구만 보여준다. -->
       <p th:if="${comment.deleted}" class="comment-item__text text-muted" th:text="#{community.comment.deleted}">삭제된 댓글입니다</p>
 
       <th:block th:unless="${comment.deleted}">
@@ -138,7 +133,7 @@
         </div>
       </th:block>
 
-      <!-- 답글 입력칸: "답글" 링크를 누르면 열린다. 삭제된 댓글에는 달 수 없음 -->
+      <!-- 답글 입력칸 (삭제된 댓글에는 불가) -->
       <th:block th:unless="${isReply or comment.deleted}">
         <th:block sec:authorize="isAuthenticated()">
           <div th:id="'commentReplyRow-' + ${comment.id}" style="display:none;margin-top:6px;">

@@ -27,11 +27,11 @@ import java.util.Map;
 public class SiteNoticeController {
 
 	private final SiteNoticeService siteNoticeService;
-	// 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석
+	// 서비스 예외(메시지 키)를 현재 로케일 문구로 바꾼다.
 	private final megane6.weplanet.i18n.Messages messages;
 	private final AuthenticatedUserResolver userResolver;
 	
-	private final ShopImageStorage shopImageStorage; // 에디터 이미지 저장 (굿즈 에디터와 같은 검사 규칙 재사용)
+	private final ShopImageStorage shopImageStorage; // 에디터 이미지 저장 (굿즈 에디터와 같은 검사)
 	
 	private final HashtagEventAdminService hashtagEventAdminService; // [해시태그 총공] 결과 공지 초안
 	private final megane6.weplanet.service.ContentTranslationService contentTranslationService; // 공지 번역보기 (AI)
@@ -49,15 +49,14 @@ public class SiteNoticeController {
 				? null : NoticeCategory.valueOf(category);
 		List<megane6.weplanet.domain.entity.SiteNotice> all = siteNoticeService.listPublished(categoryFilter);
 
-		// 15개씩 페이지 나누기 (page 는 1부터). 공지는 많아야 수십 개라 전체를 읽어 자른다.
-		// 고정 공지가 맨 앞에 오는 정렬은 그대로라 고정 공지는 1페이지에 보인다
+		// 15개씩 페이지를 나눈다 (page 는 1부터, 고정 공지는 1페이지).
 		int totalPages = Math.max(1, (all.size() + NOTICE_PAGE_SIZE - 1) / NOTICE_PAGE_SIZE);
 		int currentPage = Math.min(Math.max(page, 1), totalPages);
 		int from = (currentPage - 1) * NOTICE_PAGE_SIZE;
 		int to = Math.min(from + NOTICE_PAGE_SIZE, all.size());
 
 		model.addAttribute("notices", all.subList(from, to));
-		// 빈 문자열(?category=)로 와도 "전체" 칩이 선택돼 보이도록 null 로 맞춘다
+		// 빈 category 도 "전체" 칩이 선택되도록 null 로 맞춘다.
 		model.addAttribute("selectedCategory", categoryFilter == null ? null : category);
 		model.addAttribute("currentPage", currentPage);
 		model.addAttribute("totalPages", totalPages);
@@ -71,7 +70,7 @@ public class SiteNoticeController {
 		return "notice-detail";
 	}
 
-	// 공지 번역보기 (게시글 "번역보기"와 같은 방식) - 로그인한 사람의 기본 서비스 언어로 제목·본문을 AI 번역한다
+	// 공지 AI 번역 (로그인 사용자의 기본 서비스 언어).
 	@PostMapping("/notices/{noticeId}/translate")
 	@ResponseBody
 	public Map<String, Object> translatePublic(@PathVariable Long noticeId,
@@ -117,8 +116,7 @@ public class SiteNoticeController {
 		model.addAttribute("pinnedCount", siteNoticeService.countPinned());
 		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
 		
-		// [해시태그 총공] 모니터링의 "결과 공지 작성" 버튼으로 오면 제목·본문·분류를 미리 채운다
-		// (notice 가 아니라 draft* 로 넘기는 이유: notice 가 있으면 폼이 "수정 모드"가 되기 때문)
+		// 총공 결과 공지 작성으로 오면 초안을 채운다 (수정 모드가 되지 않게 draft* 로 넘김).
 		if (hashtagEventId != null) {
 			try {
 				HashtagResultNoticeDraft draft = hashtagEventAdminService.buildResultNotice(hashtagEventId);
@@ -251,8 +249,7 @@ public class SiteNoticeController {
 		return "redirect:/admin/notices";
 	}
 	
-	// 공지 에디트 (Toast UI) 이미지 업로드.
-	// 에디터 기본 동작은 이미지를 base64 글자로 본문에 통째로 넣어버려서, 대신 서버에 파일을 저장하고 ULR만 돌려준다.
+	// 공지 에디터 이미지 업로드 - base64 대신 서버에 저장하고 URL 을 돌려준다.
 	@PostMapping("/admin/notices/editor-image")
 	@ResponseBody
 	public Map<String, String> editorImage(@RequestParam("image") MultipartFile image,

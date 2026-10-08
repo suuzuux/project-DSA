@@ -14,7 +14,7 @@
       ? #messages.msg('partnerActivate.title.artist') : #messages.msg('partnerActivate.title.agency'))}">
     계정 활성화</h1>
 
-  <!-- 링크가 잘못됐거나 만료된 경우: 폼 없이 안내만 -->
+  <!-- 링크가 잘못됐거나 만료된 경우 안내만 -->
   <div th:if="${linkError}">
     <p class="text-sm" style="color:#c45c26;margin:16px 0;" th:text="${linkError}">
       유효하지 않은 활성화 링크입니다.
@@ -26,7 +26,7 @@
 
   <!-- 정상 링크: 비밀번호 설정 폼 -->
   <div th:if="${linkError == null}">
-    <!-- 이름은 escapeXml 로 한 번 이스케이프한 뒤 굵게 감싸서 utext 로 출력 -->
+    <!-- 이름은 이스케이프 후 굵게 감싸 utext 로 출력 -->
     <p class="text-sm text-muted" style="margin:12px 0 20px;"
        th:with="nameHtml=${'<strong>' + #strings.escapeXml(target.nickname()) + '</strong>'}"
        th:utext="${target.role().name() == 'ARTIST'}

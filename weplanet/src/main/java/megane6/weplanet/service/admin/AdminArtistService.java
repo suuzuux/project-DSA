@@ -96,7 +96,7 @@ public class AdminArtistService {
 				));
 	}
 
-	// 그룹 id(= 그룹 계정 users.id) -> 활동 중인 멤버 목록. 멤버 활동명·포지션은 멤버의 artist_profiles 에서 가져온다
+	// 그룹별 활동 멤버 목록 (활동명·포지션은 멤버 artist_profiles 에서).
 	private Map<Long, List<AdminArtistResponse.Member>> loadMembers(List<User> artists) {
 		if (artists.isEmpty()) {
 			return Map.of();
@@ -123,7 +123,7 @@ public class AdminArtistService {
 						Function.identity()
 				));
 
-		// groupingBy + toList 는 들어온 순서(id 오름차순 = 등록 순)를 유지한다
+		// 등록 순서를 유지한다.
 		return groupMembers.stream()
 				.collect(Collectors.groupingBy(
 						GroupMember::getGroupId,
@@ -203,7 +203,7 @@ public class AdminArtistService {
 		return user;
 	}
 
-	// 멤버 활동명·포지션으로 검색해도 그 멤버가 속한 그룹이 나온다
+	// 멤버 활동명·포지션으로 검색해도 소속 그룹이 나온다.
 	private boolean matchesKeyword(
 			AdminArtistResponse artist,
 			String keyword
