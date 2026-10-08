@@ -98,8 +98,8 @@ class AuthControllerSignupTest {
 	private static org.springframework.test.web.servlet.RequestBuilder validSignup() {
 		return post("/signup")
 				.param("username", "newfan01")
-				.param("password", "abcd1234")
-				.param("passwordConfirm", "abcd1234")
+				.param("password", "abcd123!")
+				.param("passwordConfirm", "abcd123!")
 				.param("realName", "이름")
 				.param("nickname", "닉네임")
 				.param("email", "newfan01@weplanet.test");

@@ -10,12 +10,14 @@ import megane6.weplanet.domain.entity.event.HashtagEvent;
 import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.event.HashtagEventRepository;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,13 +50,19 @@ public class HashtagEventPageService {
 	}
 	
 	// 홈 캐러셀 맨 앞 슬라이드. 대표 이벤트가 없거나, 집계 확정 후 7일이 지났으면 배너를 내린다
-	public Optional<HashtagHomeBanner> getHomeBanner() {
+	public Optional<HashtagEventPageView> getHomeBanner() {
 		LocalDateTime weekAgo = LocalDateTime.now().minusDays(BANNER_DAYS_AFTER_FINALIZE);
 		
 		return getFeatured(null)
 				.filter(view -> view.dashboard().finalizedAt() == null
-						|| view.dashboard().finalizedAt().isAfter(weekAgo))
-				.map(view -> HashtagHomeBanner.from(view, messages));
+						|| view.dashboard().finalizedAt().isAfter(weekAgo));
+	}
+	
+	// 슬라이드 문장 조립 - 제목은 호출하는 쪽이 화면 언어로 번역해서 넘긴다 (MainBannerTranslator)
+	// 번역이 아직이면(titleReady=false) 큰 제목을 한국어 문장 틀로 만든다 - 번역이 오면 화면이 일본어 문장으로 바꿔 끼운다
+	public HashtagHomeBanner toHomeBanner (HashtagEventPageView view, String title, boolean titleReady) {
+		Locale titleLocale = titleReady ? LocaleContextHolder.getLocale() : Locale.KOREAN;
+		return HashtagHomeBanner.from(view, title, titleLocale, messages);
 	}
 	
 	// 결과 공지의 링크로 들어왔을 때: 그 회차 이벤트

@@ -32,7 +32,7 @@ public class ArtistProfileLoginService {
 	
 	// 회원가입/계정 활성화와 같은 규칙
 	private static final Pattern PASSWORD_PATTERN
-			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
+			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$");
 	
 	// 개인 비밀번호를 5회 틀리면 그 프로필은 10분 동안 로그인할 수 없다 (다른 멤버 비밀번호 무한 대입 방지).
 	private static final int MAX_FAILED_ATTEMPTS = 5;

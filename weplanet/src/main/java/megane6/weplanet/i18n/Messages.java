@@ -27,6 +27,15 @@ public class Messages {
 		);
 	}
 
+	/** 언어를 직접 정해서 키를 해석한다 (예: 총공 배너 제목 번역을 기다리는 동안은 한국어 문장 틀로). */
+	public String get(Locale locale, String code, Object... args) {
+		return messageSource.getMessage(
+				code,
+				(args == null || args.length == 0) ? null : args,
+				locale
+		);
+	}
+
 	/** 현재 요청 로케일로 키를 해석하고, 등록된 문구가 없으면 defaultText 를 돌려준다 (DB 기본값을 함께 쓰는 곳). */
 	public String getOrDefault(String code, String defaultText) {
 		return messageSource.getMessage(code, null, defaultText, LocaleContextHolder.getLocale());

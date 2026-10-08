@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- 진행 중일 때만 30초마다 새로고침 (?all=true 도 주소에 남아 있어서 펼친 상태가 유지된다) -->
   <meta th:if="${view != null and view.dashboard().ongoing()}" http-equiv="refresh" content="30" />
-  <title th:text="${view != null} ? ${view.dashboard().title()} + ' | WePlaNet' : #{hashtagEvent.pageTitle}">해시태그 총공 | WePlaNet</title>
+  <title th:text="${view != null and eventTitle != null} ? ${eventTitle} + ' | WePlaNet' : #{hashtagEvent.pageTitle}">해시태그 총공 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
   <link rel="stylesheet" th:href="@{/css/hashtag-event.css}" />
@@ -55,7 +55,7 @@
         <p class="hashtag-event__eyebrow">
           <span th:text="#{hashtagEvent.eyebrow}">WePlaNet 이벤트</span> · <span th:text="#{${d.status().messageKey}}">진행 중</span>
         </p>
-        <h1 class="hashtag-event__title" th:text="${d.title()}">9월 해시태그 총공</h1>
+        <h1 class="hashtag-event__title" th:text="${eventTitle} ?: #{hashtagEvent.heading}">해시태그 총공</h1>
         <p class="text-sm text-muted">
           <span th:text="${#temporals.format(d.startAt(), 'MM.dd')} + ' ~ ' + ${#temporals.format(d.endAt(), 'MM.dd')}">09.22 ~ 09.28</span>
           · <span th:text="#{hashtagEvent.howShort}">가입한 커뮤니티 팬 게시판에 해시태그를 넣어 글을 써주세요</span>

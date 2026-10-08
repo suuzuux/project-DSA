@@ -87,8 +87,8 @@ public class UserService {
 		return saved;
 	}
 	
-	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자 포함 8~20자)
-	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
+	// 회원가입 때 쓰던 것과 같은 비밀번호 정책 (영문/숫자/특수문자 포함 8~20자)
+	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$");
 	// 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
 	private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-]{1,20}$");
 

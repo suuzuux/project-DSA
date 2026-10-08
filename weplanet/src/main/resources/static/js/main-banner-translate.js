@@ -26,6 +26,12 @@
       });
     });
   }
+    // 총공 슬라이드 제목 (번역된 이벤트 제목 + 언어 파일 문장 틀을 서버가 조립해 준 문장)
+  function applyHashtag(text) {
+    if (!text) return;
+    var title = root.querySelector(".hashtag-home-slide .banner__title");
+    if (title && title.textContent !== text) title.textContent = text;
+  }
 
   function load() {
     tries++;
@@ -34,6 +40,7 @@
       .then(function (data) {
         if (!data || !data.banners) return;
         apply(data.banners);
+        applyHashtag(data.hashtagTitle);
         if (data.pending && tries < MAX_TRIES) setTimeout(load, RETRY_MS);
       })
       .catch(function () { /* 번역을 못 받으면 원문 그대로 둔다 */ });

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.RisingCommunityCardView;
+import megane6.weplanet.domain.dto.event.HashtagEventPageView;
 import megane6.weplanet.domain.entity.ArtistGroup;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
@@ -50,13 +51,15 @@ public class HomeController {
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
 		List<ArtistCardView> artists = portalManagementService.toArtistCards(artistUsers);
 		model.addAttribute("artists", artists);
+		
+		// [해시태그 총공] 진행 중(또는 예정·결과 발표) 총공이 있으면 캐러셀 맨 앞에 붙는 슬라이드 - 제목은 메인 배너와 한 묶음으로 번역
+		Optional<HashtagEventPageView> eventView = hashtagEventPageService.getHomeBanner();
+		String eventTitle = eventView.map(view -> view.dashboard().title()).orElse(null);
 		// 상단 배너 - 최고관리자가 [배너 영역 관리]에서 노출 중으로 둔 배너. 비어 있으면 화면이 기본 배너를 보여준다
-		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides());
+		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides(), eventTitle);
 		model.addAttribute("mainBanners", mainBanners.slides());
 		model.addAttribute("mainBannersPending", mainBanners.pending()); // true 면 화면이 번역문을 다시 받아 바꿔 끼운다
-		// [해시태그 총공] 진행 중(또는 예정·결과 발표) 총공이 있으면 캐러셀 맨 앞에 붙는 슬라이드. 없으면 null
-		model.addAttribute("hashtagBanner", hashtagEventPageService.getHomeBanner().orElse(null));
-		
+		model.addAttribute("hashtagBanner", eventView.map(view -> hashtagEventPageService.toHomeBanner(view, mainBanners.eventTitle(), mainBanners.eventTitleReady())).orElse(null));
 		Map<Long, CommunityMember> joinedProfiles;
 		Set<Long> joinedArtistIds;
 		User viewer = null;

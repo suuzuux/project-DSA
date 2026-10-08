@@ -33,7 +33,7 @@ public class AgencyActivationService {
 	public static final long EXPIRATION_HOURS = 72;
 	
 	private static final Pattern PASSWORD_PATTERN
-			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
+			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$");
 	private static final int TOKEN_BYTE_LENGTH = 32;
 	
 	private final EmailVerificationRepository evr;
