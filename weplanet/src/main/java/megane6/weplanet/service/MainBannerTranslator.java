@@ -30,7 +30,8 @@ public class MainBannerTranslator {
 	private final ContentTranslationService translationService;
 
 	// slides = 화면에 보여줄 배너, pending = 아직 번역이 안 끝나 원문으로 둔 배너가 있음, eventTitle = 총공 슬라이드 제목(없으면 null)
-	public record Result(List<Slide> slides, String eventTitle, boolean pending) {}
+	// eventTitleReady = 총공 제목이 화면 언어로 준비됨 (한국어 화면이거나 번역 완료). false 면 eventTitle 은 한국어 원문
+	public record Result(List<Slide> slides, String eventTitle, boolean eventTitleReady, boolean pending) {}
 
 	public Result localize(List<Slide> slides) {
 		return localize(slides, null, PAGE_WAIT);
@@ -44,7 +45,7 @@ public class MainBannerTranslator {
 		Language language = PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale());
 		boolean hasEventTitle = eventTitle != null && !eventTitle.isBlank();
 		if (language == Language.KO || slides.isEmpty() && !hasEventTitle) {
-			return new Result(slides, eventTitle, false);
+			return new Result(slides, eventTitle, true, false);
 		}
 		List<Source> sources = new ArrayList<>();
 		slides.forEach(slide -> sources.add(new Source(slide.title(), slide.body())));
@@ -64,12 +65,14 @@ public class MainBannerTranslator {
 					.orElse(slide));
 		}
 		String localizedEventTitle = eventTitle;
+		boolean eventTitleReady = true;
 		if (hasEventTitle) {
 			Optional<Translation> translation = translations.get(slides.size()); // 맨 뒤 = 총공 제목
 			pending |= translation.isEmpty();
+			eventTitleReady = translation.isPresent();
 			localizedEventTitle = translation.map(Translation::title).orElse(eventTitle);
 		}
-		return new Result(localized, localizedEventTitle,pending);
+		return new Result(localized, localizedEventTitle, eventTitleReady, pending);
 	}
 
 	// 총공 이벤트 페이지 제목 - 홈 배너와 같은 번역 기억을 쓴다 (배너에서 이미 번역했으면 AI 를 다시 부르지 않음)

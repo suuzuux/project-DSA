@@ -43,7 +43,7 @@ public class MainBannerApiController {
 		response.put("pending", result.pending());
 		response.put("banners", banners);
 		// 총공 슬라이드 제목 문장 (번역된 이벤트 제목 + 언어 파일 문장 틀). 총공이 없으면 넣지 않는다
-		eventView.ifPresent(view -> response.put("hashtagTitle", hashtagEventPageService.toHomeBanner(view, result.eventTitle()).title()));
+		eventView.ifPresent(view -> response.put("hashtagTitle", hashtagEventPageService.toHomeBanner(view, result.eventTitle(), result.eventTitleReady()).title()));
 		return response;
 	}
 }

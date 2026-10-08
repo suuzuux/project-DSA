@@ -59,7 +59,7 @@ public class HomeController {
 		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides(), eventTitle);
 		model.addAttribute("mainBanners", mainBanners.slides());
 		model.addAttribute("mainBannersPending", mainBanners.pending()); // true 면 화면이 번역문을 다시 받아 바꿔 끼운다
-		model.addAttribute("hashtagBanner", eventView.map(view -> hashtagEventPageService.toHomeBanner(view, mainBanners.eventTitle())).orElse(null));
+		model.addAttribute("hashtagBanner", eventView.map(view -> hashtagEventPageService.toHomeBanner(view, mainBanners.eventTitle(), mainBanners.eventTitleReady())).orElse(null));
 		Map<Long, CommunityMember> joinedProfiles;
 		Set<Long> joinedArtistIds;
 		User viewer = null;
