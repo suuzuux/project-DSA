@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +47,14 @@ public class GeminiClient {
     private String translationApiKey;
 
     // 외부 서버에 HTTP 요청을 보낼 때 쓰는 스프링 제공 도구
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
+    
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        return new RestTemplate(factory);
+    }
 
     // Gemini AI 서버의 주소(엔드포인트)
     private static final String GEMINI_URL =
@@ -73,14 +82,14 @@ public class GeminiClient {
     // 다른 AI 기능과 하루 한도를 나눠 쓰지 않게 한다. 실패하면 generateJson 과 같이 null
     public String generateTranslationJson(String prompt) {
         boolean hasTranslationKey = translationApiKey != null && !translationApiKey.isBlank();
-        return generate(prompt, true, hasTranslationKey ? translationApiKey : apiKey);
+        return generate(prompt, false, true, hasTranslationKey ? translationApiKey : apiKey);
     }
-
+    
     private String generate(String prompt, boolean jsonResponse) {
-        return generate(prompt, jsonResponse, apiKey);
+        return generate(prompt, jsonResponse, jsonResponse, apiKey);
     }
 
-    private String generate(String prompt, boolean jsonResponse, String key) {
+    private String generate(String prompt, boolean jsonMode, boolean nullOnFailure, String key) {
         try {
             // Gemini가 요구하는 JSON 형식에 맞춰서 요청 내용을 만듦
             Map<String, Object> requestBody = new HashMap<>();
@@ -89,7 +98,7 @@ public class GeminiClient {
                             Map.of("text", prompt)
                     ))
             ));
-            if (jsonResponse) {
+            if (jsonMode) {
                 requestBody.put("generationConfig", Map.of("responseMimeType", "application/json"));
             }
 
@@ -106,12 +115,12 @@ public class GeminiClient {
         } catch (RestClientException e) {
             // Gemini API 하루 사용 한도 초과(HTTP 429), 네트워크 오류 등 - 서비스 전체가 죽지 않고 안내 문구로 대체
             log.warn("Gemini API 호출 실패: {}", e.getMessage());
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         } catch (RuntimeException e) {
             // 안전성 필터로 candidates가 비어 오는 등 응답 구조가 예상과 다른 경우.
             // RestClientException으로는 안 잡혀서 그대로 두면 NPE가 500 에러로 터졌음
             log.warn("Gemini 응답 해석 실패: {}", e.toString());
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         }
     }
 

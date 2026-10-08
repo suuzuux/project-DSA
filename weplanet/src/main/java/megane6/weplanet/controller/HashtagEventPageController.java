@@ -1,7 +1,9 @@
 package megane6.weplanet.controller;
 
 import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.event.HashtagEventPageView;
 import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.MainBannerTranslator;
 import megane6.weplanet.service.event.HashtagEventPageService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -23,12 +25,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class HashtagEventPageController {
 	
 	private final HashtagEventPageService service;
-	
+	private final MainBannerTranslator mainBannerTranslator; // 이벤트 제목 번역 - 홈 배너가 번역해 둔 것을 같이 쓴다
+
 	@GetMapping
 	public String featured(@RequestParam(defaultValue = "false") boolean all,
 						   @AuthenticationPrincipal AuthenticatedUser principal,
 						   Model model) {
-		model.addAttribute("view", service.getFeatured(viewerId(principal)).orElse(null));
+		HashtagEventPageView view = service.getFeatured(viewerId(principal)).orElse(null);
+		model.addAttribute("view", view);
+		model.addAttribute("eventTitle", view == null ? null : localizedTitle(view));
 		model.addAttribute("pagePath", "/events/hashtag");
 		model.addAttribute("showAll", all);
 		
@@ -41,7 +46,9 @@ public class HashtagEventPageController {
 						@AuthenticationPrincipal AuthenticatedUser principal,
 						Model model) {
 		try {
-			model.addAttribute("view", service.getEvent(eventId, viewerId(principal)));
+			HashtagEventPageView view = service.getEvent(eventId, viewerId(principal));
+			model.addAttribute("view", view);
+			model.addAttribute("eventTitle", localizedTitle(view));
 		} catch (IllegalArgumentException e) {
 			return "redirect:/events/hashtag";
 		}
@@ -55,5 +62,10 @@ public class HashtagEventPageController {
 	// 비로그인이면 null → "내 커뮤니티" 표시 없이 보여준다
 	private Long viewerId(AuthenticatedUser principal) {
 		return principal == null ? null : principal.getId();
+	}
+
+	// 관리자가 입력한 이벤트 제목을 화면 언어로 (홈 배너가 번역해 둔 것이 있으면 바로 꺼낸다)
+	private String localizedTitle(HashtagEventPageView view) {
+		return mainBannerTranslator.localizeEventTitle(view.dashboard().title());
 	}
 }

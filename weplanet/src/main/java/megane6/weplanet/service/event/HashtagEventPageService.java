@@ -48,13 +48,17 @@ public class HashtagEventPageService {
 	}
 	
 	// 홈 캐러셀 맨 앞 슬라이드. 대표 이벤트가 없거나, 집계 확정 후 7일이 지났으면 배너를 내린다
-	public Optional<HashtagHomeBanner> getHomeBanner() {
+	public Optional<HashtagEventPageView> getHomeBanner() {
 		LocalDateTime weekAgo = LocalDateTime.now().minusDays(BANNER_DAYS_AFTER_FINALIZE);
 		
 		return getFeatured(null)
 				.filter(view -> view.dashboard().finalizedAt() == null
-						|| view.dashboard().finalizedAt().isAfter(weekAgo))
-				.map(view -> HashtagHomeBanner.from(view, messages));
+						|| view.dashboard().finalizedAt().isAfter(weekAgo));
+	}
+	
+	// 슬라이드 문장 조립 - 제목은 호출하는 쪽이 화면 언어로 번역해서 넘긴다 (MainBannerTranslator)
+	public HashtagHomeBanner toHomeBanner (HashtagEventPageView view, String title) {
+		return HashtagHomeBanner.from(view, title, messages);
 	}
 	
 	// 결과 공지의 링크로 들어왔을 때: 그 회차 이벤트

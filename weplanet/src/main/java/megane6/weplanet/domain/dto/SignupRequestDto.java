@@ -17,7 +17,7 @@ public class SignupRequestDto {
 	private String username;
 	
 	@NotBlank(message = "{signup.validation.passwordRequired}")
-	@Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$", message = "{signup.validation.passwordPattern}")
+	@Pattern(regexp = "^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$", message = "{signup.validation.passwordPattern}")
 	private String password;
 	
 	@NotBlank(message = "{signup.validation.passwordConfirmRequired}")
