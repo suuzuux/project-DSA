@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -117,9 +117,9 @@
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
-  <script th:src="@{/js/main.js}"></script>
-  <script th:src="@{/js/shell.js}"></script>
-  <script th:src="@{/js/dm-realtime.js}"></script>
-  <script th:src="@{/js/community-live.js}"></script>
+  <script th:src="@{/js/common/main.js}"></script>
+  <script th:src="@{/js/common/shell.js}"></script>
+  <script th:src="@{/js/common/dm-realtime.js}"></script>
+  <script th:src="@{/js/community/community-live.js}"></script>
 </body>
 </html>

@@ -669,8 +669,8 @@
 </div>
 
 <script th:replace="~{community/fragments/layout :: scripts}"></script>
-<script th:src="@{/js/main.js}"></script>
-<script th:src="@{/js/shell.js}"></script>
+<script th:src="@{/js/common/main.js}"></script>
+<script th:src="@{/js/common/shell.js}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
 <script th:inline="javascript">
     // 크롭 모달 제목 - portal/profile.html과 같은 방식/같은 키를 재사용한다
@@ -679,7 +679,7 @@
       Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집"
     };
 </script>
-<script th:src="@{/js/profile-image-crop.js(v=10)}"></script>
+<script th:src="@{/js/common/profile-image-crop.js(v=10)}"></script>
 <script th:inline="javascript">
     (function () {
       "use strict";

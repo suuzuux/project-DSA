@@ -3,7 +3,7 @@ package megane6.weplanet.service.community;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.entity.ArtistGroup;
-import megane6.weplanet.repository.ArtistGroupRepository;
+import megane6.weplanet.repository.artist.ArtistGroupRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;

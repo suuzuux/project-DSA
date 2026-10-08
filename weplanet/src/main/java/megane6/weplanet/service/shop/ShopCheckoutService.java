@@ -1,11 +1,12 @@
 package megane6.weplanet.service.shop;
+import megane6.weplanet.service.goods.ShopCartService;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ShopProductView;
 import megane6.weplanet.domain.entity.ShopCartItem;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.repository.ShopCartItemRepository;
-import megane6.weplanet.service.ShopService;
+import megane6.weplanet.repository.goods.ShopCartItemRepository;
+import megane6.weplanet.service.goods.ShopService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;

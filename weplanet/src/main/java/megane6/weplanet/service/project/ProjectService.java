@@ -1,0 +1,437 @@
+package megane6.weplanet.service.project;
+import megane6.weplanet.repository.fan.FanBadgeOwnershipRepository;
+import megane6.weplanet.service.account.EmailVerificationService;
+import megane6.weplanet.service.account.AccountProtectionService;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.repository.project.FanProjectCommunityAccessRepository;
+import megane6.weplanet.service.main.FileStorageService;
+import megane6.weplanet.repository.project.ProjectRepository;
+import megane6.weplanet.repository.project.ProjectSettlementAccountRepository;
+import megane6.weplanet.repository.project.ProjectImageRepository;
+import megane6.weplanet.repository.project.ProjectContributionRepository;
+
+import lombok.RequiredArgsConstructor;
+import megane6.weplanet.domain.dto.*;
+import megane6.weplanet.domain.entity.Project;
+import megane6.weplanet.domain.entity.ProjectImage;
+import megane6.weplanet.domain.entity.ProjectSettlementAccount;
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.*;
+import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.admin.AdminActionLogService;
+import megane6.weplanet.service.community.CommunityArtistResolver;
+import megane6.weplanet.service.email.MailSenderService;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class ProjectService {
+	// 프로젝트 본문 저장
+	private final ProjectRepository pr;
+	// 조건 (일반배지 5개 + 스페셜배지 1개)
+	private final FanBadgeOwnershipRepository fbr;
+	// 로그인 회원 조회 및 본인인증 확인
+	private final UserRepository ur;
+	// 대표 이미지 정보 저장
+	private final ProjectImageRepository pir;
+	// 정산계좌 저장
+	private final ProjectSettlementAccountRepository psr;
+	private final FileStorageService fs;
+	private final AccountProtectionService aps;
+	private final FanProjectCommunityAccessRepository fcr;
+	private final ProjectContributionRepository pcr;
+	
+	// 이메일
+	private final EmailVerificationService evs;
+	private final MailSenderService mss;
+
+	private final AdminActionLogService actionLogService;
+
+	// 카드/상세의 상태·유형 라벨과 등록 자격 안내 문구를 현재 로케일로 만든다.
+	// (예외 메시지는 키로 던지고 GlobalExceptionHandler / ProjectController가 번역)
+	private final megane6.weplanet.i18n.Messages messages;
+	private final CommunityArtistResolver communityArtistResolver;
+	
+	public static final long MIN_BASIC_BADGE_COUNT = 5L;
+	public static final long MIN_SPECIAL_BADGE_COUNT = 1L;
+
+	// 목록 정렬 기준 - 화면 select의 value와 짝을 이룸
+	public static final String SORT_DEADLINE = "deadline";
+	public static final String SORT_LATEST = "latest";
+
+	/**
+	 * 프로젝트 등록 본인확인 인증번호를 발급하고 회원가입 때 인증한 이메일로 발송한다.
+	 * 발급과 발송을 한 트랜잭션으로 묶어서, 메일 발송이 실패하면 인증 기록도 롤백된다.
+	 * (롤백되지 않으면 받지도 못한 인증번호 때문에 60초 재전송 제한에 걸린다.)
+	 *
+	 * @return 화면이 확인 단계에서 되돌려줘야 할 인증 키
+	 */
+	@Transactional
+	public String sendProjectVerificationCode(Long userId) {
+		EmailVerificationService.IssuedVerification issued = evs.issueProjectVerification(userId);
+
+		mss.sendProjectVerificationCode(
+				issued.recipientEmail(),
+				issued.rawCode(),
+				EmailVerificationService.EXPIRATION_MINUTES
+		);
+
+		return issued.verificationKey();
+	}
+
+	/**
+	 * 커뮤니티(아티스트)별 프로젝트 목록을 카드용 DTO로 만들어 돌려준다.
+	 * 비로그인 사용자는 공개 상태만, FAN·타 커뮤니티 방문 ARTIST는 공개 상태와 자신이 만든 프로젝트,
+	 * ADMIN은 모든 상태를 확인한다. 본인 커뮤니티 ARTIST와 AGENCY는 프로젝트 영역에 접근할 수 없다.
+	 */
+	public List<ProjectCardView> getProjectCards(User artist, String sort, AuthenticatedUser viewer) {
+		assertProjectAreaAccessible(artist, viewer);
+
+		List<Project> projects = pr.findByArtistAndDeletedAtIsNull(artist).stream()
+				.filter(project -> canView(project, viewer))
+				.sorted(projectComparator(sort))
+				.toList();
+
+		if (projects.isEmpty()) {
+			return List.of();
+		}
+
+		// 대표 이미지는 프로젝트당 1장. 목록 전체를 쿼리 한 번으로 가져와 id로 찾아 쓴다.
+		List<Long> projectIds = projects.stream().map(Project::getId).toList();
+		Map<Long, String> coverNames = pir.findByProject_IdIn(projectIds).stream()
+				.collect(Collectors.toMap(
+						image -> image.getProject().getId(),
+						ProjectImage::getStoredName,
+						(first, second) -> first
+				));
+		Map<Long, ProjectFundingSummary> fundingSummaries = pcr.summarizePaidByProjectIds(
+				projectIds,
+				FanProjectPaymentStatus.PAID
+		).stream().collect(Collectors.toMap(
+				ProjectFundingSummary::projectId,
+				summary -> summary
+		));
+
+		return projects.stream()
+				.map(project -> {
+					ProjectFundingSummary summary = fundingSummaries.getOrDefault(
+							project.getId(),
+							new ProjectFundingSummary(project.getId(), 0L, 0L)
+					);
+					return ProjectCardView.from(
+							project,
+							coverNames.get(project.getId()),
+							summary.fundedAmount(),
+							summary.participantCount(),
+							messages.get(project.getEventType().getMessageKey()),
+							messages.get(project.getStatus().getMessageKey())
+					);
+				})
+				.toList();
+	}
+
+	public ProjectDetailView getProjectDetail(Long projectId, User artist, AuthenticatedUser viewer) {
+		assertProjectAreaAccessible(artist, viewer);
+		Project project = pr.findById(projectId).orElseThrow(() -> new IllegalArgumentException("error.project.notFound"));
+
+		// 소프트 삭제된 프로젝트는 없는 것으로 취급(목록 쿼리의 deletedAt IS NULL과 같은 기준)
+		if (project.getDeletedAt() != null) {
+			throw new IllegalArgumentException("error.project.deleted");
+		}
+		if (!project.getArtist().getId().equals(artist.getId())) {
+			throw new IllegalArgumentException("error.project.notInCommunity");
+		}
+		if (!canView(project, viewer)) {
+			throw new IllegalStateException("error.project.noPermission");
+		}
+
+		String coverStoredName = pir.findByProject_Id(projectId)
+				.map(ProjectImage::getStoredName)
+				.orElse(null);
+		ProjectFundingSummary fundingSummary = pcr.summarizePaidByProjectIds(
+				List.of(projectId),
+				FanProjectPaymentStatus.PAID
+		).stream().findFirst().orElse(
+				new ProjectFundingSummary(projectId, 0L, 0L)
+		);
+
+		return ProjectDetailView.from(
+				project,
+				coverStoredName,
+				fundingSummary.fundedAmount(),
+				fundingSummary.participantCount(),
+				messages.get(project.getEventType().getMessageKey()),
+				messages.get(project.getStatus().getMessageKey())
+		);
+	}
+
+	/**
+	 * ARTIST는 본인 커뮤니티 팬 프로젝트만 막고, 가입한 타 커뮤니티에서는 팬과 동일하게 접근한다.
+	 * AGENCY는 접근 불가. ADMIN은 심사 목적 전체 접근.
+	 */
+	public void assertProjectAreaAccessible(
+			User artist,
+			AuthenticatedUser viewer
+	) {
+		if (viewer == null) {
+			throw new AccessDeniedException("common.error.loginRequired");
+		}
+
+		if (hasRole(viewer, Role.AGENCY)) {
+			throw new AccessDeniedException("error.project.agencyNotAllowed");
+		}
+
+		if (hasRole(viewer, Role.ADMIN)) {
+			return;
+		}
+		
+		User member = ur.findById(viewer.getId())
+				.orElseThrow(() ->
+						new AccessDeniedException("error.project.memberNotFound")
+				);
+		
+		// 솔로 아티스트 본인 또는 그 그룹 멤버는 자기 커뮤니티 팬 프로젝트를 이용할 수 없다
+		if (communityArtistResolver.isArtistOf(member, artist.getId())) {
+			throw new AccessDeniedException("error.project.ownCommunity");
+		}
+		
+		if (!member.canParticipateInCommunity()) {
+			throw new AccessDeniedException("error.project.fanOrArtistOnly");
+		}
+		
+		if (!fcr.existsByFanIdAndArtistId(member.getId(), artist.getId())) {
+			throw new AccessDeniedException("error.project.joinFirst");
+		}
+	}
+	
+	@Transactional
+	public void approveProject(
+			Long projectId,
+			Long artistId,
+			Long adminId,
+			String ipAddress
+	) {
+		User admin = getAdmin(adminId);
+		
+		Project project =
+				getProjectInArtistCommunity(
+						projectId,
+						artistId
+				);
+		
+		project.approve(admin);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PROJECT_APPROVE,
+				AdminTargetType.PROJECT,
+				project.getId(),
+				project.getTitle() + " 프로젝트 승인",
+				ipAddress
+		);
+	}
+	
+	@Transactional
+	public void rejectProject(
+			Long projectId,
+			Long artistId,
+			Long adminId,
+			String rejectionReason,
+			String ipAddress
+	) {
+		User admin = getAdmin(adminId);
+		
+		Project project =
+				getProjectInArtistCommunity(
+						projectId,
+						artistId
+				);
+		
+		project.reject(
+				admin,
+				rejectionReason
+		);
+		
+		actionLogService.recordAction(
+				adminId,
+				AdminActionType.PROJECT_REJECT,
+				AdminTargetType.PROJECT,
+				project.getId(),
+				project.getRejectionReason(),
+				ipAddress
+		);
+	}
+
+	private boolean canView(Project project, AuthenticatedUser viewer) {
+		if (hasRole(viewer, Role.ADMIN)) {
+			return true;
+		}
+		if (project.getStatus().isPubliclyVisible()) {
+			return true;
+		}
+		return (hasRole(viewer, Role.FAN) || hasRole(viewer, Role.ARTIST) || hasRole(viewer, Role.ARTIST_MEMBER))
+				&& project.getCreator().getId().equals(viewer.getId());
+	}
+
+	private Comparator<Project> projectComparator(String sort) {
+		if (SORT_LATEST.equals(sort)) {
+			return Comparator.comparing(Project::getCreatedAt).reversed();
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		return Comparator
+				.comparing((Project project) -> project.getFundingEndAt().isBefore(now))
+				.thenComparing(Project::getFundingEndAt);
+	}
+
+	private Project getProjectInArtistCommunity(Long projectId, Long artistId) {
+		Project project = pr.findById(projectId)
+				.orElseThrow(() -> new IllegalArgumentException("error.project.notFound"));
+		if (project.getDeletedAt() != null || !project.getArtist().getId().equals(artistId)) {
+			throw new IllegalArgumentException("error.project.notInCommunity");
+		}
+		return project;
+	}
+
+	private User getAdmin(Long adminId) {
+		return ur.findById(adminId)
+				.filter(user -> user.getRole() == Role.ADMIN)
+				.orElseThrow(() -> new IllegalStateException("error.project.adminOnlyReview"));
+	}
+
+	private boolean hasRole(AuthenticatedUser viewer, Role role) {
+		return viewer != null && role.authority().equals(viewer.getRoleName());
+	}
+	
+	/**
+	 * 프로젝트 등록 자격(배지 개수)을 확인
+	 * 등록 버튼 눌렀을 때 미리 확인하는 용도 + createProject에서도 같은 메서드 사용
+	 * 두 군데 조건을 따로 적으면 한쪽만 고쳤을 때 화면과 서버 판단이 달라진다.
+	 */
+	@Transactional(readOnly = true)
+	public ProjectEligibilityView checkEligibility(Long fanId, Long artistId) {
+		long basicBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
+				fanId, artistId, FanBadgeType.BASIC);
+		long specialBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
+				fanId, artistId, FanBadgeType.SPECIAL);
+		boolean eligible = basicBadgeCount >= MIN_BASIC_BADGE_COUNT
+				&& specialBadgeCount >= MIN_SPECIAL_BADGE_COUNT;
+		String message = eligible ? null : messages.get(
+				"error.project.badgeShortage",
+				MIN_BASIC_BADGE_COUNT, MIN_SPECIAL_BADGE_COUNT, basicBadgeCount, specialBadgeCount);
+		
+		return new ProjectEligibilityView(
+				eligible,
+				basicBadgeCount,
+				specialBadgeCount,
+				MIN_BASIC_BADGE_COUNT,
+				MIN_SPECIAL_BADGE_COUNT,
+				message
+		);
+	}
+	
+	@Transactional
+	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
+		// 1. 로그인 회원 조회
+		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("error.project.memberNotFound"));
+		if (!creator.canParticipateInCommunity()) {
+			throw new IllegalStateException("error.project.createFanOrArtistOnly");
+		}
+
+		User artist = ur.findById(dto.getArtistId())
+				.filter(user -> user.getRole() == Role.ARTIST)
+				.orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
+
+		if (communityArtistResolver.isArtistOf(creator, artist.getId())) {
+			throw new AccessDeniedException("error.project.createOwnCommunity");
+		}
+		
+		if (!fcr.existsByFanIdAndArtistId(
+				creator.getId(),
+				artist.getId()
+		)) {
+			throw new AccessDeniedException("error.project.joinFirst");
+		}
+		
+		// 3. 뱃지 개수 확인 (화면의 등록 버튼에서 쓰는 것과 같은 메서드)
+		ProjectEligibilityView eligibility = checkEligibility(creator.getId(), artist.getId());
+		if (!eligibility.eligible()) {
+			throw new IllegalStateException("error.project.badgeRequirement");
+		}
+		
+		long basicBadgeCount = eligibility.basicCount();
+		long specialBadgeCount = eligibility.specialCount();
+		
+		LocalDateTime emailVerifiedAt = evs.consumeProjectVerification(
+				creator.getId(),
+				dto.getEmailVerificationKey()
+		);
+		
+		// 4. Project 저장
+		// 화면에서는 날짜(년월일)만 받으므로 여기서 시각을 붙인다.
+		// 시작일은 그날 00:00:00부터, 마감일은 그날 23:59:59까지 모금하는 것으로 본다.
+		// LocalTime.MAX(23:59:59.999999999)를 쓰면 안 됨 - MySQL DATETIME(6)은 마이크로초까지라
+		// 나노초가 반올림되면서 다음 날 00:00:00으로 넘어가 버린다(9/30 입력 -> 10/1 저장).
+		LocalDateTime fundingStartAt = dto.getFundingStartAt().atStartOfDay();
+		LocalDateTime fundingEndAt = dto.getFundingEndAt().atTime(LocalTime.of(23, 59, 59));
+
+		Project project = Project.createPending(
+				artist,
+				creator,
+				dto.getTitle(),
+				dto.getEventType(),
+				dto.getGoalAmount(),
+				fundingStartAt,
+				fundingEndAt,
+				dto.getDescription(),
+				Math.toIntExact(specialBadgeCount),
+				Math.toIntExact(basicBadgeCount),
+				emailVerifiedAt);
+		Project savedProject = pr.save(project);
+		
+		// 5. 대표 이미지 저장
+		MultipartFile coverImage = dto.getCoverImage();
+		if (coverImage != null && !coverImage.isEmpty()) {
+			String contentType = coverImage.getContentType();
+			if (contentType == null || !contentType.startsWith("image/")) {
+				throw new IllegalArgumentException("error.project.coverImageOnly");
+			}
+			String originalName = coverImage.getOriginalFilename();
+			if (originalName == null || originalName.isBlank()) {
+				throw new IllegalArgumentException("error.project.coverFileName");
+			}
+			// 실제 파일을 프로젝트의 uploads 폴더에 저장
+			String storedName = fs.store(coverImage);
+			// 파일 정보를 DB에 저장
+			ProjectImage projectImage = ProjectImage.create(
+					savedProject, originalName, storedName, contentType, coverImage.getSize()
+			);
+			pir.save(projectImage);
+		}
+		
+		// 6. 정산계좌 저장
+		AccountProtectionService.ProtectedAccountNumber protectedAccount = aps.protect(dto.getAccountNumber());
+		ProjectSettlementAccount settlementAccount = ProjectSettlementAccount.createUnverified(
+				savedProject,
+				dto.getSettlementBank(),
+				protectedAccount.encrypted(),
+				protectedAccount.hmac(),
+				protectedAccount.last4()
+		);
+		psr.save(settlementAccount);
+		
+		// 7. 생성된 프로젝트 ID 반환
+		return savedProject.getId();
+	}
+}

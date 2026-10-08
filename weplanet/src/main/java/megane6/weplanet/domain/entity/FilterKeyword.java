@@ -1,4 +1,5 @@
 package megane6.weplanet.domain.entity;
+import megane6.weplanet.service.chat.ChatFilterService;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

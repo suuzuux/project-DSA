@@ -3,7 +3,7 @@ package megane6.weplanet.service.membership;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
-import megane6.weplanet.repository.MembershipOrderRepository;
+import megane6.weplanet.repository.membership.MembershipOrderRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 

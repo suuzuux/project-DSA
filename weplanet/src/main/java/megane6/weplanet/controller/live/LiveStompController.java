@@ -10,7 +10,7 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.live.LiveSession;
 import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.live.LiveBroadcastService;

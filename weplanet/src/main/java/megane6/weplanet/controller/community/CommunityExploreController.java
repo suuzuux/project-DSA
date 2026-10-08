@@ -1,7 +1,7 @@
 package megane6.weplanet.controller.community;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.community.ArtistSearchResultView;
 import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 import megane6.weplanet.security.AuthenticatedUser;

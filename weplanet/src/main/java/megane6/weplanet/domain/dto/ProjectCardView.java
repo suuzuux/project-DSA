@@ -1,4 +1,5 @@
 package megane6.weplanet.domain.dto;
+import megane6.weplanet.service.project.ProjectService;
 
 import megane6.weplanet.domain.entity.Project;
 

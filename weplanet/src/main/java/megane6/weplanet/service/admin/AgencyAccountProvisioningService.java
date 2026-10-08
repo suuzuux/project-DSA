@@ -7,10 +7,10 @@ import megane6.weplanet.domain.entity.AgencyProfile;
 import megane6.weplanet.domain.entity.PartnershipApplication;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.exception.LocalizedIllegalStateException;
-import megane6.weplanet.repository.AgencyProfileRepository;
-import megane6.weplanet.repository.AgencyRepository;
-import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.service.AgencyActivationService;
+import megane6.weplanet.repository.agency.AgencyProfileRepository;
+import megane6.weplanet.repository.agency.AgencyRepository;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.service.agency.AgencyActivationService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

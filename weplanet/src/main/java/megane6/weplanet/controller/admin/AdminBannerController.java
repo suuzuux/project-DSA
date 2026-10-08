@@ -1,14 +1,14 @@
 package megane6.weplanet.controller.admin;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.entity.MainBanner;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.BannerType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.security.AuthenticatedUser;
-import megane6.weplanet.service.MainBannerService;
+import megane6.weplanet.service.main.MainBannerService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

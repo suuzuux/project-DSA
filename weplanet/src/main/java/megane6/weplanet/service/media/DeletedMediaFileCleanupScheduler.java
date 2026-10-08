@@ -1,5 +1,4 @@
 package megane6.weplanet.service.media;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.media.BoardMediaEntity;

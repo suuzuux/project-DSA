@@ -1,5 +1,4 @@
 package megane6.weplanet.service.media;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.media.BoardMediaFileViewDTO;
@@ -11,7 +10,7 @@ import megane6.weplanet.domain.entity.media.BoardMediaLike;
 import megane6.weplanet.repository.media.BoardMediaFileRepository;
 import megane6.weplanet.repository.media.BoardMediaLikeRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
-import megane6.weplanet.service.ChatFilterService;
+import megane6.weplanet.service.chat.ChatFilterService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.core.io.Resource;

@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    회원정보 및 설정 - 언어 / 알림 / 약관 / 탈퇴, 회원정보 수정은 모달 (SettingsController)
+    비밀번호와 소셜 연동(최대 1개)은 따로 공존한다 - user.hasPassword()와 user.provider(없으면 null)를 각각 본다.
+  -->
+  <title th:text="#{settings.pageTitle}">WePlaNet – 회원정보 및 설정</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/shell.css}" />
+</head>
+<body data-shell="fan" data-base=""
+      th:attr="data-authenticated=true,
+               data-nickname=${user.nickname},
+               data-role=${user.role.authority()},
+               data-fan-id=${user.id}">
+<header class="site-header">
+  <div class="header-left">
+    <button type="button" class="menu-toggle" data-shell-open="menu" th:aria-label="#{common.menu}">☰</button>
+    <a class="brand" th:href="@{/}">
+      <span class="brand__mark">W</span>
+      <span class="brand__text">We<span>Pla</span>Net</span>
+    </a>
+  </div>
+  <div class="header-actions">
+    <a class="btn btn--ghost btn--sm" th:href="@{/logout}" th:text="#{common.logout}">로그아웃</a>
+  </div>
+</header>
+
+<main class="container section" style="max-width:720px;">
+  <div class="flex-between mb-24">
+    <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;letter-spacing:-0.03em;" th:text="#{settings.heading}">회원정보</h1>
+    <a class="btn btn--ghost btn--sm" th:href="@{/}" th:text="#{settings.backHome}">← 홈</a>
+  </div>
+
+  <!-- 프로필 요약 -->
+  <section class="settings-block">
+    <p th:if="${profileMessage}" th:text="${profileMessage}" style="color:#63704a;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
+    <p th:if="${errorMessage}" th:text="${errorMessage}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;"></p>
+    <p th:if="${param.linked}" style="color:#63704a;font-size:var(--wp-fs-xs);margin-bottom:12px;" th:text="#{settings.notice.linked}">소셜 계정이 연동되었습니다.</p>
+    <p th:if="${param.linkNotice}" style="color:var(--wp-ink-soft);font-size:var(--wp-fs-xs);margin-bottom:12px;" th:text="#{settings.notice.linkNotice}">이미 연동되어 있는 계정입니다.</p>
+    <p th:if="${param.linkError}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;" th:text="#{settings.notice.linkError}">이미 다른 계정에 연동된 소셜 계정이에요.</p>
+    <div class="flex-between">
+      <div class="flex-center">
+        <div class="avatar avatar--lg" th:text="${#strings.substring(user.nickname,0,1)}">닉</div>
+        <div>
+          <strong style="font-size:var(--wp-fs-lg);" th:text="${user.nickname}">닉네임</strong>
+          <p class="text-xs text-muted mt-8">
+            <span th:text="${#temporals.format(user.createdAt, 'yyyy.MM.dd')}">2022.01.18</span>
+            <span th:text="#{settings.profile.joined}">가입</span> ·
+            <span th:text="#{settings.profile.usernameLabel}">아이디</span>
+            <span th:text="${user.username}">abcd1234</span>
+          </p>
+          <!-- 비밀번호 유무와 소셜 연동 여부는 서로 독립적인 값이라 따로 보여준다. -->
+          <span th:if="${user.hasPassword()}" class="tag mt-8"
+                style="background:var(--wp-brand-soft);color:var(--wp-brand-dark);"
+                th:text="#{settings.profile.passwordLoginAvailable}">비밀번호 로그인 가능</span>
+          <!-- 비밀번호가 없으면(소셜 전용 가입) 이 계정의 로그인 수단은 이 소셜뿐이라 "연동됨"이 아니라
+               "로그인함"으로 표시한다. 비밀번호가 있으면(로컬 계정에 추가로 연결한 경우) "연동됨"을 유지. -->
+          <span th:if="${user.provider != null and user.hasPassword()}" class="tag mt-8"
+                style="background:#eaf3ff;color:#2563eb;"
+                th:text="#{settings.profile.linkedWithProvider(${user.provider.name()})}">GOOGLE 계정과 연동됨</span>
+          <span th:if="${user.provider != null and !user.hasPassword()}" class="tag mt-8"
+                style="background:#eaf3ff;color:#2563eb;"
+                th:text="#{settings.profile.loginWithProvider(${user.provider.name()})}">GOOGLE 계정으로 로그인함</span>
+        </div>
+      </div>
+      <button type="button" class="btn btn--primary btn--sm" data-modal-open="editProfileModal" th:text="#{common.edit}">수정</button>
+    </div>
+  </section>
+
+  <!-- 소셜 계정 연동 관리 - 계정당 1개까지라, 이미 다른 소셜이 연동돼 있으면
+       "연동 계정을 바꾸시겠습니까?" 확인 화면(social-link-confirm.html)을 거친다. -->
+  <!-- 비밀번호가 없는 계정(소셜 전용 가입)은 박스 전체를 잠근다(.is-locked) - 연동된 소셜이 유일한 로그인 수단이라
+       비밀번호를 설정해야 바꿀 수 있다. 연결 해제는 서버(UserService.unlinkSocialProvider)에서도 막는다. -->
+  <!-- 소셜 로그인·연결은 팬 계정만 쓸 수 있어서(OAuth2LoginSuccessHandler, SocialLoginEntryController.startLink) 팬에게만 보여준다 -->
+  <section class="settings-block" th:if="${user.role.name() == 'FAN'}" th:classappend="${user.hasPassword()} ? '' : 'is-locked'">
+    <h2 class="settings-block__title" th:text="#{settings.social.heading}">연결된 계정</h2>
+    <p th:if="${user.hasPassword()}" class="text-sm text-muted mb-16" th:text="#{settings.social.desc}">비밀번호와 별개로, 소셜 계정 하나를 추가로 연결해서 로그인 수단으로 쓸 수 있어요.</p>
+    <p th:unless="${user.hasPassword()}" class="text-sm mb-16" style="color:#c45c26;" th:text="#{settings.social.lockedDesc}">
+      지금은 이 소셜 계정이 유일한 로그인 수단이라 연동을 바꿀 수 없어요. 회원정보 수정에서 비밀번호를 먼저 설정해주세요.
+    </p>
+
+    <div class="settings-row" th:each="p : ${T(megane6.weplanet.domain.entity.enumfolder.AuthProvider).values()}">
+      <span th:text="${p.name()}">GOOGLE</span>
+      <a th:if="${user.provider != p}" class="btn btn--ghost btn--sm"
+         th:href="@{'/social-login/' + ${#strings.toLowerCase(p.name())} + '/link'}"
+         th:attr="tabindex=${user.hasPassword()} ? null : -1" th:text="#{settings.social.link}">연결하기</a>
+      <form th:if="${user.provider == p}" th:action="@{/settings/social/unlink}" method="post" style="margin:0;"
+            th:attr="data-confirm=#{settings.social.unlinkConfirm}"
+            onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
+        <button type="submit" class="btn btn--ghost btn--sm" th:attr="tabindex=${user.hasPassword()} ? null : -1" th:text="#{settings.social.unlink}">연결 해제</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 언어 -->
+  <!-- "기본 서비스 언어" 하나로 화면 언어와 게시글/댓글 AI 번역 대상 언어를 함께 정한다 -->
+  <section class="settings-block">
+    <h2 class="settings-block__title" th:text="#{settings.language.heading}">언어 설정</h2>
+    <div class="settings-row">
+      <span th:text="#{settings.language.label}">🌐 기본 서비스 언어</span>
+      <select class="form-select" id="languageSelect" style="width:120px;min-height:38px;">
+        <option value="KO" th:selected="${user.preferredLanguage.name() == 'KO'}">한국어</option>
+        <option value="JA" th:selected="${user.preferredLanguage.name() == 'JA'}">日本語</option>
+        <option value="EN" th:selected="${user.preferredLanguage.name() == 'EN'}">English</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- 알림 -->
+  <section class="settings-block">
+    <h2 class="settings-block__title" th:text="#{settings.notify.heading}">이벤트 · 혜택 알림 설정</h2>
+    <p class="text-sm text-muted mb-16" th:text="#{settings.notify.desc}">
+      아티스트의 최신 공지·이벤트·캘린더부터 앨범·공식 상품 소식까지 빠르게 받아보세요.
+      거부 시 이벤트·혜택 정보를 받아볼 수 없습니다.
+    </p>
+    <div class="settings-row">
+      <div>
+        <strong th:text="#{settings.notify.marketingTitle}">광고성 정보 알림 받기</strong>
+        <p class="text-xs text-muted" th:text="#{settings.notify.marketingDesc}">(광고성 정보 수신) 개인정보 수집 및 이용 동의</p>
+      </div>
+      <button type="button" class="toggle-managed" id="marketingConsentToggle" role="switch"
+              th:classappend="${user.marketingConsent} ? ' is-on'"
+              th:attr="aria-checked=${user.marketingConsent}, aria-label=#{settings.notify.marketingAria}"
+              data-notify-type="marketing"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <strong th:text="#{settings.notify.emailTitle}">이메일로 알림 받기</strong>
+        <p class="text-xs text-muted" th:text="#{settings.notify.emailDesc}">가입한 아티스트의 새 게시글 · 공지 · 라이브 시작을 이메일로 받아요</p>
+      </div>
+      <button type="button" class="toggle-managed" id="communityActivityEmailToggle" role="switch"
+              th:classappend="${user.communityActivityEmailEnabled} ? ' is-on'"
+              th:attr="aria-checked=${user.communityActivityEmailEnabled}, aria-label=#{settings.notify.emailAria}"
+              data-notify-type="email"></button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <strong th:text="#{settings.notify.nightTitle}">야간 알림 받기</strong>
+        <p class="text-xs text-muted" th:text="#{settings.notify.nightDesc}">오후 9시 ~ 오전 8시(KST)에도 중요 알림 수신</p>
+      </div>
+      <button type="button" class="toggle-managed" id="nightNotificationToggle" role="switch"
+              th:classappend="${user.nightNotificationAllowed} ? ' is-on'"
+              th:attr="aria-checked=${user.nightNotificationAllowed}, aria-label=#{settings.notify.nightAria}"
+              data-notify-type="night"></button>
+    </div>
+  </section>
+
+  <!-- 약관 -->
+  <section class="settings-block">
+    <h2 class="settings-block__title" th:text="#{settings.policy.heading}">약관 및 정책</h2>
+    <a class="settings-row" th:href="@{/policy/privacy}">
+      <span th:text="#{settings.policy.privacy}">개인정보처리방침</span><span>›</span>
+    </a>
+    <a class="settings-row" th:href="@{/policy/terms}">
+      <span th:text="#{settings.policy.terms}">이용약관</span><span>›</span>
+    </a>
+  </section>
+
+  <!-- 탈퇴는 모달에서 진행 - 비밀번호가 있는 계정은 현재 비밀번호를 다시 확인한다 -->
+  <button type="button" class="btn btn--ghost btn--block text-danger" data-modal-open="withdrawModal" th:text="#{settings.withdraw.button}">
+    위플래닛 계정 탈퇴하기
+  </button>
+</main>
+
+<!-- 회원탈퇴 모달 -->
+<div class="modal-backdrop" id="withdrawModal">
+  <div class="modal">
+    <div class="modal__head">
+      <h2 class="modal__title" th:text="#{settings.withdraw.modalTitle}">계정 탈퇴</h2>
+      <button type="button" class="modal__close" data-modal-close th:aria-label="#{common.close}">✕</button>
+    </div>
+    <form th:action="@{/settings/withdraw}" method="post" id="withdrawForm"
+          th:attr="data-confirm=#{settings.withdraw.confirm}"
+          onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);">
+      <p class="text-sm mb-16" th:text="#{settings.withdraw.modalDesc}">탈퇴하면 가입한 커뮤니티와 팔로우 정보가 모두 정리되고, 이 계정으로 다시 로그인할 수 없습니다.</p>
+      <!-- 비밀번호가 없는 소셜 전용 계정은 확인할 비밀번호가 없어서 확인창만 거친다 -->
+      <div class="form-group" th:if="${user.hasPassword()}">
+        <label class="form-label" for="withdrawPasswordInput" th:text="#{settings.modal.currentPasswordLabel}">현재 비밀번호</label>
+        <input class="form-input" type="password" id="withdrawPasswordInput" name="currentPassword" required
+               placeholder="본인 확인을 위해 현재 비밀번호를 입력하세요" th:placeholder="#{settings.verifyPasswordPlaceholder}"
+               autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn btn--ghost btn--block text-danger" th:text="#{settings.withdraw.submit}">탈퇴하기</button>
+    </form>
+  </div>
+</div>
+
+<!-- 회원정보 수정 모달 -->
+<div class="modal-backdrop" id="editProfileModal">
+  <div class="modal">
+    <div class="modal__head">
+      <h2 class="modal__title" th:text="#{settings.modal.title}">회원정보 수정</h2>
+      <button type="button" class="modal__close" data-modal-close>✕</button>
+    </div>
+    <form th:action="@{/settings/profile}" method="post" id="editProfileForm">
+      <div class="form-group">
+        <label class="form-label" th:text="#{settings.profile.usernameLabel}">아이디</label>
+        <input class="form-input" th:value="${user.username}" disabled />
+        <p class="form-hint" th:text="#{settings.modal.usernameHint}">아이디는 변경할 수 없습니다.</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" th:text="#{settings.modal.nicknameLabel}">닉네임</label>
+        <input class="form-input" name="nickname" th:value="${user.nickname}" required maxlength="15" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" th:text="#{settings.modal.realNameLabel}">이름</label>
+        <input class="form-input" name="realName" th:value="${user.realName}" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label" th:text="#{settings.modal.emailLabel}">이메일</label>
+        <!-- 연동된 소셜과 무관하게 누구나 이메일을 바꿀 수 있다. -->
+        <div class="form-row">
+          <input class="form-input" type="email" id="emailInput" th:value="${user.email}" disabled />
+          <button type="button" class="btn btn--ghost btn--sm" id="emailEditBtn" data-mode="edit"
+                  th:attr="data-needs-password=${user.hasPassword()}" th:text="#{common.editAction}">수정하기</button>
+        </div>
+        <input type="hidden" id="emailHidden" name="email" th:value="${user.email}" />
+        <p class="form-hint" th:text="#{settings.modal.emailHint}">이메일은 잠겨 있습니다. 변경하려면 수정하기를 눌러 인증을 진행하세요.</p>
+
+        <!-- 이메일 변경 전 본인 확인: 비밀번호가 있는 계정은 "수정하기"를 누르면 먼저 현재 비밀번호를 확인하고,
+             맞으면 잠긴 이메일 칸이 열린다 (EmailChangeAuthService). 아래 "현재 비밀번호" 칸과는 별개 - 폼으로 제출하지 않는다 -->
+        <div class="form-row mt-8" id="emailPwRow" style="display:none;align-items:center;gap:8px;">
+          <input class="form-input" type="password" id="emailPwInput" placeholder="본인 확인을 위해 현재 비밀번호를 입력하세요"
+                 th:placeholder="#{settings.verifyPasswordPlaceholder}" autocomplete="current-password" />
+          <button type="button" class="btn btn--ghost btn--sm" id="emailPwCheckBtn" th:text="#{common.confirm}">확인</button>
+        </div>
+
+        <div class="form-row mt-8" id="emailCodeRow" style="display:none;align-items:center;gap:8px;">
+          <input class="form-input" id="emailCode" type="text" maxlength="6" th:placeholder="#{settings.modal.emailCodePlaceholder}" autocomplete="one-time-code" />
+          <span class="text-xs" id="emailCodeTimer" style="min-width:40px;color:var(--wp-ink-soft);"></span>
+          <button type="button" class="btn btn--ghost btn--sm" id="verifyEmailCodeBtn" th:text="#{settings.modal.emailVerifyBtn}">인증하기</button>
+        </div>
+        <p class="text-xs" id="emailVerifyMsg" style="margin-top:6px;"></p>
+      </div>
+
+      <!-- "비밀번호가 있는지"로 갈린다. -->
+      <div th:if="${user.hasPassword()}">
+        <div class="form-group">
+          <label class="form-label" th:text="#{settings.modal.currentPasswordLabel}">현재 비밀번호</label>
+          <input class="form-input" type="password" id="currentPasswordInput" name="currentPassword"
+                 th:placeholder="#{settings.modal.currentPasswordPlaceholder}" autocomplete="current-password" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" th:text="#{settings.modal.newPasswordLabel}">새 비밀번호</label>
+          <input class="form-input" type="password" id="newPasswordInput" name="newPassword"
+                 th:placeholder="#{settings.modal.passwordLockedPlaceholder}" autocomplete="new-password" disabled />
+        </div>
+        <div class="form-group">
+          <label class="form-label" th:text="#{settings.modal.confirmPasswordLabel}">새 비밀번호 확인</label>
+          <input class="form-input" type="password" id="confirmPasswordInput" name="confirmPassword"
+                 th:placeholder="#{settings.modal.passwordLockedPlaceholder}" autocomplete="new-password" disabled />
+          <p class="text-xs" id="passwordMismatchMsg" style="display:none;color:#c45c26;margin-top:4px;" th:text="#{settings.modal.passwordMismatch}">새 비밀번호가 일치하지 않습니다.</p>
+        </div>
+      </div>
+      <!-- 비밀번호가 아직 없는 계정(소셜 전용 가입)이 새로 등록하는 흐름 - 현재 비밀번호 확인이
+           필요 없다(UserService.updatePortalAccount 참고). -->
+      <div th:unless="${user.hasPassword()}">
+        <p class="text-xs text-muted mb-8" th:text="#{settings.modal.noPasswordNotice}">아직 비밀번호가 설정되어 있지 않아요. 등록하면 아이디/비밀번호로도 로그인할 수 있어요.</p>
+        <div class="form-group">
+          <label class="form-label" th:text="#{settings.modal.newPasswordLabel}">새 비밀번호</label>
+          <input class="form-input" type="password" name="newPassword" th:placeholder="#{settings.modal.passwordFormatHint}" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" th:text="#{settings.modal.confirmPasswordLabel}">새 비밀번호 확인</label>
+          <input class="form-input" type="password" name="confirmPassword" autocomplete="new-password" />
+        </div>
+      </div>
+      <!-- 전화번호는 users.phone 에 저장한다 (굿즈 주문서 연락처 기본값으로도 쓰임). -->
+      <div class="form-group">
+        <label class="form-label" th:text="#{settings.modal.phoneLabel}">전화번호 (선택)</label>
+        <input class="form-input" name="phone" th:value="${user.phone}" placeholder="예) 010-1234-5678"
+               th:placeholder="#{settings.modal.phonePlaceholder}"
+               maxlength="20" inputmode="tel" autocomplete="tel" />
+      </div>
+      <button type="submit" class="btn btn--primary btn--block" th:text="#{common.editAction}">수정하기</button>
+    </form>
+    <script th:inline="javascript">
+      (function () {
+        "use strict";
+        // 이메일 인증 흐름에서 쓰는 문구를 서버 로케일 기준으로 미리 받아온다.
+        var MSG = {
+          editAction: /*[[#{common.editAction}]]*/ "수정하기",
+          emailSendCodeBtn: /*[[#{settings.modal.emailSendCodeBtn}]]*/ "인증코드 받기",
+          emailSending: /*[[#{settings.modal.emailSending}]]*/ "발송 중...",
+          emailRequired: /*[[#{settings.modal.emailRequired}]]*/ "이메일을 입력해주세요.",
+          emailSameAsCurrent: /*[[#{settings.modal.emailSameAsCurrent}]]*/ "현재 이메일과 같습니다.",
+          emailSendError: /*[[#{settings.modal.emailSendError}]]*/ "이메일 발송 중 오류가 발생했습니다.",
+          emailCodeRequired: /*[[#{settings.modal.emailCodeRequired}]]*/ "인증코드를 입력해주세요.",
+          emailVerifyError: /*[[#{settings.modal.emailVerifyError}]]*/ "인증 확인 중 오류가 발생했습니다.",
+          emailCodeExpired: /*[[#{settings.modal.emailCodeExpired}]]*/ "인증 시간이 만료되었습니다. 인증코드를 다시 받아주세요.",
+          saveFailed: /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다.",
+          saveError: /*[[#{common.error.saveError}]]*/ "저장 중 오류가 발생했습니다.",
+          cancel: /*[[#{common.cancel}]]*/ "취소",
+          currentPasswordRequired: /*[[#{settings.email.currentPasswordRequired}]]*/ "현재 비밀번호를 입력해주세요.",
+          passwordCheckError: /*[[#{settings.email.passwordCheckError}]]*/ "비밀번호 확인 중 오류가 발생했습니다."
+        };
+        var currentInput = document.getElementById("currentPasswordInput");
+        var newInput = document.getElementById("newPasswordInput");
+        var confirmInput = document.getElementById("confirmPasswordInput");
+        var mismatchMsg = document.getElementById("passwordMismatchMsg");
+        var form = document.getElementById("editProfileForm");
+        if (currentInput) {
+          function syncPasswordFields() {
+            var hasCurrent = currentInput.value.length > 0;
+            newInput.disabled = !hasCurrent;
+            confirmInput.disabled = !hasCurrent;
+            if (!hasCurrent) {
+              newInput.value = "";
+              confirmInput.value = "";
+              mismatchMsg.style.display = "none";
+            }
+          }
+
+          currentInput.addEventListener("input", syncPasswordFields);
+          syncPasswordFields();
+
+          form.addEventListener("submit", function (e) {
+            if (newInput.value && newInput.value !== confirmInput.value) {
+              e.preventDefault();
+              mismatchMsg.style.display = "block";
+              confirmInput.focus();
+            }
+          });
+        }
+
+        // ===== 이메일 잠금 → 수정 → 인증 (회원가입 화면과 같은 6자리 코드 방식) =====
+        var emailInput = document.getElementById("emailInput");
+        var emailHidden = document.getElementById("emailHidden");
+        var emailEditBtn = document.getElementById("emailEditBtn");
+        var emailCodeRow = document.getElementById("emailCodeRow");
+        var emailCodeInput = document.getElementById("emailCode");
+        var emailVerifyBtn = document.getElementById("verifyEmailCodeBtn");
+        var emailTimerEl = document.getElementById("emailCodeTimer");
+        var emailMsg = document.getElementById("emailVerifyMsg");
+        var originalEmail = emailInput.value;
+        var pendingEmail = "";
+        var emailTimerInterval = null;
+        var EMAIL_CODE_VALID_SECONDS = 5 * 60; // 서버 SignupEmailVerificationService의 EXPIRE_MINUTES(5분)와 맞춤
+
+        function setEmailMsg(text, ok) {
+          emailMsg.textContent = text;
+          emailMsg.style.color = ok ? "#63704a" : "#c45c26";
+        }
+
+        function formatEmailTime(seconds) {
+          var m = Math.floor(seconds / 60);
+          var s = seconds % 60;
+          return (m < 10 ? "0" + m : m) + ":" + (s < 10 ? "0" + s : s);
+        }
+
+        function startEmailTimer() {
+          clearInterval(emailTimerInterval);
+          var remaining = EMAIL_CODE_VALID_SECONDS;
+          emailCodeInput.disabled = false;
+          emailVerifyBtn.disabled = false;
+          emailTimerEl.textContent = formatEmailTime(remaining);
+          emailTimerInterval = setInterval(function () {
+            remaining -= 1;
+            if (remaining <= 0) {
+              clearInterval(emailTimerInterval);
+              emailTimerEl.textContent = "00:00";
+              emailCodeInput.disabled = true;
+              emailVerifyBtn.disabled = true;
+              setEmailMsg(MSG.emailCodeExpired, false);
+              return;
+            }
+            emailTimerEl.textContent = formatEmailTime(remaining);
+          }, 1000);
+        }
+
+        function stopEmailTimer() {
+          clearInterval(emailTimerInterval);
+          emailTimerEl.textContent = "";
+        }
+
+        function lockEmail() {
+          emailInput.disabled = true;
+          emailEditBtn.textContent = MSG.editAction;
+          emailEditBtn.dataset.mode = "edit";
+          emailCodeRow.style.display = "none";
+          stopEmailTimer();
+          hideEmailPwRow();
+        }
+
+        // 이메일 변경 전 현재 비밀번호 확인 (비밀번호가 있는 계정만). 맞으면 서버 세션에 10분 동안 확인 완료가 남는다
+        var emailNeedsPassword = emailEditBtn.dataset.needsPassword === "true";
+        var emailPwRow = document.getElementById("emailPwRow");
+        var emailPwInput = document.getElementById("emailPwInput");
+        var emailPwCheckBtn = document.getElementById("emailPwCheckBtn");
+
+        function unlockEmail() {
+          emailInput.disabled = false;
+          emailInput.focus();
+          emailEditBtn.textContent = MSG.emailSendCodeBtn;
+          emailEditBtn.dataset.mode = "send";
+        }
+
+        function showEmailPwRow() {
+          emailInput.disabled = true;
+          emailPwRow.style.display = "flex";
+          emailPwInput.value = "";
+          emailPwInput.focus();
+          emailEditBtn.textContent = MSG.cancel;
+          emailEditBtn.dataset.mode = "cancel";
+        }
+
+        function hideEmailPwRow() {
+          emailPwRow.style.display = "none";
+          emailPwInput.value = "";
+        }
+
+        function checkEmailPassword() {
+          var pw = emailPwInput.value;
+          if (!pw) {
+            setEmailMsg(MSG.currentPasswordRequired, false);
+            emailPwInput.focus();
+            return;
+          }
+          emailPwCheckBtn.disabled = true;
+          fetch("/settings/email/password-check", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "currentPassword=" + encodeURIComponent(pw)
+          })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              setEmailMsg(data.message, data.success);
+              if (data.success) {
+                hideEmailPwRow();
+                unlockEmail();
+              } else {
+                emailPwInput.value = "";
+                emailPwInput.focus();
+              }
+            })
+            .catch(function () {
+              setEmailMsg(MSG.passwordCheckError, false);
+            })
+            .finally(function () {
+              emailPwCheckBtn.disabled = false;
+            });
+        }
+
+        emailPwCheckBtn.addEventListener("click", checkEmailPassword);
+        // 비밀번호 칸에서 Enter 를 누르면 회원정보 폼이 제출되지 않고 비밀번호 확인만 한다
+        emailPwInput.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            checkEmailPassword();
+          }
+        });
+
+        emailEditBtn.addEventListener("click", function () {
+          var mode = emailEditBtn.dataset.mode || "edit";
+
+          if (mode === "cancel") {
+            lockEmail();
+            setEmailMsg("", true);
+            return;
+          }
+
+          if (mode === "edit") {
+            setEmailMsg("", true);
+            if (emailNeedsPassword) {
+              showEmailPwRow();
+            } else {
+              unlockEmail();
+            }
+            return;
+          }
+
+          // mode === "send" - 인증코드 받기
+          var newEmail = emailInput.value.trim();
+          if (!newEmail) {
+            setEmailMsg(MSG.emailRequired, false);
+            return;
+          }
+          if (newEmail === originalEmail) {
+            setEmailMsg(MSG.emailSameAsCurrent, false);
+            return;
+          }
+          emailEditBtn.disabled = true;
+          emailEditBtn.textContent = MSG.emailSending;
+
+          fetch("/settings/email/code", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "newEmail=" + encodeURIComponent(newEmail)
+          })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              setEmailMsg(data.message, data.success);
+              if (data.needsPassword) {
+                // 확인한 지 10분이 지나 서버의 본인 확인이 만료된 경우 - 다시 비밀번호부터
+                showEmailPwRow();
+                return;
+              }
+              if (data.success) {
+                pendingEmail = newEmail;
+                emailInput.disabled = true;
+                emailCodeRow.style.display = "flex";
+                emailCodeInput.value = "";
+                emailCodeInput.focus();
+                startEmailTimer();
+              }
+            })
+            .catch(function () {
+              setEmailMsg(MSG.emailSendError, false);
+            })
+            .finally(function () {
+              emailEditBtn.disabled = false;
+              // 비밀번호 재확인으로 돌아간 경우("취소" 버튼)는 문구를 덮어쓰지 않는다
+              if (emailEditBtn.dataset.mode === "send") emailEditBtn.textContent = MSG.emailSendCodeBtn;
+            });
+        });
+
+        emailVerifyBtn.addEventListener("click", function () {
+          var code = emailCodeInput.value.trim();
+          if (!code) {
+            setEmailMsg(MSG.emailCodeRequired, false);
+            return;
+          }
+          fetch("/settings/email/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: "newEmail=" + encodeURIComponent(pendingEmail) + "&code=" + encodeURIComponent(code)
+          })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              setEmailMsg(data.message, data.success);
+              if (data.success) {
+                emailHidden.value = pendingEmail;
+                originalEmail = pendingEmail;
+                stopEmailTimer();
+                lockEmail();
+                emailInput.value = pendingEmail;
+              }
+            })
+            .catch(function () {
+              setEmailMsg(MSG.emailVerifyError, false);
+            });
+        });
+      })();
+    </script>
+  </div>
+</div>
+
+<script src="/js/common/main.js"></script>
+<script src="/js/common/shell.js"></script>
+<script th:inline="javascript">
+  // [이벤트·혜택 알림 설정] 광고성 정보/이메일 알림/야간 알림 토글 - 클릭 즉시 서버에 저장.
+  // 저장하지 않는 전역 .toggle(main.js initToggles) 대신 .toggle-managed 클래스를 쓰고 클릭을 따로 처리한다.
+  (function () {
+    "use strict";
+    var SAVE_FAILED = /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다.";
+    var SAVE_ERROR = /*[[#{common.error.saveError}]]*/ "저장 중 오류가 발생했습니다.";
+    document.querySelectorAll("[data-notify-type]").forEach(function (btn) {
+      btn.setAttribute("role", "switch");
+      btn.addEventListener("click", function () {
+        var type = btn.dataset.notifyType;
+        var nextOn = !btn.classList.contains("is-on");
+        btn.classList.toggle("is-on", nextOn);
+        btn.setAttribute("aria-checked", nextOn ? "true" : "false");
+        btn.disabled = true;
+
+        fetch("/settings/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "type=" + encodeURIComponent(type) + "&enabled=" + nextOn
+        })
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            if (!data.success) {
+              btn.classList.toggle("is-on", !nextOn);
+              btn.setAttribute("aria-checked", !nextOn ? "true" : "false");
+              window.WePlaNet.alert(data.message || SAVE_FAILED);
+            }
+          })
+          .catch(function () {
+            btn.classList.toggle("is-on", !nextOn);
+            btn.setAttribute("aria-checked", !nextOn ? "true" : "false");
+            window.WePlaNet.alert(SAVE_ERROR);
+          })
+          .finally(function () {
+            btn.disabled = false;
+          });
+      });
+    });
+  })();
+</script>
+<script th:inline="javascript">
+  // [설정 - 언어 설정] "기본 서비스 언어" 드롭다운 - 선택 즉시 서버에 저장.
+  // 이 값이 게시글/댓글 "번역보기"(TranslateService)의 번역 대상 언어로도 그대로 쓰인다.
+  (function () {
+    "use strict";
+    var SAVE_FAILED = /*[[#{common.error.saveFailed}]]*/ "저장에 실패했습니다.";
+    var SAVE_ERROR = /*[[#{common.error.saveError}]]*/ "저장 중 오류가 발생했습니다.";
+    var select = document.getElementById("languageSelect");
+    if (!select) return;
+    var previousValue = select.value;
+
+    select.addEventListener("change", function () {
+      var nextValue = select.value;
+      select.disabled = true;
+
+      if (window.WePlaNetGlobalIcons && window.WePlaNetGlobalIcons.setLang) {
+        window.WePlaNetGlobalIcons.setLang(nextValue.toLowerCase());
+        return;
+      }
+
+      fetch("/settings/language", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "language=" + encodeURIComponent(nextValue)
+      })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data.success) {
+            previousValue = nextValue;
+            window.location.reload();
+          } else {
+            select.value = previousValue;
+            window.WePlaNet.alert(data.message || SAVE_FAILED);
+          }
+        })
+        .catch(function () {
+          select.value = previousValue;
+          window.WePlaNet.alert(SAVE_ERROR);
+        })
+        .finally(function () {
+          select.disabled = false;
+        });
+    });
+  })();
+</script>
+</body>
+</html>

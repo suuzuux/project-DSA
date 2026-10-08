@@ -10,7 +10,7 @@ import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import megane6.weplanet.domain.entity.event.HashtagEvent;
 import megane6.weplanet.domain.entity.event.HashtagEventTarget;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.repository.event.HashtagEventRepository;
 import megane6.weplanet.repository.event.HashtagEventTargetRepository;
 import megane6.weplanet.service.admin.AdminActionLogService;

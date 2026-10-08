@@ -1,4 +1,6 @@
 package megane6.weplanet.service.event;
+import megane6.weplanet.service.fan.BadgeEventListener;
+import megane6.weplanet.service.fan.PostService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

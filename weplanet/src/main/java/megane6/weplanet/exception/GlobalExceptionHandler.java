@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(status).body(Map.of("success", false, "message", message));
         }
 
-        ModelAndView mav = new ModelAndView("errorMessage");
+        ModelAndView mav = new ModelAndView("common/error/errorMessage");
         mav.addObject("message", message);
         mav.addObject("status", status.value());
         mav.setStatus(status);

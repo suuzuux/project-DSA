@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.event.AccountMailEvent;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;

@@ -1,0 +1,13 @@
+package megane6.weplanet.repository.agency;
+
+import megane6.weplanet.domain.entity.Agency;
+import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface AgencyRepository extends JpaRepository<Agency, Long> {
+
+	Optional<Agency> findByName(String name);
+	long countByStatus(AgencyStatus status);
+}

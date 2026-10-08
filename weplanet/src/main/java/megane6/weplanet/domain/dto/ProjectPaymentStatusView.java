@@ -1,4 +1,5 @@
 package megane6.weplanet.domain.dto;
+import megane6.weplanet.service.project.ProjectContributionService;
 
 import megane6.weplanet.domain.entity.ProjectContribution;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;

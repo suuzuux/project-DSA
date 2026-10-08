@@ -2,7 +2,7 @@ package megane6.weplanet.util;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 

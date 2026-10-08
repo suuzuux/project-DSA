@@ -1,4 +1,5 @@
 package megane6.weplanet.service.community;
+import megane6.weplanet.service.fan.UserFollowService;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.ArtistCount;
@@ -8,11 +9,11 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
-import megane6.weplanet.repository.UserFollowRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.fan.UserFollowRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
-import megane6.weplanet.service.FileStorageService;
+import megane6.weplanet.service.main.FileStorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;

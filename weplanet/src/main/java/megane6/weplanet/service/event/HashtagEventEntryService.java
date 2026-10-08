@@ -6,7 +6,7 @@ import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.enumfolder.events.HashtagEntryStatus;
 import megane6.weplanet.domain.entity.event.HashtagEventEntry;
 import megane6.weplanet.domain.entity.event.HashtagEventTarget;
-import megane6.weplanet.repository.PostRepository;
+import megane6.weplanet.repository.fan.PostRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.event.HashtagEventEntryRepository;
 import megane6.weplanet.repository.event.HashtagEventTargetRepository;

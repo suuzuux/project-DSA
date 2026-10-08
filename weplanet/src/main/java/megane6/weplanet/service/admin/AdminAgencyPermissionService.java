@@ -6,9 +6,9 @@ import megane6.weplanet.domain.dto.admin.AdminAgencyPermissionResponse;
 import megane6.weplanet.domain.entity.AgencyProfile;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.*;
-import megane6.weplanet.repository.AgencyProfileRepository;
-import megane6.weplanet.repository.AgencyRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.agency.AgencyProfileRepository;
+import megane6.weplanet.repository.agency.AgencyRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

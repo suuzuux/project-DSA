@@ -10,7 +10,7 @@ import megane6.weplanet.domain.entity.ArtistAccountProfile;
 import megane6.weplanet.domain.entity.enumfolder.events.HashtagEntryStatus;
 import megane6.weplanet.domain.entity.event.HashtagEvent;
 import megane6.weplanet.domain.entity.event.HashtagEventTarget;
-import megane6.weplanet.repository.ArtistAccountProfileRepository;
+import megane6.weplanet.repository.artist.ArtistAccountProfileRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.event.HashtagEventEntryRepository;
 import megane6.weplanet.repository.event.HashtagEventTargetRepository;

@@ -2,7 +2,7 @@ package megane6.weplanet.util;
 
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
