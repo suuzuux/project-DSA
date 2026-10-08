@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,15 +42,25 @@ public class GeminiClient {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    // 메인 배너·공지 번역 전용 키 (선택) - 비어 있으면 위 공용 키를 쓴다
+    // 번역용 키 (선택) - 주 용도는 메인 배너·공지 번역. 비어 있으면 번역도 위 공용 키를 쓴다.
+    // 공용 키가 거절될 때 라이브 AI 댓글·AI 팬 DM 도 이 키로 한 번 더 시도한다 (generateLiveJson)
     @Value("${gemini.translation.api.key:}")
     private String translationApiKey;
 
     // 외부 서버에 HTTP 요청을 보낼 때 쓰는 스프링 제공 도구
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
     private final ThreadLocal<String> lastFailure = new ThreadLocal<>();
 
+    // 응답이 안 오면 무한정 기다리지 않게 (연결 5초, 응답 30초) - 타임아웃이 없으면 요청 하나가 멈춰 번역 전체가 막혔음
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        return new RestTemplate(factory);
+    }
+
     // 요약·번역·DM. 라이브 댓글은 더 싼 Flash-Lite를 쓴다 (무료 한도도 모델마다 따로다).
+    // 배너·공지 번역은 Flash 가 실패하면 같은 키로 Flash-Lite 에 한 번 더 묻는다 (generateTranslationJson).
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
     private static final String GEMINI_LIVE_URL =
@@ -74,7 +86,7 @@ public class GeminiClient {
 
     // 라이브 댓글과 AI 팬 DM. 한도가 남은 Flash-Lite를 쓰고, 공용 키가 거절되면 번역 전용 키로 한 번 더 시도한다.
     public String generateLiveJson(String prompt) {
-        String text = generate(prompt, true, apiKey, false, GEMINI_LIVE_URL);
+        String text = generate(prompt, true, true, apiKey, GEMINI_LIVE_URL);
         if (text != null && !text.isBlank()) {
             return text;
         }
@@ -83,7 +95,7 @@ public class GeminiClient {
             return text;
         }
         log.warn("라이브 댓글 Gemini를 번역 전용 키로 재시도");
-        return generate(prompt, true, translationApiKey, false, GEMINI_LIVE_URL);
+        return generate(prompt, true, true, translationApiKey, GEMINI_LIVE_URL);
     }
 
     public String lastFailure() {
@@ -91,26 +103,30 @@ public class GeminiClient {
         return value == null ? "" : value;
     }
 
-    // 메인 배너·공지 번역(ContentTranslationService) 전용. 번역 전용 키가 있으면 그 키로 보내서
-    // 다른 AI 기능과 하루 한도를 나눠 쓰지 않게 한다. 실패하면 generateJson 과 같이 null
+    // 메인 배너·공지 번역(ContentTranslationService) 전용. 번역용 키가 있으면 그 키로 보내서 공용 키 한도와 나눠 쓴다.
+    // 단, 라이브 AI 댓글·AI 팬 DM 도 공용 키가 막히면 이 키를 빌려 쓴다 (모델이 Flash-Lite 라 하루 한도는 따로 잡힌다). 실패하면 null
+    // JSON 모드(responseMimeType)는 끈다 - JSON 모드에서 실패가 잦았다.
+    // Gemini 가 혼잡할 때는 모드와 상관없이 503 이 난다 - 그래서 Flash 가 실패하면 같은 키로 가벼운 Flash-Lite 에 한 번 더 묻는다
+    // (모델마다 혼잡·하루 한도가 따로라 Flash-Lite 는 살아 있는 경우가 많다. 짧은 제목·공지 번역에는 Flash-Lite 로도 충분).
+    // 프롬프트로 JSON 배열을 달라고 하고, ContentTranslationService 가 코드 블록 표시를 벗겨 읽는다
     public String generateTranslationJson(String prompt) {
         boolean hasTranslationKey = translationApiKey != null && !translationApiKey.isBlank();
-        return generate(prompt, true, hasTranslationKey ? translationApiKey : apiKey);
+        String key = hasTranslationKey ? translationApiKey : apiKey;
+        String text = generate(prompt, false, true, key, GEMINI_URL);
+        if (text != null && !text.isBlank()) {
+            return text;
+        }
+        log.warn("번역 Gemini(Flash) 실패 - Flash-Lite 로 재시도");
+        return generate(prompt, false, true, key, GEMINI_LIVE_URL);
     }
 
     private String generate(String prompt, boolean jsonResponse) {
-        return generate(prompt, jsonResponse, apiKey);
+        return generate(prompt, jsonResponse, jsonResponse, apiKey, GEMINI_URL);
     }
 
-    private String generate(String prompt, boolean jsonResponse, String key) {
-        return generate(prompt, jsonResponse, key, false);
-    }
-
-    private String generate(String prompt, boolean jsonResponse, String key, boolean minimalThinking) {
-        return generate(prompt, jsonResponse, key, minimalThinking, GEMINI_URL);
-    }
-
-    private String generate(String prompt, boolean jsonResponse, String key, boolean minimalThinking, String url) {
+    // jsonMode = Gemini JSON 모드로 받기, nullOnFailure = 실패하면 안내 문구 대신 null (호출부가 실패를 알아채게)
+    // key = 보낼 API 키, url = 모델 주소 (라이브 댓글은 Flash-Lite)
+    private String generate(String prompt, boolean jsonMode, boolean nullOnFailure, String key, String url) {
         lastFailure.remove();
         try {
             // Gemini가 요구하는 JSON 형식에 맞춰서 요청 내용을 만듦
@@ -120,13 +136,8 @@ public class GeminiClient {
                             Map.of("text", prompt)
                     ))
             ));
-            if (jsonResponse) {
-                Map<String, Object> config = new HashMap<>();
-                config.put("responseMimeType", "application/json");
-                if (minimalThinking) {
-                    config.put("thinkingConfig", Map.of("thinkingLevel", "MINIMAL", "includeThoughts", false));
-                }
-                requestBody.put("generationConfig", config);
+            if (jsonMode) {
+                requestBody.put("generationConfig", Map.of("responseMimeType", "application/json"));
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -150,18 +161,18 @@ public class GeminiClient {
                     : e.getStatusCode().value() + " " + abbreviate(e.getResponseBodyAsString());
             lastFailure.set(detail);
             log.warn("Gemini API 호출 실패: {}", detail);
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         } catch (RestClientException e) {
             // Gemini API 하루 사용 한도 초과(HTTP 429), 네트워크 오류 등 - 서비스 전체가 죽지 않고 안내 문구로 대체
             lastFailure.set(abbreviate(e.getMessage()));
             log.warn("Gemini API 호출 실패: {}", e.getMessage());
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         } catch (RuntimeException e) {
             // 안전성 필터로 candidates가 비어 오는 등 응답 구조가 예상과 다른 경우.
             // RestClientException으로는 안 잡혀서 그대로 두면 NPE가 500 에러로 터졌음
             lastFailure.set(abbreviate(e.toString()));
             log.warn("Gemini 응답 해석 실패: {}", e.toString());
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         }
     }
 

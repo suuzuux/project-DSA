@@ -70,7 +70,7 @@ class AccountRecoveryServiceTest {
 		when(userRepository.findByUsername("kwon01")).thenReturn(Optional.of(user));
 
 		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-				() -> service.resetPassword("kwon01", "kwon@gmail.com", "abcd1234", "abcd9999"));
+				() -> service.resetPassword("kwon01", "kwon@gmail.com", "abcd123!", "abcd999!"));
 		assertEquals("resetPassword.confirmMismatch", e.getMessage());
 	}
 

@@ -374,8 +374,8 @@
         get msg() { return t("signup.validation.usernamePattern", "아이디는 영문/숫자 4~20자로 입력해주세요."); },
       },
       password: {
-        test: (v) => /^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$/.test(v),
-        get msg() { return t("signup.validation.passwordPattern", "비밀번호는 영문/숫자 포함 8~20자로 입력해주세요."); },
+        test: (v) => /^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$/.test(v),
+        get msg() { return t("signup.validation.passwordPattern", "비밀번호는 영문/숫자/특수문자 포함 8~20자로 입력해주세요."); },
       },
       passwordConfirm: {
         test: (v) => v === (qs("#password")?.value || ""),
