@@ -3,16 +3,19 @@ package megane6.weplanet.service;
 import megane6.weplanet.i18n.Messages;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestTemplate;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 // 번역 전용 키 선택만 확인한다 (실제 Gemini 서버로는 요청을 보내지 않음)
@@ -48,6 +51,21 @@ class GeminiClientTest {
 	void translationFallsBackToTeamKey() {
 		ReflectionTestUtils.setField(client, "translationApiKey", "");
 		expectKey("team-key");
+
+		assertEquals("{\"title\":\"T\"}", client.generateTranslationJson("번역"));
+		server.verify();
+	}
+
+	// Flash 가 혼잡(503)이면 같은 번역 키로 Flash-Lite 에 한 번 더 물어 번역을 받는다
+	@Test
+	void translationRetriesWithFlashLiteWhenFlashIsBusy() {
+		ReflectionTestUtils.setField(client, "translationApiKey", "translation-key");
+		server.expect(requestTo(containsString("gemini-3.6-flash:")))
+				.andExpect(header("x-goog-api-key", "translation-key"))
+				.andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+		server.expect(requestTo(containsString("gemini-3.1-flash-lite:")))
+				.andExpect(header("x-goog-api-key", "translation-key"))
+				.andRespond(withSuccess(ANSWER, MediaType.APPLICATION_JSON));
 
 		assertEquals("{\"title\":\"T\"}", client.generateTranslationJson("번역"));
 		server.verify();

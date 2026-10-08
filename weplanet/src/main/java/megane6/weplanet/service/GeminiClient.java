@@ -60,6 +60,7 @@ public class GeminiClient {
     }
 
     // 요약·번역·DM. 라이브 댓글은 더 싼 Flash-Lite를 쓴다 (무료 한도도 모델마다 따로다).
+    // 배너·공지 번역은 Flash 가 실패하면 같은 키로 Flash-Lite 에 한 번 더 묻는다 (generateTranslationJson).
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
     private static final String GEMINI_LIVE_URL =
@@ -105,11 +106,18 @@ public class GeminiClient {
     // 메인 배너·공지 번역(ContentTranslationService) 전용. 번역용 키가 있으면 그 키로 보내서 공용 키 한도와 나눠 쓴다.
     // 단, 라이브 AI 댓글·AI 팬 DM 도 공용 키가 막히면 이 키를 빌려 쓴다 (모델이 Flash-Lite 라 하루 한도는 따로 잡힌다). 실패하면 null
     // JSON 모드(responseMimeType)는 끈다 - JSON 모드에서 실패가 잦았다.
-    // Gemini 가 혼잡할 때는 모드와 상관없이 503 이 난다 (ContentTranslationService 가 한 번 더 시도한다).
+    // Gemini 가 혼잡할 때는 모드와 상관없이 503 이 난다 - 그래서 Flash 가 실패하면 같은 키로 가벼운 Flash-Lite 에 한 번 더 묻는다
+    // (모델마다 혼잡·하루 한도가 따로라 Flash-Lite 는 살아 있는 경우가 많다. 짧은 제목·공지 번역에는 Flash-Lite 로도 충분).
     // 프롬프트로 JSON 배열을 달라고 하고, ContentTranslationService 가 코드 블록 표시를 벗겨 읽는다
     public String generateTranslationJson(String prompt) {
         boolean hasTranslationKey = translationApiKey != null && !translationApiKey.isBlank();
-        return generate(prompt, false, true, hasTranslationKey ? translationApiKey : apiKey, GEMINI_URL);
+        String key = hasTranslationKey ? translationApiKey : apiKey;
+        String text = generate(prompt, false, true, key, GEMINI_URL);
+        if (text != null && !text.isBlank()) {
+            return text;
+        }
+        log.warn("번역 Gemini(Flash) 실패 - Flash-Lite 로 재시도");
+        return generate(prompt, false, true, key, GEMINI_LIVE_URL);
     }
 
     private String generate(String prompt, boolean jsonResponse) {
