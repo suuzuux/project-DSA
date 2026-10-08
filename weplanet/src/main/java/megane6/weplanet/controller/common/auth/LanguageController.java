@@ -32,7 +32,7 @@ public class LanguageController {
 											  @RequestParam Language language,
 											  HttpServletRequest request, HttpServletResponse response) {
 		Map<String, Object> result = new HashMap<>();
-		// 관리자는 한국어 고정 - 언어를 바꾸지 않는다 (PreferredLocaleResolver 가 관리자 요청은 항상 한국어로 처리)
+		// 관리자는 한국어 고정이라 언어를 바꾸지 않는다.
 		if (principal != null && "ROLE_ADMIN".equals(principal.getRoleName())) {
 			result.put("success", true);
 			return result;
@@ -43,7 +43,7 @@ public class LanguageController {
 		}
 		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(language));
 		if (principal == null) {
-			// 로그인 전(포털 로그인 화면 등)에 고른 언어 - 아티스트/에이전시 로그인 성공 시 LoginSuccessHandler 가 이어받는다
+			// 로그인 전에 고른 언어 (로그인 성공 시 LoginSuccessHandler 가 이어받음).
 			PreferredLocaleResolver.markExplicitChoice(request);
 		}
 		result.put("success", true);

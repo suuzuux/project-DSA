@@ -29,16 +29,13 @@ public class AiFanChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final JsonMapper jsonMapper;
 
-    // 실제 서비스 기능이 아닌 시연용 - 채팅방이 한산할 때 보여줄 가짜 팬 응원 메시지 생성
+    // 시연용 가상 팬 응원 메시지 생성
     public String generateFanMessage() {
         String prompt = "너는 K-pop 아이돌의 팬이야. 아티스트에게 짧고 애정 어린 응원 메시지를 한국어로 한 문장만 작성해줘. 메시지 외에 다른 말은 하지 마.";
         return geminiClient.generate(prompt);
     }
 
-    /**
-     * 아티스트가 DM을 보낸 뒤, 가상 팬 5명이 그 내용에 맞춰 차례로 답장한다.
-     * 웹소켓 요청 스레드를 붙잡지 않도록 백그라운드에서 돈다.
-     */
+    /** 아티스트 DM 에 가상 팬 5명이 백그라운드에서 차례로 답장한다. */
     @Async("aiFanExecutor")
     public void replyToArtistDm(Long artistId, String artistMessage) {
         User artist = userRepository.findById(artistId).orElse(null);
@@ -87,7 +84,7 @@ public class AiFanChatService {
 
     private List<String> generateReplies(String artistNickname, String artistMessage) {
         String prompt = buildPrompt(artistNickname, artistMessage);
-        String raw = geminiClient.generateJson(prompt);
+        String raw = geminiClient.generateLiveJson(prompt);
         return parseReplies(raw);
     }
 
@@ -110,27 +107,48 @@ public class AiFanChatService {
         return sb.toString();
     }
 
-    private List<String> parseReplies(String raw) {
+    // 라이브 AI 댓글도 같은 JSON 형식을 쓴다.
+    public List<String> parseReplies(String raw) {
         if (raw == null || raw.isBlank()) {
             return List.of();
         }
         String json = stripMarkdownFence(raw.strip());
         try {
             var root = jsonMapper.readTree(json);
+            if (root.isObject() && root.hasNonNull("content")) {
+                String content = root.path("content").asText("").strip();
+                return content.isBlank() ? List.of() : List.of(content);
+            }
             var array = root.isArray() ? root : root.get("replies");
+            if ((array == null || !array.isArray()) && root.isObject()) {
+                for (var field : root.properties()) {
+                    if (field.getValue().isArray()) {
+                        array = field.getValue();
+                        break;
+                    }
+                }
+            }
             if (array == null || !array.isArray()) {
+                log.warn("AI 팬 답장 JSON에 배열이 없음: {}", abbreviate(raw));
                 return List.of();
             }
             List<String> contents = new ArrayList<>();
             array.forEach(node -> {
-                var content = node.path("content").asText("");
+                String content = node.isTextual()
+                        ? node.asText("")
+                        : node.path("content").asText("");
                 contents.add(content.strip());
             });
             return contents;
         } catch (Exception e) {
-            log.warn("AI 팬 답장 JSON 파싱 실패: {}", e.getMessage());
+            log.warn("AI 팬 답장 JSON 파싱 실패: {} / 원문={}", e.getMessage(), abbreviate(raw));
             return List.of();
         }
+    }
+
+    private static String abbreviate(String raw) {
+        String text = raw == null ? "" : raw.strip();
+        return text.length() <= 300 ? text : text.substring(0, 300);
     }
 
     private static String stripMarkdownFence(String raw) {
@@ -160,7 +178,7 @@ public class AiFanChatService {
         return persona.fallbacks().get(ThreadLocalRandom.current().nextInt(persona.fallbacks().size()));
     }
 
-    // AI 호출 실패는 GeminiClient.generateJson 이 null 을 돌려줘서 parseReplies 단계에서 걸러진다 (안내 문구를 글자로 비교하지 않음)
+    // AI 호출 실패(null)는 parseReplies 에서 걸러진다.
     private static boolean isUsableReply(String content) {
         return content != null && !content.isBlank();
     }

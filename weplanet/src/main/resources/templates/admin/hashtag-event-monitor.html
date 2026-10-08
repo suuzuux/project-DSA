@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- 진행 중일 때만 30초마다 페이지 전체를 새로고침 (JS 없이 가장 간단한 "실시간") -->
+  <!-- 진행 중일 때만 30초마다 새로고침 -->
   <meta th:if="${dashboard.ongoing()}" http-equiv="refresh" content="30" />
   <title th:text="${dashboard.title()} + ' ' + #{adminHashtag.monitor} + ' | WePlaNet ADMIN'">해시태그 총공 모니터링 | WePlaNet ADMIN</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
@@ -19,7 +19,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -80,7 +80,7 @@
       </div>
 
       <div class="flex-center">
-        <!-- 공개 이벤트 페이지 (5단계에서 만든다) -->
+        <!-- 공개 이벤트 페이지 -->
         <a class="btn btn--ghost btn--sm" th:href="@{/events/hashtag}" target="_blank" th:text="#{adminHashtag.monitor.publicPage}">공개 페이지 ↗</a>
 
         <!-- 종료 후, 확정 전에만 -->
@@ -91,7 +91,7 @@
           <button type="submit" class="btn btn--primary btn--sm" th:text="#{adminHashtag.monitor.finalize}">집계 확정</button>
         </form>
 
-        <!-- 확정 후: 결과 공지 작성 (7단계에서 자동 채우기를 붙인다) -->
+        <!-- 확정 후: 결과 공지 작성 -->
         <a th:if="${d.finalized()}" class="btn btn--primary btn--sm"
            th:href="@{/admin/notices/new(hashtagEventId=${d.eventId()})}" th:text="#{adminHashtag.monitor.writeNotice}">결과 공지 작성</a>
       </div>
@@ -172,7 +172,7 @@
             <td th:text="${#numbers.formatInteger(row.memberCount(), 0, 'COMMA')}">820</td>
             <td th:text="${#numbers.formatInteger(row.participantCount(), 0, 'COMMA')}">312</td>
             <td style="min-width:160px;">
-              <!-- .progress 는 프로젝트 운영 화면의 모금 진행 막대와 같은 스타일 -->
+              <!-- 프로젝트 모금 진행 막대와 같은 스타일 -->
               <div class="progress" style="margin-bottom:4px;">
                 <span th:style="'width:' + ${row.participationRate()} + '%'"></span>
               </div>

@@ -26,7 +26,7 @@
     <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
          background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;"></div>
 
-    <!-- hidden : CSS의 display:none이 아니라, 순수 HTML 속성으로 태그를 숨기는 방법 -->
+    <!-- hidden 속성으로 숨긴다. -->
     <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
 
     <div style="display:flex;gap:8px;">
@@ -35,7 +35,7 @@
     </div>
 </div>
 
-<!-- 와이어프레임 스타일 채팅 말풍선 - 내(아티스트)가 보낸 메시지는 오른쪽(민트), 팬이 보낸 메시지는 왼쪽(연회색) -->
+<!-- 채팅 말풍선 - 내 메시지 오른쪽, 팬 메시지 왼쪽 -->
 <style>
     .chat-row { display: flex; gap: 8px; max-width: 80%; }
     .chat-row--me { align-self: flex-end; flex-direction: row-reverse; }
@@ -49,10 +49,10 @@
 
 <script th:inline="javascript">
     const artistId = /*[[${artistId}]]*/ 0;
-    // 서버가 내려준 지난 대화 이력 (새로고침해도 메시지가 남아있도록)
+    // 지난 대화 이력
     const history = /*[[${history}]]*/ [];
 
-    // 화면 언어에 맞춘 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    // 화면 언어 문구 (한국어는 fallback)
     const MSG = {
         warningPrefix: /*[[#{artistChat.warningPrefix}]]*/ "[경고] {0}"
     };
@@ -61,7 +61,7 @@
     const socket = new WebSocket(proto + '//' + location.host + '/ws-chat');
     const stompClient = Stomp.over(socket);
 
-    // 내(아티스트)가 보낸 메시지는 오른쪽, 팬이 보낸 메시지는 왼쪽 말풍선으로 그림
+    // 내 메시지는 오른쪽, 팬 메시지는 왼쪽
     function appendMessage(data) {
         const div = document.getElementById('messages');
         const isMe = data.senderId === artistId;
@@ -80,7 +80,7 @@
         div.scrollTop = div.scrollHeight;
     }
 
-    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 함 (WePlaNet.alert() 팝업 대신 사용)
+    // 경고 문구를 잠깐 보여주고 숨긴다.
     let warningTimer = null;
 
     function showWarning(message) {
@@ -94,23 +94,23 @@
         }, 3500);
     }
 
-    // 페이지를 열자마자 지난 이력을 먼저 그림 (웹소켓 연결 여부와 무관)
+    // 지난 이력을 먼저 그린다.
     if (Array.isArray(history)) {
         history.forEach(appendMessage);
     }
 
     stompClient.connect({}, function () {
-        // 내가 방송한 메시지가 그대로 나에게도 되돌아오는 채널
+        // 내 방송 메시지가 되돌아오는 채널
         stompClient.subscribe('/topic/chat.' + artistId, function (message) {
             appendMessage(JSON.parse(message.body));
         });
 
-        // 팬들이 보낸 개인 메시지 중, 30% 확률로 추려진 것만 도착하는 채널 (도배 방지용)
+        // 팬 메시지 중 30%만 오는 채널 (도배 방지)
         stompClient.subscribe('/topic/chat.' + artistId + '.artistFeed', function (message) {
             appendMessage(JSON.parse(message.body));
         });
 
-        // 필터에 걸려서 거부된 내 메시지에 대한 경고를 받는 채널
+        // 거부된 내 메시지 경고 채널
         stompClient.subscribe('/topic/chat.error.' + artistId, function (message) {
             const data = JSON.parse(message.body);
             showWarning(data.message);
@@ -121,7 +121,7 @@
         const content = document.getElementById('messageInput').value;
         if (!content) return;
 
-        // fanId를 null로 보내면 아티스트 채팅방 메시지. 서버가 저장한 뒤 AI 팬 5명이 답장함
+        // fanId 가 null 이면 아티스트 방 메시지 (저장 후 AI 팬이 답장)
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             artistId: artistId,
             fanId: null,
@@ -140,8 +140,7 @@
         }
     });
 
-    // AI 팬 인사 버튼 - 웹소켓이 아니라 fetch로 요청. 서버가 팬 5명의 답장을 artistFeed로 보내므로
-    // 여기서는 따로 응답을 받아서 화면에 그릴 필요 없이 요청만 보내면 됨
+    // AI 팬 인사 버튼 (fetch 요청, 답장은 artistFeed 로 옴)
     document.getElementById('aiFanButton').addEventListener('click', function () {
         fetch('/chat/room/artist/ai-fan?artistId=' + artistId, {
             method: 'POST'

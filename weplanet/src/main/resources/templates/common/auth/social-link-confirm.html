@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- 이미 다른 소셜이 연동된 계정에서 "연결하기"를 눌렀을 때의 확인 화면 (계정당 소셜 연동은 1개).
-       "예"면 기존 연동을 새 소셜 계정으로 바꾸고, "아니오"면 그대로 설정 화면으로 돌아간다. -->
+  <!-- 소셜 연동 계정 변경 확인 (예: 교체, 아니오: 설정으로) -->
   <title th:text="#{socialLink.pageTitle}">WePlaNet – 연동 계정 변경 확인</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
 </head>
@@ -15,8 +14,7 @@
 
   <h1 class="auth-card__title mt-16" th:text="#{socialLink.heading}">연동 계정을 바꾸시겠습니까?</h1>
 
-  <!-- provider 이름을 <strong> 으로 강조한 채 문장 전체를 번역해야 해서 th:utext 로 그린다
-       (값은 AuthProvider enum 이름이라 안전하다). -->
+  <!-- provider 이름을 강조한 문장이라 th:utext 로 그린다 (enum 값이라 안전). -->
   <p class="text-sm text-muted mt-16">
     <span th:text="#{socialLink.desc}">이 계정은 비밀번호와 별개로 소셜 계정 하나만 추가로 연결할 수 있어요.</span>
     <span th:if="${currentProvider}" th:utext="#{socialLink.currentlyLinkedNotice(${currentProvider})}">

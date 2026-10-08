@@ -1,16 +1,4 @@
-/**
- * ============================================================
- * WePlaNet – Global Icons (언어 / 알림 / 캘린더)
- * ------------------------------------------------------------
- * global_icon_shell_demo.jsx 를 기존 팬 셸(vanilla JS)에 이식한 모듈.
- *
- * 연동:
- *  - 언어(Context) 한 곳이 바뀌면 캘린더 일정·알림 문구가 같이 바뀐다.
- *  - 알림 중 스케줄 타입(라이브/티켓/콘서트)은 EVENTS 에서 파생되며,
- *    클릭하면 해당 일정 상세로 캘린더가 열린다.
- *  - 커뮤니티 미니캘린더·메인 주간 스케줄도 같은 EVENTS 를 쓴다.
- * ============================================================
- */
+/** WePlaNet 전역 아이콘(언어·알림·캘린더) 모듈 - 언어 변경이 캘린더·알림 문구에 함께 반영되고, 일정 알림을 누르면 캘린더 상세가 열린다. */
 (function () {
   "use strict";
 
@@ -24,10 +12,7 @@
     { code: "en", label: "English" },
   ];
 
-  /**
-   * 캘린더·알림 위젯 문구는 서버 MessageSource(messages*.properties, ko/ja/en)를 /api/i18n/calendar 로 받아 쓴다(shell.js와 같은 패턴).
-   * 아래 DEFAULT_* 는 fetch 실패 시 한국어 기본값이고, 언어 버튼을 누르면 새로고침 없이 다시 그리도록 3개 언어를 한번에 들고 있는다.
-   */
+  /** 위젯 문구는 /api/i18n/calendar 로 받는다 (DEFAULT_* 는 실패 시 한국어 기본값, 3개 언어 보관). */
   var DEFAULT_UI = {
     ko: {
       notificationsTitle: "알림",
@@ -140,7 +125,7 @@
   };
   var WEEKDAYS = DEFAULT_WEEKDAYS;
 
-  /* 스케줄 원본 — 에이전시 포털에서 등록한 일정을 /api/schedules 로 불러온다 */
+  // 에이전시 포털에서 등록한 일정 (/api/schedules)
   var EVENTS_BY_DATE = {};
   var POST_NOTIFICATIONS = [];
 
@@ -207,7 +192,7 @@
   };
   var RELATIVE_TIME_TABLE = DEFAULT_RELATIVE_TIME;
 
-  /** "{0}"/"{1}" 형태 템플릿의 자리표시자를 순서대로 치환한다 (shell.js의 greet 치환과 동일 패턴). */
+  /** {0}·{1} 자리표시자를 순서대로 치환한다. */
   function fmt(template, args) {
     var result = String(template == null ? "" : template);
     (args || []).forEach(function (arg, idx) {
@@ -216,7 +201,7 @@
     return result;
   }
 
-  /** /api/i18n/calendar 로 받아온 ko/ja/en 문구로 위 DEFAULT_* 를 교체한다. 실패하면 한국어 기본값 유지. */
+  /** 서버 문구로 DEFAULT_* 를 교체한다 (실패하면 한국어 유지). */
   function applyCalendarI18n(data) {
     if (!data) return;
     var codes = ["ko", "ja", "en"];
@@ -279,7 +264,7 @@
       .catch(function () { /* 네트워크 오류 시 한국어 기본값으로 진행 */ });
   }
 
-  /* ---------- helpers ---------- */
+  // helpers
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -293,7 +278,7 @@
     return found ? found.name : id;
   }
 
-  /** 가입 시각(ISO). 없으면 null → 가입 필터 미적용(아티스트 본인 등) */
+  /** 가입 시각(ISO), 없으면 null (가입 필터 미적용) */
   function joinedAtForArtist(artistId) {
     var sid = String(artistId);
     var found = MY_COMMUNITIES.filter(function (c) { return String(c.id) === sid; })[0];
@@ -476,7 +461,7 @@
       loadSchedulesFromApi().then(function () {
         persistReadState();
         renderNotiPanel();
-        updateNotiBadges(); // 예전엔 없는 함수(updateBadge)를 불러서 자정 갱신 때 에러가 났음
+        updateNotiBadges();
       });
       scheduleMidnightRefresh();
     }, delay);
@@ -511,7 +496,7 @@
       });
   }
 
-  /** 이미 읽음(기간 경과·개별 클릭)인 항목은 저장해 두고, 미읽음이 없으면 뱃지를 끈다. */
+  /** 읽음 처리된 항목을 저장하고 미읽음이 없으면 뱃지를 끈다. */
   function persistReadState() {
     var ids = loadReadIds();
     var changed = false;
@@ -524,12 +509,7 @@
     if (changed) saveReadIds(ids);
   }
 
-  /**
-   * 헤더 빨간 점이 세는 알림 범위.
-   * 커뮤니티 페이지에서는 패널에 보이는 알림(그 커뮤니티 + 내 글 댓글)과 같게 맞춘다.
-   * 예전엔 항상 전체 기준이라, 패널의 알림을 다 읽어도 다른 커뮤니티 알림 때문에 점이 남았음.
-   * 메인 등 그 밖의 페이지는 전체 기준 (패널 칩 필터와 무관).
-   */
+  /** 헤더 빨간 점이 세는 알림 범위 (커뮤니티 페이지는 패널과 같은 범위, 그 외는 전체). */
   function badgeScopeNotifications() {
     return isCommunityPage() ? notificationsForPanel() : allNotifications();
   }
@@ -610,8 +590,7 @@
       if (fromPage.length) MY_COMMUNITIES = fromPage;
     }
     EVENTS_BY_DATE = (data && data.eventsByDate) ? data.eventsByDate : {};
-    // 커뮤니티 페이지: 요청한 artistId의 출석만 반영. artistId 없는 응답으로는 덮어쓰지 않음
-    // (로그인 아티스트 본인 도장이 타 커뮤니티에 새는 것 방지)
+    // 커뮤니티 페이지는 요청한 artistId 출석만 반영한다 (다른 커뮤니티로 새지 않게).
     if (isCommunityPage()) {
       var pageCommunityId = detectCommunityId();
       var responseArtistId = data && data.attendanceArtistId != null
@@ -621,7 +600,7 @@
           && data.attendance && typeof data.attendance === "object") {
         window.__ARTIST_ATTENDANCE__ = data.attendance;
       }
-      // artistId 불일치/누락이면 페이지에서 내려준 커뮤니티 주인 출석 유지
+      // artistId 가 다르거나 없으면 페이지의 커뮤니티 주인 출석을 유지한다.
     } else if (data && data.attendance && typeof data.attendance === "object"
         && data.attendanceArtistId != null) {
       window.__ARTIST_ATTENDANCE__ = data.attendance;
@@ -638,8 +617,7 @@
   }
 
   function scheduleApiUrl() {
-    // 캘린더 패널에서 커뮤니티를 전환하려면 가입한 전체 일정/커뮤니티가 필요함.
-    // (커뮤니티 페이지의 ?artistId= 필터를 붙이면 칩이 현재 커뮤니티 하나만 남음)
+    // 커뮤니티 전환을 위해 가입한 전체 일정을 받는다.
     return "/api/schedules";
   }
 
@@ -669,7 +647,7 @@
       POST_NOTIFICATIONS = [];
       return Promise.resolve();
     }
-    // 커뮤니티 페이지에서도 전체(가입 커뮤니티 + 시스템 공지)를 받아 뱃지/패널 필터에 사용
+    // 커뮤니티 페이지에서도 전체 알림을 받아 필터에 사용한다.
     return fetch("/api/notifications", { headers: { Accept: "application/json" } })
       .then(function (res) { return res.ok ? res.json() : null; })
       .then(function (data) {
@@ -784,7 +762,7 @@
     document.body.appendChild(wrap);
 
     document.getElementById("wpCalBackdrop").addEventListener("click", function (e) {
-      // 배경만 닫기 — 모달 내부 클릭은 버블되어 날짜/일정 선택이 동작해야 함
+      // 배경 클릭만 닫기 (모달 내부 클릭은 동작해야 함)
       if (e.target.id === "wpCalBackdrop") closeCalendar();
     });
   }
@@ -807,8 +785,7 @@
     return slot;
   }
 
-  // 언어 버튼 감지: aria-label은 로케일별로 번역되므로(예: "언어" → "Language"/"言語") data-icon 속성을 우선 사용하고,
-  // 아직 data-icon이 없는 페이지를 위해 한국어 텍스트 매칭도 폴백으로 남긴다.
+  // 언어 버튼 감지 - data-icon 우선, 없으면 한국어 텍스트로 판별
   function isLangBtn(btn) {
     if (!btn || btn.tagName === "A") return false;
     if (btn.dataset && btn.dataset.icon === "language") return true;
@@ -866,14 +843,12 @@
   function ensureHeaderIcons() {
     var actions = document.querySelector(".community-top__right") || document.querySelector(".header-actions");
     if (!actions) return;
-    // 소속 에이전시용 최소 헤더 - 템플릿에 둔 다크모드 버튼 + "관리자 페이지로"만 쓰고 아무것도 끼워 넣지 않는다
+    // 에이전시 최소 헤더는 아무것도 끼워 넣지 않는다.
     if (actions.closest("[data-header-minimal]")) return;
 
     var icons = headerIconButtons();
 
-    // 검색·알림은 로그인한 사람에게만 쓸모가 있다.
-    // 템플릿에서 sec:authorize 로 걸러도 여기서 다시 만들어 넣으면 소용이 없어서,
-    // 비로그인이면 아예 만들지 않고 이미 붙어 있는 것도 걷어낸다. (언어는 누구나 쓴다)
+    // 검색·알림은 로그인 사용자에게만 만든다 (언어는 모두).
     var isAuthed = document.body.getAttribute("data-authenticated") === "true";
     if (!isAuthed) {
       icons.filter(isSearchBtn).concat(icons.filter(isNotiBtn)).forEach(function (btn) {
@@ -896,7 +871,7 @@
       else actions.appendChild(btn);
     }
 
-    // 검색·알림은 템플릿에 있는 페이지만 유지한다. (메인홈에는 두지 않음)
+    // 검색·알림은 템플릿에 있는 페이지만 유지한다.
     if (!searchBtn) {
       searchBtn = null;
     }
@@ -911,8 +886,7 @@
       insert(langBtn);
     }
 
-    // 라이트/다크 토글 - 로그인 여부와 무관하게 모든 페이지 헤더에 둔다.
-    // (메인처럼 템플릿에 이미 박혀 있으면 그걸 그대로 쓴다)
+    // 라이트/다크 토글은 모든 페이지 헤더에 둔다.
     var themeBtn = actions.querySelector("[data-theme-toggle]");
     if (!themeBtn) {
       themeBtn = document.createElement("button");
@@ -928,7 +902,7 @@
       notiBtn = null;
     }
 
-    // 순서: 검색 → 다국어 → 다크모드 → 알림 → 굿즈 (있는 것만)
+    // 순서: 검색 → 다국어 → 다크모드 → 알림 → 굿즈
     var ordered = [searchBtn, langBtn, themeBtn, notiBtn, shopBtn]
       .map(nodeForIcon)
       .filter(Boolean);
@@ -936,7 +910,7 @@
     Array.prototype.forEach.call(actions.children, function (child) {
       if (firstExtra) return;
       if (ordered.indexOf(child) !== -1) return;
-      // "관리자 페이지로 이동" 버튼도 아이콘 뒤(로그아웃 바로 왼쪽)에 오도록 건너뛰지 않는다
+      // 관리자 페이지 이동 버튼도 아이콘 뒤에 온다.
       firstExtra = child;
     });
     ordered.forEach(function (node) {
@@ -955,7 +929,7 @@
   function bindLangButton(btn) {
     if (btn.dataset.wpBound === "lang") return;
     btn.dataset.wpBound = "lang";
-    // aria-label은 Thymeleaf가 이미 로케일에 맞게 넣어 주므로 여기서 덮어쓰지 않는다.
+    // aria-label 은 템플릿 값을 유지한다.
     btn.removeAttribute("onclick");
     var slot = wrapSlot(btn, "lang");
     if (!slot.querySelector(".wp-lang-menu")) {
@@ -981,7 +955,7 @@
   function bindNotiButton(btn) {
     if (btn.dataset.wpBound === "noti") return;
     btn.dataset.wpBound = "noti";
-    // bindLangButton과 같은 이유로 aria-label은 덮어쓰지 않는다.
+    // aria-label 은 템플릿 값을 유지한다.
     btn.classList.add("icon-btn--badge", "wp-noti-bound");
     btn.removeAttribute("onclick");
     btn.onclick = null;
@@ -1111,7 +1085,7 @@
   }
 
   function markAllRead() {
-    // 빨간 점이 세는 범위 전체를 읽음 처리 → 누르면 점이 바로 사라진다 (메인에서 칩 필터를 골라 둔 상태여도 마찬가지)
+    // 빨간 점 범위 전체를 읽음 처리한다.
     var ids = loadReadIds();
     badgeScopeNotifications().forEach(function (n) {
       if (ids.indexOf(n.id) === -1) ids.push(n.id);
@@ -1145,7 +1119,7 @@
       state.detail = null;
       state.community = isCommunityPage() ? detectCommunityId() : (state.community || "all");
     } else {
-      // 기본은 현재 커뮤니티(또는 전체). 패널 안 칩으로 다른 커뮤니티 일정 확인 가능
+      // 기본은 현재 커뮤니티(또는 전체), 칩으로 다른 커뮤니티 일정 확인
       state.community = isCommunityPage() ? detectCommunityId() : "all";
       state.detail = null;
     }
@@ -1301,7 +1275,7 @@
     });
   }
 
-  /* ---------- highlight mini-cal / home week grid (same EVENTS) ---------- */
+  // 하이라이트 미니 캘린더 / 홈 주간 일정 (같은 데이터)
   function renderMiniCalEventList(dateStr, community) {
     var list = document.querySelector(".cal-event-list");
     if (!list) return;
@@ -1551,7 +1525,7 @@
     });
   }
 
-  /* ---------- shop on community (navigation only; link goes to /shop/community/{id}) ---------- */
+  // 커뮤니티 굿즈 버튼 (/shop/community/{id} 이동)
   function bindShopButtons() {
     document.querySelectorAll('.community-top__right a[aria-label="Shop"]').forEach(function (a) {
       if (a.dataset.wpShopBound) return;
@@ -1559,7 +1533,7 @@
     });
   }
 
-  /* ---------- global clicks / keys ---------- */
+  // 전역 클릭 / 키 처리
   function onDocClick(e) {
     if (e.target.closest(".wp-global-slot")) {
       var langBtn = e.target.closest("[data-lang]");
@@ -1644,8 +1618,7 @@
   }
 
   function init() {
-    // 화면 언어의 기준은 서버 세션 로케일(<html lang> = th:lang). localStorage 값은 설정·다른 기기에서 바꾼 언어와
-    // 어긋날 수 있어서, 캘린더·알림·헤더 아이콘도 서버가 내려준 언어로 맞춘다.
+    // 화면 언어는 서버 세션 로케일(<html lang>)을 기준으로 맞춘다.
     var serverLang = (document.documentElement.getAttribute("lang") || "").toLowerCase().slice(0, 2);
     persistLang(LANGUAGES.some(function (l) { return l.code === serverLang; }) ? serverLang : getLang());
     injectRoot();
@@ -1658,9 +1631,7 @@
     updateNotiBadges();
     hydrateMiniCal();
     hydrateWeekGrid();
-    // enhanceSettingsLang()은 설정 페이지의 언어 select(#languageSelect)를 소문자 코드 옵션으로 덮어써서
-    // SettingsController의 언어 저장(KO/JA/EN)과 충돌하므로 호출하지 않는다 (헤더 🌐 버튼은 그대로).
-    // enhanceSettingsLang();
+    // 설정 페이지 언어 select 와 충돌해 enhanceSettingsLang() 은 호출하지 않는다.
     loadSchedulesFromApi();
     loadPostNotifications();
     scheduleMidnightRefresh();
@@ -1682,8 +1653,7 @@
     getLang: getLang,
   };
 
-  // shell.js와 동일한 패턴 - 서버 문구(ko/ja/en)를 먼저 받아온 뒤에만
-  // 화면을 그린다. fetch가 실패해도 loadCalendarI18n()의 catch가 삼켜서 한국어 기본값으로 진행한다.
+  // 서버 문구를 받은 뒤 화면을 그린다 (실패해도 한국어로 진행).
   function boot() {
     loadCalendarI18n().then(init);
   }

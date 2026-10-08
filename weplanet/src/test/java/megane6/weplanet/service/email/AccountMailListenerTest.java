@@ -3,7 +3,7 @@ package megane6.weplanet.service.email;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.event.AccountMailEvent;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 

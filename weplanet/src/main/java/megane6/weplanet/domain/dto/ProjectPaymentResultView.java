@@ -6,10 +6,10 @@ import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
 
 import java.time.LocalDateTime;
 
-// 가상계좌 발급 안내 화면에 보여줄 값 (웹훅 secret 같은 민감 정보는 넣지 않는다)
+// 가상계좌 발급 안내 화면 값 (secret 제외)
 public record ProjectPaymentResultView(
 		Long artistId,
-		// 안내 화면이 입금 여부를 물어볼 때 쓰는 주문번호 (민감 정보 아님)
+		// 입금 여부 확인용 주문번호
 		String orderNo,
 		String projectTitle,
 		Long amount,

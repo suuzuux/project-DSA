@@ -16,18 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-/**
- * 입점 신청을 승인할 때 소속사 대표 계정 한 벌 만들어준다
- * Agency -> User (활성화 대기) -> AgencyProfile -> 활성화 토큰 순서로 만들고,
- * 하나라도 실패하면 승인 자체가 롤백되도록 호출하는 쪽 트랜잭션에 참여한다.
- */
+/** 입점 승인 시 소속사 대표 계정 생성 (Agency → User → AgencyProfile → 토큰, 승인 트랜잭션에 참여). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AgencyAccountProvisioningService {
 	
 	private static final int NICKNAME_MAX_LENGTH = 50;
-	private static final int CEO_NAME_MAX_LENGTH = 30;	// agencies.ceo_name 컬럼 같이
+	private static final int CEO_NAME_MAX_LENGTH = 30;	// agencies.ceo_name 컬럼 길이
 	
 	private final UserRepository ur;
 	private final AgencyRepository ar;
@@ -40,9 +36,9 @@ public class AgencyAccountProvisioningService {
 			User admin,
 			String agencyNameOverride
 	) {
-		// 신청서 이메일이 그대로 로그인 아이디가 된다
+		// 신청서 이메일이 로그인 아이디가 된다.
 		String email = application.getEmail();
-		// 예외는 키 + 값으로 던진다 (컨트롤러가 Messages.resolve(e) 로 번역). 어떤 이메일/소속사명이 걸렸는지 문구에 같이 보여준다.
+		// 예외는 키 + 값으로 던진다 (컨트롤러가 번역).
 		if (ur.existsByUsername(email)) {
 			throw new LocalizedIllegalStateException("admin.error.partnership.usernameTaken", email);
 		}
@@ -53,8 +49,7 @@ public class AgencyAccountProvisioningService {
 		
 		String agencyName = resolveAgencyName(application, agencyNameOverride);
 		
-		// Agency.name은 unique라서 동명이인 1인 소속사가 들어오면 여기서 막힘
-		// 관리자가 승인 화면에서 이름을 바꿔 다시 시도할 수 있도록 안내 문구를 담는다
+		// 소속사명은 unique 라 겹치면 관리자가 이름을 바꿔 다시 시도하도록 안내한다.
 		if (ar.findByName(agencyName).isPresent()) {
 			log.info("입점 승인 중 소속사명 중복: applicationId={}, agencyName={}", application.getId(), agencyName);
 			throw new LocalizedIllegalStateException("admin.error.partnership.agencyNameTaken", agencyName);
@@ -63,9 +58,9 @@ public class AgencyAccountProvisioningService {
 		Agency agency = ar.save(
 				Agency.create(
 						agencyName,
-						// 사업자번호는 소속사가 나중에 직접 등록
+						// 사업자번호는 소속사가 나중에 등록
 						null,
-						// 신청서 담당자명은 50자까지만 받지만, 대표자명 컬럼은 30자라 잘라서 넣는다
+						// 대표자명 컬럼은 30자라 잘라서 넣는다.
 						truncate(application.getContactName(), CEO_NAME_MAX_LENGTH)
 				)
 		);
@@ -98,9 +93,7 @@ public class AgencyAccountProvisioningService {
 		);
 	}
 	
-	// 관리자가 승인 화면에서 소속사며을 직접 고쳐 보낼 수 있다
-	// 비워두면 신청서에 적힌 이름을 그대로 쓴다.
-	// (아티스트 개인 신청도 1인 소속사로 만들기 때문에 처리 방식이 같다.)
+	// 관리자가 고친 소속사명 (비우면 신청서 이름, 개인 신청도 1인 소속사로 처리).
 	private String resolveAgencyName(PartnershipApplication application, String agencyNameOverride) {
 		if (agencyNameOverride != null && !agencyNameOverride.isBlank()) {
 			return agencyNameOverride.trim();
@@ -109,8 +102,7 @@ public class AgencyAccountProvisioningService {
 		return application.getApplicantName();
 	}
 	
-	// nickname은 50자 제한이라 소속사명(최대 100자)을 그대로 넣을 수 없다
-	// 중복될 때는 신청 번호를 붙여 구분한다.
+	// nickname 은 50자라 잘라 쓰고, 중복이면 신청 번호를 붙인다.
 	private String resolveNickname(String agencyName, Long applicationId) {
 		String candidate = truncate(agencyName, NICKNAME_MAX_LENGTH);
 		

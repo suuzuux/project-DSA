@@ -13,10 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * 토스 결제창이 결제를 마친 뒤 브라우저를 보내주는 주소들.
- * (project.html 의 successUrl / failUrl 과 짝)
- */
+/** 토스 결제창이 결제 후 돌려보내는 주소 (project.html 의 successUrl / failUrl). */
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/payments/toss")

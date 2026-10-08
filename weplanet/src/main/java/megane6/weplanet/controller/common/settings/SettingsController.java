@@ -79,13 +79,13 @@ public class SettingsController {
 								RedirectAttributes redirectAttributes) {
 		User user = userResolver.requireAuthenticated(principal);
 		try {
-			// 이메일 변경 인증은 "이 세션에서, 이메일 변경 용도로" 받은 것만 인정한다
+			// 이 세션에서 이메일 변경 용도로 받은 인증만 인정한다.
 			boolean newEmailVerified = emailVerificationService.isVerified(session, VerificationPurpose.EMAIL_CHANGE, email);
-			// 이메일 "수정하기"에서 현재 비밀번호 확인을 마쳤는지 (EmailChangeAuthService)
+			// 이메일 수정 전 현재 비밀번호 확인을 마쳤는지
 			boolean emailChangeAuthorized = emailChangeAuthService.isAuthorized(session, user);
 			AuthenticatedUser refreshed = userService.updatePortalAccount(user, nickname, realName, email,
 					newEmailVerified, emailChangeAuthorized, phone, currentPassword, newPassword, confirmPassword);
-			// 저장까지 모두 성공한 뒤에 인증을 지운다 (비밀번호 검증 등에서 실패하면 인증을 다시 받지 않아도 되게)
+			// 저장까지 성공한 뒤에 인증을 지운다.
 			emailVerificationService.clear(session, VerificationPurpose.EMAIL_CHANGE, email);
 			emailChangeAuthService.clear(session);
 			Authentication current = SecurityContextHolder.getContext().getAuthentication();
@@ -98,15 +98,14 @@ public class SettingsController {
 			log.warn("회원정보 수정 실패: {}", e.getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", messages.resolve(e));
 		} catch (org.springframework.dao.DataIntegrityViolationException e) {
-			// 중복 확인과 저장 사이에 다른 계정이 같은 이메일을 먼저 쓴 경우 - 500 화면 대신 안내 문구를 보여준다
+			// 동시에 같은 이메일이 저장된 경우 500 대신 안내 문구를 보여준다.
 			log.warn("회원정보 수정 실패(이메일 중복 저장 충돌): {}", e.getMostSpecificCause().getMessage());
 			redirectAttributes.addFlashAttribute("errorMessage", msg("settings.email.alreadyInUse"));
 		}
 		return "redirect:/settings";
 	}
 	
-	// 이메일 "수정하기"를 누르면 먼저 현재 비밀번호를 확인한다. 맞으면 이 세션에 10분 동안 본인 확인 완료가 남고,
-	// 화면은 잠긴 이메일 칸을 연다. (비밀번호가 없는 소셜 전용 계정은 화면에서 이 단계를 건너뛴다)
+	// 이메일 수정 전 현재 비밀번호를 확인한다 (10분간 유효).
 	@PostMapping("/settings/email/password-check")
 	@ResponseBody
 	public Map<String, Object> checkPasswordForEmailChange(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -134,8 +133,7 @@ public class SettingsController {
 		User user = userResolver.requireAuthenticated(principal);
 		String trimmed = newEmail == null ? "" : newEmail.trim();
 
-		// 소셜 연동 여부와 상관없이 누구나 이메일을 바꿀 수 있다.
-		// 현재 비밀번호 확인을 먼저 마쳐야 인증코드를 보낸다 (로그인된 브라우저로 남의 이메일에 코드를 보내는 것 방지)
+		// 현재 비밀번호 확인 후에만 인증코드를 보낸다.
 		if (!emailChangeAuthService.isAuthorized(session, user)) {
 			result.put("success", false);
 			result.put("needsPassword", true);
@@ -183,7 +181,7 @@ public class SettingsController {
 		return result;
 	}
 
-	// [이벤트·혜택 알림 설정] type: marketing(광고성 정보) / email(커뮤니티 활동 이메일) / night(야간 알림)
+	// 알림 설정 - marketing / email / night
 	@PostMapping("/settings/notifications")
 	@ResponseBody
 	public Map<String, Object> updateNotificationPreference(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -201,8 +199,7 @@ public class SettingsController {
 		return result;
 	}
 
-	// [설정 - 언어 설정] "기본 서비스 언어" 저장 - 이 값이 게시글/댓글 AI 번역(TranslateService) 대상
-	// 언어로도 그대로 쓰인다 (PostController.translatePost/translateComment 참고).
+	// 기본 서비스 언어 저장 (AI 번역 대상 언어로도 쓰임).
 	@PostMapping("/settings/language")
 	@ResponseBody
 	public Map<String, Object> updateLanguage(@AuthenticationPrincipal AuthenticatedUser principal,
@@ -210,20 +207,19 @@ public class SettingsController {
 											  HttpServletRequest request, HttpServletResponse response) {
 		Map<String, Object> result = new HashMap<>();
 		User user = userResolver.requireAuthenticated(principal);
-		// 관리자는 한국어 고정 - 언어를 바꾸지 않는다 (LanguageController 와 같은 규칙.
-		// 화면은 PreferredLocaleResolver 가 어차피 한국어로 그리지만, 저장까지 막아야 메일·AI 번역 언어도 한국어로 유지된다)
+		// 관리자는 한국어 고정이라 저장하지 않는다.
 		if ("ROLE_ADMIN".equals(principal.getRoleName())) {
 			result.put("success", true);
 			return result;
 		}
 		userService.updateLanguage(user, language);
-		// DB 저장과 함께 지금 세션의 화면 언어도 바로 바꾼다 (안 하면 새로고침해도 화면 언어가 그대로다)
+		// 현재 세션의 화면 언어도 바로 바꾼다.
 		localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(language));
 		result.put("success", true);
 		return result;
 	}
 
-	// [회원탈퇴] 소프트 삭제 처리 후 즉시 로그아웃시킨다 (세션에 남은 만료 계정으로 계속 요청이 오는 걸 막기 위함).
+	// 회원탈퇴 - 소프트 삭제 후 즉시 로그아웃한다.
 	@PostMapping("/settings/withdraw")
 	public String withdraw(@AuthenticationPrincipal AuthenticatedUser principal,
 						   @RequestParam(required = false) String currentPassword,
@@ -241,8 +237,7 @@ public class SettingsController {
 		return "redirect:/login/id?withdrawn";
 	}
 
-	// 소셜 연동 해제 - 비밀번호가 있는 계정만 가능하다 (없으면 로그인할 방법이 사라지므로 UserService 에서 막음).
-	// 로그인 수단이 줄어드는 변경이라 해제 후에는 항상 로그아웃시킨다.
+	// 소셜 연동 해제 - 비밀번호가 있는 계정만 가능하며 해제 후 로그아웃한다.
 	@PostMapping("/settings/social/unlink")
 	public String unlinkSocial(@AuthenticationPrincipal AuthenticatedUser principal, HttpServletRequest request, HttpServletResponse response,
 								RedirectAttributes redirectAttributes) {
@@ -258,8 +253,7 @@ public class SettingsController {
 		return "redirect:/login/id?unlinked=true";
 	}
 
-	// 세션을 버린 직후 새 세션을 열어 둔다 - 안 그러면 이전 세션 쿠키 때문에 /login?expired 로 튕긴다.
-	// 화면 언어도 새 세션에 이어 붙여 탈퇴·연동 해제 직후 로그인 화면이 한국어로 돌아가지 않게 한다.
+	// 세션을 버린 뒤 새 세션을 열고 화면 언어를 이어 붙인다 (/login?expired 방지).
 	private static void invalidateAndOpenFreshSession(HttpServletRequest request) {
 		PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 	}

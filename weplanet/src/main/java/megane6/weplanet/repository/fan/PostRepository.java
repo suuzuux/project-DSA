@@ -16,10 +16,10 @@ import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    // 게시판 종류(팬/아티스트)별로 게시글 목록 조회 - 최신순 (레거시 /posts 경로)
+    // 게시판 종류별 최신순 (레거시)
     List<Post> findByBoardTypeOrderByCreatedAtDesc(BoardType boardType);
 
-    // 게시판 종류별로 게시글 목록 조회 - 인기순 (레거시 /posts 경로)
+    // 게시판 종류별 인기순 (레거시)
     List<Post> findByBoardTypeOrderByLikeCountDescCreatedAtDesc(BoardType boardType);
 
     // 커뮤니티별 게시판 목록 - 최신순
@@ -28,16 +28,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 커뮤니티별 게시판 목록 - 인기순
     List<Post> findByBoardTypeAndArtistOrderByLikeCountDescCreatedAtDesc(BoardType boardType, User artist);
 
-    // 메인 페이지 "최신 인기 포스트" 위젯용 - 아티스트 게시판 글만(팬 글 X), 숨김 글 제외, 인기순 상위 4개
+    // 최신 인기 포스트 - 아티스트 게시판, 숨김 제외, 인기순 4개
     List<Post> findTop4ByBoardTypeAndHiddenFromArtistFalseAndArtistIsNotNullOrderByLikeCountDescCreatedAtDesc(BoardType boardType);
 
-    // 커뮤니티 게시판 더보기: 처음부터 전체 글을 올리지 않고 10개 단위 Slice로 조회한다.
+    // 커뮤니티 게시판 10개 단위 Slice 조회
     @EntityGraph(attributePaths = {"author", "artist"})
     Slice<Post> findByBoardTypeAndArtist(BoardType boardType, User artist, Pageable pageable);
 
-    // 아티스트 게시판 "사진/미디어" 필터 - 사진·영상 첨부가 하나라도 있는 글만 10개 단위 Slice로 조회.
-    // contentType 이 애매하게(application/octet-stream) 저장되는 경우가 있어 파일 확장자로도 한 번 더 판별한다
-    // (PostAttachment.isImage() 와 같은 이유)
+    // 사진/미디어 필터 - 사진·영상 첨부가 있는 글만 (MIME 이 애매하면 확장자로 판별).
     @EntityGraph(attributePaths = {"author", "artist"})
     @Query("""
             SELECT p FROM Post p
@@ -59,18 +57,18 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("artist") User artist,
             Pageable pageable);
 
-    // 아티스트 계정으로 팬 게시판을 볼 때 Hide from Artists 글은 DB 조회 단계에서 제외한다.
+    // Hide from Artists 글 제외 조회
     @EntityGraph(attributePaths = {"author", "artist"})
     Slice<Post> findByBoardTypeAndArtistAndHiddenFromArtistFalse(
             BoardType boardType, User artist, Pageable pageable);
 
-    // 하이라이트 "Fan Posts" / "From 아티스트" 위젯용 - 특정 커뮤니티의 최신 게시글 상위 6개 (3개씩 두 줄)
+    // 하이라이트 위젯용 최신 글 6개
     List<Post> findTop6ByBoardTypeAndArtistOrderByCreatedAtDesc(BoardType boardType, User artist);
 
     List<Post> findTop20ByBoardTypeAndArtist_IdInOrderByCreatedAtDesc(BoardType boardType,
                                                                         Collection<Long> artistIds);
 
-    // 내 프로필 "포스트 히스토리" 탭 - 내가 쓴 게시글 전체를 최신순/오래된순으로
+    // 내 프로필 포스트 이력 (최신순·오래된순)
     List<Post> findByAuthorOrderByCreatedAtDesc(User author);
     List<Post> findByAuthorOrderByCreatedAtAsc(User author);
     
@@ -87,17 +85,16 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("artistIds") Collection<Long> artistIds
     );
     
-    // 팬 + 아티스트 게시글 합쳐 최신 10개 호출
+    // 팬·아티스트 게시글 최신 10개
     @EntityGraph(attributePaths = "author")
     List<Post> findTop10ByArtistOrderByCreatedAtDesc(User artist);
     
-    // [배지] 이 커뮤니티 팬 게시판에 글을 쓴 적이 있는지 (첫 게시글 배지)
+    // [배지] 이 커뮤니티 팬 게시판에 글을 쓴 적이 있는지
     boolean existsByAuthor_IdAndArtist_IdAndBoardType(
             Long authorId, Long artistId, BoardType boardType
     );
     
-    // [배지] 이 커뮤니티에 쓴 내 글들이 받은 좋아요 합계 (받은 좋아요 배지)
-    // 글이 하나도 없으면 SUM 결과가 null 이라 coalesce로 0 처리
+    // [배지] 이 커뮤니티 내 글이 받은 좋아요 합계 (없으면 0)
     @Query("""
         SELECT COALESCE(SUM(p.likeCount), 0)
         FROM Post p

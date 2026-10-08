@@ -1,6 +1,4 @@
-/**
- * 커뮤니티 Live 탭: 진행 중 방송 썸네일 클릭 시청 + 다시보기 재생.
- */
+/** 커뮤니티 Live 탭 - 진행 중 방송 시청과 다시보기 재생 */
 (function () {
     "use strict";
 
@@ -23,7 +21,7 @@
     const replayTitle = document.getElementById("live-replay-title");
     const replayClose = document.getElementById("live-replay-close");
 
-    // 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+    // 문구는 WePlaNet.t 에서 꺼낸다 (없으면 한국어 기본값).
     const t = function (key, fallback, args) {
         return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
     };

@@ -1,38 +1,11 @@
--- ============================================================
--- WePlaNet 데모 데이터 3 - 팬·아티스트 계정, 게시글, 댓글, 좋아요 추가
--- ------------------------------------------------------------
--- 실행 순서
---   1) weplanet_schema_full_reset_v2.sql  ※ 이미 돌린 DB면 생략
---   2) weplanet_demo_seed.sql             ※ 이미 돌린 DB면 생략
---   3) weplanet_demo_seed_2_시연보강.sql   ※ 이미 돌린 DB면 생략 (없어도 이 파일은 돌아감)
---   4) 이 파일 - 여러 번 돌려도 된다 (맨 앞에서 이 파일이 넣은 행을 지우고 다시 넣음)
---   5) docs/demo/demo_images 의 새 이미지 11개(demo_nebula_*, demo_harin_*)를 서버 실행 폴더의 uploads/ 에 복사
---
--- 추가 계정 (비밀번호 공통 Test1234)
---   아티스트  nebula_official (그룹 NEBULA, 문빔컴퍼니) -> 로그인 후 멤버 프로필 선택(유나·리아·세린·하은), 멤버 비밀번호도 Test1234
---             harin_official  (솔로 서하린, 스타라이트엔터테인먼트)
---   팬        demo_fan16 ~ demo_fan27 (1501~1512)
---   demo_fan15 는 새 커뮤니티 2곳에도 가입 + 멤버십 보유 ("모든 커뮤니티 가입 + 멤버십" 유지)
---
--- 넣는 것
---   [1] 새 커뮤니티 2개 (아티스트 계정·그룹 정보·멤버·포털 프로필)
---   [2] 새 팬 12명 + 커뮤니티 가입·팔로우 (기존 팬 일부도 새 커뮤니티 가입) + 멤버십 3건
---   [3] 게시글 42개 (아티스트 게시판 15 + 팬 게시판 27, 이미지 첨부 3) - 새 커뮤니티 + 기존 6개 커뮤니티
---   [4] 댓글 (팬 댓글 + 아티스트 답글) / 좋아요 - 실제 가입자 중에서 골라 자동 생성
---   [5] 배지 - 위 활동에 맞춰 지급 (demo_fan15 의 NOVA 배지 수는 건드리지 않음)
---
--- ※ MySQL Workbench 는 자동 커밋이 꺼져 있을 수 있어 맨 끝에 COMMIT 을 넣어 두었다
--- ============================================================
+-- WePlaNet 데모 데이터 3 - 팬·아티스트 계정, 게시글, 댓글, 좋아요 추가 (재실행 가능, 새 이미지는 uploads/ 에 복사).
 
 USE `weplanet`;
 SET NAMES utf8mb4;
 SET @old_safe_updates := @@SQL_SAFE_UPDATES;
 SET SQL_SAFE_UPDATES = 0;
 
--- ------------------------------------------------------------
--- [0] 재실행 대비: 이 파일이 넣는 행을 먼저 지운다
---     users 1107·1108(아티스트), 1219~1222(멤버), 1501~1512(팬) / post 13001~13199 / comment 23001~23999
--- ------------------------------------------------------------
+-- [0] 재실행 대비: 이 파일이 넣는 행을 먼저 지운다.
 DELETE FROM `comment_report` WHERE `comment_id` IN (SELECT `id` FROM `comment` WHERE `post_id` BETWEEN 13001 AND 13199 OR `post_id` IN (SELECT `id` FROM `post` WHERE `artist_id` IN (1107, 1108)));
 DELETE FROM `report` WHERE `post_id` BETWEEN 13001 AND 13199 OR `post_id` IN (SELECT `id` FROM (SELECT `id` FROM `post` WHERE `artist_id` IN (1107, 1108)) x);
 DELETE FROM `comment` WHERE (`post_id` BETWEEN 13001 AND 13199 OR `post_id` IN (SELECT `id` FROM `post` WHERE `artist_id` IN (1107, 1108))) AND `parent_id` IS NOT NULL;
@@ -56,13 +29,11 @@ DELETE FROM `artist_groups` WHERE `id` IN (1107, 1108);
 DELETE FROM `users` WHERE `id` IN (1219, 1220, 1221, 1222);
 DELETE FROM `users` WHERE `id` IN (1107, 1108) OR `id` BETWEEN 1501 AND 1512;
 
--- ------------------------------------------------------------
--- [1] 새 커뮤니티 2개 - NEBULA (걸그룹 4인, 문빔컴퍼니) / 서하린 (솔로, 스타라이트엔터테인먼트)
--- ------------------------------------------------------------
+-- [1] 새 커뮤니티 2개 - NEBULA (걸그룹 4인) / 서하린 (솔로)
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1107, 'nebula_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 103, 'NEBULA', 'NEBULA', 'nebula_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 180 DAY), DATE_SUB(NOW(6), INTERVAL 180 DAY), DATE_SUB(NOW(6), INTERVAL 3 DAY)),
   (1108, 'harin_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 101, '서하린', '서하린', 'harin_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 170 DAY), DATE_SUB(NOW(6), INTERVAL 170 DAY), DATE_SUB(NOW(6), INTERVAL 3 DAY));
--- 그룹 멤버 계정: 그룹 계정으로 로그인 -> 프로필 선택 -> 개인 비밀번호(Test1234)
+-- 그룹 멤버 계정 (그룹 로그인 후 프로필 선택, 개인 비밀번호 Test1234)
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1219, 'member_1107_nebula1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 103, '유나', '유나', 'member_1107_nebula1@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 180 DAY), DATE_SUB(NOW(6), INTERVAL 180 DAY), DATE_SUB(NOW(6), INTERVAL 3 DAY)),
   (1220, 'member_1107_nebula2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 103, '리아', '리아', 'member_1107_nebula2@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 180 DAY), DATE_SUB(NOW(6), INTERVAL 180 DAY), DATE_SUB(NOW(6), INTERVAL 3 DAY)),
@@ -91,9 +62,7 @@ INSERT INTO `artist_profile` (`artist_id`, `intro`, `header_image_url`, `logo_im
   (1222, 'NEBULA 하은 🌌', NULL, 'demo_nebula_member4.png', NOW(), NOW()),
   (1108, '노래로 하루를 위로하는 싱어송라이터 서하린입니다 🎧', 'demo_harin_header.jpg', 'demo_harin_logo.png', NOW(), NOW());
 
--- ------------------------------------------------------------
--- [2] 새 팬 12명 (1501~1512, 38~118일 전 가입) + 커뮤니티 가입·팔로우 + 멤버십
--- ------------------------------------------------------------
+-- [2] 새 팬 12명 (1501~1512) + 커뮤니티 가입·팔로우 + 멤버십
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `last_login_at`, `created_at`, `updated_at`)
 SELECT x.id, x.username, '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, x.real_name, x.nickname,
        CONCAT(x.username, '@weplanet.test'),
@@ -114,7 +83,7 @@ FROM (
   UNION ALL SELECT 1512, 'demo_fan27', '임밤', '밤하늘지기', 38, 240
 ) x;
 
--- 커뮤니티 가입 (days_ago 일 전, 단 회원가입 10분 뒤보다 이르지 않게)
+-- 커뮤니티 가입 (days_ago 일 전, 회원가입 10분 뒤보다 이르지 않게)
 DROP TEMPORARY TABLE IF EXISTS `tmp_joins`;
 CREATE TEMPORARY TABLE `tmp_joins` (`fan_id` bigint, `artist_id` bigint, `days_ago` int, `bio` varchar(30), PRIMARY KEY (`fan_id`, `artist_id`));
 INSERT INTO `tmp_joins` VALUES
@@ -147,7 +116,7 @@ JOIN `community_members` cm ON cm.fan_id = j.fan_id AND cm.artist_id = j.artist_
 
 DROP TEMPORARY TABLE IF EXISTS `tmp_joins`;
 
--- 멤버십: demo_fan15 는 새 커뮤니티 2곳 모두, 그 밖에 2명
+-- 멤버십 (demo_fan15 는 새 커뮤니티 2곳 모두)
 INSERT INTO `membership` (`created_at`, `expires_at`, `artist_id`, `fan_id`)
 SELECT DATE_SUB(NOW(6), INTERVAL x.days_ago DAY), DATE_ADD(DATE_SUB(NOW(6), INTERVAL x.days_ago DAY), INTERVAL 1 YEAR), x.artist_id, x.fan_id
 FROM (
@@ -161,9 +130,7 @@ SELECT m.fan_id, m.artist_id, m.created_at, m.expires_at, 1, m.created_at
 FROM `membership` m
 WHERE m.artist_id IN (1107, 1108);
 
--- ------------------------------------------------------------
--- [3] 게시글 42개 - mins_ago 분 전에 작성 (아티스트 게시판은 그룹이면 멤버가 작성)
--- ------------------------------------------------------------
+-- [3] 게시글 42개 (mins_ago 분 전 작성, 그룹 아티스트 게시판은 멤버가 작성)
 DROP TEMPORARY TABLE IF EXISTS `tmp_posts`;
 CREATE TEMPORARY TABLE `tmp_posts` (
   `id` bigint PRIMARY KEY, `board_type` varchar(10), `artist_id` bigint, `author_id` bigint, `mins_ago` int,
@@ -222,11 +189,11 @@ INSERT INTO `tmp_posts` VALUES
 INSERT INTO `post` (`id`, `board_type`, `artist_id`, `author_id`, `title`, `content`, `like_count`, `hidden_from_artist`, `created_at`)
 SELECT tp.id, tp.board_type, tp.artist_id, tp.author_id, tp.title, tp.content, 0, 0, DATE_SUB(NOW(6), INTERVAL tp.mins_ago MINUTE)
 FROM `tmp_posts` tp
-JOIN `users` u ON u.id = tp.author_id;   -- seed_2 를 안 돌린 DB면 1401~1418 이 쓴 글은 자동으로 빠진다
+JOIN `users` u ON u.id = tp.author_id;   -- seed_2 를 안 돌린 DB면 1401~1418 글은 자동으로 빠진다.
 
 DROP TEMPORARY TABLE IF EXISTS `tmp_posts`;
 
--- 이미지 첨부 (demo_images 에서 uploads/ 로 복사한 파일)
+-- 이미지 첨부 (uploads/ 로 복사한 파일)
 INSERT INTO `post_attachment` (`content_type`, `created_at`, `file_size`, `original_name`, `stored_name`, `post_id`)
 SELECT 'image/jpeg', p.created_at, x.file_size, x.original_name, x.stored_name, p.id
 FROM (
@@ -236,10 +203,7 @@ FROM (
 ) x
 JOIN `post` p ON p.id = x.post_id;
 
--- ------------------------------------------------------------
--- [4] 댓글·좋아요 - 글 작성 전에 가입한 그 커뮤니티 팬 중 일부가 자동으로 단다
---     대상 팬: demo_fan01~15, 새 팬(1401~1419, 1501~1512) - 정지 계정·소속사 계정·직접 만든 테스트 계정은 제외
--- ------------------------------------------------------------
+-- [4] 댓글·좋아요 - 글 작성 전에 가입한 팬 중 일부가 자동으로 단다.
 INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`, `deleted_at`)
 SELECT 23000 + ROW_NUMBER() OVER (ORDER BY p.id, cm.fan_id),
        ELT(1 + MOD(p.id * 3 + cm.fan_id * 7, 18),
@@ -258,7 +222,7 @@ WHERE p.id BETWEEN 13001 AND 13199
   AND (cm.fan_id BETWEEN 1301 AND 1315 OR cm.fan_id BETWEEN 1401 AND 1419 OR cm.fan_id BETWEEN 1501 AND 1512)
   AND MOD(p.id * 5 + cm.fan_id * 7, 3) = 0;
 
--- 아티스트 게시글에는 작성한 아티스트(멤버)가 첫 댓글에 답글을 단다
+-- 아티스트 게시글에는 작성 아티스트가 첫 댓글에 답글을 단다.
 INSERT INTO `comment` (`id`, `content`, `created_at`, `author_id`, `post_id`, `parent_id`, `deleted_at`)
 SELECT 23500 + ROW_NUMBER() OVER (ORDER BY p.id),
        ELT(1 + MOD(p.id, 5), '고마워요 💕', '항상 응원해 줘서 고마워요!', '오늘도 좋은 하루 보내요 ☀️', '댓글 보고 힘 났어요!!', '우리 또 만나요 🫶'),
@@ -284,9 +248,7 @@ UPDATE `post` p
 SET p.like_count = (SELECT COUNT(*) FROM `post_like` l WHERE l.post_id = p.id)
 WHERE p.id BETWEEN 13001 AND 13199;
 
--- ------------------------------------------------------------
--- [5] 배지 - 새 팬(1501~1512)은 모든 커뮤니티, 기존 팬은 새 커뮤니티(NEBULA·서하린)에서만
--- ------------------------------------------------------------
+-- [5] 배지 - 새 팬은 모든 커뮤니티, 기존 팬은 새 커뮤니티에서만
 INSERT IGNORE INTO `fan_badge_ownership` (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
 SELECT cm.fan_id, cm.artist_id, b.badge_code, b.badge_name, b.badge_type, cm.joined_at, cm.joined_at
 FROM `community_members` cm
@@ -340,9 +302,7 @@ WHERE m.artist_id IN (1107, 1108);
 COMMIT;
 SET SQL_SAFE_UPDATES = @old_safe_updates;
 
--- ------------------------------------------------------------
 -- [확인] 넣은 데이터 개수
--- ------------------------------------------------------------
 SELECT '새 아티스트 커뮤니티' AS 항목, COUNT(*) AS 개수 FROM `users` WHERE `id` IN (1107, 1108)
 UNION ALL SELECT '새 팬 계정', COUNT(*) FROM `users` WHERE `id` BETWEEN 1501 AND 1512
 UNION ALL SELECT 'NEBULA 가입자', COUNT(*) FROM `community_members` WHERE `artist_id` = 1107

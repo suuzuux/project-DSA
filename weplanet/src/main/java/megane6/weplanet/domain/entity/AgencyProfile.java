@@ -51,8 +51,7 @@ public class AgencyProfile {
 		this.approvedAt = LocalDateTime.now();
 	}
 	
-	// 입점 신청 승인 시 만드는 소속사 대표 프로필.
-	// 관리자가 승인해서 생기는 계정이므로, 생성 시점에 이미 승인된 상태
+	// 입점 승인 시 만드는 소속사 대표 프로필 (생성 시점에 승인 상태).
 	public static AgencyProfile createApprovedOwner(User user, Agency agency, User admin) {
 		if (user == null || agency == null) {
 			throw new IllegalArgumentException("소속사 계정과 소속사 정보가 필요합니다.");

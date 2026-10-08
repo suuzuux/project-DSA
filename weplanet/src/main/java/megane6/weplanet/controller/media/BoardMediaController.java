@@ -34,7 +34,7 @@ public class BoardMediaController {
     private final megane6.weplanet.i18n.Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
-    // ── 목록 화면 : role=AGENCY 면 소속사 화면, 아니면 팬(읽기 전용) ──
+    // 목록 - AGENCY 면 소속사 화면, 아니면 팬(읽기 전용)
     @GetMapping("/media")
     public String media(@RequestParam(defaultValue = "1") Long groupId,
                         @RequestParam(required = false) String role,
@@ -108,7 +108,7 @@ public class BoardMediaController {
         return redirectAfterMutation(artistId, groupId);
     }
 
-    // ── 좋아요 토글 (팬 게시글 /posts/detail/{id}/like 와 동일) ──
+    // 좋아요 토글
     @PostMapping("/media/{id}/like")
     @ResponseBody
     public Map<String, Object> like(@PathVariable Long id,
@@ -140,10 +140,7 @@ public class BoardMediaController {
         return "redirect:/board/media?groupId=" + groupId + "&role=AGENCY";
     }
 
-    /**
-     * 커뮤니티 미디어는 해당 커뮤니티 아티스트(본인) 또는 소속사만 관리 가능.
-     * group_id / artistId 는 커뮤니티 아티스트 users.id 와 동일하게 쓰인다.
-     */
+    /** 커뮤니티 미디어는 그 커뮤니티 아티스트 본인 또는 소속사만 관리한다. */
     private void requireCommunityOwner(AuthenticatedUser principal, Long communityArtistId) {
         if (principal == null) {
             throw new IllegalStateException("common.error.loginRequired");

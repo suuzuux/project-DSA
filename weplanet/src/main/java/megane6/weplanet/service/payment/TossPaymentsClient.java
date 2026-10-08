@@ -17,11 +17,7 @@ import java.util.Base64;
 import java.util.Map;
 
 
-/**
- * 토스 페이먼츠 서버 API 호출 전담 클래스
- * 인증방식 : "시크릿키:"를 Base64로 인코딩해서 Authorization: Basic 헤더에 넣는다
- * (시크릿 키 뒤에 콜론(:)을 꼭 붙여야 함 - 비밀번호 없는 Basic 인증 형식)
- */
+/** 토스 페이먼츠 API 클라이언트 ("시크릿키:" 를 Base64 로 Basic 인증). */
 @Slf4j
 @Component
 public class TossPaymentsClient {
@@ -40,7 +36,7 @@ public class TossPaymentsClient {
 				.build();
 	}
 	
-	// 결제 승인. 가상계좌는 여기서 "계좌 발급"까지만 되고, 돈은 나중에 입금된다
+	// 결제 승인 (가상계좌는 계좌 발급까지, 입금은 나중)
 	public TossPaymentResponse confirm(String paymentKey, String orderId, long amount) {
 		try {
 			return restClient.post()
@@ -54,18 +50,16 @@ public class TossPaymentsClient {
 					.retrieve()
 					.body(TossPaymentResponse.class);
 		} catch (RestClientResponseException e) {
-			// 토스가 4xx/5xx로 에러코드를 돌려준 경우
+			// 토스가 4xx/5xx 오류 코드를 돌려준 경우
 			throw toTossException(e);
 		} catch (RestClientException e) {
-			// 네트워크 오류 등 응답 자체를 못 받은 경우
+			// 네트워크 오류 등 응답을 못 받은 경우
 			log.warn("[토스] 결제 승인 통신 실패. orderId={}", orderId, e);
 			throw new TossPaymentException("NETWORK_ERROR", "error.toss.network");
 		}
 	}
 	
-	/**
-	 * 결제 조회. 스케줄러가 입금 대기 주문의 실제 상태(입금됐는지)를 확인할 때 쓴다.
-	 */
+	/** 결제 조회 (스케줄러의 입금 확인용) */
 	public TossPaymentResponse getPayment(String paymentKey) {
 		try {
 			return restClient.get()
@@ -85,7 +79,7 @@ public class TossPaymentsClient {
 		try {
 			error = e.getResponseBodyAs(TossErrorResponse.class);
 		} catch (RuntimeException ignored) {
-			// 에러 본문이 JSON이 아니면 아래 기본 메시지 사용
+			// 오류 본문이 JSON 이 아니면 기본 메시지 사용
 		}
 		
 		String code = (error != null && error.code() != null)
@@ -98,11 +92,10 @@ public class TossPaymentsClient {
 
 		log.warn("[토스] API 오류 status={} code={}", e.getStatusCode().value(), code);
 
-		// 토스 서버 내부 장애(예: 테스트 서버 DB 연결 실패)면 에러 메시지에 내부 예외/SQL이 그대로 담겨 온다.
-		// 사용자 화면에는 짧은 안내만 보여주고, 원문은 원인 확인용으로 로그에만 남긴다.
+		// 토스 내부 장애 메시지는 로그에만 남기고 화면엔 짧은 안내만 보여준다.
 		if (e.getStatusCode().is5xxServerError() || looksLikeInternalError(message)) {
 			log.warn("[토스] 결제사 내부 오류 원문: {}", message);
-			// 메시지 키로 던지고, 화면에 내보내는 쪽에서 Messages.resolve()로 번역
+			// 메시지 키로 던지고 화면에서 번역한다.
 			return new TossPaymentException(code, "error.toss.providerUnavailable");
 		}
 		return new TossPaymentException(code, message);

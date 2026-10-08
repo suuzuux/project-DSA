@@ -5,7 +5,7 @@
     <title th:text="#{fanChat.pageTitle}">팬 채팅방</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/community.css}">
-    <!-- SockJS/Stomp : 웹소켓 연결과 실시간 메시지 송수신을 도와주는 외부 자바스크립트 라이브러리 -->
+    <!-- SockJS / Stomp 웹소켓 라이브러리 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
@@ -25,10 +25,7 @@
     <div id="messages" style="border:1px solid var(--wp-hairline);border-radius:var(--wp-radius);
          background:var(--wp-surface);padding:14px;min-height:280px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px;"></div>
 
-    <!--
-        hidden : 이 태그를 화면에서 숨기는 순수 HTML 속성 (CSS의 display:none과 달리 style이 아님).
-        자바스크립트에서 warningBanner.hidden = true/false 로 보이거나 숨길 수 있음
-    -->
+    <!-- hidden 속성으로 숨기고 JS 에서 보이거나 숨긴다. -->
     <p id="warningBanner" hidden class="form-error" style="display:block;"></p>
 
     <div style="display:flex;gap:8px;">
@@ -37,7 +34,7 @@
     </div>
 </div>
 
-<!-- 와이어프레임 스타일 채팅 말풍선 - 내가 보낸 메시지는 오른쪽(민트), 상대 메시지는 왼쪽(연회색) -->
+<!-- 채팅 말풍선 - 내 메시지 오른쪽, 상대 메시지 왼쪽 -->
 <style>
     .chat-row { display: flex; gap: 8px; max-width: 80%; }
     .chat-row--me { align-self: flex-end; flex-direction: row-reverse; }
@@ -50,28 +47,25 @@
 </style>
 
 <script th:inline="javascript">
-    // Thymeleaf가 서버에서 넘겨준 실제 값(아티스트/팬 번호)을 자바스크립트 변수로 바꿔치기해줌
+    // 서버 값을 JS 변수로 넘긴다.
     const artistId = /*[[${artistId}]]*/ 0;
     const fanId = /*[[${fanId}]]*/ 0;
 
-    // 화면 언어에 맞춘 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    // 화면 언어 문구 (한국어는 fallback)
     const MSG = {
         warningPrefix: /*[[#{fanChat.warningPrefix}]]*/ "[경고] {0}"
     };
 
-    // 웹소켓 연결 시작 (SockJS는 흉내내기용 안전장치, Stomp는 그 위에서 채널 규칙을 관리해주는 도구)
+    // 웹소켓 연결 (SockJS 폴백 + Stomp 채널 관리)
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const socket = new WebSocket(proto + '//' + location.host + '/ws-chat');
     const stompClient = Stomp.over(socket);
 
-    // 채팅 메시지 하나를 화면(messages) 밑에 이어붙이는 함수
-    // 내가 보낸 메시지(senderId === fanId)는 오른쪽 말풍선, 상대(아티스트)가 보낸 메시지는 왼쪽 말풍선으로 그림
+    // 메시지를 말풍선으로 붙인다 (내 메시지는 오른쪽).
     function appendMessage(data) {
         const div = document.getElementById('messages');
         const isMe = data.senderId === fanId;
-        // 서버가 보내주는 createdAt은 "2026-08-24T15:43:21.123456" 형식의 문자열.
-        // new Date(...)로 파싱하면 브라우저마다 마이크로초 자릿수 처리가 달라질 수 있어서,
-        // 문자열에서 "T" 뒤 시:분만 그대로 잘라 씀 (더 안전함)
+        // createdAt 문자열에서 시:분만 잘라 쓴다 (브라우저별 파싱 차이 회피).
         const time = (data.createdAt.split('T')[1] || '').slice(0, 5);
 
         const row = document.createElement('div');
@@ -81,15 +75,14 @@
             '<div class="chat-meta">' + data.senderNickname + ' · ' + time + '</div>' +
             '<div class="chat-bubble"></div>' +
             '</div>';
-        // textContent로 넣는 이유 : 메시지 내용에 우연히 <script> 같은 태그가 섞여도
-        // 진짜 태그로 실행되지 않고 화면에 글자 그대로만 보이게 하기 위함 (XSS 방지)
+        // textContent 로 넣어 XSS 를 막는다.
         row.querySelector('.chat-bubble').textContent = data.content;
 
         div.appendChild(row);
-        div.scrollTop = div.scrollHeight; // 항상 최신 메시지가 보이도록 스크롤을 맨 아래로 내림
+        div.scrollTop = div.scrollHeight; // 최신 메시지가 보이게 맨 아래로 스크롤
     }
 
-    // 경고 문구를 잠깐 보여줬다가 몇 초 뒤 자동으로 사라지게 하는 함수 (WePlaNet.alert() 팝업 대신 사용)
+    // 경고 문구를 잠깐 보여주고 숨긴다.
     let warningTimer = null;
 
     function showWarning(message) {
@@ -97,20 +90,20 @@
         banner.textContent = MSG.warningPrefix.replace('{0}', message);
         banner.hidden = false;
 
-        clearTimeout(warningTimer); // 이전에 걸어둔 "숨기기 예약"이 있으면 취소함
+        clearTimeout(warningTimer); // 이전 숨기기 예약 취소
         warningTimer = setTimeout(function () {
             banner.hidden = true;
-        }, 3500); // 3.5초 뒤에 자동으로 숨김
+        }, 3500); // 3.5초 후 숨김
     }
 
-    // 서버와 웹소켓 연결이 맺어지면, 이 화면에서 구독(실시간으로 받아볼)할 채널들을 등록함
+    // 연결되면 구독할 채널을 등록한다.
     stompClient.connect({}, function () {
-        // 아티스트가 전체 팬에게 보내는 방송 채널
+        // 아티스트 방송 채널
         stompClient.subscribe('/topic/chat.' + artistId, function (message) {
             appendMessage(JSON.parse(message.body));
         });
 
-        // 나(이 팬)와 아티스트만 볼 수 있는 개인 채널 - 다른 팬은 이 채널을 구독조차 할 수 없음
+        // 나와 아티스트만 보는 개인 채널
         stompClient.subscribe('/topic/chat.' + artistId + '.fan.' + fanId, function (message) {
             const data = JSON.parse(message.body);
             appendMessage(data);
@@ -120,20 +113,19 @@
             }
         });
 
-        // 필터(금칙어)에 걸리거나 한도를 다 써서 거부된 내 메시지에 대한 경고를 받는 채널
+        // 금칙어·한도로 거부된 내 메시지 경고 채널
         stompClient.subscribe('/topic/chat.error.' + fanId, function (message) {
             const data = JSON.parse(message.body);
             showWarning(data.message);
         });
     });
 
-    // 입력창의 내용을 서버로 전송하는 함수
+    // 입력 내용 전송
     function sendMessage() {
         const content = document.getElementById('messageInput').value;
         if (!content) return; // 빈 값이면 전송하지 않음
 
-        // stompClient.send(채널, 헤더, 내용) : 웹소켓으로 서버에 메시지를 보냄.
-        // JSON.stringify(...) : 자바스크립트 객체를 문자열로 바꿔서 보냄 (서버의 ChatMessageRequest가 이걸 받아줌)
+        // 웹소켓으로 메시지 전송 (서버의 ChatMessageRequest 가 받음)
         stompClient.send('/app/chat.send', {}, JSON.stringify({
             artistId: artistId,
             fanId: fanId,
@@ -146,7 +138,7 @@
 
     document.getElementById('sendButton').addEventListener('click', sendMessage);
 
-    // 입력창에서 엔터 키를 누르면, 버튼을 누른 것과 똑같이 전송되게 함
+    // Enter 로도 전송
     document.getElementById('messageInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
             sendMessage();

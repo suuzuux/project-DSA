@@ -1,7 +1,4 @@
-/**
- * 커뮤니티 검색 모달 - 검색어/성별/카테고리로 찾고, 결과의 "가입" 버튼은 community-join.js 가 받는다.
- * 이미 가입한 커뮤니티는 "✓ 가입중", 본인 커뮤니티는 "내 커뮤니티"로 표시한다 (?openSearch=1 이면 자동으로 열림).
- */
+/** 커뮤니티 검색 모달 (가입 버튼은 community-join.js, ?openSearch=1 이면 자동 열림). */
 (function () {
   "use strict";
 
@@ -12,17 +9,16 @@
   const searchBtn = document.getElementById("exploreSearchBtn");
   if (!resultsEl) return;
 
-  // 내가 가입한 커뮤니티 id 집합 (숫자/문자 섞임 방지를 위해 문자열로 통일)
+  // 가입한 커뮤니티 id 집합 (문자열)
   const joinedArtistIds = new Set(
     (window.__WEPLANET_ARTISTS__ || []).map((a) => String(a.id))
   );
 
-  // 문구는 main.js 의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  // 문구는 WePlaNet.t 에서 꺼낸다 (없으면 한국어 기본값).
   const t = (key, fallback, args) =>
     (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
 
-  // 카테고리는 DB에 한국어 값(아이돌/배우)으로 저장돼 있어서(검색 필터 값도 같은 문자열) 표시할 때만 번역한다.
-  // 등록된 두 값 외의 직접 입력한 카테고리는 저장된 그대로 보여준다.
+  // DB 에 한국어로 저장된 카테고리는 표시할 때만 번역한다.
   const CATEGORY_KEYS = { "아이돌": "main.search.categoryIdol", "배우": "main.search.categoryActor" };
   const categoryLabel = (category) =>
     CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category], category) : (category || "");
@@ -39,7 +35,7 @@
     const soloBadge = a.solo ? `<span class="badge-solo">${escapeHtml(t("client.explore.solo", "솔로"))}</span>` : "";
     const joined = joinedArtistIds.has(String(a.artistId));
 
-    // 가입한 커뮤니티와 본인 커뮤니티(a.own - 아티스트/그룹 멤버)에는 data-join-btn 을 붙이지 않는다 (가입 모달이 안 열림)
+    // 가입했거나 본인 커뮤니티면 가입 버튼을 달지 않는다.
     const actionHtml = a.own
       ? `<button type="button" class="btn btn--ghost btn--sm" disabled
                  style="opacity:.7;cursor:default;">${escapeHtml(t("client.explore.mine", "내 커뮤니티"))}</button>`
@@ -72,7 +68,7 @@
   async function runSearch() {
     resultsEl.innerHTML = `<p class="text-muted">${escapeHtml(t("client.explore.searching", "검색 중..."))}</p>`;
     try {
-      // ?openSearch=1 로 페이지 로드 직후 바로 검색할 때도 번역 문구로 그리도록 i18n 응답을 기다린다
+      // i18n 응답을 기다린 뒤 검색 결과를 그린다.
       if (window.WePlaNet && window.WePlaNet.i18nReady) await window.WePlaNet.i18nReady;
       const res = await fetch("/community/search?" + buildParams().toString(), {
         headers: { "X-Requested-With": "fetch" },
@@ -86,10 +82,10 @@
     }
   }
 
-  // "검색" 버튼을 눌렀을 때만 검색 실행 (필터 변경/입력 중에는 실행 안 함)
+  // 검색 버튼을 눌렀을 때만 검색
   searchBtn?.addEventListener("click", runSearch);
 
-  // 키워드 입력창에서 Enter로도 검색 버튼과 동일하게 동작하도록
+  // Enter 로도 검색
   keywordEl?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -97,12 +93,12 @@
     }
   });
 
-  // 검색 모달을 여는 순간에는 필터 없는 전체 목록을 한 번 보여줌
+  // 모달을 열 때 전체 목록을 보여준다.
   document.querySelectorAll('[data-modal-open="communitySearchModal"]').forEach((btn) => {
     btn.addEventListener("click", runSearch);
   });
 
-  // 드로어 메뉴 "커뮤니티 찾아보기"(?openSearch=1)로 들어온 경우 - 검색 모달을 자동으로 열고 전체 목록을 바로 보여줌
+  // ?openSearch=1 이면 검색 모달을 자동으로 연다.
   const urlParams = new URLSearchParams(location.search);
   if (urlParams.get("openSearch") === "1") {
     document.getElementById("communitySearchModal")?.classList.add("is-open");

@@ -1,8 +1,10 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.account.AccountRecoveryService;
+
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -51,8 +53,7 @@ class AccountRecoveryServiceTest {
 		assertTrue(service.findIdRecipient("다른이름", "kwon@gmail.com").isEmpty());
 	}
 
-	// 카카오 가입자가 비밀번호를 등록했어도 이메일이 받을 수 없는 시스템 주소 그대로면 코드를 보내지 않는다
-	// (User.hasPlaceholderEmail() 기준 - 연동을 해제해 provider 가 비어 있어도 같다)
+	// 소셜 가입자의 시스템 주소로는 비밀번호를 등록했어도 코드를 보내지 않는다
 	@Test
 	void placeholderEmailIsNotRecoverableEvenWithPassword() {
 		User kakao = User.createSocialFan("kakao123456", "encoded", "권형준", "닉네임", "kakao_7@kakao.weplanet.local",

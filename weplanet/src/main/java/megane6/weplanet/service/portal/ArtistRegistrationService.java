@@ -26,12 +26,7 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/**
- * 소속사가 포털에서 아티스트(그룹/솔로)를 등록한다.
- * 등록 = 커뮤니티 생성. 한 트랜잭션에서 아래를 모두 만들고, 하나라도 실패하면 전부 롤백한다.
- *   users(ARTIST, 활성화 대기) / artist_profiles / artist_groups(탐색 필터 포함) / 활성화 토큰
- * 멤버는 4단계에서 따로 추가한다. 멤버가 없으면 솔로로 동작한다.
- */
+/** 소속사의 아티스트 등록 = 커뮤니티 생성 (계정·프로필·그룹·활성화 토큰을 한 트랜잭션으로 생성). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -62,17 +57,15 @@ public class ArtistRegistrationService {
 
 		assertAvailable(groupName, nameEn, email);
 		
-		// 1) 그룹 계정 = 커뮤니티의 주인. 닉네임이 곧 커뮤니티 이름으로 보인다.
+		// 1) 그룹 계정 = 커뮤니티 주인 (닉네임이 커뮤니티 이름)
 		User artist = User.createPendingArtist(email, groupName, groupName);
 		artist.assignAgency(agency);
 		ur.save(artist);
 		
-		// 2) 아티스트 계정 프로필 (group_members FK가 이 테이블을 본다)
+		// 2) 아티스트 계정 프로필 (group_members FK 대상)
 		aapr.save(ArtistAccountProfile.create(artist, agency, groupName, command.debutDate()));
 		
-		// 3) 그룹 = 커뮤니티. id를 그룹 계정 users.id 와 같게 맞춘다.
-		//    미디어(board_media.group_id)와 커뮤니티 URL(/community/{id})이 같은 번호를 쓰기 때문
-		//    커뮤니티 탐색(검색/필터)용 정보도 같은 행에 넣는다. 멤버를 추가하기 전까지는 솔로(1명)로 본다.
+		// 3) 그룹 = 커뮤니티 (id 를 그룹 계정 users.id 와 같게, 탐색 정보 포함, 멤버 전까지 솔로).
 		LocalDateTime now = LocalDateTime.now();
 		agr.save(ArtistGroup.builder()
 				.id(artist.getId())
@@ -90,7 +83,7 @@ public class ArtistRegistrationService {
 				.updatedAt(now)
 				.build());
 
-		// 4) 그룹 이메일로 보낼 활성화 링크
+		// 4) 활성화 링크 발급
 		AgencyActivationService.IssuedActivation activation = aas.issueActivationToken(artist);
 		
 		log.info("아티스트 등록 완료: artistId={}, agencyId={}, name={}",
@@ -99,7 +92,7 @@ public class ArtistRegistrationService {
 		return new RegisteredArtist(artist.getId(), email, groupName, agency.getName(), activation);
 	}
 	
-	// 그룹 계정 활성화 메일 재발송. 이전 링크는 모두 무효가 된다(AgencyActivationService.reissue 참고).
+	// 활성화 메일 재발송 (이전 링크는 무효)
 	@Transactional
 	public RegisteredArtist reissueActivation(User agencyUser, Long artistId) {
 		Agency agency = requireAgency(agencyUser);
@@ -129,8 +122,7 @@ public class ArtistRegistrationService {
 				.orElseThrow(() -> new IllegalStateException("error.portalArtist.agencyNotFound"));
 	}
 	
-	// 이메일(로그인 아이디)은 모든 계정과 겹치면 안 된다.
-	// 그룹명(커뮤니티 이름)은 다른 커뮤니티와만 겹치지 않으면 된다 - 팬 닉네임과는 겹쳐도 됨(체크 표시로 구분)
+	// 이메일은 모든 계정과, 그룹명은 다른 커뮤니티와만 겹치지 않으면 된다.
 	private void assertAvailable(String groupName, String nameEn, String email) {
 		if (ur.existsByUsername(email) || ur.existsByEmail(email)) {
 			throw new LocalizedIllegalStateException("error.artistRegistration.emailTaken", email);
@@ -140,13 +132,13 @@ public class ArtistRegistrationService {
 			throw new LocalizedIllegalStateException("error.artistRegistration.nameTaken", groupName);
 		}
 
-		// 영문명 = 커뮤니티 주소(/kiikii). 대소문자만 다른 것도 같은 주소라 중복으로 본다(컬럼 콜레이션이 대소문자 무시)
+		// 영문명 = 커뮤니티 주소 (대소문자만 달라도 중복)
 		if (agr.existsByNameEn(nameEn)) {
 			throw new LocalizedIllegalStateException("error.artistRegistration.nameEnTaken", nameEn);
 		}
 	}
 
-	// 영문명은 커뮤니티 주소(localhost:9999/{영문명})로 쓰이므로 필수 + 주소로 쓸 수 있는 모양이어야 한다
+	// 영문명은 커뮤니티 주소라 필수이고 주소 형식이어야 한다.
 	private String requireNameEn(String value) {
 		String nameEn = requireText(value, NAME_EN_MAX_LENGTH,
 				"error.artistRegistration.nameEnRequired", "error.artistRegistration.nameEnTooLong");
@@ -173,8 +165,7 @@ public class ArtistRegistrationService {
 		return email.toLowerCase();
 	}
 	
-	// 예외 메시지는 메시지 키로 던지고 화면(컨트롤러)에서 Messages.resolve(e)로 번역한다.
-	// 글자 수 제한은 *_MAX_LENGTH 상수를 {0}으로 넘기므로, 상수만 바꾸면 3개 언어 문구가 같이 바뀐다.
+	// 예외는 메시지 키로 던지고 글자 수 한도는 {0} 으로 넘긴다.
 	private String requireText(String value, int maxLength, String blankKey, String tooLongKey) {
 		if (value == null || value.isBlank()) {
 			throw new IllegalArgumentException(blankKey);
@@ -189,8 +180,7 @@ public class ArtistRegistrationService {
 		return trimmed;
 	}
 	
-	// 커뮤니티 검색의 카테고리 필터(아이돌/배우)는 DB의 한국어 값으로 검색하므로, 다른 언어 표기로 들어와도 한국어 값으로 맞춘다.
-	// (그 밖의 값은 그대로 저장)
+	// 카테고리 필터 검색을 위해 다른 언어 표기를 한국어 값으로 맞춘다.
 	private static String normalizeCategory(String category) {
 		if (category == null) {
 			return null;
@@ -216,8 +206,7 @@ public class ArtistRegistrationService {
 		return trimmed;
 	}
 	
-	// 등록 폼 입력값. @ModelAttribute 로 폼 필드 이름과 같은 이름에 바로 담긴다.
-	// 빈 날짜/빈 성별은 null 로 들어온다.
+	// 등록 폼 입력값 (빈 날짜·성별은 null)
 	public record RegisterCommand(
 			String groupName,
 			String nameEn,
@@ -229,7 +218,7 @@ public class ArtistRegistrationService {
 			String category
 	) {}
 	
-	// 등록 결과. 컨트롤러가 트랜잭션 커밋 후 이 정보로 초대 메일을 보낸다.
+	// 등록 결과 (커밋 후 초대 메일 발송용)
 	public record RegisteredArtist(
 			Long artistId,
 			String username,

@@ -27,8 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-// 휴면 계정 해제 - 아이디를 입력하면 가입 때 등록한 이메일로 인증코드를 보내고, 확인되면 해제 후 바로 로그인시킨다.
-// 로컬·소셜 로그인 어느 쪽에서 휴면 계정을 만나도 이 화면 하나로 처리한다.
+// 휴면 해제 - 이메일 인증코드 확인 후 해제하고 바로 로그인시킨다.
 @Slf4j
 @Controller
 @RequestMapping("/login/reactivate")
@@ -60,8 +59,7 @@ public class DormantAccountReactivationController {
             result.put("message", msg("reactivate.usernameRequired"));
             return result;
         }
-        // 휴면 계정이 아니어도 같은 문구로 응답해 휴면 여부가 드러나지 않게 한다.
-        // 대상일 때만 실제로 보내고(백그라운드), 대상이 아니면 아이디로 만든 자리표시 값으로 발송 제한만 센다.
+        // 휴면 여부가 드러나지 않게 항상 같은 문구로 응답한다.
         Optional<User> target = resolveTarget(username);
         try {
             emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.REACTIVATE,
@@ -88,12 +86,12 @@ public class DormantAccountReactivationController {
                                        Model model) {
         Optional<User> target = resolveTarget(username);
         if (target.isEmpty()) {
-            // 휴면 계정이 아니어도 "코드가 틀렸다"와 같은 문구 - 여기서도 휴면 여부가 드러나지 않게
+            // 휴면 여부가 드러나지 않게 같은 오류 문구를 쓴다.
             model.addAttribute("errorMessage", messages.resolve(VerificationResult.INVALID.failureMessage()));
             return "login/reactivate";
         }
         User user = target.get();
-        // 코드를 보낸 것과 같은 세션에서만 확인된다 - 휴면 해제는 성공하면 바로 로그인되므로 특히 중요
+        // 코드를 보낸 세션에서만 확인된다.
         VerificationResult verified = emailVerificationService.verifyCode(
                 request.getSession(false), VerificationPurpose.REACTIVATE, user.getEmail(), code);
         if (!verified.isSuccess()) {
@@ -103,7 +101,7 @@ public class DormantAccountReactivationController {
         emailVerificationService.clear(request.getSession(false), VerificationPurpose.REACTIVATE, user.getEmail());
         user.reactivate();
         socialLoginSessionSupport.loginAs(user, request, response);
-        // 휴면 해제도 새로 로그인하는 지점이라, 화면 언어를 계정의 선호 언어로 맞춘다.
+        // 화면 언어를 계정의 선호 언어로 맞춘다.
         localeResolver.setLocale(request, response, PreferredLocaleResolver.toLocale(user.getPreferredLanguage()));
         return "redirect:/";
     }

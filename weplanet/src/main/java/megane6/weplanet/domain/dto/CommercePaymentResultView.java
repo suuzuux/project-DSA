@@ -22,7 +22,7 @@ public record CommercePaymentResultView(
 		String backUrl,
 		String backLabel
 ) {
-	// 레코드라 MessageSource를 직접 들 수 없어서, 호출하는 서비스가 Messages를 넘겨 현재 로케일 문구로 만든다
+	// 레코드라 호출하는 서비스가 Messages 를 넘겨 현재 로케일 문구로 만든다.
 	public static CommercePaymentResultView fromShop(ShopOrder order, Messages messages) {
 		String title;
 		if (order.getItems().isEmpty()) {

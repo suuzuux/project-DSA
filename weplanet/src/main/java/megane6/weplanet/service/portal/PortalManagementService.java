@@ -56,13 +56,13 @@ public class PortalManagementService {
     private final CommentReportRepository commentReportRepository;
     private final LiveCommentReportRepository liveCommentReportRepository;
     private final FileStorageService fileStorageService;
-    private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 새 공지 → 팔로워 이메일
+    private final CommunityActivityNotifier communityActivityNotifier; // 새 공지 → 팔로워 이메일
     private final MessageSource messageSource;
-    private final CommunityUrls communityUrls; // 카드의 커뮤니티 주소를 영문 주소(/kiikii)로 채움
+    private final CommunityUrls communityUrls; // 커뮤니티 영문 주소
 
     public static final int MAX_PINNED = 5;
 
-    // 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+    // 화면 언어 에러 메시지 조회
     private String msg(String code) {
         return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
     }
@@ -99,15 +99,14 @@ public class PortalManagementService {
         PortalNotice notice = isNew
                 ? PortalNotice.create(artist, title.trim(), content.trim(), published)
                 : getNotice(artist, noticeId);
-        // 수정 전에 이미 공개돼 있던 공지인지 (새 공지는 공개 전으로 본다)
+        // 수정 전 이미 공개된 공지인지
         boolean wasPublished = !isNew && notice.isPublished();
         if (noticeId != null) {
             notice.update(title, content, published);
         }
         applyPinState(artist, notice, pinned);
         PortalNotice saved = portalNoticeRepository.save(notice);
-        // [이벤트·혜택 알림] 비공개 → 공개로 바뀌는 순간에만 팔로워 알림 (새로 쓰면서 바로 공개 / 임시저장했다가 나중에 공개).
-        // 이미 공개된 공지의 내용 수정이나 비공개 저장 때는 보내지 않는다.
+        // 비공개 → 공개로 바뀔 때만 팔로워에게 알린다.
         if (published && !wasPublished) {
             communityActivityNotifier.notifyNewNotice(artist, saved);
         }
@@ -181,9 +180,7 @@ public class PortalManagementService {
         }
     }
 
-    // ── 생일 일정 제목/설명 다국어 표시 ──
-    // 생일 일정은 한국어 기본값("OO 생일" / "프로필에서 등록된 생일")으로 저장되므로, 화면에 내보낼 때 그 기본값이면 현재 언어 문구로 바꾼다.
-    // 소속사가 직접 다른 제목/설명을 입력했으면 입력한 그대로 보여준다.
+    // 생일 일정은 한국어 기본 제목·설명이면 현재 언어 문구로 바꿔 보여준다.
     static final String BIRTHDAY_DEFAULT_TITLE_SUFFIX = " 생일";
     static final String BIRTHDAY_PROFILE_DESCRIPTION = "프로필에서 등록된 생일";
 
@@ -328,7 +325,7 @@ public class PortalManagementService {
         List<ScheduleEventView> events = new ArrayList<>();
         for (ArtistSchedule schedule : schedules) {
             if (schedule.getCategory() == ScheduleCategory.BIRTHDAY) {
-                // 알림·공개 캘린더는 올해 생일만 (과거·내년 이후 펼침 제외)
+                // 알림·공개 캘린더는 올해 생일만
                 LocalDate birthDate = schedule.getScheduleAt().toLocalDate();
                 if (thisYear >= birthDate.getYear()) {
                     appendBirthdayEvents(events, schedule, thisYear, thisYear);
@@ -447,7 +444,7 @@ public class PortalManagementService {
                 .orElseGet(() -> artistProfileRepository.save(ArtistProfile.create(artist)));
     }
 
-    /** 커뮤니티 About 위젯용. 없으면 null (빈 프로필을 만들지 않음). */
+    /** 커뮤니티 About 위젯용 (없으면 null) */
     @Transactional(readOnly = true)
     public String findIntro(User artist) {
         return artistProfileRepository.findByArtist(artist)
@@ -495,7 +492,7 @@ public class PortalManagementService {
         return result;
     }
 
-    /** DB에 저장된 파일명/URL을 화면용 경로로 변환 */
+    /** 저장된 파일명·URL 을 화면 경로로 변환 */
     public String toPublicImageUrl(String storedOrUrl) {
         if (storedOrUrl == null || storedOrUrl.isBlank()) {
             return null;
@@ -574,13 +571,7 @@ public class PortalManagementService {
         artistProfileRepository.save(profile);
     }
 
-    /**
-     * 커뮤니티 프로필 화면에서 아티스트 쪽 계정(솔로 본인/그룹 멤버)이 자기 프로필을 고칠 때.
-     * 팬은 가입할 때 생기는 community_members 의 프로필을 고치지만, 아티스트는 자기 커뮤니티에 가입하지 않으므로
-     * 계정별 포털 프로필(artist_profile: 소개/프로필 사진/배경)을 고친다.
-     * 솔로 아티스트는 이 값이 곧 커뮤니티 로고/헤더라서 포털 "프로필 관리"와 같은 데이터다.
-     * 이름(닉네임)은 커뮤니티 이름·멤버 구분에 쓰여 소속사가 관리하므로 여기서는 바꾸지 않는다.
-     */
+    /** 아티스트 쪽 계정의 커뮤니티 프로필 편집 - 포털 프로필(소개·사진·배경)을 고친다 (이름은 소속사 관리). */
     public void updateArtistCommunityProfile(User account,
                                              String intro,
                                              MultipartFile avatar,
@@ -597,7 +588,7 @@ public class PortalManagementService {
         artistProfileRepository.save(profile);
     }
 
-    // 프로필 사진(로고)/배경 교체·삭제 - 포털 프로필 관리와 커뮤니티 프로필 편집이 같이 쓴다
+    // 프로필 사진·배경 교체·삭제 (포털과 커뮤니티 편집 공통)
     private void applyProfileImages(ArtistProfile profile,
                                     MultipartFile avatar,
                                     MultipartFile background,
@@ -607,7 +598,7 @@ public class PortalManagementService {
             deleteUploadedIfPresent(profile.getLogoImageUrl());
             profile.clearLogoImage();
         } else if (avatar != null && !avatar.isEmpty()) {
-            // 이미지 형식·크기 검증 후 저장하고, 새 파일 저장이 끝난 뒤에 옛 파일을 지운다
+            // 새 파일 저장이 끝난 뒤 옛 파일을 지운다.
             String newLogo = fileStorageService.storeImage(avatar);
             deleteUploadedIfPresent(profile.getLogoImageUrl());
             profile.replaceLogoImage(newLogo);
@@ -623,7 +614,7 @@ public class PortalManagementService {
         }
     }
 
-    /** 프로필 생일을 캘린더 BIRTHDAY 일정과 동기화 (없으면 생성, 있으면 첫 생일 일정 갱신). */
+    /** 프로필 생일을 캘린더 생일 일정과 동기화한다. */
     private void syncBirthdaySchedule(User artist, LocalDate birthDate) {
         List<ArtistSchedule> birthdays = artistScheduleRepository
                 .findByArtistAndCategoryOrderByScheduleAtAsc(artist, ScheduleCategory.BIRTHDAY);

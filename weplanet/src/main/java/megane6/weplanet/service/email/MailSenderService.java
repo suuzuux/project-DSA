@@ -19,17 +19,11 @@ public class MailSenderService {
 	private final JavaMailSender mailSender;
 	private final MessageSource messageSource;
 	
-	// 발신자 주소 (application.properties의 spring.mail.username 사용)
+	// 발신자 주소 (spring.mail.username)
 	@Value("${spring.mail.username}")
 	private String from;
 	
-	/**
-	 * 최고관리자 로그인 인증번호 발송
-	 * (내부 운영자용 메일이라 한국어 고정)
-	 * @param toEmail			받는 사람
-	 * @param code				6자리 인증번호 (로그에 남기지 X)
-	 * @param expireMinutes		유효시간 (분)
-	 */
+	/** 관리자 로그인 인증번호 발송 (한국어 고정, 코드는 로그에 남기지 않음). */
 	public void sendAdminLoginCode(String toEmail, String code, long expireMinutes) {
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setFrom(from);
@@ -48,14 +42,7 @@ public class MailSenderService {
 		log.info("[관리자 로그인] 인증번호 발송 완료: {}", maskEmail(toEmail));
 	}
 	
-	/**
-	 * 팬 프로젝트 등록 본인확인 인증번호 발송
-	 * 발송 실패 시 IllegalStateException으로 바꿔 던져서 발급한 인증 기록도 함께 롤백되게 한다.
-	 * 로그인한 회원 본인의 요청 중에 발송되므로 요청 로케일(= 회원 선호 언어)로 메일을 만든다.
-	 * @param toEmail			받는 사람 (회원가입 시 인증한 이메일)
-	 * @param code				6자리 인증번호 (로그에 남기지 X)
-	 * @param expireMinutes		유효시간 (분)
-	 */
+	/** 팬 프로젝트 등록 인증번호 발송 (실패 시 예외로 인증 기록도 롤백, 요청 로케일 사용). */
 	public void sendProjectVerificationCode(String toEmail, String code, long expireMinutes) {
 		Locale locale = LocaleContextHolder.getLocale();
 		SimpleMailMessage message = new SimpleMailMessage();
@@ -73,7 +60,7 @@ public class MailSenderService {
 		log.info("[프로젝트 등록] 인증번호 발송 완료: {}", maskEmail(toEmail));
 	}
 
-	// 이메일 가운데 숨김처리
+	// 이메일 가운데 마스킹
 	private String maskEmail(String email) {
 		int at = email.indexOf("@");
 		if (at <= 2) {

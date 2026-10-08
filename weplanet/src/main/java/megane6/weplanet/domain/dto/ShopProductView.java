@@ -2,10 +2,7 @@ package megane6.weplanet.domain.dto;
 
 import java.util.List;
 
-/**
- * 굿즈샵 상품 목록·상세용 뷰.
- * soldOut/lowStock 은 status가 아니라 Variant 재고로 판정.
- */
+/** 굿즈샵 상품 뷰 (품절·임박은 Variant 재고로 판정). */
 public record ShopProductView(
 		String id,
 		Long artistId,
@@ -59,7 +56,7 @@ public record ShopProductView(
 				&& totalStock < megane6.weplanet.domain.entity.Goods.LOW_STOCK_THRESHOLD;
 	}
 
-	/** 목록·임박 표시용 — 옵션(Variant) 재고 합계 */
+	/** 옵션(Variant) 재고 합계 */
 	public int stockQuantity() {
 		return totalStock;
 	}

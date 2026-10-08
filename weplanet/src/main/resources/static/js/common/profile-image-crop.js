@@ -1,11 +1,8 @@
-/**
- * 프로필 / 배경 이미지 자르기 모달 (Cropper.js) - 업로드 전에 위치·확대를 조정해 원하는 부분만 잘라 올린다.
- * portal/profile.html, community/profile.html 이 같은 모달 마크업과 이 스크립트를 함께 쓴다.
- */
+/** 프로필·배경 이미지 자르기 모달 (Cropper.js, 포털·커뮤니티 프로필 공용). */
 (function () {
   "use strict";
 
-  // 종류별 자르기 비율/마스크/출력 크기 - 아바타는 1:1 원형, 배경은 커버 영역 비율, 헤더 이미지는 3:1.
+  // 종류별 비율·마스크·출력 크기 (아바타 1:1 원형, 헤더 3:1)
   let KIND_CONFIG = {
     Avatar: {
       aspectRatio: 1,
@@ -23,8 +20,7 @@
 
       letterboxAtMinZoom: true
     },
-    // 에이전시 헤더 이미지(커뮤니티 히어로 배너 원본) 크롭 설정 - 3:1.
-    // community/profile.html의 개인 프로필 커버(Background, 2560:1660)와는 별개의 설정이다.
+    // 에이전시 헤더 이미지 크롭 설정 (3:1)
     HeaderImage: {
       aspectRatio: 3,
       round: false,
@@ -38,7 +34,7 @@
   let modal, modalTitle, stage, image, zoomRange, applyBtn;
   let cropper = null;
   let activeKind = null;
-  // 크롭 비율(KIND_CONFIG) 조회용 kind. DOM id 조회는 activeKind를 그대로 쓴다.
+  // 크롭 설정 조회용 kind
   let activeConfigKind = null;
   let activeInput = null;
   let activePreviewEl = null;
@@ -62,7 +58,7 @@
       if (cropper) cropper.zoomTo(Number(zoomRange.value));
     });
 
-    // 이미지를 휠/핀치로 직접 확대해도 슬라이더 위치가 같이 따라오게 동기화
+    // 휠·핀치 확대 시 슬라이더도 맞춘다.
     image.addEventListener("zoom", function (e) {
       if (e.detail && typeof e.detail.ratio === "number") {
         zoomRange.value = e.detail.ratio.toFixed(2);
@@ -84,7 +80,7 @@
     }
   }
 
-  // clearInput: 취소일 때만 true - 적용 후에는 이미 새 파일을 넣어뒀으니 지우면 안 됨
+  // 취소일 때만 input 을 비운다.
   function close(clearInput) {
     destroyCropper();
     if (modal) modal.classList.remove("is-open");
@@ -110,8 +106,7 @@
     activePreviewEl = previewEl || null;
     activeLabelEl = labelEl || null;
 
-    // 화면 언어에 맞춘 모달 제목은 window.WEPLANET_PROFILE_CROP_TITLES 로 받는다 (없으면 한국어 기본값).
-    // 크롭 설정(configKind)의 제목을 먼저 찾고, 없으면 kind 제목을 쓴다.
+    // 모달 제목은 화면 언어 문구로 받는다 (없으면 한국어 기본값).
     var overrideTitles = window.WEPLANET_PROFILE_CROP_TITLES;
     modalTitle.textContent = (overrideTitles && (overrideTitles[activeConfigKind] || overrideTitles[kind])) || cfg.title;
     stage.classList.toggle("is-round", !!cfg.round);
@@ -123,8 +118,7 @@
       modal.classList.add("is-open");
       cropper = new Cropper(image, {
         aspectRatio: cfg.aspectRatio,
-        // 배경(letterboxAtMinZoom)은 이미지가 크롭 프레임보다 작아지는 상태(letterbox)까지
-        // 허용해야 해서 viewMode:0(무제한). 아바타는 기존처럼 프레임을 항상 채우도록 1 유지.
+        // 배경은 프레임보다 작게 축소할 수 있도록 viewMode 0, 아바타는 1
         viewMode: cfg.letterboxAtMinZoom ? 0 : 1,
         dragMode: "move",
         autoCropArea: 1,
@@ -134,8 +128,7 @@
         background: false,
         ready: function () {
           if (cfg.letterboxAtMinZoom) {
-            // 배경: 가장 축소했을 때 이미지 전체가 잘리지 않고 다 보이도록(contain fit) 시작하고,
-            // 확대할수록 점점 크롭 프레임을 채우며 잘려나가게 한다.
+            // 배경은 처음엔 이미지 전체가 보이게 시작한다.
             let cropBoxData = cropper.getCropBoxData();
             let imgData = cropper.getImageData();
             let naturalW = imgData.naturalWidth || 1;
@@ -150,8 +143,7 @@
             zoomRange.step = 0.001;
             zoomRange.value = containRatio.toFixed(3);
           } else {
-            // 아바타: 이미지마다 처음 배율이 달라서 그 배율을 기준으로 슬라이더 범위를 잡는다.
-            // Cropper 가 실제로 허용하는 최소 배율을 한 번 확대·축소해 보고 축소 하한으로 쓴다.
+            // 아바타는 이미지별 처음 배율을 기준으로 슬라이더 범위를 잡는다.
             let startImgData = cropper.getImageData();
             let startRatio = startImgData.naturalWidth ? startImgData.width / startImgData.naturalWidth : 1;
 
@@ -181,7 +173,7 @@
       width: cfg.outputWidth,
       height: cfg.outputHeight,
       imageSmoothingQuality: "high",
-      // 배경을 가장 축소한 상태(letterbox)로 자르면 빈 자리가 생길 수 있어서 흰색으로 채운다 (안전장치).
+      // 빈 자리는 흰색으로 채운다.
       fillColor: "#ffffff"
     });
     if (!canvas) {
@@ -203,7 +195,7 @@
       let fileName = "profile-" + kind.toLowerCase() + ".jpg";
       let file = new File([blob], fileName, { type: "image/jpeg" });
 
-      // 잘라낸 결과를 원래 input에 다시 넣는다 - 폼 전송 시 이 파일이 그대로 올라감
+      // 잘라낸 결과를 원래 input 에 넣는다 (폼 전송용).
       let dt = new DataTransfer();
       dt.items.add(file);
       inputEl.files = dt.files;
@@ -217,7 +209,7 @@
           previewEl.innerHTML =
             '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">';
         } else {
-          // 배경 미리보기는 실제 <img>(width:100%;height:auto)로 채운다 - 좌우가 잘리거나 여백 없이 이미지 전체가 꽉 차게 보인다.
+          // 배경 미리보기는 실제 이미지로 채운다.
           previewEl.innerHTML = '<img src="' + url + '" alt="">';
         }
       }

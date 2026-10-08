@@ -21,11 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * "나의 컬렉션" 조회 전용 서비스.
- * <p>
- * 지급은 BadgeAwardService가 전담
- */
+/** 나의 컬렉션 조회 전용 (지급은 BadgeAwardService). */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -35,17 +31,12 @@ public class CollectionService {
 	private final FanBadgeOwnershipRepository ownershipRepository;
 	private final UserRepository userRepository;
 	private final CommunityMemberRepository communityMemberRepository;
-	private final Messages messages; // 배지 이름·설명을 화면 언어로 (badge.{코드}.name / .description)
+	private final Messages messages; // 배지 이름·설명 번역
 	
-	// 카드에 미리보기로 띄울 배지 개수
+	// 카드 미리보기 배지 수
 	private static final int PREVIEW_SIZE = 3;
 	
-	/**
-	 * 내가 가입한 커뮤니티별 배지 요약 카드 목록.
-	 * <p>
-	 * 기준은 community_members(커뮤니티 가입)다. group_follow(프로필 팔로우)는 배지 하나의 조건일 뿐,
-	 * "내 커뮤니티" 목록의 기준이 아니다.
-	 */
+	/** 가입한 커뮤니티별 배지 요약 카드 (community_members 기준). */
 	public List<CollectionCardView> getMyCollection(Long fanId) {
 		List<Long> artistIds = communityMemberRepository.findByFanId(fanId).stream()
 				.map(CommunityMember::getArtistId)
@@ -55,8 +46,7 @@ public class CollectionService {
 			return List.of();
 		}
 		
-		// 카탈로그는 커뮤니티 수와 무관하게 딱 한 번만 읽는다.
-		// 반복문 안에서 읽으면 커뮤니티 6개일 때 6번 조회하게 된다(N+1).
+		// 카탈로그는 한 번만 읽는다 (N+1 방지).
 		List<FanBadge> catalog = fanBadgeRepository.findAllByOrderByBadgeTypeAscSortOrderAsc();
 		
 		return userRepository.findAllById(artistIds).stream()
@@ -65,9 +55,7 @@ public class CollectionService {
 				.toList();
 	}
 	
-	/**
-	 * 전체보기 모달에 띄울 한 아티스트의 배지 현황.
-	 */
+	/** 전체보기 모달의 아티스트별 배지 현황 */
 	public BadgeCollectionView getBadgeCollection(Long fanId, Long artistId) {
 		User artist = userRepository.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
@@ -83,8 +71,6 @@ public class CollectionService {
 				toBadgeViews(catalog, earnedCodes, FanBadgeType.SPECIAL)
 		);
 	}
-	
-	// ---------- 아래는 내부 helper ----------
 	
 	private CollectionCardView toCard(Long fanId, User artist, List<FanBadge> catalog) {
 		Set<String> earnedCodes = findEarnedCodes(fanId, artist.getId());
@@ -111,13 +97,7 @@ public class CollectionService {
 		);
 	}
 	
-	/**
-	 * 이 팬이 이 아티스트에게서 획득한 배지 코드들.
-	 * <p>
-	 * List 가 아니라 Set 으로 만드는 이유 : 카탈로그 25개를 돌면서 매번
-	 * "이 코드가 획득 목록에 있나"를 확인하는데, List.contains 는 매번 처음부터
-	 * 훑기 때문에 느리다. Set.contains 는 한 번에 찾는다.
-	 */
+	/** 획득한 배지 코드 (조회가 잦아 Set 사용). */
 	private Set<String> findEarnedCodes(Long fanId, Long artistId) {
 		return ownershipRepository.findByFan_IdAndArtist_IdAndRevokedAtIsNull(fanId, artistId)
 				.stream()
@@ -125,7 +105,7 @@ public class CollectionService {
 				.collect(Collectors.toSet());
 	}
 	
-	// 카탈로그를 유형별로 걸러 BadgeView 로 바꾼다. 획득 여부는 earnedCodes 로 판단.
+	// 카탈로그를 유형별 BadgeView 로 변환
 	private List<BadgeView> toBadgeViews(List<FanBadge> catalog, Set<String> earnedCodes, FanBadgeType type) {
 		return catalog.stream()
 				.filter(badge -> badge.getBadgeType() == type)
@@ -133,7 +113,7 @@ public class CollectionService {
 				.toList();
 	}
 	
-	// 획득한 배지 중 특정 유형의 개수
+	// 획득 배지 중 특정 유형 수
 	private long countByType(List<BadgeView> earnedBadges, List<FanBadge> catalog, FanBadgeType type) {
 		Set<String> codesOfType = catalog.stream()
 				.filter(badge -> badge.getBadgeType() == type)

@@ -25,13 +25,12 @@ public class ChatMessage {
     @JoinColumn(name = "artist_id", nullable = false)
     private User artist;
 
-    // null이면 아티스트가 전체 팬에게 보낸 방송 메시지
-    // 값이 있으면 그 팬 한 명과 아티스트만 주고받는 개인 메시지
+    // null 이면 방송 메시지, 값이 있으면 그 팬과의 개인 메시지
     @ManyToOne
     @JoinColumn(name = "fan_id")
     private User fan;
 
-    // 실제로 이 메시지를 보낸 사람 (아티스트 본인이거나, 특정 팬)
+    // 실제로 보낸 사람 (아티스트 또는 팬)
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
@@ -43,10 +42,7 @@ public class ChatMessage {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // CHAT-02 비대칭 수신: 팬이 보낸 메시지 중 일부만 아티스트 화면에 노출됨(도배 방지).
-    // 노출 여부를 저장해두지 않으면 새로고침했을 때 히스토리에서 전부 다시 보여서
-    // 도배 방지가 무의미해지므로, 전송 시점에 정해진 결과를 여기에 남겨둠.
-    // (아티스트 본인이 보낸 방송은 항상 true)
+    // 아티스트 화면 노출 여부 (도배 방지용, 전송 시 정한 값을 저장해 이력과 맞춤).
     @Builder.Default
     @Column(name = "visible_to_artist", nullable = false)
     private boolean visibleToArtist = true;

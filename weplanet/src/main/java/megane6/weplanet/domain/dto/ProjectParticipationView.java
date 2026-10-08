@@ -6,12 +6,7 @@ import megane6.weplanet.domain.entity.enumfolder.SettlementBank;
 
 import java.time.LocalDateTime;
 
-/**
- * 나의 컬렉션 > 내 프로젝트 참여 기록 카드 한 장
- *
- * waitingForDeposit 이 true 일 때만 계좌 정보(bankName, accountNumber, dueDate)를 보여준다.
- * 웹훅 검증용 secret 같은 민감 정보는 넣지 않는다.
- */
+/** 내 프로젝트 참여 기록 카드 (입금 대기일 때만 계좌 표시, secret 제외). */
 public record ProjectParticipationView(
 		Long contributionId,
 		Long projectId,
@@ -19,7 +14,7 @@ public record ProjectParticipationView(
 		String projectTitle,
 		Long amount,
 		String statusLabel,
-		// 화면은 이 키로 번역한다(statusLabel은 레거시 폴백)
+		// 화면 번역용 키 (statusLabel 은 폴백)
 		String statusMessageKey,
 		String statusCode,
 		boolean waitingForDeposit,

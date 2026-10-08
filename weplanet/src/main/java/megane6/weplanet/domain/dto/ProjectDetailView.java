@@ -35,7 +35,7 @@ public record ProjectDetailView(
 				project.getEventType().getDisplayName(), project.getStatus().getDisplayName());
 	}
 
-	/** ProjectCardView와 같은 이유로 번역된 라벨을 인자로 받는 오버로드 */
+	/** 번역된 라벨을 받는 오버로드 */
 	public static ProjectDetailView from(
 			Project project,
 			String coverStoredName,
@@ -80,7 +80,7 @@ public record ProjectDetailView(
 		return remainingDays == 0 ? "D-DAY" : "D-" + remainingDays;
 	}
 
-	// 반려 시유가 있을 때만 화면에 안내 박스를 띄우기 위함
+	// 반려 사유가 있을 때만 안내 박스를 띄운다.
 	public boolean hasRejectionReason() {
 		return rejectionReason != null && !rejectionReason.isBlank();
 	}

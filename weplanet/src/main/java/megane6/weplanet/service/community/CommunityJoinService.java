@@ -35,12 +35,11 @@ public class CommunityJoinService {
 	private final ArtistProfileRepository artistProfileRepository;
 	private final UserRepository userRepository;
 	private final FileStorageService fileStorageService;
-	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 알림 발행용
-	// 탈퇴 시 그 커뮤니티의 팔로우 관계도 함께 지우려고 리포지토리를 직접 쓴다
-	// (UserFollowService 는 이 서비스에 의존하므로, 서비스를 쓰면 순환 의존이 생긴다).
+	private final ApplicationEventPublisher eventPublisher; // [배지] 활동 이벤트 발행
+	// 순환 의존을 피하려고 팔로우 리포지토리를 직접 쓴다.
 	private final UserFollowRepository userFollowRepository;
 	
-	// 커뮤니티 가입 - 가입 정보와 커뮤니티별 프로필(닉네임·소개·사진)을 community_members 한 행으로 같이 저장한다.
+	// 커뮤니티 가입 - 가입 정보와 커뮤니티 프로필을 한 행으로 저장한다.
 	@Transactional
 	public void join(User fan, Long artistId, String nickname, String bio,
 					 MultipartFile avatar, MultipartFile background) {
@@ -49,7 +48,7 @@ public class CommunityJoinService {
 		if (artist.getRole() != Role.ARTIST) {
 			throw new IllegalArgumentException("error.community.artistNotFound");
 		}
-		// 활성화 전(PENDING_ACTIVATION)이거나 정지·탈퇴된 아티스트의 커뮤니티에는 가입할 수 없다
+		// 활성화 전이거나 정지·탈퇴된 아티스트 커뮤니티는 가입할 수 없다.
 		if (!artist.isLoginable()) {
 			throw new IllegalStateException("error.community.notJoinable");
 		}
@@ -66,8 +65,7 @@ public class CommunityJoinService {
 			throw new IllegalArgumentException("error.community.bioTooLong");
 		}
 		
-		// 이미지 형식(jpg/png/gif/webp)·크기를 검증한 뒤 서버가 정한 확장자로 저장한다.
-		// 가입이 취소되면(뒤이은 배경 사진 검증 실패 등) 먼저 저장한 사진 파일도 지운다.
+		// 이미지 검증 후 저장하고, 가입이 취소되면 저장한 파일도 지운다.
 		List<String> newFiles = new ArrayList<>();
 		cleanUpFilesAfterTransaction(List.of(), newFiles);
 		String avatarStoredName = (avatar != null && !avatar.isEmpty()) ? fileStorageService.storeImage(avatar) : null;
@@ -84,18 +82,14 @@ public class CommunityJoinService {
 				.backgroundStoredName(backgroundStoredName)
 				.build());
 		
-		// [배지] 가입 완료 알림 -> 첫 가입 배지 + 가입 전 활동 배지 확인 (트랜잭션 커밋 후 실행됨)
+		// [배지] 가입 완료 이벤트 (커밋 후 실행)
 		eventPublisher.publishEvent(new BadgeActivityEvent(
 				fan.getId(), artistId, BadgeActivityEvent.Activity.COMMUNITY_JOINED
 		));
 	}
 
-	/**
-	 * 이미 가입돼 있으면 아무 것도 하지 않고, 없으면 최소 프로필로 가입 처리.
-	 * 에이전시 자동 가입 등 멱등성이 필요한 경로에서 사용.
-	 */
-	// 별도 트랜잭션(REQUIRES_NEW) - 같은 가입이 동시에 들어와 한쪽이 유니크 제약으로 실패해도 그쪽만 롤백되고,
-	// 호출한 쪽(AgencyEnrollmentService)은 "이미 가입됨"으로 넘긴다.
+	/** 이미 가입돼 있으면 그대로, 없으면 최소 프로필로 가입한다 (멱등). */
+	// 별도 트랜잭션 - 동시 가입 충돌 시 그쪽만 롤백되고 호출부는 "이미 가입됨"으로 처리한다.
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void ensureJoined(User user, Long artistId, String nickname) {
 		if (user == null || artistId == null) {
@@ -104,7 +98,7 @@ public class CommunityJoinService {
 		if (communityMemberRepository.existsByFanIdAndArtistId(user.getId(), artistId)) {
 			return;
 		}
-		// 아직 활성화 전인 아티스트는 자동 가입하지 않는다 (join 에서 막히므로 조용히 건너뜀)
+		// 활성화 전 아티스트는 자동 가입하지 않는다.
 		boolean activeArtist = userRepository.findById(artistId).map(User::isLoginable).orElse(false);
 		if (!activeArtist) {
 			return;
@@ -116,17 +110,16 @@ public class CommunityJoinService {
 		join(user, artistId, safeNickname, null, null, null);
 	}
 	
-	// 커뮤니티별 프로필 편집 (닉네임 / 소개글 / 프로필 이미지 / 배경 이미지 / 콘텐츠 숨김).
-	// 이미지는 삭제 요청이 우선이고, 그다음 새 파일 교체, 둘 다 없으면 기존 이미지를 그대로 둔다.
+	// 커뮤니티 프로필 편집 (이미지는 삭제 요청 > 새 파일 > 기존 유지 순).
 	@Transactional
 	public void editProfile(User fan, Long artistId, String nickname, String bio,
 							MultipartFile avatar, MultipartFile background,
 							boolean removeAvatar, boolean removeBackground,
 							boolean contentHidden) {
-		// 가입 행이 곧 이 커뮤니티의 프로필이다
+		// 가입 행이 곧 커뮤니티 프로필이다.
 		CommunityMember profile = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
-		// 바뀌는 옛 사진은 저장이 확정된 뒤에 지우고, 새로 올린 사진은 저장이 취소되면 지운다 (cleanUpFilesAfterTransaction)
+		// 옛 사진은 커밋 후, 새 사진은 롤백 시 지운다.
 		List<String> replacedFiles = new ArrayList<>();
 		List<String> newFiles = new ArrayList<>();
 		cleanUpFilesAfterTransaction(replacedFiles, newFiles);
@@ -150,7 +143,7 @@ public class CommunityJoinService {
 			}
 			profile.setAvatarStoredName(null);
 		} else if (avatar != null && !avatar.isEmpty()) {
-			// 새 파일을 먼저 저장(검증)하고, 옛 파일은 저장이 확정된 뒤에 지운다 - 검증에 실패하면 기존 사진이 그대로 남는다
+			// 새 파일을 먼저 검증·저장하고 옛 파일은 커밋 후 지운다.
 			String newAvatar = fileStorageService.storeImage(avatar);
 			newFiles.add(newAvatar);
 			if (profile.getAvatarStoredName() != null) {
@@ -181,30 +174,29 @@ public class CommunityJoinService {
 	public void leave(User fan, Long artistId) {
 		CommunityMember member = communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElseThrow(() -> new IllegalStateException("error.community.notJoined"));
-		// 프로필 사진 파일은 탈퇴가 DB 에 확정된 뒤에 지운다 (탈퇴 처리가 실패하면 사진도 그대로 남도록)
+		// 프로필 사진은 탈퇴가 커밋된 뒤 지운다.
 		List<String> profileFiles = new ArrayList<>();
 		if (member.getAvatarStoredName() != null) profileFiles.add(member.getAvatarStoredName());
 		if (member.getBackgroundStoredName() != null) profileFiles.add(member.getBackgroundStoredName());
 		cleanUpFilesAfterTransaction(profileFiles, List.of());
 		communityMemberRepository.delete(member);
-		// 이 커뮤니티 소속 팔로우 관계를 함께 지운다.
-		// 단, 팬→아티스트 팔로우(following_id == community_id)는 가입과 무관하게 할 수 있는 것이라 남긴다.
+		// 이 커뮤니티의 팔로우 관계를 지운다 (아티스트 팔로우는 유지).
 		userFollowRepository.deleteByCommunityIdAndFollowerIdAndFollowingIdNot(artistId, fan.getId(), artistId);
 		userFollowRepository.deleteByCommunityIdAndFollowingId(artistId, fan.getId());
 	}
 	
-	// 커뮤니티 페이지에서 "이 커뮤니티에 가입했는지" 판단 - 가입/탭 접근 제어의 기준
+	// 커뮤니티 가입 여부 (탭 접근 제어 기준)
 	public boolean isJoined(User fan, Long artistId) {
 		if (fan == null) return false;
 		return communityMemberRepository.existsByFanIdAndArtistId(fan.getId(), artistId);
 	}
 
-	// 가입한 커뮤니티 목록. 프로필 유무와 관계없이 community_members 기준.
+	// 가입한 커뮤니티 id 목록
 	public Set<Long> joinedArtistIds(User fan) {
 		return joinedAtByArtistId(fan).keySet();
 	}
 
-	/** 가입 커뮤니티별 joinedAt. 알림에서 가입 이전 이벤트를 걸러낼 때 쓴다. */
+	/** 커뮤니티별 가입 시각 (알림에서 가입 이전 이벤트 제외용) */
 	public Map<Long, LocalDateTime> joinedAtByArtistId(User fan) {
 		if (fan == null) return Map.of();
 		Map<Long, LocalDateTime> result = new LinkedHashMap<>();
@@ -214,16 +206,14 @@ public class CommunityJoinService {
 		return result;
 	}
 	
-	// 내 프로필 화면에 계정 아이디 대신 이 커뮤니티 전용 닉네임을 띄우기 위해 씀. 미가입이면 null.
-	// 가입 행(CommunityMember)이 곧 커뮤니티별 프로필이다.
+	// 이 커뮤니티 프로필 (미가입이면 null)
 	public CommunityMember profileOf(User fan, Long artistId) {
 		if (fan == null) return null;
 		return communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
 				.orElse(null);
 	}
 
-	// PROFILE-03: 계정 가입일이 아니라, 선택한 아티스트 커뮤니티의 가입일과 D+N을 반환한다.
-	// 미가입 사용자(아티스트 본인/관리자 포함)는 표시할 D-DAY가 없으므로 null을 반환한다.
+	// 선택한 커뮤니티의 가입일과 D+N (미가입이면 null).
 	public CommunityJoinInfo joinInfoOf(User fan, Long artistId) {
 		if (fan == null) return null;
 		return communityMemberRepository.findByFanIdAndArtistId(fan.getId(), artistId)
@@ -231,8 +221,7 @@ public class CommunityJoinService {
 				.orElse(null);
 	}
 	
-	// 커뮤니티 화면에서 작성자 이름을 보여줄 때 쓰는 헬퍼 - 그 커뮤니티 전용 닉네임이 있으면 그걸,
-	// 없으면(아티스트 본인, 탈퇴한 회원 등) 계정 닉네임을 쓴다.
+	// 작성자 표시 이름 (커뮤니티 닉네임이 없으면 계정 닉네임).
 	public String displayNickname(User author, Long artistId) {
 		if (author == null) {
 			return null;
@@ -241,10 +230,7 @@ public class CommunityJoinService {
 		return profile != null ? profile.getNickname() : author.getNickname();
 	}
 
-	/**
-	 * 게시글/댓글 목록을 한 번에 그릴 때 쓰는 "작성자 id → 커뮤니티 닉네임" 맵.
-	 * Thymeleaf 맵 키 접근 이슈를 피하려고 String 키로 만든다 (작성자 프로필은 한 쿼리로 읽는다 - authorViewsByAuthorIdKey).
-	 */
+	/** 작성자 id → 커뮤니티 닉네임 맵 (Thymeleaf 를 위해 String 키). */
 	public Map<String, String> displayNicknamesByAuthorIdKey(Collection<User> authors, Long artistId) {
 		Map<String, String> result = new LinkedHashMap<>();
 		authorViewsByAuthorIdKey(authors, artistId).forEach(
@@ -252,10 +238,7 @@ public class CommunityJoinService {
 		return result;
 	}
 
-	/**
-	 * 게시글 목록에서 사용할 커뮤니티 전용 닉네임과 프로필 이미지 URL을 한 번에 만든다.
-	 * 작성자별 조회를 반복하지 않고 현재 페이지 작성자들의 프로필을 한 쿼리로 읽는다.
-	 */
+	/** 작성자별 커뮤니티 닉네임과 프로필 이미지를 한 쿼리로 만든다. */
 	public Map<String, CommunityAuthorView> authorViewsByAuthorIdKey(
 			Collection<User> authors,
 			Long artistId
@@ -282,8 +265,7 @@ public class CommunityJoinService {
 			}
 		}
 
-		// 아티스트 쪽 작성자(솔로 본인/그룹 멤버)는 커뮤니티에 가입하지 않아 가입 프로필이 없다.
-		// 대신 커뮤니티 프로필 편집에서 고친 계정별 포털 프로필(artist_profile) 사진을 쓴다. 역시 한 쿼리로 읽는다.
+		// 아티스트 쪽 작성자는 포털 프로필 사진을 쓴다 (한 쿼리로 조회).
 		List<Long> artistSideAuthorIds = uniqueAuthors.values().stream()
 				.filter(author -> !profilesByAuthorId.containsKey(author.getId()) && author.isArtistSide())
 				.map(User::getId)
@@ -311,11 +293,10 @@ public class CommunityJoinService {
 		return result;
 	}
 
-	// 디스크의 사진 파일은 DB 와 달리 롤백되지 않아서 트랜잭션 결과를 보고 정리한다.
-	// 커밋되면 교체·삭제된 옛 파일(replacedFiles)을, 롤백되면 새로 올린 파일(newFiles)을 지운다 (목록은 호출한 쪽이 채운다).
+	// 디스크 파일은 롤백되지 않아 커밋이면 옛 파일, 롤백이면 새 파일을 지운다.
 	private void cleanUpFilesAfterTransaction(List<String> replacedFiles, List<String> newFiles) {
 		if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-			// 트랜잭션 밖에서 불린 경우(테스트 등) - 되돌릴 저장이 없으므로 옛 파일 정리만 하던 방식 그대로
+			// 트랜잭션 밖 호출이면 옛 파일만 정리한다.
 			replacedFiles.forEach(fileStorageService::delete);
 			return;
 		}
@@ -331,7 +312,7 @@ public class CommunityJoinService {
 		});
 	}
 
-	// 포털 프로필 이미지는 업로드 파일명 또는 외부 URL 로 저장된다 (PortalManagementService.toPublicImageUrl 과 같은 규칙)
+	// 포털 프로필 이미지 URL 변환 (업로드 파일명 또는 외부 URL)
 	private static String toPublicImageUrl(String storedOrUrl) {
 		String value = storedOrUrl.trim();
 		if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/")) {
@@ -340,7 +321,7 @@ public class CommunityJoinService {
 		return "/uploads/" + value;
 	}
 
-	// 화면에 프로필 카드(닉네임/소개글/아바타/배경)를 그릴 때 씀 - 가입한 커뮤니티의 프로필을 쿼리 한 번으로 읽는다
+	// 가입한 커뮤니티 프로필을 한 번에 조회
 	public Map<Long, CommunityMember> joinedProfilesByArtistId(User fan) {
 		if (fan == null) return Map.of();
 		Map<Long, CommunityMember> result = new HashMap<>();
@@ -354,7 +335,7 @@ public class CommunityJoinService {
 		return communityMemberRepository.countByArtistId(artistId);
 	}
 
-	// 급상승 커뮤니티 정렬용: 최근 days일 동안 새로 가입한 사람 수 (artistId → 명)
+	// 급상승 커뮤니티용 최근 days 일 신규 가입자 수 (artistId → 명)
 	public Map<Long, Long> countNewMembers(Collection<Long> artistIds, int days) {
 		if (artistIds.isEmpty()) return Map.of();
 		return communityMemberRepository

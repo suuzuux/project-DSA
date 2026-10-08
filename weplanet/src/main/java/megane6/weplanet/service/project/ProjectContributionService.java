@@ -42,7 +42,7 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class ProjectContributionService {
     
-    // 가상계좌 입금기한은 최대 24시간. 모금 마감이 더 빠르면 마감 시각까지만.
+    // 입금기한은 최대 24시간 (모금 마감이 더 빠르면 마감까지)
     private static final long MAX_DEPOSIT_HOURS = 24;
     private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
     
@@ -50,16 +50,13 @@ public class ProjectContributionService {
     private final ProjectContributionRepository contributionRepository;
     private final UserRepository userRepository;
     private final FanProjectCommunityAccessRepository communityAccessRepository;
-    private final ApplicationEventPublisher eventPublisher; // [배지] 입금 확인 시 발행 (Step 5에서 사용)
+    private final ApplicationEventPublisher eventPublisher; // [배지] 입금 확인 시 발행
     private final TossPaymentsProperties tossProperties;
     private final TossPaymentsClient tossClient;
-    // 결제창 주문명/구매자명/상태 라벨을 요청 로케일로 만든다
+    // 결제창 주문명·구매자명·상태 라벨을 요청 로케일로 만든다.
     private final megane6.weplanet.i18n.Messages messages;
     
-    /**
-     * [참여하기] - 주문(READY)을 만들고, 토스 결제창에 필요한 정보를 돌려준다.
-     * 같은 idempotencyKey로 다시 요청하면(더블클릭, 재시도) 새로 만들지 않고 기존 주문을 재사용한다.
-     */
+    /** 참여하기 - READY 주문을 만들고 결제창 정보를 돌려준다 (같은 멱등 키면 기존 주문 재사용). */
     @Transactional
     public ProjectPaymentPrepareResponse contribute(
             Long contributorId,
@@ -109,7 +106,7 @@ public class ProjectContributionService {
         
         return contributionRepository.findParticipationHistory(contributorId)
                 .stream()
-                // 결제창을 열기만 했거나(READY) 닫아서 실패한(FAILED) 주문은 참여 기록이 아니므로 숨긴다.
+                // READY·FAILED 주문은 참여 기록에서 숨긴다.
                 .filter(contribution -> contribution.getPaymentStatus() != FanProjectPaymentStatus.READY
                         && contribution.getPaymentStatus() != FanProjectPaymentStatus.FAILED)
                 .map(ProjectParticipationView::from)
@@ -117,12 +114,7 @@ public class ProjectContributionService {
     }
     
     
-    /**
-     * 토스 결제창 -> successUrl 로 돌아왔을 때: 결제 승인 요청 후 가상계좌 발급 정보를 저장한다.
-     *
-     * noRollbackFor: 토스 승인이 실패하면 주문을 FAILED 로 바꾼 뒤 예외를 던지는데,
-     * 롤백되면 FAILED 기록까지 사라지므로 이 예외에는 롤백하지 않는다.
-     */
+    /** 결제창 성공 복귀 - 승인 후 가상계좌 정보를 저장한다 (실패 기록이 남도록 noRollbackFor). */
     @Transactional(noRollbackFor = TossPaymentException.class)
     public ProjectPaymentResultView confirmVirtualAccount(
             Long contributorId,
@@ -136,7 +128,7 @@ public class ProjectContributionService {
         
         ProjectContribution contribution = findMyOrderForUpdate(contributorId, orderId);
         
-        // 새로고침 등으로 다시 들어온 경우: 토스에 다시 요청하지 않고 저장된 결과를 보여준다.
+        // 새로고침으로 다시 오면 저장된 결과를 보여준다.
         if (contribution.getPaymentStatus() != FanProjectPaymentStatus.READY) {
             if (paymentKey.equals(contribution.getProviderTransactionId())) {
                 return ProjectPaymentResultView.from(contribution);
@@ -144,7 +136,7 @@ public class ProjectContributionService {
             throw new IllegalStateException("error.contribution.alreadyProcessedOrder");
         }
         
-        // 주소창의 amount 는 사용자가 바꿀 수 있으므로, 반드시 DB 금액과 비교한다.
+        // 주소창 amount 는 조작될 수 있어 DB 금액과 비교한다.
         if (!contribution.getAmount().equals(amount)) {
             throw new IllegalArgumentException("error.contribution.amountMismatch");
         }
@@ -173,9 +165,7 @@ public class ProjectContributionService {
         return ProjectPaymentResultView.from(contribution);
     }
     
-    /**
-     * 토스 결제창 -> failUrl 로 돌아왔을 때: 아직 READY 인 본인 주문이면 FAILED 로 정리한다.
-     */
+    /** 결제창 실패 복귀 - READY 인 본인 주문을 FAILED 로 정리한다. */
     @Transactional
     public void failOrder(Long contributorId, String orderId) {
         if (orderId == null || orderId.isBlank()) {
@@ -187,11 +177,7 @@ public class ProjectContributionService {
                 .ifPresent(ProjectContribution::markFailed);
     }
     
-    /**
-     * 토스 입금 웹훅 처리
-     * 잘못된 요청(모르는 주문, secret 불일치)은 예외를 던지지 않고 로그만 남기고 무시한다
-     * -> 예외로 500을 돌려주면 토스가 같은 요청을 계속 재전송하기 때문
-     */
+    /** 입금 웹훅 처리 - 잘못된 요청은 로그만 남기고 무시한다 (500 이면 토스가 재전송). */
     @Transactional
     public void handleDepositCallback(TossDepositCallback callback) {
         if (callback == null || callback.orderId() == null || callback.secret() == null) {
@@ -207,14 +193,14 @@ public class ProjectContributionService {
             return;
         }
         
-        // 가짜 웹훅 차단 : 승인 때 저장한 secret 과 달라면(?) 무시
+        // secret 이 다르면 가짜 웹훅으로 보고 무시한다.
         if (!contribution.matchesDepositSecret(callback.secret())) {
             log.warn("[토스 웹훅] secret 불일치 orderId={}", callback.orderId());
             return;
         }
         
         if (!"DONE".equals(callback.status())) {
-            // 입금 완료가 아닌 알림(취소 등)은 이번 단계에서는 기록만 한다. (취소·환불은 다음 작업)
+            // 입금 완료 외 알림은 기록만 한다.
             log.info("[토스 웹훅] 처리하지 않는 상태 orderId={}, status={}", callback.orderId(), callback.status());
             return;
         }
@@ -227,15 +213,12 @@ public class ProjectContributionService {
         completePayment(contribution, LocalDateTime.now());
     }
     
-    /**
-     * [스케줄러] 입금 대기 주문 하나를 토스의 실제 상태와 맞춘다.
-     * 웹훅이 유실되거나(로컬 개발 환경 포함) 입금기한이 지난 경우를 정리한다.
-     */
+    /** [스케줄러] 입금 대기 주문을 토스 실제 상태와 맞춘다 (웹훅 유실·기한 경과 대비). */
     @Transactional
     public void syncWaitingDeposit(String orderNo) {
         ProjectContribution contribution = contributionRepository.findByOrderNoForUpdate(orderNo)
                 .orElse(null);
-        // 조회하는 사이에 웹훅이 먼저 처리했을 수 있으므로 상태를 다시 확인
+        // 그 사이 웹훅이 처리했을 수 있어 상태를 다시 확인한다.
         if (contribution == null || contribution.getPaymentStatus()
                 != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
             return;
@@ -243,13 +226,10 @@ public class ProjectContributionService {
         syncWithToss(contribution, LocalDateTime.now());
     }
 
-    /**
-     * [입금 확인] 가상계좌 안내 화면이 주기적으로 물어보는 조회.
-     * 입금 대기 상태면 토스에 바로 확인해서, 스케줄러(5분 주기)를 기다리지 않고 반영한다.
-     */
+    /** 입금 확인 화면 폴링 - 입금 대기면 토스에 바로 확인한다. */
     @Transactional
     public ProjectPaymentStatusView refreshDepositStatus(Long contributorId, String orderNo) {
-        // 폴링은 몇 초마다 들어오므로, 입금 대기가 아닐 때는 행을 잠그지 않고 상태만 읽는다.
+        // 입금 대기가 아니면 잠그지 않고 상태만 읽는다.
         ProjectContribution contribution = contributionRepository.findByOrderNo(orderNo)
                 .orElseThrow(() -> new IllegalArgumentException("shop.error.orderNotFound"));
         if (!contribution.getContributor().getId().equals(contributorId)) {
@@ -260,7 +240,7 @@ public class ProjectContributionService {
                     messages.get(contribution.getPaymentStatus().getMessageKey()));
         }
 
-        // 상태를 바꿀 수 있는 구간이므로 웹훅·스케줄러와 같은 방식으로 행을 잠그고 다시 확인한다
+        // 상태를 바꿀 수 있어 행을 잠그고 다시 확인한다.
         ProjectContribution locked = findMyOrderForUpdate(contributorId, orderNo);
         if (locked.getPaymentStatus() == FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
             syncWithToss(locked, LocalDateTime.now());
@@ -269,27 +249,24 @@ public class ProjectContributionService {
                 messages.get(locked.getPaymentStatus().getMessageKey()));
     }
 
-    /**
-     * 입금 대기 주문 하나를 토스의 실제 상태와 맞춘다. (스케줄러 / 화면 폴링 공용)
-     * 호출하는 쪽에서 이미 WAITING_FOR_DEPOSIT 인지 확인한 뒤 부른다.
-     */
+    /** 입금 대기 주문을 토스 상태와 맞춘다 (스케줄러·폴링 공용). */
     private void syncWithToss(ProjectContribution contribution, LocalDateTime now) {
         String orderNo = contribution.getOrderNo();
         TossPaymentResponse payment;
         try {
             payment = tossClient.getPayment(contribution.getProviderTransactionId());
         } catch (TossPaymentException e) {
-            // 조회 실패는 다음 주기에 다시 시도하면 되므로 기록만 남긴다
+            // 조회 실패는 다음 주기에 다시 시도한다.
             log.warn("[결제 동기화] 토스 조회 실패. orderNo={}, code={}", orderNo, e.getCode());
             return;
         }
         
         switch (payment.status()) {
             case "DONE" -> completePayment(contribution, now);
-            // 토스 쪽에서 취소/만료된 결제. 취소·환불 상태는 다음 작업에서 따로 나눌 예정
+            // 토스에서 취소·만료된 결제
             case "CANCELED", "PARTIAL_CANCELED", "EXPIRED" -> contribution.expire(now);
             default -> {
-                // 아직 입금 대기인데 우리 기준 입금기한이 지났으면 만료
+                // 우리 기준 입금기한이 지났으면 만료
                 if (contribution.getDueDate().isBefore(now)) {
                     contribution.expire(now);
                     log.info("[결제 동기화] 입금기한 만료. orderNo={}", orderNo);
@@ -298,9 +275,7 @@ public class ProjectContributionService {
         }
     }
     
-    /**
-     * [스케줄러] 결제창을 닫아버려서 READY 로 남은 오래된 주문을 FAILED로 정리한다.
-     */
+    /** [스케줄러] 방치된 READY 주문을 FAILED 로 정리한다. */
     @Transactional
     public void failStaleReadyOrder(String orderNo) {
         contributionRepository.findByOrderNoForUpdate(orderNo)
@@ -309,13 +284,10 @@ public class ProjectContributionService {
                 .ifPresent(ProjectContribution::markFailed);
     }
     
-    /**
-     * 입금 완료 공통 처리 (웹훅, 스케줄러 둘 다 여기로 온다)
-     * markPaid가 true일 때(이번에 처음 PAID)만 배지 이벤트를 발행해서 중복 지급을 막는다.
-     */
+    /** 입금 완료 공통 처리 (처음 PAID 가 될 때만 배지 이벤트 발행). */
     private void completePayment(ProjectContribution contribution, LocalDateTime paidAt) {
         if (contribution.markPaid(paidAt)) {
-            // [배지] 입금 확인 = 실제 참여 확정. 배지 리스너는 커밋 후(AFTER_COMMIT)에 실행됨
+            // [배지] 입금 확인 = 참여 확정 (리스너는 커밋 후 실행)
             eventPublisher.publishEvent(new BadgeActivityEvent(
                     contribution.getContributor().getId(),
                     contribution.getProject().getArtist().getId(),
@@ -334,14 +306,14 @@ public class ProjectContributionService {
         return contribution;
     }
     
-    // 토스 시각("2026-09-22T17:30:00+09:00")을 한국 시각 LocalDateTime 으로 변환
+    // 토스 시각 → 한국 시각
     private LocalDateTime toKoreaTime(String isoDateTime) {
         return OffsetDateTime.parse(isoDateTime)
                 .atZoneSameInstant(KOREA)
                 .toLocalDateTime();
     }
     
-    // 새 주문(READY) 생성. 실제 결제는 토스 결제창 -> 승인 -> 입금 순서로 진행된다.
+    // 새 READY 주문 생성
     private ProjectContribution createReadyOrder(
             Project project,
             User contributor,
@@ -358,12 +330,12 @@ public class ProjectContributionService {
                         request.idempotencyKey(),
                         request.amount(),
                         request.anonymous(),
-                        now // 환불 규정 동의 시각 = 참여하기 누른 시각
+                        now // 환불 규정 동의 시각
                 )
         );
     }
     
-    // 같은 요청 키로 다시 들어온 경우: 같은 사람·같은 프로젝트·같은 금액이고 아직 READY일 때만 재사용
+    // 같은 요청 키면 같은 사람·프로젝트·금액의 READY 주문만 재사용한다.
     private ProjectContribution reuseReadyOrder(
             ProjectContribution existing,
             Long contributorId,
@@ -382,7 +354,7 @@ public class ProjectContributionService {
         return existing;
     }
     
-    // 입금기한(시간)이 모금 마감을 넘지 않게 계산한다.
+    // 입금기한이 모금 마감을 넘지 않게 계산한다.
     private int depositValidHours(Project project, LocalDateTime now) {
         long hoursUntilEnd = Duration.between(now, project.getFundingEndAt()).toHours();
         if (hoursUntilEnd < 1) {
@@ -409,7 +381,7 @@ public class ProjectContributionService {
         }
     }
     
-    // 토스 orderId 규칙(6~64자, 영문·숫자·-·_)에 맞는 형식: FP-{프로젝트ID}-{시각}-{랜덤10자}
+    // 토스 orderId 규칙에 맞는 주문번호: FP-{프로젝트ID}-{시각}-{랜덤10자}
     private String createOrderNo(Long projectId, LocalDateTime now) {
         String timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String random = UUID.randomUUID().toString().replace("-", "").substring(0, 10);

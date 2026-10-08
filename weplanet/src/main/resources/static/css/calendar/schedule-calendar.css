@@ -1,4 +1,4 @@
-/* Schedule / portal month calendar + fan calendar modal + attendance paws */
+/* 일정 - 포털 월간 캘린더, 팬 캘린더 모달, 출석 도장 */
 
 .sched-flash { margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px; }
 .sched-flash--ok { background: #e8f7ef; color: #146c43; }
@@ -188,7 +188,7 @@
 .wp-noti-panel { width: min(92vw, 340px); overflow: hidden; }
 .wp-lang-menu[hidden],
 .wp-noti-panel[hidden] { display: none; }
-/* 모바일: 종 아이콘 기준(right: 0)으로 340px 을 펼치면 왼쪽이 화면 밖으로 잘린다 → 헤더 아래에 화면 폭으로 고정 */
+/* 모바일: 알림 패널이 화면 밖으로 잘리지 않게 헤더 아래에 화면 폭으로 고정 */
 @media (max-width: 560px) {
   .wp-noti-panel {
     position: fixed;

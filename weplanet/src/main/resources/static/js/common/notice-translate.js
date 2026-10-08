@@ -1,9 +1,4 @@
-/**
- * 공지 번역보기 - 게시글 "번역보기"와 같은 방식 (사이트 공지·커뮤니티 공지 상세 공용).
- * [data-notice-translate] 링크를 누르면 data-url 로 번역을 받아 제목·본문을 data-target 상자에 보여주고,
- * 다시 누르면 접는다. 번역에 실패했으면 다음에 누를 때 다시 시도한다. 문구는 링크의 data-label-* 속성으로 받는다(화면 언어).
- * 번역문은 textContent 로만 넣고, data-render="markdown" 이면(사이트 공지) 원문과 같은 Toast UI 뷰어로 본문을 그린다.
- */
+/** 공지 번역보기 - data-url 로 번역을 받아 펼치고 접는다 (textContent 사용, 사이트 공지는 Toast UI 뷰어로 렌더). */
 (function () {
   "use strict";
 

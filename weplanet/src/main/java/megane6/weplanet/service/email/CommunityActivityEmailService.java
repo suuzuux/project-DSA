@@ -14,8 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
-// 가입·팔로우한 아티스트의 새 게시글/공지/라이브 시작을 팬에게 알리는 메일 한 통을 보낸다 (문구는 받는 팬의 선호 언어).
-// 받을 사람 선별과 비동기 처리는 CommunityActivityNotifier 가 맡는다.
+// 새 글·공지·라이브 시작 알림 메일 (받는 팬의 선호 언어).
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -65,7 +64,7 @@ public class CommunityActivityEmailService {
 		log.info("[이벤트·혜택 알림] 라이브 시작 이메일 발송: artist={}, fan={}", artist.getId(), fan.getId());
 	}
 
-	// 인자 없는 키는 args=null로 조회해 MessageFormat을 거치지 않게 한다 (작은따옴표 그대로 유지).
+	// 인자 없는 키는 args=null 로 조회한다 (작은따옴표 유지).
 	private String msg(String code, Locale locale, Object... args) {
 		return messageSource.getMessage(code, args.length == 0 ? null : args, locale);
 	}

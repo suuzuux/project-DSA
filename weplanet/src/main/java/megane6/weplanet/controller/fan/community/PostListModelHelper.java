@@ -39,8 +39,7 @@ public class PostListModelHelper {
 		populate(model, boardType, sort, artist, false, null);
 	}
 
-	// hideFromArtists=true면, hiddenFromArtist(Hide from Artists 토글)가 켜진 글을 목록에서 뺌
-	// (36번: 아티스트 계정으로 팬 게시판을 볼 때는 숨긴 글이 안 보여야 함)
+	// hideFromArtists 면 Hide from Artists 글을 목록에서 뺀다.
 	public void populate(Model model, BoardType boardType, String sort, User artist, boolean hideFromArtists) {
 		populate(model, boardType, sort, artist, hideFromArtists, null);
 	}
@@ -107,8 +106,7 @@ public class PostListModelHelper {
 					.ifPresent(a -> thumbnailUrls.put(post.getId(), a.getStoredName()));
 		}
 
-		// [닉네임 관리] 목록에 작성자 닉네임을 뿌릴 때, 커뮤니티(artist)별 게시판이면 가입할 때 설정한
-		// 커뮤니티 닉네임을 쓰고, artist가 없는 레거시 전역 게시판이면 계정 닉네임을 그대로 쓴다.
+		// 커뮤니티 게시판이면 가입 닉네임, 레거시 게시판이면 계정 닉네임을 쓴다.
 		List<User> authors = posts.stream().map(Post::getAuthor).toList();
 		Map<String, CommunityAuthorView> authorViews = artist != null
 				? communityJoinService.authorViewsByAuthorIdKey(authors, artist.getId())

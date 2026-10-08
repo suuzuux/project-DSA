@@ -23,8 +23,7 @@ public class EmailVerificationService {
 	public static final long EXPIRATION_MINUTES = 5;
 	private static final long RESEND_COOLDOWN_SECONDS = 60;
 
-	// 관리자 로그인은 보안 등급이 높아 유효시간을 짧게 두고, 재전송 제한은 두지 않는다.
-	// (회원가입/프로젝트 인증은 위 5분 그대로 사용)
+	// 관리자 로그인은 유효시간을 짧게 두고 재전송 제한은 두지 않는다.
 	public static final long ADMIN_EXPIRATION_MINUTES = 2;
 	
 	private final EmailVerificationRepository evr;
@@ -118,8 +117,7 @@ public class EmailVerificationService {
 		);
 	}
 	
-	// 최고관리자 로그인 인증번호 발급
-	// ID/PW가 이미 검증된 뒤 호출. 대상 관리자 확정 및 그 계정에 등록된 이메일로만 발송됨
+	// 관리자 로그인 인증번호 발급 (아이디·비밀번호 확인 후, 관리자 이메일로만 발송)
 	@Transactional
 	public IssuedVerification issueAdminLoginVerification(Long adminId) {
 		User admin = ur.findById(adminId).orElseThrow(() ->
@@ -131,9 +129,7 @@ public class EmailVerificationService {
 		
 		LocalDateTime now = LocalDateTime.now();
 
-		// 관리자 로그인은 재전송 쿨다운을 두지 않는다.
-		// (메일이 늦게 도착하거나 스팸함으로 갈 때 바로 다시 받을 수 있어야 함)
-		// 대신 새 번호를 발급하는 순간 이전 번호는 폐기해 여러 번호가 동시에 유효하지 않게 한다.
+		// 재전송 제한 없이 새 번호 발급 시 이전 번호를 폐기한다.
 		evr.findByUser_IdAndPurposeAndConsumedAtIsNull(
 				adminId,
 				EmailVerificationPurpose.ADMIN_LOGIN
@@ -198,7 +194,7 @@ public class EmailVerificationService {
 		return verifyCode(verification, rawCode);
 	}
 	
-	// 최고관리자 로그인 인증번호
+	// 관리자 로그인 인증번호 확인
 	@Transactional
 	public VerificationResult confirmAdminLoginVerification(
 			Long adminId,
@@ -215,7 +211,7 @@ public class EmailVerificationService {
 		return verifyCode(verification, rawCode);
 	}
 	
-	// 회원가입이 최종 저장될 때 인증 기록을 사용 완료 처리
+	// 회원가입 저장 시 인증 기록 사용 완료
 	@Transactional
 	public LocalDateTime consumeSignupVerification(
 			String verificationKey,
@@ -237,7 +233,7 @@ public class EmailVerificationService {
 		return verification.getVerifiedAt();
 	}
 	
-	// 프로젝트가 최종 저장될 때 인증 기록을 사용 완료 처리
+	// 프로젝트 저장 시 인증 기록 사용 완료
 	@Transactional
 	public LocalDateTime consumeProjectVerification(
 			Long userId,
@@ -259,7 +255,7 @@ public class EmailVerificationService {
 		return verification.getVerifiedAt();
 	}
 
-	// 최고관리자 로그인이 완료되면 해당 인증번호를 즉시 사용 완료 처리한다.
+	// 관리자 로그인 완료 시 인증번호 사용 완료
 	@Transactional
 	public LocalDateTime consumeAdminLoginVerification(
 			Long adminId,
@@ -308,7 +304,7 @@ public class EmailVerificationService {
 			);
 		}
 		
-		// 같은 확인 요청이 다시 들어오면 인증 시각을 바꾸지 않고 성공 처리
+		// 이미 인증된 요청이면 시각을 바꾸지 않고 성공 처리
 		if (verification.isVerified()) {
 			return new VerificationResult(
 					true,
@@ -424,14 +420,12 @@ public class EmailVerificationService {
 		return email.trim().toLowerCase(Locale.ROOT);
 	}
 	
-	// 이 값은 메일 발송 Service에만 전달한다.
-	// Controller 응답에 rawCode를 포함하면 안 된다.
+	// 발송 서비스에만 전달한다 (응답에 rawCode 포함 금지).
 	public record IssuedVerification(
 			String verificationKey,
 			String recipientEmail,
 			String rawCode,
-			// 화면 타이머가 서버 시각을 기준으로 돌도록 만료 시각을 함께 내려준다.
-			// 화면에서 그냥 120초를 세면 서버 만료와 어긋날 수 있다.
+			// 화면 타이머용 서버 만료 시각
 			LocalDateTime expiresAt
 	) {
 	}

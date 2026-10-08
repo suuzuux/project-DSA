@@ -12,11 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 아티스트 DM에 답장할 가상 AI 팬 계정 5명을 없으면 만들어 둔다.
- * 이미 DB를 쓰고 있는 팀원도 앱만 재시작하면 계정이 생기도록 시드 SQL과 별도로 둔다.
- * 로그인 비밀번호: Test1234
- */
+/** 아티스트 DM에 답장할 가상 AI 팬 계정 5명을 없으면 생성한다 (비밀번호 Test1234). */
 @Slf4j
 @Component
 @Order(3)

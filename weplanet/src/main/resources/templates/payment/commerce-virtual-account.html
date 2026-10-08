@@ -57,7 +57,7 @@
     const paidMessage = /*[[${paidMessage}]]*/ "입금이 확인되었습니다.";
     if (!orderNo || !statusUrl) return;
 
-    // 화면 언어에 맞춘 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    // 화면 언어 문구 (한국어는 fallback)
     const MSG = {
       paidTitle: /*[[#{payment.paidTitle}]]*/ "입금이 확인되었어요",
       notPaidTitle: /*[[#{payment.notPaidTitle}]]*/ "입금이 확인되지 않았어요",

@@ -1,6 +1,4 @@
-/**
- * 커뮤니티 Fan / Artist 게시판 – 정렬(fetch) 및 포스트 작성 모달
- */
+/** 커뮤니티 게시판 - 정렬(fetch)과 글쓰기 모달 */
 (function () {
   "use strict";
 
@@ -9,10 +7,10 @@
 
   const artistId = boardRoot.dataset.artistId;
   const boardTab = boardRoot.dataset.boardTab;
-  // 목록 주소는 서버가 내려준 영문 주소(/kiikii/fan)를 우선 쓴다 - 정렬/새로고침 후에도 주소창이 영문 주소로 유지됨
+  // 목록 주소는 영문 주소를 우선 쓴다.
   const listBase = boardRoot.dataset.listBase || ("/community/" + artistId + "/" + boardTab);
 
-  // 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  // 문구는 WePlaNet.t 에서 꺼낸다 (없으면 한국어 기본값).
   const t = function (key, fallback, args) {
     return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
   };
@@ -41,8 +39,7 @@
       });
   }
 
-  // 다음 Slice(10개)만 받아 현재 목록 뒤에 붙인다. 이벤트는 위임 방식이라 새 카드의
-  // 좋아요/댓글 버튼도 별도 재바인딩 없이 바로 동작한다.
+  // 다음 10개를 받아 목록 뒤에 붙인다 (이벤트 위임이라 재바인딩 불필요).
   document.addEventListener("click", function (e) {
     const moreButton = e.target.closest("[data-view-more]");
     if (!moreButton) return;
@@ -131,11 +128,10 @@
   const hideToggleBtn = document.getElementById("writePostHideToggle");
   const hiddenFromArtistEl = document.getElementById("writePostHiddenFromArtist");
 
-  // Toast UI Editor - writePostContent(hidden textarea)가 실제 폼 전송값, 화면엔 이 에디터가 보임.
-  // (예전엔 writePostContent가 그냥 평범한 textarea라 마크다운 리치 편집이 안 됐음)
+  // Toast UI Editor (실제 전송값은 hidden textarea)
   const editorEl = document.getElementById("writePostEditor");
   let postEditor = null;
-  // 에디터 placeholder/모드 탭 라벨이 생성 시점에 정해지므로 i18n 응답을 받은 뒤에 만든다.
+  // 에디터 라벨이 생성 시점에 정해지므로 i18n 응답 후에 만든다.
   const i18nReady = (window.WePlaNet && window.WePlaNet.i18nReady) || Promise.resolve();
   i18nReady.then(initPostEditor);
 
@@ -147,8 +143,7 @@
       initialEditType: "wysiwyg",
       previewStyle: "vertical",
       placeholder: t("client.posts.editorPlaceholder", "포스트를 남겨보세요 …"),
-      // 이미지 버튼 제외: 기본 동작이 base64로 통째로 마크다운에 박아넣어서 1000자 제한을 훌쩍 넘겨버림.
-      // 진짜 이미지 첨부는 아래 별도 파일 첨부 버튼(writePostFiles, 실제 업로드) 쓰면 됨
+      // 이미지 버튼은 base64 로 본문에 들어가 글자 수 제한을 넘기므로 뺀다 (파일 첨부 사용).
       toolbarItems: [
         ["heading", "bold", "italic", "strike"],
         ["hr", "quote"],
@@ -165,9 +160,7 @@
       if (counter) counter.textContent = text.length + " / 1000";
     });
 
-    // 하단 모드 전환 탭 라벨을 알아보기 쉬운 한글로 교체.
-    // Toast UI 기본값은 "Markdown" / "WYSIWYG"이라 처음 보는 사람은 뭔지 알기 어려움.
-    // (WYSIWYG = 툴바 버튼으로 꾸미는 모드, Markdown = #, ** 같은 기호를 직접 쓰는 모드)
+    // 모드 전환 탭 라벨을 알기 쉬운 문구로 바꾼다.
     relabelEditorModeTabs(editorEl);
   }
 
@@ -183,7 +176,7 @@
       },
     };
 
-    // 에디터가 그려진 직후에 탭이 붙기 때문에 다음 프레임에 한 번 더 시도함
+    // 탭이 늦게 붙어 다음 프레임에 한 번 더 시도한다.
     function apply() {
       const tabs = root.querySelectorAll(".toastui-editor-mode-switch .tab-item");
       if (!tabs.length) return false;
@@ -203,10 +196,10 @@
     }
   }
 
-  // 제목 + 본문 둘 다 있어야 등록 가능
+  // 본문이 있어야 등록 가능
   function refreshSubmitState() {
     if (!submitBtn) return;
-    const titleOk = !titleEl || titleEl.value.trim().length > 0; // 제목칸을 없앴으므로 요소가 없으면 통과
+    const titleOk = !titleEl || titleEl.value.trim().length > 0; // 제목칸이 없으면 통과
     const text = contentEl.value;
     const contentOk = text.trim().length > 0 && text.length <= 1000;
     submitBtn.disabled = !(titleOk && contentOk);
@@ -237,7 +230,7 @@
     btn.addEventListener("click", resetWriteModal);
   });
 
-  // 🔗 링크 아이콘 - 누르면 링크 입력창이 나타나고, 다시 누르면 숨기면서 값도 비움
+  // 링크 아이콘 - 입력창 표시·숨김 (숨길 때 값도 비움)
   if (linkToggleBtn && linkRow) {
     linkToggleBtn.addEventListener("click", function () {
       const willShow = linkRow.style.display === "none";
@@ -248,9 +241,7 @@
     });
   }
 
-  // "Hide from Artists" 토글 - class/aria/hidden input 값을 모두 이 핸들러 하나에서 직접 관리함.
-  // (참고: 이 프로젝트의 전역 .toggle 자동 바인딩(main.js의 initToggles)에 기대지 않고 독립적으로 동작하도록 작성함 -
-  //  전역 바인딩 타이밍에 의존하면 페이지에 따라 초기화가 안 된 상태로 남는 경우가 있었음)
+  // Hide from Artists 토글 - class·aria·hidden 값을 이 핸들러에서 직접 관리한다.
   if (hideToggleBtn && hiddenFromArtistEl) {
     hideToggleBtn.addEventListener("click", function () {
       const nowOn = hiddenFromArtistEl.value !== "true";
@@ -305,12 +296,12 @@
         }
         if (contentType.indexOf("application/json") !== -1) {
           return response.json().then(function (data) {
-            // 금칙어 등으로 막힌 경우 - 모달은 그대로 두고(작성 내용 유지) 경고창으로 알림
+            // 막힌 경우 모달과 작성 내용을 유지하고 경고창으로 알린다.
             WePlaNet.alert(data.message || t("client.posts.submitFailed", "등록에 실패했습니다."));
             submitBtn.disabled = false;
           });
         }
-        // 서버 오류 HTML 등이면 목록만 다시 불러와 실제 등록 여부 확인
+        // 서버 오류 응답이면 목록을 다시 불러와 등록 여부를 확인한다.
         writeModal.classList.remove("is-open");
         resetWriteModal();
         loadList(listBase + "?sort=latest&page=0", true);

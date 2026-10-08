@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- 진행 중일 때만 30초마다 새로고침 (?all=true 도 주소에 남아 있어서 펼친 상태가 유지된다) -->
+  <!-- 진행 중일 때만 30초마다 새로고침 (?all=true 유지) -->
   <meta th:if="${view != null and view.dashboard().ongoing()}" http-equiv="refresh" content="30" />
   <title th:text="${view != null} ? ${view.dashboard().title()} + ' | WePlaNet' : #{hashtagEvent.pageTitle}">해시태그 총공 | WePlaNet</title>
   <link rel="stylesheet" th:href="@{/css/style.css}" />
@@ -75,7 +75,7 @@
       </div>
     </header>
 
-    <!-- 내 커뮤니티 요약 (여러 커뮤니티에 가입했으면 전부) -->
+    <!-- 내 커뮤니티 요약 -->
     <p class="hashtag-event__mine" th:if="${not scheduled and not #lists.isEmpty(view.myRows())}">
       <span th:text="#{hashtagEvent.myCommunity}">내 커뮤니티</span> ·
       <th:block th:each="row, stat : ${view.myRows()}">
@@ -84,7 +84,7 @@
       </th:block>
     </p>
 
-    <!-- 시작 전: 순위 대신 참여 아티스트와 해시태그만 -->
+    <!-- 시작 전: 참여 아티스트와 해시태그만 -->
     <section th:if="${scheduled}">
       <h2 class="hashtag-event__subtitle" th:text="#{hashtagEvent.targetsHeading}">참여 아티스트와 해시태그</h2>
       <ol class="hashtag-rank-list">
@@ -106,7 +106,7 @@
       </ol>
     </section>
 
-    <!-- 1~3위 (왼쪽부터 1-2-3) -->
+    <!-- 1~3위 -->
     <section class="hashtag-top" th:unless="${scheduled}">
       <article class="hashtag-top__card" th:each="row : ${view.topRanking()}"
                th:classappend="${row.rank() == 1} ? 'is-first'">
@@ -127,7 +127,7 @@
         <button type="button" class="hashtag-chip" th:attr="data-copy=${row.hashtag()}">
           <span th:text="${row.hashtag()}">#가을총공_STELLA</span> <span data-copy-label th:text="#{hashtagEvent.copy}">복사</span>
         </button>
-        <!-- X(트위터) 글쓰기 창을 해시태그가 채워진 채로 연다. API 가 아니라 링크라서 집계와는 무관 -->
+        <!-- X 글쓰기 창을 해시태그와 함께 연다 (집계와 무관). -->
         <a class="btn btn--ghost btn--sm" th:if="${d.ongoing()}" target="_blank" rel="noopener"
            th:href="@{https://twitter.com/intent/tweet(text=${#messages.msg('hashtagEvent.tweetText', row.artistName(), row.hashtag())})}"
            th:text="#{hashtagEvent.tweetButton}">
@@ -170,7 +170,7 @@
     </section>
 
     <!-- 참여 방법 -->
-    <!-- th:utext 안에서는 T(...) 정적 접근이 금지(Thymeleaf 제한 모드)라 500 이 난다 → th:with 로 먼저 꺼내 둔다 -->
+    <!-- th:utext 안에서는 T(...) 를 쓸 수 없어 th:with 로 먼저 꺼낸다. -->
     <section class="hashtag-event__guide"
              th:with="dailyLimit=${T(megane6.weplanet.service.event.HashtagEventEntryService).DAILY_LIMIT}">
       <strong th:text="#{hashtagEvent.guideTitle}">참여 방법</strong><br />
@@ -186,7 +186,7 @@
 <script th:inline="javascript">
   var COPY_LABEL = /*[[#{hashtagEvent.copy}]]*/ "복사";
   var COPIED_LABEL = /*[[#{hashtagEvent.copied}]]*/ "복사됨!";
-  // 해시태그 칩을 누르면 클립보드에 복사 → 팬 게시판이나 X 에 바로 붙여넣기
+  // 해시태그 칩 클릭 시 클립보드 복사
   document.querySelectorAll("[data-copy]").forEach(function (chip) {
     chip.addEventListener("click", function () {
       navigator.clipboard.writeText(chip.dataset.copy).then(function () {

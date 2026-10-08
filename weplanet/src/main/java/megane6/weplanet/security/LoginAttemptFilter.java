@@ -9,8 +9,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// 아이디·비밀번호 로그인(POST /login) 직전에 잠긴 아이디·IP 인지 확인한다 - 잠겨 있으면 비밀번호를 보지 않고 실패 처리.
-// SecurityConfig 에서 UsernamePasswordAuthenticationFilter 앞에 직접 끼운다 (빈으로 등록하면 모든 요청에 붙는다).
+// 로그인 직전에 잠긴 아이디·IP 인지 확인한다 (UsernamePasswordAuthenticationFilter 앞).
 public class LoginAttemptFilter extends OncePerRequestFilter {
 
 	private final LoginAttemptService loginAttemptService;

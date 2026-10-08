@@ -1,5 +1,7 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.main.GeminiClient;
+
 import megane6.weplanet.i18n.Messages;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +33,7 @@ class GeminiClientTest {
 		server = MockRestServiceServer.bindTo(restTemplate).build();
 	}
 
-	// 번역 전용 키가 있으면 배너·공지 번역은 그 키로, 다른 AI 기능은 그대로 공용 키로 보낸다
+	// 번역 전용 키가 있으면 번역만 그 키로 보낸다
 	@Test
 	void translationUsesItsOwnKeyWhenConfigured() {
 		ReflectionTestUtils.setField(client, "translationApiKey", "translation-key");
@@ -43,7 +45,7 @@ class GeminiClientTest {
 		server.verify();
 	}
 
-	// 번역 전용 키가 없으면(키를 안 넣은 PC) 번역도 공용 키를 쓴다
+	// 번역 전용 키가 없으면 공용 키를 쓴다
 	@Test
 	void translationFallsBackToTeamKey() {
 		ReflectionTestUtils.setField(client, "translationApiKey", "");

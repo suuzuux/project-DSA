@@ -27,12 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 해시태그 총공 순위·통계 계산. (관리자 모니터링 · 집계 확정 · 공개 이벤트 페이지 공통)
- *
- * 순위 기준 : 참여율 높은 순 → (같으면) 참여 인원 많은 순 → 글 수 많은 순 → 이름순
- * 집계 확정 전에는 매번 새로 계산하고, 확정 후에는 hashtag_event_target.final_* 에 고정된 값을 쓴다.
- */
+/** 총공 순위·통계 (참여율 → 참여 인원 → 글 수 → 이름순, 확정 후엔 final_* 사용). */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -63,7 +58,7 @@ public class HashtagEventStatsService {
 		);
 	}
 	
-	// 지금 이 순간 기준의 순위 (확정 전 화면 + "집계 확정" 할 때 고정할 값)
+	// 현재 기준 순위
 	public List<HashtagRankingRow> calculateLiveRanking(Long eventId) {
 		List<HashtagEventTarget> targets = hetr.findByEvent_IdOrderByIdAsc(eventId);
 		if (targets.isEmpty()) {
@@ -74,7 +69,7 @@ public class HashtagEventStatsService {
 				.map(target -> target.getArtist().getId())
 				.toList();
 		
-		// 쿼리를 참여팀마다 날리지 않고, "group by" 로 팀별 숫자를 한 번에 가져와 Map 으로 바꿔둔다
+		// 팀별 숫자를 group by 로 한 번에 가져온다.
 		Map<Long, Long> memberCounts = cmr.countMembersByArtistIds(artistIds)
 				.stream()
 				.collect(Collectors.toMap(ArtistCount::artistId, ArtistCount::count));
@@ -113,7 +108,7 @@ public class HashtagEventStatsService {
 		return ranked;
 	}
 	
-	// 집계 확정된 이벤트: 확정 순간 저장해둔 숫자 그대로
+	// 확정된 이벤트는 저장된 숫자를 쓴다.
 	private List<HashtagRankingRow> finalRanking(Long eventId) {
 		List<HashtagEventTarget> targets = hetr.findByEvent_IdOrderByIdAsc(eventId);
 		Map<Long, String> profileImgs = profileImages(
@@ -135,7 +130,7 @@ public class HashtagEventStatsService {
 				.toList();
 	}
 	
-	// 인정되지 않은 글의 사유별 개수. EnumMap 은 enum 선언 순서대로 꺼내져서 화면 순서가 일정하다
+	// 제외 사유별 개수 (EnumMap 으로 순서 고정)
 	private Map<HashtagEntryStatus, Long> excludedCounts(Long eventId) {
 		Map<HashtagEntryStatus, Long> counts = new EnumMap<>(HashtagEntryStatus.class);
 		for (HashtagCount<HashtagEntryStatus> row : heer.countByStatus(eventId)) {
@@ -146,7 +141,7 @@ public class HashtagEventStatsService {
 		return counts;
 	}
 	
-	// 시작일부터 (종료일과 오늘 중 빠른 날)까지 하루씩, 인정된 글 수
+	// 시작일부터 (종료일과 오늘 중 빠른 날)까지 일자별 인정 글 수
 	private List<HashtagDailyCount> dailyCounts(HashtagEvent event, LocalDateTime now) {
 		LocalDate first = event.getStartAt().toLocalDate();
 		LocalDate last = event.getEndAt().toLocalDate();
@@ -179,7 +174,7 @@ public class HashtagEventStatsService {
 			return Map.of();
 		}
 		
-		// 프로필 이미지가 null 인 아티스트도 있어서 Collectors.toMap 대신 직접 담는다 (toMap 은 null 값을 못 넣음)
+		// null 이미지가 있어 toMap 대신 직접 담는다.
 		Map<Long, String> images = new HashMap<>();
 		for (ArtistAccountProfile profile : aapr.findAllByUserIds(artistIds)) {
 			images.put(profile.getUserId(), profile.getProfileImg());

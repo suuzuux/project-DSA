@@ -48,10 +48,10 @@ public class ShopPaymentService {
 	private final TossPaymentsProperties tossProperties;
 	private final TossPaymentsClient tossClient;
 	private final MessageSource messageSource;
-	// 결제 결과 화면(CommercePaymentResultView) 문구를 요청 로케일로 만든다
+	// 결제 결과 화면 문구를 요청 로케일로 만든다.
 	private final megane6.weplanet.i18n.Messages messages;
 
-	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어 에러 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}

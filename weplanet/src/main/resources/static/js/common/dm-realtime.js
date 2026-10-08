@@ -1,37 +1,19 @@
-/**
- * ============================================================
- * WePlaNet – DM 플로팅 위젯 실데이터 연결 (김화평, CHAT 담당)
- * ------------------------------------------------------------
- * shell.js(위석현님)가 그려주는 DM 위젯 화면(목업 데이터)에,
- * 실제 백엔드(ChatController)의 데이터와 웹소켓을 연결해주는 스크립트.
- * shell.js가 먼저 화면을 그려놓은 다음에 이 스크립트가 실행되어야 하므로,
- * html에서는 반드시 shell.js보다 나중에 불러와야 함.
- *
- * 팬 쪽은 "아티스트별 1:1 DM 인박스" (CHAT-02 이하 그대로).
- * 멤버별 DM: 그룹은 그룹 전체가 아니라 멤버 한 명 한 명이 각자 DM 방을 가진다 (솔로는 본인 방 그대로).
- * 아티스트 쪽은 "팬 DM 방 1개" (CHAT-02 비대칭 수신, 팬 메시지는 30%만 노출) - 이 둘은
- * 서로 다른 모델이라서 아티스트는 인박스 목록 없이 DM 버튼을 누르면 바로 자신의 방으로 들어감.
- * ============================================================
- */
+/** DM 플로팅 위젯에 ChatController 데이터와 웹소켓을 연결한다 (shell.js 뒤에 로드). */
 (function () {
     "use strict";
 
     const body = document.body;
     if (body.getAttribute("data-shell") !== "fan") return;
 
-    // data-fan-id는 실제 로그인한 사람일 때만 서버가 채워줌 (비로그인이면 아예 속성 자체가 없음).
-    // 예전엔 없으면 1번으로 기본값 처리해서, 비로그인 상태로도 1번 계정 명의로 DM이 보내지는 문제가 있었음
-    // 이름은 fanId지만 실제로는 "로그인한 내 계정 id"임 - 아티스트로 로그인했을 때도 이 값이 곧 내 artistId가 됨
+    // data-fan-id 는 로그인했을 때만 채워진다 (로그인한 내 계정 id).
     const fanIdRaw = body.getAttribute("data-fan-id");
     const fanId = fanIdRaw ? Number(fanIdRaw) : null;
 
-    // 아티스트 계정으로 로그인했는지 - 아티스트는 팬용 DM 인박스 대신
-    // 자기 자신의 방송 채팅방 하나로 바로 들어가야 하므로 분기가 필요함
+    // 아티스트는 인박스 대신 자기 방으로 바로 들어간다.
     const roleName = body.getAttribute("data-role") || "";
     const isArtist = roleName === "ROLE_ARTIST" || roleName === "ROLE_ARTIST_MEMBER";
 
-    // 아티스트 채팅방 번호(= DM 방 주인 id). 멤버별 DM 이라 솔로도 그룹 멤버도 내 id 와 같지만,
-    // 그룹 멤버는 지금 활동 중인 멤버인지 서버가 확인해서 돌려주도록 한 번 물어본다
+    // 아티스트 방 번호 (그룹 멤버는 서버에 활동 여부를 확인)
     let artistRoomId = roleName === "ROLE_ARTIST" ? fanId : null;
 
     function withArtistRoomId(callback) {
@@ -51,16 +33,16 @@
             });
     }
 
-    // 관리자는 DM을 주고받을 일이 없는 계정이라(shell.js가 채팅 버튼 자체를 안 그림) 이 스크립트도 아예 동작 안 함
+    // 관리자는 DM 을 쓰지 않는다.
     if (roleName === "ROLE_ADMIN") return;
 
-    // main.js가 /api/i18n/client 로 받아둔 문구를 쓰고, 없으면 한국어 기본값
+    // 문구는 WePlaNet.t 에서 꺼낸다 (없으면 한국어 기본값).
     const t = (key, ko) => (window.WePlaNet && typeof window.WePlaNet.t === "function")
         ? window.WePlaNet.t(key, ko)
         : ko;
 
     let stompClient = null;
-    let currentArtistId = null; // 팬 화면에서 지금 열려있는 방의 상대 아티스트 id
+    let currentArtistId = null; // 지금 열린 방의 상대 아티스트 id
     let subscriptions = [];
 
     function unsubscribeAll() {
@@ -75,8 +57,7 @@
         return proto + "//" + location.host + "/ws-chat";
     }
 
-    // 연결 중에 또 요청이 오면 소켓을 하나 더 만들지 않고 기다렸다가 같이 실행한다
-    // (안 읽은 DM 알림 구독과 DM 방 열기가 동시에 소켓을 찾을 수 있어서 - 소켓이 둘 생기면 앞쪽 구독이 사라짐)
+    // 연결 중 요청은 기다렸다가 같은 소켓으로 처리한다 (소켓 중복 방지).
     let socketWaiters = null;
 
     function ensureSocket(callback) {
@@ -91,7 +72,7 @@
         socketWaiters = [callback];
         const socket = new WebSocket(wsChatUrl());
         stompClient = Stomp.over(socket);
-        stompClient.debug = null; // 콘솔에 웹소켓 로그가 너무 많이 찍히는 걸 막음
+        stompClient.debug = null; // 웹소켓 디버그 로그 끄기
         stompClient.connect({}, function () {
             const waiters = socketWaiters;
             socketWaiters = null;
@@ -109,9 +90,7 @@
         return (iso.split("T")[1] || "").slice(0, 5);
     }
 
-    // 인박스 한 줄(아티스트 하나)을 실제 버튼 엘리먼트로 만듦.
-    // shell.js가 기대하는 것과 같은 클래스 구조(.dm-list-item, .dm-list-item__name 등)를 그대로 맞춰서 만듦
-    // → shell.js의 기존 클릭 핸들러(방 전환/헤더 표시)가 그대로 이 버튼에도 작동함
+    // 인박스 한 줄 버튼 생성 (shell.js 와 같은 클래스 구조라 기존 클릭 처리가 그대로 동작).
     function buildItem(item) {
         const btn = document.createElement("button");
         btn.type = "button";
@@ -133,7 +112,7 @@
         const name = document.createElement("div");
         name.className = "dm-list-item__name";
         const nameText = document.createElement("span");
-        // 멤버별 DM: 그룹 멤버면 어느 그룹 멤버인지 같이 보여줌 (이 이름이 방 헤더에도 그대로 쓰임)
+        // 그룹 멤버면 그룹 이름을 함께 보여준다.
         nameText.textContent = (item.artistNickname || "") + (item.groupName ? " · " + item.groupName : "");
         const badge = document.createElement("span");
         badge.className = "badge-verified";
@@ -156,7 +135,7 @@
         return btn;
     }
 
-    // 서버에서 실제 인박스 목록을 받아와서, shell.js가 그려둔 목업 목록을 통째로 실데이터로 갈아끼움 (팬 전용)
+    // 서버 인박스로 목업 목록을 교체한다 (팬 전용).
     function renderInbox(items) {
         const dmBody = document.querySelector("#dmListView .dm-body");
         if (!dmBody) return;
@@ -168,7 +147,7 @@
             return !i.hasConversation;
         });
 
-        const promo = dmBody.querySelector(".dm-promo"); // 상단 "구독 혜택 안내" 배너는 그대로 유지
+        const promo = dmBody.querySelector(".dm-promo"); // 구독 혜택 배너는 유지
         dmBody.innerHTML = "";
         if (promo) dmBody.appendChild(promo);
 
@@ -197,14 +176,14 @@
             dmBody.appendChild(buildItem(item));
         });
 
-        renderUnreadBadges(); // 목록을 새로 그렸으니 방별 안 읽은 개수도 다시 붙임
+        renderUnreadBadges(); // 방별 안 읽은 개수 다시 표시
     }
 
     function loadInbox() {
         if (!fanId) {
             const dmBody = document.querySelector("#dmListView .dm-body");
             if (dmBody) {
-                // 화면 문구(/api/i18n)를 받은 뒤에 그린다 (바로 그리면 일본어·영어 화면에도 한국어 기본값이 보인다)
+                // 화면 문구를 받은 뒤 그린다.
                 const i18nReady = (window.WePlaNet && window.WePlaNet.i18nReady) || Promise.resolve();
                 i18nReady.then(function () {
                     dmBody.innerHTML = '<p class="text-xs text-muted" style="padding:16px 4px;"></p>';
@@ -220,7 +199,7 @@
             .then(renderInbox);
     }
 
-    // 메시지 하나를 대화창에 말풍선으로 그림 (내가 보낸 건 오른쪽, 상대가 보낸 건 왼쪽 - shell.js CSS 클래스 그대로 사용)
+    // 말풍선 그리기 (내 메시지는 오른쪽)
     function appendBubble(container, data) {
         const isMe = data.senderId === fanId;
         const row = document.createElement("div");
@@ -233,11 +212,10 @@
             row.appendChild(avatar);
 
             const wrap = document.createElement("div");
-            wrap.className = "dm-msg__content"; // meta 줄 너비에 맞춰 말풍선까지 늘어나지 않도록(내용물 크기로 감싸기 위함)
+            wrap.className = "dm-msg__content"; // 말풍선이 meta 줄 너비로 늘어나지 않게
             const meta = document.createElement("div");
             meta.className = "dm-msg__meta";
-            // 아티스트 자신의 방송 채팅방에서는 상대가 여러 팬이라 "ARTIST" 태그가 아니라
-            // 각자의 닉네임만 보여주는 게 맞음 (팬 화면에서는 상대가 항상 그 아티스트 한 명이라 태그 유지)
+            // 아티스트 방송 방에서는 팬마다 닉네임만 보여준다.
             if (!isArtist) {
                 const tag = document.createElement("span");
                 tag.className = "artist-tag";
@@ -271,7 +249,7 @@
         container.scrollTop = container.scrollHeight;
     }
 
-    // 금칙어/한도 초과 경고를 화면 안 배너로 보여줌 (3.5초 뒤 자동 숨김)
+    // 금칙어·한도 경고 배너 (3.5초 후 숨김)
     let warningTimer = null;
 
     function showWarning(message) {
@@ -287,7 +265,7 @@
         }, 3500);
     }
 
-    // 오늘 남은 전송 횟수를 입력창 아래에 표시
+    // 오늘 남은 전송 횟수 표시
     function updateQuota(remaining) {
         const wrap = document.getElementById("dmQuota");
         const countEl = document.getElementById("dmQuotaCount");
@@ -300,12 +278,11 @@
 
         countEl.textContent = remaining;
         wrap.hidden = false;
-        // 다 쓰면 눈에 띄게 색을 바꿔줌
+        // 다 쓰면 색을 바꾼다.
         wrap.classList.toggle("is-empty", Number(remaining) <= 0);
     }
 
-    // [팬 전용] 아티스트 하나를 골라서 1:1 DM 방을 열 때: 지난 대화 이력을 불러오고, 실시간 수신을 새로 구독함
-    // (화면 전환/헤더 표시는 shell.js가 이미 처리해줌 - 여기선 메시지 데이터만 채움)
+    // [팬] 1:1 DM 방 열기 - 지난 대화를 불러오고 실시간 수신을 구독한다.
     function openRealRoom(artistId) {
         if (!fanId) {
             window.location.href = "/login";
@@ -326,40 +303,37 @@
                     });
                 }
 
-                // 와이어프레임 19번: 서버가 최종 판단한 만료 여부로 배너를 확실하게 맞춰줌
-                // (shell.js가 클릭 시점에 이미 한 번 처리해주지만, 서버 응답이 더 정확한 최신 값이라 덮어씀)
+                // 서버가 판단한 만료 여부로 배너를 맞춘다.
                 const banner = document.getElementById("dmExpiredBanner");
                 if (banner) {
                     banner.classList.toggle("hidden", !data.membershipExpired);
-                    // 한 번도 가입 안 한 팬이면 "구독 만료" 대신 가입 안내 문구로 바꿔서 보여줌
+                    // 가입 이력이 없으면 가입 안내 문구로 바꾼다.
                     banner.classList.toggle("is-never-subscribed", !!data.neverSubscribed);
                 }
 
-                // 와이어프레임 19번: 멤버십 만료 시엔 입력창 자체가 없어야 함 (배너만 있고 메시지는 못 보냄)
+                // 멤버십 만료 시 입력창을 숨긴다.
                 const composerEl = document.getElementById("dmComposer");
                 if (composerEl) {
                     composerEl.style.display = data.membershipExpired ? "none" : "";
                 }
 
-                // 오늘 남은 전송 횟수 표시 (CHAT-05)
+                // 오늘 남은 전송 횟수
                 updateQuota(data.remaining);
 
-                // 방을 열었으니 이 방 메시지는 모두 읽은 것으로 처리 (비행기 버튼 숫자에서 빠짐)
+                // 방을 열면 메시지를 모두 읽음 처리한다.
                 markRoomRead(currentArtistId);
 
                 unsubscribeAll();
                 ensureSocket(function () {
                     const personalTopic = "/topic/chat." + currentArtistId + ".fan." + fanId;
                     const errorTopic = "/topic/chat.error." + fanId;
-                    // 아티스트가 보내는 방송(공지) 채널. 서버(ChatController.send)는 fanId가 null인
-                    // 메시지를 "/topic/chat.{artistId}" 로 뿌리는데, 그동안 팬 쪽에서 이 채널을 구독하지
-                    // 않아서 아티스트가 보낸 메시지가 팬 화면에 아예 안 보였음
+                    // 아티스트 방송 채널도 구독한다.
                     const broadcastTopic = "/topic/chat." + currentArtistId;
 
                     subscriptions.push(stompClient.subscribe(personalTopic, function (frame) {
                         const payload = JSON.parse(frame.body);
                         appendBubble(messages, payload);
-                        // 내가 보낸 게 정상 저장되면 서버가 남은 횟수를 같이 내려줌
+                        // 정상 저장되면 남은 횟수가 함께 온다.
                         if (payload.remaining !== undefined) {
                             updateQuota(payload.remaining);
                         }
@@ -370,13 +344,10 @@
                     }));
 
                     subscriptions.push(stompClient.subscribe(errorTopic, function (frame) {
-                        // 예전엔 브라우저 기본 alert을 띄웠는데, 팬 채팅방 화면(fanChatRoom.html)은
-                        // 화면 안 배너를 쓰고 있어서 방식이 서로 달랐음 -> 배너로 통일
+                        // 경고는 화면 안 배너로 보여준다.
                         const warning = JSON.parse(frame.body);
                         showWarning(warning.message);
-                        // 한도 초과로 거부된 경우에만 남은 횟수를 0으로 표시.
-                        // 금칙어·멤버십 경고는 횟수가 차감되지 않으므로 표시를 그대로 둔다
-                        // (예전엔 경고 종류와 상관없이 0으로 바꿔서, 금칙어에 걸리면 "남은 메시지 0회"로 보였음)
+                        // 한도 초과일 때만 남은 횟수를 0으로 표시한다 (금칙어·멤버십 경고는 차감 없음).
                         if (warning.reason === "DAILY_LIMIT") {
                             updateQuota(0);
                         }
@@ -385,14 +356,12 @@
             });
     }
 
-    // [아티스트 전용] DM 버튼을 누르면 목록 없이 바로 자신의 팬 DM 방으로 들어감.
-    // 팬 개개인과의 1:1 방이 아니라 방 1개(artistId=자기 자신)뿐이라, openRealRoom과는 별도로 다룸.
+    // [아티스트] DM 버튼을 누르면 바로 자기 팬 DM 방으로 들어간다.
     function openArtistBroadcastRoom() {
         const dmRoomName = document.getElementById("dmRoomName");
         if (dmRoomName) dmRoomName.textContent = t("shell.dm.fanDm", "팬 DM");
 
-        // "ARTIST · DM" 서브텍스트와 인증뱃지는 "팬이 특정 아티스트와 대화 중"일 때 의미가 있는 표시라
-        // 아티스트 자신의 방송 채팅방에는 어울리지 않으므로 숨김
+        // 아티스트 방에는 "ARTIST · DM" 표시와 인증뱃지를 숨긴다.
         const titleWrap = dmRoomName ? dmRoomName.parentElement : null;
         if (titleWrap) {
             const badge = titleWrap.querySelector(".badge-verified");
@@ -401,12 +370,12 @@
             if (sub) sub.classList.add("hidden");
         }
 
-        // 아티스트에게는 "멤버십 만료" 개념이 없음(그건 팬이 이 아티스트를 구독했는지에 대한 제약) - 항상 숨김
+        // 아티스트에게는 멤버십 만료 배너가 없다.
         const banner = document.getElementById("dmExpiredBanner");
         if (banner) banner.classList.add("hidden");
         const composerEl = document.getElementById("dmComposer");
         if (composerEl) composerEl.style.display = "";
-        updateQuota(null); // 하루 전송 한도도 팬 전용 제약이라 표시 안 함
+        updateQuota(null); // 전송 한도도 팬 전용이라 표시하지 않음
 
         withArtistRoomId(function (roomId) {
             fetch("/chat/room-data/artist?artistId=" + roomId)
@@ -424,11 +393,11 @@
 
                     unsubscribeAll();
                     ensureSocket(function () {
-                        // 우리 커뮤니티 방송이 그대로 되돌아오는 채널 (방 번호 = 커뮤니티 id)
+                        // 우리 커뮤니티 방송 채널 (방 번호 = 커뮤니티 id)
                         const broadcastTopic = "/topic/chat." + roomId;
-                        // 팬들이 보낸 메시지 중 30%만 도착하는 채널 (CHAT-02 비대칭 수신 - 도배 방지)
+                        // 팬 메시지 중 30%만 오는 채널 (도배 방지)
                         const artistFeedTopic = "/topic/chat." + roomId + ".artistFeed";
-                        // 경고는 "보낸 사람 본인"에게 오므로 방 번호가 아니라 내 id
+                        // 경고는 보낸 사람 본인 채널로 온다.
                         const errorTopic = "/topic/chat.error." + fanId;
 
                         subscriptions.push(stompClient.subscribe(broadcastTopic, function (frame) {
@@ -448,9 +417,7 @@
     }
 
     document.addEventListener("click", function (e) {
-        // DM 목록 버튼(buildItem)에만 붙는 data-open-room을 기준으로 잡음 (팬 전용 - 아티스트는 목록 자체가 없음).
-        // 예전엔 [data-artist-id]로 찾았는데, fan/artist/post-detail 화면은 <body>에도 그 속성이 있어서
-        // 페이지 아무 곳이나 클릭할 때마다 openRealRoom이 실행되고 /chat/room-data가 호출됐음
+        // DM 목록 버튼의 data-open-room 으로만 방을 연다 (body 의 data-artist-id 와 구분).
         const roomBtn = e.target.closest("[data-open-room]");
         if (roomBtn && !isArtist) {
             openRealRoom(roomBtn.getAttribute("data-open-room"));
@@ -458,30 +425,25 @@
 
         if (e.target.closest("#fabChat")) {
             if (isArtist) {
-                openArtistBroadcastRoom(); // 위젯을 열 때마다 최신 이력으로 새로고침
+                openArtistBroadcastRoom(); // 위젯을 열 때마다 최신 이력으로 갱신
             } else {
-                loadInbox(); // 위젯을 열 때마다 최신 목록으로 새로고침
+                loadInbox(); // 위젯을 열 때마다 최신 목록으로 갱신
             }
         }
     });
 
-    // ------------------------------------------------------------
-    // [팬 전용] 안 읽은 DM 개수 - 비행기(DM) 버튼 위 숫자 배지
-    // 서버(/chat/unread-source)는 최근 7일간 방 주인(아티스트/멤버)이 보낸 메시지 시각만 내려주고,
-    // "방마다 어디까지 읽었는지"는 이 브라우저의 localStorage 에 기억한다 (DB 테이블을 새로 만들지 않기 위함).
-    // 아티스트가 새로 보내는 메시지는 웹소켓으로 받아서 바로 숫자를 올린다.
-    // ------------------------------------------------------------
+    // [팬] 안 읽은 DM 숫자 - 서버는 최근 7일 방 주인 메시지 시각만 주고, 방별 읽음 위치는 localStorage 에 저장한다.
     const LAST_READ_KEY = "weplanet.dm.lastRead." + fanId;
-    let serverSkew = 0;   // 서버 시각 - 브라우저 시각(ms). 읽은 시각을 서버 기준으로 맞추려고 씀
-    let unreadTimes = {}; // 방(artistId) -> 처음 불러올 때 받은 방 주인 메시지 시각들 (서버 기준 epoch ms)
-    let liveUnread = {};  // 방(artistId) -> 페이지를 연 뒤 실시간으로 새로 받은 개수
-    let notifySubs = [];  // DM 방을 바꿀 때 지우는 subscriptions 와 섞이지 않게 따로 관리
+    let serverSkew = 0;   // 서버 시각 - 브라우저 시각(ms)
+    let unreadTimes = {}; // 방별 방 주인 메시지 시각 (서버 기준 ms)
+    let liveUnread = {};  // 방별 실시간으로 새로 받은 개수
+    let notifySubs = [];  // DM 방 구독과 따로 관리
 
     function loadLastRead() {
         try {
             return JSON.parse(localStorage.getItem(LAST_READ_KEY)) || {};
         } catch (e) {
-            return {}; // 시크릿 창 등 저장소를 못 쓰면 매번 "처음"처럼 동작
+            return {}; // 저장소를 못 쓰면 매번 처음처럼 동작
         }
     }
 
@@ -489,7 +451,7 @@
         try {
             localStorage.setItem(LAST_READ_KEY, JSON.stringify(map));
         } catch (e) {
-            // 저장 실패는 무시 (숫자가 새로고침 후 다시 보일 수 있을 뿐)
+            // 저장 실패는 무시
         }
     }
 
@@ -561,7 +523,7 @@
         renderUnreadBadges();
     }
 
-    // 지금 그 방 대화창을 보고 있는지 (DM 패널이 열려 있고, 목록이 아니라 그 방이 떠 있는 상태)
+    // 지금 그 방 대화창을 보고 있는지
     function isRoomOnScreen(artistId) {
         const panel = document.getElementById("dmPanel");
         const room = document.getElementById("dmRoomView");
@@ -582,7 +544,7 @@
                 unreadTimes = {};
                 (data.rooms || []).forEach(function (room) {
                     unreadTimes[room.artistId] = room.times || [];
-                    // 처음 보는 방은 "지금"을 기준점으로 잡는다 - 기능을 처음 쓰는 순간 지난 메시지가 한꺼번에 쌓여 보이지 않게
+                    // 처음 보는 방은 지금을 기준점으로 잡는다.
                     if (!(room.artistId in lastRead)) {
                         lastRead[room.artistId] = serverNow();
                         changed = true;
@@ -601,7 +563,7 @@
                     roomIds.forEach(function (roomId) {
                         const onMessage = function (frame) {
                             const payload = JSON.parse(frame.body);
-                            // 방 주인이 직접 보낸 것만 센다 (AI 가상 팬·내가 보낸 메시지는 제외)
+                            // 방 주인이 직접 보낸 메시지만 센다.
                             if (Number(payload.senderId) !== Number(roomId)) return;
                             if (isRoomOnScreen(roomId)) {
                                 markRoomRead(roomId);
@@ -610,20 +572,18 @@
                             liveUnread[roomId] = (liveUnread[roomId] || 0) + 1;
                             renderUnreadBadges();
                         };
-                        // 아티스트 전체 방송 + 나에게 온 개인 메시지
+                        // 방송 + 나에게 온 개인 메시지
                         notifySubs.push(stompClient.subscribe("/topic/chat." + roomId, onMessage));
                         notifySubs.push(stompClient.subscribe("/topic/chat." + roomId + ".fan." + fanId, onMessage));
                     });
                 });
             })
             .catch(function () {
-                // 알림 숫자는 부가 기능이라, 실패해도 DM 자체는 그대로 쓸 수 있게 조용히 넘어감
+                // 알림 숫자 실패는 DM 사용에 영향을 주지 않게 무시한다.
             });
     }
 
-    // shell.js는 번역 문구(/api/i18n/shell)를 받아온 뒤에 DM 위젯을 그리므로(비동기), 위젯이 다 그려졌다는
-    // 신호(weplanet:shell-ready)를 받은 뒤에 폼 교체/인박스 로딩을 시작함. 이 순서를 안 지키면 아래 #dmComposer 를
-    // 못 찾아서 목업 전송만 남음 - 메시지가 화면에만 붙고 서버로 안 가서 횟수 차감도, 아티스트 수신도 안 됐음
+    // 셸이 비동기로 다 그려진 뒤(weplanet:shell-ready)에 폼 교체와 인박스 로딩을 시작한다.
     function whenShellReady(callback) {
         if (window.WePlaNetShellReady) {
             callback();
@@ -633,8 +593,7 @@
     }
 
     whenShellReady(function () {
-        // shell.js가 미리 만들어둔 "메시지 보내기" 폼은 실제 전송 없이 화면에만 붙이는 목업 코드라서,
-        // 노드를 통째로 복제해서 갈아끼우는 방식으로 그 목업 이벤트를 떼어내고 실제 전송 로직을 새로 닮
+        // 셸의 목업 전송 폼을 복제·교체해 이벤트를 떼고 실제 전송 로직을 붙인다.
         const oldComposer = document.getElementById("dmComposer");
         if (oldComposer) {
             const newComposer = oldComposer.cloneNode(true);
@@ -651,7 +610,7 @@
                 if (!text) return;
 
                 if (isArtist) {
-                    // fanId를 null로 보내면 아티스트 DM. 방 번호는 커뮤니티 id, 보낸 사람은 나
+                    // fanId 가 null 이면 아티스트 DM (방 번호는 커뮤니티 id)
                     if (!artistRoomId) return;
                     ensureSocket(function () {
                         stompClient.send("/app/chat.send", {}, JSON.stringify({
@@ -680,7 +639,7 @@
             loadInbox();
         }
 
-        // 안 읽은 DM 숫자는 로그인한 팬에게만 (아티스트·소속사는 받는 DM 구조가 달라서 제외)
+        // 안 읽은 DM 숫자는 로그인한 팬에게만
         if (fanId && roleName === "ROLE_FAN") {
             startUnreadWatcher();
         }

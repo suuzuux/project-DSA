@@ -8,10 +8,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
-/**
- * AI 팬 DM 답장처럼 "보낸 직후 백그라운드에서 이어서 할 일"을 웹소켓 요청 스레드와 분리한다.
- * 아티스트 메시지가 화면에 먼저 뜨고, 팬 답장은 조금 뒤에 차례로 도착하게 하기 위함.
- */
+/** AI 팬 DM 답장 같은 후속 작업을 웹소켓 요청 스레드와 분리하는 비동기 설정. */
 @Configuration
 @EnableAsync
 public class AsyncConfig {
@@ -27,8 +24,7 @@ public class AsyncConfig {
 		return executor;
 	}
 
-	// 아이디·비밀번호 찾기 / 휴면 해제 인증코드 메일 전용 풀 (VerificationMailAsyncSender).
-	// 응답 시간 차이로 계정 존재 여부가 드러나지 않게 백그라운드로 보내고, 큐가 차면 같은 이유로 버리고 로그만 남긴다.
+	// 인증코드 메일 전용 풀 - 응답 시간으로 계정 존재 여부가 드러나지 않게 백그라운드로 보낸다.
 	@Bean(name = "verificationMailExecutor")
 	public Executor verificationMailExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -42,8 +38,7 @@ public class AsyncConfig {
 		return executor;
 	}
 
-	// [이벤트·혜택 알림] 게시글/공지/라이브 시작 시 팔로워에게 이메일을 보내는 작업 전용 풀.
-	// 팔로워가 많으면 순차 발송이 오래 걸릴 수 있어 aiFanExecutor(AI 채팅용)와 분리하고 큐를 넉넉하게 잡았다.
+	// 팔로워 이메일 알림 전용 풀 - 발송량이 많을 수 있어 AI 채팅 풀과 분리했다.
 	@Bean(name = "communityNotifyExecutor")
 	public Executor communityNotifyExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -55,8 +50,7 @@ public class AsyncConfig {
 		return executor;
 	}
 
-	// 가입 완료 / 커뮤니티 가입 유도 / 광고성 동의 확인 메일 전용 풀 (AccountMailListener) - 인증코드 메일이 밀리지 않게 분리.
-	// 큐가 차면 그 메일은 보내지 않고 로그만 남긴다 (가입은 이미 끝났으므로 화면에 오류를 내지 않음).
+	// 가입 완료·안내 메일 전용 풀 - 큐가 차면 로그만 남기고 버린다.
 	@Bean(name = "accountMailExecutor")
 	public Executor accountMailExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -70,8 +64,7 @@ public class AsyncConfig {
 		return executor;
 	}
 
-	// 메인 배너 AI 번역 전용 풀 (ContentTranslationService) - 배너 여러 장을 동시에 번역해 메인 화면이 오래 기다리지 않게 한다.
-	// 큐가 차면 그 배너는 이번에는 원문으로 보여준다 (호출부가 거절을 받아 처리).
+	// 메인 배너 AI 번역 전용 풀 - 큐가 차면 그 배너는 원문으로 보여준다.
 	@Bean(name = "contentTranslationExecutor")
 	public Executor contentTranslationExecutor() {
 		ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();

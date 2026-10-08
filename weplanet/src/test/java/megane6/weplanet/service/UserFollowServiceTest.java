@@ -1,9 +1,11 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.fan.UserFollowService;
+
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.UserFollowRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.fan.UserFollowRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.service.community.CommunityJoinService;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,7 @@ class UserFollowServiceTest {
 	private final UserFollowService service = new UserFollowService(followRepository, userRepository, memberRepository,
 			mock(CommunityJoinService.class), mock(ApplicationEventPublisher.class));
 
-	// 상대가 커뮤니티를 떠났고 나도 가입돼 있지 않아도, 이미 걸려 있는 팔로우는 취소할 수 있어야 한다
+	// 이미 걸린 팔로우는 가입 조건과 상관없이 취소할 수 있다
 	@Test
 	void unfollowIsAllowedEvenWhenFollowConditionsNoLongerHold() {
 		User me = user(ME, Role.FAN);

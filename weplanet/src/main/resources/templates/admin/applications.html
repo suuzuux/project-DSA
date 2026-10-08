@@ -32,7 +32,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -825,8 +825,7 @@
                             th:value="${applications.number}"
                     />
 
-                    <!-- 승인하면 이 이름으로 소속사(Agency)가 만들어진다.
-     Agency.name은 중복될 수 없어서, 동명이인 1인 소속사일 때 여기서 고친다. -->
+                    <!-- 승인하면 이 이름으로 소속사가 만들어진다 (중복 불가라 여기서 고칠 수 있음). -->
                     <div class="form-group" style="margin-bottom: 12px;">
                         <label
                                 class="form-label"

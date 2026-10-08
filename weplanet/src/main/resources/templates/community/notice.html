@@ -8,7 +8,7 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+  <!-- SockJS / Stomp (dm-realtime.js 용) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
@@ -29,7 +29,7 @@
         <a class="notice-list__item"
            th:each="item : ${notices}"
            th:href="@{/community/{id}/notice/{nid}(id=${artist.id()}, nid=${item.id})}">
-          <!-- 상단 고정 공지 표시 (전체 공지사항 페이지와 같은 핀 아이콘). 항목 간격(gap 14px)이 넓어 margin 으로 8px 로 줄임 -->
+          <!-- 상단 고정 공지 핀 아이콘 (gap 이 넓어 margin 으로 줄임) -->
           <svg th:if="${item.pinned}" viewBox="0 0 24 24" width="16" height="16"
                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                role="img" th:aria-label="#{admin.notices.stat.pinned}"

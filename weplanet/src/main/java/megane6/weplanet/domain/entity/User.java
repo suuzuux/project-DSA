@@ -22,14 +22,14 @@ import java.time.LocalDateTime;
 public class User {
 	@Id
 	@GeneratedValue(strategy =  GenerationType.IDENTITY)
-	private Long id;			// 디비 내부 식별 id
+	private Long id;			// 내부 식별 id
 	
 	@Column(nullable = false, unique = true, length = 50)
 	private String username;	// 로그인 아이디
 	
-	// 소셜 전용 가입자는 비밀번호가 없을 수 있다(null) - 비밀번호 로그인 가능 여부는 hasPassword() 로 판단한다.
+	// 소셜 전용 가입자는 비밀번호가 없을 수 있다 (hasPassword 로 판단).
 	@Column(nullable = true, length = 60)
-	private String password;	// 암호화(BCrypt)된 비밀번호. 소셜 전용 가입자는 null일 수 있음.
+	private String password;	// BCrypt 비밀번호 (소셜 전용이면 null)
 	
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
@@ -50,7 +50,7 @@ public class User {
 	@Column(nullable = false, length = 50)
 	private String nickname;	// 가입자 닉네임
 	
-	// DB 에 UNIQUE KEY uk_users_email 이 있다 (ddl-auto=validate 라 스키마는 그대로, 엔티티에 같은 사실만 적어 둠)
+	// DB 에 UNIQUE KEY 가 있다 (엔티티에도 표시)
 	@Column(nullable = false, length = 255, unique = true)
 	private String email;		// 가입자 이메일
 	
@@ -59,7 +59,7 @@ public class User {
 	private String phone;		// 본인인증 - 결제 알림
 	
 	@Column(name = "phone_hash", length = 64)
-	private String phoneHash;	// 지금은 평문 단계라 사용 안 함, 암호화 붙일 때 채움
+	private String phoneHash;	// 암호화 적용 시 사용 예정
 	
 	@Column(name = "birth_date")
 	private LocalDate birthDate;	// 본인인증
@@ -96,30 +96,27 @@ public class User {
 	@Column(name = "deleted_at")
 	private LocalDateTime deletedAt;		// 탈퇴(소프트 삭제) 처리 시각
 	
-	// 지금 이 계정에 연동된 소셜 provider. 연동이 없거나 해제한 계정은 null.
+	// 연동된 소셜 provider (없으면 null)
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = true, length = 20)
-	private AuthProvider provider;		// 연동된 소셜 provider (GOOGLE/KAKAO/LINE), 연동 없으면 null
+	private AuthProvider provider;
 	
 	@Column(name = "provider_id", length = 255)
 	private String providerId;		// 소셜 플랫폼 고유 ID (연동 없으면 null)
 
-	// 광고성 정보 수신 동의 (기본 false).
-	// 가입 화면의 "(선택) 광고 및 마케팅 활용 동의"와 설정 화면 토글이 같은 값을 쓴다.
+	// 광고성 정보 수신 동의 (가입 화면과 설정 토글이 공유).
 	@Column(name = "marketing_consent", nullable = false)
 	private boolean marketingConsent;
 
-	// 가입·팔로우한 아티스트의 새 글/공지/라이브 시작을 이메일로 받을지 (기본 false, 광고 동의와 별개).
-	// 받을 사람 선별(가입 + 팔로우)은 CommunityActivityNotifier 가 따로 확인한다.
+	// 아티스트 새 글·공지·라이브 시작 이메일 수신 여부 (광고 동의와 별개).
 	@Column(name = "community_activity_email_enabled", nullable = false)
 	private boolean communityActivityEmailEnabled;
 
-	// [설정 - 이벤트·혜택 알림] 오후 9시~오전 8시(KST)에도 알림을 받을지. 기본값 false.
-	// CommunityActivityNotifier가 이메일 발송 직전에 이 값을 확인해서, 꺼져 있으면 야간 시간대엔 건너뛴다.
+	// 야간(21시~8시) 알림 수신 여부 (꺼져 있으면 야간 발송 건너뜀).
 	@Column(name = "night_notification_allowed", nullable = false)
 	private boolean nightNotificationAllowed;
 
-	// 기본 서비스 언어 (기본 KO). 화면 언어이자 게시글/댓글 AI 번역 대상 언어로 함께 쓴다.
+	// 기본 서비스 언어 (화면 언어이자 AI 번역 대상 언어).
 	@Enumerated(EnumType.STRING)
 	@Column(name = "preferred_language", nullable = false, length = 10)
 	private Language preferredLanguage = Language.KO;
@@ -140,7 +137,7 @@ public class User {
 		this(username, password, realName, nickname, email, role, null, null);
 	}
 	
-	// 소셜 가입은 비밀번호 없이 만든다 - encodedPassword 가 null 일 수 있다.
+	// 소셜 가입은 비밀번호 없이 만든다.
 	public static User createSocialFan(String username, String encodedPassword, String realName, String nickname, String email, AuthProvider provider, String providerId) {
 		return new User(username, encodedPassword, realName, nickname, email, Role.FAN, provider, providerId);
 	}
@@ -157,9 +154,7 @@ public class User {
 		return new User(username, encodedPassword, realName, nickname, email, Role.AGENCY);
 	}
 	
-	// 관리자가 입점 신청을 승인할 때 만드는 소속사 대표 계정.
-	// 비밀번호는 본인이 초대 링크에서 직접 정하므로 여기서는 비워둔다(null).
-	// 관리자가 비밀번호를 정해서 메일로 보내면 평문이 메일과 로그에 남기 때문이다.
+	// 입점 승인 시 만드는 소속사 대표 계정 (비밀번호는 초대 링크에서 본인이 설정).
 	public static User createPendingAgencyOwner(String username, String realName, String nickname, String email) {
 		User user = new User(username, null, realName, nickname, email, Role.AGENCY);
 		user.status = UserStatus.PENDING_ACTIVATION;
@@ -167,9 +162,7 @@ public class User {
 		return user;
 	}
 	
-	// 소속사가 포털에서 등록하는 아티스트(그룹/솔로) 계정
-	// 로그인 아이디 = 소속사가 입력한 그룹 이메일
-	// 소속사 대표 계정과 마찬가지로 비밀번호는 비워두고, 초대 링크에서 본인이 정한다
+	// 소속사가 등록한 아티스트 계정 (아이디는 그룹 이메일, 비밀번호는 초대 링크에서 설정).
 	public static User createPendingArtist(String email, String groupName, String nickname) {
 		User user = new User(email, null, groupName, nickname, email, Role.ARTIST);
 		user.status = UserStatus.PENDING_ACTIVATION;
@@ -177,10 +170,7 @@ public class User {
 		return user;
 	}
 	
-	// 그룹 멤버(프로필) 계정
-	// 멤버는 아이디/비밀번호 폼으로 로그인하지 않고, 그룹 로그인 -> 프로필 선택으로만 돌린다
-	// 그래서 username / email은 서비서에서 시스템용 값으로 만들어 넣고,
-	// 개인 비밀번호는 프로필을 처음 선택할 때 본인이 정함 (그 전까지 password = null)
+	// 그룹 멤버 계정 (프로필 선택으로만 로그인, 비밀번호는 첫 선택 때 설정).
 	public static User createArtistMember(String username, String memberName, String nickname, String email) {
 		return new User(username, null, memberName, nickname, email, Role.ARTIST_MEMBER);
 	}
@@ -207,31 +197,31 @@ public class User {
 	
 	public void recordLogin() {
 		this.lastLoginAt = LocalDateTime.now();
-		this.dormantNoticeSentAt = null;	// 다시 로그인했으니 다음 휴면 주기에 사전 안내를 다시 보낼 수 있도록 초기화
+		this.dormantNoticeSentAt = null;	// 다음 휴면 주기에 사전 안내를 다시 보내도록 초기화
 	}
 
 	public void markEmailVerified(LocalDateTime verifiedAt) {
 		this.emailVerifiedAt = verifiedAt;
 	}
 	
-	// 비밀번호는 건드리지 않는다 - 로컬 비밀번호와 소셜 연동은 따로 공존한다.
+	// 비밀번호는 그대로 두고 소셜을 연동한다.
 	public void linkSocialProvider(AuthProvider provider, String providerId) {
 		this.provider = provider;
 		this.providerId = providerId;
 	}
 
-	// 설정 화면에서 "연결 해제"를 누르면 호출. 비밀번호는 손대지 않는다.
+	// 소셜 연동 해제 (비밀번호는 그대로).
 	public void unlinkSocialProvider() {
 		this.provider = null;
 		this.providerId = null;
 	}
 
-	// 비밀번호가 설정돼 있는지 - 아이디·비밀번호 로그인이 가능한 계정인지를 이 값으로 판단한다.
+	// 아이디·비밀번호 로그인이 가능한 계정인지
 	public boolean hasPassword() {
 		return this.password != null;
 	}
 
-	// 메일을 받을 수 없는 시스템용 주소인지 (카카오/LINE 가입자, 그룹 멤버, 탈퇴 익명화 주소 - 모두 *.weplanet.local)
+	// 메일을 받을 수 없는 시스템 주소인지 (*.weplanet.local)
 	public boolean hasPlaceholderEmail() {
 		return this.email != null && this.email.toLowerCase().endsWith(".weplanet.local");
 	}
@@ -253,7 +243,7 @@ public class User {
 		this.realName = realName;
 	}
 
-	// 설정 화면의 "전화번호 (선택)" - 비우면 null 로 지운다. 굿즈 주문서 연락처 기본값으로도 쓰인다.
+	// 전화번호 변경 (비우면 null, 주문서 연락처 기본값).
 	public void changePhone(String phone) {
 		this.phone = phone;
 	}
@@ -262,8 +252,7 @@ public class User {
 		this.password = encodedPassword;
 	}
 	
-	// 초대 링크로 들어온 소속사가 비밀번호를 설정하면 호출
-	// 메일 링크를 실제로 열었다는 뜻이므로, 이메일 인증도 이 시점에 완료 처리한다.
+	// 초대 링크로 비밀번호를 설정하면 이메일 인증도 완료 처리한다.
 	public void activateWithPassword(String encodedPassword) {
 		if (this.status != UserStatus.PENDING_ACTIVATION) {
 			throw new IllegalStateException("error.activation.notPending");
@@ -278,8 +267,7 @@ public class User {
 		this.emailVerifiedAt = LocalDateTime.now();
 	}
 	
-	// 멤버가 프로필을 처음 선택했을 때 개인 비밀번호를 저장한다
-	// 이미 비밀번호가 있으면 막는다 - 다른 사람이 남의 프로필 비밀번호를 덮어쓰지 못하게
+	// 멤버가 프로필을 처음 선택할 때 비밀번호를 저장한다 (이미 있으면 막음).
 	public void setInitialMemberPassword(String encodedPassword) {
 		if (this.role != Role.ARTIST_MEMBER) {
 			throw new IllegalStateException("error.member.notGroupMember");
@@ -296,8 +284,7 @@ public class User {
 		this.password = encodedPassword;
 	}
 	
-	// 소속사가 멤버의 개인 비밀번호를 초기화한다
-	// null로 되돌리면 프로필 선택 화면에서 "첫 로그인"처럼 새 비밀번호를 정하게 된다
+	// 소속사가 멤버 비밀번호를 초기화한다 (다음 선택 때 새로 설정).
 	public void resetMemberPassword() {
 		if (this.role != Role.ARTIST_MEMBER) {
 			throw new IllegalStateException("error.member.notGroupMember");
@@ -326,8 +313,7 @@ public class User {
 		anonymizePersonalInfo();
 	}
 	
-	// 탈퇴 시 개인정보 익명 처리 - email/username/providerId 는 withdrawn_{id} 로 바꿔 다시 쓸 수 있게 하고,
-	// 실명은 고정 문구로, 나머지 개인 정보는 null 로 지운다 (탈퇴는 되돌리지 않는다).
+	// 탈퇴 시 개인정보를 익명 처리한다 (되돌릴 수 없음).
 	private void anonymizePersonalInfo() {
 		String suffix = "withdrawn_" + this.id;
 		this.username = suffix;
@@ -338,7 +324,7 @@ public class User {
 		this.realName = "탈퇴한 회원";
 		this.phone = null;
 		this.address2 = null;
-		// 개인정보처리방침("탈퇴 시 개인정보 익명 처리, 선택 항목 삭제")에 맞춰 주소·생년월일·성별도 지운다.
+		// 개인정보처리방침에 맞춰 주소·생년월일·성별도 지운다.
 		this.phoneHash = null;
 		this.zipcode = null;
 		this.address1 = null;
@@ -346,13 +332,12 @@ public class User {
 		this.gender = null;
 	}
 
-	// [관리자 제재] 신고 누적 등으로 관리자가 계정을 정지시킬 때 씀.
-	// isLoginable()이 ACTIVE/DORMANT만 허용하므로, 정지 즉시 로그인이 막힘.
+	// 관리자 제재 - 계정 정지 (즉시 로그인 불가).
 	public void suspend() {
 		this.status = UserStatus.SUSPENDED;
 	}
 
-	// [관리자 제재 해제] 정지된 계정을 다시 활성 상태로 되돌림
+	// 관리자 제재 해제
 	public void reinstate() {
 		this.status = UserStatus.ACTIVE;
 	}
@@ -365,19 +350,17 @@ public class User {
 		return agency == null ? null : agency.getId();
 	}
 	
-	// 아티스트 쪽 계정인지 (그룹/솔로 계정 + 그룹 멤버)
-	// 이름 옆 체크 표시, "Hide from Artists" 필터 등에 쓴다. 템플릿에서는 ${user.artistSide} 로 읽힌다.
+	// 아티스트 쪽 계정인지 (그룹·솔로 + 멤버, 템플릿에서 ${user.artistSide}).
 	public boolean isArtistSide() {
 		return this.role != null && this.role.isArtistSide();
 	}
 	
-	// 커뮤니티 가입/팬 게시판 글쓰기/멤버십/팔로우 같은 "참여"를 할 수 있는 계정인지
-	// 아티스트 쪽 계정은 남의 커뮤니티에서 팬과 같은 자격으로 참여한다.
+	// 커뮤니티 참여(가입·글쓰기·멤버십·팔로우)가 가능한 계정인지.
 	public boolean canParticipateInCommunity() {
 		return this.role == Role.FAN || isArtistSide();
 	}
 
-	// [설정 - 이벤트·혜택 알림] 토글 클릭 시 서버가 최종값을 확정한다 (화면 상태를 그대로 믿지 않음).
+	// 광고성 정보 수신 동의 변경 (서버가 최종값 확정).
 	public void changeMarketingConsent(boolean consent) {
 		this.marketingConsent = consent;
 	}
@@ -390,7 +373,7 @@ public class User {
 		this.nightNotificationAllowed = allowed;
 	}
 
-	// [설정 - 언어 설정] "기본 서비스 언어" 저장. 이 값이 게시글/댓글 AI 번역 대상 언어로도 그대로 쓰인다.
+	// 기본 서비스 언어 변경 (AI 번역 대상 언어로도 사용).
 	public void changePreferredLanguage(Language language) {
 		this.preferredLanguage = language;
 	}

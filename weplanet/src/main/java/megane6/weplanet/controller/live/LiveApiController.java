@@ -122,7 +122,7 @@ public class LiveApiController {
 	}
 	
 	private User resolveManagedArtist(User actor, HttpSession session) {
-		// 아티스트 쪽 계정은 "내 커뮤니티"(솔로=본인, 멤버=소속 그룹)가 곧 방송 대상
+		// 아티스트 쪽 계정은 내 커뮤니티가 방송 대상이다.
 		if (actor.isArtistSide()) {
 			Long ownCommunityId = communityArtistResolver.ownCommunityId(actor);
 			if (ownCommunityId == null) {
