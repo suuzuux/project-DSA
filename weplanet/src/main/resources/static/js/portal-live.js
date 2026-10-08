@@ -36,6 +36,10 @@
     const viewers = new Set();
     let mediaRecorder = null;
     const recordedChunks = [];
+    // 아티스트 말을 텍스트로 바꿔 서버로 보내면 AI 팬이 라이브 채팅에 댓글을 단다 (Chrome/Edge 전용 Web Speech API)
+    const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let speechWanted = false;
 
     function refreshControls() {
         startBtn.disabled = isLive || !localStream || !socketReady;
@@ -137,6 +141,86 @@
                 resolve(null);
             }
         });
+    }
+
+    function speechLang() {
+        const lang = (document.documentElement.lang || "ko").toLowerCase();
+        if (lang.indexOf("ja") === 0) return "ja-JP";
+        if (lang.indexOf("en") === 0) return "en-US";
+        return "ko-KR";
+    }
+
+    function startSpeech() {
+        if (speechWanted) return;
+        if (!SpeechRecognitionCtor) {
+            showSaveStatus("이 브라우저는 음성 인식을 지원하지 않습니다. Chrome으로 방송해 주세요.");
+            return;
+        }
+        speechWanted = true;
+        recognition = new SpeechRecognitionCtor();
+        recognition.lang = speechLang();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = function (event) {
+            let interim = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const result = event.results[i];
+                const text = (result[0] && result[0].transcript || "").trim();
+                if (!text) continue;
+                if (result.isFinal) {
+                    sendJson("/app/live.speech", { artistId: artistId, content: text });
+                    showSaveStatus("인식해서 보냄: " + text);
+                } else {
+                    interim += text;
+                }
+            }
+            if (interim) {
+                showSaveStatus("듣는 중: " + interim);
+            }
+        };
+        recognition.onerror = function (event) {
+            if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+                speechWanted = false;
+                showSaveStatus("마이크 권한이 없어 음성 인식을 쓸 수 없습니다.");
+            }
+            if (event.error !== "no-speech" && event.error !== "aborted") {
+                console.warn("[LIVE] 음성 인식 오류", event.error);
+            }
+        };
+        // 말이 한동안 없으면 브라우저가 인식을 스스로 끝내므로, 방송 중이면 다시 켠다
+        recognition.onend = function () {
+            if (!speechWanted || !recognition) return;
+            setTimeout(function () {
+                if (!speechWanted || !recognition) return;
+                try {
+                    recognition.start();
+                } catch (err) {
+                    console.warn("[LIVE] 음성 인식 재시작 실패", err);
+                }
+            }, 300);
+        };
+        try {
+            recognition.start();
+            showSaveStatus("음성 인식 켜짐. 말하면 여기에 바로 표시됩니다.");
+        } catch (err) {
+            console.warn("[LIVE] 음성 인식 시작 실패", err);
+            speechWanted = false;
+            recognition = null;
+            showSaveStatus("음성 인식을 켜지 못했습니다.");
+        }
+    }
+
+    function stopSpeech() {
+        speechWanted = false;
+        if (!recognition) return;
+        const current = recognition;
+        recognition = null;
+        current.onend = null;
+        try {
+            current.stop();
+        } catch (err) {
+            // 이미 멈춘 상태
+        }
     }
 
     function uploadReplay(blob) {
@@ -369,6 +453,8 @@
                 createPeer(body.viewerId);
             } else if (body.type === "leave" && body.viewerId) {
                 closePeer(body.viewerId);
+            } else if (body.type === "ai" && body.message) {
+                showSaveStatus(body.message);
             }
         });
         stompClient.subscribe("/topic/live." + artistId + ".peer." + hostId, function (frame) {
@@ -388,6 +474,7 @@
         if (isLive) {
             sendJson("/app/live.host", { artistId: artistId });
             loadComments();
+            startSpeech();
         }
     }
 
@@ -465,6 +552,7 @@
                     showCameraError("");
                     showSaveStatus("");
                     startRecording();
+                    startSpeech();
                 })
                 .catch(function (err) {
                     setLiveUi(isLive);
@@ -475,6 +563,7 @@
 
     endBtn.addEventListener("click", function () {
         endBtn.disabled = true;
+        stopSpeech();
         stopRecording().then(function (blob) {
             return fetch("/api/portal/live/end", { method: "POST", headers: FETCH_HEADERS })
                 .then(parseResponse)
@@ -502,6 +591,7 @@
         if (isLive) {
             navigator.sendBeacon("/api/portal/live/end");
         }
+        stopSpeech();
         closeAllPeers();
         if (localStream) {
             localStream.getTracks().forEach(function (track) { track.stop(); });
