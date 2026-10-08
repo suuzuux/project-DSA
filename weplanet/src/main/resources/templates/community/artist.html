@@ -8,10 +8,10 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+  <!-- SockJS / Stomp (dm-realtime.js 용) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-  <!-- Toast UI Editor: 포스트 작성 모달의 마크다운 리치 에디터 (예전엔 뷰어만 붙어있고 작성용은 빠져있었음) -->
+  <!-- Toast UI Editor (글쓰기 모달 마크다운 에디터) -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 </head>
@@ -30,7 +30,7 @@
       <nav th:replace="~{community/fragments/layout :: tabs('artist')}"></nav>
 
       <div class="board-toolbar">
-        <!-- 전체 / 사진·미디어(사진·영상 첨부가 있는 글만) - 팬 게시판의 포스트/프로젝트 칩과 같은 모양 -->
+        <!-- 전체 / 사진·미디어 필터 칩 -->
         <div class="chip-row" style="margin:0;">
           <a class="chip" th:classappend="${boardFilter == null} ? ' is-active'"
              th:href="@{${artist.homeUrl() + '/artist'}(sort=${sort})}">
@@ -70,7 +70,7 @@
     <span aria-hidden="true">↑</span>
   </button>
 
-  <!-- 아티스트 포스트 작성 모달 (해당 커뮤니티 아티스트만) -->
+  <!-- 아티스트 포스트 작성 모달 (커뮤니티 아티스트만) -->
   <div class="modal-backdrop" id="writePostModal"
        th:if="${isOwnCommunity}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">

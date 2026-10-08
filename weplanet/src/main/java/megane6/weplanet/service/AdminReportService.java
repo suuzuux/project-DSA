@@ -17,13 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * 관리자 "통합 신고·제재" 화면 전용 서비스.
- * <p>
- * 신고에는 별도의 "처리 상태" 컬럼이 없다 - 신고 기록(Report/CommentReport)은 그 자체로 처리 대기 목록이고,
- * 관리자가 처리(기각 또는 대상 삭제)하면 그 신고 로우 자체가 사라지는 방식이다.
- * 그래서 목록에 남아있는 것 = 아직 처리 안 된 신고, 라는 규칙만 지키면 별도 상태값 없이도 동작한다.
- */
+/** 관리자 통합 신고·제재 서비스 (처리 상태 컬럼 없이 남은 신고 = 처리 대기). */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,18 +31,18 @@ public class AdminReportService {
 	private final CommentService commentService;
 	private final AdminActionLogService als;
 	private final AdminUserService aus;
-	// 댓글 신고 대상 제목("댓글 (원글 : ...)")을 요청 로케일로 만든다
+	// 댓글 신고 대상 제목을 요청 로케일로 만든다.
 	private final megane6.weplanet.i18n.Messages messages;
 
-	// 대상 종류 - 게시글 신고인지 댓글 신고인지
+	// 대상 종류 (게시글 / 댓글)
 	public enum TargetType {
 		POST, COMMENT
 	}
 
-	// 화면에 뿌리기 위해 게시글 신고/댓글 신고를 한 형태로 합친 값
+	// 게시글·댓글 신고를 한 형태로 합친 목록 항목
 	public record ReportItem(
 			TargetType targetType,
-			Long targetId,				// postId 또는 commentId - 기각/삭제 액션에 사용
+			Long targetId,				// postId 또는 commentId
 			ReportStatus status,
 			long reportCount,			// 이 대상에 대해 처리 대기 중인 신고 건수
 			ReportReason latestReason,	// 가장 최근 신고의 사유
@@ -61,7 +55,7 @@ public class AdminReportService {
 	) {
 	}
 	
-	// 목록 하나를 페이지 단위로 잘라서 돌려주기 위한 공용 껍데기
+	// 페이지 단위 목록 결과
 	public record PageResult<T>(List<T> content, int page, int size, long totalElements) {
 		public int totalPages() {
 			return size == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
@@ -146,7 +140,7 @@ public class AdminReportService {
 		return new PageResult<>(pageContent, page, size, items.size());
 	}
 
-	// 목록/카드에 너무 긴 본문이 그대로 노출되지 않도록 앞부분만 자름
+	// 긴 본문은 앞부분만 자른다.
 	private String excerpt(String content) {
 		if (content == null) {
 			return "";
@@ -155,7 +149,7 @@ public class AdminReportService {
 		return trimmed.length() > 80 ? trimmed.substring(0, 80) + "…" : trimmed;
 	}
 	
-	// 신고 기각 - 이 게시글에 걸린 처리 대기 신고를 전부 DISMISSED로 바꾼다
+	// 신고 기각 - 처리 대기 신고를 DISMISSED 로 바꾼다.
 	public void dismissPostReports(
 			Long postId,
 			Long adminId,
@@ -202,7 +196,7 @@ public class AdminReportService {
 				ipAddress);
 	}
 	
-	// 신고된 게시글 자체를 삭제 - PostService.deletePost가 그 글에 걸린 신고 기록까지 함께 지워줌
+	// 신고된 게시글 삭제 (신고 기록도 함께 삭제됨)
 	public void deleteReportedPost(
 			Long postId, User admin, String ipAddress) {
 		Post post = postService.getPost(postId);
@@ -220,7 +214,7 @@ public class AdminReportService {
 	}
 	
 	
-	// 신고된 댓글 자체를 삭제 - CommentService.deleteComment가 그 댓글에 걸린 신고 기록까지 함께 지워줌
+	// 신고된 댓글 삭제 (신고 기록도 함께 삭제됨)
 	public void deleteReportedComment(
 			Long commentId, User admin, String ipAddress) {
 		Comment comment = commentService.getComment(commentId);
@@ -236,18 +230,18 @@ public class AdminReportService {
 				ipAddress);
 	}
 	
-	// 작성자 계정 정지 (제재) - 신고 처리와는 별개로, 필요하면 신고를 남긴 채로도 제재만 먼저 할 수 있음
+	// 작성자 계정 정지 (신고 처리와 별개로 가능)
 	public void suspendUser(Long userId, Long adminId, String ipAddress) {
 		aus.suspendUser(userId, adminId, ipAddress);
 	}
 	
-	// 제재 대상 목록 - 현재 정지 상태인 회원 전체
+	// 정지 상태 회원 목록
 	@Transactional(readOnly = true)
 	public List<User> listSuspendedUsers() {
 		return userRepository.findByStatus(UserStatus.SUSPENDED);
 	}
 	
-	// 정지 해제 - 다시 로그인 가능한 상태로 도디ㅗㄹ림
+	// 정지 해제
 	public void reinstateUser(Long userId, Long adminId, String ipAddress) {
 		aus.reinstateUser(userId, adminId, ipAddress);
 	}

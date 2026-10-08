@@ -18,10 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
-/**
- * 검증 메시지는 {project.validation.*} 키로 두고, Spring Boot 기본 검증기가
- * messages*.properties에서 현재 로케일 문구를 찾아 끼워 넣는다(MessageSourceMessageInterpolator).
- */
+/** 검증 메시지는 {project.validation.*} 키로 두고 현재 로케일 문구로 채운다. */
 @Getter
 @Setter
 public class ProjectRequestDTO {
@@ -43,8 +40,7 @@ public class ProjectRequestDTO {
     @Max(value = 3_000_000, message = "{project.validation.goalMax}")
     private Long goalAmount;
 
-    // 화면에서는 날짜(년월일)만 받는다. 시각은 ProjectService에서 붙인다.
-    // (시작일 00:00:00 / 마감일 23:59:59 - fan_project 컬럼은 그대로 DATETIME(6))
+    // 날짜만 받고 시각(00:00:00 / 23:59:59)은 서비스에서 붙인다.
     @NotNull(message = "{project.validation.startRequired}")
     @FutureOrPresent(message = "{project.validation.startNotPast}")
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
@@ -62,11 +58,11 @@ public class ProjectRequestDTO {
     @NotBlank(message = "{project.validation.emailVerificationRequired}")
     private String emailVerificationKey;
 
-    // select의 value는 enum 이름, 표시 문구는 SettlementBank.displayName을 사용한다.
+    // select 값은 enum 이름, 표시는 displayName
     @NotNull(message = "{project.validation.bankRequired}")
     private SettlementBank settlementBank;
 
-    // 예금주명은 로그인 회원의 본인인증 실명(User.realName)을 사용한다.
+    // 예금주명은 회원 실명을 쓴다.
     @NotBlank(message = "{project.validation.accountNumberRequired}")
     @Pattern(regexp = "^[0-9]{6,30}$", message = "{project.validation.accountNumberPattern}")
     private String accountNumber;

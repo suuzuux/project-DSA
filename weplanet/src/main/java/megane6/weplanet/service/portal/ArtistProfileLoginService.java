@@ -19,29 +19,25 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-/**
- * 프로필 선택(2단계 로그인).
- * 그룹 로그인을 통과한 사람에게 멤버 목록을 보여주고, 고른 멤버의 개인 비밀번호를 확인한다.
- * 개인 비밀번호가 아직 없는 멤버는 이 자리에서 처음 정한다.
- */
+/** 프로필 선택(2단계 로그인) - 멤버 개인 비밀번호 확인 (없으면 처음 설정). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ArtistProfileLoginService {
 	
-	// 회원가입/계정 활성화와 같은 규칙
+	// 회원가입과 같은 비밀번호 규칙
 	private static final Pattern PASSWORD_PATTERN
 			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
 	
-	// 개인 비밀번호를 5회 틀리면 그 프로필은 10분 동안 로그인할 수 없다 (다른 멤버 비밀번호 무한 대입 방지).
+	// 5회 틀리면 그 프로필은 10분 잠금 (비밀번호 대입 방지)
 	private static final int MAX_FAILED_ATTEMPTS = 5;
 	private static final long LOCK_MINUTES = 10;
 	
 	private final UserRepository ur;
 	private final GroupMemberRepository gmr;
 	private final PasswordEncoder pe;
-	// memberId → 틀린 횟수/잠금 해제 시각 (서버 메모리 - 재시작하면 초기화)
+	// memberId → 실패 횟수·잠금 해제 시각 (메모리)
 	private final Map<Long, FailedAttempts> failedAttempts = new ConcurrentHashMap<>();
 	
 	public ProfileScreen loadScreen(Long groupId) {
@@ -59,7 +55,7 @@ public class ArtistProfileLoginService {
 	
 	@Transactional
 	public User authenticate(Long groupId, Long memberId, String password, String confirmPassword) {
-		// 폼의 memberId는 조작될 수 있으므로, "이 그룹의 활동 중인 멤버"인지 DB로 다시 확인
+		// 폼의 memberId 를 신뢰하지 않고 이 그룹의 활동 멤버인지 다시 확인한다.
 		User member = gmr.findByGroupIdAndMember_IdAndLeftAtIsNull(groupId, memberId)
 				.map(GroupMember::getMember)
 				.orElseThrow(() -> new IllegalArgumentException("error.profileLogin.profileNotFound"));
@@ -78,7 +74,7 @@ public class ArtistProfileLoginService {
 		}
 		
 		if (!member.hasPassword()) {
-			// 처음 고른 프로필: 지금 입력한 값을 개인 비밀번호로 정한다.
+			// 처음 고른 프로필은 입력값을 개인 비밀번호로 정한다.
 			if (!PASSWORD_PATTERN.matcher(password).matches()) {
 				throw new IllegalArgumentException("signup.validation.passwordPattern");
 			}
@@ -106,7 +102,7 @@ public class ArtistProfileLoginService {
 		return member;
 	}
 	
-	// 틀린 횟수와 잠금 해제 시각. 5회째에 잠금 시각이 정해지고, 그 시각이 지나면 처음부터 다시 센다.
+	// 실패 횟수와 잠금 해제 시각 (5회째 잠금)
 	private record FailedAttempts(int count, LocalDateTime lockedUntil) {
 		static FailedAttempts first() {
 			return new FailedAttempts(1, null);
@@ -123,9 +119,9 @@ public class ArtistProfileLoginService {
 		}
 	}
 	
-	// 프로필 원 하나에 필요한 정보
+	// 프로필 카드 정보
 	public record ProfileCard(Long memberId, String name, boolean passwordSet) {}
 	
-	// 프로필 선택 화면 전체
+	// 프로필 선택 화면 정보
 	public record ProfileScreen(Long groupId, String groupName, List<ProfileCard> profiles) {}
 }

@@ -8,11 +8,7 @@ import megane6.weplanet.domain.entity.enumfolder.BannerType;
 
 import java.time.LocalDateTime;
 
-/**
- * 메인 페이지(/) 상단 배너. 최고관리자가 [통합 대시보드 > 배너 영역 관리]에서 관리한다.
- * 위버스 배너처럼 "아티스트 영문명 / 대제목 / 본문 / 이미지"로 구성되고,
- * 배경색은 이미지에서 뽑은 대표색(bgColor)을 쓴다. 글자색(textColor)은 배경 밝기에 맞춰 흰색/차콜 중 하나.
- */
+/** 메인 상단 배너 (영문명·제목·본문·이미지, 배경색은 이미지 대표색). */
 @Entity
 @Table(name = "main_banner")
 @Getter
@@ -27,12 +23,12 @@ public class MainBanner {
 	@Column(name = "banner_type", nullable = false, length = 20)
 	private BannerType bannerType;
 
-	// 홍보할 아티스트(커뮤니티 = 그룹 계정 users.id). 배너의 영문명 표시와 커뮤니티 링크에 쓴다
+	// 홍보할 아티스트 (영문명 표시와 커뮤니티 링크용)
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "artist_id", nullable = false)
 	private User artist;
 
-	// 상품 홍보일 때만 - 클릭하면 이 상품 상세로 간다
+	// 상품 홍보일 때 연결할 상품
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "goods_id")
 	private Goods goods;
@@ -52,7 +48,7 @@ public class MainBanner {
 	@Column(name = "text_color", nullable = false, length = 7)
 	private String textColor;
 
-	// 메인에 노출할지 (끄면 목록에는 남고 메인에서만 빠진다)
+	// 메인 노출 여부 (끄면 목록에만 남음)
 	@Column(nullable = false)
 	private boolean active;
 

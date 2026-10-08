@@ -95,8 +95,7 @@ public class AdminPartnershipApplicationService {
 		
 		application.approve(admin);
 		
-		// 계정 발급이 실패하면 승인 자체가 롤백됨
-		// "승인은 됐는데 계정이 없는" 상태를 만들기 않기 위해서
+		// 계정 발급이 실패하면 승인도 롤백된다.
 		AgencyAccountProvisioningService.ProvisionedAccount account
 				= provisioningService.provision(application, admin, agencyName);
 		
@@ -150,7 +149,7 @@ public class AdminPartnershipApplicationService {
 			throw new IllegalStateException("admin.error.partnership.resendOnlyApproved");
 		}
 		
-		// 승인할 때 신청서 이메일을 그대로 로그인 아이디로 만들었으므로, 같은 값으로 찾는다.
+		// 신청서 이메일이 로그인 아이디라 같은 값으로 찾는다.
 		User agencyUser = userRepository.findByUsername(application.getEmail())
 				.orElseThrow(() -> new IllegalStateException("admin.error.partnership.agencyAccountNotFound"));
 		
@@ -259,13 +258,13 @@ public class AdminPartnershipApplicationService {
 		return keyword.trim();
 	}
 	
-	// 승인 결과. 컨트롤러가 이 정보로 초대 메일을 보낸다.
+	// 승인 결과 (컨트롤러가 초대 메일 발송에 사용)
 	public record ApprovalResult(
 			PartnershipApplication application,
 			AgencyAccountProvisioningService.ProvisionedAccount account
 	) {}
 	
-	// 재발송 결과. 컨트롤러가 이 정보로 새 링크를 메일로 보낸다.
+	// 재발송 결과 (컨트롤러가 새 링크 메일 발송에 사용)
 	public record ResendResult(
 			PartnershipApplication application,
 			String username,

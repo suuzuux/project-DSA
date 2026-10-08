@@ -5,9 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-// 커뮤니티 가입 + 그 커뮤니티 전용 프로필.
-// 테이블 간소화: 예전 community_profiles 를 이 테이블에 합쳤다. 가입할 때 프로필이 항상 같이 만들어지는 1:1 관계였다.
-// nickname varchar(10), bio varchar(30) - 스키마 길이 제한 그대로 반영.
+// 커뮤니티 가입과 커뮤니티 전용 프로필 (닉네임 10자, 소개 30자).
 @Entity
 @Table(name = "community_members", uniqueConstraints = @UniqueConstraint(columnNames = {"fan_id", "artist_id"}))
 @Data
@@ -30,7 +28,7 @@ public class CommunityMember {
 	@Column(name = "joined_at", nullable = false, updatable = false)
 	private LocalDateTime joinedAt;
 
-	// ---- 커뮤니티별 프로필 (예전 community_profiles) ----
+	// 커뮤니티별 프로필
 
 	@Column(nullable = false, length = 10)
 	private String nickname;

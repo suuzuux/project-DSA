@@ -29,7 +29,7 @@ public class ProjectSettlementAccount {
     @Column(name = "bank_code", nullable = false, length = 3)
     private SettlementBank bank;
 
-    // 평문이 아닌 실제 암호화 결과(byte[])만 저장한다.
+    // 암호화된 바이트만 저장한다.
     @Column(name = "account_number_enc", nullable = false, columnDefinition = "VARBINARY(512)")
     private byte[] accountNumberEncrypted;
 

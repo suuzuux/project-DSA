@@ -32,7 +32,7 @@
         <h1 class="notice-article__title" th:text="${notice.title}">공지 제목</h1>
         <p class="notice-article__date"
            th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2026.08.31 16:00</p>
-        <!-- 번역보기 (게시글과 같은 방식) - 내 기본 서비스 언어로 제목·본문을 AI 번역해 원문 위에 보여준다 -->
+        <!-- 공지 AI 번역 (기본 서비스 언어) -->
         <a href="#" class="translate-link" data-notice-translate data-target="noticeTranslated"
            th:data-url="@{/community/{artistId}/notice/{noticeId}/translate(artistId=${artist.id()},noticeId=${notice.id})}"
            th:data-label-show="#{community.translate.show}" th:data-label-loading="#{client.translate.loading}"

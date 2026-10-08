@@ -17,11 +17,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequiredArgsConstructor
 public class CollectionController {
-	/**
-	 * 나의 컬렉션(배지) 화면
-	 * 로그인한 본인의 배지만 보는 화면이라 url > fanId 받지 X
-	 * 항상 고르인 정보(principal)에서 꺼내 씀
-	 */
+	/** 로그인한 본인의 배지 컬렉션 화면 (fanId 를 URL 로 받지 않음). */
 	private final CollectionService cs;
 	private final ProjectContributionService pcs;
 	private final BadgePeriodService bps;
@@ -34,12 +30,11 @@ public class CollectionController {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		// 아티스트·멤버 계정은 배지를 받지 않으므로 컬렉션 화면을 쓰지 않는다 (메뉴도 shell.js 에서 숨김)
+		// 아티스트·멤버 계정은 배지를 받지 않아 컬렉션을 쓰지 않는다.
 		if (isArtistAccount(principal)) {
 			return "redirect:/";
 		}
-		// 기간 배지는 스케줄러가 새벽에 확인하지만, 화면에 들어올 때 한 번 더 확인해서
-		// 조건을 채운 배지가 바로 보이게 한다 (본인 것만 확인)
+		// 화면 진입 시 본인 기간 배지를 한 번 더 확인해 바로 보이게 한다.
 		bps.checkForFan(principal.getId());
 		
 		model.addAttribute("cards", cs.getMyCollection(principal.getId()));
@@ -51,10 +46,7 @@ public class CollectionController {
 		return "collection";
 	}
 	
-	/**
-	 * 전체보기 모달 내용. 화면 전체를 새로 그리지 않고 이 부분만 받아간다.
-	 * JS가 fetch로 받아서 모달을 채움
-	 */
+	/** 전체보기 모달 내용만 부분 렌더링한다 (JS 가 fetch). */
 	@GetMapping("/collection/{artistId}")
 	@ResponseBody
 	public BadgeCollectionView badgeCollection(

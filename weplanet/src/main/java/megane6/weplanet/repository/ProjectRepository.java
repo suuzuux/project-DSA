@@ -16,8 +16,7 @@ import java.util.List;
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    // 역할별 공개 범위는 ProjectService에서 적용한다. creator는 카드 DTO 변환에
-    // 항상 필요하므로 한 번에 가져와 목록 조회 시 N+1 쿼리를 막는다.
+    // creator 를 함께 조회 (N+1 방지, 공개 범위는 서비스에서 적용).
     @EntityGraph(attributePaths = "creator")
     List<Project> findByArtistAndDeletedAtIsNull(User artist);
     
@@ -31,7 +30,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByStatusAndDeletedAtIsNullOrderByCreatedAtAsc(
             FanProjectStatus status);
     
-    // 관리자 화면에서 검색 가능 (상태별, 키워드, 삭제된 프로젝트, 최신 프로젝트)
+    // 관리자 검색 (상태·키워드·삭제 여부)
     @EntityGraph(attributePaths = {
             "artist",
             "creator",

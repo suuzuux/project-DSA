@@ -14,10 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * 설정 화면 "이메일 변경" 전 본인 확인 - 현재 비밀번호가 맞으면 이 세션에 10분 동안 확인 완료를 남긴다.
- * 인증코드 발송·최종 저장은 이 기록이 있어야 통과한다. 5회 틀리면 10분 잠금, 비밀번호가 없는 소셜 전용 계정은 항상 통과.
- */
+/** 이메일 변경 전 비밀번호 확인 - 10분 유지, 5회 실패 시 10분 잠금, 소셜 전용 계정은 통과. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -30,20 +27,15 @@ public class EmailChangeAuthService {
 	private static final String SESSION_ATTR = "weplanet.emailChangeAuth";
 
 	private final PasswordEncoder passwordEncoder;
-	// userId → 틀린 횟수/잠금 해제 시각 (서버 메모리 - 재시작하면 초기화)
+	// userId → 실패 횟수·잠금 해제 시각 (메모리)
 	private final Map<Long, FailedAttempts> failedAttempts = new ConcurrentHashMap<>();
 
-	/** 이메일을 바꾸기 전에 비밀번호 확인이 필요한 계정인지 (비밀번호가 있는 계정만) */
+	/** 비밀번호 확인이 필요한 계정인지 */
 	public boolean requiresPassword(User user) {
 		return user.hasPassword();
 	}
 
-	/**
-	 * 현재 비밀번호를 확인하고, 맞으면 이 세션에 본인 확인 완료를 기록한다.
-	 *
-	 * @throws IllegalArgumentException 비밀번호가 비었거나 틀린 경우 (메시지 키 - 컨트롤러가 Messages.resolve(e)로 번역)
-	 * @throws IllegalStateException    5회 오입력으로 잠긴 경우
-	 */
+	/** 비밀번호가 맞으면 이 세션에 확인 완료를 기록한다. */
 	public void confirmPassword(HttpSession session, User user, String password) {
 		if (!requiresPassword(user)) {
 			authorize(session, user);
@@ -70,7 +62,7 @@ public class EmailChangeAuthService {
 		authorize(session, user);
 	}
 
-	/** 이 세션에서 이 계정으로 이메일 변경 본인 확인을 마쳤는지 (소셜 전용 계정은 항상 true) */
+	/** 이 세션에서 본인 확인을 마쳤는지 (소셜 전용은 항상 true) */
 	public boolean isAuthorized(HttpSession session, User user) {
 		if (!requiresPassword(user)) {
 			return true;
@@ -84,7 +76,7 @@ public class EmailChangeAuthService {
 				&& LocalDateTime.now().isBefore(auth.expiresAt());
 	}
 
-	/** 이메일 변경을 저장했으면 확인 기록을 지운다 (다음 변경 때 다시 확인) */
+	/** 이메일 변경 후 확인 기록 삭제 */
 	public void clear(HttpSession session) {
 		if (session != null) {
 			session.removeAttribute(SESSION_ATTR);
@@ -103,7 +95,7 @@ public class EmailChangeAuthService {
 	private record Authorization(Long userId, LocalDateTime expiresAt) implements Serializable {
 	}
 
-	// 틀린 횟수와 잠금 해제 시각. 5회째에 잠금 시각이 정해지고, 그 시각이 지나면 처음부터 다시 센다.
+	// 실패 횟수와 잠금 해제 시각 (5회째 잠금)
 	private record FailedAttempts(int count, LocalDateTime lockedUntil) {
 		static FailedAttempts first() {
 			return new FailedAttempts(1, null);

@@ -14,10 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * 관리자 "통합 신고 · 제재" 화면.
- * 게시글 신고 + 댓글 신고를 한 목록에서 보고, 기각/대상 삭제/작성자 제재를 처리한다.
- */
+/** 관리자 통합 신고·제재 - 게시글·댓글 신고 기각, 대상 삭제, 작성자 제재. */
 @Controller
 @RequestMapping("/admin/reports")
 @RequiredArgsConstructor
@@ -25,7 +22,7 @@ public class AdminReportController {
 
 	private final AdminReportService adminReportService;
 	private final AuthenticatedUserResolver userResolver;
-	// 게시글/댓글 서비스 예외(메시지 키)를 화면에 내보낼 때 번역한다
+	// 서비스 예외(메시지 키)를 화면 문구로 번역한다.
 	private final megane6.weplanet.i18n.Messages messages;
 
 	@GetMapping
@@ -168,7 +165,7 @@ public class AdminReportController {
 		return "redirect:/admin/reports";
 	}
 
-	// 성공/실패 메시지를 매번 똑같이 반복하지 않기 위한 공통 처리
+	// 성공·실패 메시지 처리 공통 메서드.
 	private void handle(Runnable action, String successMessage, RedirectAttributes redirectAttributes) {
 		try {
 			action.run();

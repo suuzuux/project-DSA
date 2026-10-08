@@ -2,10 +2,7 @@ package megane6.weplanet.domain.dto.event;
 
 import java.time.format.DateTimeFormatter;
 
-/**
- * 집계 확정된 해시태그 총공의 "결과 공지" 초안 (제목 + 마크다운 본문).
- * 관리자 모니터링의 [결과 공지 작성] → 공지 글쓰기 폼에 미리 채워진다. 관리자가 자유롭게 고쳐서 등록하면 된다.
- */
+/** 확정된 총공의 결과 공지 초안 (제목 + 마크다운 본문). */
 public record HashtagResultNoticeDraft(
 		String title,
 		String content
@@ -41,7 +38,7 @@ public record HashtagResultNoticeDraft(
 					.append(" |\n");
 		}
 		
-		// 공지 본문 링크 → 공개 이벤트 페이지(그 회차)의 전체 순위로 바로 이동
+		// 공개 이벤트 페이지의 전체 순위 링크
 		md.append("\n👉 [최종 순위 자세히 보기](/events/hashtag/").append(d.eventId()).append("?all=true#ranking)\n\n");
 		md.append("다음 해시태그 총공에도 많은 참여 부탁드려요!");
 		

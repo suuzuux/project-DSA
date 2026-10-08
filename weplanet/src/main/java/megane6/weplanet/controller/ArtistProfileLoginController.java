@@ -23,11 +23,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Locale;
 
-/*
-	아티스트 2단계 로그인 - 프로필 선택 화면 (와이어프레임 51쪽)
-	아직 로그인되지 않은 상태로 들어오므로 SecurityConfig 에서 공개 URL 로 열어두고,
-	대신 세션의 "대기 그룹 id"(ArtistProfileLoginSupport)가 있어야만 화면을 보여준다.
- */
+// 아티스트 2단계 로그인의 프로필 선택 화면 (세션에 대기 그룹 id 가 있어야 표시).
 @Controller
 @RequestMapping("/portal/profiles")
 @RequiredArgsConstructor
@@ -58,7 +54,7 @@ public class ArtistProfileLoginController {
 		return "portal/profiles";
 	}
 	
-	// "다른 그룹 계정으로 로그인" - 대기 상태를 지우고 1단계로
+	// 다른 그룹 계정으로 로그인 - 대기 상태를 지우고 1단계로 돌아간다.
 	@PostMapping("/cancel")
 	public String cancel(HttpSession session) {
 		ArtistProfileLoginSupport.clear(session);
@@ -90,11 +86,10 @@ public class ArtistProfileLoginController {
 		
 		ArtistProfileLoginSupport.clear(session);
 		
-		// 로그인 직전에 세션 id 를 바꾼다 (세션 고정 공격 방지 - 폼 로그인은 Spring Security 가 해주지만 여기선 직접)
+		// 세션 고정 공격을 막기 위해 로그인 직전에 세션 id 를 바꾼다.
 		request.changeSessionId();
 		sessionSupport.loginAs(member, request, response);
-		// 프로필 선택도 새로 로그인하는 지점이라 화면 언어를 다시 맞춘다.
-		// 포털 로그인 화면에서 언어를 골랐으면 그 언어를 유지해 멤버 계정에 저장하고, 아니면 멤버의 선호 언어로 보여준다.
+		// 로그인 화면에서 고른 언어가 있으면 유지하고, 없으면 멤버의 선호 언어로 맞춘다.
 		if (PreferredLocaleResolver.hasExplicitChoice(request)) {
 			Locale chosen = localeResolver.resolveLocale(request);
 			userService.updateLanguage(member, PreferredLocaleResolver.toLanguage(chosen));

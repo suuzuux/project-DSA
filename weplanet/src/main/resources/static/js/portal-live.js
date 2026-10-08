@@ -1,6 +1,4 @@
-/**
- * 아티스트 포털 라이브 호스트: 카메라 프리뷰 + WebRTC 송출 + 실시간 댓글.
- */
+/** 포털 라이브 호스트 - 카메라 프리뷰, WebRTC 송출, 실시간 댓글 */
 (function () {
     "use strict";
 
@@ -20,7 +18,7 @@
     const commentForm = document.getElementById("live-comment-form");
     const commentInput = document.getElementById("live-comment-input");
 
-    // live.html 이 넘겨준 문구(window.PORTAL_I18N)를 쓰고, 없으면 한국어 기본값
+    // 페이지가 넘겨준 문구 (없으면 한국어 기본값)
     const I18N = window.PORTAL_I18N || {};
     const t = (key, ko) => (I18N[key] != null ? I18N[key] : ko);
 
@@ -36,7 +34,7 @@
     const viewers = new Set();
     let mediaRecorder = null;
     const recordedChunks = [];
-    // 아티스트 말을 텍스트로 바꿔 서버로 보내면 AI 팬이 라이브 채팅에 댓글을 단다 (Chrome/Edge 전용 Web Speech API)
+    // 아티스트 발화를 텍스트로 보내 AI 팬 댓글을 받는다 (Chrome/Edge Web Speech API).
     const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
     let speechWanted = false;
@@ -187,7 +185,7 @@
                 console.warn("[LIVE] 음성 인식 오류", event.error);
             }
         };
-        // 말이 한동안 없으면 브라우저가 인식을 스스로 끝내므로, 방송 중이면 다시 켠다
+        // 브라우저가 인식을 끝내면 방송 중일 때 다시 켠다.
         recognition.onend = function () {
             if (!speechWanted || !recognition) return;
             setTimeout(function () {

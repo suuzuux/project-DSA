@@ -35,14 +35,14 @@
 
     <h1 style="font-size:var(--wp-fs-lg);margin:12px 0 6px;" th:text="${post.title}"></h1>
 
-    <!-- 와이어프레임 기준: 본문 위에 번역보기 링크 (Gemini로 영어 번역) -->
+    <!-- 번역보기 -->
     <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" style="margin-top:0;" th:text="#{community.translate.show}">번역보기</a>
     <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
 
-    <!-- Toast UI Editor(외부 라이브러리)가 여기에 마크다운 본문을 예쁘게 그려줌 (아래 스크립트 참고) -->
+    <!-- Toast UI 뷰어가 마크다운 본문을 그린다. -->
     <div id="contentViewer" class="post-card__body"></div>
 
-    <!-- 첨부파일 - 이미지는 와이어프레임처럼 큼직한 "사진" 영역으로, 그 외 파일(pdf 등)은 다운로드 링크로 보여줌 -->
+    <!-- 첨부파일 (이미지는 크게, 그 외는 다운로드 링크) -->
     <div th:if="${not #lists.isEmpty(attachments)}" class="post-card__media" style="margin-top:12px;">
         <div th:each="file : ${attachments}">
             <img th:if="${file.image}" th:src="@{'/uploads/' + ${file.storedName}}" th:alt="${file.originalName}"
@@ -52,7 +52,7 @@
         </div>
     </div>
 
-    <!-- 와이어프레임 기준: 하단에 좋아요/댓글/북마크 아이콘 고정, 숫자는 0이면 표시 안 함 -->
+    <!-- 좋아요·댓글·북마크 (0이면 숫자 숨김) -->
     <div class="post-card__actions">
         <span style="display:flex;align-items:center;gap:6px;">
             <button id="likeButton" type="button" style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;">
@@ -107,7 +107,7 @@
             <button type="submit" class="btn btn--primary btn--block btn--sm" style="margin-top:6px;" th:text="#{feed.commentSubmit}">등록</button>
         </form>
         <script>
-            // 댓글 입력창 글자수 카운터 (댓글 목록이 fetch로 통째로 바뀔 때마다 이 script도 같이 다시 실행됨)
+            // 댓글 글자 수 카운터 (목록이 바뀔 때마다 다시 실행)
             (function () {
                 const input = document.getElementById('commentContentInput');
                 const counter = document.getElementById('commentCharCount');
@@ -120,7 +120,7 @@
         </script>
     </div>
 
-    <!-- 아티스트 댓글 - 와이어프레임: 항상 최상단 별도 박스, 화살표로 접기/펼치기 -->
+    <!-- 아티스트 댓글 (최상단 박스, 접기·펼치기) -->
     <div th:if="${not #lists.isEmpty(artistComments)}" class="post-card" style="margin-top:12px;">
         <div class="flex-between" style="cursor:pointer;" onclick="document.getElementById('artistCommentBox').classList.toggle('is-collapsed'); this.querySelector('.collapse-arrow').textContent = this.querySelector('.collapse-arrow').textContent === '▲' ? '▼' : '▲';">
             <strong class="text-sm"><th:block th:text="#{feed.artistComments}">아티스트 댓글</th:block> <span th:text="${#lists.size(artistComments)}"></span></strong>
@@ -206,13 +206,12 @@
 </div>
 
 <style>
-    /* 아티스트 댓글 접기 상태 - JS가 이 클래스를 토글해서 여닫음 */
+    /* 아티스트 댓글 접기 상태 */
     #artistCommentBox.is-collapsed { display: none; }
 </style>
 
 <script th:inline="javascript">
-    // Thymeleaf가 이 부분(/*[[${post.id}]]*/)을 서버에서 실제 게시글 번호로 바꿔치기해줌.
-    // 그래서 자바스크립트에서도 "지금 보고 있는 게시글이 몇 번인지" 알 수 있음
+    // 서버 값으로 현재 게시글 번호를 넘긴다.
     const postId = /*[[${post.id}]]*/ 0;
     const FEED_I18N = {
         translate: /*[[#{community.translate.show}]]*/ '번역보기',
@@ -224,7 +223,7 @@
         summaryTitle: /*[[#{feed.summaryTitle}]]*/ 'AI 요약'
     };
 
-    // ----- 좋아요 버튼 -----
+    // 좋아요 버튼
     document.getElementById('likeButton').addEventListener('click', function () {
         fetch(`/posts/detail/${postId}/like`, {method: 'POST'})
             .then(function (response) {
@@ -235,7 +234,7 @@
             });
     });
 
-    // ----- 북마크 버튼 -----
+    // 북마크 버튼
     document.getElementById('bookmarkButton').addEventListener('click', function () {
         const btn = this;
 
@@ -249,12 +248,12 @@
             });
     });
 
-    // ----- 게시글 번역보기 (Gemini) -----
+    // 게시글 번역보기
     document.getElementById('postTranslateLink').addEventListener('click', function () {
         const link = this;
         const textArea = document.getElementById('postTranslatedText');
 
-        // 이미 번역문이 보이는 상태면, 다시 누를 때 원문만 보이게 접어줌 (토글)
+        // 번역문이 보이면 다시 눌러 접는다.
         if (textArea.style.display !== 'none') {
             textArea.style.display = 'none';
             link.textContent = FEED_I18N.translate;
@@ -274,7 +273,7 @@
             });
     });
 
-    // ----- 댓글 번역보기 (아티스트 댓글/전체 댓글 공통, 이벤트 위임으로 처리) -----
+    // 댓글 번역보기 (이벤트 위임)
     document.addEventListener('click', function (e) {
         if (!e.target.classList.contains('comment-translate-link')) {
             return;
@@ -302,7 +301,7 @@
             });
     });
 
-    // ----- 게시글 신고 폼 -----
+    // 게시글 신고 폼
     document.getElementById('postReportForm').addEventListener('submit', function (e) {
         e.preventDefault();
         const form = e.target;
@@ -323,7 +322,7 @@
             });
     });
 
-    // ----- AI 요약 버튼 -----
+    // AI 요약 버튼
     document.getElementById('summarizeButton').addEventListener('click', function () {
         const area = document.getElementById('summaryArea');
         area.innerHTML = '<p></p>';
@@ -343,9 +342,7 @@
             });
     });
 
-    // 댓글 작성 폼과 댓글 삭제 폼은 여러 개(댓글 개수만큼) 반복해서 화면에 생기고,
-    // 댓글 목록이 갱신될 때마다 새로 만들어지므로, 폼 하나하나에 직접 이벤트를 걸지 않고
-    // "document 전체에 이벤트를 걸어두고, 그 안에서 어떤 폼이 제출됐는지 확인하는" 방식(이벤트 위임)을 씀.
+    // 댓글 작성·삭제 폼은 이벤트 위임으로 처리한다.
     document.addEventListener('submit', function (e) {
         const form = e.target;
 
@@ -390,7 +387,7 @@
 
 <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 <style>
-    /* 유튜브 링크가 본문에 있으면 이 박스 안에 실제 영상 플레이어로 바꿔서 보여줌 (16:9 반응형) */
+    /* 유튜브 임베드 (16:9 반응형) */
     .video-embed {
         position: relative;
         padding-bottom: 56.25%;
@@ -408,15 +405,14 @@
     }
 </style>
 <script th:inline="javascript">
-    // 게시글 본문(마크다운 문법으로 저장된 텍스트)을, 사람이 보기 좋은 형태로 그려주는
-    // 외부 라이브러리(Toast UI Editor)를 "뷰어 모드"로 초기화하는 코드
+    // Toast UI 뷰어 초기화
     new toastui.Editor.factory({
         el: document.querySelector('#contentViewer'),
         viewer: true,
         initialValue: /*[[${post.content}]]*/ ''
     });
 
-    // 와이어프레임 기준: 본문에 유튜브 링크가 있으면 링크 대신 실제 영상을 띄워줌.
+    // 본문 유튜브 링크를 영상으로 바꾼다.
     setTimeout(embedYoutubeLinks, 0);
 
     function embedYoutubeLinks() {

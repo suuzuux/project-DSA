@@ -36,14 +36,11 @@ public class PostDetailModelHelper {
 		populate(model, post, currentUser, null);
 	}
 
-	// [닉네임 관리] artistId가 있으면(커뮤니티 게시글 상세) 작성자/댓글 작성자 닉네임을
-	// 커뮤니티 가입 닉네임으로 통일해서 보여준다. artistId가 null이면(레거시 전역 게시판) 계정 닉네임 그대로.
+	// 커뮤니티 글이면 작성자 닉네임을 가입 닉네임으로 보여준다 (artistId 가 없으면 계정 닉네임).
 	public void populate(Model model, Post post, User currentUser, Long artistId) {
 		List<Comment> comments = commentService.getComments(post);
 
-		// [대댓글] 목록에는 원댓글만 올리고, 답글은 부모 id별로 묶어서 따로 넘긴다.
-		// 키를 문자열로 쓰는 이유는 authorNicknames와 마찬가지로 Thymeleaf에서 Long 키 조회가
-		// 타입 때문에 어긋나는 일을 피하기 위함 (repliesByParentId.get('' + comment.id) 형태로 씀)
+		// 원댓글만 목록에 두고 답글은 부모 id(문자열 키)별로 묶는다.
 		Map<String, List<Comment>> repliesByParentId = comments.stream()
 				.filter(c -> c.getParent() != null)
 				.collect(Collectors.groupingBy(
@@ -53,7 +50,7 @@ public class PostDetailModelHelper {
 		// 답글도 최신순(새 답글이 맨 위)
 		repliesByParentId.values().forEach(Collections::reverse);
 
-		// 원댓글은 최신순(새 댓글이 맨 위). 조회 결과가 오래된 순이라 뒤집기만 한다.
+		// 원댓글은 최신순 (조회 결과를 뒤집음).
 		List<Comment> rootComments = new ArrayList<>(comments.stream()
 				.filter(c -> c.getParent() == null)
 				.toList());

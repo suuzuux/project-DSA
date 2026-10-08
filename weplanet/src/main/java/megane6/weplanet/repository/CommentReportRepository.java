@@ -22,18 +22,17 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
     // 같은 사람이 같은 댓글을 이미 신고했는지 확인
     Optional<CommentReport> findByCommentAndReporter(Comment comment, User reporter);
 
-    // 댓글 하나 삭제할 때, 그 댓글에 달린 신고 기록도 같이 지우기 위함
+    // 댓글 삭제 전 신고 기록 삭제
     void deleteByComment(Comment comment);
 
-    // 게시글이 삭제될 때, 그 게시글에 속한 모든 댓글의 신고 기록을 한 번에 지우기 위함
-    // (Comment.post 필드를 타고 들어가는 문법 - "Comment_Post")
+    // 게시글 삭제 시 그 게시글 댓글들의 신고 기록 삭제
     void deleteByComment_Post(Post post);
 
     List<CommentReport> findByComment_Post_ArtistOrderByCreatedAtDesc(User artist);
 
     long countByComment_Post_Artist(User artist);
 
-    // 관리자 "통합 신고 및 제재" 목록 - 특정 상태(예 : 대기중)인 신고만 최신순으로
+    // 관리자 신고 목록 - 상태별 최신순
     @Query("""
         SELECT cr FROM CommentReport cr
         WHERE cr.status = :status
@@ -76,7 +75,7 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
             ReportStatus status
     );
 
-    // 특정 유저가 이미 신고한 댓글 id 목록 (상세 화면에서 신고 상태 표시용)
+    // 내가 신고한 댓글 id 목록 (신고 상태 표시용)
     @Query("""
             SELECT r.comment.id FROM CommentReport r
             WHERE r.reporter = :reporter AND r.comment.id IN :commentIds

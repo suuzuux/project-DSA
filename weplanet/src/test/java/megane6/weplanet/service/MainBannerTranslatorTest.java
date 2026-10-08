@@ -63,7 +63,7 @@ class MainBannerTranslatorTest {
 		assertFalse(result.pending());
 	}
 
-	// 번역이 아직 없으면(시간 초과·실패) 원문 그대로 두고 pending - 화면이 번역문을 다시 받아 바꿔 끼운다
+	// 번역이 없으면 원문과 pending (화면이 다시 받아 교체)
 	@Test
 	void missingTranslationKeepsOriginalAndIsPending() {
 		LocaleContextHolder.setLocale(Locale.ENGLISH);

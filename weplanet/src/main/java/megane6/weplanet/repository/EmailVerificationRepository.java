@@ -17,7 +17,7 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
 	// 인증키를 이용한 일반 조회
 	Optional<EmailVerification> findByVerificationKey(String verificationKey);
 	
-	// 인증 성공 및 사용 완료 처리 시 중복 요청글을 막기 위한 잠금 조회
+	// 인증 완료 처리 시 중복 요청을 막는 잠금 조회
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 			SELECT verification
@@ -40,7 +40,7 @@ public interface EmailVerificationRepository extends JpaRepository<EmailVerifica
 			EmailVerificationPurpose emailVerificationPurpose
 	);
 	
-	// 소속사 활성화 메일 재발송 시 아직 사용하지 않은 이전 링크를 모두 무효화하기 위한 조회
+	// 활성화 메일 재발송 시 이전 미사용 링크를 무효화하기 위한 조회
 	List<EmailVerification> findByUser_IdAndPurposeAndConsumedAtIsNull(
 			Long userId, EmailVerificationPurpose emailVerificationPurpose
 	);

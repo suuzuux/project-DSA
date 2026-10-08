@@ -17,7 +17,7 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // CHAT-06 AI팬 계정처럼, DB가 초기화돼도 항상 같은 이름으로 찾을 수 있어야 하는 경우 사용
+    // AI 팬 계정처럼 고정 아이디로 찾을 때 사용
     Optional<User> findByUsername(String username);
     List<User> findByUsernameIn(List<String> usernames);
     Optional<User> findByEmail(String email);
@@ -26,14 +26,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByNickname(String nickname);
     boolean existsByEmail(String email);
 
-    // 닉네임 중복은 "같은 쪽" 계정끼리만 본다. 팬 닉네임과 아티스트(멤버) 닉네임은 겹쳐도 된다.
-    // 팬 쪽 검사: existsByNicknameAndRoleNotIn(nickname, Role.ARTIST_SIDE)
+    // 닉네임 중복은 같은 쪽(팬/아티스트) 계정끼리만 검사한다.
     boolean existsByNicknameAndRoleNotIn(String nickname, Collection<Role> roles);
-    // 그룹(커뮤니티) 이름 검사: existsByNicknameAndRole(name, Role.ARTIST)
+    // 그룹 이름 중복 검사
     boolean existsByNicknameAndRole(String nickname, Role role);
 
-    // DM 인박스(CHAT: 여러 아티스트 목록) 에서, 아직 대화 안 나눈 아티스트도 "추천" 칸에 보여주기 위해
-    // 시스템에 있는 아티스트 전체 목록이 필요함
+    // DM 추천 칸용 전체 아티스트 목록
     List<User> findByRole(Role role);
     
     long countByStatus(UserStatus status);
@@ -95,7 +93,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("role") Role role,
             @Param("status") UserStatus status,
             @Param("provider") AuthProvider provider,
-            // localOnly: 소셜 연동이 없는 계정(provider IS NULL)만. provider(특정 소셜) 필터와는 둘 중 하나만 쓴다 (AdminUserController#users).
+            // localOnly: 소셜 미연동 계정만 (provider 필터와 둘 중 하나만 사용)
             @Param("localOnly") boolean localOnly,
             @Param("keyword") String keyword
     );
@@ -141,8 +139,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @EntityGraph(attributePaths = "agency")
     Optional<User> findOneById(Long id);
 
-    // [휴면계정] 팬(FAN) 계정만 대상. 최근 로그인 기록(없으면 가입일) 기준으로
-    // 아직 사전 안내를 못 받은 ACTIVE 유저 조회
+    // [휴면] 사전 안내 대상 - 팬 ACTIVE 계정 중 최근 로그인(없으면 가입일) 기준
     @Query("""
         SELECT u FROM User u
         WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
@@ -152,8 +149,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     """)
     List<User> findActiveUsersDueForDormantNotice(@Param("threshold") LocalDateTime threshold);
 
-    // 휴면 전환 대상: 팬 계정 중 최근 로그인(없으면 가입일)이 1년 지났고,
-    // 사전 안내 메일을 보낸 지 30일(noticeThreshold)이 지난 ACTIVE 회원
+    // 휴면 전환 대상 - 1년 미로그인, 안내 후 30일 지난 팬 ACTIVE 계정
     @Query("""
         SELECT u FROM User u
         WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE

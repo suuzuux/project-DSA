@@ -1,26 +1,9 @@
--- ============================================================
--- WePlaNet 데모 데이터 (발표 / 테스트 배포용)  -  generate_demo_seed.py 로 생성됨, 직접 고치지 말고 스크립트를 고쳐서 다시 만들 것
--- ------------------------------------------------------------
--- 실행 순서
---   1) weplanet_schema_full_reset_v2.sql  (전체 초기화 + 기본 시드)
---   2) 이 파일                            (데모 데이터 추가)
---   3) docs/demo/demo_images/* 를 서버 실행 폴더의 uploads/ 에 복사  (이미지 180개)
---
--- 계정 (비밀번호 공통: Test1234)
---   최고관리자  admin_super1 ~ admin_super4   인증번호 -> admin4.wp@gmail.com 메일함 (+1 ~ +4 별칭)
---   소속사      agency_starlight / agency_bluewave / agency_moonbeam
---   그룹        nova_official / lumi_official / eclipse_official / prism_official
---               -> 로그인 후 멤버 프로필 선택, 멤버 개인 비밀번호도 Test1234
---   솔로        yuri_official / kaito_official
---   팬          demo_fan01 ~ demo_fan15   (demo_fan15 = 모든 커뮤니티 가입 + 멤버십 보유)
--- ============================================================
+-- WePlaNet 데모 데이터 1 - schema_full_reset_v2.sql 다음에 실행하고 demo_images 를 uploads/ 에 복사 (계정 비밀번호 공통 Test1234).
 
 USE `weplanet`;
 SET NAMES utf8mb4;
 
--- ------------------------------------------------------------
--- [1] 소속사 3곳 + 소속사 담당자 계정 (비밀번호 공통 Test1234)
--- ------------------------------------------------------------
+-- [1] 소속사 3곳 + 담당자 계정
 INSERT INTO `agencies` (`id`, `name`, `business_no`, `ceo_name`, `status`, `created_at`, `updated_at`) VALUES
   (101, '스타라이트엔터테인먼트', '101-81-10101', '윤서진', 'ACTIVE', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE)),
   (102, '블루웨이브뮤직', '102-81-10202', '강도현', 'ACTIVE', DATE_SUB(NOW(6), INTERVAL 576000 MINUTE), DATE_SUB(NOW(6), INTERVAL 576000 MINUTE)),
@@ -34,9 +17,7 @@ INSERT INTO `agency_profiles` (`user_id`, `agency_id`, `department`, `position`,
   (1012, 102, '매니지먼트팀', '팀장', 1),
   (1013, 103, '매니지먼트팀', '팀장', 1);
 
--- ------------------------------------------------------------
--- [2] 최고관리자 4명 - 인증번호는 전부 admin4.wp@gmail.com 메일함으로 온다 (+별칭)
--- ------------------------------------------------------------
+-- [2] 최고관리자 4명 (인증번호는 admin4.wp@gmail.com 별칭으로 수신)
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1001, 'admin_super1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN', 'ACTIVE', NULL, '최고관리자1', '최고관리자1', 'admin4.wp+1@gmail.com', DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE)),
   (1002, 'admin_super2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ADMIN', 'ACTIVE', NULL, '최고관리자2', '최고관리자2', 'admin4.wp+2@gmail.com', DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE), DATE_SUB(NOW(6), INTERVAL 432000 MINUTE)),
@@ -47,12 +28,10 @@ INSERT INTO `admin_profiles` (`user_id`, `admin_level`, `department`, `employee_
   (1002, 'SUPER', '플랫폼운영팀', 'WP-ADM-002'),
   (1003, 'SUPER', '플랫폼운영팀', 'WP-ADM-003'),
   (1004, 'SUPER', '플랫폼운영팀', 'WP-ADM-004');
--- 기존 시드의 admin_test 도 실제로 받을 수 있는 주소로 맞춘다
+-- 기존 시드 admin_test 도 받을 수 있는 주소로 맞춘다.
 UPDATE `users` SET `email` = 'admin4.wp@gmail.com' WHERE `username` = 'admin_test';
 
--- ------------------------------------------------------------
 -- [3] 커뮤니티 6개 (그룹 4 + 솔로 2) - 아티스트 계정, 그룹 정보, 멤버, 포털 프로필
--- ------------------------------------------------------------
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1101, 'nova_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 101, 'NOVA', 'NOVA', 'nova_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
   (1102, 'lumi_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 101, 'LUMI', 'LUMI', 'lumi_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
@@ -60,7 +39,7 @@ INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`
   (1104, 'prism_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 103, 'PRISM', 'PRISM', 'prism_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
   (1105, 'yuri_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 102, '한유리', '한유리', 'yuri_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE)),
   (1106, 'kaito_official', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', 103, 'KAITO', 'KAITO', 'kaito_official@weplanet.test', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 14400 MINUTE));
--- 그룹 멤버 계정: 그룹 계정으로 로그인 -> 프로필 선택 -> 개인 비밀번호(Test1234)
+-- 그룹 멤버 계정 (그룹 로그인 후 프로필 선택, 개인 비밀번호 Test1234)
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1201, 'member_1101_nova1', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '시온', '시온', 'member_1101_nova1@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
   (1202, 'member_1101_nova2', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST_MEMBER', 'ACTIVE', 101, '하람', '하람', 'member_1101_nova2@member.weplanet.local', DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 1296000 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
@@ -157,9 +136,7 @@ INSERT INTO `artist_profile` (`artist_id`, `intro`, `header_image_url`, `logo_im
   (1105, '싱어송라이터 한유리의 작은 방에 오신 걸 환영해요 🎹', 'demo_yuri_header.jpg', 'demo_yuri_logo.png', NOW(), NOW()),
   (1106, '도쿄에서 온 KAITO 입니다. 한국어 열심히 공부 중이에요! 🇯🇵🇰🇷', 'demo_kaito_header.jpg', 'demo_kaito_logo.png', NOW(), NOW());
 
--- ------------------------------------------------------------
--- [4] 팬 15명 + 커뮤니티 가입(커뮤니티별 프로필) + 멤버십 + 팔로우
--- ------------------------------------------------------------
+-- [4] 팬 15명 + 커뮤니티 가입 + 멤버십 + 팔로우
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`) VALUES
   (1301, 'demo_fan01', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '별빛수집가', '별빛수집가', 'demo_fan01@weplanet.test', DATE_SUB(NOW(6), INTERVAL 288000 MINUTE), DATE_SUB(NOW(6), INTERVAL 288000 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
   (1302, 'demo_fan02', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '하람바라기', '하람바라기', 'demo_fan02@weplanet.test', DATE_SUB(NOW(6), INTERVAL 280800 MINUTE), DATE_SUB(NOW(6), INTERVAL 280800 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
@@ -379,9 +356,7 @@ INSERT INTO `user_follows` (`follower_id`, `following_id`, `community_id`, `crea
   (1314, 1315, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE)),
   (1315, 1303, 1106, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE));
 
--- ------------------------------------------------------------
--- [5] 게시글 (아티스트 게시판 + 팬 게시판) / 첨부 이미지 / 댓글 / 좋아요
--- ------------------------------------------------------------
+-- [5] 게시글 (아티스트·팬 게시판) / 첨부 이미지 / 댓글 / 좋아요
 INSERT INTO `post` (`id`, `board_type`, `artist_id`, `content`, `created_at`, `title`, `author_id`, `like_count`, `hidden_from_artist`) VALUES
   (10001, 'FAN', 1101, '출근길에 NOVA 노래만 들어요.
 하루 시작이 행복해지는 마법 ✨', DATE_SUB(NOW(6), INTERVAL 393 MINUTE), '요즘 출근길 플레이리스트', 1313, 4, 0),
@@ -1479,9 +1454,7 @@ INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
 INSERT INTO `post_like` (`created_at`, `post_id`, `user_id`) VALUES
   (DATE_SUB(NOW(6), INTERVAL 38129 MINUTE), 10108, 1313);
 
--- ------------------------------------------------------------
 -- [6] 미디어 게시판 (소속사 업로드) / 이미지 / 좋아요
--- ------------------------------------------------------------
 INSERT INTO `board_media` (`id`, `group_id`, `uploader_id`, `title`, `content`, `created_at`, `updated_at`, `like_count`, `membership_only`) VALUES
   (3001, 1101, 1011, '뮤직비디오 비하인드 컷', '촬영 현장에서 찍은 비하인드 사진을 공개합니다 🎬', DATE_SUB(NOW(6), INTERVAL 1469 MINUTE), DATE_SUB(NOW(6), INTERVAL 1469 MINUTE), 1, 0),
   (3002, 1101, 1011, '음악방송 출근길', '오늘도 출근길 응원 와주셔서 감사합니다!', DATE_SUB(NOW(6), INTERVAL 7289 MINUTE), DATE_SUB(NOW(6), INTERVAL 7289 MINUTE), 5, 0),
@@ -1704,9 +1677,7 @@ INSERT INTO `board_media_like` (`board_id`, `user_id`, `created_at`) VALUES
   (3030, 1314, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE)),
   (3030, 1308, DATE_SUB(NOW(6), INTERVAL 24623 MINUTE));
 
--- ------------------------------------------------------------
 -- [7] 굿즈샵 - 커뮤니티마다 6개 (멤버십 전용 1개 포함)
--- ------------------------------------------------------------
 INSERT INTO `shop_goods` (`id`, `artist_id`, `name`, `description`, `price`, `thumbnail_url`, `official_url`, `status`, `sort_order`, `membership_only`, `shop_category`, `created_at`, `updated_at`) VALUES
   (4001, 1101, 'NOVA 공식 응원봉 Ver.2', '## 공식 응원봉 Ver.2
 
@@ -1964,9 +1935,7 @@ INSERT INTO `shop_goods_variant` (`goods_id`, `option_key`, `option_value`, `sto
   (4035, 'DEFAULT', '', 120),
   (4036, 'DEFAULT', '', 80);
 
--- ------------------------------------------------------------
--- [8] 아티스트 일정 / 커뮤니티 공지(포털) / 홈페이지 공지
--- ------------------------------------------------------------
+-- [8] 아티스트 일정 / 커뮤니티 공지 / 홈페이지 공지
 INSERT INTO `artist_schedule` (`artist_id`, `category`, `title`, `description`, `location`, `ticket_url`, `schedule_at`, `created_at`, `updated_at`) VALUES
   (1101, 'TV_BROADCAST', 'NOVA 음악중심 출연', '스텔라 여러분 많은 관심 부탁드려요!', 'MBC 상암 공개홀', NULL, DATE_ADD(DATE(NOW()), INTERVAL -2 DAY) + INTERVAL 18 HOUR, NOW(), NOW()),
   (1101, 'YOUTUBE', 'NOVA 공식 유튜브 자체 콘텐츠 공개', '스텔라 여러분 많은 관심 부탁드려요!', NULL, NULL, DATE_ADD(DATE(NOW()), INTERVAL 0 DAY) + INTERVAL 19 HOUR, NOW(), NOW()),
@@ -2050,18 +2019,14 @@ INSERT INTO `site_notice` (`author_id`, `title`, `category`, `content`, `publish
 점검 시간에는 접속이 원활하지 않을 수 있습니다.', 1, 0, NULL, DATE_SUB(NOW(6), INTERVAL 4320 MINUTE), DATE_SUB(NOW(6), INTERVAL 4320 MINUTE)),
   (1003, 'DM 기능 업데이트: 멤버별 1:1 대화', 'GENERAL', '이제 그룹 멤버 한 명 한 명과 DM 을 나눌 수 있어요 💌', 1, 0, NULL, DATE_SUB(NOW(6), INTERVAL 1440 MINUTE), DATE_SUB(NOW(6), INTERVAL 1440 MINUTE));
 
--- ------------------------------------------------------------
 -- [9] 메인 배너 4개 (커뮤니티 홍보 2 + 상품 홍보 2)
--- ------------------------------------------------------------
 INSERT INTO `main_banner` (`banner_type`, `artist_id`, `goods_id`, `title`, `body`, `image_stored_name`, `bg_color`, `text_color`, `active`, `sort_order`, `created_by`, `created_at`, `updated_at`) VALUES
   ('COMMUNITY', 1101, NULL, 'NOVA 정규 2집 컴백', '스텔라와 함께하는 새로운 여정', 'demo_banner_1_nova.jpg', '#4F46E5', '#FFFFFF', 1, 0, 1001, NOW(6), NOW(6)),
   ('COMMUNITY', 1105, NULL, '한유리 단독 콘서트', '작은 방에서 큰 무대로', 'demo_banner_2_yuri.jpg', '#F59E0B', '#1F2937', 1, 1, 1001, NOW(6), NOW(6)),
   ('PRODUCT', 1102, 4008, 'LUMI 로고 후드티', '가을 신상 굿즈 오픈', 'demo_banner_3_lumi.jpg', '#EC4899', '#FFFFFF', 1, 2, 1001, NOW(6), NOW(6)),
   ('PRODUCT', 1103, 4013, 'ECLIPSE 응원봉 Ver.2', '공연장을 밝히는 단 하나의 빛', 'demo_banner_4_eclipse.jpg', '#1E293B', '#FFFFFF', 1, 3, 1001, NOW(6), NOW(6));
 
--- ------------------------------------------------------------
--- [10] 팬 프로젝트 2개 (모금 중) + 모의 결제(MOCK) 후원 내역. 정산 계좌는 앱 암호화가 필요해 시드에서 제외
--- ------------------------------------------------------------
+-- [10] 팬 프로젝트 2개 (모금 중) + 모의 결제 후원 내역
 INSERT INTO `fan_project` (`id`, `artist_id`, `creator_id`, `title`, `event_type`, `goal_amount`, `funding_start_at`, `funding_end_at`, `description`, `status`, `special_badge_count_at_apply`, `basic_badge_count_at_apply`, `identity_verified_at`, `reviewed_by`, `reviewed_at`, `created_at`, `updated_at`) VALUES
   (501, 1101, 1301, 'NOVA 데뷔 4주년 지하철광고', 'BILLBOARD', 1500000, DATE_SUB(NOW(6), INTERVAL 7200 MINUTE), DATE_ADD(NOW(6), INTERVAL 28800 MINUTE), '스텔라가 함께 준비하는 NOVA 데뷔 4주년 지하철 광고 프로젝트입니다 🚇
 모인 금액은 광고 제작 및 게재 비용으로 사용됩니다.', 'FUNDING', 1, 5, DATE_SUB(NOW(6), INTERVAL 10080 MINUTE), 1001, DATE_SUB(NOW(6), INTERVAL 8640 MINUTE), DATE_SUB(NOW(6), INTERVAL 10080 MINUTE), DATE_SUB(NOW(6), INTERVAL 7200 MINUTE)),
@@ -2083,9 +2048,7 @@ INSERT INTO `fan_project_contribution` (`project_id`, `contributor_id`, `order_n
   (502, 1314, 'DEMO-502-005', 'demo-502-005', 'MOCK', 50000, 0, DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE)),
   (502, 1315, 'DEMO-502-006', 'demo-502-006', 'MOCK', 100000, 0, DATE_SUB(NOW(6), INTERVAL 2100 MINUTE), 'PAID', DATE_SUB(NOW(6), INTERVAL 2100 MINUTE), DATE_SUB(NOW(6), INTERVAL 2100 MINUTE), DATE_SUB(NOW(6), INTERVAL 2100 MINUTE));
 
--- ------------------------------------------------------------
--- [11] DM - 멤버별 방송 메시지 + 멤버십 팬이 보낸 1:1 메시지 (멤버별 DM 코드와 짝)
--- ------------------------------------------------------------
+-- [11] DM - 멤버별 방송 메시지 + 멤버십 팬의 1:1 메시지
 INSERT INTO `chat_message` (`content`, `created_at`, `artist_id`, `fan_id`, `sender_id`, `visible_to_artist`) VALUES
   ('스텔라 오늘 하루 어땠어요? 💬', DATE_SUB(NOW(6), INTERVAL 1804 MINUTE), 1201, NULL, 1201, 1),
   ('방금 연습 끝났어요! 다들 뭐 해요?', DATE_SUB(NOW(6), INTERVAL 1504 MINUTE), 1201, NULL, 1201, 1),
@@ -2189,9 +2152,7 @@ INSERT INTO `chat_message` (`content`, `created_at`, `artist_id`, `fan_id`, `sen
   ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 1021 MINUTE), 1106, 1313, 1313, 1),
   ('오늘 무대 너무 멋있었어요!!', DATE_SUB(NOW(6), INTERVAL 841 MINUTE), 1106, 1315, 1315, 0);
 
--- ------------------------------------------------------------
 -- [확인] 데모 데이터 개수
--- ------------------------------------------------------------
 SELECT
   (SELECT COUNT(*) FROM `users` WHERE `id` >= 1001)       AS demo_users,
   (SELECT COUNT(*) FROM `artist_groups` WHERE `id` >= 1101) AS communities,

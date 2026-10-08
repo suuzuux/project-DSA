@@ -7,7 +7,6 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.stereotype.Component;
 
 // 한 계정의 로그인 세션을 모두 끊는다 (비밀번호 재설정 직후 등).
-// 동시 로그인 제한이 쓰는 SessionRegistry 를 그대로 쓰고, 끊긴 세션은 다음 요청에서 /login?duplicateLogin 으로 간다.
 @Slf4j
 @Component
 @RequiredArgsConstructor

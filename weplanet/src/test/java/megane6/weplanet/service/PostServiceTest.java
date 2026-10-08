@@ -74,6 +74,7 @@ class PostServiceTest {
 				mock(CommentReportRepository.class),
 				mock(PostAttachmentRepository.class),
 				mock(FileStorageService.class),
-				mock(ApplicationEventPublisher.class));
+				mock(ApplicationEventPublisher.class),
+				mock(ChatFilterService.class));
 	}
 }

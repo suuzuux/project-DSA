@@ -3,7 +3,7 @@ package megane6.weplanet.util;
 public class NicknamePolicy {
 	
 	private static final int MIN_LENGTH = 2;
-	// 가입 화면(signup-id.html / main.js)·설정 화면(settings.html)의 입력 제한과 안내 문구(2~15자)도 이 값과 맞춘다
+	// 가입·설정 화면 입력 제한(2~15자)과 맞춘다.
 	private static final int MAX_LENGTH = 15;
 	private static final int REPEAT_THRESHOLD = 4; // 같은 문자가 이 횟수 이상 연속되면 거부
 	

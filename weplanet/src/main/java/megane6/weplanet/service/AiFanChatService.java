@@ -28,16 +28,13 @@ public class AiFanChatService {
     private final SimpMessagingTemplate messagingTemplate;
     private final JsonMapper jsonMapper;
 
-    // 실제 서비스 기능이 아닌 시연용 - 채팅방이 한산할 때 보여줄 가짜 팬 응원 메시지 생성
+    // 시연용 가상 팬 응원 메시지 생성
     public String generateFanMessage() {
         String prompt = "너는 K-pop 아이돌의 팬이야. 아티스트에게 짧고 애정 어린 응원 메시지를 한국어로 한 문장만 작성해줘. 메시지 외에 다른 말은 하지 마.";
         return geminiClient.generate(prompt);
     }
 
-    /**
-     * 아티스트가 DM을 보낸 뒤, 가상 팬 5명이 그 내용에 맞춰 차례로 답장한다.
-     * 웹소켓 요청 스레드를 붙잡지 않도록 백그라운드에서 돈다.
-     */
+    /** 아티스트 DM 에 가상 팬 5명이 백그라운드에서 차례로 답장한다. */
     @Async("aiFanExecutor")
     public void replyToArtistDm(Long artistId, String artistMessage) {
         User artist = userRepository.findById(artistId).orElse(null);
@@ -109,7 +106,7 @@ public class AiFanChatService {
         return sb.toString();
     }
 
-    // 라이브 AI 댓글(AiLiveCommentService)도 같은 JSON 형식을 쓰므로 공개한다
+    // 라이브 AI 댓글도 같은 JSON 형식을 쓴다.
     public List<String> parseReplies(String raw) {
         if (raw == null || raw.isBlank()) {
             return List.of();
@@ -180,7 +177,7 @@ public class AiFanChatService {
         return persona.fallbacks().get(ThreadLocalRandom.current().nextInt(persona.fallbacks().size()));
     }
 
-    // AI 호출 실패는 GeminiClient.generateJson 이 null 을 돌려줘서 parseReplies 단계에서 걸러진다 (안내 문구를 글자로 비교하지 않음)
+    // AI 호출 실패(null)는 parseReplies 에서 걸러진다.
     private static boolean isUsableReply(String content) {
         return content != null && !content.isBlank();
     }

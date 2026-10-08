@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ArtistBlockRepository extends JpaRepository<ArtistBlock, Long> {
-    // 차단 회원 정보까지 한번에 가져와 추가 조회가 반복되는 것을 막아줌
+    // 차단 회원을 함께 조회 (N+1 방지)
     @EntityGraph(attributePaths = "blockedUser")
     List<ArtistBlock> findByArtistOrderByCreatedAtDesc(User artist);
     

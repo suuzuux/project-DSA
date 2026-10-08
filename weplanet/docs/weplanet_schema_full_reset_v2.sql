@@ -1,84 +1,4 @@
--- ============================================================
--- [v2 간소화본] 2026-10-03 정휘원
---   원본 weplanet_schema_full_reset.sql 에서 테이블 60개 -> 56개로 줄였다.
---   ※ main-details 의 엔티티 코드 변경과 짝이다. 이 파일만 적용하고 예전 코드로 서버를 켜면
---  '   시작할 때 DB 구조 검사(ddl-auto=validate)에서 실패한다.
---   ※ 전체 초기화용이라 실행하면 기존 데이터가 모두 지워진다.
---   1) 코드에서 쓰지 않는 테이블 삭제 (엔티티·참조 없음)
---      - group_schedule        : 일정 기능은 artist_schedule 을 쓴다
---      - notification_setting  : 알림 설정은 users 컬럼으로 관리한다
---   2) 1:1 관계 테이블 통합
---      - artist_groups     <- artist_group_profiles (커뮤니티 탐색 필터, 그룹당 1행. debut_date 중복 제거)
---      - community_members <- community_profiles    (커뮤니티별 프로필, 가입할 때 항상 같이 생성)
---      ※ artist_profile 은 그룹 멤버 계정마다 1행이라(그룹당 1행이 아님) 합치지 않았다
---   3) 시드: artist_groups.id 를 그룹 계정 users.id 와 같게 넣는다 (fk_group_artist 추가)
---   DROP 목록에는 없어진 테이블도 남겨 두었다 (기존 DB 에 남은 옛 테이블 정리용)
--- ============================================================
--- ============================================================
--- WePlaNet 통합 DB 스키마 [파일 1] 전체 초기화용 (DROP → CREATE)
--- ------------------------------------------------------------
--- 작성: 2026-09-03
--- [이번에 새로 추가한 것]
---   - users.agency_id : 아티스트 계정의 소속사(agencies.id) 표시용 컬럼
---     (FAN/ADMIN 등 소속사가 없는 계정은 NULL)
--- ------------------------------------------------------------
--- 수정: 2026-09-08 (AUTH-08, 휴면계정 자동전환/해제)
---   - users.dormant_notice_sent_at : 휴면 전환 30일 전 사전 안내 메일 발송 시각
--- ------------------------------------------------------------
--- 수정: 2026-09-09 (ADMIN-2, 관리자 기능 통합)
---   - email_verification.purpose에 ADMIN_LOGIN 허용
---   - report/comment_report에 status, resolved_at 추가
---   - site_notice에 category, publish_at, pinned, pin_order 추가
---   - admin_action_logs 감사 로그 테이블 반영
---   - 테스트 계정 비밀번호를 Test1234로 통일
--- ------------------------------------------------------------
--- 수정: 2026-09-14 (AUTH-10, 소셜 로그인 연동/해제)
---   - users.password : 소셜 전용 가입자는 비밀번호가 없을 수 있어 NOT NULL 해제 (nullable)
---   - users.provider : "가입 경로"가 아니라 "지금 연동된 소셜 provider"로 의미 변경.
---     LOCAL 값 삭제 (연동 없음 = NULL), DEFAULT 'LOCAL' 제거, ck_users_provider에서 LOCAL 제외
---     (기존 데이터는 UPDATE users SET provider = NULL WHERE provider = 'LOCAL'; 로 정리)
--- ------------------------------------------------------------
--- 수정: 2026-09-16 (SETTINGS-01, 이벤트·혜택 알림 설정)
---   - users.marketing_consent : 광고성 정보 수신 동의. 회원가입 화면 "(선택) 광고 및 마케팅 활용 동의"
---     체크박스와 같은 값을 공유함 (가입 시 반영, 설정 화면에서 다시 변경 가능)
---   - users.community_activity_email_enabled : 가입(community_members)한 아티스트의 새 게시글/공지/
---     라이브 시작을 이메일로 받을지. marketing_consent와는 별개의 값
---   - users.night_notification_allowed : 오후 9시~오전 8시(KST)에도 위 이메일을 받을지
--- ------------------------------------------------------------
--- 수정: 2026-09-17 (SETTINGS-02, 언어 설정 / 게시글·댓글 AI 자동번역)
---   - users.preferred_language : "기본 서비스 언어" (KO/JA/EN, 기본값 KO). 게시글/댓글 AI 번역
---     (TranslateService)의 대상 언어로도 그대로 재사용됨 - UI 언어랑 번역 언어를 따로 두지 않음
--- ------------------------------------------------------------
--- 수정: 2026-09-29 (EVENT-HASHTAG, 해시태그 총공 이벤트)
---   - hashtag_event : 총공 1회분(기간, 집계 확정 시각). 예정/진행 중/종료 상태는 컬럼 없이 시각으로 계산
---   - hashtag_event_target : 참여 아티스트별 해시태그 + 집계 확정 시 고정되는 final_* 결과
---   - hashtag_event_entry : 해시태그가 들어간 팬 게시글 기록(인정/제외 사유). post 삭제 시 CASCADE
--- ------------------------------------------------------------
--- !! 주의 !!
---   이 파일은 DROP TABLE 을 포함합니다. 실행하면 기존 데이터가
---   전부 삭제됩니다. 이미 운영 중인 DB, 팀원 개인 DB에서는
---   절대 이 파일을 실행하지 말고 weplanet_DB적용.sql (데이터 보존 동기화)을 쓰세요.
---   이 파일은 "새로 시작하는 사람" 또는 "완전히 리셋하고 싶은 사람" 전용입니다.
---
--- 실행 방법
---   mysql -uroot -p --default-character-set=utf8mb4 < weplanet_schema_full_reset.sql
---
--- 테스트 계정 (비밀번호 공통: Test1234)
---   admin_test      ADMIN   관리자테스트   <- 금칙어 관리 화면(/chat/admin/keywords)
---   agency_wp       AGENCY  휘원공주정식왕자매니저   (소속사: 휘원공주정식왕자)
---   agency_hs       AGENCY  혜선우주최강매니저      (소속사: 혜선우주최강)
---   artist_hwiwon   ARTIST  휘원공주             (소속사: 휘원공주정식왕자)
---   artist_jungsik  ARTIST  정식왕자             (소속사: 휘원공주정식왕자)
---   artist_hyeseon  ARTIST  혜선여왕             (소속사: 혜선우주최강)
---   asd123          FAN     빛나는여우135
---   qatest99        FAN     QA테스터
---   aifan_bot       FAN     AI팬봇
---   aifan_mina      FAN     별빛민아   (아티스트 DM 가상 팬)
---   aifan_hayul     FAN     하율짱
---   aifan_haerin    FAN     달콤해린
---   aifan_jun       FAN     우주준
---   aifan_yuna      FAN     햇살유나
--- ============================================================
+-- WePlaNet 통합 DB 스키마 v2 (테이블 56개) - 전체 초기화용 (DROP 후 CREATE, 기존 데이터가 모두 지워짐, 테스트 계정 비밀번호 공통 Test1234).
 
 CREATE DATABASE IF NOT EXISTS `weplanet` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `weplanet`;
@@ -87,9 +7,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 SET UNIQUE_CHECKS = 0;
 
--- ------------------------------------------------------------
--- DROP (자식 -> 부모 역순, users.agency_id 추가로 인해 agencies 도 맨 마지막)
--- ------------------------------------------------------------
+-- DROP (자식 → 부모 역순, 없어진 옛 테이블도 정리)
 DROP TABLE IF EXISTS `hashtag_event_entry`;
 DROP TABLE IF EXISTS `hashtag_event_target`;
 DROP TABLE IF EXISTS `hashtag_event`;
@@ -151,11 +69,9 @@ DROP TABLE IF EXISTS `filter_keyword`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `agencies`;
 
--- ------------------------------------------------------------
--- CREATE (부모 -> 자식)
--- ------------------------------------------------------------
+-- CREATE (부모 → 자식)
 
--- agencies: 소속사 마스터 (users.agency_id 가 참조하므로 users 보다 먼저 생성)
+-- agencies: 소속사 마스터 (users 보다 먼저 생성)
 CREATE TABLE `agencies` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '소속사 PK',
   `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '소속사명',
@@ -170,8 +86,7 @@ CREATE TABLE `agencies` (
   CONSTRAINT `ck_agencies_status` CHECK (`status` IN (_utf8mb4'ACTIVE', _utf8mb4'SUSPENDED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='소속사 마스터';
 
--- users: 팬/아티스트/소속사/관리자 공통 계정 (AUTH)
---        agency_id: 아티스트 계정의 소속사 표시용 (신규 추가 컬럼)
+-- users: 팬/아티스트/소속사/관리자 공통 계정 (agency_id 는 아티스트의 소속사)
 CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '회원 PK',
   `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '로그인 아이디',
@@ -361,8 +276,7 @@ CREATE TABLE `artist_profiles` (
   CONSTRAINT `fk_ap_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='아티스트 계정 전용 프로필';
 
--- artist_groups: 아티스트 그룹/커뮤니티 (v2: artist_group_profiles 통합)
---   id 는 그룹 계정 users.id 와 같은 번호를 쓴다 (커뮤니티 URL /community/{id}, board_media.group_id 와 일치)
+-- artist_groups: 아티스트 그룹·커뮤니티 (id = 그룹 계정 users.id)
 CREATE TABLE `artist_groups` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '그룹(커뮤니티) PK = 그룹 계정 users.id',
   `agency_id` bigint NOT NULL COMMENT '소속 소속사(agencies.id)',
@@ -371,7 +285,7 @@ CREATE TABLE `artist_groups` (
   `fandom_name` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '팬덤명',
   `debut_date` date DEFAULT NULL COMMENT '그룹 데뷔일 (구 artist_group_profiles.debut_date 와 중복이라 하나로 합침)',
   `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE' COMMENT '상태: ACTIVE/HIATUS/DISBANDED',
-  -- 커뮤니티 탐색 필터 (구 artist_group_profiles)
+  -- 커뮤니티 탐색 필터
   `gender` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '그룹/아티스트 성별(탐색 필터)',
   `member_count` int DEFAULT NULL COMMENT '구성 인원 수(탐색 필터)',
   `nationality` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '국적(탐색 필터)',
@@ -416,11 +330,7 @@ CREATE TABLE `group_members` (
   CONSTRAINT `ck_gm_period` CHECK ((`left_at` IS NULL) OR (`left_at` >= `joined_at`))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='그룹–아티스트 소속 이력';
 
--- user_follows: GroupFollow/UserFollow 통합. 사람↔사람(팬↔팬, 팬↔아티스트 계정) 팔로우.
--- 팔로우는 특정 커뮤니티(community_id)에 종속된다 - 같은 두 사람이 여러 커뮤니티에 함께 가입돼
--- 있어도 팔로우는 커뮤니티마다 별개의 관계이며, 한쪽이 그 커뮤니티를 탈퇴하면 그 커뮤니티 소속
--- 팔로우 관계만 함께 삭제된다(CommunityJoinService.leave). 팬→아티스트 팔로우는 following_id ==
--- community_id(그 아티스트의 users.id)다.
+-- user_follows: 커뮤니티별 팔로우 (팬↔팬, 팬→아티스트는 following_id = community_id)
 CREATE TABLE `user_follows` (
   `follower_id` bigint NOT NULL COMMENT '팔로우 하는 사람(users.id)',
   `following_id` bigint NOT NULL COMMENT '팔로우 당하는 사람(users.id)',
@@ -448,8 +358,7 @@ CREATE TABLE `membership` (
   CONSTRAINT `fk_membership_fan` FOREIGN KEY (`fan_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='팬–아티스트 유료 멤버십';
 
--- membership_period: 멤버십 가입/갱신 이력 (연속 N년 배지 판정용)
---   streak_count : 새 시작일이 직전 만료일 + 7일 안이면 +1, 넘으면 1
+-- membership_period: 멤버십 가입·갱신 이력 (만료 후 7일 안에 다시 시작하면 streak +1)
 CREATE TABLE `membership_period` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '멤버십 기간 PK',
   `fan_id` bigint NOT NULL COMMENT '팬(users.id)',
@@ -592,14 +501,13 @@ CREATE TABLE `site_notice` (
   CONSTRAINT `fk_site_notice_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='홈페이지 관리 공지사항';
 
--- community_members: 팬의 아티스트 커뮤니티 가입 + 커뮤니티별 프로필 (v2: community_profiles 통합)
---   가입할 때 프로필을 항상 같이 만들기 때문에(1:1) 한 행으로 합쳤다. 프로필 생성 시각은 joined_at 과 같아서 따로 두지 않는다.
+-- community_members: 커뮤니티 가입 + 커뮤니티별 프로필 (가입당 1행)
 CREATE TABLE `community_members` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '가입 PK',
   `fan_id` bigint NOT NULL COMMENT '가입 팬(users.id)',
   `artist_id` bigint NOT NULL COMMENT '커뮤니티 아티스트(users.id)',
   `joined_at` datetime(6) NOT NULL COMMENT '가입 시각(디데이 기준, 프로필 생성 시각)',
-  -- 커뮤니티별 독립 프로필 (구 community_profiles)
+  -- 커뮤니티별 프로필
   `nickname` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '해당 커뮤니티 전용 닉네임',
   `bio` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '짧은 소개',
   `avatar_stored_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '아바타 저장 파일명',
@@ -1028,7 +936,7 @@ CREATE TABLE `email_verification` (
   CONSTRAINT `ck_email_verification_purpose` CHECK (`purpose` IN (_utf8mb4'SIGNUP', _utf8mb4'FAN_PROJECT_CREATE', _utf8mb4'ADMIN_LOGIN', _utf8mb4'AGENCY_ACTIVATION', _utf8mb4'ARTIST_ACTIVATION'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원가입, 팬 프로젝트 및 관리자 로그인 이메일 인증';
 
--- fan_project: 팬 프로젝트(개설·승인·모금) - creator_id 타입 오타 수정 완료
+-- fan_project: 팬 프로젝트 (개설·승인·모금)
 CREATE TABLE `fan_project` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '프로젝트 PK',
   `artist_id` bigint NOT NULL COMMENT '대상 아티스트 커뮤니티(users.id)',
@@ -1206,7 +1114,7 @@ CREATE TABLE `notification` (
   CONSTRAINT `fk_noti_recipient` FOREIGN KEY (`recipient_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='회원 알림';
 
--- hashtag_event: 해시태그 총공 이벤트 (최고관리자 > 이벤트 > 해시태그 총공). 상태는 저장하지 않고 기간·finalized_at 으로 계산
+-- hashtag_event: 해시태그 총공 이벤트 (상태는 기간·finalized_at 으로 계산)
 CREATE TABLE `hashtag_event` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '이벤트 PK',
   `title` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '이벤트명',
@@ -1238,7 +1146,7 @@ CREATE TABLE `hashtag_event_target` (
   CONSTRAINT `fk_hashtag_target_artist` FOREIGN KEY (`artist_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='해시태그 총공 참여 아티스트';
 
--- hashtag_event_entry: 해시태그가 들어간 팬 게시글 기록 (인정/제외 사유 포함, 글 1개당 1행). 글이 삭제되면 같이 삭제
+-- hashtag_event_entry: 해시태그가 들어간 팬 게시글 기록 (글 삭제 시 같이 삭제)
 CREATE TABLE `hashtag_event_entry` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '집계 기록 PK',
   `target_id` bigint NOT NULL COMMENT 'hashtag_event_target.id',
@@ -1258,9 +1166,7 @@ CREATE TABLE `hashtag_event_entry` (
 SET FOREIGN_KEY_CHECKS = 1;
 SET UNIQUE_CHECKS = 1;
 
--- ============================================================
--- [2] 배지 카탈로그 25종 (일반 15 + 스페셜 10) - 전 아티스트 공통
--- ============================================================
+-- [2] 배지 카탈로그 25종 (일반 15 + 스페셜 10)
 INSERT INTO `fan_badge`
   (`badge_code`, `badge_name`, `badge_type`, `icon`, `image_url`, `description`, `sort_order`, `created_at`)
 VALUES
@@ -1290,18 +1196,13 @@ VALUES
   ('SPECIAL_MEMBERSHIP_5',  '멤버십 연속 5년',      'SPECIAL', '👑', 'membership-5-years.svg',   '멤버십을 5년 연속 유지하면 획득',            9,  NOW(6)),
   ('SPECIAL_PROJECT_CREATE','프로젝트 참여',        'SPECIAL', '🚀', 'project-registered.svg',   '팬 프로젝트에 참여(결제 완료)하면 획득',    10, NOW(6));
 
--- ============================================================
 -- [3] 소속사 시드
--- ============================================================
 INSERT INTO `agencies` (`name`, `business_no`, `ceo_name`, `status`, `created_at`, `updated_at`)
 VALUES
   ('휘원공주정식왕자',   '000-00-00001', '테스트대표', 'ACTIVE', NOW(6), NOW(6)),
   ('혜선우주최강',       '000-00-00002', '테스트대표', 'ACTIVE', NOW(6), NOW(6));
 
--- ============================================================
--- [4] 테스트 계정 시드 (비밀번호 공통: Test1234)
---     artist_hwiwon / artist_jungsik 은 위 소속사(agency_id)에 배정
--- ============================================================
+-- [4] 테스트 계정 시드 (비밀번호 공통 Test1234)
 INSERT INTO `users`
   (`username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
@@ -1317,7 +1218,7 @@ VALUES
   ('aifan_jun',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '우주준',    '우주준',        'aifan_jun@weplanet.test',  NOW(6), NOW(6), NOW(6)),
   ('aifan_yuna',     '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN',    'ACTIVE', NULL,                                                            '햇살유나',  '햇살유나',      'aifan_yuna@weplanet.test', NOW(6), NOW(6), NOW(6));
 
--- artist_profiles / artist_groups 등 다른 소속사 참조 컬럼도 같은 소속사로 맞춰줌
+-- 다른 소속사 참조 컬럼도 같은 소속사로 맞춘다.
 INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
 SELECT u.id, u.agency_id, CASE u.username WHEN 'artist_hwiwon' THEN '휘원' ELSE '정식' END, '2023-01-01', 'VOCAL', '테스트용 아티스트 소개'
 FROM `users` u WHERE u.username IN ('artist_hwiwon', 'artist_jungsik');
@@ -1326,12 +1227,7 @@ INSERT INTO `artist_groups` (`id`, `agency_id`, `name`, `name_en`, `fandom_name`
 SELECT a.id, a.agency_id, '테스트그룹', 'TestGroup', '테스트팬덤', '2023-01-01', 'ACTIVE', NOW(6), NOW(6)
 FROM `users` a WHERE a.username = 'artist_hwiwon';
 
--- ============================================================
--- [4b] 에이전시 계정 2개 + 아티스트 계정 1개 추가
---   agency_wp        AGENCY  소속사: 휘원공주정식왕자
---   agency_hs        AGENCY  소속사: 혜선우주최강
---   artist_hyeseon   ARTIST  소속사: 혜선우주최강, 활동명: 혜선여왕
--- ============================================================
+-- [4b] 에이전시 계정 2개 + 아티스트 계정 1개
 INSERT INTO `users`
   (`username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `created_at`, `updated_at`)
 VALUES
@@ -1339,30 +1235,22 @@ VALUES
   ('agency_hs',      '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'AGENCY', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선우주최강담당자',     '혜선우주최강매니저',     'agency_hs@weplanet.test', NOW(6), NOW(6), NOW(6)),
   ('artist_hyeseon', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'ARTIST', 'ACTIVE', (SELECT id FROM `agencies` WHERE `name` = '혜선우주최강'),     '혜선',                   '혜선여왕',               'hyeseon@weplanet.test',   NOW(6), NOW(6), NOW(6));
 
--- agency_profiles: AGENCY 역할 계정은 1:1 프로필이 필요
+-- AGENCY 계정은 1:1 프로필이 필요하다.
 INSERT INTO `agency_profiles` (`user_id`, `agency_id`, `department`, `position`, `is_owner`, `approved_by`, `approved_at`)
 SELECT u.id, u.agency_id, '매니지먼트팀', '담당자', 0, NULL, NULL
 FROM `users` u WHERE u.username IN ('agency_wp', 'agency_hs');
 
--- artist_profiles: artist_hyeseon 도 같은 방식으로 등록
+-- artist_hyeseon 프로필
 INSERT INTO `artist_profiles` (`user_id`, `agency_id`, `stage_name`, `debut_date`, `position`, `bio`)
 SELECT u.id, u.agency_id, '혜선여왕', '2023-01-01', 'VOCAL', '테스트용 아티스트 소개'
 FROM `users` u WHERE u.username = 'artist_hyeseon';
 
--- ============================================================
--- [5] 팔로우 시드 (테스트 계정용, 'hwiwhi' -> 'qatest99' 로 수정)
---   배지(fan_badge_ownership)는 더 이상 시드로 넣지 않는다.
---   실제 활동/기간 조건을 채우면 BadgeAwardService 를 통해 지급된다.
---   GroupFollow/UserFollow 통합: 아티스트 팔로우는 이제 user_follows에 community_id(=그 아티스트의
---   users.id) 값과 함께 들어간다. group_id가 곧 그 아티스트 User.id이므로 following_id/community_id 둘 다 g.id.
--- ============================================================
+-- [5] 팔로우 시드 (배지는 활동 조건 충족 시 BadgeAwardService 가 지급)
 INSERT INTO `user_follows` (`follower_id`, `following_id`, `community_id`, `created_at`)
 SELECT f.id, g.id, g.id, NOW(6)
 FROM `users` f
 JOIN `artist_groups` g
 WHERE f.username IN ('qatest99', 'asd123');
 
--- ------------------------------------------------------------
--- [확인] 60이 나오면 테이블은 모두 준비된 것입니다.
--- ------------------------------------------------------------
+-- [확인] 56 이 나오면 테이블 준비 완료
 SELECT COUNT(*) AS table_count FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE();

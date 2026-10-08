@@ -32,7 +32,7 @@ public class GoodsService {
 	private final ShopImageStorage shopImageStorage;
 	private final MessageSource messageSource;
 
-	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어 에러 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
@@ -123,8 +123,7 @@ public class GoodsService {
 			goods.setThumbnailUrl(shopImageStorage.storeImage(thumbnail));
 			shopImageStorage.delete(previous);
 		}
-		// orphanRemoval clear → 동일 유니크키로 재삽입 시 INSERT가 DELETE보다 먼저 나가면
-		// uk_goods_variant / uk_goods_category 충돌로 수정이 실패한다. flush로 삭제를 먼저 확정.
+		// 같은 유니크키 재삽입 충돌을 막으려고 flush 로 삭제를 먼저 확정한다.
 		goods.getCategoryLinks().clear();
 		goods.getOptions().clear();
 		goods.getVariants().clear();

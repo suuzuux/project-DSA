@@ -8,11 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * "누가 어떤 게시글을 북마크(저장)했는지"를 기록하는 엔티티.
- * 좋아요(Like.java)와 완전히 같은 구조 - uniqueConstraints로 같은 사람이
- * 같은 글을 두 번 북마크하는 것을 DB 차원에서 막아둠.
- */
+/** 게시글 북마크 기록 (같은 글 중복 북마크는 유니크 제약으로 막음). */
 @Entity
 @Table(
         name = "post_bookmark",

@@ -7,14 +7,14 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/portal.css}" />
   <style>
-    /* .btn 의 display 가 hidden 속성을 덮어써서 버튼이 안 숨겨지는 것을 막는다 (전송 버튼·접속 버튼 공통) */
+    /* .btn 의 display 가 hidden 속성을 덮지 않게 한다. */
     #adminLoginForm [hidden] { display: none !important; }
   </style>
 </head>
 
 <body class="admin-login">
 
-<!-- 관리자 화면은 한국어 고정이라 언어 전환 버튼을 두지 않는다 (PreferredLocaleResolver 참고) -->
+<!-- 관리자 화면은 한국어 고정이라 언어 버튼이 없다. -->
 <div class="admin-login__split">
 
 
@@ -53,7 +53,7 @@
         아이디 또는 비밀번호가 올바르지 않습니다.
       </p>
 
-      <!-- 비밀번호를 여러 번 틀려 잠시 로그인할 수 없을 때 (LoginAttemptService) -->
+      <!-- 로그인 시도 초과로 잠긴 경우 -->
       <p
               th:if="${param.locked}"
               class="admin-login__notice admin-login__notice--error"
@@ -163,7 +163,7 @@
         <p id="codeStatus" class="admin-otp-status" aria-live="polite"></p>
         <input type="hidden" id="verificationKey" name="verificationKey" />
 
-        <!-- 접속 버튼은 인증번호 인증에 성공한 뒤에만 나타난다 -->
+        <!-- 접속 버튼은 인증 성공 후에만 나타난다. -->
         <button
                 type="submit"
                 id="adminSubmitBtn"
@@ -228,7 +228,7 @@
       status.className = "admin-otp-status" + (state ? " is-" + state : "");
     }
 
-    // 인증 성공 시에만 접속 버튼을 보여 주고 누를 수 있게 한다 (만료·재전송·아이디 변경 시 다시 숨김)
+    // 인증 성공 시에만 접속 버튼을 보여준다 (만료·재전송·아이디 변경 시 숨김).
     function setSubmitReady(ready) {
       submitBtn.disabled = !ready;
       submitBtn.hidden = !ready;

@@ -3,14 +3,7 @@ package megane6.weplanet.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-/**
- * 판매 단위(SKU). 재고는 여기에만 둔다.
- * <ul>
- *   <li>의류: optionKey=SIZE, optionValue=S/M/L…</li>
- *   <li>신발: optionKey=SHOE_MM, optionValue=250…</li>
- *   <li>가방/악세서리/기타(또는 무카테고리): optionKey=DEFAULT, optionValue=""</li>
- * </ul>
- */
+/** 판매 단위(SKU)와 재고 (의류 SIZE, 신발 SHOE_MM, 기타 DEFAULT). */
 @Entity
 @Table(
 		name = "shop_goods_variant",

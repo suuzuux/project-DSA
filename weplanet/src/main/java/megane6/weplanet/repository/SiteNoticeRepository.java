@@ -14,7 +14,7 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
 	
 	long countByPinnedTrue();
 	
-	// 정렬은 커뮤니티 공지(PortalNotice)와 동일: 상단 고정 → pinOrder → 최신
+	// 정렬: 상단 고정 → pinOrder → 최신
 	@Query("""
         SELECT n FROM SiteNotice n
         WHERE (:category IS NULL OR n.category = :category)
@@ -33,7 +33,7 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
         """)
 	List<SiteNotice> findVisible(@Param("category") NoticeCategory category);
 	
-	// 게시 중 = 공개 && (예약 없음 or 예약시각 지남)
+	// 게시 중 = 공개 && (예약 없음 또는 예약시각 지남)
 	@Query("""
         SELECT COUNT(n) FROM SiteNotice n
         WHERE n.published = true
@@ -41,7 +41,7 @@ public interface SiteNoticeRepository extends JpaRepository<SiteNotice, Long> {
         """)
 	long countVisible();
 	
-	// 예약 대기 = 공개로 설정했지만 예약시각이 아직 미래
+	// 예약 대기 = 공개지만 예약시각이 미래
 	@Query("""
         SELECT COUNT(n) FROM SiteNotice n
         WHERE n.published = true

@@ -32,13 +32,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class SocialLoginEntryController {
 
 	public static final String SESSION_KEY_SOCIAL_LOGIN_INTENT = "SOCIAL_LOGIN_INTENT";
-	// 소셜 연동을 시작한 로그인 사용자 id - OAuth2 로그인 중에는 SecurityContext 가 소셜 원본 정보로 바뀌므로
-	// 콜백(OAuth2LoginSuccessHandler)이 어느 계정에 연동할지 이 값으로 알아낸다.
+	// 소셜 연동을 시작한 사용자 id (OAuth2 콜백이 연동 대상 계정을 찾을 때 사용).
 	public static final String SESSION_KEY_LINK_TARGET_USER_ID = "SOCIAL_LINK_TARGET_USER_ID";
-	// 이미 다른 소셜 계정이 연동돼 있는 상태에서 또 연동을 시도하면, 확인 화면을 띄우기 전까지
-	// "무엇으로 바꾸려는 건지"를 잠깐 담아두는 용도.
+	// 다른 소셜 계정이 이미 연동된 상태에서 바꾸려는 연동 정보 (확인 전까지 보관).
 	public static final String SESSION_KEY_PENDING_LINK = "PENDING_SOCIAL_LINK";
-	// 소셜 인증은 끝났지만 가입된 계정이 없을 때, "가입하시겠습니까?" 확인을 받기 전까지 소셜 정보를 담아두는 용도
+	// 가입 확인 전까지 보관하는 소셜 정보
 	public static final String SESSION_KEY_PENDING_SIGNUP = "PENDING_SOCIAL_SIGNUP";
 
 	private final AuthenticatedUserResolver userResolver;
@@ -46,8 +44,7 @@ public class SocialLoginEntryController {
 	private final SocialLoginSessionSupport socialLoginSessionSupport;
 	private final Messages messages;
 
-	// 가입된 계정이 없는 소셜 계정으로 로그인(또는 가입)을 시도했을 때 보여주는 "이 계정으로 가입하시겠습니까?" 화면.
-	// OAuth2LoginSuccessHandler 가 소셜 정보를 세션에 담고 여기로 보낸다. 담긴 정보가 없거나 10분이 지났으면 로그인 화면으로.
+	// 가입된 계정이 없는 소셜 계정의 가입 확인 화면 (정보가 없거나 10분이 지나면 로그인으로).
 	@GetMapping("/social-login/signup-confirm")
 	public String signupConfirmForm(HttpSession session, Model model) {
 		PendingSocialSignup pending = pendingSignup(session);
@@ -61,7 +58,7 @@ public class SocialLoginEntryController {
 		return "social-signup-confirm";
 	}
 
-	// [예, 가입할게요] - 필수 약관 동의를 확인하고 계정을 만든 뒤 바로 로그인시킨다
+	// 가입 확인 - 필수 약관을 확인하고 계정을 만든 뒤 바로 로그인한다.
 	@PostMapping("/social-login/signup-confirm/confirm")
 	public String confirmSignup(@RequestParam(defaultValue = "false") boolean agreeAge,
 								@RequestParam(defaultValue = "false") boolean agreeTerms,
@@ -72,7 +69,7 @@ public class SocialLoginEntryController {
 		if (pending == null) {
 			return "redirect:/login";
 		}
-		// 화면에서도 막지만(required), 직접 요청을 보내는 경우까지 서버에서 다시 확인한다
+		// 직접 요청 우회를 막기 위해 서버에서도 확인한다.
 		if (!agreeAge || !agreeTerms) {
 			redirectAttributes.addFlashAttribute("errorMessage", messages.get("socialSignup.error.termsRequired"));
 			return "redirect:/social-login/signup-confirm";
@@ -84,7 +81,7 @@ public class SocialLoginEntryController {
 			session.removeAttribute(SESSION_KEY_PENDING_SIGNUP);
 			return "redirect:/login?socialEmailTaken=true";
 		} catch (DataIntegrityViolationException e) {
-			// 확인과 저장 사이에 같은 이메일/소셜 계정이 먼저 저장된 경우 (DB 유니크 제약이 막음)
+			// 동시에 같은 이메일·소셜 계정이 저장된 경우 (유니크 제약)
 			log.warn("소셜 회원가입 저장 충돌: {}", e.getMostSpecificCause().getMessage());
 			session.removeAttribute(SESSION_KEY_PENDING_SIGNUP);
 			return "redirect:/login?socialEmailTaken=true";
@@ -103,31 +100,28 @@ public class SocialLoginEntryController {
 		return "redirect:/login?socialSignupCancelled=true";
 	}
 
-	// 회원가입 페이지의 "구글로 가입하기" 버튼이 여기로 들어온다.
-	// intent=SIGNUP을 세션에 남긴 뒤, 스프링 시큐리티가 처리하는 진짜 OAuth2 로그인 시작 URL로 넘긴다.
+	// 회원가입의 소셜 가입 버튼 - intent=SIGNUP 을 남기고 OAuth2 로그인을 시작한다.
 	@GetMapping("/social-login/{provider}/signup")
 	public String startSignup(@PathVariable String provider, HttpSession session) {
 		session.setAttribute(SESSION_KEY_SOCIAL_LOGIN_INTENT, SocialLoginIntent.SIGNUP);
 		return "redirect:/oauth2/authorization/" + provider;
 	}
 
-	// 로그인 페이지의 "구글로 로그인" 버튼이 여기로 들어온다.
-	// intent=LOGIN을 세션에 남긴 뒤, 마찬가지로 OAuth2 로그인을 시작시킨다.
+	// 로그인의 소셜 로그인 버튼 - intent=LOGIN 을 남기고 OAuth2 로그인을 시작한다.
 	@GetMapping("/social-login/{provider}/login")
 	public String startLogin(@PathVariable String provider, HttpSession session) {
 		session.setAttribute(SESSION_KEY_SOCIAL_LOGIN_INTENT, SocialLoginIntent.LOGIN);
 		return "redirect:/oauth2/authorization/" + provider;
 	}
 
-	// 설정 화면의 "연결하기" 버튼이 여기로 들어온다. 로그인된 상태에서만 시작할 수 있다.
+	// 설정 화면의 소셜 연결 버튼 (로그인 상태에서만).
 	@GetMapping("/social-login/{provider}/link")
 	public String startLink(@PathVariable String provider, HttpSession session,
 							@AuthenticationPrincipal AuthenticatedUser principal) {
 		if (principal == null) {
 			return "redirect:/login";
 		}
-		// 소셜 연결은 팬 계정만 - 소셜 로그인 자체가 팬 전용이라(OAuth2LoginSuccessHandler) 다른 역할이 연결해도 쓸 데가 없다.
-		// 설정 화면에서도 팬에게만 "연결된 계정" 칸을 보여준다.
+		// 소셜 연결은 팬 계정만 가능하다.
 		if (!"ROLE_FAN".equals(principal.getRoleName())) {
 			return "redirect:/settings";
 		}
@@ -136,8 +130,7 @@ public class SocialLoginEntryController {
 		return "redirect:/oauth2/authorization/" + provider;
 	}
 
-	// 이미 다른 소셜 계정이 연동돼 있는 상태에서 또 연동을 시도했을 때 보여주는 확인 화면.
-	// 세션에 담아둔 정보가 없으면(예: 이 URL로 바로 접근) 설정 화면으로 돌려보낸다.
+	// 다른 소셜 계정이 연동된 상태에서 새로 연동할 때의 확인 화면.
 	@GetMapping("/social-login/link-confirm")
 	public String linkConfirmForm(HttpSession session, Model model,
 									@AuthenticationPrincipal AuthenticatedUser principal) {

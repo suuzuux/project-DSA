@@ -13,11 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * 장바구니 결제(모의). Variant 재고 차감과 장바구니 비우기를 한 트랜잭션에서 처리.
- * 실제로는 쓰이지 않고(checkout/buyNow는 Toss 결제 도입 전의 옛 흐름), parseVariantId/cartProductId만
- * ShopCartService·ShopPaymentService에서 공용으로 씀.
- */
+/** 장바구니 모의 결제 (현재는 parseVariantId·cartProductId 만 공용으로 사용). */
 @Service
 @RequiredArgsConstructor
 public class ShopCheckoutService {
@@ -27,7 +23,7 @@ public class ShopCheckoutService {
 	private final ShopService shopService;
 	private final MessageSource messageSource;
 
-	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어 에러 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}

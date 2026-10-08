@@ -1,8 +1,6 @@
 package megane6.weplanet.domain.dto;
 
-/**
- * 장바구니 한 줄 표시용 뷰.
- */
+/** 장바구니 한 줄 뷰 */
 public record ShopCartItemView(
 		Long itemId,
 		ShopProductView product,

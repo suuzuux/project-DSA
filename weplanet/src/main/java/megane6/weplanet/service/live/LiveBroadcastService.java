@@ -39,7 +39,7 @@ public class LiveBroadcastService {
 	private final LiveCommentReportRepository liveCommentReportRepository;
 	private final UserRepository userRepository;
 	private final CommunityJoinService communityJoinService;
-	private final CommunityActivityNotifier communityActivityNotifier; // [이벤트·혜택 알림] 라이브 시작 → 팔로워 이메일
+	private final CommunityActivityNotifier communityActivityNotifier; // 라이브 시작 → 팔로워 이메일
 	private final ChatFilterService chatFilterService;
 	private final BoardMediaService boardMediaService;
 	private final CommunityArtistResolver communityArtistResolver;
@@ -70,7 +70,7 @@ public class LiveBroadcastService {
 			return LiveStatusView.from(session);
 		}
 		LiveSession saved = liveSessionRepository.save(LiveSession.start(artist, host));
-		// [이벤트·혜택 알림] 이미 방송 중이면 위에서 일찍 return되므로, 여기 도달하는 건 항상 "새로 시작"한 경우.
+		// 새로 시작한 방송일 때만 알림을 보낸다.
 		communityActivityNotifier.notifyLiveStart(artist, saved);
 		return LiveStatusView.from(saved);
 	}
@@ -161,7 +161,7 @@ public class LiveBroadcastService {
 		return LiveCommentView.of(saved, communityJoinService.displayNickname(author, artistId), artistId);
 	}
 
-	// AI 팬 계정은 커뮤니티 가입 여부와 상관없이 댓글을 남긴다. 방송이 끝났거나 금칙어가 걸리면 조용히 건너뛴다.
+	// AI 팬은 가입 여부와 상관없이 댓글을 남긴다 (방송 종료·금칙어면 건너뜀).
 	@Transactional
 	public Optional<LiveCommentView> addAiFanComment(User fan, Long artistId, String content) {
 		if (fan == null || content == null || content.isBlank()) {

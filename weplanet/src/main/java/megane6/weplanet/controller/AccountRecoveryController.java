@@ -27,8 +27,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AccountRecoveryController {
 	
-	// 입력한 정보와 일치하는 계정이 있든 없든 같은 안내(recovery.codeSentIfMatched)를 보여준다.
-	// 문구 차이로 계정이 있는지, 소셜 전용 계정인지가 드러나지 않게 하기 위함.
+	// 계정 존재 여부가 드러나지 않게 결과와 상관없이 같은 안내를 보여준다.
 	
 	private final AccountRecoveryService accountRecoveryService;
 	private final SignupEmailVerificationService emailVerificationService;
@@ -50,7 +49,7 @@ public class AccountRecoveryController {
 	@ResponseBody
 	public Map<String, Object> sendFindIdCode(@RequestParam String realName, @RequestParam String email, HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		// 일치하는 계정이 있으면 가입 때 등록한 주소로 보낸다 (없으면 null - 메일은 안 보내고 응답만 같게)
+		// 일치하는 계정이 있으면 가입 이메일로 보낸다 (없으면 메일 없이 같은 응답).
 		String recipient = accountRecoveryService.findIdRecipient(realName, email).orElse(null);
 		try {
 			emailVerificationService.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, email, recipient);
@@ -140,7 +139,7 @@ public class AccountRecoveryController {
 											 @RequestParam String confirmPassword,
 											 HttpSession session) {
 		Map<String, Object> result = new HashMap<>();
-		// 화면(JS)에서 인증 후에만 이 단계로 넘어가지만, 직접 POST를 우회하는 걸 막기 위해 서버에서도 확인한다
+		// 직접 POST 우회를 막기 위해 서버에서도 인증 여부를 확인한다.
 		if (!emailVerificationService.isVerified(session, VerificationPurpose.RESET_PASSWORD, email)
 				|| !accountRecoveryService.matchesUsernameAndEmail(username, email)) {
 			result.put("success", false);
@@ -150,7 +149,7 @@ public class AccountRecoveryController {
 		try {
 			User user = accountRecoveryService.resetPassword(username, email, newPassword, confirmPassword);
 			emailVerificationService.clear(session, VerificationPurpose.RESET_PASSWORD, email);
-			// 비밀번호를 바꿨으면 그 계정에 로그인돼 있던 세션을 모두 끊고(탈취된 세션 차단), 본인이 되찾았으니 로그인 잠금도 푼다.
+			// 비밀번호를 바꾸면 기존 세션을 모두 끊고 로그인 잠금을 푼다.
 			userSessionExpirer.expireAllSessions(user.getId());
 			loginAttemptService.reset(user.getUsername());
 			result.put("success", true);

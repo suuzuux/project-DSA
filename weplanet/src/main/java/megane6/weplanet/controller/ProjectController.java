@@ -175,14 +175,14 @@ public class ProjectController {
 		}
 		
 		try {
-			// hidden input이 조작되더라도 URL의 아티스트를 등록 대상으로 사용한다.
+			// hidden input 이 조작돼도 URL 의 아티스트를 등록 대상으로 쓴다.
 			dto.setArtistId(artistId);
 			Long projectId = ps.createProject(principal.getId(), dto);
 			log.info("팬 프로젝트 등록 완료: projectId={}, creatorId={}", projectId, principal.getId());
 			redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.created"));
 			return "redirect:/community/" + artistId + "/project";
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			// 예외 메시지는 키(또는 아직 키로 안 바꾼 문장)라서 여기서 번역한 문구를 기본 메시지로 넘긴다
+			// 번역한 예외 문구를 기본 메시지로 넘긴다.
 			bindingResult.reject("projectCreateFailed", messages.resolve(e));
 			addPageModel(artistId, model, ProjectService.SORT_DEADLINE, principal);
 			return "community/project";
@@ -233,7 +233,7 @@ public class ProjectController {
 		return "redirect:/community/" + artistId + "/project/" + projectId;
 	}
 	
-	// 팀 공통 커뮤니티 화면과 등록 폼에서 사용할 모델을 함께 구성한다.
+	// 커뮤니티 화면과 등록 폼 공통 모델 구성.
 	private void addPageModel(Long artistId, Model model, String sort, AuthenticatedUser viewer) {
 		User artist = ur.findById(artistId)
 				.filter(user -> user.getRole() == Role.ARTIST)
@@ -256,7 +256,7 @@ public class ProjectController {
 		model.addAttribute("eventTypes", FanProjectEventType.values());
 		model.addAttribute("settlementBanks", SettlementBank.values());
 
-		// 목록 - 등록 실패로 폼을 다시 그릴 때도 뒤쪽 목록은 그대로 보여야 하므로 여기서 함께 담는다.
+		// 등록 실패로 폼을 다시 그릴 때도 목록을 함께 담는다.
 		model.addAttribute("projects", ps.getProjectCards(artist, sort, viewer));
 		model.addAttribute("sort", sort);
 	}

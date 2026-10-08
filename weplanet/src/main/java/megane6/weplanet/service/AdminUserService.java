@@ -223,7 +223,7 @@ public class AdminUserService {
 		return keyword.trim();
 	}
 	
-	// 라벨 필드에는 메시지 키를 담고 화면(admin/users.html)에서 #{${...}}로 번역한다
+	// 라벨에는 메시지 키를 담고 화면에서 번역한다.
 	private String roleLabel(Role role) {
 		return "admin.users.role." + role.name();
 	}

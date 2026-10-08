@@ -18,15 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * 햄버거(드로어) 메뉴용 커뮤니티 목록 API.
- * <p>
- * 원래는 각 페이지 컨트롤러가 joinedArtists/otherCommunities 를 모델에 담고
- * 템플릿이 window.__WEPLANET_*__ 로 뿌려주는 방식이었는데, 그 처리를 한 페이지(메인,
- * 커뮤니티, Shop)에서만 하고 있어서 공지사항 같은 다른 페이지에서는 메뉴가 빈 채로
- * "가입한 커뮤니티가 없어요"로 보였다. 페이지마다 같은 코드를 넣는 대신,
- * shell.js 가 필요할 때 여기서 받아가도록 창구를 하나로 모은다.
- */
+/** 햄버거 메뉴용 커뮤니티 목록 API (모든 페이지에서 shell.js 가 호출). */
 @RestController
 @RequiredArgsConstructor
 public class SideMenuApiController {

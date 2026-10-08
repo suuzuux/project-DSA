@@ -40,8 +40,7 @@ public class EmailVerification {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 	
-	// 회원가입 인증은 가입 전이므로 null,
-	// 프로젝트 등록 인증은 로그인 회원이 들어간다.
+	// 회원가입 인증은 null, 프로젝트 등록 인증은 로그인 회원
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id")
 	private User user;
@@ -146,9 +145,7 @@ public class EmailVerification {
 		);
 	}
 	
-	// 입점 승인 후 발급하는 소속사 계정 활성화 토큰.
-	// 다른 용도와 달리 6자리 숫자가 아니라 긴 랜덤 문자열을 쓰고,
-	// 메일 링크에 담아서 보내브로 codeHash에는 그 토큰의 해시만 저장한다.
+	// 소속사 계정 활성화 토큰 (긴 랜덤 문자열, 해시만 저장).
 	public static EmailVerification createForAgencyActivation(
 			User agencyUser,
 			String tokenHash,
@@ -167,9 +164,7 @@ public class EmailVerification {
 		);
 	}
 	
-	// 소속사가 포털에서 등록한 아티스트 그룹 계정의 활성화 링크
-	// 소속사 활성화와 구조는 같고, purpose만 다르다
-	// purpose를 나눠야 소속사용 링크로 아티스트 계정을, 아티스트용 링크로 소속사 계정을 여는 일이 없다
+	// 아티스트 그룹 계정 활성화 링크 (소속사용과 purpose 를 나눠 섞이지 않게 함).
 	public static EmailVerification createForArtistActivation(
 			User artistUser,
 			String tokenHash,
@@ -248,8 +243,7 @@ public class EmailVerification {
 		this.consumedAt = now;
 	}
 	
-	// 활성화 메일을 재발송할 때 이전에 보낸 링크가 더 이상 못 쓰게 만든다.
-	// 만료 시각을 지금으로 당겨서 isExpired()가 true가 되게 한다.
+	// 재발송 시 이전 링크를 만료시킨다.
 	public void invalidate(LocalDateTime now) {
 		if (isConsumed() || isExpired(now)) {
 			return;

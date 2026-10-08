@@ -5,13 +5,7 @@ import megane6.weplanet.domain.entity.Project;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-/**
- * 프로젝트 목록에 뿌릴 카드 한 장 분량의 뷰 모델.
- * <p>
- * Project 엔티티를 화면에 그대로 넘기면 creator/reviewedBy 같은 User가 딸려가서
- * 비밀번호·실명 같은 민감한 값까지 템플릿에서 접근 가능해진다.
- * 그래서 ArtistCardView처럼 화면에 필요한 값만 뽑아서 넘긴다.
- */
+/** 프로젝트 카드 뷰 (엔티티의 민감 정보가 화면에 넘어가지 않게 필요한 값만 담음). */
 public record ProjectCardView(
         Long id,
         String title,
@@ -29,9 +23,7 @@ public record ProjectCardView(
         int progressPercent
 ) {
 
-    /**
-     * @param coverStoredName 대표 이미지의 저장 파일명. 아직 없으면 null (카드에 기본 배경 표시)
-     */
+    /** coverStoredName 은 대표 이미지 파일명 (없으면 null). */
     public static ProjectCardView from(
             Project project,
             String coverStoredName,
@@ -42,10 +34,7 @@ public record ProjectCardView(
                 project.getEventType().getDisplayName(), project.getStatus().getDisplayName());
     }
 
-    /**
-     * 이벤트 유형/상태 라벨을 호출하는 쪽(ProjectService)이 현재 로케일로 번역해서 넘긴다.
-     * 레코드라 MessageSource를 직접 들 수 없어서 라벨을 인자로 받는 오버로드를 둔다.
-     */
+    /** 유형·상태 라벨을 번역해 받는 오버로드 (레코드라 MessageSource 를 직접 못 씀). */
     public static ProjectCardView from(
             Project project,
             String coverStoredName,
@@ -78,7 +67,7 @@ public record ProjectCardView(
         );
     }
 
-    // 마감일이 지났는지 (카드에서 D-day 대신 "마감"을 보여줄 때 사용)
+    // 마감일이 지났는지
     public boolean isClosed() {
         return remainingDays < 0;
     }

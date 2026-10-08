@@ -42,12 +42,12 @@ public enum SettlementBank {
         return displayName;
     }
 
-    // 화면 표시용 은행 이름 메시지 키 (displayName은 레거시 폴백)
+    // 화면 표시용 은행 이름 메시지 키 (displayName 은 폴백)
     public String getMessageKey() {
         return "project.bank." + name();
     }
 
-    // 토스 은행 코드 -> 메시지 키. 목록에 없는 은행이면 null (호출부가 displayNameOfTossCode로 폴백)
+    // 토스 은행 코드 → 메시지 키 (목록에 없으면 null)
     public static String messageKeyOfTossCode(String tossCode) {
         return Arrays.stream(values())
                 .filter(bank -> bank.tossPaymentsCode.equals(tossCode))
@@ -67,7 +67,7 @@ public enum SettlementBank {
                 .orElseThrow(() -> new IllegalArgumentException("지원하지 않는 은행 코드입니다: " + financialCode));
     }
     
-    // 토스 은행 코드 (예: "20") -> 화면에 보여줄 은행 이름. 목록에 없는 은행이면 코드를 그대로 보여준다.
+    // 토스 은행 코드 → 은행 이름 (목록에 없으면 코드 그대로)
     public static String displayNameOfTossCode(String tossCode) {
         return Arrays.stream(values())
                 .filter(bank -> bank.tossPaymentsCode.equals(tossCode))

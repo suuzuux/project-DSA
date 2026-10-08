@@ -121,7 +121,7 @@
             </dd>
           </div>
 
-          <!-- 입금 완료 전에는 신청 일시, 완료 후에는 입금 완료 일시 -->
+          <!-- 입금 전엔 신청 일시, 입금 후엔 입금 완료 일시 -->
           <div th:if="${participation.paidAt() != null}">
             <dt th:text="#{collection.paidAt}">입금 완료</dt>
             <dd th:text="${#temporals.format(participation.paidAt(), 'yyyy.MM.dd HH:mm')}">
@@ -136,7 +136,7 @@
           </div>
         </dl>
 
-        <!-- 입금 대기 중일 때만: 입금할 계좌 안내 -->
+        <!-- 입금 대기 중일 때만 계좌 안내 -->
         <div class="project-history-card__account"
              th:if="${participation.waitingForDeposit()}">
           <p>
@@ -158,7 +158,7 @@
   </section>
 </main>
 
-<!-- 전체보기 모달 (내용은 자바스크립트가 채움) -->
+<!-- 전체보기 모달 (JS 가 채움) -->
 <div class="modal-backdrop" id="collectionDetail">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal__head">

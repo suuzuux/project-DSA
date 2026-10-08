@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <!-- 이용약관 - 설정 화면 "약관 및 정책"에서 들어온다 (로그인 없이도 볼 수 있음).
-         본문은 policy/terms-body.html 의 ko / ja / en 조각 (한국어가 원문, WePlaNet 서비스 구성 기준으로 직접 작성). -->
+    <!-- 이용약관 (로그인 없이 열람, 본문은 terms-body.html 의 언어별 조각) -->
     <title th:text="#{policy.terms.pageTitle}">이용약관 | WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <style>
@@ -25,7 +24,7 @@
     <h1 style="font-size:var(--wp-fs-2xl);font-weight:800;letter-spacing:-0.03em;margin-bottom:8px;" th:text="#{policy.terms.heading}">이용약관</h1>
     <p class="policy-meta" th:text="#{policy.effectiveDate}">시행일자: 2026년 9월 16일</p>
 
-    <!-- th:replace가 th:case보다 먼저 처리되므로 case와 replace는 반드시 다른 요소에 둔다 -->
+    <!-- th:replace 가 th:case 보다 먼저 처리되므로 둘은 다른 요소에 둔다. -->
     <th:block th:switch="${#locale.language}">
         <th:block th:case="'ja'"><th:block th:replace="~{policy/terms-body :: ja}"></th:block></th:block>
         <th:block th:case="'en'"><th:block th:replace="~{policy/terms-body :: en}"></th:block></th:block>

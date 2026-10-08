@@ -11,8 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
-// 데모용 광고성 정보 메일 발송기 (문구는 받는 회원의 선호 언어).
-// 가입 완료 메일(항상) / 커뮤니티 가입 유도 메일(가입 때 광고 동의) / 동의 확인 메일(설정 화면에서 알림을 켰을 때).
+// 데모용 계정·광고성 정보 메일 (받는 회원의 선호 언어).
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,8 +20,7 @@ public class MarketingConsentEmailService {
 	private final JavaMailSender mailSender;
 	private final MessageSource messageSource;
 
-	// marketingConsentGiven: 가입 시점에 광고·마케팅 동의를 했는지. 소셜 가입은 이 체크박스 자체가 없으므로
-	// 항상 false로 넘어온다. true일 때만 동의 안내 문구를 메일 본문에 덧붙인다.
+	// 가입 시 광고 동의를 했을 때만 동의 안내를 덧붙인다 (소셜 가입은 항상 false).
 	public void sendSignupWelcomeEmail(User user, boolean marketingConsentGiven) {
 		Locale locale = PreferredLocaleResolver.toLocale(user.getPreferredLanguage());
 		SimpleMailMessage message = new SimpleMailMessage();
@@ -44,7 +42,7 @@ public class MarketingConsentEmailService {
 		Locale locale = PreferredLocaleResolver.toLocale(user.getPreferredLanguage());
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setTo(user.getEmail());
-		// 광고성 정보는 제목 첫머리에 "(광고)"를 표시해야 한다 (정보통신망법 제50조) - mail.invite.subject 키에 포함
+		// 광고성 메일은 제목에 "(광고)" 표시 (정보통신망법 제50조)
 		message.setSubject(msg("mail.invite.subject", locale));
 		message.setText(msg("mail.common.greeting", locale, user.getNickname()) + "\n\n"
 				+ msg("mail.invite.body", locale) + "\n\n"
@@ -65,7 +63,7 @@ public class MarketingConsentEmailService {
 		log.info("[광고성 정보 알림] 설정 화면 동의 확인 메일 발송: user={}", user.getId());
 	}
 
-	// 인자 없는 키는 args=null로 조회해 MessageFormat을 거치지 않게 한다 (작은따옴표 그대로 유지).
+	// 인자 없는 키는 args=null 로 조회한다 (작은따옴표 유지).
 	private String msg(String code, Locale locale, Object... args) {
 		return messageSource.getMessage(code, args.length == 0 ? null : args, locale);
 	}

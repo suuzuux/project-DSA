@@ -1,18 +1,6 @@
-/**
- * ============================================================
- * WePlaNet – Shell Overlays (메뉴 / 채팅 / 멤버십 공통 UI)
- * ------------------------------------------------------------
- * 와이어프레임:
- *  - P11~13,18~19: 햄버거 → 좌측 메뉴 드로어
- *  - P13: DM 목록 (종이비행기 FAB)
- *  - P18: DM 1:1 채팅방
- *  - P19: DM 구독(멤버십) 만료 배너
- *  - P27: Membership 가입 모달
- *  - P33: Membership 상세보기 모달
- * ============================================================
- */
+/* 공통 셸 UI - 메뉴 드로어, DM 목록·채팅방, 멤버십 모달 */
 
-/* ---------- Backdrop (메뉴/채팅 공통 딤) ---------- */
+/* 메뉴·채팅 공통 딤 배경 */
 .shell-backdrop {
   position: fixed;
   inset: 0;
@@ -28,9 +16,7 @@
   visibility: visible;
 }
 
-/* =========================================================
- * 1. 좌측 메뉴 드로어 (햄버거)
- * ========================================================= */
+/* 1. 좌측 메뉴 드로어 */
 .drawer-menu {
   position: fixed;
   top: 0;
@@ -81,8 +67,7 @@
   margin-bottom: 10px;
 }
 
-/* 커뮤니티 목록 영역이 남은 공간을 차지해서, 아래 메뉴(컬렉션·공지사항·Shop·설정)가
-   목록 길이와 상관없이 항상 드로어 맨 아래에 붙게 한다. */
+/* 커뮤니티 목록이 남은 공간을 차지해 아래 메뉴가 항상 맨 아래에 붙는다. */
 #drawerCommunities {
   flex: 1;
   min-height: 0;
@@ -97,7 +82,7 @@
   margin-bottom: 24px;
   flex: 1;
   overflow: auto;
-  /* 목록이 길면 스크롤은 되되 스크롤바는 보이지 않게 */
+  /* 스크롤은 되되 스크롤바는 숨김 */
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -164,9 +149,7 @@
   font-size: 16px;
 }
 
-/* =========================================================
- * 2. FAB (종이비행기 = 채팅, 캘린더 = 커뮤니티 일정)
- * ========================================================= */
+/* 2. FAB (채팅, 캘린더) */
 .fab-stack {
   position: fixed;
   right: 22px;
@@ -195,7 +178,7 @@
   background: var(--wp-brand-dark);
 }
 
-/* 안 읽은 DM 개수 (dm-realtime.js 가 #fabChat 안에 붙임) */
+/* 안 읽은 DM 개수 */
 #fabChat {
   position: relative;
 }
@@ -245,9 +228,7 @@
   color: var(--wp-brand);
 }
 
-/* =========================================================
- * 3. DM 패널 (모바일 폭 오버레이)
- * ========================================================= */
+/* 3. DM 패널 */
 .dm-panel {
   position: fixed;
   right: 18px;
@@ -268,7 +249,7 @@
   display: flex;
 }
 
-/* --- DM 공통 헤더 --- */
+/* DM 공통 헤더 */
 .dm-header {
   display: flex;
   align-items: center;
@@ -299,7 +280,7 @@
   background: #f3f1ed;
 }
 
-/* --- DM 목록 (P13) --- */
+/* DM 목록 */
 .dm-promo {
   margin: 12px;
   padding: 12px 14px;
@@ -390,7 +371,7 @@
   flex-shrink: 0;
 }
 
-/* --- DM 채팅방 (P18 / P19) --- */
+/* DM 채팅방 */
 .dm-room {
   display: none;
   flex-direction: column;
@@ -411,7 +392,7 @@
   display: flex;
 }
 
-/* 멤버십/DM 구독 만료 배너 (P19) */
+/* DM 구독 만료 배너 */
 .dm-expired {
   margin: 10px 12px;
   padding: 14px;
@@ -439,7 +420,7 @@
   min-width: 0;
 }
 
-/* 한 번도 가입 안 한 팬: "구독 만료" 대신 가입 안내 문구 */
+/* 가입 이력이 없는 팬: 가입 안내 문구 */
 .dm-expired__text--join,
 .dm-expired.is-never-subscribed .dm-expired__text--expired {
   display: none;
@@ -514,9 +495,7 @@
   border-bottom-left-radius: 4px;
 }
 
-/* 아바타 옆 메타(ARTIST 태그/닉네임) + 말풍선을 감싸는 컨테이너.
-   기본 div(block)로 두면 메타 줄 너비에 맞춰 말풍선까지 늘어나서, 짧은 메시지 뒤에 빈 공간이 남는 문제가 있었음.
-   flex-column + align-items:flex-start로 각 줄이 자기 내용물 너비만큼만 차지하도록 함 */
+/* 메타와 말풍선을 감싸는 컨테이너 (각 줄이 내용 너비만 차지하도록 flex-column). */
 .dm-msg__content {
   display: flex;
   flex-direction: column;
@@ -593,7 +572,7 @@
   place-items: center;
 }
 
-/* 금칙어/전송 한도 초과 경고 배너 (브라우저 alert 대신 화면 안에서 알려줌) */
+/* 금칙어·전송 한도 경고 배너 */
 .dm-warning {
   flex-shrink: 0;
   margin: 0 12px 8px;
@@ -622,9 +601,7 @@
   font-weight: 700;
 }
 
-/* =========================================================
- * 4. 멤버십 전용 페이지 / 카드 보강
- * ========================================================= */
+/* 4. 멤버십 페이지 / 카드 */
 .membership-hero {
   text-align: center;
   padding: 40px 20px 24px;
@@ -693,7 +670,7 @@
   min-width: 0;
 }
 
-/* 멤버십 혜택 리스트 (shell 모달에서도 community.css 없이 동작) */
+/* 멤버십 혜택 목록 (셸 모달에서도 동작) */
 .membership-benefits {
   margin: 16px 0 20px;
   padding: 0;
@@ -731,10 +708,7 @@
   margin-top: 4px;
 }
 
-/* =========================================================
- * 모바일(560px 이하) 헤더
- * 아이콘 버튼·간격이 PC 크기 그대로면 로고/커뮤니티 이름 자리가 모자라 서로 겹친다.
- * ========================================================= */
+/* 모바일(560px 이하) 헤더 - 아이콘·간격을 줄여 겹치지 않게 한다. */
 @media (max-width: 560px) {
   .site-header,
   .community-top {
@@ -777,7 +751,7 @@
     height: 34px;
   }
 
-  /* 커뮤니티 헤더는 아이콘이 6개까지 늘어나므로(검색·언어·테마·알림·샵·프로필) 더 촘촘하게 */
+  /* 커뮤니티 헤더는 아이콘이 많아 더 촘촘하게 */
   .community-top__right {
     gap: 0;
   }

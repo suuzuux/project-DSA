@@ -16,7 +16,7 @@
       </div>
 
       <nav class="portal-sidebar__nav">
-        <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+        <!-- 하위 메뉴 묶음 (details/summary) -->
         <details class="portal-sidebar__group" open>
           <summary>
             <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -71,7 +71,7 @@
       <div class="banner-admin-list" th:if="${!#lists.isEmpty(banners)}">
         <article class="banner-admin-item" th:each="b : ${banners}"
                  th:classappend="${!b.active()} ? ' is-off'">
-          <!-- 미니 미리보기 - 메인 배너와 같은 구성(배경색 + 영문명/대제목/본문 + 이미지) -->
+          <!-- 미니 미리보기 (메인 배너와 같은 구성) -->
           <div class="banner-mini" th:style="|background:${b.bgColor()};color:${b.textColor()};|">
             <div class="banner-mini__text">
               <span class="banner-mini__label" th:text="${b.label()}">ARTIST</span>

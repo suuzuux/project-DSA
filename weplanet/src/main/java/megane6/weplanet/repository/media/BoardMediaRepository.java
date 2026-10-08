@@ -18,6 +18,6 @@ public interface BoardMediaRepository extends JpaRepository<BoardMediaEntity, Lo
 
     long countByGroupIdAndDeletedAtIsNull(Long groupId);
 
-    // 삭제(소프트 삭제)된 지 일정 기간이 지났는데 아직 파일이 남아 있는 게시물 (DeletedMediaFileCleanupScheduler)
+    // 소프트 삭제 후 일정 기간이 지났는데 파일이 남은 게시물
     List<BoardMediaEntity> findByDeletedAtBeforeAndFilesIsNotEmpty(java.time.LocalDateTime cutoff);
 }

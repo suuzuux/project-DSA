@@ -1,15 +1,12 @@
 package megane6.weplanet.exception;
 
-/**
- * 문구에 넣을 값을 함께 들고 다니는 IllegalArgumentException (잘못된 입력 → 400). 번역은 Messages.resolve(e).
- * 예) throw new LocalizedIllegalArgumentException("error.banner.titleTooLong", TITLE_MAX);
- */
+/** 문구 값을 함께 담는 IllegalArgumentException (400, Messages.resolve(e) 로 번역). */
 public class LocalizedIllegalArgumentException extends IllegalArgumentException implements LocalizedMessage {
 
 	private final Object[] args;
 
 	public LocalizedIllegalArgumentException(String messageKey, Object... args) {
-		// getMessage() 는 키 그대로 (로그에도 키가 찍힘). 번역은 반드시 Messages.resolve(e) 로 - resolve(e.getMessage()) 로 하면 {0} 자리가 비어서 나온다
+		// getMessage() 는 키 그대로 (번역은 Messages.resolve(e) 로 해야 {0} 이 채워짐).
 		super(messageKey);
 		this.args = args == null ? new Object[0] : args.clone();
 	}

@@ -46,19 +46,18 @@ public class SecurityConfig {
             "/login/reactivate",
             "/login/reactivate/**",
             "/portal/login",
-            // 아티스트 2단계 로그인(프로필 선택) - 로그인 전 화면. 세션의 대기 그룹 id 로만 접근 가능
+            // 아티스트 프로필 선택 (대기 그룹 id 로만 접근)
             "/portal/profiles",
             "/portal/profiles/**",
             "/admin/login",
             "/api/schedules",
             "/api/notifications",
             "/api/site-notices",
-            // 메인 배너 번역문 - 메인 화면(비로그인 포함)이 번역이 늦게 끝난 배너 글자를 받아 바꿔 끼운다
+            // 메인 배너 번역문 (비로그인 포함)
             "/api/main-banners",
-            // shell.js(공통 헤더/사이드바)가 로그인 여부와 무관하게 fetch로 받아가는
-            // 다국어 문자열 API - 비로그인 화면(메인 등)에서도 셸이 그려지므로 공개해야 한다
+            // shell.js 다국어 문구 API (비로그인 화면에서도 사용)
             "/api/i18n/**",
-            // 햄버거 메뉴 커뮤니티 목록 - 비로그인도 전체 커뮤니티는 볼 수 있다
+            // 햄버거 메뉴 커뮤니티 목록
             "/api/side-menu/communities",
             "/api/artists",
             "/posts/**",
@@ -72,17 +71,17 @@ public class SecurityConfig {
             "/notices/**",
             "/shop",
             "/shop/**",
-            // 토스 입금 웹훅 - 토스 서버가 호출하므로 로그인 없음 (secret 값으로 검증)
+            // 토스 입금 웹훅 (secret 으로 검증)
             "/payments/toss/webhook",
             "/membership",
             "/partnership",
-            // 입점 승인 메일의 계정 활성화 링크 - 아직 로그인할 수 없는 사용자가 들어온다
+            // 계정 활성화 링크 (로그인 전)
             "/partner/activate",
             "/policy/**",
             "/css/**",
             "/js/**",
             "/img/**",
-            // 브라우저 탭 아이콘 - 로그인 전 화면에서도 브라우저가 자동으로 요청한다
+            // 브라우저 탭 아이콘
             "/favicon.ico",
             "/signup-wireframe",
             "/login-wireframe",
@@ -104,22 +103,21 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         AuthenticationFailureHandler failureHandler = portalAwareFailureHandler();
         http
-                // 로그인 처리 직전에 잠긴 아이디/IP 인지 먼저 확인 (LoginAttemptFilter, LoginAttemptService)
+                // 로그인 처리 직전에 잠긴 아이디·IP 확인
                 .addFilterBefore(new LoginAttemptFilter(loginAttemptService, failureHandler),
                         UsernamePasswordAuthenticationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // 관리자 로그인 2단계 인증은 로그인 전 요청이므로 공개한다.
-                        // 이 세 경로 외의 /admin/** 는 바로 아래 규칙에서 ADMIN 권한을 요구한다.
+                        // 관리자 로그인 2단계 인증 경로만 공개 (나머지 /admin/** 는 ADMIN).
                         .requestMatchers(
                                 "/admin/login",
                                 "/admin/login/code",
                                 "/admin/login/verify"
                         ).permitAll()
                         
-                        // 넓은 /chat/** 공개 규칙보다 먼저 검사해야 함
+                        // /chat/** 공개 규칙보다 먼저 검사한다.
                         .requestMatchers(
                                 "/admin/**",
                                 "/chat/admin/**"
@@ -129,8 +127,7 @@ public class SecurityConfig {
                                 PUBLIC_URLS.toArray(String[]::new)
                         ).permitAll()
 
-                        // 커뮤니티 영문 주소(/kiikii, /kiikii/fan) - /community/** 와 같은 공개 범위.
-                        // 등록된 영문명일 때만 공개하고, 아니면 아래 anyRequest 규칙을 그대로 탄다
+                        // 등록된 커뮤니티 영문 주소만 /community/** 와 같은 범위로 공개한다.
                         .requestMatchers(request -> communitySlugForwardFilter.forwardTargetOf(request).isPresent())
                         .permitAll()
 
@@ -153,7 +150,7 @@ public class SecurityConfig {
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        // 세션을 버리기 전에 화면 언어를 읽어 두고, 로그아웃 후 새 세션에 다시 넣는다 (RoleAwareLogoutSuccessHandler)
+                        // 로그아웃 전후로 화면 언어를 유지한다.
                         .addLogoutHandler(roleAwareLogoutSuccessHandler)
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
@@ -172,15 +169,14 @@ public class SecurityConfig {
 
     private AuthenticationFailureHandler portalAwareFailureHandler() {
         return (request, response, exception) -> {
-            // 로그인 비밀번호 대입 방어(LoginAttemptService): 비밀번호가 틀린 경우만 센다 (휴면·활성화 전·이미 잠긴 경우는 세지 않음).
-            // 없는 아이디는 IP 횟수만 센다 - 아이디까지 잠그면 아래 "가입된 아이디가 없습니다" 안내 대신 잠금 안내가 뜬다.
+            // 비밀번호가 틀린 경우만 센다 (없는 아이디는 IP 만).
             String attemptedUsername = request.getParameter("username");
             if (exception instanceof BadCredentialsException) {
                 boolean accountExists = attemptedUsername != null && !attemptedUsername.isBlank()
                         && userRepository.existsByUsername(attemptedUsername.trim());
                 loginAttemptService.recordFailure(accountExists ? attemptedUsername : null, request.getRemoteAddr());
             }
-            // 이번 실패로 한도에 닿았으면 바로 "잠시 후 다시 시도" 안내를 보여준다
+            // 이번 실패로 잠겼으면 바로 잠금 안내를 보여준다.
             boolean locked = exception instanceof LoginAttemptsExceededException
                     || loginAttemptService.isBlocked(attemptedUsername, request.getRemoteAddr());
 
@@ -199,7 +195,7 @@ public class SecurityConfig {
                     return;
                 }
 
-                // 입점 승인은 됐지만, 아직 메일 링크로 비밀번호를 설정하지 않은 소속사 계정
+                // 승인됐지만 아직 비밀번호를 설정하지 않은 계정
                 if (exception instanceof DisabledException) {
                     String username = request.getParameter("username");
                     boolean pendingActivation = username != null && userRepository.findByUsername(username)
@@ -228,10 +224,9 @@ public class SecurityConfig {
                     response.sendRedirect("/login?dormant=true");
                     return;
                 }
-                // WITHDRAWN/SUSPENDED는 구분 안 하고 일반 에러로 - 탈퇴 여부를 로그인 화면에서 노출 안 하려는 의도
+                // 탈퇴·정지는 구분하지 않고 일반 오류로 보여준다.
             }
-            // 없는 아이디로 실패하면 회원가입을 권한다 (팬 로그인 화면만): 1~4회째는 안내만, 5회째에 확인창을 띄우고 다시 센다.
-            // 가입으로 넘어가면 입력한 아이디가 채워진 가입 화면이 열린다(AuthController.signupForm) - 아이디는 URL 대신 세션에 담는다.
+            // 없는 아이디로 실패하면 회원가입을 권한다 (5회째 확인창, 아이디는 세션에 보관).
             if (exception instanceof BadCredentialsException) {
                 String username = request.getParameter("username");
                 String trimmed = username == null ? "" : username.trim();
@@ -250,8 +245,7 @@ public class SecurityConfig {
                     return;
                 }
             }
-            // "/login"은 SNS/아이디 선택 화면(login-wireframe)이라 에러 문구가 없다.
-            // 실제 아이디/비밀번호 폼과 에러 문구는 "/login/id"(login-id.html)에 있으므로 거기로 보내야 한다.
+            // 아이디·비밀번호 폼과 오류 문구가 있는 /login/id 로 보낸다.
             response.sendRedirect("/login/id?error");
         };
         

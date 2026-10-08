@@ -36,16 +36,16 @@ public class BoardMediaService {
     private final BoardMediaRepository boardMediaRepository;
     private final BoardMediaFileRepository boardMediaFileRepository;
     private final BoardMediaLikeRepository boardMediaLikeRepository;
-    private final FileStorageService fileStorageService; // 기존에 쓰던 파일 저장 서비스
+    private final FileStorageService fileStorageService; // 파일 저장 서비스
     private final MessageSource messageSource;
-    private final ChatFilterService chatFilterService; // 관리자가 등록한 금칙어 검사 (작성·수정 차단)
+    private final ChatFilterService chatFilterService; // 금칙어 검사
 
-    // 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+    // 화면 언어 에러 메시지 조회
     private String msg(String code, Object... args) {
         return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
     }
 
-    // 허용하는 파일 형식(MIME)
+    // 허용 파일 형식(MIME)
     private static final List<String> ALLOWED_TYPES = Arrays.asList(
             "image/jpeg", "image/png", "image/gif", "image/webp",
             "video/mp4", "video/webm", "video/quicktime"
@@ -54,7 +54,7 @@ public class BoardMediaService {
     public static final String LIVE_REPLAY_TITLE_PREFIX = "라이브 다시보기";
     public static final int POPULAR_LIKE_THRESHOLD = 100;
 
-    // ── 저장(업로드) : 게시글 + 파일 여러 개를 한 번에 저장 ──
+    // 업로드 - 게시글과 파일 여러 개를 함께 저장
     public Long create(Long groupId, Long uploaderId, String title, String content,
                        List<MultipartFile> files) {
         return create(groupId, uploaderId, title, content, files, false);
@@ -63,7 +63,7 @@ public class BoardMediaService {
     public Long create(Long groupId, Long uploaderId, String title, String content,
                        List<MultipartFile> files, boolean membershipOnly) {
 
-        // 파일을 디스크에 저장하기 전에 먼저 검사 (막힐 글인데 파일만 남는 일이 없게)
+        // 파일 저장 전에 금칙어를 먼저 검사한다.
         chatFilterService.rejectIfContainsBannedWord(title, content);
 
         LocalDateTime now = LocalDateTime.now();
@@ -151,11 +151,11 @@ public class BoardMediaService {
                 order++;
             }
         }
-        // @Transactional 안에서 값만 바꿔도 자동 저장되지만, 명확하게 저장 호출
+        // 명시적으로 저장한다.
         boardMediaRepository.save(post);
     }
 
-    // ── 삭제 : 소프트 삭제(기록/파일은 남기고 목록에서만 숨김) ──
+    // 삭제 - 소프트 삭제 (목록에서만 숨김)
     public void softDelete(Long id, Long communityGroupId) {
         BoardMediaEntity post = getActivePostInCommunity(id, communityGroupId);
         post.setDeletedAt(LocalDateTime.now());
@@ -182,7 +182,7 @@ public class BoardMediaService {
         return title != null && title.startsWith(LIVE_REPLAY_TITLE_PREFIX);
     }
 
-    // ── 목록 조회 : 엔티티 → 화면용 DTO 로 변환 ──
+    // 목록 조회 (엔티티 → DTO)
     @Transactional(readOnly = true)
     public List<BoardMediaViewDTO> list(Long groupId) {
         return listEntities(groupId).stream().map(this::toViewDTO).toList();
@@ -213,7 +213,7 @@ public class BoardMediaService {
         return boardMediaRepository.findByGroupIdAndDeletedAtIsNullOrderByCreatedAtDesc(groupId);
     }
 
-    // ── 파일 서빙 : 화면에서 이미지/영상을 불러올 때 ──
+    // 파일 서빙 (이미지·영상)
     @Transactional(readOnly = true)
     public BoardMediaFileEntity getFile(Long fileId) {
         return boardMediaFileRepository.findById(fileId)
@@ -255,7 +255,7 @@ public class BoardMediaService {
         return boardMediaLikeRepository.findByBoardAndUser(getActivePost(mediaId), user).isPresent();
     }
 
-    /** 해당 커뮤니티(groupId)에서 사용자가 좋아요한 미디어 id 집합 */
+    /** 이 커뮤니티에서 사용자가 좋아요한 미디어 id */
     @Transactional(readOnly = true)
     public Set<Long> likedIdsForUser(User user, Long groupId) {
         if (user == null || groupId == null) {
@@ -267,7 +267,6 @@ public class BoardMediaService {
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
-    // ── 내부 헬퍼 ──
     private String resolveContentType(MultipartFile file) {
         String raw = file.getContentType();
         if (raw != null) {

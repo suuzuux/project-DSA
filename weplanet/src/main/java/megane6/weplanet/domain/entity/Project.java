@@ -37,12 +37,12 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 팀 공통 커뮤니티와 동일하게 users.id(ARTIST)를 프로젝트 대상 아티스트로 사용한다.
+    // 프로젝트 대상 아티스트 (users.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "artist_id", nullable = false)
     private User artist;
 
-    // username이 아닌 users.id(PK)가 creator_id에 저장된다.
+    // 등록한 팬 (users.id)
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "creator_id", nullable = false)
     private User creator;
@@ -216,9 +216,7 @@ public class Project {
         }
     }
 
-    /**
-     * ADMIN이 승인대기 프로젝트를 승인한다.
-     */
+    /** 관리자가 승인대기 프로젝트를 승인한다. */
     public void approve(User admin) {
         validatePendingReview(admin);
         this.status = FanProjectStatus.APPROVED;
@@ -227,9 +225,7 @@ public class Project {
         this.rejectionReason = null;
     }
 
-    /**
-     * ADMIN이 승인대기 프로젝트를 사유와 함께 반려한다.
-     */
+    /** 관리자가 사유와 함께 반려한다. */
     public void reject(User admin, String reason) {
         validatePendingReview(admin);
         if (reason == null || reason.isBlank()) {
@@ -247,9 +243,7 @@ public class Project {
         this.rejectionReason = trimmedReason;
     }
     
-    /**
-     * 현재 시각에 맞춰 승인된 프로젝트의 모금 상태를 변경한다.
-     */
+    /** 현재 시각에 맞춰 모금 상태를 바꾼다. */
     public void synchronizeFundingStatus(LocalDateTime now) {
         if (now == null) {
             throw new IllegalArgumentException("상태 확인 시각이 필요합니다.");
@@ -270,7 +264,7 @@ public class Project {
         }
     }
     
-    // 진짜 정산
+    // 정산 완료 처리
     public void completeSettlement(User admin) {
         if (admin == null || admin.getRole() != Role.ADMIN) {
             throw new IllegalStateException("error.project.adminOnlySettlement");

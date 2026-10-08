@@ -22,7 +22,7 @@
       </div>
 
       <nav class="portal-sidebar__nav">
-        <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+        <!-- 하위 메뉴 묶음 (details/summary) -->
         <details class="portal-sidebar__group">
           <summary>
             <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -78,8 +78,7 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="content" th:text="#{noticeForm.contentLabel}">본문내용</label>
-          <!-- 서버로 실제 전송되는 값은 이 숨긴 textarea.
-               화면에는 아래 Toast UI 에디터가 보이고, 저장할 때 에디터 내용(마크다운)을 여기에 옮겨 담는다 -->
+          <!-- 실제 전송값은 숨긴 textarea (저장 시 에디터 마크다운을 옮겨 담는다). -->
           <textarea id="content" name="content" hidden
                     th:text="${notice != null ? notice.content : draftContent}"></textarea>
           <div id="contentEditor"></div>
@@ -159,7 +158,7 @@
           ["table", "link", "image"]
         ],
         hooks: {
-          // 이미지 버튼·붙여넣기·드래그 모두 여기로 들어온다 → 서버에 올리고 돌려받은 URL만 본문에 넣음
+          // 이미지 업로드는 서버에 올리고 받은 URL 만 본문에 넣는다.
           addImageBlobHook: function (blob, callback) {
             var formData = new FormData();
             formData.append("image", blob);
@@ -180,7 +179,7 @@
         }
       });
 
-      // 숨긴 textarea에는 required를 걸 수 없어서(브라우저가 포커스를 못 줌) 제출 직전에 직접 검사
+      // 숨긴 textarea 는 required 를 쓸 수 없어 제출 직전에 검사한다.
       form.addEventListener("submit", function (e) {
         contentEl.value = editor.getMarkdown();
         if (!contentEl.value.trim()) {

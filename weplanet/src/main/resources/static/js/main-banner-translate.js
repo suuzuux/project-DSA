@@ -1,9 +1,4 @@
-/**
- * 메인 배너 번역 이어받기 - 메인 화면을 그릴 때 AI 번역이 늦어 원문으로 둔 배너가 있으면(data-banners-pending="true")
- * /api/main-banners 로 번역문을 받아 제목·본문 글자만 바꿔 끼운다. 언어를 바꾼 직후에도 새로고침 없이 번역이 보이게.
- * 그래도 아직 번역 중이면(pending) 잠시 뒤 다시 물어본다 (최대 MAX_TRIES 번).
- * 화면의 배너는 원문 제목(originalTitle)으로 맞춰 본다 - 그 사이 노출 배너가 바뀌었으면 그 배너는 건너뛴다.
- */
+/** 메인 배너 번역 이어받기 - pending 이면 /api/main-banners 로 번역문을 받아 글자만 교체한다 (최대 MAX_TRIES, 원문 제목으로 대조). */
 (function () {
   "use strict";
 

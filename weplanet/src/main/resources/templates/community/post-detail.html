@@ -65,14 +65,14 @@
         </div>
       </div>
 
-      <!-- Hide from Artists 로 쓴 글 표시 (아티스트에겐 애초에 안 보이므로 팬 화면에서만 보인다) -->
+      <!-- Hide from Artists 배지 (팬 화면에서만 보임) -->
       <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
             th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
       <a href="javascript:void(0)" id="postTranslateLink" class="translate-link" th:text="#{community.translate.show}">번역보기</a>
       <p id="postTranslatedText" class="text-sm" style="display:none;margin:6px 0 0;color:var(--wp-ink-soft);"></p>
       <div id="contentViewer" class="post-card__body"></div>
 
-      <!-- 와이어프레임 36번: 포스트 작성 시 첨부한 링크 -->
+      <!-- 첨부 링크 -->
       <a th:if="${post.linkUrl != null}" th:href="${post.linkUrl}" target="_blank" rel="noopener"
          class="translate-link" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
@@ -101,7 +101,7 @@
           <span th:text="${#lists.size(comments)}">0</span>
         </a>
 
-        <!-- 와이어프레임 35/45번: 북마크 - 백엔드/모델(bookmarked)은 이미 있었는데 버튼만 빠져있었음 -->
+        <!-- 북마크 -->
         <button type="button" id="bookmarkButton"
                 th:classappend="${bookmarked} ? ' is-active'"
                 style="background:none;border:none;cursor:pointer;color:inherit;font-size:inherit;margin-left:auto;">
@@ -110,13 +110,13 @@
         </button>
       </div>
 
-      <!-- 수정/삭제(작성자 본인만) / 신고(작성자 아닌 로그인 사용자만) -->
+      <!-- 수정·삭제(작성자) / 신고(다른 로그인 사용자) -->
       <div class="flex-center mt-8" style="gap:12px;" th:if="${post.author != null}">
         <th:block sec:authorize="isAuthenticated()" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
           <th:block th:if="${#authentication.principal.id == post.author.id}">
             <button type="button" class="translate-link" style="background:none;border:none;cursor:pointer;"
                     data-modal-open="editPostModal" th:text="#{common.edit}">수정</button>
-            <!-- th:onsubmit엔 문자열 표현식을 못 넣어서(Thymeleaf 제한) 확인 문구는 data-confirm으로 넘긴다 -->
+            <!-- th:onsubmit 제한으로 확인 문구는 data-confirm 으로 넘긴다. -->
             <form th:action="@{/posts/detail/{id}/delete(id=${post.id})}" method="post"
                   th:attr="data-confirm=#{community.postDetail.deleteConfirm}"
                   onsubmit="return WePlaNet.confirmSubmit(this, this.dataset.confirm);" style="display:inline;">
@@ -142,8 +142,7 @@
         <span id="postReportMsg" class="text-xs"></span>
       </div>
 
-      <!-- AI 자동요약 - 백엔드(SummaryService, /posts/detail/{id}/summarize)는 이미 있었는데
-           지금 쓰는 커뮤니티 상세 페이지엔 버튼이 안 붙어있었음. 레거시 feed/postDetail.html에서 로직 그대로 옮김 -->
+      <!-- AI 자동 요약 -->
       <div class="mt-12">
         <button id="summarizeButton" type="button" class="btn btn--soft btn--sm" th:text="#{community.postDetail.summarize}">AI 요약보기</button>
         <div id="summaryArea"></div>
@@ -154,7 +153,7 @@
     <div th:replace="~{community/fragments/fanComments :: commentsFragment}"></div>
   </div>
 
-  <!-- 게시글 수정 모달 (작성자 본인만 열림, th:if로 렌더링 자체를 걸러서 다른 사람 화면엔 안 그려짐) -->
+  <!-- 게시글 수정 모달 (작성자 화면에만 렌더링) -->
   <div class="modal-backdrop" id="editPostModal"
        th:if="${post.author != null and #authentication.name != 'anonymousUser' and #authentication.principal.id == post.author.id}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">
@@ -182,8 +181,7 @@
       initialValue: /*[[${post.content}]]*/ ''
     });
 
-    // 유튜브 링크 자동 임베드 - 레거시 feed/postDetail.html 로직 그대로 옮김
-    // (전엔 이 페이지에 아예 안 붙어있어서 유튜브 링크가 그냥 텍스트로만 보였음)
+    // 유튜브 링크 자동 임베드
     setTimeout(embedYoutubeLinks, 0);
 
     function embedYoutubeLinks() {

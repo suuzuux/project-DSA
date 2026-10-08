@@ -24,7 +24,7 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 
 	List<CommunityMember> findByArtistId(Long artistId);
 
-	// 게시글 목록 작성자들의 이 커뮤니티 프로필을 한 번에 (예전 CommunityProfileRepository.findForAuthorsInCommunity)
+	// 게시글 작성자들의 이 커뮤니티 프로필을 한 번에 조회
 	List<CommunityMember> findByArtistIdAndFanIdIn(Long artistId, Collection<Long> fanIds);
 
 	long countByArtistId(Long artistId);
@@ -42,7 +42,7 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
 			@Param("artistIds") Collection<Long> artistIds
 	);
 
-	// 급상승 커뮤니티: since 이후 새로 가입한 사람 수 (커뮤니티별). 신규 가입자가 없는 커뮤니티는 결과에 안 나온다
+	// 급상승 커뮤니티: since 이후 커뮤니티별 신규 가입자 수
 	@Query("""
         select new megane6.weplanet.domain.dto.ArtistCount(
             member.artistId,

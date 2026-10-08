@@ -18,8 +18,7 @@ public enum ScheduleCategory {
 	private final String label;
 	private final String calendarType;
 
-	// 이 라벨들은 global-icons.js 캘린더 위젯이 이미 calendar.eventType.* 키로 갖고 있는
-	// 것과 의미가 같아서(TV/방송, 유튜브, 콘서트 ... ), 새 키를 만들지 않고 그대로 재사용한다.
+	// 캘린더 위젯과 같은 calendar.eventType.* 키를 재사용한다.
 	public String getMessageKey() {
 		return "calendar.eventType." + calendarType;
 	}

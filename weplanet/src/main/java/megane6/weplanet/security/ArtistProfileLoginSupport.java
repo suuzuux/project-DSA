@@ -2,11 +2,7 @@ package megane6.weplanet.security;
 
 import jakarta.servlet.http.HttpSession;
 
-/**
- * 그룹 로그인(1단계)과 프로필 선택(2단계) 사이에 "어느 그룹의 프로필을 고르는 중인지"를 세션에 잠깐 들고 있는다.
- * 이 상태는 로그인이 아니다 - SecurityContext 는 비어 있고, 이 값으로는 /portal/profiles 화면만 열 수 있다.
- * 그룹 비밀번호만 알고 프로필을 고르지 않은 채 그룹 이름으로 활동하는 것을 막기 위함.
- */
+/** 그룹 로그인과 프로필 선택 사이의 대기 그룹 id (로그인 상태 아님, 프로필 선택만 가능). */
 public class ArtistProfileLoginSupport {
 	
 	private static final String PENDING_GROUP_ID = "artistProfileLogin.groupId";
@@ -22,7 +18,7 @@ public class ArtistProfileLoginSupport {
 		session.setAttribute(PENDING_EXPIRES_AT, System.currentTimeMillis() + VALID_MILLIS);
 	}
 	
-	// 대기 중인 그룹id. 없거나 시간이 지났으면 null
+	// 대기 중인 그룹 id (없거나 만료면 null)
 	public static Long pendingGroupId(HttpSession session) {
 		if (session == null) {
 			return null;

@@ -1,32 +1,13 @@
-/**
- * ============================================================
- * WePlaNet – Common Interactions (Mock)
- * ------------------------------------------------------------
- * 실제 API 연동 없이 UI 동작만 시연한다.
- * - 배너 캐러셀
- * - 모달 open/close
- * - 탭 / 토글
- * - 약관 전체동의
- * - 회원가입 간단 유효성 (시각 피드백)
- * - 폼 submit 기본 방지 + 페이지 이동 안내
- * ============================================================
- */
+/** 공통 UI 동작 - 배너 캐러셀, 모달, 탭·토글, 약관 전체동의, 회원가입 검증. */
 
 (function () {
   "use strict";
 
-  /* ---------------------------------------------------------
-   * 유틸
-   * --------------------------------------------------------- */
+  // 유틸
   const qs = (sel, root = document) => root.querySelector(sel);
   const qsa = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-  /* ---------------------------------------------------------
-   * 순수 클라이언트 JS 문구 (/api/i18n/client)
-   * -----------------------------------------------------------
-   * 현재 화면 언어 문구를 한 번 받아와 WePlaNet.t(key, 한국어기본값, [인자])로 꺼내 쓴다 (community-*.js 공용).
-   * 페이지를 그릴 때 필요한 곳은 WePlaNet.i18nReady 뒤에 그리고, 요청이 실패하면 한국어 기본값을 쓴다.
-   * --------------------------------------------------------- */
+  // JS 문구 (/api/i18n/client) - WePlaNet.t(key, 한국어 기본값, 인자) 로 꺼내 쓴다.
   let clientMessages = null;
 
   function formatMessage(template, args) {
@@ -53,15 +34,10 @@
     return formatMessage(template == null ? key : template, args);
   }
 
-  /* ---------------------------------------------------------
-   * 라이트 / 다크 테마
-   * - 고른 값은 localStorage에 남겨서 다음 방문/다른 페이지에서도 유지
-   * - 고른 적이 없으면 OS 설정(prefers-color-scheme)을 따라간다
-   * --------------------------------------------------------- */
+  // 라이트·다크 테마 (선택값은 localStorage, 없으면 OS 설정).
   const THEME_KEY = "weplanet-theme";
 
-  // 로그인·회원가입 등 로그인 전 화면(.auth-page)은 항상 밝은 화면으로 둔다.
-  // 고른 값 자체는 지우지 않아서, 로그인하고 나면 원래 쓰던 테마로 돌아온다.
+  // 로그인 전 화면은 항상 밝게 둔다 (선택값은 유지).
   const forceLightPage = document.body.classList.contains("auth-page");
 
   function applyTheme(theme) {
@@ -69,7 +45,7 @@
     try {
       localStorage.setItem(THEME_KEY, theme);
     } catch (e) {
-      /* 시크릿 모드 등에서 저장이 막혀도 화면 전환은 되어야 함 */
+      // 저장이 막혀도 화면 전환은 된다.
     }
   }
 
@@ -78,7 +54,7 @@
       const saved = localStorage.getItem(THEME_KEY);
       if (saved === "dark" || saved === "light") return saved;
     } catch (e) {
-      /* 무시하고 OS 설정으로 */
+      // OS 설정 사용
     }
     return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
@@ -94,17 +70,7 @@
     applyTheme(isDark ? "light" : "dark");
   });
 
-  /* ---------------------------------------------------------
-   * 공용 알림/확인 다이얼로그 (브라우저 기본 alert/confirm 대체)
-   * -----------------------------------------------------------
-   * 기본 alert/confirm은 브라우저가 그리는 창이라 디자인을 맞출 수 없고,
-   * 화면 전체가 멈춰버려서(모달 블로킹) 자동화 테스트에서도 잡히지 않음.
-   * 그래서 같은 역할을 하는 화면 안 다이얼로그를 직접 만들어서 씀.
-   *
-   *   WePlaNet.alert("메시지")            -> 확인 버튼만 (Promise 반환)
-   *   WePlaNet.confirm("정말?")           -> 확인/취소 (true/false Promise)
-   *   WePlaNet.toast("저장했어요")         -> 잠깐 떴다 사라지는 알림
-   * --------------------------------------------------------- */
+  // 공용 다이얼로그 - WePlaNet.alert / confirm / toast (브라우저 기본 창 대체).
   function ensureDialogRoot() {
     let root = document.getElementById("wpDialogRoot");
     if (root) return root;
@@ -132,7 +98,7 @@
     const cancelBtn = root.querySelector('[data-wp-dialog="cancel"]');
 
     msgEl.textContent = message;
-    // 버튼 문구는 열 때마다 채운다 - 다이얼로그가 i18n 응답보다 먼저 만들어졌어도 다음부터는 번역 문구가 나오게
+    // 버튼 문구는 열 때마다 채운다 (i18n 응답 이후 반영).
     okBtn.textContent = t("common.confirm", "확인");
     cancelBtn.textContent = t("common.cancel", "취소");
     cancelBtn.hidden = !withCancel;
@@ -191,14 +157,7 @@
     }, 2600);
   };
 
-  /**
-   * 폼 제출 전 확인창을 띄우는 헬퍼.
-   * 기존 onsubmit="return confirm('...')" 을 그대로 대체하기 위한 것 -
-   * 우리 확인창은 Promise라서 즉시 true/false를 돌려줄 수 없기 때문에,
-   * 일단 제출을 막고(false 반환) 사용자가 "확인"을 누르면 그때 폼을 다시 제출함.
-   *
-   *   <form onsubmit="return WePlaNet.confirmSubmit(this, '삭제할까요?')">
-   */
+  /** onsubmit 확인창 대체 - 제출을 막고 확인을 누르면 다시 제출한다. */
   window.WePlaNet.confirmSubmit = function (form, message) {
     if (form.dataset.wpConfirmed === "1") {
       form.dataset.wpConfirmed = "";
@@ -217,10 +176,7 @@
     return false;
   };
 
-  /**
-   * data-modal-open / data-modal-close 로 모달 제어
-   * 예) <button data-modal-open="membershipModal">
-   */
+  /** data-modal-open / data-modal-close 모달 제어 */
   function initModals() {
     qsa("[data-modal-open]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -252,9 +208,7 @@
     });
   }
 
-  /**
-   * 배너 캐러셀 (.banner[data-carousel])
-   */
+  /** 배너 캐러셀 (.banner[data-carousel]) */
   function initCarousels() {
     qsa("[data-carousel]").forEach((root) => {
       const track = qs(".banner__track", root);
@@ -269,7 +223,7 @@
         dotsWrap.innerHTML = slides
           .map((_, i) => `<button type="button" class="banner__dot${i === 0 ? " is-active" : ""}" data-i="${i}"></button>`)
           .join("");
-        // aria-label은 i18n 응답이 온 뒤에 채운다 (도트는 페이지 로드 직후에 그려지므로)
+        // aria-label 은 i18n 응답 후 채운다.
         i18nReady.then(() => {
           qsa(".banner__dot", dotsWrap).forEach((dot, i) => {
             dot.setAttribute("aria-label", t("client.carousel.slide", "슬라이드 {0}", [i + 1]));
@@ -301,14 +255,7 @@
     });
   }
 
-  /**
-   * 탭: [data-tabs] 안에서 .is-active 토글 + 패널 전환
-   * HTML 예)
-   * <div data-tabs>
-   *   <button data-tab="a" class="is-active">A</button>
-   *   <div data-tab-panel="a">...</div>
-   * </div>
-   */
+  /** 탭 ([data-tabs] 안 is-active 토글 + 패널 전환) */
   function initTabs() {
     qsa("[data-tabs]").forEach((root) => {
       root.addEventListener("click", (e) => {
@@ -324,9 +271,7 @@
     });
   }
 
-  /**
-   * 토글 스위치 (.toggle) – 클릭 시 is-on
-   */
+  /** 토글 스위치 (.toggle 클릭 시 is-on) */
   function initToggles() {
     qsa(".toggle").forEach((el) => {
       el.setAttribute("role", "switch");
@@ -338,9 +283,7 @@
     });
   }
 
-  /**
-   * 약관: #agreeAll 체크 시 하위 전부 동기화
-   */
+  /** 약관 전체동의 동기화 */
   function initAgreeAll() {
     const all = qs("#agreeAll");
     if (!all) return;
@@ -359,15 +302,12 @@
     });
   }
 
-  /**
-   * 회원가입 클라이언트 유효성
-   * - 통과 시 실제 서버(POST /signup)로 제출
-   */
+  /** 회원가입 클라이언트 검증 (통과 시 POST /signup) */
   function initSignupValidation() {
     const form = qs("#signupForm");
     if (!form) return;
 
-    // 메시지는 검증 시점에 꺼내도록 getter로 둔다(서버 문구와 같은 키 재사용)
+    // 메시지는 검증 시점에 꺼낸다 (서버 문구 키 재사용).
     const rules = {
       username: {
         test: (v) => /^[a-zA-Z0-9]{4,20}$/.test(v),
@@ -390,7 +330,7 @@
         get msg() { return t("signup.validation.emailFormat", "올바른 이메일 형식으로 입력해주세요."); },
       },
       nickname: {
-        // 서버 닉네임 규칙(NicknamePolicy - 2~15자)과 같은 범위
+        // 서버 닉네임 규칙과 같은 2~15자
         test: (v) => v.trim() === "" || (v.length >= 2 && v.length <= 15),
         get msg() { return t("client.signup.nicknameLength", "닉네임은 2~15자로 입력해주세요."); },
       },
@@ -426,9 +366,7 @@
     });
   }
 
-  /**
-   * data-mock-submit 폼: 기본 submit 막고 alert 또는 이동
-   */
+  /** data-mock-submit 폼 (기본 제출 막고 안내 또는 이동) */
   function initMockForms() {
     qsa("form[data-mock-submit]").forEach((form) => {
       form.addEventListener("submit", (e) => {
@@ -443,9 +381,7 @@
     });
   }
 
-  /**
-   * 글자 수 카운터: textarea[data-count] + .char-count
-   */
+  /** 글자 수 카운터 (textarea[data-count] + .char-count) */
   function initCharCounters() {
     qsa("[data-count]").forEach((el) => {
       const max = Number(el.getAttribute("maxlength") || el.dataset.count || 0);
@@ -458,9 +394,7 @@
     });
   }
 
-  /**
-   * 좋아요 토글 (목업 카운트 ±1)
-   */
+  /** 좋아요 토글 (목업 카운트) */
   function initLikeButtons() {
     qsa("[data-like]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -477,9 +411,7 @@
     });
   }
 
-  /* ---------------------------------------------------------
-   * Init
-   * --------------------------------------------------------- */
+  // 초기화
   document.addEventListener("DOMContentLoaded", () => {
     initModals();
     initCarousels();
