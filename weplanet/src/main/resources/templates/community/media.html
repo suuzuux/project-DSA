@@ -119,7 +119,7 @@
     <aside th:replace="~{community/fragments/layout :: sidebarAside(false, false)}"></aside>
   </div>
 
-  <!-- 미디어 등록 모달 (해당 커뮤니티 아티스트만) -->
+  <!-- 미디어 등록 모달 (커뮤니티 아티스트만) -->
   <div class="modal-backdrop" id="writeMediaModal"
        th:if="${isOwnCommunity}">
     <div class="modal modal--wide" onclick="event.stopPropagation()">

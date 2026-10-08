@@ -30,8 +30,7 @@ public class AdminUserController {
 		requireAdmin(principal);
 		Role roleFilter = parseEnum(Role.class, role);
 		UserStatus statusFilter = parseEnum(UserStatus.class, status);
-		// "LOCAL"(연동된 소셜이 없는 계정)은 AuthProvider 값이 아니라 parseEnum 하면 필터가 풀려 버리므로,
-		// provider IS NULL 조건(localOnly)으로 따로 처리한다.
+		// LOCAL(소셜 미연동) 필터는 AuthProvider 값이 아니라 provider IS NULL 로 처리한다.
 		boolean localOnly = "LOCAL".equalsIgnoreCase(provider);
 		AuthProvider providerFilter = localOnly ? null : parseEnum(AuthProvider.class, provider);
 		model.addAttribute("users", aus.getUsers(

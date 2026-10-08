@@ -25,7 +25,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -467,7 +467,7 @@
               </strong>
             </td>
 
-            <!-- 사유 (DB에 저장된 데이터라 번역하지 않음) -->
+            <!-- 사유 (DB 저장값이라 번역하지 않음) -->
             <td>
               <span th:text="${adminLog.reason() == null
                       or #strings.isEmpty(

@@ -55,18 +55,18 @@
     </div>
 </div>
 
-<!-- 프로필 클릭 시 뜨는 모달 (와이어프레임: OO 로 로그인합니다 / 개인 비밀번호 / 취소·시작하기) -->
+<!-- 프로필 로그인 모달 (개인 비밀번호 입력) -->
 <div class="profile-modal" id="profileModal" th:attr="data-error-member-id=${errorMemberId}">
     <div class="profile-modal__box">
         <div class="profile-card__avatar" id="modalAvatar">프</div>
-        <!-- 어순이 언어마다 달라서 "{0}" 자리에 이름(strong)을 스크립트가 끼워 넣는다 -->
+        <!-- 언어마다 어순이 달라 이름은 스크립트가 {0} 자리에 넣는다. -->
         <p id="modalLoginAs" style="text-align:center;margin-bottom:16px;"
            th:attr="data-template=#{portalProfiles.modal.loginAs}"><strong id="modalName">멤버</strong> 로 로그인합니다.</p>
 
         <p th:if="${profileError}" id="modalError" class="text-sm" style="color:#c45c26;margin-bottom:12px;"
            th:text="${profileError}"></p>
 
-        <!-- action 의 0 은 자리표시. 클릭한 프로필의 memberId 로 스크립트가 바꾼다 -->
+        <!-- action 의 0 은 자리표시 (스크립트가 memberId 로 바꾼다). -->
         <form id="profileForm" th:action="@{/portal/profiles/0}" method="post">
             <div class="form-group">
                 <label class="form-label" for="profilePassword" th:text="#{portalProfiles.modal.passwordLabel}">개인 비밀번호</label>
@@ -102,7 +102,7 @@
       // "/portal/profiles/0" → "/portal/profiles/"
       var baseAction = form.getAttribute("action").replace(/0$/, "");
 
-      // 번역 문구의 "{0}" 자리에 굵은 이름을 넣는다 (이름은 textContent 로만 넣어 HTML 로 해석되지 않게)
+      // 문구의 {0} 자리에 굵은 이름을 넣는다 (textContent 사용).
       function renderLoginAs(name) {
         var template = loginAsEl.getAttribute("data-template") || "{0} 로 로그인합니다.";
         var parts = template.split("{0}");
@@ -123,7 +123,7 @@
         renderLoginAs(name);
         avatarEl.textContent = name.charAt(0);
 
-        // 첫 로그인이면 "비밀번호 확인" 칸을 보여주고 필수로 만든다
+        // 첫 로그인이면 비밀번호 확인 칸을 필수로 보여준다.
         confirmGroup.style.display = firstLogin ? "" : "none";
         confirmInput.required = firstLogin;
         passwordInput.autocomplete = firstLogin ? "new-password" : "current-password";
@@ -148,7 +148,7 @@
         modal.classList.remove("is-open");
       });
 
-      // 비밀번호가 틀려서 돌아온 경우: 그 프로필 모달을 에러 문구와 함께 다시 연다
+      // 비밀번호가 틀려 돌아오면 그 프로필 모달을 에러와 함께 다시 연다.
       var errorMemberId = modal.getAttribute("data-error-member-id");
       if (errorMemberId) {
         var card = document.querySelector('.profile-card[data-member-id="' + errorMemberId + '"]');

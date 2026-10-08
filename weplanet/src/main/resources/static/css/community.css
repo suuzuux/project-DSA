@@ -1,13 +1,6 @@
-/**
- * ============================================================
- * WePlaNet – Community Styles
- * ------------------------------------------------------------
- * 아티스트 커뮤니티 내부 (Highlight / Notice / Fan / Artist /
- * Media / Live / Profile). 공통 헤더·탭·멤버십 배너 포함.
- * ============================================================
- */
+/* 커뮤니티 화면 스타일 (Highlight / Notice / Fan / Artist / Media / Live / Profile) */
 
-/* ---------- 게시글 본문 안 유튜브 임베드 (16:9 반응형) ---------- */
+/* 게시글 본문 유튜브 임베드 (16:9 반응형) */
 .video-embed {
   position: relative;
   width: 100%;
@@ -40,7 +33,7 @@
   z-index: 100;
 }
 
-/* 햄버거(메뉴)는 community-top 직속 첫 자식으로 삽입됨 */
+/* 햄버거는 community-top 의 첫 자식으로 삽입됨 */
 .community-top > .menu-toggle {
   flex-shrink: 0;
 }
@@ -81,7 +74,7 @@
   color: var(--wp-brand);
 }
 
-/* 아이콘 크기는 메인 헤더(.icon = 1em)와 동일하게 둔다 - 따로 키우지 않음 */
+/* 아이콘 크기는 메인 헤더와 동일 */
 
 .community-top__left a.home-link {
   width: 36px;
@@ -107,8 +100,7 @@
 }
 
 /* ---------- Hero Header Image ---------- */
-/* 커뮤니티 히어로 배너 비율 (3:1, 실제 위버스 배너 비율과 동일).
-   에이전시 헤더 이미지도 같은 3:1로 미리 크롭되어 표시된다 (HeaderImage 크롭 설정). */
+/* 커뮤니티 히어로 배너 비율 3:1 (에이전시 헤더 이미지도 같은 비율로 크롭) */
 .community-hero {
   aspect-ratio: 3 / 1;
   background:
@@ -157,7 +149,7 @@
   order: 2;
 }
 
-/* Highlight/Notice/Fan/Artist/Media/Live 탭바 — 스크롤바 없음 */
+/* 탭바 (스크롤바 없음) */
 .community-main > .tabs,
 .community-main nav.tabs {
   overflow: hidden;
@@ -171,8 +163,7 @@
   order: 1;
 }
 
-/* 게시글 상세(post-detail) 페이지는 예외: 사이드바(Membership 등)가 아니라 본문(왼쪽, 넓게)-댓글(오른쪽) 구성.
-   .community-aside를 재사용하는 #commentSection 폭도 사이드바보다 넓게 별도 지정함 */
+/* 게시글 상세는 본문(왼쪽, 넓게) - 댓글(오른쪽) 구성 */
 .community-body--detail {
   grid-template-columns: minmax(0, 1fr) 380px;
 }
@@ -537,7 +528,7 @@
   margin-left: auto;
 }
 
-/* 정렬 select — 칩과 같은 알약 + 둥근 메뉴 */
+/* 정렬 select - 칩과 같은 알약 모양 */
 .board-select {
   position: relative;
   display: inline-flex;
@@ -673,13 +664,13 @@
   min-width: 0;
 }
 
-/* [대댓글] 답글은 원댓글 아래에 한 단 들여써서 구분한다 */
+/* 답글은 원댓글 아래 들여쓰기 */
 .comment-replies {
   margin-top: 10px;
 }
 
 .comment-replies .comment-item {
-  /* 왼쪽 여백: 답글 세로줄과 아이콘 사이 간격 (padding 단축 속성이 .comment-item--reply 의 padding-left 를 덮어쓰지 않게 여기서 지정) */
+  /* 답글 세로줄과 아이콘 사이 간격 (padding-left 가 덮이지 않게 여기서 지정) */
   padding: 10px 0 0 12px;
   border-bottom: 0;
 }
@@ -689,7 +680,7 @@
   border-left: 2px solid var(--wp-hairline);
 }
 
-/* 답글이 남아 있어서 자리만 남겨둔 원댓글 */
+/* 답글 때문에 자리만 남긴 원댓글 */
 .comment-item--deleted .comment-item__text {
   font-style: italic;
   color: var(--wp-muted);
@@ -1218,7 +1209,7 @@
   width: 300px;
   min-width: 240px;
   max-width: 320px;
-  /* 영상 열 너비(= 전체 - 채팅 - gap) 기준 16:9 높이에 맞춤 */
+  /* 영상 열 너비 기준 16:9 높이 */
   height: calc((100cqi - 300px - 16px) * 9 / 16);
   max-height: calc((100cqi - 300px - 16px) * 9 / 16);
   min-height: 0;
@@ -1359,7 +1350,7 @@
   }
 }
 
-/* ---------- Post feed pagination / quick actions ---------- */
+/* 게시글 피드 아바타 / 빠른 동작 */
 .post-author-avatar {
   background: var(--wp-brand-soft);
 }
@@ -1370,20 +1361,20 @@
   color: var(--wp-brand-dark);
 }
 
-/* 댓글처럼 작은 아바타(28px) 안에서는 아이콘도 비율 맞춰 줄임 */
+/* 작은 아바타(28px) 안 아이콘 크기 */
 .avatar--sm .avatar__placeholder {
   width: 17px;
   height: 17px;
 }
 
-/* 하이라이트 "From 아티스트" - 게시글 카드 한 줄에 두 칸 (Comments by 위젯과 같은 카드 간격) */
+/* 하이라이트 From 영역 - 한 줄에 두 칸 */
 .feed--grid-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
-/* 텍스트 글 + 사진 글이 섞인 경우: 카드마다 제 높이만 쓰게 (기본은 같은 줄 카드 높이를 맞춰 늘림) */
+/* 텍스트 글과 사진 글이 섞이면 카드마다 제 높이만 쓴다. */
 .feed--grid-2--mixed {
   align-items: start;
 }
@@ -1394,7 +1385,7 @@
   }
 }
 
-/* Hide from Artists 글 표시 - 본문 바로 위에 한 줄로 놓는 둥근 알약 모양 배지 */
+/* Hide from Artists 배지 (본문 위 알약 모양) */
 .badge-only-fan {
   display: flex;
   width: fit-content;
@@ -1470,13 +1461,10 @@
   }
 }
 
-/* 모바일: 하단 가입 유도 띠의 글자·버튼이 오른쪽 아래 FAB(채팅/캘린더)에 가려지지 않게 왼쪽으로 모은다.
-   띠의 기본 스타일이 인라인이라 !important 로 덮는다. */
-/* 한 단으로 접히는 폭(960px 이하)의 배치.
-   위쪽의 같은 조건 미디어쿼리는 뒤에 오는 기본 규칙(order, --detail 2단)에 덮여 적용되지 않아서 파일 끝에 다시 둔다. */
+/* 모바일: 하단 가입 유도 띠가 FAB 에 가려지지 않게 왼쪽으로 모은다 (인라인 스타일이라 !important). */
+/* 한 단으로 접히는 폭(960px 이하) - 기본 규칙에 덮이지 않게 파일 끝에 둔다. */
 @media (max-width: 960px) {
-  /* 목록 화면: 가입 상태·글쓰기 → 탭과 게시글 → 멤버십·캘린더 순서.
-     사이드 카드를 전부 위에 쌓으면 탭과 게시글이 한참 아래로 밀린다. */
+  /* 목록 화면: 가입 상태·글쓰기 → 탭·게시글 → 멤버십·캘린더 순서 */
   .community-body:not(.community-body--detail) > .community-aside {
     display: contents;
   }
@@ -1517,9 +1505,7 @@
 }
 
 @media (max-width: 560px) {
-  /* 헤더 오른쪽 아이콘이 많아 이름 자리가 모자란다 (아이콘 크기는 shell.css 의 모바일 헤더 규칙).
-     아바타는 바로 옆 이름과 같은 곳(커뮤니티 홈)으로 가므로 숨겨도 된다.
-     홈 버튼은 메인으로 가는 유일한 길이라 남긴다. */
+  /* 헤더 아이콘 공간 확보를 위해 아바타를 숨긴다 (홈 버튼은 유지). */
   .community-top__left > .avatar {
     display: none;
   }

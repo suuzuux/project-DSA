@@ -1,10 +1,4 @@
-/**
- * 최고관리자 > 이벤트 > 해시태그 총공 > 등록/수정 폼
- *  - 아티스트 검색: 입력이 잠깐 멈추면 서버에 검색 요청 → 결과의 "추가" → 참여 아티스트 목록에 한 줄 추가
- *  - 줄마다 hidden artistIds + hashtags 입력칸이 있어서, 그대로 제출하면 서버가 List 로 받는다
- *  - 시작일~종료일이 며칠인지 바로 보여주고, 3~7일을 벗어나면 경고
- * 검색 결과는 innerHTML 대신 textContent 로 채운다 (이름에 <script> 같은 글자가 있어도 실행되지 않게)
- */
+/** 관리자 해시태그 총공 폼 - 아티스트 검색(디바운스)·참여 목록 추가·기간 경고 (검색 결과는 textContent 로 채워 XSS 방지). */
 (function () {
   "use strict";
 
@@ -24,7 +18,7 @@
   const minDays = Number(form.dataset.minDays || 3);
   const maxDays = Number(form.dataset.maxDays || 7);
 
-  // 화면 언어 문구 - hashtag-event-form.html 이 window.__HASHTAG_FORM_MSG__ 에 넣어 준다. 없으면 한국어 기본값
+  // 화면 언어 문구 (없으면 한국어 기본값)
   const MSG = window.__HASHTAG_FORM_MSG__ || {};
   function t(key, ko, args) {
     let text = MSG[key] != null ? MSG[key] : ko;
@@ -37,7 +31,7 @@
   let searchTimer = null;
   let lastResults = [];
 
-  // 이미 참여 목록에 들어간 아티스트 id 들 (input 값이라 문자열)
+  // 참여 목록에 들어간 아티스트 id (문자열)
   function selectedIds() {
     return Array.from(targetList.querySelectorAll("input[name='artistIds']")).map(function (input) {
       return input.value;
@@ -66,7 +60,7 @@
   function addTarget(artist) {
     if (selectedIds().includes(String(artist.artistId))) return;
 
-    // <template> 안의 한 줄 틀을 복사해서 값만 채운다
+    // <template> 의 줄 틀을 복사해 값만 채운다.
     const row = rowTemplate.content.firstElementChild.cloneNode(true);
     fillAvatar(row.querySelector(".hashtag-avatar"), artist);
     row.querySelector("strong").textContent = artist.name;
@@ -80,7 +74,7 @@
     hashtagInput.focus();
 
     refreshCount();
-    renderResults(lastResults); // 방금 추가한 아티스트를 "추가됨"으로 다시 그림
+    renderResults(lastResults); // 추가한 아티스트를 "추가됨"으로 다시 그림
   }
 
   function renderResults(artists) {
@@ -151,13 +145,13 @@
       });
   }
 
-  // 한 글자 칠 때마다 요청하지 않도록, 입력이 250ms 멈추면 그때 검색 (디바운스)
+  // 입력이 250ms 멈추면 검색한다 (디바운스).
   searchInput.addEventListener("input", function () {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(search, 250);
   });
 
-  // 검색창에서 엔터를 쳐도 폼이 제출되지 않게
+  // 검색창 엔터로 폼이 제출되지 않게
   searchInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -165,7 +159,7 @@
     }
   });
 
-  // "빼기" - 서버가 그려준 줄도, JS로 추가한 줄도 목록 하나에 걸어둔 리스너로 처리 (이벤트 위임)
+  // 빼기 버튼은 이벤트 위임으로 처리
   targetList.addEventListener("click", function (e) {
     const button = e.target.closest("[data-remove-target]");
     if (!button) return;
@@ -183,7 +177,7 @@
 
     const start = new Date(startInput.value);
     const end = new Date(endInput.value);
-    const days = Math.round((end - start) / 86400000) + 1; // 86400000ms = 하루, 양 끝 날짜 포함
+    const days = Math.round((end - start) / 86400000) + 1; // 하루 = 86400000ms, 양 끝 날짜 포함
     const ok = days >= minDays && days <= maxDays;
 
     periodHint.textContent = ok

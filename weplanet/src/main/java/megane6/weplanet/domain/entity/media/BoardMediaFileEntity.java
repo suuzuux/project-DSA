@@ -5,7 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-// 게시글 첨부 미디어 (board_media_files 테이블). 게시글 1개에 여러 개.
+// 미디어 게시글 첨부 파일
 @Entity
 @Table(name = "board_media_files")
 @Getter
@@ -19,7 +19,7 @@ public class BoardMediaFileEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 어느 게시글의 첨부인지. LAZY = 필요할 때만 게시글을 불러옴.
+    // 첨부된 게시글
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "board_id", nullable = false)
     private BoardMediaEntity board;

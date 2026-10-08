@@ -28,7 +28,7 @@
     };
     const successUrl = window.location.origin + /*[[${successUrl}]]*/ "/payments/shop/success";
     const failUrl = window.location.origin + /*[[${failUrl}]]*/ "/payments/shop/fail";
-    // 화면 언어에 맞춘 문구 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+    // 화면 언어 문구 (한국어는 fallback)
     const MSG = {
       cancelled: /*[[#{payment.cancelled}]]*/ "결제를 취소했어요.",
       openFailed: /*[[#{payment.openFailed}]]*/ "결제창을 열지 못했습니다."

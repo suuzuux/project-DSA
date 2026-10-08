@@ -17,7 +17,7 @@ class RefererRedirectsTest {
 				RefererRedirects.safePath("https://weplanet.example.com/community/1/fan?sort=latest", request, FALLBACK));
 	}
 
-	// 다른 사이트에서 폼을 제출하면 그 사이트로 보내지 않고 기본 주소로 (오픈 리다이렉트 방지)
+	// 다른 사이트에서 온 요청은 기본 주소로 보낸다 (오픈 리다이렉트 방지)
 	@Test
 	void otherSiteRefererFallsBack() {
 		assertEquals(FALLBACK, RefererRedirects.safePath("https://evil.example.org/phishing", request, FALLBACK));

@@ -19,8 +19,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
-// 새 게시글/공지/라이브 시작 알림 메일을 받을 팬을 골라 한 명씩 보낸다 (@Async - 호출한 쪽을 기다리게 하지 않음).
-// 대상: 커뮤니티 가입 + 아티스트 팔로우 + 이메일 알림 켬 (+ 야간 21~08시면 야간 알림 허용까지).
+// 알림 메일 대상 선별 후 비동기 발송 (가입 + 팔로우 + 수신 동의, 야간엔 야간 허용까지).
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -75,8 +74,7 @@ public class CommunityActivityNotifier {
 		if (memberIds.isEmpty()) {
 			return List.of();
 		}
-		// 가입자 중에서 이 아티스트를 팔로우하는 사람만 남긴다
-		// (팔로워 목록을 한 번에 읽어 가입자와 겹치는 사람만 - 가입자마다 따로 조회하지 않는다).
+		// 가입자 중 아티스트 팔로워만 남긴다 (팔로워 목록을 한 번에 조회).
 		java.util.Set<Long> artistFollowerIds = userFollowRepository
 				.findByFollowingIdAndCommunityIdOrderByCreatedAtAsc(artist.getId(), artist.getId()).stream()
 				.map(UserFollow::getFollowerId)
@@ -89,7 +87,7 @@ public class CommunityActivityNotifier {
 		}
 		boolean night = isNightNow();
 		return userRepository.findAllById(followerIds).stream()
-				// 휴면·정지·탈퇴 회원과 받을 수 없는 시스템 주소(*.weplanet.local - 카카오/LINE 가입자 등)는 제외
+				// 휴면·정지·탈퇴 회원과 수신 불가 주소 제외
 				.filter(User::isLoginable)
 				.filter(fan -> !fan.hasPlaceholderEmail())
 				.filter(User::isCommunityActivityEmailEnabled)
@@ -97,7 +95,7 @@ public class CommunityActivityNotifier {
 				.collect(Collectors.toList());
 	}
 
-	// 21:00~08:00(KST) 사이인지 - 자정을 걸치는 구간이라 "21시 이후이거나 8시 이전" 으로 판단.
+	// 21:00~08:00(KST) 인지
 	private boolean isNightNow() {
 		LocalTime now = LocalTime.now(KST);
 		return !now.isBefore(NIGHT_START) || now.isBefore(NIGHT_END);

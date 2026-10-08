@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface MainBannerRepository extends JpaRepository<MainBanner, Long> {
 
-	// 관리 목록 - 노출 순서대로 (같은 순서면 최근 등록이 앞)
+	// 관리 목록 - 노출 순서 (같으면 최근 등록 우선)
 	@EntityGraph(attributePaths = {"artist", "goods"})
 	List<MainBanner> findAllByOrderBySortOrderAscIdDesc();
 

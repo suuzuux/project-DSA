@@ -13,12 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Locale;
 
-/**
- * 관리자는 관리자 로그인으로, 아티스트/에이전시는 포털 로그인으로, 그 외는 메인홈으로 보낸다.
- *
- * 화면 언어 유지: 로그아웃은 세션을 통째로 버리므로, LogoutHandler 로도 등록해 세션을 버리기 전에 언어를 읽어 두고(logout)
- * 로그아웃이 끝난 뒤 새 세션에 다시 넣는다(onLogoutSuccess). 관리자는 한국어 고정이라 따로 하지 않는다.
- */
+/** 역할별 로그아웃 이동 (관리자·포털·메인) 및 화면 언어 유지. */
 @Component
 public class RoleAwareLogoutSuccessHandler implements LogoutHandler, LogoutSuccessHandler {
 
@@ -54,7 +49,7 @@ public class RoleAwareLogoutSuccessHandler implements LogoutHandler, LogoutSucce
 				}
 			}
 		}
-		// 한국어가 아닌 언어를 쓰던 경우에만 새 세션을 열어 언어를 이어 준다 (한국어는 기본값이라 세션이 필요 없다)
+		// 한국어가 아닌 경우에만 새 세션에 언어를 이어 준다.
 		if (request.getAttribute(KEPT_LOCALE_ATTR) instanceof Locale kept) {
 			PreferredLocaleResolver.restoreLocale(request, kept);
 		}

@@ -16,9 +16,7 @@ import java.util.List;
 public class ProjectStatusScheduler {
 	private final ProjectRepository pr;
 	
-	/**
-	 * 매분 0초마다 프로젝트 모금 상태를 현재 시각에 맞춘다.
-	 */
+	/** 매분 프로젝트 모금 상태를 현재 시각에 맞춘다. */
 	@Scheduled(cron = "0 * * * * *")
 	@Transactional
 	public void synchronizeFundingStatuses() {

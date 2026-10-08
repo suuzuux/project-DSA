@@ -10,13 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * 팬 프로젝트 결제 상태 정리 스케줄러 (5분마다)
- * 1) 입금 대기 주문 -> 토스에 조회해서 입금됐으면 PAID, 기한 지났으면 EXPIRED
- * 2) 결제창을 닫아 READY로 방치된 주문 -> 60분 지나면 FAILED
- *
- * 주문마다 서비스 메서드를 따로 호출(= 주문마다 별도 트랜잭션)해서 한 건이 실패해도 나머지는 계속 처리되게 한다.
- */
+/** 결제 상태 정리 스케줄러 (5분마다 입금 대기 확인, 60분 방치 READY 는 FAILED, 주문별 트랜잭션). */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -27,7 +21,7 @@ public class ProjectPaymentScheduler {
 	private final ProjectContributionRepository pcr;
 	private final ProjectContributionService pcs;
 	
-	// fixedDelay : 이전 실행이 끝나고 5분 뒤 다시 실행 / initialDelay : 서버 시작 1분 뒤 첫 실행
+	// 이전 실행 5분 후 반복, 서버 시작 1분 후 첫 실행
 	@Scheduled(fixedDelay = 5 * 60 * 1000L, initialDelay = 60 * 1000L)
 	public void cleanUpPayments() {
 		List<String> waitingOrders = pcr.findOrderNosByStatus(FanProjectPaymentStatus.WAITING_FOR_DEPOSIT);

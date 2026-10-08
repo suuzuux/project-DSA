@@ -17,19 +17,13 @@ import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.regex.Pattern;
 
-/**
- * 초대 링크로 만들어진 계정의 활성화(비밀번호 설정)를 담당
- *  - 입점 승인으로 만들어진 소속사 계정 (AGENCY_ACTIVATION)
- *  - 소속사가 포털에서 등록한 아티스트 계정 (ARTIST_ACTIVATION)
- * 회원가입 인증과 달리 6자리 숫자가 아니라 긴 랜덤 토큰 사용
- * 메일 링크를 그냥 누르면 되도록 만들기 위해서이고, 대신 추측이 불가능하도록 길이를 충분히 길게 잡음
- */
+/** 초대 링크 계정(소속사·아티스트) 활성화 - 추측 불가능한 긴 랜덤 토큰 사용. */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AgencyActivationService {
-	// 관리자가 승인한 뒤 소속사가 메일을 확인할 시간을 넉넉히 줌
+	// 메일 확인 기간 (72시간)
 	public static final long EXPIRATION_HOURS = 72;
 	
 	private static final Pattern PASSWORD_PATTERN
@@ -40,7 +34,7 @@ public class AgencyActivationService {
 	private final PasswordEncoder pe;
 	private final SecureRandom secureRandom = new SecureRandom();
 	
-	// 활성화 토근 발급. 승인 처리와 "초대 메일 재발송" 두 곳에서 쓴다.
+	// 활성화 토큰 발급 (승인·재발송 공통)
 	@Transactional
 	public IssuedActivation issueActivationToken(User agencyUser) {
 		if (agencyUser == null) {
@@ -53,8 +47,7 @@ public class AgencyActivationService {
 		
 		String rawToken = generateToken();
 		
-		// DB에는 해시만 저장. DB가 유출돼도 활성화 링크를 만들어낼 수 없음
-		// 소속사/아티스트 중 어떤 링크인지는 계정 역할로 정한다
+		// DB 에는 해시만 저장하고, 링크 용도는 계정 역할로 정한다.
 		EmailVerification saved = evr.save(
 				createVerification(
 						agencyUser,
@@ -71,8 +64,7 @@ public class AgencyActivationService {
 		);
 	}
 	
-	// 활성화 메일 재발송. 이전 링크 모두 무효화한 뒤 새 토큰 발급
-	// 메일을 여러 번 받았을 때 옛날 링크가 살아있으면 안 됨
+	// 재발송 - 이전 링크를 모두 무효화하고 새 토큰을 발급한다.
 	@Transactional
 	public IssuedActivation reissueActivationToken(User agencyUser) {
 		LocalDateTime now = LocalDateTime.now();
@@ -85,7 +77,7 @@ public class AgencyActivationService {
 		return issueActivationToken(agencyUser);
 	}
 	
-	// 활성화 화면을 열 때 링크가 아직 쓸 수 있는지 확인
+	// 활성화 화면을 열 때 링크 유효성 확인
 	public ActivationTarget loadActivationTarget(
 			String verificationKey,
 			String rawToken
@@ -113,7 +105,7 @@ public class AgencyActivationService {
 	) {
 		LocalDateTime now = LocalDateTime.now();
 		
-		// 같은 링크로 동시에 두 번 들어오는 경우를 막기 위해 잠금 조회를 사용
+		// 같은 링크 동시 요청을 막는 잠금 조회
 		EmailVerification verification
 				= evr.findByVerificationKeyForUpdate(verificationKey)
 				.orElseThrow(() -> new IllegalArgumentException("error.activation.invalidLink"));
@@ -146,7 +138,7 @@ public class AgencyActivationService {
 			String rawToken,
 			LocalDateTime now
 	) {
-		// 계정 역할과 링크 용도가 맞아야 한다 (소속사 링크로 아티스트 계정을 여는 것 방지)
+		// 계정 역할과 링크 용도가 맞아야 한다.
 		if (verification.getPurpose() != purposeFor(verification.getUser())) {
 			throw new IllegalArgumentException("error.activation.invalidLink");
 		}
@@ -178,8 +170,7 @@ public class AgencyActivationService {
 		}
 	}
 	
-	// 계정 역할 → 활성화 링크 용도
-	// 초대 링크로 활성화하는 계정은 소속사와 아티스트뿐이다
+	// 계정 역할 → 링크 용도 (소속사·아티스트만)
 	private EmailVerificationPurpose purposeFor(User user) {
 		if (user.getRole() == Role.AGENCY) {
 			return EmailVerificationPurpose.AGENCY_ACTIVATION;
@@ -204,13 +195,13 @@ public class AgencyActivationService {
 		byte[] buffer = new byte[TOKEN_BYTE_LENGTH];
 		secureRandom.nextBytes(buffer);
 		
-		// URL에 그대로 담아야 하므로 URL-safe Base64를 쓴다
+		// URL 에 담으려고 URL-safe Base64 를 쓴다.
 		return Base64.getUrlEncoder()
 				.withoutPadding()
 				.encodeToString(buffer);
 	}
 	
-	// 발급 결과. rawToken은 메일에 담기 위해 이 순간에만 평문으로 존재한다.
+	// 발급 결과 (rawToken 은 메일 발송 때만 평문으로 존재)
 	public record IssuedActivation(
 			String verificationKey,
 			String rawToken,
@@ -218,7 +209,7 @@ public class AgencyActivationService {
 	){
 	}
 	
-	// 활성화 화면에 보여줄 정보 (role: 소속사/아티스트 문구와 로그인 탭 구분용)
+	// 활성화 화면 정보 (role 로 문구와 로그인 탭 구분)
 	public record ActivationTarget(
 			String username, String nickname, Role role
 	) {}

@@ -1,13 +1,16 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.fan.BadgeAwardService;
+import megane6.weplanet.service.fan.BadgeEventListener;
+
 import megane6.weplanet.domain.entity.MembershipPeriod;
 import megane6.weplanet.domain.entity.enumfolder.BadgeCode;
 import megane6.weplanet.domain.event.BadgeActivityEvent;
-import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.UserFollowRepository;
-import megane6.weplanet.repository.MembershipPeriodRepository;
-import megane6.weplanet.repository.PostRepository;
+import megane6.weplanet.repository.comment.CommentRepository;
+import megane6.weplanet.repository.fan.LikeRepository;
+import megane6.weplanet.repository.fan.UserFollowRepository;
+import megane6.weplanet.repository.membership.MembershipPeriodRepository;
+import megane6.weplanet.repository.fan.PostRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -39,8 +42,7 @@ class BadgeEventListenerTest {
 		verify(awardService).award(11L, 22L, BadgeCode.SPECIAL_MEMBERSHIP_1);
 	}
 
-	// 아티스트 팔로우(following_id == community_id == artistId)
-	// 관계가 있을 때만 BASIC_FOLLOW_ARTIST 배지가 나가는지 확인.
+	// 아티스트 팔로우 관계가 있을 때만 BASIC_FOLLOW_ARTIST 배지가 나간다
 	@Test
 	void artistFollowedAwardsFollowBadgeWhenFollowRelationExists() {
 		BadgeAwardService awardService = mock(BadgeAwardService.class);

@@ -8,10 +8,10 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+  <!-- SockJS / Stomp (dm-realtime.js 용) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-  <!-- Toast UI Editor: 포스트 작성 모달의 마크다운 리치 에디터 (예전엔 뷰어만 붙어있고 작성용은 빠져있었음) -->
+  <!-- Toast UI Editor (글쓰기 모달 마크다운 에디터) -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 </head>
@@ -72,7 +72,7 @@
     <span aria-hidden="true">↑</span>
   </button>
 
-  <!-- 포스트 작성 모달 (팬 + 타 커뮤니티 방문 아티스트) -->
+  <!-- 포스트 작성 모달 (팬 + 다른 커뮤니티 방문 아티스트) -->
   <div class="modal-backdrop" id="writePostModal"
        th:if="${!isOwnCommunity}"
        sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')">

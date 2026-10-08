@@ -43,7 +43,7 @@ public class ProjectContribution {
     @JoinColumn(name = "contributor_id", nullable = false)
     private User contributor;
     
-    // 토스에 넘기는 orderId 로도 그대로 사용한다.
+    // 토스 orderId 로도 사용한다.
     @Column(name = "order_no", nullable = false, unique = true, length = 50)
     private String orderNo;
     
@@ -53,20 +53,20 @@ public class ProjectContribution {
     @Column(name = "payment_provider", nullable = false, length = 30)
     private String paymentProvider;
     
-    // 토스 paymentKey. 결제 승인(confirm) 이후에 채워진다.
+    // 토스 paymentKey (승인 후 채워짐)
     @Column(name = "provider_transaction_id", length = 255)
     private String providerTransactionId;
     
     @Column(nullable = false)
     private Long amount;
     
-    // ---------- 가상계좌 정보 (READY 상태에서는 전부 null) ----------
+    // 가상계좌 정보 (READY 에서는 null)
     
     // 토스 은행 코드 (예: "20" = 우리은행)
     @Column(name = "virtual_bank_code", length = 3)
     private String virtualBankCode;
     
-    // 발급받은 가상계좌 번호. 추후 암호화할 수 있게 VARBINARY + 변환기 사용
+    // 가상계좌 번호 (VARBINARY + 변환기)
     @Convert(converter = PlaintextBytesConverter.class)
     @Column(name = "virtual_account_number", columnDefinition = "VARBINARY(255)")
     private String virtualAccountNumber;
@@ -75,11 +75,9 @@ public class ProjectContribution {
     @Column(name = "due_date")
     private LocalDateTime dueDate;
     
-    // 입금 웹훅이 진짜 토스에서 온 건지 확인하는 값. 화면/DTO로 절대 내보내지 않는다.
+    // 입금 웹훅 검증 값 (외부로 내보내지 않음)
     @Column(name = "deposit_secret", length = 100)
     private String depositSecret;
-    
-    // ---------------------------------------------------------------
     
     @Column(name = "is_anonymous", nullable = false)
     private boolean anonymous;
@@ -133,10 +131,7 @@ public class ProjectContribution {
         this.paymentStatus = FanProjectPaymentStatus.READY;
     }
     
-    /**
-     * [참여하기] 버튼 -> 주문만 먼저 만든다. 아직 돈은 오가지 않은 상태.
-     * 금액은 여기서 확정되고, 이후 승인 단계에서 이 금액과 비교해 위변조를 막는다.
-     */
+    /** 참여하기 - 금액을 확정해 주문만 만든다 (승인 때 이 금액과 비교). */
     public static ProjectContribution createReady(
             Project project,
             User contributor,
@@ -164,9 +159,7 @@ public class ProjectContribution {
         );
     }
     
-    /**
-     * 토스 결제 승인(confirm) 성공 -> 가상계좌가 발급된 상태로 바꾼다.
-     */
+    /** 승인 성공 - 가상계좌 발급 상태로 바꾼다. */
     public void markWaitingForDeposit(
             String paymentKey,
             String bankCode,
@@ -190,12 +183,7 @@ public class ProjectContribution {
         this.paymentStatus = FanProjectPaymentStatus.WAITING_FOR_DEPOSIT;
     }
     
-    /**
-     * 입금 확인(웹훅) -> 결제 완료.
-     * 토스는 같은 웹훅을 여러 번 보낼 수 있어서, 이미 PAID면 에러 없이 그냥 넘어간다.
-     *
-     * @return 이번 호출로 실제 PAID가 됐으면 true (배지 지급 등 후속 처리는 true일 때만)
-     */
+    /** 입금 확인 → 결제 완료 (중복 웹훅은 무시, 이번에 PAID 가 되면 true). */
     public boolean markPaid(LocalDateTime paidAt) {
         if (paymentStatus == FanProjectPaymentStatus.PAID) {
             return false;
@@ -209,9 +197,7 @@ public class ProjectContribution {
         return true;
     }
     
-    /**
-     * 결제창 취소나 승인 API 실패 -> 실패 처리
-     */
+    /** 결제 취소·승인 실패 처리 */
     public void markFailed() {
         if (paymentStatus != FanProjectPaymentStatus.READY) {
             throw new IllegalStateException("error.order.onlyReadyCanFail");
@@ -219,9 +205,7 @@ public class ProjectContribution {
         this.paymentStatus = FanProjectPaymentStatus.FAILED;
     }
     
-    /**
-     * 입금기한이 지나도록 입금이 없으면 만료 처리 (스케줄러에서 호출)
-     */
+    /** 입금기한이 지나면 만료 처리 (스케줄러) */
     public void expire(LocalDateTime now) {
         if (paymentStatus != FanProjectPaymentStatus.WAITING_FOR_DEPOSIT) {
             throw new IllegalStateException("error.order.onlyWaitingCanExpire");
@@ -230,7 +214,7 @@ public class ProjectContribution {
         this.cancelledAt = now;
     }
     
-    // 웹훅으로 받은 secret이 발급 때 저장한 값과 같은지 확인
+    // 웹훅 secret 이 저장한 값과 같은지
     public boolean matchesDepositSecret(String secret) {
         return depositSecret != null && depositSecret.equals(secret);
     }

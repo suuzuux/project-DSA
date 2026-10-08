@@ -106,7 +106,7 @@ public class PartnershipInquiryController {
                     email,
                     phone,
                     message,
-                    // 지금 보고 있는 화면 언어를 같이 저장해 두고, 승인/반려 메일을 이 언어로 보낸다
+                    // 승인·반려 메일을 보낼 언어로 현재 화면 언어를 저장한다.
                     PreferredLocaleResolver.toLanguage(LocaleContextHolder.getLocale())
             );
         } catch (IllegalArgumentException e) {
@@ -129,12 +129,7 @@ public class PartnershipInquiryController {
             return "common/partnership/partnership";
         }
         
-        /*
-         * DB 저장과 이메일 발송을 분리한다.
-         *
-         * 메일 서버가 잠시 고장 나더라도 이미 접수된 신청이
-         * 롤백되거나 사용자에게 실패로 표시되면 안 된다.
-         */
+        // 메일 발송 실패가 이미 저장된 신청에 영향을 주지 않도록 분리한다.
         try {
             inquiryEmailService.sendNewApplicationNotice(
                     application

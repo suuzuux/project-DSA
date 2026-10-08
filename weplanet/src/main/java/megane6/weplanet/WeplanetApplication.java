@@ -7,8 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-// @ConfigurationProperties 붙은 클래스
-// (TossPaymentProperties)를 찾아서 등록
+// @ConfigurationProperties 클래스를 찾아 등록
 @ConfigurationPropertiesScan
 public class WeplanetApplication {
 

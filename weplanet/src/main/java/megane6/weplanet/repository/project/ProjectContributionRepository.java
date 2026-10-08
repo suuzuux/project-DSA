@@ -18,19 +18,19 @@ public interface ProjectContributionRepository extends JpaRepository<ProjectCont
 
     Optional<ProjectContribution> findByIdempotencyKey(String idempotencyKey);
     
-    // 결제 승인/웹훅이 같은 주문을 동시에 처리하지 못하게 행 잠금(SELECT .. FOR UPDATE)으로 조회
+    // 승인·웹훅 동시 처리를 막는 행 잠금 조회
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ProjectContribution c where c.orderNo = :orderNo")
     Optional<ProjectContribution> findByOrderNoForUpdate(@Param("orderNo") String orderNo);
     
-    // 상태만 확인하면 되는 경우(안내 화면 폴링)는 행을 잠그지 않고 읽는다
+    // 상태 확인용 조회 (잠그지 않음)
     Optional<ProjectContribution> findByOrderNo(String orderNo);
 
     // [스케줄러] 특정 상태인 주문번호 목록
     @Query("select c.orderNo from ProjectContribution c where c.paymentStatus = :status")
     List<String> findOrderNosByStatus(@Param("status") FanProjectPaymentStatus status);
     
-    // [스케줄러] 특정 상태이면서 기준 시각 이전에 만들어진 주문번호 목록 (방치된 READY 정리용)
+    // [스케줄러] 기준 시각 이전 특정 상태 주문번호 (방치된 READY 정리)
     @Query("""
             select c.orderNo
             from ProjectContribution c

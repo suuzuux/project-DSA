@@ -1,10 +1,13 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.fan.BadgeAwardService;
+import megane6.weplanet.service.fan.BadgePeriodService;
+
 import megane6.weplanet.domain.entity.MembershipPeriod;
 import megane6.weplanet.domain.entity.community.CommunityMember;
 import megane6.weplanet.domain.entity.enumfolder.BadgeCode;
-import megane6.weplanet.repository.ArtistAccountProfileRepository;
-import megane6.weplanet.repository.MembershipPeriodRepository;
+import megane6.weplanet.repository.artist.ArtistAccountProfileRepository;
+import megane6.weplanet.repository.membership.MembershipPeriodRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import org.junit.jupiter.api.Test;
 

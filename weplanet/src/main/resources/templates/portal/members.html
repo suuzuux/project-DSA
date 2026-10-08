@@ -22,14 +22,14 @@
             <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
             <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
-            <!-- 그룹 계정(1단계 로그인) 상태 -->
+            <!-- 그룹 계정 상태 -->
             <div class="settings-block" style="max-width:800px;margin-bottom:16px;">
                 <div class="text-sm text-muted" th:text="#{portalMembers.groupAccount}">그룹 로그인 계정</div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;gap:8px;">
                     <strong th:text="${artist.username}">artist@domain.com</strong>
                     <th:block th:if="${artist.status.name() == 'PENDING_ACTIVATION'}">
                         <span class="tag" th:text="#{portalMembers.status.pending}">활성화 대기</span>
-                        <!-- th:onsubmit엔 문자열 표현식을 못 넣어서(Thymeleaf 제한) 확인 문구는 data-confirm으로 넘긴다 -->
+                        <!-- th:onsubmit 제한으로 확인 문구는 data-confirm 으로 넘긴다. -->
                         <form th:action="@{/portal/artists/resend-activation}" method="post" style="margin:0;"
                               th:attr="data-confirm=#{portalMembers.confirm.resendActivation}"
                               onsubmit="return confirm(this.dataset.confirm);">
@@ -83,7 +83,7 @@
 
             <!-- 멤버 추가 -->
             <form class="settings-block" style="max-width:800px;" th:action="@{/portal/members}" method="post">
-                <!-- 이 화면에 보이는 그룹에 추가되도록 그룹 id 를 같이 보낸다 (탭 여러 개 대비) -->
+                <!-- 이 화면의 그룹 id 를 같이 보낸다. -->
                 <input type="hidden" name="artistId" th:value="${artist.id}" />
                 <div class="form-group">
                     <label class="form-label" for="memberName" th:text="#{portalMembers.add}">멤버 추가</label>

@@ -1,7 +1,7 @@
 package megane6.weplanet.security;
 
-import megane6.weplanet.repository.GroupMemberRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.artist.GroupMemberRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.service.portal.AgencyEnrollmentService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

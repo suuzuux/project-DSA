@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
-// 커뮤니티 검색 API (/community/search). 가입·프로필 편집·탈퇴는 CommunityJoinController 가 맡는다.
+// 커뮤니티 검색 API (가입·편집·탈퇴는 CommunityJoinController).
 @RestController
 @RequiredArgsConstructor
 public class CommunityExploreController {
@@ -38,7 +38,7 @@ public class CommunityExploreController {
 		
 		List<ArtistSearchResultView> results = communityExploreService.search(keyword, gender, nationality, category,
 				memberCount, isSolo, debutFrom, debutTo);
-		// 아티스트(그룹 멤버 포함)에게는 자기 커뮤니티에 "가입" 버튼 대신 "내 커뮤니티"가 나오도록 표시한다
+		// 아티스트에게는 자기 커뮤니티에 가입 대신 "내 커뮤니티"를 표시한다.
 		Long ownCommunityId = principal == null ? null
 				: communityArtistResolver.ownCommunityId(userResolver.requireAuthenticated(principal));
 		if (ownCommunityId == null) {

@@ -1,8 +1,10 @@
 package megane6.weplanet.controller;
 
+import megane6.weplanet.controller.common.auth.DormantAccountReactivationController;
+
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.i18n.Messages;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.VerificationPurpose;
@@ -40,7 +42,7 @@ class DormantAccountReactivationControllerTest {
 				mock(LocaleResolver.class))).build();
 	}
 
-	// 휴면 계정이든, 휴면이 아닌 계정이든, 없는 아이디든 응답이 똑같아야 휴면 여부가 드러나지 않는다
+	// 휴면·정상·없는 아이디 모두 응답이 같아야 한다
 	@Test
 	void respondsTheSameWhetherOrNotTheAccountIsDormant() throws Exception {
 		User dormant = User.createFan("sleeper", "encoded", "이름", "닉", "sleeper@test.com");

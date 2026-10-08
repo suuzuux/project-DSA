@@ -96,7 +96,7 @@
                 <p class="project-detail__description" th:text="${project.description()}">설명</p>
             </section>
 
-            <!-- 승인대기 프로젝트를 보고 있는 ADMIN에게만 심사 기능을 노출한다. -->
+            <!-- 승인대기 프로젝트를 보는 관리자에게만 심사 기능 노출 -->
             <section class="project-review"
                      sec:authorize="hasRole('ADMIN')"
                      th:if="${project.statusBadgeCode() == 'pending'}">

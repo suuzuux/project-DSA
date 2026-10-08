@@ -4,10 +4,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * 라이브 호스트/시청자의 STOMP 세션을 기억해, 연결이 끊기면 상대에게 leave를 알리거나
- * 호스트 퇴장 시 방송을 종료하기 위한 레지스트리.
- */
+/** 라이브 STOMP 세션 레지스트리 (끊기면 leave 알림, 호스트 퇴장 시 방송 종료). */
 @Component
 public class LiveConnectionRegistry {
 

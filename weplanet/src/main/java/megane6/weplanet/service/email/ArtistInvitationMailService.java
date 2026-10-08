@@ -13,12 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/**
- * 소속사가 등록한 아티스트 계정의 활성화(비밀번호 설정) 안내 메일.
- * 링크는 소속사 활성화와 같은 /partner/activate 화면을 쓴다.
- * 받는 쪽은 방금 만든 그룹 계정이라 선호 언어가 항상 기본값(KO)이므로,
- * 대신 이 아티스트를 등록한 소속사 사용자의 언어로 메일 문구를 만든다.
- */
+/** 아티스트 계정 활성화 안내 메일 (문구는 등록한 소속사 사용자의 언어). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,8 +28,7 @@ public class ArtistInvitationMailService {
 	@Value("${weplanet.base-url:http://localhost:9999}")
 	private String baseUrl;
 	
-	// 첫 등록과 (7단계) 재발송에서 같이 쓴다.
-	// 기존 호출부(PortalController, 소속사 요청 처리 중) 호환용: 지금 요청의 로케일 = 등록한 소속사 사용자의 언어.
+	// 첫 등록·재발송 공통 (현재 요청 로케일 = 등록한 소속사 언어).
 	public void sendActivationMail(
 			String to,
 			String artistName,
@@ -44,7 +38,7 @@ public class ArtistInvitationMailService {
 		sendActivationMail(to, artistName, agencyName, activation, LocaleContextHolder.getLocale());
 	}
 	
-	// locale: 이 아티스트를 등록한 소속사 사용자의 언어 (보통 PreferredLocaleResolver.toLocale(agency.getPreferredLanguage()))
+	// locale: 등록한 소속사 사용자의 언어
 	public void sendActivationMail(
 			String to,
 			String artistName,
@@ -75,7 +69,7 @@ public class ArtistInvitationMailService {
 				+ "/partner/activate?key=" + activation.verificationKey()
 				+ "&token=" + activation.rawToken();
 		
-		// {0} 아티스트명, {1} 소속사명, {2} 로그인 아이디, {3} 활성화 링크, {4} 유효기간
+		// {0} 아티스트명, {1} 소속사명, {2} 아이디, {3} 링크, {4} 유효기간
 		return messageSource.getMessage(
 				"mail.artistInvite.body",
 				new Object[]{

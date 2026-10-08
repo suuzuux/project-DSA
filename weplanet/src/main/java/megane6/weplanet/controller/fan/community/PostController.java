@@ -30,20 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 게시판(FEED) 관련 화면과 요청을 처리하는 컨트롤러.
- * <p>
- * 이 컨트롤러의 메서드들은 크게 두 가지 방식으로 응답함.
- * <p>
- * ① 예전 방식(web1~web5에서 쓰던 방식) : return "화면이름"; 또는 return "redirect:/주소";
- * → 브라우저가 페이지 전체를 다시 불러옴 (화면이 한 번 깜빡이고 새로고침됨)
- * <p>
- * ② 비동기(fetch) 방식 : 자바스크립트가 fetch()로 요청을 보내고, 응답을 JSON이나
- * 화면 조각(fragment)만 받아서 페이지의 일부만 바꿔치기함 (전체 새로고침 없음).
- * 이 컨트롤러에서는 요청 헤더에 X-Requested-With: fetch 가 붙어있는지로
- * "이 요청이 자바스크립트가 몰래 보낸 fetch 요청인지, 사람이 폼(form)을 눌러서 보낸 일반 요청인지"를 구분함.
- * fetch로 온 요청이면 화면 전체 대신 결과(JSON)나 화면의 일부(fragment)만 돌려줌.
- */
+/** 게시판 컨트롤러 - X-Requested-With: fetch 요청이면 화면 대신 JSON 이나 프래그먼트만 돌려준다. */
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -58,10 +45,10 @@ public class PostController {
     private final ReportService reportService;
     private final SummaryService summaryService;
     private final TranslateService translateService;
-    // AI 요약/번역 접근 권한 확인용 (커뮤니티 가입 여부 - 팔로우는 가입 없이도 할 수 있어서 팔로우 여부로 보면 안 됨)
+    // AI 요약·번역 권한 확인용 (커뮤니티 가입 여부 기준).
     private final CommunityJoinService communityJoinService;
     private final PortalManagementService portalManagementService;
-    // 예외 메시지는 키로 던지고(GlobalExceptionHandler가 번역), fetch 성공 JSON 문구만 여기서 번역
+    // 예외는 메시지 키로 던지고(GlobalExceptionHandler 가 번역), 성공 JSON 문구만 여기서 번역한다.
     private final Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
 
@@ -84,7 +71,7 @@ public class PostController {
             if ("fetch".equals(requestedWith)) {
                 return "community/fragments/fanComments :: commentsFragment";
             }
-            // 게시글 종류(FAN/ARTIST)에 맞는 상세 페이지로 리다이렉트 (예전엔 무조건 /fan/으로 가는 버그가 있었음)
+            // 게시글 종류에 맞는 상세 페이지로 리다이렉트한다.
             String tab = post.getBoardType() == BoardType.FAN ? "fan" : "artist";
             return "redirect:/community/" + artistId + "/" + tab + "/" + post.getId();
         }
@@ -95,8 +82,7 @@ public class PostController {
         return "redirect:/posts/detail/" + post.getId();
     }
 
-    // 와이어프레임 기준: 본문은 공백/줄바꿈 포함 최대 1,000자, 공백만 있는 내용은 등록 불가.
-    // 프론트(JS)에서도 막지만, 서버에서도 한 번 더 검증해서 API를 직접 호출하는 우회를 막음
+    // 본문은 최대 1,000자, 공백만 있는 내용은 불가 (API 직접 호출 우회 방지).
     private void validateContentLength(String content) {
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("error.post.contentRequired");
@@ -106,7 +92,7 @@ public class PostController {
         }
     }
 
-    // 게시판 목록 화면 (FEED-02, FEED-03)
+    // 게시판 목록 화면
     @GetMapping("/posts/{boardType}")
     public String list(
             @PathVariable String boardType,
@@ -119,16 +105,14 @@ public class PostController {
         // URL의 소문자 문자열("fan")을 enum(BoardType.FAN)으로 변환
         BoardType type = BoardType.valueOf(boardType.toUpperCase());
 
-        // 36번: 아티스트로 로그인한 사람이 팬 게시판을 볼 땐 "Hide from Artists" 글을 목록에서 뺌
+        // 아티스트가 팬 게시판을 볼 땐 Hide from Artists 글을 뺀다.
         boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
         postListModelHelper.populate(model, type, sort, null, hideFromArtists);
 
         log.debug("게시판 조회: {}, 정렬: {}, 게시글 수: {}", type, sort,
                 ((List<?>) model.getAttribute("posts")).size());
 
-        // 정렬 버튼을 클릭했을 때(자바스크립트 fetch로 온 요청)는,
-        // "postList.html 안에서 postListFragment 라는 이름표가 붙은 부분만" 잘라서 돌려줌
-        // → 페이지 전체가 아니라 게시글 목록 표(<div id="postListArea">)만 바뀌므로 새로고침 없이 정렬이 바뀜
+        // 정렬 버튼(fetch)이면 목록 프래그먼트만 돌려준다.
         if ("fetch".equals(requestedWith)) {
             return "feed/postList :: postListFragment";
         }
@@ -148,17 +132,16 @@ public class PostController {
         return "feed/postForm";
     }
 
-    // 글쓰기 저장 처리 (FEED-01 권한 구분, FEED-02 작성, FEED-10 파일 첨부)
+    // 글쓰기 저장 (권한 확인, 파일 첨부)
     @PostMapping("/posts/{boardType}/new")
     public String create(
             @PathVariable String boardType,
             @RequestParam(required = false) String title,
             @RequestParam String content,
-            // List<MultipartFile> : 폼에서 <input type="file" multiple>로 여러 개 고른 파일들이
-            // 하나의 리스트로 담겨서 들어옴. required=false라서 파일을 하나도 안 골라도 에러 안 남
+            // 여러 파일 첨부 (선택하지 않아도 됨)
             @RequestParam(required = false) List<MultipartFile> files,
             @RequestParam(required = false) Long artistId,
-            // 36번: 팬 게시판 글쓰기 모달의 🔗 링크 첨부 + "Hide from Artists" 토글 (팬 게시판일 때만 의미 있음)
+            // 팬 게시판 링크 첨부와 Hide from Artists 토글
             @RequestParam(required = false) String linkUrl,
             @RequestParam(defaultValue = "false") boolean hiddenFromArtist,
             @AuthenticationPrincipal AuthenticatedUser principal,
@@ -174,7 +157,7 @@ public class PostController {
 
         User tempAuthor = userResolver.requireAuthenticated(principal);
 
-        // FEED-01 권한 구분 실제 적용 - 아티스트 게시판은 해당 커뮤니티의 아티스트(솔로 본인/그룹 멤버)만 작성 가능
+        // 아티스트 게시판은 해당 커뮤니티 아티스트(솔로·멤버)만 작성한다.
         if (type == BoardType.ARTIST && !tempAuthor.isArtistSide()) {
             throw new IllegalStateException("error.post.artistBoardArtistOnly");
         }
@@ -200,7 +183,7 @@ public class PostController {
             }
         }
 
-        // linkUrl/hiddenFromArtist는 팬 게시판일 때만 유효하게 처리 (아티스트 게시판 글엔 항상 무시)
+        // linkUrl·hiddenFromArtist 는 팬 게시판에서만 적용한다.
         boolean effectiveHidden = type == BoardType.FAN && hiddenFromArtist;
         String effectiveLinkUrl = (type == BoardType.FAN && linkUrl != null && !linkUrl.isBlank()) ? linkUrl.trim() : null;
 
@@ -210,12 +193,10 @@ public class PostController {
         log.debug("게시글 작성 완료 : boardType={}, title={}, author={}, artistId={}",
                 type, title, tempAuthor.getUsername(), artistId);
 
-        // 와이어프레임 기준: 글쓰기가 목록 위에 뜨는 모달이라, fetch로 왔으면 페이지 이동 없이
-        // 최신 목록(postListFragment)만 다시 그려서 돌려주고, 모달은 자바스크립트가 닫음
+        // fetch 요청이면 최신 목록 프래그먼트만 돌려준다 (모달은 JS 가 닫음).
         if ("fetch".equals(requestedWith)) {
             if (communityArtist != null) {
-                // postList 프래그먼트가 FAN/ARTIST 링크를 만들 때 ${artist.id()}를 참조하므로,
-                // artist 모델 속성을 꼭 채워줘야 함 (안 채우면 Thymeleaf에서 500 에러 남)
+                // postList 프래그먼트가 artist 를 참조하므로 반드시 채운다.
                 model.addAttribute("artist", portalManagementService.toArtistCard(communityArtist));
                 boolean hideFromArtists = type == BoardType.FAN && userResolver.isArtist(principal);
                 postListModelHelper.populateCommunityPage(
@@ -242,8 +223,7 @@ public class PostController {
     ) {
         Post post = postService.getPost(id);
 
-        // 커뮤니티에 속한 글이면 접근 제어가 걸려 있는 커뮤니티 상세로 넘김
-        // (아티스트가 없는 레거시 전역 게시글은 지금처럼 이 화면을 계속 사용)
+        // 커뮤니티 글이면 접근 제어가 있는 커뮤니티 상세로 보낸다.
         if (post.getArtist() != null) {
             String tab = post.getBoardType() == BoardType.FAN ? "fan" : "artist";
             return "redirect:/community/" + post.getArtist().getId() + "/" + tab + "/" + post.getId();
@@ -255,13 +235,13 @@ public class PostController {
         return "feed/postDetail";
     }
 
-    // 댓글 작성 (FEED-04)
+    // 댓글 작성
     @PostMapping("/posts/detail/{id}/comment")
     public String addComment(
             @PathVariable Long id,
             @RequestParam String content,
             @RequestParam(required = false) Long artistId,
-            // [대댓글] 답글 폼에서만 넘어오는 값. 없으면 지금까지처럼 일반 댓글로 저장됨
+            // 답글이면 부모 댓글 id (없으면 일반 댓글)
             @RequestParam(required = false) Long parentId,
             @AuthenticationPrincipal AuthenticatedUser principal,
             @RequestHeader(value = "X-Requested-With", required = false) String requestedWith,
@@ -270,7 +250,7 @@ public class PostController {
         Post post = postService.getPost(id);
         User author = userResolver.requireAuthenticated(principal);
 
-        // 와이어프레임 기준: 댓글은 최대 100자
+        // 댓글은 최대 100자
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("error.comment.contentRequired");
         }
@@ -302,7 +282,7 @@ public class PostController {
         return renderCommentsResponse(post, artistId, principal, requestedWith, model);
     }
 
-    // 댓글 수정 - 작성자 본인만 가능. 응답 방식은 작성/삭제와 동일 (댓글 영역 통째로 다시 그려서 돌려줌)
+    // 댓글 수정 - 작성자 본인만 (댓글 영역을 다시 그려 돌려줌)
     @PostMapping("/posts/detail/{id}/comment/{commentId}/edit")
     public String editComment(
             @PathVariable Long id,
@@ -328,14 +308,7 @@ public class PostController {
         return renderCommentsResponse(post, artistId, principal, requestedWith, model);
     }
 
-    /**
-     * 댓글 신고 - 게시글 신고와 완전히 같은 방식 (같은 사람이 같은 댓글을 두 번 신고하면 예외).
-     * <p>
-     * 반환 타입이 Object인 이유 : 상황에 따라 서로 다른 두 가지 타입을 돌려줘야 하기 때문.
-     * - fetch로 온 경우 → ResponseEntity(JSON 형태의 응답)
-     * - 일반 폼 제출인 경우 → String("redirect:...", 화면 이동 경로)
-     * 자바 메서드는 하나의 반환 타입만 가질 수 있어서, 이 둘의 공통 부모 타입인 Object로 선언함.
-     */
+    /** 댓글 신고 - fetch 면 JSON, 일반 요청이면 리다이렉트를 돌려준다. */
     @PostMapping("/posts/detail/{id}/comment/{commentId}/report")
     public Object reportComment(
             @PathVariable Long id,
@@ -350,21 +323,13 @@ public class PostController {
         reportService.reportComment(comment, reporter, reason);
 
         if ("fetch".equals(requestedWith)) {
-            // ResponseEntity.ok(...) : "성공(HTTP 200)" 상태와 함께 괄호 안의 내용을 JSON으로 돌려줌
             return ResponseEntity.ok(Map.of("success", true, "message", messages.get("community.report.commentReported")));
         }
 
         return "redirect:" + communityDetailPath(postService.getPost(id));
     }
 
-    /**
-     * 좋아요 토글.
-     * <p>
-     *
-     * @ResponseBody : 이 메서드가 돌려주는 값(Map)을 "화면 이름"이 아니라
-     * "JSON 데이터 그 자체"로 브라우저에 돌려주라는 표시. 좋아요 버튼은 항상 비동기로만 동작하므로
-     * (fetch로 안 왔는지 구분할 필요 없이) 무조건 JSON을 돌려주면 됨.
-     */
+    /** 좋아요 토글 (항상 JSON 응답). */
     @PostMapping("/posts/detail/{id}/like")
     @ResponseBody
     public Map<String, Object> like(
@@ -383,9 +348,7 @@ public class PostController {
         );
     }
 
-    /**
-     * 북마크 토글 - 좋아요 토글과 완전히 같은 방식.
-     */
+    /** 북마크 토글 (좋아요와 같은 방식). */
     @PostMapping("/posts/detail/{id}/bookmark")
     @ResponseBody
     public Map<String, Object> bookmark(
@@ -401,7 +364,7 @@ public class PostController {
         return Map.of("bookmarked", bookmarked);
     }
 
-    // 게시글 삭제 - 본인 글만 삭제 가능. 삭제 후에는 그 게시글이 있던 커뮤니티 게시판 목록으로 돌아감
+    // 게시글 삭제 - 본인 글만, 삭제 후 커뮤니티 게시판 목록으로 이동한다.
     @PostMapping("/posts/detail/{id}/delete")
     public String deletePost(
             @PathVariable Long id,
@@ -414,8 +377,7 @@ public class PostController {
 
         postService.deletePost(post, requester);
 
-        // 예전엔 레거시 /posts/{boardType} 목록으로 보냈었는데, 지금 실제로 쓰는 화면은
-        // 커뮤니티 게시판이라 그쪽으로 돌려보내도록 수정함
+        // 커뮤니티 게시판 목록으로 돌아간다.
         if (artist != null) {
             String tab = boardType == BoardType.ARTIST ? "artist" : "fan";
             return "redirect:/community/" + artist.getId() + "/" + tab;
@@ -423,7 +385,7 @@ public class PostController {
         return "redirect:/posts/" + boardType.name().toLowerCase();
     }
 
-    // 게시글 신고 - 같은 사람이 같은 글을 중복 신고하면 예외. 댓글 신고와 완전히 같은 구조
+    // 게시글 신고 - 같은 글 중복 신고는 예외.
     @PostMapping("/posts/detail/{id}/report")
     public Object reportPost(
             @PathVariable Long id,
@@ -443,7 +405,7 @@ public class PostController {
         return "redirect:" + communityDetailPath(post);
     }
 
-    // 수정 폼 화면 이동 - 레거시 feed 페이지용 (지금 커뮤니티 화면은 상세페이지 안에서 모달로 바로 수정함)
+    // 수정 폼 (레거시 feed 페이지용).
     @GetMapping("/posts/detail/{id}/edit")
     public String editForm(
             @PathVariable Long id,
@@ -473,7 +435,7 @@ public class PostController {
         return "redirect:" + communityDetailPath(post);
     }
 
-    // 게시글이 속한 커뮤니티 상세페이지 경로 - 삭제/신고/수정 후 어디로 돌려보낼지 계산할 때 재사용
+    // 삭제·신고·수정 후 돌아갈 커뮤니티 상세 경로.
     private String communityDetailPath(Post post) {
         User artist = post.getArtist();
         if (artist == null) {
@@ -483,16 +445,7 @@ public class PostController {
         return "/community/" + artist.getId() + "/" + tab + "/" + post.getId();
     }
 
-    /**
-     * AI 기능(요약/번역)을 쓸 수 있는지 확인.
-     * <p>
-     * 이 세 엔드포인트는 그동안 principal 파라미터조차 받지 않아서 비로그인 상태로도 호출이 가능했음.
-     * 호출될 때마다 실제로 Gemini API가 돌기 때문에, 외부에서 반복 호출하면 하루 사용 한도가 소진되고
-     * 커뮤니티에 가입하지 않은 사람이 멤버십 전용 게시글 내용을 요약/번역으로 빼갈 수도 있었음.
-     * <p>
-     * 그래서 ① 로그인 여부와 ② 그 게시글이 속한 커뮤니티에 가입(팔로우)했는지를 함께 확인함.
-     */
-    // 번역·요약을 로그인 사용자의 기본 서비스 언어로 하도록 조회한 User를 반환한다 (필요 없는 호출부는 반환값 무시).
+    /** AI 요약·번역 권한 확인 - 로그인과 커뮤니티 가입 여부 (Gemini 호출 남용·전용 글 유출 방지). */
     private User requireAiAccess(Post post, AuthenticatedUser principal) {
         User user = userResolver.requireAuthenticated(principal);
 
@@ -510,14 +463,7 @@ public class PostController {
         return user;
     }
 
-    /**
-     * AI 자동 요약 - 게시글 내용을 Gemini에게 보내 요약을 받아옴 (저장하지 않고, 버튼 누를 때마다 새로 생성).
-     * <p>
-     * 이 버튼은 항상 비동기(fetch)로만 동작함. AI가 답을 만드는 데 몇 초 걸릴 수 있는데,
-     * 그동안 화면이 멈추지 않고 "AI가 요약을 만들고 있어요..." 같은 로딩 문구를 보여줄 수 있는 이유가
-     * 바로 fetch 방식이기 때문임 (페이지 전체를 새로고침하며 기다리는 게 아니라,
-     * 자바스크립트가 백그라운드에서 응답을 기다리는 동안에도 화면 조작이 가능함).
-     */
+    /** AI 요약 - 저장하지 않고 요청마다 Gemini 로 생성한다 (fetch 전용). */
     @PostMapping("/posts/detail/{id}/summarize")
     @ResponseBody
     public Map<String, Object> summarizePost(
@@ -532,7 +478,7 @@ public class PostController {
         return Map.of("summary", summary);
     }
 
-    // 게시글 번역보기 (와이어프레임: 게시글/댓글 본문 밑에 있는 "번역보기" 링크)
+    // 게시글 번역보기
     @PostMapping("/posts/detail/{id}/translate")
     @ResponseBody
     public Map<String, Object> translatePost(
@@ -547,7 +493,7 @@ public class PostController {
         return Map.of("translated", translated);
     }
 
-    // 댓글 번역보기 - 게시글 번역과 완전히 같은 방식
+    // 댓글 번역보기
     @PostMapping("/posts/detail/{id}/comment/{commentId}/translate")
     @ResponseBody
     public Map<String, Object> translateComment(

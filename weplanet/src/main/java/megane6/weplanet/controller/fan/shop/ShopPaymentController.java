@@ -30,7 +30,7 @@ public class ShopPaymentController {
 	private final MessageSource messageSource;
 	private final megane6.weplanet.i18n.Messages messages;
 
-	// 화면 언어에 맞춰 메시지를 가져오는 헬퍼 (SettingsController.msg()와 동일한 패턴)
+	// 화면 언어에 맞춘 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}

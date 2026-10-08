@@ -12,10 +12,10 @@ import java.util.List;
 
 public interface HashtagEventEntryRepository extends JpaRepository<HashtagEventEntry, Long> {
 	
-	// 같은 글이 두 번 기록되지 않게 (post_id UNIQUE 에 걸리기 전에 미리 확인)
+	// 같은 글이 두 번 기록되지 않게 미리 확인
 	boolean existsByPost_Id(Long postId);
 	
-	// 이 팬이 [from, to) 동안 이 참여팀에서 특정 상태로 기록된 글 수 → "1인 1일 3건" 판정에 사용
+	// 팬의 [from, to) 동안 특정 상태 글 수 (하루 3건 판정)
 	@Query("""
 			select count(e)
 			from HashtagEventEntry e
@@ -46,8 +46,7 @@ public interface HashtagEventEntryRepository extends JpaRepository<HashtagEventE
 			@Param("status") HashtagEntryStatus status
 	);
 	
-	// 이벤트의 참여팀별 참여 인원 → [참여팀 id, 인원]
-	// count(distinct 팬) : 같은 팬이 여러 번 써도 1명. exists : 지금도 그 커뮤니티 가입자인 팬만 센다
+	// 참여팀별 참여 인원 (같은 팬은 1명, 현재 가입자만)
 	@Query("""
 			select new megane6.weplanet.domain.dto.event.HashtagCount(e.target.id, count(distinct e.fanId))
 			from HashtagEventEntry e
@@ -75,7 +74,7 @@ public interface HashtagEventEntryRepository extends JpaRepository<HashtagEventE
 			""")
 	List<HashtagCount<HashtagEntryStatus>> countByStatus(@Param("eventId") Long eventId);
 	
-	// 일자별 그래프용: 인정된 글들의 작성 시각 (날짜별 묶기는 자바에서 한다)
+	// 일자별 그래프용 인정 글 작성 시각
 	@Query("""
 			select e.createdAt
 			from HashtagEventEntry e

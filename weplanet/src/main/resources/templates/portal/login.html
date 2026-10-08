@@ -13,7 +13,7 @@
 </head>
 <body>
 
-<!-- 언어 전환: 로그인 전이라 헤더/사이드바가 없어서 화면 우상단에 고정 배치. 클릭하면 한국어/日本語/English 메뉴가 뜨고, 항목 선택 시 그 언어로 전환 -->
+<!-- 언어 전환 (로그인 전이라 우상단 고정) -->
 <div style="position:fixed;top:20px;right:20px;z-index:50;">
   <button type="button" class="icon-btn" id="langToggleBtn" data-icon="language"
           th:aria-label="#{layout.header.languageLabel}" aria-haspopup="true" aria-expanded="false">
@@ -94,7 +94,7 @@
       var submitBtn = document.getElementById("portalSubmitBtn");
       var tabs = document.querySelectorAll(".role-tabs [data-portal-role]");
 
-      // 서버가 내려준 번역 문자열 - 원래 한국어 문자열은 각 값의 fallback으로 남겨둠
+      // 화면 언어 문구 (한국어는 fallback)
       var MSG = {
         titleSuffix: /*[[#{portalLogin.titleSuffix}]]*/ " | Artist Portal",
         ARTIST: {

@@ -35,10 +35,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ScheduleApiController {
 
-	/**
-	 * 알림 문구는 MessageSource(messages*.properties)에서 서비스 지원 언어(ko/ja/en)별로 만든다.
-	 * global-icons.js의 tr(obj)가 obj[현재 언어] || obj.ko || obj.en 으로 꺼내 쓰므로 응답은 언어별 Map 모양을 유지한다.
-	 */
+	/** 알림 문구는 ko/ja/en 언어별 Map 으로 만든다 (global-icons.js 가 현재 언어로 꺼냄). */
 	private static final Map<String, Locale> NOTIFY_LOCALES = Map.of(
 			"ko", Locale.KOREAN,
 			"ja", Locale.JAPANESE,
@@ -103,8 +100,7 @@ public class ScheduleApiController {
 				? Map.of()
 				: portalManagementService.getPublicEventsByDateForArtists(joined));
 
-		// 출석은 "요청한 커뮤니티 주인"만. artistId 없으면 로그인 아티스트 출석으로 절대 fallback 하지 않음
-		// (타 커뮤니티 캘린더에 본인 도장이 새는 버그 방지)
+		// 출석은 요청한 커뮤니티 주인 것만 보여준다 (로그인 아티스트로 대체하지 않음).
 		Map<String, String> attendance = Map.of();
 		if (artistId != null) {
 			User attendanceArtist = userRepository.findById(artistId)
@@ -281,7 +277,7 @@ public class ScheduleApiController {
 		if (commenter.getNickname() != null) {
 			notification.put("message", localized("notify.message.commented", commenter.getNickname(), preview));
 		} else {
-			// 닉네임이 없는 경우 "누군가"도 언어별로 번역해서 넣는다
+			// 닉네임이 없을 때의 "누군가"도 언어별로 넣는다.
 			Map<String, String> message = new LinkedHashMap<>();
 			NOTIFY_LOCALES.forEach((lang, locale) -> message.put(lang, messageSource.getMessage(
 					"notify.message.commented",

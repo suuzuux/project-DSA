@@ -16,9 +16,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/**
- * 최고관리자 대시보드 통계
- */
+/** 최고관리자 대시보드 통계 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -49,17 +47,17 @@ public class AdminDashboardService {
 		long agencyCount = userRepository.countByRole(Role.AGENCY);
 		long adminCount = userRepository.countByRole(Role.ADMIN);
 		
-		// 활성 상태인 아티스트 계정을 하나의 활성 커뮤니티로 계산
+		// 활성 아티스트 계정 하나를 활성 커뮤니티 하나로 센다.
 		long activeCommunityCount = userRepository.countByRoleAndStatus(
 				Role.ARTIST,
 				UserStatus.ACTIVE
 		);
 		
-		// 아직 관리자가 승인하지 않은 소속사 권한
+		// 승인 대기 소속사 권한
 		long pendingAgencyApprovalCount =
 				agencyProfileRepository.countByApprovedAtIsNull();
 		
-		// 게시글 신고와 댓글 신고 중 아직 처리하지 않은 신고 수
+		// 처리 대기 신고 수 (게시글 + 댓글)
 		long pendingReportCount =
 				reportRepository.countByStatus(ReportStatus.PENDING)
 						+ commentReportRepository.countByStatus(
@@ -123,7 +121,7 @@ public class AdminDashboardService {
 						.map(this::toSeverePendingReport)
 						.toList();
 		
-		// 최근 관리자 활동 3건 (전체는 "전체 보기" → /admin/logs)
+		// 최근 관리자 활동 3건
 		List<RecentAdminAction> recentAdminActions =
 				adminActionLogRepository
 						.findTop3ByOrderByCreatedAtDescIdDesc()

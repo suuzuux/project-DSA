@@ -17,10 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * 팬 게시글 1개를 해시태그 총공 집계에 기록
- * 해시태그가 들어간 글이면 "인정" 또는 "제외(사유)"로 한 줄 남기고, 해시태그가 없으면 아무것도 안 남긴다.
- */
+/** 팬 게시글을 총공 집계에 기록 (해시태그가 있으면 인정 또는 제외 사유로 기록). */
 @Service
 @RequiredArgsConstructor
 public class HashtagEventEntryService {
@@ -32,11 +29,7 @@ public class HashtagEventEntryService {
 	private final HashtagEventTargetRepository hetr;
 	private final HashtagEventEntryRepository heer;
 	
-	/**
-	 * REQUIRES_NEW : 항상 "새 트랜잭션"으로 실행한다.
-	 * 리스너는 글 저장 트랜잭션이 커밋된 "뒤"에 불리는데, 그 시점엔 기존 트랜잭션에 더 쓸 수 없어서
-	 * 새로 열어야 이 안의 save가 실제로 DB에 반영된다.
-	 */
+	/** 리스너가 커밋 뒤에 부르므로 새 트랜잭션으로 저장한다. */
 	
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void recordFanPost(Long postId) {
@@ -61,7 +54,7 @@ public class HashtagEventEntryService {
 		
 		HashtagEventTarget target = ongoing.get();
 		
-		// 2) 본문에 그 해시태그가 들어 있는지 (없으면 총공과 상관없는 평범한 글)
+		// 2) 본문에 그 해시태그가 있는지
 		if (!HashtagMatcher.contains(post.getContent(), target.getHashtag())) {
 			return;
 		}
@@ -71,7 +64,7 @@ public class HashtagEventEntryService {
 		heer.save(HashtagEventEntry.record(target, post, status));
 	}
 	
-	// 확인 순서가 곧 우선순위: Hide 글 → 미가입 → 오늘 3건 초과 → 인정
+	// 판정 순서: Hide 글 → 미가입 → 하루 3건 초과 → 인정
 	private HashtagEntryStatus judge(Post post, HashtagEventTarget target) {
 		Long fanId = post.getAuthor().getId();
 		Long artistId = post.getArtist().getId();
@@ -84,7 +77,7 @@ public class HashtagEventEntryService {
 			return HashtagEntryStatus.NOT_MEMBER;
 		}
 		
-		// "하루" = 글 쓴 날짜의 00:00 이상 ~ 다음 날 00:00 미만
+		// 하루 = 작성일 00:00 ~ 다음 날 00:00
 		LocalDate day = post.getCreatedAt().toLocalDate();
 		long countedToday = heer.countFanEntries(
 				target.getId(),

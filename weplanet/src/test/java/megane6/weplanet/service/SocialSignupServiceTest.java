@@ -1,9 +1,11 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.account.SocialSignupService;
+
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.event.AccountMailEvent;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.security.PendingSocialSignup;
 import megane6.weplanet.util.NicknameGenerator;
 import megane6.weplanet.util.UsernameGenerator;
@@ -52,7 +54,7 @@ class SocialSignupServiceTest {
 		assertEquals("권형준", saved.getNickname());
 	}
 
-	// 가입 완료 메일은 직접 보내지 않고, 가입이 확정된 뒤 보내도록 이벤트만 남긴다 (AccountMailListener)
+	// 가입 완료 메일은 커밋 후 보내도록 이벤트만 남긴다
 	@Test
 	void signupRequestsWelcomeMailInsteadOfSendingIt() {
 		service.signup(pending("권형준"), true);
@@ -64,7 +66,7 @@ class SocialSignupServiceTest {
 		assertEquals(true, mail.marketingConsentGiven());
 	}
 
-	// 이미 다른 계정이 쓰는 이메일이면 메시지 키로 막는다 (한국어 문장을 직접 넣지 않음)
+	// 이미 쓰이는 이메일이면 메시지 키로 막는다
 	@Test
 	void takenEmailThrowsMessageKey() {
 		when(userRepository.existsByEmail("kwon@gmail.com")).thenReturn(true);

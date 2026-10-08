@@ -22,7 +22,7 @@ public class ChatFilterService {
     private final FilterKeywordRepository filterKeywordRepository;
     private final AdminActionLogService adminActionLogService;
     
-    // 채팅 메시지에 금칙어가 포함되어 있는지 검사
+    // 금칙어 포함 여부 검사
     public boolean containsBannedWord(String content) {
         if (content == null || content.isBlank()) {
             return false;
@@ -49,8 +49,7 @@ public class ChatFilterService {
         return false;
     }
 
-    // 게시글·댓글·미디어 게시판 저장 전 검사 - 넘겨준 글(제목, 본문 등) 중 하나라도 금칙어가 있으면 저장을 막는다
-    // 메시지 키는 GlobalExceptionHandler / 각 컨트롤러가 화면 언어 문구로 바꿔서 보여줌
+    // 게시글·댓글·미디어 저장 전 금칙어 검사 (하나라도 있으면 저장을 막음).
     public void rejectIfContainsBannedWord(String... contents) {
         for (String content : contents) {
             if (containsBannedWord(content)) {

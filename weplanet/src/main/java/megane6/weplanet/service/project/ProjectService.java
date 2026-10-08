@@ -37,46 +37,39 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ProjectService {
-	// 프로젝트 본문 저장
+	// 프로젝트 저장
 	private final ProjectRepository pr;
-	// 조건 (일반배지 5개 + 스페셜배지 1개)
+	// 배지 조건 (일반 5개 + 스페셜 1개)
 	private final FanBadgeOwnershipRepository fbr;
-	// 로그인 회원 조회 및 본인인증 확인
+	// 회원 조회
 	private final UserRepository ur;
-	// 대표 이미지 정보 저장
+	// 대표 이미지
 	private final ProjectImageRepository pir;
-	// 정산계좌 저장
+	// 정산계좌
 	private final ProjectSettlementAccountRepository psr;
 	private final FileStorageService fs;
 	private final AccountProtectionService aps;
 	private final FanProjectCommunityAccessRepository fcr;
 	private final ProjectContributionRepository pcr;
 	
-	// 이메일
+	// 이메일 인증
 	private final EmailVerificationService evs;
 	private final MailSenderService mss;
 
 	private final AdminActionLogService actionLogService;
 
-	// 카드/상세의 상태·유형 라벨과 등록 자격 안내 문구를 현재 로케일로 만든다.
-	// (예외 메시지는 키로 던지고 GlobalExceptionHandler / ProjectController가 번역)
+	// 라벨과 자격 안내 문구를 현재 로케일로 만든다.
 	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;
 	
 	public static final long MIN_BASIC_BADGE_COUNT = 5L;
 	public static final long MIN_SPECIAL_BADGE_COUNT = 1L;
 
-	// 목록 정렬 기준 - 화면 select의 value와 짝을 이룸
+	// 목록 정렬 기준 (화면 select 값과 짝)
 	public static final String SORT_DEADLINE = "deadline";
 	public static final String SORT_LATEST = "latest";
 
-	/**
-	 * 프로젝트 등록 본인확인 인증번호를 발급하고 회원가입 때 인증한 이메일로 발송한다.
-	 * 발급과 발송을 한 트랜잭션으로 묶어서, 메일 발송이 실패하면 인증 기록도 롤백된다.
-	 * (롤백되지 않으면 받지도 못한 인증번호 때문에 60초 재전송 제한에 걸린다.)
-	 *
-	 * @return 화면이 확인 단계에서 되돌려줘야 할 인증 키
-	 */
+	/** 등록 인증번호 발급·발송 (발송 실패 시 인증 기록도 롤백, 인증 키 반환). */
 	@Transactional
 	public String sendProjectVerificationCode(Long userId) {
 		EmailVerificationService.IssuedVerification issued = evs.issueProjectVerification(userId);
@@ -90,11 +83,7 @@ public class ProjectService {
 		return issued.verificationKey();
 	}
 
-	/**
-	 * 커뮤니티(아티스트)별 프로젝트 목록을 카드용 DTO로 만들어 돌려준다.
-	 * 비로그인 사용자는 공개 상태만, FAN·타 커뮤니티 방문 ARTIST는 공개 상태와 자신이 만든 프로젝트,
-	 * ADMIN은 모든 상태를 확인한다. 본인 커뮤니티 ARTIST와 AGENCY는 프로젝트 영역에 접근할 수 없다.
-	 */
+	/** 커뮤니티별 프로젝트 카드 (비로그인 공개만, 팬은 공개 + 본인 것, 관리자 전체). */
 	public List<ProjectCardView> getProjectCards(User artist, String sort, AuthenticatedUser viewer) {
 		assertProjectAreaAccessible(artist, viewer);
 
@@ -107,7 +96,7 @@ public class ProjectService {
 			return List.of();
 		}
 
-		// 대표 이미지는 프로젝트당 1장. 목록 전체를 쿼리 한 번으로 가져와 id로 찾아 쓴다.
+		// 대표 이미지를 한 번에 조회한다.
 		List<Long> projectIds = projects.stream().map(Project::getId).toList();
 		Map<Long, String> coverNames = pir.findByProject_IdIn(projectIds).stream()
 				.collect(Collectors.toMap(
@@ -145,7 +134,7 @@ public class ProjectService {
 		assertProjectAreaAccessible(artist, viewer);
 		Project project = pr.findById(projectId).orElseThrow(() -> new IllegalArgumentException("error.project.notFound"));
 
-		// 소프트 삭제된 프로젝트는 없는 것으로 취급(목록 쿼리의 deletedAt IS NULL과 같은 기준)
+		// 소프트 삭제된 프로젝트는 없는 것으로 본다.
 		if (project.getDeletedAt() != null) {
 			throw new IllegalArgumentException("error.project.deleted");
 		}
@@ -176,10 +165,7 @@ public class ProjectService {
 		);
 	}
 
-	/**
-	 * ARTIST는 본인 커뮤니티 팬 프로젝트만 막고, 가입한 타 커뮤니티에서는 팬과 동일하게 접근한다.
-	 * AGENCY는 접근 불가. ADMIN은 심사 목적 전체 접근.
-	 */
+	/** 프로젝트 영역 접근 확인 (본인 커뮤니티 아티스트·소속사 불가, 관리자 전체). */
 	public void assertProjectAreaAccessible(
 			User artist,
 			AuthenticatedUser viewer
@@ -201,7 +187,7 @@ public class ProjectService {
 						new AccessDeniedException("error.project.memberNotFound")
 				);
 		
-		// 솔로 아티스트 본인 또는 그 그룹 멤버는 자기 커뮤니티 팬 프로젝트를 이용할 수 없다
+		// 자기 커뮤니티 아티스트는 팬 프로젝트를 이용할 수 없다.
 		if (communityArtistResolver.isArtistOf(member, artist.getId())) {
 			throw new AccessDeniedException("error.project.ownCommunity");
 		}
@@ -314,11 +300,7 @@ public class ProjectService {
 		return viewer != null && role.authority().equals(viewer.getRoleName());
 	}
 	
-	/**
-	 * 프로젝트 등록 자격(배지 개수)을 확인
-	 * 등록 버튼 눌렀을 때 미리 확인하는 용도 + createProject에서도 같은 메서드 사용
-	 * 두 군데 조건을 따로 적으면 한쪽만 고쳤을 때 화면과 서버 판단이 달라진다.
-	 */
+	/** 등록 자격(배지 수) 확인 - 화면 버튼과 등록 처리가 같은 메서드를 쓴다. */
 	@Transactional(readOnly = true)
 	public ProjectEligibilityView checkEligibility(Long fanId, Long artistId) {
 		long basicBadgeCount = fbr.countByFan_IdAndArtist_IdAndBadgeTypeAndRevokedAtIsNull(
@@ -343,7 +325,7 @@ public class ProjectService {
 	
 	@Transactional
 	public Long createProject(Long creatorId, ProjectRequestDTO dto) {
-		// 1. 로그인 회원 조회
+		// 1. 회원 조회
 		User creator = ur.findById(creatorId).orElseThrow(() -> new IllegalArgumentException("error.project.memberNotFound"));
 		if (!creator.canParticipateInCommunity()) {
 			throw new IllegalStateException("error.project.createFanOrArtistOnly");
@@ -364,7 +346,7 @@ public class ProjectService {
 			throw new AccessDeniedException("error.project.joinFirst");
 		}
 		
-		// 3. 뱃지 개수 확인 (화면의 등록 버튼에서 쓰는 것과 같은 메서드)
+		// 3. 배지 수 확인
 		ProjectEligibilityView eligibility = checkEligibility(creator.getId(), artist.getId());
 		if (!eligibility.eligible()) {
 			throw new IllegalStateException("error.project.badgeRequirement");
@@ -378,11 +360,7 @@ public class ProjectService {
 				dto.getEmailVerificationKey()
 		);
 		
-		// 4. Project 저장
-		// 화면에서는 날짜(년월일)만 받으므로 여기서 시각을 붙인다.
-		// 시작일은 그날 00:00:00부터, 마감일은 그날 23:59:59까지 모금하는 것으로 본다.
-		// LocalTime.MAX(23:59:59.999999999)를 쓰면 안 됨 - MySQL DATETIME(6)은 마이크로초까지라
-		// 나노초가 반올림되면서 다음 날 00:00:00으로 넘어가 버린다(9/30 입력 -> 10/1 저장).
+		// 4. 저장 - 날짜에 시각을 붙인다 (23:59:59.999999999 는 MySQL 반올림으로 다음 날이 되어 초 단위 사용).
 		LocalDateTime fundingStartAt = dto.getFundingStartAt().atStartOfDay();
 		LocalDateTime fundingEndAt = dto.getFundingEndAt().atTime(LocalTime.of(23, 59, 59));
 
@@ -411,9 +389,9 @@ public class ProjectService {
 			if (originalName == null || originalName.isBlank()) {
 				throw new IllegalArgumentException("error.project.coverFileName");
 			}
-			// 실제 파일을 프로젝트의 uploads 폴더에 저장
+			// uploads 폴더에 저장
 			String storedName = fs.store(coverImage);
-			// 파일 정보를 DB에 저장
+			// 파일 정보 저장
 			ProjectImage projectImage = ProjectImage.create(
 					savedProject, originalName, storedName, contentType, coverImage.getSize()
 			);
@@ -431,7 +409,7 @@ public class ProjectService {
 		);
 		psr.save(settlementAccount);
 		
-		// 7. 생성된 프로젝트 ID 반환
+		// 7. 프로젝트 ID 반환
 		return savedProject.getId();
 	}
 }

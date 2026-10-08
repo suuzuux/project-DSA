@@ -11,12 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * 해시태그 총공 이벤트 페이지 (로그인 회원만 - 비회원은 SecurityConfig 규칙에 따라 /login 으로 이동)
- *   GET /events/hashtag            홈 배너 → 지금 대표 이벤트
- *   GET /events/hashtag/{id}       결과 공지 링크 → 그 회차 이벤트
- *   ?all=true                      전체 순위 펼치기 (주소에 남아서 30초 새로고침 후에도 펼친 상태 유지)
- */
+/** 해시태그 총공 페이지 (로그인 회원만, ?all=true 는 전체 순위 펼치기). */
 @Controller
 @RequestMapping("/events/hashtag")
 @RequiredArgsConstructor
@@ -52,7 +47,7 @@ public class HashtagEventPageController {
 		return "events/hashtag";
 	}
 	
-	// 비로그인이면 null → "내 커뮤니티" 표시 없이 보여준다
+	// 비로그인이면 null ("내 커뮤니티" 표시 없음)
 	private Long viewerId(AuthenticatedUser principal) {
 		return principal == null ? null : principal.getId();
 	}

@@ -1,13 +1,11 @@
-/**
- * 커뮤니티 Fan 게시글 상세 – 좋아요, 댓글, 번역
- */
+/** 커뮤니티 게시글 상세 - 좋아요, 댓글, 번역 */
 (function () {
   "use strict";
 
   const postId = document.body.dataset.postId;
   if (!postId) return;
 
-  // 문구는 main.js의 WePlaNet.t(/api/i18n/client)에서 꺼낸다. 없으면 한국어 기본값.
+  // 문구는 WePlaNet.t 에서 꺼낸다 (없으면 한국어 기본값).
   const t = function (key, fallback, args) {
     return (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
   };
@@ -134,7 +132,7 @@
     });
   }
 
-  // 게시글 수정 모달 - Toast UI Editor, 기존 내용을 hidden textarea 값으로 초기화
+  // 게시글 수정 모달 (Toast UI Editor)
   const editEditorEl = document.getElementById("editPostEditor");
   const editContentEl = document.getElementById("editPostContent");
   const editTitleEl = document.getElementById("editPostTitle");
@@ -161,7 +159,7 @@
       const counter = document.getElementById("editPostCharCount");
       if (counter) counter.textContent = text.length + " / 1000";
       if (editSubmitBtn) {
-        const titleOk = !editTitleEl || editTitleEl.value.trim().length > 0; // 제목칸을 없앴으므로 요소가 없으면 통과
+        const titleOk = !editTitleEl || editTitleEl.value.trim().length > 0; // 제목칸이 없으면 통과
         editSubmitBtn.disabled = !titleOk || text.trim().length === 0 || text.length > 1000;
       }
     }
@@ -170,7 +168,7 @@
     refreshEditState();
   }
 
-  // 게시글 수정 저장 - fetch 로 보내서, 금칙어 등으로 막히면 에러 페이지로 넘어가지 않고 경고창만 띄운다
+  // 수정 저장은 fetch 로 보내 금칙어 등은 경고창으로 알린다.
   const editPostForm = document.getElementById("editPostForm");
   if (editPostForm) {
     editPostForm.addEventListener("submit", function (e) {
@@ -184,7 +182,7 @@
       })
         .then(function (response) {
           if (response.ok) {
-            // 저장 성공 - 서버가 상세 페이지로 리다이렉트하므로 새로고침해서 바뀐 내용을 보여줌
+            // 저장 성공 시 새로고침
             window.location.reload();
             return;
           }
@@ -204,7 +202,7 @@
   if (summarizeButton) {
     summarizeButton.addEventListener("click", function () {
       const area = document.getElementById("summaryArea");
-      // 번역 문구는 HTML 문자열에 섞지 않고 textContent로 넣는다
+      // 번역 문구는 textContent 로 넣는다.
       area.innerHTML = "<p></p>";
       area.querySelector("p").textContent = t("client.summary.loading", "AI가 요약을 만들고 있어요...");
 
@@ -240,7 +238,7 @@
       if (row) row.style.display = row.style.display === "none" ? "flex" : "none";
       return;
     }
-    // [대댓글] 답글 입력칸 열고 닫기
+    // 답글 입력칸 열고 닫기
     if (e.target.classList.contains("comment-reply-toggle")) {
       const commentId = e.target.getAttribute("data-comment-id");
       const row = document.getElementById("commentReplyRow-" + commentId);
@@ -324,7 +322,7 @@
       return;
     }
 
-    // [대댓글] 답글은 내용이 비면 서버까지 갈 필요가 없음
+    // 빈 답글은 보내지 않는다.
     if (form.classList.contains("comment-reply-form")) {
       const replyInput = form.querySelector("input[name='content']");
       if (replyInput && !replyInput.value.trim()) {

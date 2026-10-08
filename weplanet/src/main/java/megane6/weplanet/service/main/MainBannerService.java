@@ -31,10 +31,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * 메인 배너 관리 (최고관리자 > 통합 대시보드 > 배너 영역 관리).
- * 배너 = 아티스트 영문명 / 대제목 / 본문 / 이미지. 배경색은 이미지의 평균색을 자동으로 쓴다.
- */
+/** 메인 배너 관리 (배경색은 이미지 평균색). */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -56,9 +53,7 @@ public class MainBannerService {
 	private final FileStorageService fileStorageService;
 	private final CommunityUrls communityUrls;
 
-	// ---------- 메인 페이지 ----------
-
-	// 노출 중인 배너 → 슬라이드. 판매 중이 아닌 상품을 가리키는 배너는 깨진 링크가 되므로 빼고 보여준다
+	// 노출 중인 배너 슬라이드 (판매 중이 아닌 상품 배너는 제외)
 	@Transactional(readOnly = true)
 	public List<Slide> activeSlides() {
 		List<MainBanner> banners = mainBannerRepository.findByActiveTrueOrderBySortOrderAscIdDesc();
@@ -75,8 +70,6 @@ public class MainBannerService {
 						linkOf(banner)))
 				.toList();
 	}
-
-	// ---------- 관리 화면 ----------
 
 	@Transactional(readOnly = true)
 	public List<BannerRow> listAll() {
@@ -109,7 +102,7 @@ public class MainBannerService {
 				.orElseThrow(() -> new IllegalArgumentException("error.banner.notFound"));
 	}
 
-	// 폼의 아티스트 선택지 - 모든 커뮤니티(그룹 계정). 영문명이 있으면 같이 보여준다
+	// 아티스트 선택지 (영문명 함께 표시)
 	@Transactional(readOnly = true)
 	public List<ArtistOption> artistOptions() {
 		List<User> artists = userRepository.findByRole(Role.ARTIST);
@@ -122,7 +115,7 @@ public class MainBannerService {
 				.toList();
 	}
 
-	// 폼의 상품 선택지 - 판매 중인 굿즈만. 아티스트를 고르면 화면(JS)에서 그 아티스트 상품만 남긴다
+	// 판매 중인 굿즈 선택지 (화면에서 아티스트별로 거름)
 	@Transactional(readOnly = true)
 	public List<GoodsOption> goodsOptions() {
 		return goodsRepository.findByStatusAndDeletedAtIsNullOrderBySortOrderAscIdAsc(GoodsStatus.ON_SALE).stream()
@@ -130,7 +123,7 @@ public class MainBannerService {
 				.toList();
 	}
 
-	// 등록(bannerId == null) / 수정. 새 이미지를 올리면 교체하고, 배경색을 비워두면 이미지에서 다시 뽑는다
+	// 등록·수정 (새 이미지면 교체, 배경색이 비면 이미지에서 다시 계산)
 	public MainBanner save(User admin, Long bannerId, BannerForm form, MultipartFile image) {
 		MainBanner banner = bannerId == null ? MainBanner.create(admin) : get(bannerId);
 
@@ -155,7 +148,7 @@ public class MainBannerService {
 			}
 		}
 
-		// 예외 메시지는 메시지 키 (컨트롤러에서 Messages.resolve(e)로 번역). 글자 수 한도는 TITLE_MAX/BODY_MAX 를 {0}으로 넘긴다
+		// 예외는 메시지 키 (글자 수 한도는 {0} 으로 전달)
 		String title = requireText(form.title(), "error.banner.titleRequired", TITLE_MAX,
 				"error.banner.titleTooManyLines", "error.banner.titleTooLong");
 		String body = optionalText(form.body(), BODY_MAX,
@@ -172,11 +165,11 @@ public class MainBannerService {
 
 		String oldImage = banner.getImageStoredName();
 		if (hasNewImage) {
-			// 이미지 형식(매직바이트)·크기를 검증하고, 확장자는 서버가 정한다 (FileStorageService.storeImage)
+			// 이미지 검증 후 서버가 확장자를 정해 저장한다.
 			banner.changeImage(fileStorageService.storeImage(image));
 		}
 
-		// 배경색: 관리자가 고른 값(화면에서 이미지로 자동 계산해 채워줌)이 있으면 그대로, 없으면 서버가 이미지에서 뽑는다
+		// 관리자가 고른 배경색이 없으면 이미지에서 뽑는다.
 		String bgColor = isHexColor(form.bgColor()) ? form.bgColor().toLowerCase()
 				: (hasNewImage || banner.getBgColor() == null)
 						? averageColorOf(banner.getImageStoredName())
@@ -200,13 +193,11 @@ public class MainBannerService {
 		fileStorageService.delete(banner.getImageStoredName());
 	}
 
-	// ---------- 내부 ----------
-
 	private String linkOf(MainBanner banner) {
 		if (banner.getBannerType() == BannerType.PRODUCT) {
 			Goods goods = banner.getGoods();
 			if (goods == null || goods.isDeleted() || goods.getStatus() != GoodsStatus.ON_SALE) {
-				return null;	// 판매 종료/삭제된 상품 - 메인에서는 빼고, 관리 목록에는 "링크 없음"으로 표시
+				return null;	// 판매 종료·삭제 상품 (메인에서 제외)
 			}
 			return "/shop/products/" + goods.getId();
 		}
@@ -220,19 +211,19 @@ public class MainBannerService {
 				.collect(Collectors.toMap(ArtistGroup::getId, ArtistGroup::getNameEn, (a, b) -> a));
 	}
 
-	// 배너 맨 위 작은 글씨 - 아티스트 영문명(대문자). 영문명이 없으면 커뮤니티 이름
+	// 배너 윗줄 - 아티스트 영문명 (없으면 커뮤니티 이름)
 	private static String labelOf(User artist, Map<Long, String> nameEns) {
 		String nameEn = nameEns.get(artist.getId());
 		return nameEn != null ? nameEn.toUpperCase() : artist.getNickname();
 	}
 
-	// 이미지의 평균색. 너무 밝거나 어두운 끝 부분이 섞여도 무난한 배경이 되도록 픽셀을 듬성듬성 훑는다
+	// 이미지 평균색 (픽셀을 듬성듬성 훑음)
 	private static String averageColorOf(String storedName) {
 		Path path = Paths.get("uploads").resolve(storedName);
 		try (InputStream in = Files.newInputStream(path)) {
 			BufferedImage img = ImageIO.read(in);
 			if (img == null) {
-				return DEFAULT_BG;	// ImageIO가 못 읽는 형식(webp 등)
+				return DEFAULT_BG;	// ImageIO 가 못 읽는 형식
 			}
 			int stepX = Math.max(1, img.getWidth() / 60);
 			int stepY = Math.max(1, img.getHeight() / 60);
@@ -259,7 +250,7 @@ public class MainBannerService {
 		}
 	}
 
-	// 배경이 밝으면 차콜 글자, 어두우면 흰 글자
+	// 배경이 밝으면 차콜, 어두우면 흰 글자
 	private static String textColorFor(String hex) {
 		int r = Integer.parseInt(hex.substring(1, 3), 16);
 		int g = Integer.parseInt(hex.substring(3, 5), 16);
@@ -287,8 +278,7 @@ public class MainBannerService {
 		return twoLines(value, max, tooManyLinesKey, tooLongKey);
 	}
 
-	// 대제목/본문은 배너에서 줄바꿈 그대로 보인다(white-space: pre-line).
-	// 브라우저가 보내는 \r\n 을 \n 으로 맞추고, 빈 줄은 지우고, 최대 두 줄까지만 허용한다
+	// 줄바꿈을 \n 으로 맞추고 빈 줄을 지운 뒤 최대 두 줄만 허용한다.
 	private static String twoLines(String value, int max, String tooManyLinesKey, String tooLongKey) {
 		List<String> lines = value.replace("\r\n", "\n").replace('\r', '\n').lines()
 				.map(String::strip)
@@ -304,9 +294,7 @@ public class MainBannerService {
 		return joined;
 	}
 
-	// ---------- 화면용 값 ----------
-
-	// 폼 입력값. @ModelAttribute로 폼 필드 이름 그대로 담긴다
+	// 폼 입력값
 	public record BannerForm(
 			BannerType bannerType,
 			Long artistId,
@@ -314,16 +302,15 @@ public class MainBannerService {
 			String title,
 			String body,
 			String bgColor,
-			Boolean active,		// 비어 오면(null) 노출로 본다
-			Integer sortOrder	// 칸을 비우면 null - 0으로 본다
+			Boolean active,		// null 이면 노출
+			Integer sortOrder	// 비우면 0
 	) {}
 
 	// 메인 페이지 슬라이드 한 장
 	public record Slide(String label, String title, String body, String imageUrl,
 						String bgColor, String textColor, String linkUrl) {}
 
-	// 관리 목록 한 줄. linkUrl == null 이면 판매 종료 등으로 메인에서 빠지는 배너
-	// typeMessageKey: 배너 종류 메시지 키 - 화면(admin/banners.html)에서 #{${...}}로 번역한다
+	// 관리 목록 한 줄 (linkUrl 이 null 이면 메인에서 빠짐, typeMessageKey 는 화면에서 번역).
 	public record BannerRow(Long id, String typeMessageKey, String artistName, String label, String goodsName,
 							String title, String body, String imageUrl, String bgColor, String textColor,
 							String linkUrl, boolean active, int sortOrder) {}

@@ -1,51 +1,17 @@
--- ============================================================
--- WePlaNet 데모 데이터 2 - 시연 보강 (발표 시연 화면을 채우는 추가 데이터)
--- ------------------------------------------------------------
--- 실행 순서
---   1) weplanet_schema_full_reset_v2.sql  (전체 초기화 + 기본 시드)   ※ 이미 돌린 DB면 생략
---   2) weplanet_demo_seed.sql             (데모 데이터)               ※ 이미 돌린 DB면 생략
---   3) 이 파일                             - 여러 번 돌려도 된다 (맨 앞에서 이 파일이 넣은 행을 지우고 다시 넣음)
---   이미지는 새로 쓰지 않는다 (demo_images 에 있는 파일만 재사용)
---
--- 채우는 화면
---   [1] 관리자 대시보드 "최근 30일 가입 추이"  - 최근 28일 동안 가입한 팬 20명 (1401~1420, 1420 은 정지 계정)
---   [2] 해시태그 총공 - 지금 진행 중인 이벤트에 해시태그 글/집계 기록 추가 (제외 사례 3종 포함)
---                       진행 중인 이벤트가 없으면 "10월 컴백 응원 총공"(4팀, 그저께~4일 뒤)을 새로 만든다
---                     - 지난 이벤트 "9월 가을맞이 총공" (집계 확정 완료, 결과 공지 버튼 시연용)
---   [3] 통합 신고·제재  - 게시글 신고 5건(대기 4 + 기각 1), 댓글 신고 3건(대기)
---   [4] 입점 신청       - 대기 4건(한/일/영) + 반려 1건. 승인 메일은 admin4.wp 메일함(+별칭)으로 온다
---   [5] 팬 프로젝트     - 심사 대기 2 / 반려 1 / 모금 마감(정산 대기) 1 / 정산 완료 1
---                         정산 계좌는 화면 표시용 더미 값 (앱이 복호화하지 않으므로 확인·정산 완료 버튼까지 동작)
---   [6] 배지            - 실제 활동 데이터(가입·글·댓글·좋아요·멤버십·후원)에 맞춰 지급
---                         demo_fan15 는 NOVA 에서 "일반 3 / 스페셜 1" 그대로 둔다 (등록 자격 부족 시연용)
---                         demo_fan09(응원봉장인) 는 NOVA 프로젝트 등록 자격 충족
---   [7] 관리자 로그     - 위 데이터와 맞는 조치 이력
---   [8] 북마크          - demo_fan15
---
--- 시연 팁
---   총공 "참여율 오르는 장면"은 NOVA 가입자 중 아직 참여하지 않은 demo_fan04(새벽세시) 로 #NOVA컴백 글을 쓰면 된다
---   새 팬 계정 비밀번호도 Test1234 (1403/1408/1415 는 소셜 가입이라 아이디 로그인 불가)
---
--- ※ MySQL Workbench 는 자동 커밋이 꺼져 있을 수 있어 맨 끝에 COMMIT 을 넣어 두었다
--- ============================================================
+-- WePlaNet 데모 데이터 2 - 시연 화면 보강 (데모 1 다음에 실행, 재실행 가능).
 
 USE `weplanet`;
 SET NAMES utf8mb4;
 SET @old_safe_updates := @@SQL_SAFE_UPDATES;
 SET SQL_SAFE_UPDATES = 0;
 
--- ------------------------------------------------------------
--- [0] 재실행 대비: 이 파일이 넣는 ID 범위를 먼저 지운다
---     users 1401~1420 / post 12001~12299 / comment 22001~22099 / fan_project 503~507
---     hashtag_event 901(지난 이벤트), 902(이 파일이 만든 진행 이벤트) / partnership 801~805 / admin_action_logs 7001~7099
---     report 7001~7099 / comment_report 7101~7199 / post_bookmark 9001~9099
--- ------------------------------------------------------------
+-- [0] 재실행 대비: 이 파일이 넣는 ID 범위를 먼저 지운다.
 DELETE FROM `comment_report` WHERE `id` BETWEEN 7101 AND 7199 OR `comment_id` BETWEEN 22001 AND 22099;
 DELETE FROM `report` WHERE `id` BETWEEN 7001 AND 7099 OR `post_id` BETWEEN 12001 AND 12299;
 DELETE FROM `post_bookmark` WHERE `id` BETWEEN 9001 AND 9099 OR `post_id` BETWEEN 12001 AND 12299;
 DELETE FROM `hashtag_event_entry` WHERE `post_id` BETWEEN 12001 AND 12299;
 DELETE FROM `hashtag_event` WHERE `id` IN (901, 902);
-DELETE FROM `comment` WHERE `parent_id` BETWEEN 22001 AND 22099;   -- 시연 중 이 댓글에 달린 답글
+DELETE FROM `comment` WHERE `parent_id` BETWEEN 22001 AND 22099;   -- 이 댓글에 달린 답글
 DELETE FROM `comment` WHERE `id` BETWEEN 22001 AND 22099;
 DELETE FROM `post_like` WHERE `post_id` BETWEEN 12001 AND 12299;
 DELETE FROM `comment` WHERE `post_id` BETWEEN 12001 AND 12299 AND `parent_id` IS NOT NULL;
@@ -59,10 +25,7 @@ DELETE FROM `fan_badge_ownership` WHERE `fan_id` BETWEEN 1401 AND 1420;
 DELETE FROM `community_members` WHERE `fan_id` BETWEEN 1401 AND 1420;
 DELETE FROM `users` WHERE `id` BETWEEN 1401 AND 1420;
 
--- ------------------------------------------------------------
--- [1] 최근 28일 동안 가입한 팬 20명 (비밀번호 공통 Test1234)
---     1403(카카오) / 1408(구글) / 1415(라인) 은 소셜 가입, 1420 은 광고글로 정지된 계정
--- ------------------------------------------------------------
+-- [1] 최근 28일 가입 팬 20명 (1403·1408·1415 소셜 가입, 1420 정지 계정)
 INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`, `real_name`, `nickname`, `email`, `email_verified_at`, `provider`, `provider_id`, `last_login_at`, `created_at`, `updated_at`) VALUES
   (1401, 'demo_new01', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '김별하', '노바별빛', 'demo_new01@weplanet.test', DATE_SUB(NOW(6), INTERVAL 38820 MINUTE), NULL, NULL, DATE_SUB(NOW(6), INTERVAL 300 MINUTE), DATE_SUB(NOW(6), INTERVAL 38820 MINUTE), DATE_SUB(NOW(6), INTERVAL 300 MINUTE)),
   (1402, 'demo_new02', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '이시은', '시온의하루', 'demo_new02@weplanet.test', DATE_SUB(NOW(6), INTERVAL 36100 MINUTE), NULL, NULL, DATE_SUB(NOW(6), INTERVAL 1200 MINUTE), DATE_SUB(NOW(6), INTERVAL 36100 MINUTE), DATE_SUB(NOW(6), INTERVAL 1200 MINUTE)),
@@ -85,7 +48,7 @@ INSERT INTO `users` (`id`, `username`, `password`, `role`, `status`, `agency_id`
   (1419, 'demo_new19', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'ACTIVE', NULL, '노은밤', '노래하는밤', 'demo_new19@weplanet.test', DATE_SUB(NOW(6), INTERVAL 2700 MINUTE), NULL, NULL, DATE_SUB(NOW(6), INTERVAL 240 MINUTE), DATE_SUB(NOW(6), INTERVAL 2700 MINUTE), DATE_SUB(NOW(6), INTERVAL 240 MINUTE)),
   (1420, 'demo_new20', '$2a$10$H2u7S71f8gdjfDEPzl3k/uUtgbG/rTwHDz8XUUe2X0yOAqE5f6muu', 'FAN', 'SUSPENDED', NULL, '광고계정', '굿즈공구왕', 'demo_new20@weplanet.test', DATE_SUB(NOW(6), INTERVAL 6200 MINUTE), NULL, NULL, DATE_SUB(NOW(6), INTERVAL 3000 MINUTE), DATE_SUB(NOW(6), INTERVAL 6200 MINUTE), DATE_SUB(NOW(6), INTERVAL 2880 MINUTE));
 
--- 커뮤니티 가입: 가입 10분 뒤 첫 커뮤니티, 1419 는 다음 날 두 번째 커뮤니티
+-- 커뮤니티 가입 (1419 는 다음 날 두 번째 커뮤니티)
 INSERT INTO `community_members` (`fan_id`, `artist_id`, `joined_at`, `nickname`, `bio`, `updated_at`)
 SELECT x.fan_id, x.artist_id, DATE_ADD(u.created_at, INTERVAL x.after_min MINUTE), u.nickname, x.bio, DATE_ADD(u.created_at, INTERVAL x.after_min MINUTE)
 FROM (
@@ -113,10 +76,7 @@ FROM (
 ) x
 JOIN `users` u ON u.id = x.fan_id;
 
--- ------------------------------------------------------------
--- [2-1] 해시태그 총공 - 지난 이벤트 "9월 가을맞이 총공" (30일 전 시작, 7일간, 종료 2일 뒤 집계 확정)
---       겹치는 이벤트가 이미 있으면 만들지 않는다 (그러면 이 섹션의 글·집계도 건너뜀)
--- ------------------------------------------------------------
+-- [2-1] 지난 해시태그 총공 "9월 가을맞이 총공" (겹치는 이벤트가 있으면 건너뜀)
 SET @past_start := TIMESTAMP(CURDATE() - INTERVAL 30 DAY);
 SET @past_end   := TIMESTAMP(CURDATE() - INTERVAL 24 DAY, '23:59:59');
 
@@ -136,7 +96,7 @@ FROM (
 ) x
 WHERE EXISTS (SELECT 1 FROM `hashtag_event` WHERE `id` = 901);
 
--- 지난 이벤트 글: 시작 시각 + hours 시간에 작성
+-- 지난 이벤트 글 (시작 시각 + hours 시간에 작성)
 DROP TEMPORARY TABLE IF EXISTS `tmp_past_posts`;
 CREATE TEMPORARY TABLE `tmp_past_posts` (
   `post_id` bigint PRIMARY KEY, `artist_id` bigint, `author_id` bigint, `hours` int,
@@ -178,7 +138,7 @@ FROM `tmp_past_posts` tp
 JOIN `post` p ON p.id = tp.post_id
 JOIN `hashtag_event_target` t ON t.event_id = 901 AND t.artist_id = tp.artist_id;
 
--- 집계 확정 스냅샷 (관리자가 "집계 확정"을 눌렀을 때와 같은 값: 종료 시점 가입자 수 기준 참여율 순위)
+-- 집계 확정 스냅샷 (종료 시점 가입자 수 기준 참여율 순위)
 UPDATE `hashtag_event_target` t
 JOIN `hashtag_event` e ON e.id = t.event_id
 SET t.final_member_count      = (SELECT COUNT(*) FROM `community_members` cm WHERE cm.artist_id = t.artist_id AND cm.joined_at <= e.end_at),
@@ -196,11 +156,7 @@ JOIN (
 ) x ON x.id = t.id
 SET t.final_rank = x.rk;
 
--- ------------------------------------------------------------
--- [2-2] 해시태그 총공 - 지금 진행 중인 이벤트
---       진행 중인 이벤트가 있으면 그 이벤트의 참여 아티스트에만 글을 넣고 (해시태그도 그 이벤트 것을 씀),
---       없으면 902 "10월 컴백 응원 총공"(NOVA·LUMI·ECLIPSE·PRISM, 그저께 00:00 ~ 4일 뒤 23:59:59)을 만든다
--- ------------------------------------------------------------
+-- [2-2] 진행 중 해시태그 총공 (없으면 902 "10월 컴백 응원 총공"을 만든다)
 SET @cur := (SELECT `id` FROM `hashtag_event` WHERE `start_at` <= NOW(6) AND `end_at` >= NOW(6) ORDER BY `start_at` DESC LIMIT 1);
 SET @new_start := TIMESTAMP(CURDATE() - INTERVAL 2 DAY);
 SET @new_end   := TIMESTAMP(CURDATE() + INTERVAL 4 DAY, '23:59:59');
@@ -223,8 +179,7 @@ WHERE EXISTS (SELECT 1 FROM `hashtag_event` WHERE `id` = 902);
 
 SET @cur := COALESCE(@cur, (SELECT `id` FROM `hashtag_event` WHERE `id` = 902));
 
--- 진행 중 이벤트 글: mins_ago 분 전에 작성 (이벤트 시작 전으로 넘어가면 시작 30분 뒤로 맞춤)
--- 제외 사례: 12005 = 1인 1일 3건 초과, 12010 = 아티스트에게 숨김, 12014 = 미가입자
+-- 진행 중 이벤트 글 (제외 사례: 12005 1일 3건 초과, 12010 아티스트에게 숨김, 12014 미가입자)
 DROP TEMPORARY TABLE IF EXISTS `tmp_now_posts`;
 CREATE TEMPORARY TABLE `tmp_now_posts` (
   `post_id` bigint PRIMARY KEY, `artist_id` bigint, `author_id` bigint, `mins_ago` int, `hidden` tinyint,
@@ -280,10 +235,7 @@ JOIN `hashtag_event_target` t ON t.event_id = @cur AND t.artist_id = tp.artist_i
 DROP TEMPORARY TABLE IF EXISTS `tmp_past_posts`;
 DROP TEMPORARY TABLE IF EXISTS `tmp_now_posts`;
 
--- ------------------------------------------------------------
--- [3] 신고 - 신고당할 글·댓글과 신고 내역 (대기 위주 + 오늘 기각 1건)
---     "처리(삭제)" 사례는 글이 지워진 상태라 신고 행 없이 관리자 로그로만 남긴다 ([7] 참고)
--- ------------------------------------------------------------
+-- [3] 신고 - 신고 대상 글·댓글과 신고 내역 (대기 위주 + 기각 1건)
 INSERT INTO `post` (`id`, `board_type`, `artist_id`, `author_id`, `title`, `content`, `like_count`, `hidden_from_artist`, `created_at`) VALUES
   (12201, 'FAN', 1101, 1405, '🔥포카 무료 나눔 이벤트🔥', '선착순 100명! 프로필 링크 들어가서 이름이랑 전화번호 입력하면 NOVA 미공개 포카 무료로 보내드려요 ㅎㅎ 빨리빨리~', 0, 0, DATE_SUB(NOW(6), INTERVAL 260 MINUTE)),
   (12202, 'FAN', 1102, 1409, '솔직히 타팬들 수준', '다른 그룹 팬들은 왜 이렇게 수준이 낮은지 모르겠음 ㅋㅋ 우리랑은 비교도 안 됨', 0, 0, DATE_SUB(NOW(6), INTERVAL 520 MINUTE)),
@@ -314,10 +266,7 @@ INSERT INTO `comment_report` (`id`, `created_at`, `reason`, `status`, `resolved_
   (7104, DATE_SUB(NOW(6), INTERVAL 1500 MINUTE), 'ETC',   'PENDING', NULL, 22003, 1309),
   (7105, DATE_SUB(NOW(6), INTERVAL 1400 MINUTE), 'ETC',   'PENDING', NULL, 22003, 1310);
 
--- ------------------------------------------------------------
 -- [4] 입점 신청 - 대기 4건(한·일·영) + 반려 1건
---     승인하면 활성화 메일이 신청 이메일로 가므로 admin4.wp 메일함(+별칭)으로 받게 해 두었다
--- ------------------------------------------------------------
 INSERT INTO `partnership_applications` (`id`, `applicant_type`, `applicant_name`, `contact_name`, `email`, `phone`, `message`, `applicant_language`, `status`, `reviewed_by`, `reviewed_at`, `rejection_reason`, `created_at`, `updated_at`) VALUES
   (801, 'AGENCY', '오로라스튜디오', '김민서', 'admin4.wp+aurora@gmail.com', '010-2481-3579',
    '안녕하세요, 신인 보이그룹 2팀을 매니지먼트하는 오로라스튜디오입니다. 내년 상반기 데뷔를 앞두고 팬 커뮤니티를 WePlaNet 에서 운영하고 싶어 입점을 신청드립니다. 공지·일정·굿즈 기능을 주로 사용할 예정입니다.',
@@ -336,10 +285,7 @@ INSERT INTO `partnership_applications` (`id`, `applicant_type`, `applicant_name`
    'KO', 'REJECTED', 1002, DATE_SUB(NOW(6), INTERVAL 5000 MINUTE), '사업자 정보가 확인되지 않아 반려합니다. 사업자등록번호와 소속 아티스트 정보를 보완해 다시 신청해 주세요.',
    DATE_SUB(NOW(6), INTERVAL 8600 MINUTE), DATE_SUB(NOW(6), INTERVAL 5000 MINUTE));
 
--- ------------------------------------------------------------
--- [5] 팬 프로젝트 - 503·504 심사 대기 / 505 반려 / 506 모금 마감(정산 대기) / 507 정산 완료
---     정산 계좌의 암호문·HMAC 은 무작위 더미 값 (화면은 은행·끝 4자리·검증 상태만 사용)
--- ------------------------------------------------------------
+-- [5] 팬 프로젝트 - 503·504 심사 대기 / 505 반려 / 506 정산 대기 / 507 정산 완료 (정산 계좌는 더미 값)
 INSERT INTO `fan_project` (`id`, `artist_id`, `creator_id`, `title`, `event_type`, `goal_amount`, `funding_start_at`, `funding_end_at`, `description`, `status`,
                            `special_badge_count_at_apply`, `basic_badge_count_at_apply`, `identity_verified_at`, `reviewed_by`, `reviewed_at`, `rejection_reason`, `created_at`, `updated_at`) VALUES
   (503, 1101, 1309, '시온 생일카페 프로젝트', 'BIRTHDAY_CAFE', 600000,
@@ -376,7 +322,7 @@ INSERT INTO `fan_project_settlement_account` (`project_id`, `bank_code`, `accoun
   (506, '090', RANDOM_BYTES(48), SHA2(CONCAT('demo2-settlement-506-', UUID()), 256), '4821', 'UNVERIFIED', NULL, DATE_SUB(NOW(6), INTERVAL 44 DAY), DATE_SUB(NOW(6), INTERVAL 44 DAY)),
   (507, '004', RANDOM_BYTES(48), SHA2(CONCAT('demo2-settlement-507-', UUID()), 256), '1357', 'VERIFIED', DATE_SUB(NOW(6), INTERVAL 22 DAY), DATE_SUB(NOW(6), INTERVAL 65 DAY), DATE_SUB(NOW(6), INTERVAL 22 DAY));
 
--- 후원 내역 (모의 결제 MOCK, 전부 결제 완료) - 506 은 목표 대비 112%, 507 은 107%
+-- 후원 내역 (모의 결제, 506 은 목표 112%, 507 은 107%)
 INSERT INTO `fan_project_contribution` (`project_id`, `contributor_id`, `order_no`, `idempotency_key`, `payment_provider`, `amount`, `is_anonymous`, `refund_policy_agreed_at`, `payment_status`, `paid_at`, `created_at`, `updated_at`)
 SELECT x.project_id, x.contributor_id, CONCAT('DEMO2-', x.project_id, '-', LPAD(x.seq, 3, '0')), CONCAT('demo2-', x.project_id, '-', LPAD(x.seq, 3, '0')), 'MOCK',
        x.amount, x.anon, DATE_SUB(NOW(6), INTERVAL x.days_ago DAY), 'PAID',
@@ -398,11 +344,7 @@ FROM (
   UNION ALL SELECT 507, 6, 1301, 50000,  0, 27
 ) x;
 
--- ------------------------------------------------------------
--- [6] 배지 - 실제 활동 데이터에 맞춰 지급 (이미 있는 배지는 건너뜀)
---     대상: demo_fan01~14(1301~1314) + 새 팬(1401~1419). demo_fan15(1315)는 일부러 제외
--- ------------------------------------------------------------
--- 커뮤니티 첫 가입
+-- [6] 배지 - 실제 활동에 맞춰 지급 (demo_fan15 제외) / 커뮤니티 첫 가입
 INSERT IGNORE INTO `fan_badge_ownership` (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
 SELECT cm.fan_id, cm.artist_id, b.badge_code, b.badge_name, b.badge_type, cm.joined_at, cm.joined_at
 FROM `community_members` cm
@@ -458,7 +400,7 @@ JOIN `fan_badge` b ON b.badge_code = 'SPECIAL_MEMBERSHIP_1'
 WHERE m.fan_id BETWEEN 1301 AND 1314 OR m.fan_id BETWEEN 1401 AND 1419
 GROUP BY m.fan_id, m.artist_id, b.badge_code, b.badge_name, b.badge_type;
 
--- 프로젝트 참여 (스페셜) - 결제 완료한 후원 기준, 프로젝트의 커뮤니티에 지급
+-- 프로젝트 참여 (스페셜) - 결제 완료 후원 기준
 INSERT IGNORE INTO `fan_badge_ownership` (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
 SELECT c.contributor_id, fp.artist_id, b.badge_code, b.badge_name, b.badge_type, MIN(c.paid_at), MIN(c.paid_at)
 FROM `fan_project_contribution` c
@@ -468,7 +410,7 @@ WHERE c.payment_status = 'PAID'
   AND (c.contributor_id BETWEEN 1301 AND 1314 OR c.contributor_id BETWEEN 1401 AND 1419)
 GROUP BY c.contributor_id, fp.artist_id, b.badge_code, b.badge_name, b.badge_type;
 
--- demo_fan09(응원봉장인) NOVA - 프로젝트 등록 자격(일반 5 + 스페셜 1)을 확실히 넘기도록 활동 배지 추가
+-- demo_fan09 NOVA - 프로젝트 등록 자격을 넘기도록 활동 배지 추가
 INSERT IGNORE INTO `fan_badge_ownership` (`fan_id`, `artist_id`, `badge_code`, `badge_name`, `badge_type`, `awarded_at`, `created_at`)
 SELECT 1309, 1101, b.badge_code, b.badge_name, b.badge_type, DATE_SUB(NOW(6), INTERVAL x.days_ago DAY), DATE_SUB(NOW(6), INTERVAL x.days_ago DAY)
 FROM (
@@ -478,9 +420,7 @@ FROM (
 ) x
 JOIN `fan_badge` b ON b.badge_code = x.badge_code;
 
--- ------------------------------------------------------------
--- [7] 관리자 로그 - 위 데이터와 맞는 조치 이력 (관리자 4명이 나눠서 처리)
--- ------------------------------------------------------------
+-- [7] 관리자 로그 - 위 데이터와 맞는 조치 이력
 INSERT INTO `admin_action_logs` (`id`, `actor_id`, `action`, `target_type`, `target_id`, `reason`, `ip_address`, `created_at`) VALUES
   (7001, 1002, 'PROJECT_APPROVE',               'PROJECT',                 507,   '유리 생일 지하철 광고 승인',                                  '127.0.0.1', DATE_SUB(NOW(6), INTERVAL 63 DAY)),
   (7002, 1001, 'PROJECT_APPROVE',               'PROJECT',                 506,   'LUMI 3주년 팬 서포트 승인',                                   '127.0.0.1', DATE_SUB(NOW(6), INTERVAL 42 DAY)),
@@ -494,7 +434,7 @@ INSERT INTO `admin_action_logs` (`id`, `actor_id`, `action`, `target_type`, `tar
   (7010, 1003, 'PROJECT_REJECT',                'PROJECT',                 505,   '목표 금액 대비 사용 계획이 구체적이지 않아 반려합니다. 광고 기간·단가 견적과 초과 모금 시 처리 방법을 보완해 다시 신청해 주세요.', '127.0.0.1', DATE_SUB(NOW(6), INTERVAL 1300 MINUTE)),
   (7011, 1002, 'REPORT_DISMISS',                'REPORT',                  12206, '게시글 신고 1건 기각',                                         '127.0.0.1', GREATEST(DATE_SUB(NOW(6), INTERVAL 90 MINUTE), TIMESTAMP(CURDATE())));
 
--- 총공 이벤트 로그는 이벤트가 실제로 만들어졌을 때만
+-- 총공 이벤트 로그는 이벤트가 만들어졌을 때만
 INSERT INTO `admin_action_logs` (`id`, `actor_id`, `action`, `target_type`, `target_id`, `reason`, `ip_address`, `created_at`)
 SELECT 7012, 1001, 'HASHTAG_EVENT_CREATE', 'HASHTAG_EVENT', 901, '9월 가을맞이 총공 등록 (4팀)', '127.0.0.1', `created_at` FROM `hashtag_event` WHERE `id` = 901;
 INSERT INTO `admin_action_logs` (`id`, `actor_id`, `action`, `target_type`, `target_id`, `reason`, `ip_address`, `created_at`)
@@ -502,9 +442,7 @@ SELECT 7013, 1001, 'HASHTAG_EVENT_FINALIZE', 'HASHTAG_EVENT', 901, '9월 가을�
 INSERT INTO `admin_action_logs` (`id`, `actor_id`, `action`, `target_type`, `target_id`, `reason`, `ip_address`, `created_at`)
 SELECT 7014, 1001, 'HASHTAG_EVENT_CREATE', 'HASHTAG_EVENT', 902, '10월 컴백 응원 총공 등록 (4팀)', '127.0.0.1', `created_at` FROM `hashtag_event` WHERE `id` = 902;
 
--- ------------------------------------------------------------
 -- [8] 북마크 - demo_fan15
--- ------------------------------------------------------------
 INSERT INTO `post_bookmark` (`id`, `created_at`, `post_id`, `user_id`) VALUES
   (9001, DATE_SUB(NOW(6), INTERVAL 7 DAY), 10011, 1315),
   (9002, DATE_SUB(NOW(6), INTERVAL 5 DAY), 10019, 1315),
@@ -514,9 +452,7 @@ INSERT INTO `post_bookmark` (`id`, `created_at`, `post_id`, `user_id`) VALUES
 COMMIT;
 SET SQL_SAFE_UPDATES = @old_safe_updates;
 
--- ------------------------------------------------------------
 -- [확인] 넣은 데이터 개수
--- ------------------------------------------------------------
 SELECT '최근 30일 가입 팬' AS 항목, COUNT(*) AS 개수 FROM `users` WHERE `role` = 'FAN' AND `created_at` >= DATE_SUB(NOW(6), INTERVAL 30 DAY)
 UNION ALL SELECT '진행 중 총공 집계 글', COUNT(*) FROM `hashtag_event_entry` en JOIN `hashtag_event_target` t ON t.id = en.target_id WHERE t.event_id = @cur
 UNION ALL SELECT '지난 총공(901) 집계 글', COUNT(*) FROM `hashtag_event_entry` en JOIN `hashtag_event_target` t ON t.id = en.target_id WHERE t.event_id = 901

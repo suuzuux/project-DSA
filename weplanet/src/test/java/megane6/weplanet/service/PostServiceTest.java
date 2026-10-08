@@ -1,15 +1,19 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.main.FileStorageService;
+import megane6.weplanet.service.chat.ChatFilterService;
+import megane6.weplanet.service.fan.PostService;
+
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.repository.BookmarkRepository;
-import megane6.weplanet.repository.CommentReportRepository;
-import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.PostAttachmentRepository;
-import megane6.weplanet.repository.PostRepository;
-import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.repository.fan.BookmarkRepository;
+import megane6.weplanet.repository.comment.CommentReportRepository;
+import megane6.weplanet.repository.comment.CommentRepository;
+import megane6.weplanet.repository.fan.LikeRepository;
+import megane6.weplanet.repository.fan.PostAttachmentRepository;
+import megane6.weplanet.repository.fan.PostRepository;
+import megane6.weplanet.repository.fan.ReportRepository;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -74,6 +78,7 @@ class PostServiceTest {
 				mock(CommentReportRepository.class),
 				mock(PostAttachmentRepository.class),
 				mock(FileStorageService.class),
-				mock(ApplicationEventPublisher.class));
+				mock(ApplicationEventPublisher.class),
+				mock(ChatFilterService.class));
 	}
 }

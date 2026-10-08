@@ -15,11 +15,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * 해시태그 총공 이벤트 1회분. (hashtag_event)
- * 기간은 날짜 단위로 받는다: 시작일 00:00:00 ~ 종료일 23:59:59, 3~7일.
- * 상태(예정/진행 중/종료/집계 확정)는 저장하지 않고 statusAt(지금 시각)으로 계산한다.
- */
+/** 해시태그 총공 이벤트 (기간은 시작일 00:00 ~ 종료일 23:59:59, 3~7일, 상태는 계산). */
 @Entity
 @Table(name = "hashtag_event")
 @Getter
@@ -42,7 +38,7 @@ public class HashtagEvent {
 	@Column(name = "end_at", nullable = false)
 	private LocalDateTime endAt;
 	
-	// 관리자가 "집계 확정"을 누른 시각. null 이면 아직 확정 전
+	// 집계 확정 시각 (null 이면 확정 전)
 	@Column(name = "finalized_at")
 	private LocalDateTime finalizedAt;
 	
@@ -56,9 +52,7 @@ public class HashtagEvent {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 	
-	// 참여 아티스트 목록.
-	// cascade ALL : 이벤트를 저장/삭제하면 참여 아티스트도 같이 저장/삭제
-	// orphanRemoval : 목록에서 빼기만 해도 DB 행이 지워짐
+	// 참여 아티스트 목록 (이벤트와 함께 저장·삭제, 목록에서 빼면 행도 삭제).
 	@OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("id ASC")
 	private List<HashtagEventTarget> targets = new ArrayList<>();
@@ -74,7 +68,7 @@ public class HashtagEvent {
 		return event;
 	}
 	
-	// 시작 전에만 수정 가능 (진행 중에 기간·해시태그가 바뀌면 이미 쌓인 집계 기준이 흔들린다)
+	// 시작 전에만 수정할 수 있다 (집계 기준 보호).
 	public void update(String title, LocalDate startDate, LocalDate endDate, LocalDateTime now) {
 		requireEditable(now);
 		changeInfo(title, startDate, endDate);
@@ -86,8 +80,7 @@ public class HashtagEvent {
 		}
 	}
 	
-	// 참여 아티스트 추가 또는 해시태그 변경.
-	// (전부 지우고 다시 넣으면 같은 아티스트가 DELETE보다 INSERT가 먼저 실행돼 UNIQUE 충돌이 나서, 있는 건 고쳐 쓴다)
+	// 참여 아티스트 추가 또는 해시태그 변경 (UNIQUE 충돌을 피하려고 있는 행은 고쳐 씀).
 	public void putTarget(User artist, String hashtag) {
 		for (HashtagEventTarget target : targets) {
 			if (target.getArtist().getId().equals(artist.getId())) {
@@ -99,7 +92,7 @@ public class HashtagEvent {
 		targets.add(HashtagEventTarget.create(this, artist, hashtag));
 	}
 	
-	// 수정 폼에서 체크가 풀린 아티스트는 목록에서 뺀다 (orphanRemoval 로 DB 행도 삭제)
+	// 수정 폼에서 빠진 아티스트를 목록에서 뺀다.
 	public void retainTargets(Collection<Long> artistIds) {
 		targets.removeIf(target -> !artistIds.contains(target.getArtist().getId()));
 	}
@@ -117,12 +110,12 @@ public class HashtagEvent {
 		return HashtagEventStatus.ENDED;
 	}
 	
-	// 글 작성 시각이 이벤트 기간 안인지 (3단계 집계에서 사용)
+	// 글 작성 시각이 이벤트 기간 안인지
 	public boolean isOngoingAt(LocalDateTime time) {
 		return !time.isBefore(startAt) && !time.isAfter(endAt);
 	}
 	
-	// 종료 후 "집계 확정" 버튼. 아티스트별 숫자 고정은 서비스에서 target.recordFinalResult(...)로 한다
+	// 종료 후 집계 확정 (아티스트별 숫자 고정은 서비스에서 처리).
 	public void finalizeResult(LocalDateTime now) {
 		if (finalizedAt != null) {
 			throw new IllegalStateException("adminHashtag.error.alreadyFinalized");
@@ -160,7 +153,7 @@ public class HashtagEvent {
 		
 		this.title = title.strip();
 		this.startAt = startDate.atStartOfDay();
-		// LocalTime.MAX(23:59:59.999999999)는 MySQL이 반올림해서 다음 날 0시가 될 수 있어 초 단위로 끊는다
+		// 23:59:59.999999999 는 MySQL 이 다음 날로 반올림할 수 있어 초 단위로 끊는다.
 		this.endAt = endDate.atTime(23, 59, 59);
 	}
 	

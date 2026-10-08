@@ -58,7 +58,7 @@ class SignupEmailVerificationRateLimitTest {
 		service.sendVerificationCode(session, VerificationPurpose.SIGNUP, "another@test.com");
 	}
 
-	// 찾기(계정 존재를 숨기는 곳): 대상이면 백그라운드로 보내고, 대상이 아니어도 발송 제한은 똑같이 센다
+	// 계정 존재를 숨기는 찾기: 대상이면 백그라운드 발송, 아니어도 발송 제한은 센다
 	@Test
 	void eligibleSendsInBackgroundAndBothCountTowardTheLimit() {
 		service.sendVerificationCodeIfEligible(session, VerificationPurpose.FIND_ID, "match@test.com", "match@test.com");
@@ -73,7 +73,7 @@ class SignupEmailVerificationRateLimitTest {
 		verify(asyncSender, times(1)).send(any(SimpleMailMessage.class));
 	}
 
-	// 메일 서버 오류로 실제로 보내지 못했으면 60초 재발송 제한·횟수에 남기지 않는다 - 바로 다시 보낼 수 있어야 한다
+	// 메일 서버 오류로 못 보냈으면 재발송 제한에 남기지 않는다
 	@Test
 	void failedSendDoesNotCountTowardTheLimit() {
 		doThrow(new MailSendException("SMTP down")).doNothing().when(mailSender).send(any(SimpleMailMessage.class));
@@ -85,7 +85,7 @@ class SignupEmailVerificationRateLimitTest {
 		verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
 	}
 
-	// 찾기 메일은 입력한 주소가 아니라 가입 때 등록한 주소로 보낸다 (대소문자만 다르게 입력한 경우)
+	// 찾기 메일은 가입 때 등록한 주소로 보낸다
 	@Test
 	void eligibleMailGoesToRegisteredAddress() {
 		service.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, "kwon@test.com", "Kwon@Test.com");

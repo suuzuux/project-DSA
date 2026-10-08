@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
-// 스케줄러에서 보내는 메일이라 요청 언어가 없다 - 받는 회원의 선호 언어로 문구를 만든다.
+// 스케줄러 메일이라 받는 회원의 선호 언어로 문구를 만든다.
 @Service
 @RequiredArgsConstructor
 public class DormantAccountNoticeService {

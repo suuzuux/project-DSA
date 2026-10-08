@@ -2,7 +2,7 @@ package megane6.weplanet.domain.dto;
 
 import jakarta.validation.constraints.*;
 
-// 검증 메시지는 "{메시지 키}" 참조 방식(ProjectRequestDTO와 동일)
+// 검증 메시지는 {메시지 키} 참조 방식
 
 public record ProjectContributionRequestDTO(
         @NotNull(message = "{project.contribution.validation.amountRequired}")

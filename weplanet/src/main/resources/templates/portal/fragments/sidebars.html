@@ -13,7 +13,7 @@
     </nav>
     <p class="portal-artists__empty" th:if="${#lists.isEmpty(managedArtists)}" th:text="#{portal.sidebar.noArtists}">소속 아티스트가 없습니다.</p>
     <div class="portal-artists__footer">
-      <!-- 아티스트 등록 - 웜그레이 채움 버튼 + 사람(user-plus) 아이콘 -->
+      <!-- 아티스트 등록 버튼 -->
       <a class="portal-artists__add" th:href="@{/portal/artists/new}"
          th:classappend="${activeMenu == 'artistNew'} ? ' is-active'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"

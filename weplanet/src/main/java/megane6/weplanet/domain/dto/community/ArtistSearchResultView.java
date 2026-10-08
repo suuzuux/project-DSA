@@ -4,8 +4,7 @@ import megane6.weplanet.domain.entity.enumfolder.GroupGender;
 
 import java.time.LocalDate;
 
-// 검색 결과 카드 하나 - 로고/솔로 여부까지 계산해서 화면에 그대로 뿌릴 수 있게 함.
-// "가입했는지 여부"는 여기 담지 않는다 - 화면(community-explore.js)이 드로어용으로 이미 받은 가입 커뮤니티 목록으로 판단한다.
+// 검색 결과 카드 (가입 여부는 화면이 가입 목록으로 판단).
 public record ArtistSearchResultView(
 		Long artistId,
 		String nickname,
@@ -16,7 +15,7 @@ public record ArtistSearchResultView(
 		String nationality,
 		String category,
 		LocalDate debutDate,
-		boolean own		// 로그인한 사람의 "본인 커뮤니티"인지 (아티스트/그룹 멤버) - 가입 버튼을 숨기는 데 씀
+		boolean own		// 로그인한 사람의 본인 커뮤니티인지 (가입 버튼 숨김용)
 ) {
 	public static ArtistSearchResultView of(ArtistSearchRow row) {
 		boolean solo = row.memberCount() != null && row.memberCount() == 1;

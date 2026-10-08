@@ -36,12 +36,12 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 	
-	// 아이디 로그인에서 가입된 아이디가 없을 때, [회원가입하기]로 넘어가면 가입 화면에 채워줄 아이디 (SecurityConfig 로그인 실패 처리)
+	// 없는 아이디로 로그인 실패 시 회원가입 화면에 채워 줄 아이디.
 	public static final String SESSION_KEY_LOGIN_NOT_FOUND_USERNAME = "LOGIN_NOT_FOUND_USERNAME";
-	// 가입된 아이디가 없어서 로그인에 실패한 횟수 - 5회째에 "회원가입하시겠습니까?" 확인창을 띄운다 (SecurityConfig)
+	// 없는 아이디로 로그인 실패한 횟수 (5회째 회원가입 안내).
 	public static final String SESSION_KEY_LOGIN_NOT_FOUND_COUNT = "LOGIN_NOT_FOUND_COUNT";
 	public static final int LOGIN_NOT_FOUND_ASK_AT = 5;
-	// 회원가입 직후 자동 로그인으로 메인에 들어왔을 때 환영 토스트를 한 번 띄우는 표시 (index.html)
+	// 회원가입 직후 자동 로그인 시 환영 토스트를 띄우는 표시.
 	public static final String FLASH_SIGNUP_WELCOME = "signupWelcome";
 	// 아이디 형식 (SignupRequestDto 의 @Pattern 과 같은 규칙)
 	private static final String USERNAME_PATTERN = "^[a-zA-Z0-9]{4,20}$";
@@ -57,7 +57,7 @@ public class AuthController {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}
 
-	// 회원가입 화면의 "중복 확인" 버튼 - 실제로 DB를 조회해서 사용 가능 여부를 JSON으로 알려준다.
+	// 아이디 중복 확인 (JSON 응답).
 	@PostMapping("/signup/username/check")
 	@ResponseBody
 	public Map<String, Object> checkUsername(@RequestParam String username) {
@@ -83,7 +83,7 @@ public class AuthController {
 	@GetMapping("/signup/id")
 	public String signupForm(Model model, HttpSession session) {
 		SignupRequestDto dto = new SignupRequestDto();
-		// 아이디 로그인에서 "가입된 아이디가 없습니다 → 회원가입하기"로 넘어온 경우, 입력했던 아이디를 채워준다 (한 번만)
+		// 로그인 실패 화면에서 넘어온 경우 입력했던 아이디를 한 번 채워 준다.
 		Object notFoundUsername = session.getAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
 		if (notFoundUsername instanceof String username) {
 			session.removeAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
@@ -91,8 +91,7 @@ public class AuthController {
 				dto.setUsername(username);
 			}
 		}
-		// 실제로 저장될 닉네임을 미리 뽑아 입력칸에 채워 둔다.
-		// 그대로 제출해도 화면에서 본 닉네임과 같은 값으로 가입된다.
+		// 실제로 저장될 닉네임을 미리 생성해 입력칸에 채운다.
 		dto.setNickname(nicknameGenerator.generate());
 		model.addAttribute("signupRequestDto", dto);
 		return "common/auth/signup-id";
@@ -109,7 +108,7 @@ public class AuthController {
 		if (bindingResult.hasErrors()) {
 			return showSignupFormAgain(signupRequestDto, session, model);
 		}
-		// 화면(JS)에서 인증코드 확인을 막아두지만, 직접 POST를 보내는 우회를 막기 위해 서버에서도 확인한다
+		// 직접 POST 우회를 막기 위해 서버에서도 인증 여부를 확인한다.
 		if (!emailVerificationService.isVerified(session, VerificationPurpose.SIGNUP, signupRequestDto.getEmail())) {
 			model.addAttribute("errorMessage", msg("signup.error.emailNotVerified"));
 			return showSignupFormAgain(signupRequestDto, session, model);
@@ -122,20 +121,17 @@ public class AuthController {
 			model.addAttribute("errorMessage", messages.resolve(e));
 			return showSignupFormAgain(signupRequestDto, session, model);
 		} catch (DataIntegrityViolationException e) {
-			// 중복 확인과 저장 사이에 같은 아이디·이메일 가입이 먼저 끝난 경우(동시 가입).
-			// DB 유니크 제약 오류를 500 화면 대신 안내 문구로 보여준다.
+			// 동시 가입으로 유니크 제약에 걸리면 500 대신 안내 문구를 보여준다.
 			model.addAttribute("errorMessage", msg("signup.error.concurrentSignup"));
 			return showSignupFormAgain(signupRequestDto, session, model);
 		}
-		// 가입이 끝나면 로그인 화면을 거치지 않고 바로 로그인시켜 메인으로 보낸다 (소셜 가입과 같은 흐름).
-		// 세션 id 교체·동시 로그인 제한은 loginAs 가 폼 로그인과 똑같이 처리한다.
+		// 가입이 끝나면 바로 로그인시켜 메인으로 보낸다.
 		loginSessionSupport.loginAs(user, request, response);
 		redirectAttributes.addFlashAttribute(FLASH_SIGNUP_WELCOME, true);
 		return "redirect:/";
 	}
 
-	// 검증에 실패해 가입 화면을 다시 보여줄 때, 이미 마친 아이디 중복 확인·이메일 인증(30분 유효)을 이어간다.
-	// checkedUsername: 지금도 쓸 수 있는 아이디 / emailVerified: 이 세션에서 가입 인증을 마쳤는지
+	// 가입 화면을 다시 보여줄 때 이미 마친 중복 확인·이메일 인증 상태를 유지한다.
 	private String showSignupFormAgain(SignupRequestDto dto, HttpSession session, Model model) {
 		fillNicknameIfBlank(dto);
 		String username = dto.getUsername() == null ? "" : dto.getUsername().trim();
@@ -146,8 +142,7 @@ public class AuthController {
 		return "common/auth/signup-id";
 	}
 
-	// 다른 항목(비밀번호 등) 검증에 실패해서 회원가입 화면을 다시 보여줄 때, 닉네임 칸을 비워둔 채 왔으면
-	// 다시 하나 뽑아 채워준다. 사용자가 직접 입력한 닉네임은 그대로 두고 건드리지 않는다.
+	// 닉네임이 비어 있으면 다시 생성해 채운다 (직접 입력한 값은 유지).
 	private void fillNicknameIfBlank(SignupRequestDto dto) {
 		if (dto.getNickname() == null || dto.getNickname().isBlank()) {
 			dto.setNickname(nicknameGenerator.generate());

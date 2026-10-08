@@ -24,7 +24,7 @@ public class AdminCommunityController {
 	
 	private final AdminCommunityService acs;
 	private final ProjectService ps;
-	// ProjectService/Project 예외(메시지 키)를 flash로 내보낼 때 번역한다.
+	// 서비스 예외(메시지 키)를 flash 문구로 번역한다.
 	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping

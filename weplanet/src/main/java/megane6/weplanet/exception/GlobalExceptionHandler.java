@@ -24,39 +24,25 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 
-/**
- * 스프링 기본 Whitelabel 에러 페이지(스택 트레이스 그대로 노출)가 사용자에게 보이지 않도록,
- * 컨트롤러에서 터지는 모든 예외를 여기서 받아 안내 화면 또는 JSON으로 바꿔서 돌려줌.
- * <p>
- * fetch(비동기)로 온 요청이면 화면 이동 없이 JSON({"success":false,"message":"..."})으로 돌려줘서,
- * 관리자 아님/이미 신고함 같은 경우도 페이지 전체 새로고침 없이 그 자리에서 실패 메시지를 보여줄 수 있게 함.
- * <p>
- * @ControllerAdvice : "모든 컨트롤러를 감시하고 있다가, 어디서든 예외가 터지면 이 클래스가 대신 처리한다"는 표시.
- * 즉 ChatController, PostController 안에서 try-catch를 일일이 안 써도, 여기 한 곳에서 예외 처리를 몰아서 담당함.
- */
+/** 모든 컨트롤러 예외를 안내 화면 또는 JSON(fetch 요청)으로 바꿔 돌려준다. */
 @Slf4j
 @ControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
-    // 예외 메시지는 메시지 키로 던지고(예: "error.post.contentRequired"), 여기서 사용자의
-    // 로케일 문구로 바꿔서 내보낸다. 아직 키로 바꾸지 않은 한국어 문구는 그대로 통과한다(Messages.resolve 참고).
+    // 예외 메시지 키를 사용자 로케일 문구로 바꾼다.
     private final Messages messages;
 
     private boolean isAsync(HttpServletRequest request) {
         return "fetch".equals(request.getHeader("X-Requested-With"));
     }
 
-    /**
-     * 화면(HTML) 응답과 JSON 응답을 한 곳에서 만들어주는 공통 처리.
-     * 어떤 예외든 결국 이 메서드를 거치므로, Whitelabel 페이지로 새어나가지 않음.
-     */
+    /** HTML 응답과 JSON 응답 공통 처리 */
     private Object respond(HttpServletRequest request, HttpStatus status, String messageOrKey) {
         return respondMessage(request, status, messages.resolve(messageOrKey));
     }
 
-    // 예외를 그대로 받는 버전 - 값을 들고 다니는 예외(LocalizedMessage)의 {0} 자리까지 채워서 번역한다.
-    // 예외 메시지는 우리 코드가 던진 예외일 때만 보여주고, 라이브러리(Tomcat·Spring·JDK) 예외는 내부 정보라 상태별 일반 문구로 바꾼다.
+    // 우리 코드 예외만 메시지를 보여주고, 라이브러리 예외는 상태별 일반 문구로 바꾼다.
     private Object respond(HttpServletRequest request, HttpStatus status, Throwable e) {
         if (!isThrownByOurCode(e)) {
             return respond(request, status, genericMessageKey(status));
@@ -64,7 +50,7 @@ public class GlobalExceptionHandler {
         return respondMessage(request, status, messages.resolve(e));
     }
 
-    // 메시지 키/값을 들고 다니는 예외이거나, 예외가 만들어진 곳(스택 맨 위)이 우리 패키지면 우리 코드가 던진 것
+    // 우리 코드가 던진 예외인지 (메시지 키 예외이거나 스택 맨 위가 우리 패키지).
     private static boolean isThrownByOurCode(Throwable e) {
         if (e instanceof LocalizedMessage) {
             return true;
@@ -93,7 +79,7 @@ public class GlobalExceptionHandler {
         return mav;
     }
 
-    // 로그인 안 하고 글쓰기/댓글/좋아요 등을 시도했을 때
+    // 비로그인으로 로그인 필요 동작을 시도했을 때
     @ExceptionHandler(AuthenticationRequiredException.class)
     public Object handleAuthenticationRequired(AuthenticationRequiredException e, HttpServletRequest request) {
         log.warn("로그인 필요한 요청을 비로그인 상태로 시도함: {}", request.getRequestURI());
@@ -105,16 +91,15 @@ public class GlobalExceptionHandler {
         return "redirect:/login";
     }
 
-    // 세션엔 로그인돼 있는데 그 유저가 DB에 없는 경우(관리자가 계정을 삭제한 경우 등). 에러 화면만 보여주면
-    // "홈으로"를 눌러도 같은 예외가 반복되므로, 세션을 정리(로그아웃)한 뒤 로그인 화면으로 보낸다.
+    // 세션의 유저가 DB 에 없으면 세션을 정리하고 로그인 화면으로 보낸다.
     @ExceptionHandler(StaleSessionException.class)
     public Object handleStaleSession(StaleSessionException e, HttpServletRequest request) {
         log.warn("세션의 로그인 유저가 더 이상 존재하지 않아 세션을 정리함: {}", e.getMessage());
         SecurityContextHolder.clearContext();
-        // 세션을 버리되 화면 언어는 새 세션에 이어 붙인다 (안내 문구·로그인 화면이 한국어로 돌아가지 않게)
+        // 세션을 버리되 화면 언어는 새 세션에 유지한다.
         PreferredLocaleResolver.invalidateSessionKeepingLocale(request);
 
-        // 정지·탈퇴 등으로 계정을 쓸 수 없게 된 경우는 "세션 만료" 대신 이용할 수 없는 계정이라고 안내한다
+        // 정지·탈퇴 계정은 이용할 수 없는 계정이라고 안내한다.
         boolean inactive = e instanceof InactiveAccountSessionException;
         if (isAsync(request)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -132,8 +117,7 @@ public class GlobalExceptionHandler {
         return respond(request, HttpStatus.BAD_REQUEST, e);
     }
 
-    // 요청 파라미터를 읽을 수 없는 경우(글자 인코딩이 깨진 값 등). Tomcat 11 은 이때 IllegalStateException 하위 예외를 던지므로
-    // 아래 "권한/상태 위반"(403)으로 빠지지 않게 요청 형식 오류(400)로 따로 처리한다.
+    // 파라미터를 읽을 수 없는 경우는 400 으로 따로 처리한다 (Tomcat 11).
     @ExceptionHandler(InvalidParameterException.class)
     public Object handleInvalidParameter(InvalidParameterException e, HttpServletRequest request) {
         log.warn("요청 파라미터를 읽을 수 없음: {} - {}", request.getRequestURI(), e.getMessage());
@@ -190,11 +174,7 @@ public class GlobalExceptionHandler {
         return respond(request, HttpStatus.CONTENT_TOO_LARGE, "error.uploadTooLarge");
     }
 
-    /**
-     * 위에서 못 잡은 나머지 전부 (NPE, DB 오류 등) - 최후의 그물.
-     * 이게 있어야 Whitelabel 페이지가 사용자에게 노출되지 않음.
-     * 내부 오류 메시지는 그대로 보여주면 정보가 새므로, 로그에만 남기고 화면엔 일반 문구를 띄움.
-     */
+    /** 나머지 모든 예외 - 내부 메시지는 로그에만 남기고 일반 문구를 보여준다. */
     @ExceptionHandler(Exception.class)
     public Object handleUnexpected(Exception e, HttpServletRequest request) {
         log.error("예상치 못한 오류: {} {}", request.getMethod(), request.getRequestURI(), e);

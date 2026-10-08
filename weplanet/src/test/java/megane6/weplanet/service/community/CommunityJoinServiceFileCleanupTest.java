@@ -2,11 +2,11 @@ package megane6.weplanet.service.community;
 
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.community.CommunityMember;
-import megane6.weplanet.repository.UserFollowRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.fan.UserFollowRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.repository.community.CommunityMemberRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
-import megane6.weplanet.service.FileStorageService;
+import megane6.weplanet.service.main.FileStorageService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// 커뮤니티 프로필 편집: 디스크의 사진 파일은 DB 와 달리 롤백되지 않으므로, 저장 결과에 맞춰 정리하는지 확인한다
+// 디스크 파일은 롤백되지 않으므로 저장 결과에 맞춰 정리하는지 확인한다
 class CommunityJoinServiceFileCleanupTest {
 
 	private final CommunityMemberRepository memberRepository = mock(CommunityMemberRepository.class);
@@ -57,7 +57,7 @@ class CommunityJoinServiceFileCleanupTest {
 		TransactionSynchronizationManager.clearSynchronization();
 	}
 
-	// 새 프로필 사진은 저장됐는데 배경 사진이 실패해서 롤백되면: 옛 사진 파일은 남기고(DB 가 계속 가리킴), 새 파일만 지운다.
+	// 배경 사진 실패로 롤백되면 새 파일만 지운다
 	@Test
 	void rollbackKeepsOldAvatarAndRemovesNewFile() {
 		assertThrows(IllegalArgumentException.class, () -> service.editProfile(fan, 10L, null, null,

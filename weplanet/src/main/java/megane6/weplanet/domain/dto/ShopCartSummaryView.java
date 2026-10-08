@@ -2,9 +2,7 @@ package megane6.weplanet.domain.dto;
 
 import java.util.List;
 
-/**
- * 장바구니 목록 + 합계.
- */
+/** 장바구니 목록과 합계 */
 public record ShopCartSummaryView(
 		List<ShopCartItemView> items,
 		int subtotal,

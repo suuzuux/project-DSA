@@ -55,7 +55,7 @@ public class PartnershipApplication {
 	@Column(nullable = false, length = 2000)
 	private String message;
 	
-	// 신청할 때 화면 언어. 승인/반려 메일을 이 언어로 보낸다 (신청자는 아직 회원이 아니라 선호 언어가 없다)
+	// 신청 당시 화면 언어 (승인·반려 메일 언어)
 	@Enumerated(EnumType.STRING)
 	@Column(name = "applicant_language", nullable = false, length = 10)
 	private Language applicantLanguage = Language.KO;

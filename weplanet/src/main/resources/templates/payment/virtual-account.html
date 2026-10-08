@@ -58,7 +58,7 @@
     const orderNo = /*[[${result.orderNo()}]]*/ "";
     if (!orderNo) return;
 
-    // 화면 언어에 맞춘 문구 - 굿즈 가상계좌 화면(commerce-virtual-account.html)과 같은 payment.* 키를 재사용
+    // 화면 언어 문구 (굿즈 가상계좌 화면과 같은 payment.* 키)
     const MSG = {
       paidTitle: /*[[#{payment.paidTitle}]]*/ "입금이 확인되었어요",
       paidDesc: /*[[#{community.project.payment.paidDesc}]]*/ "프로젝트 참여가 확정되었습니다.",
@@ -71,7 +71,7 @@
     };
 
     const POLL_INTERVAL_MS = 3000;
-    const POLL_LIMIT_MS = 3 * 60 * 1000; // 3분 뒤에는 멈춘다. 이후는 5분 주기 스케줄러가 처리
+    const POLL_LIMIT_MS = 3 * 60 * 1000; // 3분 뒤 폴링 중단 (이후는 스케줄러가 처리)
     const MAX_ERRORS = 3;
 
     const waitingArea = document.getElementById("depositWaiting");
@@ -106,7 +106,7 @@
         return;
       }
       if (data.finished) {
-        // 기한 만료·취소 등 더 기다려도 바뀌지 않는 상태
+        // 만료·취소 등 더 바뀌지 않는 상태
         stopPolling();
         title.textContent = MSG.notPaidTitle;
         desc.textContent = MSG.orderStatusPrefix.replace("{0}", data.displayName);
@@ -123,7 +123,7 @@
       }
 
       fetch("/payments/toss/orders/" + encodeURIComponent(orderNo) + "/status", {
-        // 오류도 JSON으로 받기 위한 프로젝트 공통 표시 (GlobalExceptionHandler)
+        // 오류도 JSON 으로 받기 위한 표시 (GlobalExceptionHandler)
         headers: { "X-Requested-With": "fetch" }
       })
         .then(function (response) {
@@ -149,7 +149,7 @@
     }
 
     timer = setInterval(function () {
-      // 다른 탭을 보고 있는 동안에는 토스에 묻지 않는다
+      // 다른 탭을 보는 동안은 조회하지 않는다.
       if (document.hidden) return;
       if (Date.now() > deadline) {
         stopPolling();

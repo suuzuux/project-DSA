@@ -17,7 +17,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -92,7 +92,7 @@
       </div>
       <p id="periodHint" class="text-sm text-muted" style="margin:-8px 0 16px;"></p>
 
-      <!-- 아티스트 검색: 입력하면 JS가 /admin/events/hashtag/artists?keyword= 로 검색해 아래 목록을 채운다 -->
+      <!-- 아티스트 검색 (JS 가 검색해 아래 목록을 채운다) -->
       <div class="form-group">
         <label class="form-label" for="artistSearch" th:text="#{adminHashtag.form.artistSearch}">참여 아티스트 검색</label>
         <input class="form-input" id="artistSearch" type="search" autocomplete="off"
@@ -100,7 +100,7 @@
         <ul id="artistResults" class="hashtag-search-results" hidden></ul>
       </div>
 
-      <!-- 참여 아티스트 목록: 줄마다 hidden artistIds + hashtags 입력칸 → 서버가 List 로 받는다 -->
+      <!-- 참여 아티스트 목록 (줄마다 hidden artistIds + hashtags) -->
       <div class="form-group">
         <div class="form-label">
           <span th:text="#{adminHashtag.form.targets}">참여 아티스트</span> <span id="targetCount" th:text="#{adminHashtag.teams(${#lists.size(targetRows)})}">0팀</span>
@@ -132,7 +132,7 @@
         </ul>
       </div>
 
-      <!-- JS 가 "추가"할 때 복사해서 쓰는 한 줄 틀 (화면에는 안 보임) -->
+      <!-- JS 가 줄을 추가할 때 복사하는 틀 -->
       <template id="targetRowTemplate">
         <li class="hashtag-target-row">
           <span class="hashtag-avatar"></span>
@@ -156,7 +156,7 @@
 
 <script th:inline="javascript">
   window.__HASHTAG_ARTIST_SEARCH_URL__ = /*[[@{/admin/events/hashtag/artists}]]*/ "/admin/events/hashtag/artists";
-  // hashtag-event-form.js 가 쓰는 화면 언어 문구 (없으면 JS 안의 한국어 기본값)
+  // hashtag-event-form.js 문구 (없으면 한국어 기본값)
   window.__HASHTAG_FORM_MSG__ = {
     teams: /*[[#{adminHashtag.teams}]]*/ "{0}팀",
     noAgency: /*[[#{admin.artists.noAgency}]]*/ "소속사 미등록",

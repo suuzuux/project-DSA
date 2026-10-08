@@ -12,11 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 메인 배너 번역문 (main-banner-translate.js). 메인 화면을 그릴 때 번역이 늦어 원문으로 둔 배너가 있으면
- * 화면이 이 주소로 번역문을 다시 받아 글자만 바꿔 끼운다 - 언어를 바꾼 직후에도 새로고침 없이 번역이 보이게.
- * 진행 중인 번역이 있으면 그것을 같이 기다리므로 AI 를 새로 부르지 않는다.
- */
+/** 메인 배너 번역문 API - 늦게 끝난 번역을 화면이 다시 받아 교체한다. */
 @RestController
 @RequiredArgsConstructor
 public class MainBannerApiController {
@@ -24,7 +20,7 @@ public class MainBannerApiController {
 	private final MainBannerService mainBannerService;
 	private final MainBannerTranslator mainBannerTranslator;
 
-	// originalTitle 은 화면의 어느 배너인지 맞춰 보는 용도 (그 사이 노출 배너가 바뀌었으면 화면이 건너뛴다)
+	// originalTitle 로 화면의 어느 배너인지 맞춘다.
 	@GetMapping("/api/main-banners")
 	public Map<String, Object> translated() {
 		List<Slide> originals = mainBannerService.activeSlides();

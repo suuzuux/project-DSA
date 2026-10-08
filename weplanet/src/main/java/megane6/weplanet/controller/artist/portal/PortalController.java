@@ -78,7 +78,7 @@ public class PortalController {
 	private final LiveBroadcastService liveBroadcastService;
 	private final GoodsService goodsService;
 	private final MessageSource messageSource;
-	// 서비스 예외(메시지 키)를 화면에 내보낼 때 현재 로케일 문구로 해석한다
+	// 서비스 예외(메시지 키)를 현재 로케일 문구로 바꾼다.
 	private final megane6.weplanet.i18n.Messages messages;
 	private final ArtistRegistrationService artistRegistrationService;
 	private final ArtistInvitationMailService artistInvitationMailService;
@@ -148,14 +148,14 @@ public class PortalController {
 		model.addAttribute("latestNotices", portalManagementService.getNotices(artist).stream().limit(5).toList());
 		List<ArtistSchedule> upcomingSchedules = portalManagementService.getSchedules(artist).stream().limit(5).toList();
 		model.addAttribute("upcomingSchedules", upcomingSchedules);
-		// 생일 기본 제목("OO 생일")은 화면 언어로 바꿔서 보여준다 (PortalManagementService.displayTitle)
+		// 생일 기본 제목은 화면 언어로 바꿔 보여준다.
 		Map<Long, String> upcomingScheduleTitles = new java.util.HashMap<>();
 		upcomingSchedules.forEach(s -> upcomingScheduleTitles.put(s.getId(), portalManagementService.displayTitle(s)));
 		model.addAttribute("upcomingScheduleTitles", upcomingScheduleTitles);
 		return "portal/dashboard";
 	}
 	
-	// 아티스트(그룹/솔로) 등록 화면. 특정 아티스트가 아니라 소속사 단위 메뉴라서 선택 여부와 상관없이 폼을 보여준다.
+	// 아티스트 등록 화면 (소속사 단위 메뉴).
 	@GetMapping("/artists/new")
 	public String artistRegisterForm(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		String redirect = prepareArtistPage(principal, model, "artistNew");
@@ -185,7 +185,7 @@ public class PortalController {
 			return "redirect:/portal/artists/new";
 		}
 		
-		// 메일은 등록 트랜잭션이 커밋된 뒤에 보낸다. 실패해도 계정은 남아 있어 재발송(7단계)으로 복구 가능
+		// 메일은 등록 커밋 뒤에 보내며, 실패해도 재발송으로 복구할 수 있다.
 		try {
 			artistInvitationMailService.sendActivationMail(
 					registered.username(),
@@ -235,8 +235,7 @@ public class PortalController {
 			return artistRedirect(principal);
 		}
 		
-		// 세션의 "현재 선택 아티스트"가 아니라 폼이 보내 준 그룹(artistId)에 추가한다 (탭마다 다른 그룹을 띄워도 섞이지 않음).
-		// 이 그룹을 실제로 관리하는지는 ArtistMemberService.addMember(requireManagedGroup)가 다시 확인한다.
+		// 세션의 선택 아티스트가 아니라 폼의 그룹에 추가한다 (관리 권한은 서비스에서 재확인).
 		Long targetGroupId = artistId != null ? artistId : artist.getId();
 		
 		try {
@@ -305,7 +304,7 @@ public class PortalController {
 			return "redirect:/portal/members";
 		}
 		
-		// 토큰 재발급 트랜잭션이 커밋된 뒤에 메일을 보낸다 (등록 때와 같은 이유)
+		// 토큰 재발급이 커밋된 뒤 메일을 보낸다.
 		try {
 			artistInvitationMailService.sendActivationMail(
 					reissued.username(),
@@ -327,7 +326,7 @@ public class PortalController {
 		if (principal == null) {
 			return "redirect:/portal/login";
 		}
-		// 아티스트(솔로 본인/그룹 멤버)는 "내 커뮤니티" 방송 페이지만 진입 가능 (커뮤니티 Live 탭의 '방송하기'에서 이동)
+		// 아티스트는 내 커뮤니티 방송 페이지만 들어올 수 있다.
 		if ("ROLE_ARTIST".equals(principal.getRoleName()) || "ROLE_ARTIST_MEMBER".equals(principal.getRoleName())) {
 			User me = userRepository.findById(principal.getId()).orElse(null);
 			Long ownCommunityId = communityArtistResolver.ownCommunityId(me);
@@ -856,8 +855,7 @@ public class PortalController {
 		List<CommentReport> commentReports = commentReportRepository.findByComment_Post_ArtistOrderByCreatedAtDesc(artist);
 		List<LiveCommentReport> liveCommentReports = liveCommentReportRepository.findByArtistOrderByCreatedAtDesc(artist);
 
-		// [닉네임 관리] 신고 목록의 "팬 닉네임"은 커뮤니티 가입할 때의 닉네임과 연결한다.
-		// (차단 목록의 닉네임은 ArtistBlock.blockedUser.nickname, 즉 회원가입할 때의 계정 닉네임을 그대로 쓰므로 변경하지 않음)
+		// 신고 목록의 팬 닉네임은 커뮤니티 가입 닉네임으로 보여준다.
 		List<User> reportedAuthors = new ArrayList<>();
 		postReports.forEach(r -> reportedAuthors.add(r.getPost().getAuthor()));
 		commentReports.forEach(r -> reportedAuthors.add(r.getComment().getAuthor()));

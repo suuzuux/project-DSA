@@ -18,7 +18,7 @@ public class NicknameGenerator {
 	
 	private static final int MAX_ATTEMPTS = 10;
 	
-	// 화면 언어별 단어 - "형용사 + 동물 + 3자리 숫자"가 닉네임 규칙(2~15자) 안에 들어가는 길이로 고른다
+	// 언어별 단어 ("형용사 + 동물 + 3자리 숫자", 2~15자)
 	private static final Words KO = new Words("게스트",
 			List.of("행복한", "즐거운", "용감한", "차분한", "빛나는", "따뜻한", "씩씩한", "포근한"),
 			List.of("고양이", "강아지", "토끼", "여우", "판다", "펭귄", "다람쥐", "부엉이"));
@@ -31,12 +31,12 @@ public class NicknameGenerator {
 	
 	private final UserRepository userRepository;
 	
-	// 지금 화면 언어(요청 로케일)의 단어로 만든다 - 일본어·영어 화면에 한국어 닉네임이 채워지지 않게
+	// 현재 화면 언어의 단어로 만든다.
 	public String generate() {
 		Words words = wordsFor(LocaleContextHolder.getLocale());
 		for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
 			String candidate = randomCandidate(words);
-			// 팬 닉네임 자동 생성: 팬 쪽 계정끼리만 겹치지 않으면 된다
+			// 팬 쪽 계정끼리만 겹치지 않으면 된다.
 			if (!userRepository.existsByNicknameAndRoleNotIn(candidate, Role.ARTIST_SIDE)) {
 				return candidate;
 			}

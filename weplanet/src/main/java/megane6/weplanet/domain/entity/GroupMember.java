@@ -15,13 +15,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-/**
- * 그룹(커뮤니티) - 멤버 소속 이력. (group_members)
- * group_id  = artist_groups.id = 그룹 계정 users.id = 커뮤니티 id
- * artist_id = 멤버 계정 users.id (DB FK는 artist_profiles.user_id)
- * left_at 이 NULL 이면 활동 중인 멤버.
- * is_leader 컬럼은 리더 역할을 쓰지 않기로 해서 매핑하지 않는다(DB 기본값 0).
- */
+/** 그룹-멤버 소속 이력 (left_at 이 NULL 이면 활동 중, is_leader 는 사용하지 않음). */
 @Entity
 @Table(name = "group_members")
 @Getter
@@ -63,7 +57,7 @@ public class GroupMember {
 		return this.leftAt == null;
 	}
 	
-	// 7단계 멤버 탈퇴 처리에서 사용. 행을 지우지 않고 탈퇴일만 남긴다(이력 보존).
+	// 멤버 탈퇴 - 행을 남기고 탈퇴일만 기록한다.
 	public void leave(LocalDate date) {
 		if (!isActive()) {
 			throw new IllegalStateException("error.groupMember.alreadyLeft");

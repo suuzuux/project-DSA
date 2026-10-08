@@ -16,7 +16,7 @@
       </div>
 
       <nav class="portal-sidebar__nav">
-        <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+        <!-- 하위 메뉴 묶음 (details/summary) -->
         <details class="portal-sidebar__group" open>
           <summary>
             <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -62,7 +62,7 @@
 
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
 
-      <!-- 미리보기 - 입력값을 바꾸면 바로 반영된다 (메인 배너와 같은 모양) -->
+      <!-- 미리보기 - 입력값이 바로 반영된다. -->
       <div class="banner-preview-wrap">
         <p class="form-label" th:text="#{adminBanner.form.preview}">미리보기</p>
         <div class="banner banner--promo" id="bannerPreview"
