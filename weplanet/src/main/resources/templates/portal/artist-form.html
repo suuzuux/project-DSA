@@ -78,6 +78,7 @@
              표시 문구만 번역한다 (검색 필터가 한국어 저장값으로 찾는다) -->
         <select class="form-select" id="category" name="category" style="max-width:220px;">
           <option value="아이돌" th:selected="${form == null or form.category() == null or form.category() == '아이돌'}" th:text="#{main.search.categoryIdol}">아이돌</option>
+          <option value="솔로가수" th:selected="${form != null and form.category() == '솔로가수'}" th:text="#{main.search.categorySolo}">솔로가수</option>
           <option value="배우" th:selected="${form != null and form.category() == '배우'}" th:text="#{main.search.categoryActor}">배우</option>
         </select>
       </div>

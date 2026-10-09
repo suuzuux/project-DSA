@@ -227,6 +227,14 @@ public class UserService {
 		}
 	}
 
+	// [굿즈 주문] 주문서에 입력한 배송지를 다음 주문서 기본값으로 남긴다 (결제 준비와 같은 트랜잭션).
+	// 받는 사람 연락처는 설정 화면 전화번호 규칙에 맞을 때만 넘긴다 - 맞지 않는 값이 들어가면 설정 저장이 막히므로
+	@Transactional
+	public void rememberShipping(User user, String zipcode, String address1, String address2, String receiverPhone) {
+		String phone = receiverPhone == null ? "" : receiverPhone.trim();
+		user.rememberShipping(zipcode, address1, address2, PHONE_PATTERN.matcher(phone).matches() ? phone : null);
+	}
+
 	// 기본 서비스 언어 저장 - 화면 언어이자 게시글/댓글 AI 번역 대상 언어로 쓰인다.
 	@Transactional
 	public void updateLanguage(User user, Language language) {
