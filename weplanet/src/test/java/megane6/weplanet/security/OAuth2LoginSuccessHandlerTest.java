@@ -46,7 +46,7 @@ class OAuth2LoginSuccessHandlerTest {
 
 	@Test
 	void fanLogsInWithGoogle() throws Exception {
-		User fan = User.createSocialFan("google123456", null, "권형준", "닉네임", "kwon@gmail.com",
+		User fan = User.createSocialFan("google123456", null, "홍길동", "닉네임", "hong@gmail.com",
 				AuthProvider.GOOGLE, "google-sub-2");
 		when(userRepository.findByProviderAndProviderId(AuthProvider.GOOGLE, "google-sub-2")).thenReturn(Optional.of(fan));
 

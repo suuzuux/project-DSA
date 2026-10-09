@@ -26,7 +26,7 @@ class AccountMailListenerTest {
 	// 광고·마케팅에 동의하고 가입하면 가입 완료 메일 → 커뮤니티 가입 유도 메일 순서로 보낸다
 	@Test
 	void signupWithConsentSendsWelcomeThenInvite() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "kwon@gmail.com");
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "hong@gmail.com");
 		when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
 		listener.onAccountMail(AccountMailEvent.signupWelcome(1L, true));
@@ -38,7 +38,7 @@ class AccountMailListenerTest {
 
 	@Test
 	void signupWithoutConsentSendsOnlyWelcome() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "kwon@gmail.com");
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "hong@gmail.com");
 		when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
 		listener.onAccountMail(AccountMailEvent.signupWelcome(1L, false));
@@ -50,7 +50,7 @@ class AccountMailListenerTest {
 	// 가입 완료 메일이 실패해도 이어지는 메일은 보낸다 (가입에는 영향 없음)
 	@Test
 	void failedWelcomeStillSendsInvite() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "kwon@gmail.com");
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "hong@gmail.com");
 		when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 		doThrow(new RuntimeException("SMTP down")).when(mailService).sendSignupWelcomeEmail(user, true);
 

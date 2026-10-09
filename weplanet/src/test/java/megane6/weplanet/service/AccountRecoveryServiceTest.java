@@ -21,41 +21,41 @@ class AccountRecoveryServiceTest {
 	private final AccountRecoveryService service =
 			new AccountRecoveryService(userRepository, mock(PasswordEncoder.class));
 
-	// 가입 때 Kwon@Gmail.com 으로 쓴 사람이 비밀번호 찾기에서 kwon@gmail.com 으로 입력해도 같은 계정으로 본다
+	// 가입 때 Hong@Gmail.com 으로 쓴 사람이 비밀번호 찾기에서 hong@gmail.com 으로 입력해도 같은 계정으로 본다
 	@Test
 	void resetPasswordMatchesEmailIgnoringCase() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "Kwon@Gmail.com");
-		when(userRepository.findByUsername("kwon01")).thenReturn(Optional.of(user));
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "Hong@Gmail.com");
+		when(userRepository.findByUsername("hong01")).thenReturn(Optional.of(user));
 
-		assertTrue(service.matchesUsernameAndEmail("kwon01", "kwon@gmail.com"));
+		assertTrue(service.matchesUsernameAndEmail("hong01", "hong@gmail.com"));
 		// 코드는 입력한 주소가 아니라 가입 때 등록한 주소로 보낸다
-		assertEquals(Optional.of("Kwon@Gmail.com"), service.resetPasswordRecipient("kwon01", " kwon@gmail.com "));
+		assertEquals(Optional.of("Hong@Gmail.com"), service.resetPasswordRecipient("hong01", " hong@gmail.com "));
 	}
 
 	@Test
 	void resetPasswordRejectsDifferentEmail() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "kwon@gmail.com");
-		when(userRepository.findByUsername("kwon01")).thenReturn(Optional.of(user));
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "hong@gmail.com");
+		when(userRepository.findByUsername("hong01")).thenReturn(Optional.of(user));
 
-		assertFalse(service.matchesUsernameAndEmail("kwon01", "other@gmail.com"));
-		assertTrue(service.resetPasswordRecipient("kwon01", "other@gmail.com").isEmpty());
+		assertFalse(service.matchesUsernameAndEmail("hong01", "other@gmail.com"));
+		assertTrue(service.resetPasswordRecipient("hong01", "other@gmail.com").isEmpty());
 	}
 
 	// 아이디 찾기도 등록된 주소로 보낸다 (DB 조회는 대소문자를 무시한다)
 	@Test
 	void findIdSendsToRegisteredAddress() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "Kwon@Gmail.com");
-		when(userRepository.findByEmail("kwon@gmail.com")).thenReturn(Optional.of(user));
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "Hong@Gmail.com");
+		when(userRepository.findByEmail("hong@gmail.com")).thenReturn(Optional.of(user));
 
-		assertEquals(Optional.of("Kwon@Gmail.com"), service.findIdRecipient("권형준", "kwon@gmail.com"));
-		assertTrue(service.findIdRecipient("다른이름", "kwon@gmail.com").isEmpty());
+		assertEquals(Optional.of("Hong@Gmail.com"), service.findIdRecipient("홍길동", "hong@gmail.com"));
+		assertTrue(service.findIdRecipient("다른이름", "hong@gmail.com").isEmpty());
 	}
 
 	// 카카오 가입자가 비밀번호를 등록했어도 이메일이 받을 수 없는 시스템 주소 그대로면 코드를 보내지 않는다
 	// (User.hasPlaceholderEmail() 기준 - 연동을 해제해 provider 가 비어 있어도 같다)
 	@Test
 	void placeholderEmailIsNotRecoverableEvenWithPassword() {
-		User kakao = User.createSocialFan("kakao123456", "encoded", "권형준", "닉네임", "kakao_7@kakao.weplanet.local",
+		User kakao = User.createSocialFan("kakao123456", "encoded", "홍길동", "닉네임", "kakao_7@kakao.weplanet.local",
 				AuthProvider.KAKAO, "7");
 		kakao.unlinkSocialProvider();
 		when(userRepository.findByUsername("kakao123456")).thenReturn(Optional.of(kakao));
@@ -66,21 +66,21 @@ class AccountRecoveryServiceTest {
 	// 예외 메시지는 다른 서비스와 같이 메시지 키로 던진다 (컨트롤러가 Messages.resolve 로 번역)
 	@Test
 	void resetPasswordThrowsMessageKeys() {
-		User user = User.createFan("kwon01", "encoded", "권형준", "닉네임", "kwon@gmail.com");
-		when(userRepository.findByUsername("kwon01")).thenReturn(Optional.of(user));
+		User user = User.createFan("hong01", "encoded", "홍길동", "닉네임", "hong@gmail.com");
+		when(userRepository.findByUsername("hong01")).thenReturn(Optional.of(user));
 
 		IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-				() -> service.resetPassword("kwon01", "kwon@gmail.com", "abcd123!", "abcd999!"));
+				() -> service.resetPassword("hong01", "hong@gmail.com", "abcd123!", "abcd999!"));
 		assertEquals("resetPassword.confirmMismatch", e.getMessage());
 	}
 
 	// 비밀번호가 없는 소셜 전용 계정은 찾기 대상이 아니라서 코드를 보내지 않는다
 	@Test
 	void socialOnlyAccountGetsNoCode() {
-		User social = User.createSocialFan("google123456", null, "권형준", "닉네임", "kwon@gmail.com",
+		User social = User.createSocialFan("google123456", null, "홍길동", "닉네임", "hong@gmail.com",
 				AuthProvider.GOOGLE, "google-sub");
-		when(userRepository.findByEmail("kwon@gmail.com")).thenReturn(Optional.of(social));
+		when(userRepository.findByEmail("hong@gmail.com")).thenReturn(Optional.of(social));
 
-		assertTrue(service.findIdRecipient("권형준", "kwon@gmail.com").isEmpty());
+		assertTrue(service.findIdRecipient("홍길동", "hong@gmail.com").isEmpty());
 	}
 }
