@@ -50,6 +50,7 @@ public class ShopPaymentService {
 	private final MessageSource messageSource;
 	// 결제 결과 화면(CommercePaymentResultView) 문구를 요청 로케일로 만든다
 	private final megane6.weplanet.i18n.Messages messages;
+	private final megane6.weplanet.service.UserService userService; // 주문서 배송지를 다음 주문서 기본값으로 저장
 
 	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
 	private String msg(String code) {
@@ -85,6 +86,8 @@ public class ShopPaymentService {
 		ShopOrder order = shopOrderRepository.findByIdempotencyKey(key)
 				.map(existing -> reuseReady(existing, buyer, cart.total(), shipping))
 				.orElseGet(() -> createCartOrder(buyer, rows, cart.total(), key, shipping));
+		// 입력한 배송지를 다음 주문서 기본값(최근 배송지)으로 남긴다. 전화번호는 내 번호가 비어 있을 때만
+		userService.rememberShipping(buyer, shipping.zipcode(), shipping.address1(), shipping.address2(), shipping.receiverPhone());
 		return toPrepare(order, orderName(order));
 	}
 

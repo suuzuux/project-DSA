@@ -79,7 +79,7 @@ class UserServiceWithdrawTest {
 	// (그래야 같은 구글 계정으로 다시 가입할 수 있다)
 	@Test
 	void socialOnlyAccountWithdrawsWithoutPassword() {
-		User social = User.createSocialFan("google123456", null, "권형준", "닉네임", "kwon@gmail.com",
+		User social = User.createSocialFan("google123456", null, "홍길동", "닉네임", "hong@gmail.com",
 				AuthProvider.GOOGLE, "google-sub-1");
 		ReflectionTestUtils.setField(social, "id", 8L);
 
@@ -91,7 +91,7 @@ class UserServiceWithdrawTest {
 	}
 
 	private static User fanWithPersonalInfo() {
-		User user = User.createFan("fan07", "encoded", "권형준", "닉네임", "fan07@test.com");
+		User user = User.createFan("fan07", "encoded", "홍길동", "닉네임", "fan07@test.com");
 		ReflectionTestUtils.setField(user, "id", USER_ID);
 		ReflectionTestUtils.setField(user, "phone", "010-1234-5678");
 		ReflectionTestUtils.setField(user, "address1", "서울시 어딘가 1");

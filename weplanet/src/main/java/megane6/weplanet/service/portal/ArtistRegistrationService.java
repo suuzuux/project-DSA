@@ -189,7 +189,7 @@ public class ArtistRegistrationService {
 		return trimmed;
 	}
 	
-	// 커뮤니티 검색의 카테고리 필터(아이돌/배우)는 DB의 한국어 값으로 검색하므로, 다른 언어 표기로 들어와도 한국어 값으로 맞춘다.
+	// 커뮤니티 검색의 카테고리 필터(아이돌/솔로가수/배우)는 DB의 한국어 값으로 검색하므로, 다른 언어 표기로 들어와도 한국어 값으로 맞춘다.
 	// (그 밖의 값은 그대로 저장)
 	private static String normalizeCategory(String category) {
 		if (category == null) {
@@ -197,6 +197,7 @@ public class ArtistRegistrationService {
 		}
 		return switch (category.toLowerCase(Locale.ROOT)) {
 			case "아이돌", "idol", "アイドル" -> "아이돌";
+			case "솔로가수", "솔로", "solo", "solo singer", "solo artist", "ソロ歌手", "ソロ" -> "솔로가수";
 			case "배우", "actor", "actress", "俳優", "女優" -> "배우";
 			default -> category;
 		};

@@ -4,12 +4,14 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import megane6.weplanet.domain.entity.convert.EncryptedStringConverter;
 import megane6.weplanet.domain.entity.convert.PlaintextBytesConverter;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Gender;
 import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,6 +19,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
+// 바뀐 칸만 UPDATE 한다 - 로그인 시각처럼 다른 칸이 바뀔 때 기존 평문 실명·전화번호가 다시 저장되며 암호화되지 않게
+// (실명·전화번호 암호화는 새로 가입하거나 새로 입력한 값부터 적용)
+@DynamicUpdate
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
@@ -43,7 +48,7 @@ public class User {
 	@JoinColumn(name = "agency_id")
 	private Agency agency;	// 소속사 (ARTIST/AGENCY 계정, 없으면 NULL)
 	
-	@Convert(converter = PlaintextBytesConverter.class)
+	@Convert(converter = EncryptedStringConverter.class)	// AES-GCM 암호화 저장
 	@Column(name = "real_name", nullable = false, columnDefinition = "VARBINARY(255)")	// 실명 (결제 명의 대조용)
 	private String realName;
 	
@@ -54,12 +59,12 @@ public class User {
 	@Column(nullable = false, length = 255, unique = true)
 	private String email;		// 가입자 이메일
 	
-	@Convert(converter = PlaintextBytesConverter.class)
+	@Convert(converter = EncryptedStringConverter.class)	// AES-GCM 암호화 저장
 	@Column(columnDefinition = "VARBINARY(255)")
 	private String phone;		// 본인인증 - 결제 알림
 	
 	@Column(name = "phone_hash", length = 64)
-	private String phoneHash;	// 지금은 평문 단계라 사용 안 함, 암호화 붙일 때 채움
+	private String phoneHash;	// 전화번호로 회원을 찾는 기능이 생기면 채울 검색용 HMAC (지금은 그런 기능이 없어 사용 안 함)
 	
 	@Column(name = "birth_date")
 	private LocalDate birthDate;	// 본인인증
@@ -258,6 +263,17 @@ public class User {
 		this.phone = phone;
 	}
 	
+	// 굿즈 주문서에 입력한 배송지를 다음 주문서 기본값(최근 배송지)으로 남긴다.
+	// 전화번호는 설정의 "내 전화번호"라 비어 있을 때만 채운다 - 선물 주문의 받는 사람 번호로 덮어쓰지 않게
+	public void rememberShipping(String zipcode, String address1, String address2, String phone) {
+		this.zipcode = zipcode;
+		this.address1 = address1;
+		this.address2 = address2;
+		if (this.phone == null && phone != null) {
+			this.phone = phone;
+		}
+	}
+
 	public void changePassword(String encodedPassword) {
 		this.password = encodedPassword;
 	}

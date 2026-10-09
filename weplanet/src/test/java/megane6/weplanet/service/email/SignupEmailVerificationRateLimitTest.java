@@ -88,11 +88,11 @@ class SignupEmailVerificationRateLimitTest {
 	// 찾기 메일은 입력한 주소가 아니라 가입 때 등록한 주소로 보낸다 (대소문자만 다르게 입력한 경우)
 	@Test
 	void eligibleMailGoesToRegisteredAddress() {
-		service.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, "kwon@test.com", "Kwon@Test.com");
+		service.sendVerificationCodeIfEligible(session, VerificationPurpose.RESET_PASSWORD, "hong@test.com", "Hong@Test.com");
 
 		ArgumentCaptor<SimpleMailMessage> sent = ArgumentCaptor.forClass(SimpleMailMessage.class);
 		verify(asyncSender).send(sent.capture());
-		assertArrayEquals(new String[]{"Kwon@Test.com"}, sent.getValue().getTo());
+		assertArrayEquals(new String[]{"Hong@Test.com"}, sent.getValue().getTo());
 	}
 
 	// 사이트 전체 하루 한도: 실제로 보낸 메일이 400통이 되면 그날은 더 보내지 않는다

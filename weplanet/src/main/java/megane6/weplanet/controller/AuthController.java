@@ -74,13 +74,20 @@ public class AuthController {
 	}
 	
 	// 회원가입 방법 선택 화면 (Google/Kakao/LINE/아이디 중 선택)
+	// 이미 로그인했으면 로그인 화면처럼 역할별 첫 화면으로 보낸다 - 그대로 가입하면 지금 계정이 말없이 새 계정으로 바뀐다
 	@GetMapping("/signup")
-	public String signupEntry() {
+	public String signupEntry(@AuthenticationPrincipal AuthenticatedUser principal) {
+		if (principal != null) {
+			return RoleHomeRedirects.redirectFor(principal);
+		}
 		return "signup-wireframe";
 	}
-	
+
 	@GetMapping("/signup/id")
-	public String signupForm(Model model, HttpSession session) {
+	public String signupForm(@AuthenticationPrincipal AuthenticatedUser principal, Model model, HttpSession session) {
+		if (principal != null) {
+			return RoleHomeRedirects.redirectFor(principal);
+		}
 		SignupRequestDto dto = new SignupRequestDto();
 		// 아이디 로그인에서 "가입된 아이디가 없습니다 → 회원가입하기"로 넘어온 경우, 입력했던 아이디를 채워준다 (한 번만)
 		Object notFoundUsername = session.getAttribute(SESSION_KEY_LOGIN_NOT_FOUND_USERNAME);
