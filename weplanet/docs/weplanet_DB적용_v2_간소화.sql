@@ -1,6 +1,27 @@
--- WePlaNet 로컬 DB 적용 - 테이블 간소화(v2, 60 → 56개)를 데이터를 유지한 채 반영 (실행 전 백업, 한 번만 실행).
+-- WePlaNet 로컬 DB 적용 - 제휴 신청 언어 추가 + 테이블 간소화(v2, 60 → 56개)를 데이터를 유지한 채 반영 (실행 전 백업, 한 번만 실행).
 
 USE `weplanet`;
+
+-- 0) 제휴 신청 언어 (기존 DB적용.sql 내용, 이미 추가된 컬럼·제약은 건너뜀)
+SET @pa_language_sql = IF(
+    EXISTS (SELECT 1 FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name = 'partnership_applications'
+              AND column_name = 'applicant_language'),
+    'SELECT ''applicant_language 컬럼이 이미 있습니다'' AS notice',
+    'ALTER TABLE `partnership_applications` ADD COLUMN `applicant_language` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT ''KO'' COMMENT ''신청할 때 화면 언어 (KO/JA/EN) - 승인/반려 메일을 이 언어로 보낸다'' AFTER `message`');
+PREPARE pa_language_stmt FROM @pa_language_sql;
+EXECUTE pa_language_stmt;
+DEALLOCATE PREPARE pa_language_stmt;
+
+SET @pa_language_check_sql = IF(
+    EXISTS (SELECT 1 FROM information_schema.table_constraints
+            WHERE constraint_schema = DATABASE() AND table_name = 'partnership_applications'
+              AND constraint_name = 'ck_pa_applicant_language' AND constraint_type = 'CHECK'),
+    'SELECT ''ck_pa_applicant_language 제약이 이미 있습니다'' AS notice',
+    'ALTER TABLE `partnership_applications` ADD CONSTRAINT `ck_pa_applicant_language` CHECK (`applicant_language` IN (''KO'', ''JA'', ''EN''))');
+PREPARE pa_language_check_stmt FROM @pa_language_check_sql;
+EXECUTE pa_language_check_stmt;
+DEALLOCATE PREPARE pa_language_check_stmt;
 
 -- Safe Updates 가 켜져 있으면 JOIN UPDATE 가 막혀 잠시 끈다.
 SET @old_safe_updates = @@SQL_SAFE_UPDATES;

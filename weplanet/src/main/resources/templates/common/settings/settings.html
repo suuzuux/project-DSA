@@ -146,10 +146,10 @@
   <!-- 약관 -->
   <section class="settings-block">
     <h2 class="settings-block__title" th:text="#{settings.policy.heading}">약관 및 정책</h2>
-    <a class="settings-row" th:href="@{/policy/privacy}">
+    <a class="settings-row" href="/policy/privacy?from=settings" th:href="@{/policy/privacy(from='settings')}">
       <span th:text="#{settings.policy.privacy}">개인정보처리방침</span><span>›</span>
     </a>
-    <a class="settings-row" th:href="@{/policy/terms}">
+    <a class="settings-row" href="/policy/terms?from=settings" th:href="@{/policy/terms(from='settings')}">
       <span th:text="#{settings.policy.terms}">이용약관</span><span>›</span>
     </a>
   </section>
