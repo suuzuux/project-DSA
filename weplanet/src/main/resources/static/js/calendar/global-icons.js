@@ -755,13 +755,13 @@
     var wrap = document.createElement("div");
     wrap.id = "weplanet-global-icons";
     wrap.innerHTML =
-      '<div class="wp-cal-backdrop" id="wpCalBackdrop" hidden>' +
+      (isAuthenticatedPage() ? '<div class="wp-cal-backdrop" id="wpCalBackdrop" hidden>' +
         '<div class="wp-cal-modal" id="wpCalModal" role="dialog" aria-modal="true" aria-labelledby="wpCalTitle"></div>' +
-      "</div>" +
+      "</div>" : "") +
       '<div class="wp-toast" id="wpGlobalToast" hidden></div>';
     document.body.appendChild(wrap);
 
-    document.getElementById("wpCalBackdrop").addEventListener("click", function (e) {
+    document.getElementById("wpCalBackdrop")?.addEventListener("click", function (e) {
       // 배경 클릭만 닫기 (모달 내부 클릭은 동작해야 함)
       if (e.target.id === "wpCalBackdrop") closeCalendar();
     });
@@ -1103,6 +1103,7 @@
   }
 
   function openCalendar(opts) {
+    if (!isAuthenticatedPage()) return;
     opts = opts || {};
     closeMenus();
     if (opts.eventId) {

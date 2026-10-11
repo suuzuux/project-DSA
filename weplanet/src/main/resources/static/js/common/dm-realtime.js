@@ -4,6 +4,7 @@
 
     const body = document.body;
     if (body.getAttribute("data-shell") !== "fan") return;
+    if (body.getAttribute("data-authenticated") !== "true") return;
 
     // data-fan-id 는 로그인했을 때만 채워진다 (로그인한 내 계정 id).
     const fanIdRaw = body.getAttribute("data-fan-id");

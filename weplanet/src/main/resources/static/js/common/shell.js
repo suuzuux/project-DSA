@@ -235,8 +235,8 @@
     <a href="${root}signup">${t("shell.guest.signup")}</a>
   </nav>`;
 
-    // 관리자는 채팅 버튼을 노출하지 않는다.
-    const chatFabHtml = isAdmin
+    // 로그인 사용자에게만 플로팅 위젯을 제공하며, 관리자는 채팅을 숨긴다.
+    const chatFabHtml = !isAuthenticated || isAdmin
       ? ""
       : `<button type="button" class="fab" id="fabChat" title="${isArtist ? t("shell.fab.chatFan") : t("shell.fab.chatDm")}" aria-label="${t("shell.fab.chatOpen")}">${ICONS.send}</button>`;
 
@@ -254,13 +254,13 @@
 </aside>
 
 <!-- ========== 2. FAB ========== -->
-<div class="fab-stack">
+${isAuthenticated ? `<div class="fab-stack">
   <button type="button" class="fab fab--secondary" data-shell-open="calendar" title="${t("shell.fab.calendar")}" aria-label="${t("shell.fab.calendar")}">${ICONS.calendar}</button>
   ${chatFabHtml}
-</div>
+</div>` : ""}
 
 <!-- ========== 3. DM 패널 ========== -->
-<div class="dm-panel" id="dmPanel" role="dialog" aria-label="${escapeHtml(t("shell.dm.panelLabel"))}" aria-hidden="true">
+${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label="${escapeHtml(t("shell.dm.panelLabel"))}" aria-hidden="true">
 
   <!-- 3-A. DM 목록 (P13) -->
   <div class="dm-list-view is-active" id="dmListView">
@@ -324,7 +324,7 @@
     <!-- 오늘 남은 전송 횟수 (CHAT-05 하루 전송 한도) -->
     <p class="dm-quota" id="dmQuota" hidden>${escapeHtml(t("shell.dm.quota")).replace("{0}", '<strong id="dmQuotaCount">-</strong>')}</p>
   </div>
-</div>
+</div>` : ""}
 
 <!-- ========== 4. 멤버십 가입 모달 (P27) – 전역에서 data-modal-open 가능 ========== -->
 <div class="modal-backdrop" id="membershipJoinModal">
@@ -533,7 +533,7 @@
     }
 
     function syncBackdrop() {
-      const anyOpen = drawer.classList.contains("is-open") || dmPanel.classList.contains("is-open");
+      const anyOpen = drawer.classList.contains("is-open") || !!dmPanel?.classList.contains("is-open");
       backdrop.classList.toggle("is-open", anyOpen);
       setHidden(backdrop, !anyOpen);
       document.body.style.overflow = anyOpen ? "hidden" : "";
@@ -552,6 +552,7 @@
     }
 
     function openDm() {
+      if (!isAuthenticated || isAdmin || !dmPanel) return;
       dmPanel.classList.add("is-open");
       dmPanel.setAttribute("aria-hidden", "false");
       // 아티스트는 목록 없이 자기 DM 방을 바로 보여준다.
@@ -564,17 +565,20 @@
     }
 
     function closeDm() {
+      if (!dmPanel) return;
       dmPanel.classList.remove("is-open");
       dmPanel.setAttribute("aria-hidden", "true");
       syncBackdrop();
     }
 
     function showList() {
+      if (!dmListView || !dmRoomView) return;
       dmListView.classList.add("is-active");
       dmRoomView.classList.remove("is-active");
     }
 
     function showRoom(name, expired, neverSubscribed) {
+      if (!dmPanel) return;
       dmRoomName.textContent = name;
       dmExpiredBanner.classList.toggle("hidden", !expired && !dmExpired);
       if (expired || dmExpired) dmExpiredBanner.classList.remove("hidden");
@@ -707,10 +711,10 @@
       box.scrollTop = box.scrollHeight;
     });
 
-    // ?dm=1 이면 자동으로 연다 (관리자 제외).
+    // 로그인한 사용자만 ?dm=1 로 자동으로 연다 (관리자 제외).
     const params = new URLSearchParams(location.search);
-    if (!isAdmin && params.get("dm") === "1") openDm();
-    if (!isAdmin && params.get("dm") === "expired") {
+    if (isAuthenticated && !isAdmin && params.get("dm") === "1") openDm();
+    if (isAuthenticated && !isAdmin && params.get("dm") === "expired") {
       openDm();
       showRoom("YUMA", true);
     }
