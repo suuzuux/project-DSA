@@ -93,11 +93,11 @@
           <span class="admin-stat__icon admin-stat__icon--khaki">📌</span>
           <span class="admin-stat__body">
             <span class="admin-stat__label" th:text="#{admin.notices.stat.pinned}">상단 고정</span>
-            <strong class="admin-stat__value" th:text="${stats.pinned()} + ' / ' + ${T(megane6.weplanet.service.SiteNoticeService).MAX_PINNED}">0 / 3</strong>
+            <strong class="admin-stat__value" th:text="${stats.pinned()} + ' / ' + ${maxPinned}">0 / 3</strong>
           </span>
         </article>
       </div>
-      <p class="text-sm text-muted" style="margin-bottom:12px;" th:text="#{admin.notices.dragHint(${T(megane6.weplanet.service.SiteNoticeService).MAX_PINNED})}">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 3개)</p>
+      <p class="text-sm text-muted" style="margin-bottom:12px;" th:text="#{admin.notices.dragHint(${maxPinned})}">상단 노출된 공지는 제목이 굵게 표시되며, ☰ 를 드래그해 순서를 바꿀 수 있습니다. (최대 3개)</p>
       <form method="get" th:action="@{/admin/notices}" class="report-filter-bar">
         <input type="hidden" name="category" th:value="${selectedCategory}" />
         <input type="text" name="keyword" placeholder="제목 검색" th:placeholder="#{admin.notices.searchPlaceholder}" th:value="${keyword}" />
