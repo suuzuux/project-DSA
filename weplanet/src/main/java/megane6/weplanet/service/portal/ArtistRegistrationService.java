@@ -187,6 +187,7 @@ public class ArtistRegistrationService {
 		}
 		return switch (category.toLowerCase(Locale.ROOT)) {
 			case "아이돌", "idol", "アイドル" -> "아이돌";
+			case "솔로가수", "솔로", "solo", "solo singer", "solo artist", "ソロ歌手", "ソロ" -> "솔로가수";
 			case "배우", "actor", "actress", "俳優", "女優" -> "배우";
 			default -> category;
 		};

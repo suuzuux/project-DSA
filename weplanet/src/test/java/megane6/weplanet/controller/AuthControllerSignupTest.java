@@ -5,13 +5,18 @@ import megane6.weplanet.controller.common.auth.AuthController;
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.i18n.Messages;
+import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
 import megane6.weplanet.service.account.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.util.NicknameGenerator;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.MessageSource;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -21,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
@@ -39,7 +45,33 @@ class AuthControllerSignupTest {
 			mock(NicknameGenerator.class),
 			mock(MessageSource.class),
 			mock(Messages.class),
-			loginSessionSupport)).build();
+			loginSessionSupport))
+			// 실제 앱처럼 @AuthenticationPrincipal 에 로그인한 회원을 넣어 준다 (로그인 안 했으면 null)
+			.setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+			.build();
+
+	@AfterEach
+	void logout() {
+		SecurityContextHolder.clearContext();
+	}
+
+	// 로그인한 채로 가입 화면 주소를 열면 로그인 화면(/login)처럼 역할별 첫 화면으로 보낸다
+	@Test
+	void loggedInUserIsSentToRoleHomeFromSignupPages() throws Exception {
+		loginAs("ROLE_FAN");
+		mockMvc.perform(get("/signup")).andExpect(redirectedUrl("/"));
+		mockMvc.perform(get("/signup/id")).andExpect(redirectedUrl("/"));
+
+		loginAs("ROLE_AGENCY");
+		mockMvc.perform(get("/signup/id")).andExpect(redirectedUrl("/portal/dashboard"));
+	}
+
+	// 로그인하지 않았으면 가입 화면이 그대로 열린다
+	@Test
+	void guestSeesSignupPages() throws Exception {
+		mockMvc.perform(get("/signup")).andExpect(view().name("common/auth/signup-wireframe"));
+		mockMvc.perform(get("/signup/id")).andExpect(view().name("common/auth/signup-id"));
+	}
 
 	// 아이디 회원가입이 끝나면 로그인 화면을 거치지 않고 바로 로그인된 채로 메인으로 간다
 	@Test
@@ -97,11 +129,18 @@ class AuthControllerSignupTest {
 				.andExpect(model().attribute("checkedUsername", ""));
 	}
 
+	private static void loginAs(String roleName) {
+		AuthenticatedUser user = AuthenticatedUser.builder()
+				.id(7L).username("hong01").nickname("홍길동").roleName(roleName).enabled(true).build();
+		SecurityContextHolder.getContext().setAuthentication(
+				UsernamePasswordAuthenticationToken.authenticated(user, null, user.getAuthorities()));
+	}
+
 	private static org.springframework.test.web.servlet.RequestBuilder validSignup() {
 		return post("/signup")
 				.param("username", "newfan01")
-				.param("password", "abcd1234")
-				.param("passwordConfirm", "abcd1234")
+				.param("password", "abcd123!")
+				.param("passwordConfirm", "abcd123!")
 				.param("realName", "이름")
 				.param("nickname", "닉네임")
 				.param("email", "newfan01@weplanet.test");

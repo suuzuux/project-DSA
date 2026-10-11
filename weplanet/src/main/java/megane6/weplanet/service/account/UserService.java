@@ -83,9 +83,9 @@ public class UserService {
 		return saved;
 	}
 	
-	// 비밀번호 규칙 (영문·숫자 포함 8~20자)
-	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
-	// 전화번호 (숫자·하이픈·+, 최대 20자)
+	// 비밀번호 규칙 (영문·숫자·특수문자 포함 8~20자)
+	private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$");
+	// 설정 화면 전화번호(선택) - 숫자·하이픈·+ 만, 최대 20자
 	private static final Pattern PHONE_PATTERN = Pattern.compile("^[0-9+\\-]{1,20}$");
 
 	// 아이디 중복 확인
@@ -214,7 +214,14 @@ public class UserService {
 		}
 	}
 
-	// 기본 서비스 언어 저장 (AI 번역 대상 언어로도 사용)
+	// 최근 배송지를 저장하고, 수취인 연락처는 전화번호 규칙에 맞을 때만 넘긴다.
+	@Transactional
+	public void rememberShipping(User user, String zipcode, String address1, String address2, String receiverPhone) {
+		String phone = receiverPhone == null ? "" : receiverPhone.trim();
+		user.rememberShipping(zipcode, address1, address2, PHONE_PATTERN.matcher(phone).matches() ? phone : null);
+	}
+
+	// 기본 서비스 언어 저장 - 화면 언어이자 게시글/댓글 AI 번역 대상 언어로 쓰인다.
 	@Transactional
 	public void updateLanguage(User user, Language language) {
 		user.changePreferredLanguage(language);

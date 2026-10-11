@@ -18,8 +18,9 @@
   const t = (key, fallback, args) =>
     (window.WePlaNet && window.WePlaNet.t) ? window.WePlaNet.t(key, fallback, args) : fallback;
 
-  // DB 에 한국어로 저장된 카테고리는 표시할 때만 번역한다.
-  const CATEGORY_KEYS = { "아이돌": "main.search.categoryIdol", "배우": "main.search.categoryActor" };
+  // 카테고리는 DB에 한국어 값(아이돌/솔로가수/배우)으로 저장돼 있어서(검색 필터 값도 같은 문자열) 표시할 때만 번역한다.
+  // 선택지에 있는 값 외의 직접 입력한 카테고리는 저장된 그대로 보여준다.
+  const CATEGORY_KEYS = { "아이돌": "main.search.categoryIdol", "솔로가수": "main.search.categorySolo", "배우": "main.search.categoryActor" };
   const categoryLabel = (category) =>
     CATEGORY_KEYS[category] ? t(CATEGORY_KEYS[category], category) : (category || "");
 

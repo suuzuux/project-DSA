@@ -56,6 +56,7 @@
     "main.search.category": "직업/카테고리",
     "main.search.categoryIdol": "아이돌",
     "main.search.categoryActor": "배우",
+    "main.search.categorySolo": "솔로가수",
     "main.search.submit": "검색",
     "community.join.button": "커뮤니티 가입하기",
     "community.join.thisCommunity": "이 커뮤니티",
@@ -777,6 +778,7 @@
         <select id="exploreCategory" class="form-input">
           <option value="">${escapeHtml(t("main.search.all"))}</option>
           <option value="아이돌">${escapeHtml(t("main.search.categoryIdol"))}</option>
+          <option value="솔로가수">${escapeHtml(t("main.search.categorySolo"))}</option>
           <option value="배우">${escapeHtml(t("main.search.categoryActor"))}</option>
         </select>
       </div>
