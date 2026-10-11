@@ -102,6 +102,7 @@ public class SiteNoticeController {
 		model.addAttribute(
 				"pageResult", siteNoticeService.listAll(categoryFilter, keyword, page, size));
 		model.addAttribute("stats", siteNoticeService.getStats());
+		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
 		model.addAttribute("selectedCategory", category);
 		model.addAttribute("keyword", keyword);
 		
