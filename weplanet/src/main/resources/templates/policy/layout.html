@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head th:fragment="head(headingKey)">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="#{${headingKey}} + ' | WePlaNet'">WePlaNet</title>
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
+  <link rel="stylesheet" th:href="@{/css/policy.css}" />
+</head>
+<body>
+<th:block th:fragment="header(headingKey, dateKey)">
+  <a th:if="${policyFromSettings == true}" th:href="@{/settings}" class="btn btn--ghost btn--sm"
+     th:text="#{policy.backToSettings}">← 설정으로</a>
+  <a th:unless="${policyFromSettings == true}" th:href="@{/}" class="btn btn--ghost btn--sm"
+     th:text="#{policy.backHome}">← 홈으로</a>
+  <h1 th:text="#{${headingKey}}">정책</h1>
+  <p class="policy-meta" th:text="#{${dateKey}}">시행일자</p>
+</th:block>
+<th:block th:fragment="footer(addendumKey, type)">
+  <section class="policy-contact">
+    <h2 th:text="#{policy.contact.heading}">문의 및 신고 창구</h2>
+    <p th:text="#{policy.contact.description}">운영팀 이메일로 문의 내용을 작성할 수 있습니다.</p>
+    <a href="mailto:admin4.wp@gmail.com">admin4.wp@gmail.com</a>
+    <p class="policy-meta" th:text="#{policy.contact.emailNotice}">이메일 앱이 열리며, 이 페이지에서 신고가 자동 접수되지는 않습니다.</p>
+  </section>
+
+  <section class="policy-sources" th:if="${type == 'paid' or type == 'youth' or type == 'illegal-content' or type == 'cookies' or type == 'cookie-settings'}">
+    <h2 th:text="#{policy.sources.heading}">공식 참고 자료</h2>
+    <a th:if="${type == 'paid'}" href="https://www.ftc.go.kr/www/selectBbsNttList.do?bordCd=201&amp;key=202"
+       target="_blank" rel="noopener noreferrer" th:text="#{policy.sources.ftc}">공정거래위원회 표준약관</a>
+    <a th:if="${type == 'paid'}" href="https://www.law.go.kr/admRulLsInfoP.do?admRulSeq=2100000216089"
+       target="_blank" rel="noopener noreferrer" th:text="#{policy.sources.digitalTerms}">디지털콘텐츠 표준약관</a>
+    <a th:if="${type == 'youth' or type == 'illegal-content'}" href="https://d4u.stop.or.kr/"
+       target="_blank" rel="noopener noreferrer" th:text="#{policy.sources.digitalSafety}">중앙디지털성범죄피해자지원센터</a>
+    <a th:if="${type == 'cookies' or type == 'cookie-settings'}" href="https://www.privacy.go.kr/"
+       target="_blank" rel="noopener noreferrer" th:text="#{policy.sources.privacy}">개인정보 포털</a>
+  </section>
+
+  <nav class="policy-related" th:aria-label="#{policy.related.heading}">
+    <h2 th:text="#{policy.related.heading}">함께 확인할 정책</h2>
+    <a th:href="${policyFromSettings == true} ? @{/policy/terms(from='settings')} : @{/policy/terms}" th:text="#{footer.terms}"></a>
+    <a th:href="${policyFromSettings == true} ? @{/policy/privacy(from='settings')} : @{/policy/privacy}" th:text="#{footer.privacy}"></a>
+    <a th:href="@{/policy/operation}" th:text="#{footer.operationPolicy}"></a>
+    <a th:href="@{/policy/paid}" th:text="#{footer.paidTerms}"></a>
+    <a th:href="@{/policy/youth}" th:text="#{footer.youthPolicy}"></a>
+    <a th:href="@{/policy/illegal-content}" th:text="#{footer.illegalContentReport}"></a>
+    <a th:href="@{/policy/cookies}" th:text="#{footer.cookiePolicy}"></a>
+    <a th:href="@{/policy/cookie-settings}" th:text="#{footer.cookieSettings}"></a>
+  </nav>
+  <section class="policy-addendum">
+    <h2 th:text="#{policy.addendum.heading}">부칙</h2>
+    <p th:text="#{${addendumKey}}"></p>
+  </section>
+</th:block>
+</body>
+</html>

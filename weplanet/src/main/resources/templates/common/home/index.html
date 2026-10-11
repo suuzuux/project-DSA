@@ -290,14 +290,14 @@
 <footer style="border-top:1px solid var(--wp-hairline, #e5e5e5);margin-top:40px;padding:24px 0;">
   <div class="container" style="display:flex;flex-direction:column;gap:16px;">
     <nav style="display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--wp-fs-xs);">
-      <a href="#" class="text-muted" th:text="#{footer.terms}">이용약관</a>
-      <a href="#" class="text-muted" th:text="#{footer.operationPolicy}">서비스 운영정책</a>
-      <a href="#" class="text-muted" th:text="#{footer.paidTerms}">유료서비스 이용약관</a>
-      <a href="#" class="text-muted" th:text="#{footer.youthPolicy}">아동 및 청소년 보호정책</a>
-      <a href="#" class="text-muted" th:text="#{footer.illegalContentReport}">불법촬영물 신고·삭제 요청</a>
-      <a href="#" style="font-weight:700;" th:text="#{footer.privacy}">개인정보 처리방침</a>
-      <a href="#" class="text-muted" th:text="#{footer.cookiePolicy}">쿠키 정책</a>
-      <a href="#" class="text-muted" th:text="#{footer.cookieSettings}">쿠키 설정</a>
+      <a href="/policy/terms" th:href="@{/policy/terms}" class="text-muted" th:text="#{footer.terms}">이용약관</a>
+      <a href="/policy/operation" th:href="@{/policy/operation}" class="text-muted" th:text="#{footer.operationPolicy}">서비스 운영정책</a>
+      <a href="/policy/paid" th:href="@{/policy/paid}" class="text-muted" th:text="#{footer.paidTerms}">유료서비스 이용약관</a>
+      <a href="/policy/youth" th:href="@{/policy/youth}" class="text-muted" th:text="#{footer.youthPolicy}">아동 및 청소년 보호정책</a>
+      <a href="/policy/illegal-content" th:href="@{/policy/illegal-content}" class="text-muted" th:text="#{footer.illegalContentReport}">불법촬영물 신고·삭제 요청</a>
+      <a href="/policy/privacy" th:href="@{/policy/privacy}" style="font-weight:700;" th:text="#{footer.privacy}">개인정보 처리방침</a>
+      <a href="/policy/cookies" th:href="@{/policy/cookies}" class="text-muted" th:text="#{footer.cookiePolicy}">쿠키 정책</a>
+      <a href="/policy/cookie-settings" th:href="@{/policy/cookie-settings}" class="text-muted" th:text="#{footer.cookieSettings}">쿠키 설정</a>
       <a th:href="@{/partnership}" class="text-muted" th:text="#{footer.partnership}">입점 신청</a>
       <!-- 고객센터 - 이용 후기 구글폼 (새 탭) -->
       <a href="https://forms.gle/EEdsPYB7iCPNzoTF8" target="_blank" rel="noopener noreferrer"
@@ -305,17 +305,17 @@
     </nav>
     <!-- 사업자 정보 고지 (법적 문구) -->
     <p class="text-xs text-muted" style="line-height:1.6;" th:utext="#{footer.businessInfo}">
-      상호 WePlaNet Inc. | 대표자 정휘원 | 전자우편주소 support@weplanet.io<br />
+      상호 WePlaNet Inc. | 대표자 정휘원 | 전자우편주소 admin4.wp@gmail.com<br />
       WePlaNet Shop에서 판매되는 상품 중에는 WePlaNet Shop에 입점한 개별 판매자가 판매하는 상품이 포함되어 있습니다.
       개별 판매자가 판매하는 상품의 경우 WePlaNet은 통신판매중개자로서 통신판매의 당사자가 아니며,
       등록된 상품의 정보 및 거래에 대해 책임을 지지 않습니다.
     </p>
     <div class="flex-center" style="gap:12px;font-size:var(--wp-fs-md);">
       <span class="text-xs text-muted">WePlaNet SNS</span>
-      <a href="#" class="icon-btn" aria-label="X">𝕏</a>
-      <a href="#" class="icon-btn" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
-      <a href="#" class="icon-btn" aria-label="YouTube">▶</a>
-      <a href="#" class="icon-btn" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18a4 4 0 1 0 4-4V2h4a6 6 0 0 0 6 6"></path></svg></a>
+      <a href="https://x.com/" target="_blank" rel="noopener noreferrer" class="icon-btn" aria-label="X">𝕏</a>
+      <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="icon-btn" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
+      <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" class="icon-btn" aria-label="YouTube">▶</a>
+      <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" class="icon-btn" aria-label="TikTok"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18a4 4 0 1 0 4-4V2h4a6 6 0 0 0 6 6"></path></svg></a>
     </div>
     <p class="text-xs text-muted">© 2026 WePlaNet Inc. All rights reserved.</p>
   </div>
