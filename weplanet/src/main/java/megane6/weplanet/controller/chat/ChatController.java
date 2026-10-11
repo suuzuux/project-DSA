@@ -7,6 +7,9 @@ import megane6.weplanet.domain.dto.ChatMessageRequest;
 import megane6.weplanet.domain.dto.DmInboxItem;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.MembershipOrder;
+import megane6.weplanet.repository.artist.ArtistAccountProfileRepository;
+import org.springframework.security.access.AccessDeniedException;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.i18n.PreferredLocaleResolver;
@@ -50,6 +53,7 @@ public class ChatController {
     private final MessageSource messageSource;
     private final megane6.weplanet.i18n.Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
+    private final ArtistAccountProfileRepository artistAccountProfileRepository;
 
     // 웹소켓 요청엔 세션 로케일이 없어 보낸 사람의 선호 언어로 문구를 만든다.
     private String chatMsg(String code, User forUser) {
@@ -323,11 +327,22 @@ public class ChatController {
     /** DM 방 데이터 - 지난 대화와 오늘 남은 전송 횟수. */
     @GetMapping("/chat/room-data")
     @ResponseBody
-    public Map<String, Object> roomData(@RequestParam Long artistId, @RequestParam Long fanId) {
+    public Map<String, Object> roomData(@RequestParam Long artistId, @RequestParam Long fanId,
+                                       @AuthenticationPrincipal AuthenticatedUser principal) {
+        User fan = requireLoginUser(principal);
+        if (!fan.getId().equals(fanId) || fan.getRole() != Role.FAN) {
+            throw new AccessDeniedException("error.contribution.ownOrderOnlyView");
+        }
         User artist = getUserOrThrow(artistId, "아티스트");
-        User fan = getUserOrThrow(fanId, "팬");
+        if (!communityArtistResolver.isDmRoomOwner(artist)) {
+            throw new IllegalArgumentException("error.community.userNotFound");
+        }
+        Long communityId = communityArtistResolver.ownCommunityId(artist);
+        User community = getUserOrThrow(communityId, "커뮤니티");
+        boolean neverSubscribed = chatMessageService.isNeverSubscribed(fan, artist);
 
-        List<Map<String, Object>> messages = chatMessageService.getConversation(artist, fan).stream()
+        List<Map<String, Object>> messages = (neverSubscribed ? List.<ChatMessage>of()
+                : chatMessageService.getConversation(artist, fan)).stream()
                 .map(m -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("senderId", m.getSender().getId());
@@ -339,11 +354,16 @@ public class ChatController {
 
         Map<String, Object> result = new HashMap<>();
         result.put("artistNickname", artist.getNickname());
+        result.put("communityId", communityId);
+        result.put("communityName", community.getNickname());
+        result.put("artistProfileImage", artistAccountProfileRepository.findByUser_Id(artistId)
+                .map(profile -> profile.getProfileImg()).orElse(""));
+        result.put("membershipYearlyPrice", MembershipOrder.YEARLY_PRICE);
         result.put("remaining", chatQuotaService.getRemaining(fan, artist));
         result.put("messages", messages);
         result.put("membershipExpired", chatMessageService.isMembershipExpired(fan, artist));
         // 한 번도 가입하지 않은 팬이면 가입 안내 문구를 보여준다.
-        result.put("neverSubscribed", chatMessageService.isNeverSubscribed(fan, artist));
+        result.put("neverSubscribed", neverSubscribed);
         return result;
     }
 
