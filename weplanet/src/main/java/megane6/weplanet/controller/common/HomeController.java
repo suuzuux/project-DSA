@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import megane6.weplanet.domain.dto.ArtistCardView;
 import megane6.weplanet.domain.dto.RisingCommunityCardView;
+import megane6.weplanet.domain.dto.event.HashtagEventPageView;
 import megane6.weplanet.domain.entity.ArtistGroup;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
@@ -30,7 +31,7 @@ import java.util.*;
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
-	
+
 	private final UserRepository userRepository;
 	private final PostService postService;
 	private final ArtistGroupRepository artistGroupRepository;
@@ -42,7 +43,7 @@ public class HomeController {
 	private final megane6.weplanet.service.main.MainBannerService mainBannerService;
 	private final megane6.weplanet.service.main.MainBannerTranslator mainBannerTranslator; // 배너 제목·본문을 화면 언어로 (AI 번역)
 	private final HashtagEventPageService hashtagEventPageService; // 해시태그 총공 홈 배너 슬라이드
-	
+
 	@GetMapping({"", "/"})
 	public String home(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		if (principal != null) {
@@ -52,13 +53,15 @@ public class HomeController {
 		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
 		List<ArtistCardView> artists = portalManagementService.toArtistCards(artistUsers);
 		model.addAttribute("artists", artists);
-		// 상단 배너 - 관리자가 노출 중으로 둔 배너 (없으면 기본 배너).
-		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides());
+
+		// 총공 제목을 메인 배너와 함께 번역한다.
+		Optional<HashtagEventPageView> eventView = hashtagEventPageService.getHomeBanner();
+		String eventTitle = eventView.map(view -> view.dashboard().title()).orElse(null);
+		// 노출 중인 배너를 번역한다 (없으면 기본 배너).
+		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides(), eventTitle);
 		model.addAttribute("mainBanners", mainBanners.slides());
 		model.addAttribute("mainBannersPending", mainBanners.pending()); // true 면 화면이 번역문을 다시 받아 바꿔 끼운다
-		// 진행 중이거나 예정·결과 발표 중인 총공 배너 (없으면 null).
-		model.addAttribute("hashtagBanner", hashtagEventPageService.getHomeBanner().orElse(null));
-		
+		model.addAttribute("hashtagBanner", eventView.map(view -> hashtagEventPageService.toHomeBanner(view, mainBanners.eventTitle(), mainBanners.eventTitleReady())).orElse(null));
 		Map<Long, CommunityMember> joinedProfiles;
 		Set<Long> joinedArtistIds;
 		User viewer = null;
@@ -71,13 +74,13 @@ public class HomeController {
 			joinedArtistIds = Collections.emptySet();
 		}
 		model.addAttribute("joinedProfiles", joinedProfiles);
-		
+
 		// 햄버거: 상단(가입/내 커뮤니티) + 하단(모든 커뮤니티)
 		model.addAttribute("joinedArtists",
 				communityDrawerHelper.joined(viewer, artists, joinedArtistIds));
 		model.addAttribute("otherCommunities",
 				communityDrawerHelper.otherCommunities(viewer, artists));
-		
+
 		// 급상승 커뮤니티: 최근 7일 신규 가입자 많은 순 상위 5개 (동률이면 전체 가입자 순).
 		Map<Long, Long> newMemberCounts = communityJoinService.countNewMembers(
 				artistUsers.stream().map(User::getId).toList(), 7);
@@ -100,7 +103,7 @@ public class HomeController {
 		Map<String, String> communityHomeUrls = new HashMap<>();
 		artists.forEach(card -> communityHomeUrls.put(String.valueOf(card.id()), card.homeUrl()));
 		model.addAttribute("communityHomeUrls", communityHomeUrls);
-		
+
 		// 최신 인기 포스트 - 인기순 상위 4개와 대표 이미지 (작성자는 커뮤니티 닉네임).
 		List<Post> popularPosts = postService.getPopularPosts();
 		Map<Long, String> popularPostThumbnails = new HashMap<>();
@@ -119,13 +122,13 @@ public class HomeController {
 		model.addAttribute("popularPosts", popularPosts);
 		model.addAttribute("popularPostThumbnails", popularPostThumbnails);
 		model.addAttribute("popularAuthorNicknames", popularAuthorNicknames);
-		
+
 		return "common/home/index";
 	}
-	
+
 	@GetMapping("/home")
 	public String homeAlias() {
 		return "redirect:/";
 	}
-	
+
 }

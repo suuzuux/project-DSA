@@ -28,7 +28,7 @@ public class ArtistProfileLoginService {
 	
 	// 회원가입과 같은 비밀번호 규칙
 	private static final Pattern PASSWORD_PATTERN
-			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9]).{8,20}$");
+			= Pattern.compile("^(?=.*[a-zA-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])[!-~]{8,20}$");
 	
 	// 5회 틀리면 그 프로필은 10분 잠금 (비밀번호 대입 방지)
 	private static final int MAX_FAILED_ATTEMPTS = 5;

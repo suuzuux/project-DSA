@@ -8,10 +8,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,15 +31,23 @@ public class GeminiClient {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    // 배너·공지 번역 전용 키 (없으면 공용 키)
+    // 번역 전용 키 (없으면 공용 키). 라이브·DM 공용 키가 거절되면 재시도에도 사용한다.
     @Value("${gemini.translation.api.key:}")
     private String translationApiKey;
 
     // HTTP 요청 도구
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
     private final ThreadLocal<String> lastFailure = new ThreadLocal<>();
 
-    // 요약·번역·DM 모델 (라이브 댓글은 Flash-Lite)
+    // 연결 5초·응답 30초 제한으로 번역 요청이 무한 대기하지 않게 한다.
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(30));
+        return new RestTemplate(factory);
+    }
+
+    // 요약·번역은 Flash, 라이브·DM과 번역 실패 재시도는 Flash-Lite를 사용한다.
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
     private static final String GEMINI_LIVE_URL =
@@ -55,7 +65,7 @@ public class GeminiClient {
 
     // 라이브 댓글·AI 팬 DM (Flash-Lite, 거절되면 번역 키로 재시도).
     public String generateLiveJson(String prompt) {
-        String text = generate(prompt, true, apiKey, false, GEMINI_LIVE_URL);
+        String text = generate(prompt, true, true, apiKey, GEMINI_LIVE_URL);
         if (text != null && !text.isBlank()) {
             return text;
         }
@@ -64,7 +74,7 @@ public class GeminiClient {
             return text;
         }
         log.warn("라이브 댓글 Gemini를 번역 전용 키로 재시도");
-        return generate(prompt, true, translationApiKey, false, GEMINI_LIVE_URL);
+        return generate(prompt, true, true, translationApiKey, GEMINI_LIVE_URL);
     }
 
     public String lastFailure() {
@@ -72,25 +82,26 @@ public class GeminiClient {
         return value == null ? "" : value;
     }
 
-    // 배너·공지 번역 전용 (번역 키로 한도를 분리, 실패하면 null).
+    // 배너·공지 번역: JSON 모드를 끄고 프롬프트로 배열을 요청한다.
+    // Flash 실패 시 같은 키로 Flash-Lite에 재시도하며, 모두 실패하면 null을 반환한다.
     public String generateTranslationJson(String prompt) {
         boolean hasTranslationKey = translationApiKey != null && !translationApiKey.isBlank();
-        return generate(prompt, true, hasTranslationKey ? translationApiKey : apiKey);
+        String key = hasTranslationKey ? translationApiKey : apiKey;
+        String text = generate(prompt, false, true, key, GEMINI_URL);
+        if (text != null && !text.isBlank()) {
+            return text;
+        }
+        log.warn("번역 Gemini(Flash) 실패 - Flash-Lite 로 재시도");
+        return generate(prompt, false, true, key, GEMINI_LIVE_URL);
     }
 
     private String generate(String prompt, boolean jsonResponse) {
-        return generate(prompt, jsonResponse, apiKey);
+        return generate(prompt, jsonResponse, jsonResponse, apiKey, GEMINI_URL);
     }
 
-    private String generate(String prompt, boolean jsonResponse, String key) {
-        return generate(prompt, jsonResponse, key, false);
-    }
-
-    private String generate(String prompt, boolean jsonResponse, String key, boolean minimalThinking) {
-        return generate(prompt, jsonResponse, key, minimalThinking, GEMINI_URL);
-    }
-
-    private String generate(String prompt, boolean jsonResponse, String key, boolean minimalThinking, String url) {
+    // jsonMode = Gemini JSON 모드로 받기, nullOnFailure = 실패하면 안내 문구 대신 null (호출부가 실패를 알아채게)
+    // key = 보낼 API 키, url = 모델 주소 (라이브 댓글은 Flash-Lite)
+    private String generate(String prompt, boolean jsonMode, boolean nullOnFailure, String key, String url) {
         lastFailure.remove();
         try {
             // Gemini 요청 형식
@@ -100,13 +111,8 @@ public class GeminiClient {
                             Map.of("text", prompt)
                     ))
             ));
-            if (jsonResponse) {
-                Map<String, Object> config = new HashMap<>();
-                config.put("responseMimeType", "application/json");
-                if (minimalThinking) {
-                    config.put("thinkingConfig", Map.of("thinkingLevel", "MINIMAL", "includeThoughts", false));
-                }
-                requestBody.put("generationConfig", config);
+            if (jsonMode) {
+                requestBody.put("generationConfig", Map.of("responseMimeType", "application/json"));
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -130,17 +136,17 @@ public class GeminiClient {
                     : e.getStatusCode().value() + " " + abbreviate(e.getResponseBodyAsString());
             lastFailure.set(detail);
             log.warn("Gemini API 호출 실패: {}", detail);
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         } catch (RestClientException e) {
             // 한도 초과·네트워크 오류는 안내 문구로 대체한다.
             lastFailure.set(abbreviate(e.getMessage()));
             log.warn("Gemini API 호출 실패: {}", e.getMessage());
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         } catch (RuntimeException e) {
             // 응답 구조가 예상과 다른 경우 (안전성 필터 등)
             lastFailure.set(abbreviate(e.toString()));
             log.warn("Gemini 응답 해석 실패: {}", e.toString());
-            return jsonResponse ? null : messages.get("error.ai.unavailable");
+            return nullOnFailure ? null : messages.get("error.ai.unavailable");
         }
     }
 
