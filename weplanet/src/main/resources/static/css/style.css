@@ -11,6 +11,21 @@
   flex-shrink: 0;
 }
 
+/* 모든 화면과 내부 패널에서 사용하는 로즈우드 스크롤바 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--wp-scrollbar-thumb) var(--wp-scrollbar-track);
+}
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: var(--wp-scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--wp-scrollbar-thumb); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--wp-scrollbar-thumb-hover); }
+::-webkit-scrollbar-corner { background: var(--wp-scrollbar-track); }
+/* Chromium/Safari에서는 네모 모양을 유지하는 커스텀 스크롤바를 우선한다. */
+@supports selector(::-webkit-scrollbar) {
+  * { scrollbar-width: auto; scrollbar-color: auto; }
+}
+
 /* 0. Reset & Base */
 *,
 *::before,
@@ -887,15 +902,13 @@ a.banner__slide--promo,
 }
 
 .badge-verified {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--wp-brand);
-  color: #fff;
-  font-size: 9px;
+  display: inline-block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  background: url("../img/brand/verified-badge.svg") center / contain no-repeat;
+  color: transparent;
+  font-size: 0;
   margin-left: 4px;
   vertical-align: middle;
 }
@@ -1909,13 +1922,6 @@ span.chip {
   overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 4px;
-}
-.comment-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-.comment-scroll::-webkit-scrollbar-thumb {
-  background: var(--wp-line, #ddd);
-  border-radius: 3px;
 }
 
 /* 아티스트 댓글 영역도 별도 스크롤 (팬 댓글보다 낮은 높이) */

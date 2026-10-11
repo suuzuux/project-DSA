@@ -283,6 +283,57 @@
         wrap.classList.toggle("is-empty", Number(remaining) <= 0);
     }
 
+    function setArtistAvatar(element, nickname, imageUrl) {
+        if (!element) return;
+        element.replaceChildren();
+        element.textContent = (nickname || "?").slice(0, 2);
+        if (imageUrl) {
+            const image = document.createElement("img");
+            image.alt = "";
+            image.src = imageUrl;
+            image.addEventListener("error", function () {
+                element.replaceChildren(document.createTextNode((nickname || "?").slice(0, 2)));
+            }, { once: true });
+            element.replaceChildren(image);
+        }
+    }
+
+    function renderMembershipState(data) {
+        const never = !!data.neverSubscribed;
+        const expired = !!data.membershipExpired && !never;
+        const nickname = data.artistNickname || "";
+        const conversation = document.getElementById("dmConversation");
+        const intro = document.getElementById("dmMembershipIntro");
+        conversation.hidden = never;
+        conversation.classList.toggle("has-expiry-notice", expired);
+        intro.hidden = !never;
+        document.getElementById("dmExpiredBanner").classList.toggle("hidden", !expired);
+        document.getElementById("dmComposer").style.display = never || expired ? "none" : "";
+        document.getElementById("dmAccessNotice").hidden = !expired;
+        document.getElementById("dmWarningBanner").classList.add("hidden");
+        document.getElementById("dmRoomName").textContent = nickname;
+        setArtistAvatar(document.getElementById("dmRoomAvatar"), nickname, data.artistProfileImage);
+        setArtistAvatar(document.getElementById("dmIntroAvatar"), nickname, data.artistProfileImage);
+        document.getElementById("dmIntroArtist").textContent = nickname;
+        document.getElementById("dmIntroCommunity").textContent =
+            t("shell.dm.communityMembership", "{0} 공식 멤버십").replace("{0}", data.communityName || nickname);
+        document.getElementById("dmIntroHeading").textContent =
+            t("shell.dm.introHeading", "{0}과 더 가까워지는 시간").replace("{0}", nickname);
+        document.getElementById("dmExpiredDescription").textContent =
+            t("shell.dm.expiredDesc", "다시 가입하고 {0}과의 대화를 이어가세요.").replace("{0}", nickname);
+        const price = new Intl.NumberFormat(document.documentElement.lang || "ko", {
+            style: "currency", currency: "KRW", maximumFractionDigits: 0
+        }).format(data.membershipYearlyPrice);
+        document.getElementById("dmIntroPrice").textContent =
+            t("shell.dm.yearlyPrice", "{0} / 년").replace("{0}", price);
+        document.querySelectorAll("[data-dm-membership-link]").forEach(function (link) {
+            link.href = "/community/" + data.communityId;
+        });
+        updateQuota(never || expired ? null : data.remaining);
+    }
+
+    let roomRequestVersion = 0;
+
     // [팬] 1:1 DM 방 열기 - 지난 대화를 불러오고 실시간 수신을 구독한다.
     function openRealRoom(artistId) {
         if (!fanId) {
@@ -290,12 +341,17 @@
             return;
         }
         currentArtistId = Number(artistId);
+        const requestVersion = ++roomRequestVersion;
+        unsubscribeAll();
 
         fetch("/chat/room-data?artistId=" + currentArtistId + "&fanId=" + fanId)
             .then(function (res) {
+                if (!res.ok) throw new Error(t("client.dm.roomLoadFailed", "대화를 불러오지 못했어요. 다시 시도해주세요."));
                 return res.json();
             })
             .then(function (data) {
+                if (requestVersion !== roomRequestVersion) return;
+                renderMembershipState(data);
                 const messages = document.getElementById("dmMessages");
                 if (messages) {
                     messages.innerHTML = "";
@@ -304,28 +360,12 @@
                     });
                 }
 
-                // 서버가 판단한 만료 여부로 배너를 맞춘다.
-                const banner = document.getElementById("dmExpiredBanner");
-                if (banner) {
-                    banner.classList.toggle("hidden", !data.membershipExpired);
-                    // 가입 이력이 없으면 가입 안내 문구로 바꾼다.
-                    banner.classList.toggle("is-never-subscribed", !!data.neverSubscribed);
-                }
-
-                // 멤버십 만료 시 입력창을 숨긴다.
-                const composerEl = document.getElementById("dmComposer");
-                if (composerEl) {
-                    composerEl.style.display = data.membershipExpired ? "none" : "";
-                }
-
-                // 오늘 남은 전송 횟수
-                updateQuota(data.remaining);
-
-                // 방을 열면 메시지를 모두 읽음 처리한다.
+                // 미가입·해지·만료 상태에는 새 메시지를 구독하지 않는다.
+                if (data.neverSubscribed || data.membershipExpired) return;
                 markRoomRead(currentArtistId);
 
-                unsubscribeAll();
                 ensureSocket(function () {
+                    if (requestVersion !== roomRequestVersion) return;
                     const personalTopic = "/topic/chat." + currentArtistId + ".fan." + fanId;
                     const errorTopic = "/topic/chat.error." + fanId;
                     // 아티스트 방송 채널도 구독한다.
@@ -354,11 +394,30 @@
                         }
                     }));
                 });
+            })
+            .catch(function (error) {
+                if (requestVersion !== roomRequestVersion) return;
+                document.getElementById("dmMembershipIntro").hidden = true;
+                document.getElementById("dmConversation").hidden = false;
+                document.getElementById("dmConversation").classList.remove("has-expiry-notice");
+                document.getElementById("dmAccessNotice").hidden = true;
+                updateQuota(null);
+                document.getElementById("dmExpiredBanner").classList.add("hidden");
+                document.getElementById("dmComposer").style.display = "none";
+                document.getElementById("dmMessages").textContent = error.message;
             });
     }
 
     // [아티스트] DM 버튼을 누르면 바로 자기 팬 DM 방으로 들어간다.
     function openArtistBroadcastRoom() {
+        const requestVersion = ++roomRequestVersion;
+        unsubscribeAll();
+        document.getElementById("dmMembershipIntro").hidden = true;
+        document.getElementById("dmConversation").hidden = false;
+        document.getElementById("dmConversation").classList.remove("has-expiry-notice");
+        document.getElementById("dmAccessNotice").hidden = true;
+        document.getElementById("dmWarningBanner").classList.add("hidden");
+        setArtistAvatar(document.getElementById("dmRoomAvatar"), "DM", "");
         const dmRoomName = document.getElementById("dmRoomName");
         if (dmRoomName) dmRoomName.textContent = t("shell.dm.fanDm", "팬 DM");
 
@@ -379,11 +438,13 @@
         updateQuota(null); // 전송 한도도 팬 전용이라 표시하지 않음
 
         withArtistRoomId(function (roomId) {
+            if (requestVersion !== roomRequestVersion) return;
             fetch("/chat/room-data/artist?artistId=" + roomId)
                 .then(function (res) {
                     return res.json();
                 })
                 .then(function (data) {
+                    if (requestVersion !== roomRequestVersion) return;
                     const messages = document.getElementById("dmMessages");
                     if (messages) {
                         messages.innerHTML = "";
@@ -394,6 +455,7 @@
 
                     unsubscribeAll();
                     ensureSocket(function () {
+                        if (requestVersion !== roomRequestVersion) return;
                         // 우리 커뮤니티 방송 채널 (방 번호 = 커뮤니티 id)
                         const broadcastTopic = "/topic/chat." + roomId;
                         // 팬 메시지 중 30%만 오는 채널 (도배 방지)
@@ -424,7 +486,14 @@
             openRealRoom(roomBtn.getAttribute("data-open-room"));
         }
 
+        if (e.target.closest("#dmBackBtn, [data-shell-close='dm']")) {
+            roomRequestVersion++;
+            unsubscribeAll();
+        }
+
         if (e.target.closest("#fabChat")) {
+            roomRequestVersion++;
+            unsubscribeAll();
             if (isArtist) {
                 openArtistBroadcastRoom(); // 위젯을 열 때마다 최신 이력으로 갱신
             } else {

@@ -7,7 +7,6 @@
 
   const base = body.getAttribute("data-base") || "";
   const root = base.endsWith("/") ? base : (base ? base + "/" : "/");
-  const dmExpired = body.getAttribute("data-dm-expired") === "true";
   const isAuthenticated = body.getAttribute("data-authenticated") === "true";
   // 관리자에게만 금칙어 관리 메뉴 표시
   const roleName = body.getAttribute("data-role") || "";
@@ -80,8 +79,18 @@
     "shell.dm.backToList": "목록으로",
     "shell.dm.search": "검색",
     "shell.dm.more": "더보기",
-    "shell.dm.expiredTitle": "DM 구독 만료",
-    "shell.dm.expiredDesc": "아티스트 커뮤니티에서 멤버십을 갱신해주세요.",
+    "shell.dm.expiredTitle": "멤버십이 만료되었어요",
+    "shell.dm.expiredDesc": "다시 가입하고 {0}과의 대화를 이어가세요.",
+    "shell.dm.introHeading": "{0}과 더 가까워지는 시간",
+    "shell.dm.introDesc": "멤버십에 가입하고 DM을 시작해보세요.",
+    "shell.dm.communityMembership": "{0} 공식 멤버십",
+    "shell.dm.benefits": "멤버십 혜택",
+    "shell.dm.benefitDm": "아티스트와 1:1 DM",
+    "shell.dm.benefitContent": "멤버십 전용 콘텐츠",
+    "shell.dm.benefitGoods": "공식 굿즈 구매 기회",
+    "shell.dm.specialConnection": "좋아하는 아티스트와 특별한 소통",
+    "shell.dm.accessNotice": "멤버십 가입 후 메시지를 보낼 수 있어요",
+    "shell.dm.yearlyPrice": "{0} / 년",
     "shell.dm.joinTitle": "멤버십 가입하고 DM을 시작해보세요",
     "shell.dm.joinDesc": "아티스트 커뮤니티에서 멤버십에 가입하면 아티스트와 1:1 DM을 나눌 수 있어요.",
     "shell.dm.startConversation": "대화를 시작해보세요.",
@@ -266,8 +275,7 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
   <div class="dm-list-view is-active" id="dmListView">
     <div class="dm-header">
       <strong class="dm-header__title">WePlaNet DM</strong>
-      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.addFriend"))}" aria-label="${escapeHtml(t("shell.dm.friend"))}">＋</button>
-      <button type="button" class="icon-btn" data-shell-close="dm" aria-label="${escapeHtml(t("shell.dm.close"))}">∨</button>
+      <button type="button" class="icon-btn" data-shell-close="dm" aria-label="${escapeHtml(t("shell.dm.close"))}">X</button>
     </div>
     <div class="dm-body">
       <div class="dm-promo">
@@ -285,31 +293,55 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
   <div class="dm-room" id="dmRoomView">
     <div class="dm-header">
       <button type="button" class="icon-btn" id="dmBackBtn" aria-label="${escapeHtml(t("shell.dm.backToList"))}">‹</button>
+      <div class="avatar dm-room-avatar" id="dmRoomAvatar" aria-hidden="true"></div>
       <div class="dm-header__title">
         <span id="dmRoomName">DM</span> <span class="badge-verified">✓</span>
         <small>ARTIST · DM</small>
       </div>
-      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.search"))}" aria-label="${escapeHtml(t("shell.dm.search"))}">${ICONS.search}</button>
-      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.more"))}" aria-label="${escapeHtml(t("shell.dm.more"))}">⋮</button>
+      <button type="button" class="icon-btn" data-shell-close="dm" aria-label="${escapeHtml(t("shell.dm.close"))}">X</button>
     </div>
 
-    <!-- 구독 만료 배너 (data-room에 따라 표시)
-         한 번도 가입 안 한 팬이면 is-never-subscribed 를 붙여 만료 문구 대신 가입 안내 문구를 보여줌 -->
-    <div class="dm-expired ${dmExpired ? "" : "hidden"}" id="dmExpiredBanner">
-      <div class="dm-expired__icon">${ICONS.heart}</div>
-      <div class="dm-expired__text dm-expired__text--expired">
-        <strong>${escapeHtml(t("shell.dm.expiredTitle"))}</strong>
-        <span>${escapeHtml(t("shell.dm.expiredDesc"))}</span>
-      </div>
-      <div class="dm-expired__text dm-expired__text--join">
-        <strong>${escapeHtml(t("shell.dm.joinTitle"))}</strong>
-        <span>${escapeHtml(t("shell.dm.joinDesc"))}</span>
-      </div>
-    </div>
+    <div class="dm-room-content">
+      <div class="dm-conversation" id="dmConversation">
+        <div class="dm-expired hidden" id="dmExpiredBanner" role="status">
+          <button type="button" class="icon-btn dm-expired__close" id="dmExpiredClose" aria-label="${escapeHtml(t("shell.dm.close"))}">X</button>
+          <div class="dm-expired__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+          <strong>${escapeHtml(t("shell.dm.expiredTitle"))}</strong>
+          <p id="dmExpiredDescription"></p>
+          <a class="btn btn--primary btn--block" data-dm-membership-link>${escapeHtml(t("shell.membership.join"))}</a>
+        </div>
 
-    <div class="dm-messages" id="dmMessages">
-      <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">${escapeHtml(t("shell.dm.startConversation"))}</p>
+        <div class="dm-messages" id="dmMessages">
+          <p class="text-xs text-muted" style="padding:24px 8px;text-align:center;">${escapeHtml(t("shell.dm.startConversation"))}</p>
+        </div>
+
+      </div>
+      <section class="dm-membership-intro" id="dmMembershipIntro" hidden>
+        <div class="dm-membership-intro__body">
+          <div class="avatar avatar--lg dm-membership-intro__avatar" id="dmIntroAvatar" aria-hidden="true"></div>
+          <div class="dm-membership-intro__artist"><strong id="dmIntroArtist"></strong><span class="badge-verified">✓</span></div>
+          <p class="dm-membership-intro__community" id="dmIntroCommunity"></p>
+          <h2 id="dmIntroHeading"></h2>
+          <p>${escapeHtml(t("shell.dm.introDesc"))}</p>
+          <strong class="dm-membership-intro__price" id="dmIntroPrice"></strong>
+          <small>${escapeHtml(t("shell.membership.vatIncluded"))}</small>
+          <div class="dm-membership-intro__benefits">
+            <h3>${escapeHtml(t("shell.dm.benefits"))}</h3>
+            <ul>
+              <li>${escapeHtml(t("shell.dm.benefitDm"))}</li>
+              <li>${escapeHtml(t("shell.dm.benefitContent"))}</li>
+              <li>${escapeHtml(t("shell.dm.benefitGoods"))}</li>
+            </ul>
+          </div>
+          <img class="dm-membership-intro__illustration" src="${root}img/brand/dm-membership-illustration.svg" alt="" />
+          <p class="dm-membership-intro__connection">${escapeHtml(t("shell.dm.specialConnection"))}</p>
+        </div>
+        <div class="dm-membership-intro__footer">
+          <a class="btn btn--primary btn--block" data-dm-membership-link>${escapeHtml(t("shell.membership.join"))}</a>
+        </div>
+      </section>
     </div>
+    <p class="dm-access-notice" id="dmAccessNotice" hidden>${escapeHtml(t("shell.dm.accessNotice"))}</p>
 
     <!-- 금칙어/전송 한도 초과 등 경고를 화면 안에서 보여주는 배너
          (예전엔 브라우저 기본 alert을 썼는데, 팬 채팅방 화면과 방식이 달라서 통일함) -->
@@ -557,7 +589,7 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
       dmPanel.setAttribute("aria-hidden", "false");
       // 아티스트는 목록 없이 자기 DM 방을 바로 보여준다.
       if (isArtist) {
-        showRoom(nickname || t("shell.dm.fanDm"), false);
+        showRoom(nickname || t("shell.dm.fanDm"));
       } else {
         showList();
       }
@@ -577,13 +609,17 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
       dmRoomView.classList.remove("is-active");
     }
 
-    function showRoom(name, expired, neverSubscribed) {
+    function showRoom(name) {
       if (!dmPanel) return;
       dmRoomName.textContent = name;
-      dmExpiredBanner.classList.toggle("hidden", !expired && !dmExpired);
-      if (expired || dmExpired) dmExpiredBanner.classList.remove("hidden");
-      else dmExpiredBanner.classList.add("hidden");
-      dmExpiredBanner.classList.toggle("is-never-subscribed", !!neverSubscribed);
+      dmExpiredBanner.classList.add("hidden");
+      document.getElementById("dmMembershipIntro").hidden = true;
+      document.getElementById("dmConversation").hidden = false;
+      document.getElementById("dmConversation").classList.remove("has-expiry-notice");
+      document.getElementById("dmComposer").style.display = "none";
+      document.getElementById("dmAccessNotice").hidden = true;
+      document.getElementById("dmQuota").hidden = true;
+      document.getElementById("dmMessages").replaceChildren();
       dmListView.classList.remove("is-active");
       dmRoomView.classList.add("is-active");
     }
@@ -663,9 +699,7 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
         const name =
           roomBtn.querySelector(".dm-list-item__name")?.textContent?.trim() ||
           roomBtn.getAttribute("data-open-room");
-        const expired = roomBtn.getAttribute("data-room-expired") === "true";
-        const neverSubscribed = roomBtn.getAttribute("data-room-never-subscribed") === "true";
-        showRoom(name, expired, neverSubscribed);
+        showRoom(name);
         return;
       }
     });
@@ -695,6 +729,11 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
       }
     });
 
+    document.getElementById("dmExpiredClose")?.addEventListener("click", () => {
+      dmExpiredBanner.classList.add("hidden");
+      document.getElementById("dmConversation").classList.remove("has-expiry-notice");
+    });
+
     // DM 전송 목업
     document.getElementById("dmComposer")?.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -713,11 +752,7 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
 
     // 로그인한 사용자만 ?dm=1 로 자동으로 연다 (관리자 제외).
     const params = new URLSearchParams(location.search);
-    if (isAuthenticated && !isAdmin && params.get("dm") === "1") openDm();
-    if (isAuthenticated && !isAdmin && params.get("dm") === "expired") {
-      openDm();
-      showRoom("YUMA", true);
-    }
+    if (isAuthenticated && !isAdmin && ["1", "expired"].includes(params.get("dm"))) openDm();
     if (params.get("menu") === "1") openMenu();
 
     // 스케줄 캘린더 CSS 와 global-icons 로드

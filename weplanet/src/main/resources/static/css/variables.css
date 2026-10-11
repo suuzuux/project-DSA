@@ -1,6 +1,9 @@
 /* 디자인 토큰 (색·간격·타이포) */
 
 :root {
+  --wp-scrollbar-thumb: #a85d67;
+  --wp-scrollbar-thumb-hover: #8c4a54;
+  --wp-scrollbar-track: #fbeef1;
   /* Brand & Surface (배경은 거의 흰색, 바닐라는 포인트 영역에만) */
   --wp-ink: #2d3a47;           /* 본문·헤더 기본 글자 */
   --wp-ink-soft: #5a6773;      /* 보조 본문 */
