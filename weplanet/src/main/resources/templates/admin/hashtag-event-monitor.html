@@ -165,7 +165,7 @@
           <tr th:if="${#lists.isEmpty(d.ranking())}">
             <td colspan="7" class="text-sm text-muted" th:text="#{adminHashtag.monitor.noTargets}">참여 아티스트가 없습니다.</td>
           </tr>
-          <tr th:each="row : ${d.ranking()}">
+          <tr th:each="row : ${rankingRows}">
             <td><strong th:text="${row.rank()}">1</strong></td>
             <td th:text="${row.artistName()}">STELLA</td>
             <td class="text-xs text-muted" th:text="${row.hashtag()}">#가을총공_STELLA</td>
@@ -183,6 +183,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${rankingRowsPagination})}"></div>
     </section>
 
     <!-- 일자별 추이 -->

@@ -5,11 +5,10 @@ import megane6.weplanet.domain.dto.AdminUserListItemResponse;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.*;
 import megane6.weplanet.repository.main.UserRepository;
-import megane6.weplanet.service.admin.AdminActionLogService;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 
 @Service
@@ -19,19 +18,26 @@ public class AdminUserService {
 	private final UserRepository ur;
 	private final AdminActionLogService actionLogService;
 	
-	public List<AdminUserListItemResponse> getUsers(
+	public static final int PAGE_SIZE = 15;
+
+	public Page<AdminUserListItemResponse> getUsers(
 			Role role,
 			UserStatus status,
 			AuthProvider provider,
 			boolean localOnly,
-			String keyword
+			String keyword,
+			int page
 	) {
 		String normalizeKeyword = normalizeKeyword(keyword);
-		return ur.searchForAdmin(
-				role, status, provider, localOnly, normalizeKeyword)
-				.stream()
-				.map(this::toListItem)
-				.toList();
+		Page<User> result = ur.searchForAdmin(role, status, provider, localOnly, normalizeKeyword,
+				PageRequest.of(Math.max(0, page), PAGE_SIZE));
+		// 필터 결과가 줄거나 마지막 페이지에서 회원 상태를 바꾼 경우 유효한 페이지로 돌아간다.
+		int lastPage = Math.max(0, result.getTotalPages() - 1);
+		if (result.getNumber() > lastPage) {
+			result = ur.searchForAdmin(role, status, provider, localOnly, normalizeKeyword,
+					PageRequest.of(lastPage, PAGE_SIZE));
+		}
+		return result.map(this::toListItem);
 	}
 	
 	public AdminUserStats getStats() {

@@ -66,4 +66,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             User artist,
             ReportStatus status
     );
+
+    List<Report> findByPost_ArtistAndStatusOrderByCreatedAtDesc(
+            User artist,
+            ReportStatus status
+    );
 }

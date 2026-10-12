@@ -70,6 +70,17 @@ public class CommunityController {
 
 	private final CommunityUrls communityUrls; // 탭/메뉴 링크를 영문 주소(/kiikii/fan)로
 
+	private void populateAuthorProfiles(Model model, Collection<User> authors, Long artistId) {
+		Map<String, String> nicknames = new LinkedHashMap<>();
+		Map<String, String> avatarUrls = new LinkedHashMap<>();
+		communityJoinService.authorViewsByAuthorIdKey(authors, artistId).forEach((id, view) -> {
+			nicknames.put(id, view.nickname());
+			if (view.avatarUrl() != null) avatarUrls.put(id, view.avatarUrl());
+		});
+		model.addAttribute("authorNicknames", nicknames);
+		model.addAttribute("authorAvatarUrls", avatarUrls);
+	}
+
 	@GetMapping({"/community/{artistId}", "/community/{artistId}/highlight"})
 	public String highlight(@PathVariable Long artistId, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		User artist = populateArtistModel(artistId, principal, model);
@@ -88,9 +99,6 @@ public class CommunityController {
 		model.addAttribute("fanPosts", fanPosts);
 		model.addAttribute("fanPostCommentCounts", fanPostCommentCounts);
 		model.addAttribute("fanPostThumbnails", fanPostThumbnails);
-		// 작성자 닉네임은 커뮤니티 가입 닉네임으로 보여준다.
-		model.addAttribute("fanPostAuthorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(
-				fanPosts.stream().map(Post::getAuthor).toList(), artistId));
 		
 		// Comments by 위젯 - 그룹·멤버 계정의 최신 댓글·답글 6개.
 		List<Comment> artistComments = commentRepository
@@ -108,6 +116,11 @@ public class CommunityController {
 					.ifPresent(a -> artistPostThumbnails.put(post.getId(), a.getStoredName()));
 		}
 		model.addAttribute("artistPosts", artistPosts);
+		List<User> highlightAuthors = new ArrayList<>();
+		fanPosts.forEach(post -> highlightAuthors.add(post.getAuthor()));
+		artistPosts.forEach(post -> highlightAuthors.add(post.getAuthor()));
+		artistComments.forEach(comment -> highlightAuthors.add(comment.getAuthor()));
+		populateAuthorProfiles(model, highlightAuthors, artistId);
 		model.addAttribute("artistPostThumbnails", artistPostThumbnails);
 
 		// Lives 위젯 - 최대 3칸 (방송 중이면 LIVE 카드 + 다시보기 최신순).
@@ -488,7 +501,7 @@ public class CommunityController {
 		model.addAttribute("myPostCommentCounts", myPostCommentCounts);
 		model.addAttribute("likedPosts", likedPosts);
 		model.addAttribute("bookmarkedPosts", bookmarkedPosts);
-		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(profileAuthors, artistId));
+		populateAuthorProfiles(model, profileAuthors, artistId);
 		// 팔로우는 커뮤니티별이라 항상 artistId 를 함께 넘긴다.
 		model.addAttribute("myFollowingCount", userFollowService.countFollowing(userId, artistId));
 		model.addAttribute("followerCount", userFollowService.countFollowers(userId, artistId));
@@ -571,7 +584,7 @@ public class CommunityController {
 				: userFollowService.listFollowing(userId, artistId);
 		model.addAttribute("artistId", artistId);
 		model.addAttribute("users", users);
-		model.addAttribute("authorNicknames", communityJoinService.displayNicknamesByAuthorIdKey(users, artistId));
+		populateAuthorProfiles(model, users, artistId);
 		return "community/fragments/userList :: userListFragment";
 	}
 	

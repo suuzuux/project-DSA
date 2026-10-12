@@ -61,9 +61,13 @@ public class ChatMessageService {
     public List<DmInboxItem> getInboxForFan(User fan) {
         // 지금 DM 방을 열 수 있는 상대 전체
         Map<Long, DmRoomOwner> owners = dmRoomOwners();
+        if (owners.isEmpty()) {
+            return List.of();
+        }
 
         // 최신순이라 상대별 첫 메시지가 마지막 메시지다.
-        List<ChatMessage> messages = chatMessageRepository.findByFanOrderByCreatedAtDesc(fan);
+        List<ChatMessage> messages = chatMessageRepository.findInboxMessages(owners.keySet(), fan);
+        Map<Long, Boolean> neverSubscribedByCommunity = new HashMap<>();
 
         // 먼저 나온(최근 대화) 상대 순서를 유지한다.
         Map<Long, DmInboxItem> conversations = new LinkedHashMap<>();
@@ -72,6 +76,11 @@ public class ChatMessageService {
             DmRoomOwner owner = owners.get(roomId);
             if (owner == null || conversations.containsKey(roomId)) {
                 continue; // 방 주인이 아니거나 이미 찾은 상대면 건너뛴다.
+            }
+            // 가입한 적이 없는 커뮤니티의 방송은 대화 미리보기로 노출하지 않는다.
+            if (message.getFan() == null && neverSubscribedByCommunity.computeIfAbsent(
+                    owner.community().getId(), id -> isCommunityNeverSubscribed(fan, owner.community()))) {
+                continue;
             }
             conversations.put(roomId, inboxItem(fan, owner)
                     .lastMessage(message.getContent())

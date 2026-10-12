@@ -312,12 +312,8 @@ public class PostService {
         if (content == null || content.isBlank()) {
             return "(내용 없음)";
         }
-        String firstLine = content.lines()
-                .map(line -> line.replaceAll("^[#>*\\\\-\\\\s]+", "").trim())
-                .filter(line -> !line.isEmpty())
-                .findFirst()
-                .orElse(content.trim());
-        String plain = firstLine.replaceAll("[*`_~]", "").trim();
+        String plain = megane6.weplanet.util.MarkdownPreview.of(content).lines()
+                .findFirst().orElse("");
         if (plain.isEmpty()) {
             return "(내용 없음)";
         }

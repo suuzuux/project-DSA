@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -21,6 +22,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class CommunityJoinServiceTest {
+
+	@Test
+	void nicknameLookupStaysWithinSelectedCommunity() {
+		CommunityMemberRepository members = mock(CommunityMemberRepository.class);
+		CommunityJoinService service = new CommunityJoinService(members,
+				mock(ArtistProfileRepository.class), mock(UserRepository.class),
+				mock(FileStorageService.class), mock(ApplicationEventPublisher.class),
+				mock(UserFollowRepository.class));
+		User fan = author(1L, "계정닉");
+		when(members.findByFanIdAndArtistId(1L, 10L))
+				.thenReturn(Optional.of(CommunityMember.builder().nickname("@@").build()));
+		when(members.findByFanIdAndArtistId(1L, 20L))
+				.thenReturn(Optional.of(CommunityMember.builder().nickname("##").build()));
+
+		assertEquals("@@", service.displayNickname(fan, 10L));
+		assertEquals("##", service.displayNickname(fan, 20L));
+		assertEquals("계정닉", service.displayNickname(fan, 30L));
+	}
 
 	@Test
 	void authorViewsUseCommunityAvatarAndRespectHiddenProfile() {

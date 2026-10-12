@@ -25,6 +25,7 @@ public class AdminUserController {
 						@RequestParam(required = false) String status,
 						@RequestParam(required = false) String provider,
 						@RequestParam(required = false) String keyword,
+						@RequestParam(defaultValue = "0") int page,
 						@AuthenticationPrincipal AuthenticatedUser principal,
 						Model model) {
 		requireAdmin(principal);
@@ -33,13 +34,16 @@ public class AdminUserController {
 		// LOCAL(소셜 미연동) 필터는 AuthProvider 값이 아니라 provider IS NULL 로 처리한다.
 		boolean localOnly = "LOCAL".equalsIgnoreCase(provider);
 		AuthProvider providerFilter = localOnly ? null : parseEnum(AuthProvider.class, provider);
-		model.addAttribute("users", aus.getUsers(
+		var userPage = aus.getUsers(
 				roleFilter,
 				statusFilter,
 				providerFilter,
 				localOnly,
-				keyword
-		));
+				keyword, page
+		);
+		model.addAttribute("users", userPage.getContent());
+		model.addAttribute("userPage", userPage);
+		AdminPagination.addNavigation(model, "usersPagination", userPage.getNumber(), userPage.getTotalPages(), "page");
 		model.addAttribute("stats", aus.getStats());
 		model.addAttribute("selectedRole", roleFilter == null ? "" : roleFilter.name());
 		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
@@ -56,13 +60,14 @@ public class AdminUserController {
 							  @RequestParam(required = false) String status,
 							  @RequestParam(required = false) String provider,
 							  @RequestParam(required = false) String keyword,
+							  @RequestParam(defaultValue = "0") int page,
 							  HttpServletRequest request,
 							  @AuthenticationPrincipal AuthenticatedUser principal,
 							  RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> aus.suspendUser(userId, principal.getId(), request.getRemoteAddr()),
 				messages.get("admin.users.flash.suspended"), redirectAttributes);
-		addFilters(role, status, provider, keyword, redirectAttributes);
+		addFilters(role, status, provider, keyword, page, redirectAttributes);
 		
 		return "redirect:/admin/users";
 	}
@@ -73,13 +78,14 @@ public class AdminUserController {
 								@RequestParam(required = false) String status,
 								@RequestParam(required = false) String provider,
 								@RequestParam(required = false) String keyword,
+								@RequestParam(defaultValue = "0") int page,
 								HttpServletRequest request,
 								@AuthenticationPrincipal AuthenticatedUser principal,
 								RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> aus.reinstateUser(userId, principal.getId(), request.getRemoteAddr()),
 				messages.get("admin.users.flash.reinstated"), redirectAttributes);
-		addFilters(role, status, provider, keyword, redirectAttributes);
+		addFilters(role, status, provider, keyword, page, redirectAttributes);
 		
 		return "redirect:/admin/users";
 	}
@@ -101,12 +107,14 @@ public class AdminUserController {
 			String status,
 			String provider,
 			String keyword,
+			int page,
 			RedirectAttributes redirectAttributes
 	) {
 		addFilter("role", role, redirectAttributes);
 		addFilter("status", status, redirectAttributes);
 		addFilter("provider", provider, redirectAttributes);
 		addFilter("keyword", keyword, redirectAttributes);
+		redirectAttributes.addAttribute("page", Math.max(0, page));
 	}
 	
 	private void addFilter(

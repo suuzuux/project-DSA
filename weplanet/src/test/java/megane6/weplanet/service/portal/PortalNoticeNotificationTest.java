@@ -34,7 +34,8 @@ class PortalNoticeNotificationTest {
 			mock(ArtistScheduleRepository.class), mock(ArtistProfileRepository.class), mock(BoardMediaRepository.class),
 			mock(MembershipRepository.class), mock(ReportRepository.class), mock(CommentReportRepository.class),
 			mock(LiveCommentReportRepository.class), mock(FileStorageService.class), notifier,
-			mock(MessageSource.class), mock(CommunityUrls.class));
+			mock(MessageSource.class), mock(CommunityUrls.class),
+			mock(megane6.weplanet.repository.main.UserRepository.class));
 
 	private final User artist = User.createArtist("artist01", "encoded", "그룹", "그룹", "artist01@test.com");
 

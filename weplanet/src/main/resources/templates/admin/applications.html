@@ -446,78 +446,7 @@
         </div>
 
         <!-- 페이지 이동 -->
-        <nav
-                class="pagination"
-                th:if="${applications.totalPages > 1}"
-                aria-label="등록 신청 페이지 이동"
-                th:aria-label="#{admin.applications.paginationLabel}"
-        >
-                    <span th:if="${applications.first}" th:text="#{admin.common.prev}">
-                        이전
-                    </span>
-
-          <a
-                  th:unless="${applications.first}"
-                  th:href="@{/admin/applications(
-                                page=${applications.number - 1},
-                                status=${selectedStatus},
-                                applicantType=${selectedApplicantType},
-                                keyword=${keyword}
-                            )}"
-                  th:text="#{admin.common.prev}"
-          >
-            이전
-          </a>
-
-          <th:block
-                  th:each="pageNumber : ${#numbers.sequence(
-                                0,
-                                applications.totalPages - 1
-                            )}"
-          >
-                        <span
-                                class="is-active"
-                                th:if="${pageNumber
-                                    == applications.number}"
-                                th:text="${pageNumber + 1}"
-                        >
-                            1
-                        </span>
-
-            <a
-                    th:unless="${pageNumber
-                                    == applications.number}"
-                    th:text="${pageNumber + 1}"
-                    th:href="@{/admin/applications(
-                                    page=${pageNumber},
-                                    status=${selectedStatus},
-                                    applicantType=${
-                                        selectedApplicantType
-                                    },
-                                    keyword=${keyword}
-                                )}"
-            >
-              1
-            </a>
-          </th:block>
-
-          <span th:if="${applications.last}" th:text="#{admin.common.next}">
-                        다음
-                    </span>
-
-          <a
-                  th:unless="${applications.last}"
-                  th:href="@{/admin/applications(
-                                page=${applications.number + 1},
-                                status=${selectedStatus},
-                                applicantType=${selectedApplicantType},
-                                keyword=${keyword}
-                            )}"
-                  th:text="#{admin.common.next}"
-          >
-            다음
-          </a>
-        </nav>
+        <div th:replace="~{admin/fragments/pagination :: pages(${applicationsPagination})}"></div>
       </section>
 
       <!-- 상세 패널 -->

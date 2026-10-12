@@ -29,9 +29,9 @@ public class AdminHashtagEventController {
 	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
-	public String list(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+	public String list(@RequestParam(defaultValue = "0") int page, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		requireAdmin(principal);
-		model.addAttribute("events", service.getEvents());
+		AdminPagination.paginate(model, "events", service.getEvents(), page, 15, "page");
 		return "admin/hashtag-events";
 	}
 	
@@ -132,7 +132,9 @@ public class AdminHashtagEventController {
 		requireAdmin(principal);
 		
 		try {
-			model.addAttribute("dashboard", service.getDashboard(eventId));
+			var dashboard = service.getDashboard(eventId);
+			model.addAttribute("dashboard", dashboard);
+			AdminPagination.paginate(model, "rankingRows", dashboard.ranking(), AdminPagination.requestedPage("page"), 15, "page");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/events/hashtag";

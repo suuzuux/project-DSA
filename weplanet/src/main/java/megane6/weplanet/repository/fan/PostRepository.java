@@ -88,6 +88,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     // 팬·아티스트 게시글 최신 10개
     @EntityGraph(attributePaths = "author")
     List<Post> findTop10ByArtistOrderByCreatedAtDesc(User artist);
+
+    List<Post> findByArtistOrderByCreatedAtDesc(User artist);
     
     // [배지] 이 커뮤니티 팬 게시판에 글을 쓴 적이 있는지
     boolean existsByAuthor_IdAndArtist_IdAndBoardType(

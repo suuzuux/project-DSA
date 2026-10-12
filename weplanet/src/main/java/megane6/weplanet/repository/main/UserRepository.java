@@ -6,6 +6,8 @@ import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -68,7 +70,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("keyword") String keyword
     );
     
-    @Query("""
+    @Query(value = """
         select user
         from User user
         left join fetch user.agency agency
@@ -88,14 +90,30 @@ public interface UserRepository extends JpaRepository<User, Long> {
                     like lower(concat('%', :keyword, '%'))
           )
         order by user.createdAt desc, user.id desc
+        """, countQuery = """
+        select count(user)
+        from User user
+        left join user.agency agency
+        where (:role is null or user.role = :role)
+          and (:status is null or user.status = :status)
+          and (:localOnly = false or user.provider is null)
+          and (:localOnly = true or :provider is null or user.provider = :provider)
+          and (
+              :keyword is null
+              or lower(user.username) like lower(concat('%', :keyword, '%'))
+              or lower(user.nickname) like lower(concat('%', :keyword, '%'))
+              or lower(user.email) like lower(concat('%', :keyword, '%'))
+              or lower(coalesce(agency.name, '')) like lower(concat('%', :keyword, '%'))
+          )
         """)
-    List<User> searchForAdmin(
+    Page<User> searchForAdmin(
             @Param("role") Role role,
             @Param("status") UserStatus status,
             @Param("provider") AuthProvider provider,
             // localOnly: 소셜 미연동 계정만 (provider 필터와 둘 중 하나만 사용)
             @Param("localOnly") boolean localOnly,
-            @Param("keyword") String keyword
+            @Param("keyword") String keyword,
+            Pageable pageable
     );
 
     @Query("""

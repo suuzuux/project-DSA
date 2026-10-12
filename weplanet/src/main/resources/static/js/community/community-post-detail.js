@@ -23,6 +23,22 @@
   focusCommentInput();
   window.addEventListener("hashchange", focusCommentInput);
 
+  function focusLinkedComment() {
+    const hash = window.location.hash;
+    if (!/^#comment-\d+$/.test(hash)) return;
+    const comment = document.getElementById(hash.slice(1));
+    if (!comment) return;
+    // 답글이 접혀 있으면 부모 댓글의 답글 영역도 먼저 펼친다.
+    const replies = comment.closest(".comment-replies");
+    if (replies) {
+      replies.style.display = "";
+      replies.classList.remove("hidden");
+    }
+    comment.scrollIntoView({ block: "center" });
+  }
+  focusLinkedComment();
+  window.addEventListener("hashchange", focusLinkedComment);
+
   function markCommentReported(commentId) {
     const text = document.getElementById("commentText-" + commentId);
     const item = text ? text.closest(".comment-item") : null;

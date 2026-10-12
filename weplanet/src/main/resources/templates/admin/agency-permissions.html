@@ -55,6 +55,7 @@
       <form th:action="@{/admin/logout}"
             method="post"
             style="margin:0;">
+                <input type="hidden" name="page" th:value="${permissionsPagination.number}" />
 
         <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">
           🚪 로그아웃
@@ -219,7 +220,7 @@
 
         <span class="tag tag--member"
               th:text="#{admin.agencies.resultCount(${#numbers.formatInteger(
-                  #lists.size(permissions), 0, 'COMMA')})}">
+                  permissionsTotal, 0, 'COMMA')})}">
           0건 조회
         </span>
       </div>
@@ -523,6 +524,7 @@
                     th:action="@{/admin/agencies/{userId}/approve(
                         userId=${permission.userId()})}"
                     method="post">
+                <input type="hidden" name="page" th:value="${permissionsPagination.number}" />
 
                 <input type="hidden"
                        name="approval"
@@ -554,6 +556,7 @@
                     th:action="@{/admin/agencies/{userId}/revoke(
                         userId=${permission.userId()})}"
                     method="post">
+                <input type="hidden" name="page" th:value="${permissionsPagination.number}" />
 
                 <input type="hidden"
                        name="approval"
@@ -597,6 +600,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${permissionsPagination})}"></div>
     </section>
 
   </main>

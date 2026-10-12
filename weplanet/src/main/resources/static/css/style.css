@@ -27,6 +27,10 @@
 }
 
 /* 0. Reset & Base */
+[hidden] {
+  display: none !important;
+}
+
 *,
 *::before,
 *::after {
@@ -1686,6 +1690,8 @@ span.chip {
 /* 17. Pagination */
 .pagination {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 6px;
   margin-top: 20px;

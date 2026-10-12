@@ -180,6 +180,8 @@
         renderUnreadBadges(); // 방별 안 읽은 개수 다시 표시
     }
 
+    let inboxRequestVersion = 0;
+
     function loadInbox() {
         if (!fanId) {
             const dmBody = document.querySelector("#dmListView .dm-body");
@@ -193,11 +195,14 @@
             }
             return;
         }
+        const requestVersion = ++inboxRequestVersion;
         fetch("/chat/inbox?fanId=" + fanId)
             .then(function (res) {
                 return res.json();
             })
-            .then(renderInbox);
+            .then(function (items) {
+                if (requestVersion === inboxRequestVersion) renderInbox(items);
+            });
     }
 
     // 말풍선 그리기 (내 메시지는 오른쪽)
@@ -489,6 +494,7 @@
         if (e.target.closest("#dmBackBtn, [data-shell-close='dm']")) {
             roomRequestVersion++;
             unsubscribeAll();
+            if (!isArtist && e.target.closest("#dmBackBtn")) loadInbox();
         }
 
         if (e.target.closest("#fabChat")) {
@@ -635,6 +641,10 @@
                             const payload = JSON.parse(frame.body);
                             // 방 주인이 직접 보낸 메시지만 센다.
                             if (Number(payload.senderId) !== Number(roomId)) return;
+                            const panel = document.getElementById("dmPanel");
+                            const list = document.getElementById("dmListView");
+                            if (panel && panel.classList.contains("is-open")
+                                && list && list.classList.contains("is-active")) loadInbox();
                             if (isRoomOnScreen(roomId)) {
                                 markRoomRead(roomId);
                                 return;

@@ -246,7 +246,7 @@
 
         <span class="text-xs text-muted"
               style="margin-left:auto;"
-              th:text="#{admin.overview.communityCount(${#lists.size(communities)})}">
+              th:text="#{admin.overview.communityCount(${communitiesTotal})}">
           0개 커뮤니티
         </span>
       </form>
@@ -378,6 +378,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${communitiesPagination})}"></div>
     </section>
 
   </main>

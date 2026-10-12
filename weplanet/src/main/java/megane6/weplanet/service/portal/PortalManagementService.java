@@ -16,6 +16,7 @@ import megane6.weplanet.repository.fan.ReportRepository;
 import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
 import megane6.weplanet.service.main.FileStorageService;
@@ -59,6 +60,7 @@ public class PortalManagementService {
     private final CommunityActivityNotifier communityActivityNotifier; // 새 공지 → 팔로워 이메일
     private final MessageSource messageSource;
     private final CommunityUrls communityUrls; // 커뮤니티 영문 주소
+    private final UserRepository userRepository;
 
     public static final int MAX_PINNED = 5;
 
@@ -534,7 +536,7 @@ public class PortalManagementService {
                 .toList());
     }
 
-    public void updateProfile(User artist,
+    public void updateProfile(User artistAccount,
                               String nickname,
                               String email,
                               String realName,
@@ -546,14 +548,17 @@ public class PortalManagementService {
                               boolean removeAvatar,
                               boolean removeBackground) {
         validateText(nickname, msg("portalProfile.error.nicknameRequired"));
-        if (nickname.trim().length() > 50) {
+        if (nickname.trim().length() > 20) {
             throw new IllegalArgumentException(msg("portalProfile.error.nicknameTooLong"));
         }
         validateText(email, msg("portalProfile.error.emailRequired"));
-        if (intro != null && intro.length() > 30) {
+        if (intro != null && intro.length() > 100) {
             throw new IllegalArgumentException(msg("portalProfile.error.introTooLong"));
         }
 
+        // 컨트롤러가 조회한 계정은 분리된 엔티티일 수 있어 쓰기 트랜잭션에서 다시 읽는다.
+        User artist = userRepository.findById(artistAccount.getId())
+                .orElseThrow(() -> new IllegalArgumentException("error.community.artistNotFound"));
         artist.changePortalProfile(nickname.trim(), email.trim());
         if (realName != null && !realName.isBlank()) {
             artist.changeRealName(realName.trim());
@@ -563,6 +568,7 @@ public class PortalManagementService {
             throw new IllegalArgumentException(msg("portalProfile.error.birthDateFuture"));
         }
         artist.changeBirthDate(birthDate);
+        userRepository.save(artist);
         syncBirthdaySchedule(artist, birthDate);
 
         ArtistProfile profile = getOrCreateProfile(artist);
@@ -578,8 +584,8 @@ public class PortalManagementService {
                                              MultipartFile background,
                                              boolean removeAvatar,
                                              boolean removeBackground) {
-        if (intro != null && intro.length() > 30) {
-            throw new IllegalArgumentException("error.community.bioTooLong");
+        if (intro != null && intro.length() > 100) {
+            throw new IllegalArgumentException("portalProfile.error.introTooLong");
         }
 
         ArtistProfile profile = getOrCreateProfile(account);

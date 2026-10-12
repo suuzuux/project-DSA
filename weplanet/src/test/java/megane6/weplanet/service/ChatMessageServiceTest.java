@@ -64,7 +64,7 @@ class ChatMessageServiceTest {
 		when(groupMemberRepository.findByGroupIdInAndLeftAtIsNullOrderByIdAsc(any())).thenReturn(List.of(
 				GroupMember.join(GROUP, memberA),
 				GroupMember.join(GROUP, memberB)));
-		when(chatMessageRepository.findByFanOrderByCreatedAtDesc(fan)).thenReturn(List.of(
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan))).thenReturn(List.of(
 				message(memberB, "B와의 대화"),
 				message(group, "예전 그룹 단위 방")));
 
@@ -76,6 +76,51 @@ class ChatMessageServiceTest {
 		assertEquals("GROUP", inbox.get(0).getGroupName());
 		assertFalse(inbox.get(1).isHasConversation());
 		assertNull(inbox.get(2).getGroupName());
+	}
+
+	@Test
+	void latestBroadcastReplacesFansLastMessageInInbox() {
+		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(group, solo));
+		when(groupMemberRepository.findByGroupIdInAndLeftAtIsNullOrderByIdAsc(any()))
+				.thenReturn(List.of(GroupMember.join(GROUP, memberA)));
+		when(periodRepository.existsByFanIdAndArtistId(FAN, GROUP)).thenReturn(true);
+		LocalDateTime now = LocalDateTime.now();
+		ChatMessage broadcast = ChatMessage.builder().artist(memberA).sender(memberA)
+				.content("아티스트의 새 메시지").createdAt(now).build();
+		ChatMessage personal = message(memberA, "내 마지막 메시지");
+		personal.setCreatedAt(now.minusMinutes(1));
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan)))
+				.thenReturn(List.of(broadcast, personal));
+
+		var inbox = service.getInboxForFan(fan);
+
+		assertEquals(MEMBER_A, inbox.getFirst().getArtistId());
+		assertEquals("아티스트의 새 메시지", inbox.getFirst().getLastMessage());
+		assertEquals(now, inbox.getFirst().getLastMessageTime());
+		verify(chatMessageRepository).findInboxMessages(java.util.Set.of(MEMBER_A, SOLO), fan);
+	}
+
+	@Test
+	void subscribedFanWhoHasNeverSentAMessageSeesBroadcastConversation() {
+		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(solo));
+		when(periodRepository.existsByFanIdAndArtistId(FAN, SOLO)).thenReturn(true);
+		ChatMessage broadcast = ChatMessage.builder().artist(solo).sender(solo)
+				.content("첫 인사").createdAt(LocalDateTime.now()).build();
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan))).thenReturn(List.of(broadcast));
+
+		assertTrue(service.getInboxForFan(fan).getFirst().isHasConversation());
+	}
+
+	@Test
+	void neverSubscribedFanDoesNotSeeBroadcastPreview() {
+		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(solo));
+		ChatMessage broadcast = ChatMessage.builder().artist(solo).sender(solo)
+				.content("회원 전용 메시지").createdAt(LocalDateTime.now()).build();
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan))).thenReturn(List.of(broadcast));
+
+		var item = service.getInboxForFan(fan).getFirst();
+		assertFalse(item.isHasConversation());
+		assertNull(item.getLastMessage());
 	}
 
 	// 멤버 DM 의 멤버십은 소속 그룹 기준으로 확인한다
