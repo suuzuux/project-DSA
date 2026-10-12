@@ -24,7 +24,7 @@ public class CommunityUrls {
 	public static final Pattern SLUG_PATTERN = Pattern.compile("^[A-Za-z0-9][A-Za-z0-9-]{0,99}$");
 
 	// 영문 주소 뒤에 붙는 탭
-	public static final Set<String> TABS = Set.of("highlight", "fan", "artist", "notice", "media", "live", "profile");
+	public static final Set<String> TABS = Set.of("highlight", "fan", "artist", "notice", "media", "live", "profile", "project");
 
 	// 사이트 최상위 주소와 겹치는 이름은 쓸 수 없다 (새 최상위 주소를 만들면 추가).
 	private static final Set<String> RESERVED = Set.of(

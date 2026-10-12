@@ -5,6 +5,7 @@ import megane6.weplanet.exception.AuthenticationRequiredException;
 import megane6.weplanet.exception.TossPaymentException;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.service.project.ProjectContributionService;
+import megane6.weplanet.service.community.CommunityUrls;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -21,6 +22,7 @@ public class TossPaymentController {
 	
 	private final ProjectContributionService pcs;
 	private final megane6.weplanet.i18n.Messages messages;
+	private final CommunityUrls communityUrls;
 	
 	// 가상계좌 발급 요청 완료 -> 승인 처리 후 계좌 안내 화면
 	@GetMapping("/success")
@@ -34,8 +36,9 @@ public class TossPaymentController {
 		}
 		
 		try {
-			model.addAttribute("result", pcs.confirmVirtualAccount(
-					principal.getId(), paymentKey, orderId, amount));
+			var result = pcs.confirmVirtualAccount(principal.getId(), paymentKey, orderId, amount);
+			model.addAttribute("result", result);
+			model.addAttribute("projectUrl", communityUrls.of(result.artistId(), "project"));
 			return "payment/virtual-account";
 		} catch (TossPaymentException | IllegalArgumentException
 				 | IllegalStateException | AccessDeniedException e) {

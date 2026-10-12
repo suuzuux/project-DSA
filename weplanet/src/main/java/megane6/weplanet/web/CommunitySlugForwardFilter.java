@@ -20,7 +20,10 @@ import java.util.regex.Pattern;
 public class CommunitySlugForwardFilter extends OncePerRequestFilter {
 
 	private static final Pattern SLUG_PATH =
-			Pattern.compile("^/([A-Za-z0-9][A-Za-z0-9-]*)(?:/(highlight|fan|artist|notice|media|live|profile))?/?$");
+			Pattern.compile("^/([A-Za-z0-9][A-Za-z0-9-]*)(?:/((?:highlight|fan|artist|notice|media|live|profile)"
+					+ "|project(?:/(?:eligibility|email-verification(?:/confirm)?|[0-9]+(?:/(?:modal|contributions|approve|reject))?))?))?/?$");
+	private static final Pattern PROJECT_POST_PATH = Pattern.compile(
+			"^project(?:/(?:email-verification(?:/confirm)?|[0-9]+/(?:contributions|approve|reject)))?$");
 
 	private final CommunityUrls communityUrls;
 
@@ -39,15 +42,18 @@ public class CommunitySlugForwardFilter extends OncePerRequestFilter {
 	// 영문 주소면 전달할 숫자 주소, 아니면 empty (SecurityConfig 공개 판단에도 사용).
 	public Optional<String> forwardTargetOf(HttpServletRequest request) {
 		String method = request.getMethod();
-		if (!"GET".equalsIgnoreCase(method) && !"HEAD".equalsIgnoreCase(method)) {
-			return Optional.empty();
-		}
 		String path = request.getRequestURI().substring(request.getContextPath().length());
 		Matcher matcher = SLUG_PATH.matcher(path);
 		if (!matcher.matches() || !CommunityUrls.isUsableSlug(matcher.group(1))) {
 			return Optional.empty();
 		}
 		String tab = matcher.group(2);
+		boolean readRequest = "GET".equalsIgnoreCase(method) || "HEAD".equalsIgnoreCase(method);
+		boolean projectPost = "POST".equalsIgnoreCase(method) && tab != null
+				&& PROJECT_POST_PATH.matcher(tab).matches();
+		if (!readRequest && !projectPost) {
+			return Optional.empty();
+		}
 		return communityUrls.findArtistId(matcher.group(1))
 				.map(artistId -> "/community/" + artistId + (tab != null ? "/" + tab : ""));
 	}
