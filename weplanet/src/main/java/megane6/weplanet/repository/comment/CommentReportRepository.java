@@ -75,6 +75,12 @@ public interface CommentReportRepository extends JpaRepository<CommentReport, Lo
             ReportStatus status
     );
 
+    List<CommentReport>
+    findByComment_Post_ArtistAndStatusOrderByCreatedAtDesc(
+            User artist,
+            ReportStatus status
+    );
+
     // 내가 신고한 댓글 id 목록 (신고 상태 표시용)
     @Query("""
             SELECT r.comment.id FROM CommentReport r

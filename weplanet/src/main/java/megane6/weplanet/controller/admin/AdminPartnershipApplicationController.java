@@ -58,6 +58,7 @@ public class AdminPartnershipApplicationController {
 				);
 		
 		model.addAttribute("applications", applications);
+		AdminPagination.addNavigation(model, "applicationsPagination", applications.getNumber(), applications.getTotalPages(), "page");
 		model.addAttribute("stats", service.getStats());
 		model.addAttribute("statusOptions", PartnershipApplicationStatus.values());
 		model.addAttribute("applicantTypeOptions",  PartnershipApplicantType.values());

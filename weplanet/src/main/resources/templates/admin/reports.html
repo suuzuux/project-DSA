@@ -163,18 +163,7 @@
           </tbody>
         </table>
       </div>
-      <div class="flex-center" style="margin-top:16px; gap:8px;">
-        <a th:if="${pageResult.hasPrevious()}"
-           th:href="@{/admin/reports(type=${selectedType}, status=${selectedStatus}, reason=${selectedReason}, keyword=${keyword}, page=${pageResult.page() - 1}, size=${pageResult.size()})}"
-           class="btn btn--ghost btn--sm"
-           th:text="|‹ #{admin.common.prev}|">‹ 이전</a>
-        <span class="text-xs text-muted"
-              th:text="(${pageResult.page()} + 1) + ' / ' + ${pageResult.totalPages()}">1 / 1</span>
-        <a th:if="${pageResult.hasNext()}"
-           th:href="@{/admin/reports(type=${selectedType}, status=${selectedStatus}, reason=${selectedReason}, keyword=${keyword}, page=${pageResult.page() + 1}, size=${pageResult.size()})}"
-           class="btn btn--ghost btn--sm"
-           th:text="|#{admin.common.next} ›|">다음 ›</a>
-      </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${reportsPagination})}"></div>
     </section>
   </main>
 </div>

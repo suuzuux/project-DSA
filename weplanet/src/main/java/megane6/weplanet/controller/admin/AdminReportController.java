@@ -46,8 +46,9 @@ public class AdminReportController {
 		ReportReason reasonFilter = (reason == null || reason.isBlank())
 				? null : ReportReason.valueOf(reason);
 		
-		model.addAttribute("pageResult", adminReportService.listAll
-				(typeFilter, statusFilter, reasonFilter, keyword, page, size));
+		var result = adminReportService.listAll(typeFilter, statusFilter, reasonFilter, keyword, page, size);
+		model.addAttribute("pageResult", result);
+		AdminPagination.addNavigation(model, "reportsPagination", result.page(), result.totalPages(), "page");
 		model.addAttribute("selectedType", type);
 		model.addAttribute("selectedStatus", statusFilter.name());
 		model.addAttribute("selectedReason", reason);
@@ -186,11 +187,12 @@ public class AdminReportController {
 	
 	@GetMapping("/suspended")
 	public String suspendedUsers(
+            @RequestParam(defaultValue = "0") int page,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
 		requireAdmin(principal);
-		model.addAttribute("suspendedUsers", adminReportService.listSuspendedUsers());
+		AdminPagination.paginate(model, "suspendedUsers", adminReportService.listSuspendedUsers(), page, 15, "page");
 		return "admin/suspended-users";
 	}
 	

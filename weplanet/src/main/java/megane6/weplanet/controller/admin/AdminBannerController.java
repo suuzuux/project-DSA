@@ -27,9 +27,9 @@ public class AdminBannerController {
 	private final Messages messages;
 
 	@GetMapping
-	public String list(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+	public String list(@RequestParam(defaultValue = "0") int page, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		requireAdmin(principal);
-		model.addAttribute("banners", mainBannerService.listAll());
+		AdminPagination.paginate(model, "banners", mainBannerService.listAll(), page, 15, "page");
 		return "admin/banners";
 	}
 

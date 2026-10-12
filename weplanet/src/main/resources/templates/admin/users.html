@@ -205,7 +205,7 @@
         </div>
 
         <span class="tag tag--member"
-              th:text="#{admin.users.resultCount(${#numbers.formatInteger(#lists.size(users), 0, 'COMMA')})}">
+              th:text="#{admin.users.resultCount(${#numbers.formatInteger(userPage.totalElements, 0, 'COMMA')})}">
           0명 조회
         </span>
       </div>
@@ -493,6 +493,8 @@
                        name="provider"
                        th:value="${selectedProvider}" />
 
+                <input type="hidden" name="page" th:value="${userPage.number}" />
+
                 <input type="hidden"
                        name="keyword"
                        th:value="${keyword}" />
@@ -525,6 +527,8 @@
                        name="provider"
                        th:value="${selectedProvider}" />
 
+                <input type="hidden" name="page" th:value="${userPage.number}" />
+
                 <input type="hidden"
                        name="keyword"
                        th:value="${keyword}" />
@@ -549,6 +553,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${usersPagination})}"></div>
     </section>
 
   </main>

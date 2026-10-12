@@ -286,6 +286,8 @@ public class ProjectController {
 	) {
 		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artist.getId());
 		model.addAttribute("isOwnCommunity", isOwnCommunity);
+		model.addAttribute("artistHeaderImageUrl", portalManagementService.findHeaderImageUrl(artist));
+		model.addAttribute("artistIntro", portalManagementService.findIntro(artist));
 
 		Map<Long, CommunityMember> joinedProfiles = cjs.joinedProfilesByArtistId(currentUser);
 		Set<Long> joinedArtistIds = cjs.joinedArtistIds(currentUser);

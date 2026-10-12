@@ -181,7 +181,7 @@ public class AdminCommunityService {
 		
 		List<RecentPostItem> recentPosts =
 				postRepository
-						.findTop10ByArtistOrderByCreatedAtDesc(artist)
+						.findByArtistOrderByCreatedAtDesc(artist)
 						.stream()
 						.map(post -> new RecentPostItem(
 								post.getId(),
@@ -196,7 +196,7 @@ public class AdminCommunityService {
 						.toList();
 		
 		List<ProjectItem> recentProjects =
-				pr.findTop10ByArtistAndDeletedAtIsNullOrderByCreatedAtDesc(
+				pr.findByArtistAndDeletedAtIsNullOrderByCreatedAtDesc(
 								artist
 						)
 						.stream()
@@ -214,7 +214,6 @@ public class AdminCommunityService {
 		List<BlockedMemberItem> blockedMembers =
 				abr.findByArtistOrderByCreatedAtDesc(artist)
 						.stream()
-						.limit(10)
 						.map(block -> new BlockedMemberItem(
 								block.getId(),
 								block.getBlockedUser().getId(),
@@ -228,7 +227,7 @@ public class AdminCommunityService {
 						.toList();
 		
 		List<PendingReportItem> postReports =
-				rr.findTop10ByPost_ArtistAndStatusOrderByCreatedAtDesc(
+				rr.findByPost_ArtistAndStatusOrderByCreatedAtDesc(
 								artist,
 								ReportStatus.PENDING
 						)
@@ -244,7 +243,7 @@ public class AdminCommunityService {
 						.toList();
 		
 		List<PendingReportItem> commentReports =
-				crr.findTop10ByComment_Post_ArtistAndStatusOrderByCreatedAtDesc(
+				crr.findByComment_Post_ArtistAndStatusOrderByCreatedAtDesc(
 								artist,
 								ReportStatus.PENDING
 						)
@@ -272,7 +271,6 @@ public class AdminCommunityService {
 								commentReports.stream()
 						)
 						.sorted(newestReportFirst)
-						.limit(10)
 						.toList();
 		
 		return new AdminCommunityDetailResponse(

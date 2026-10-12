@@ -363,11 +363,16 @@
             <!-- 댓글 히스토리 -->
             <div data-tab-panel="comments">
                 <article class="post-card mb-16" th:each="comment : ${myComments}">
+                    <a th:href="${comment.post.boardType.name() == 'FAN'}
+                               ? @{|/community/${comment.post.artist.id}/fan/${comment.post.id}#comment-${comment.id}|}
+                               : @{|/community/${comment.post.artist.id}/artist/${comment.post.id}#comment-${comment.id}|}"
+                       style="display:block;color:inherit;">
                     <p class="text-xs text-muted mb-8"
-                       th:text="#{community.profile.originalPost(${comment.post.author != null ? authorNicknames.get('' + comment.post.author.id) : #messages.msg('community.post.unknownAuthor')}, ${comment.post.title})}">
+                       th:text="#{community.profile.originalPost(${comment.post.author != null ? authorNicknames.get('' + comment.post.author.id) : #messages.msg('community.post.unknownAuthor')}, ${comment.post.previewTitle})}">
                         원글</p>
                     <p class="post-card__body" th:text="${comment.content}"></p>
                     <p class="text-xs text-muted" th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
+                    </a>
                     <!-- 내 댓글 삭제 (fetch 후 새로고침) -->
                     <div class="post-card__actions" th:if="${isOwnProfile}">
                         <form class="profile-comment-delete-form"
@@ -393,7 +398,7 @@
                        style="display:block;color:inherit;">
                         <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
                               th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
-                        <p class="post-card__body" th:text="${post.title}"></p>
+                        <p class="post-card__body" th:text="${post.previewTitle}"></p>
                         <p class="text-xs text-muted" th:text="${#temporals.format(post.createdAt, 'yyyy.MM.dd HH:mm')}"></p>
                     </a>
                     <div class="post-card__actions">
@@ -416,8 +421,9 @@
                     <div class="post-card__head">
                         <a th:if="${post.author != null}"
                            th:href="@{/community/{artistId}/profile/{userId}(artistId=${post.artist != null ? post.artist.id : 0}, userId=${post.author.id})}"
-                           class="avatar" th:aria-label="#{community.post.authorProfileAria}"
-                           th:text="${#strings.substring(authorNicknames.get('' + post.author.id),0,1)}"></a>
+                           class="avatar" th:aria-label="#{community.post.authorProfileAria}">
+                            <th:block th:replace="~{community/fragments/authorAvatar :: image(${authorAvatarUrls.get('' + post.author.id)})}"></th:block>
+                        </a>
                         <div th:unless="${post.author != null}" class="avatar">?</div>
                         <div class="post-card__meta">
                             <a th:if="${post.author != null}"
@@ -433,7 +439,7 @@
                        style="display:block;color:inherit;">
                         <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
                               th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
-                        <p class="post-card__body" th:text="${post.title}"></p>
+                        <p class="post-card__body" th:text="${post.previewTitle}"></p>
                     </a>
                 </article>
                 <p th:if="${#lists.isEmpty(likedPosts)}" class="list-empty" th:text="#{community.profile.emptyLikes}">좋아요한 게시글이 없습니다.</p>
@@ -445,8 +451,9 @@
                     <div class="post-card__head">
                         <a th:if="${post.author != null}"
                            th:href="@{/community/{artistId}/profile/{userId}(artistId=${post.artist != null ? post.artist.id : 0}, userId=${post.author.id})}"
-                           class="avatar" th:aria-label="#{community.post.authorProfileAria}"
-                           th:text="${#strings.substring(authorNicknames.get('' + post.author.id),0,1)}"></a>
+                           class="avatar" th:aria-label="#{community.post.authorProfileAria}">
+                            <th:block th:replace="~{community/fragments/authorAvatar :: image(${authorAvatarUrls.get('' + post.author.id)})}"></th:block>
+                        </a>
                         <div th:unless="${post.author != null}" class="avatar">?</div>
                         <div class="post-card__meta">
                             <a th:if="${post.author != null}"
@@ -462,7 +469,7 @@
                        style="display:block;color:inherit;">
                         <span th:if="${post.hiddenFromArtist}" class="badge-only-fan"
                               th:title="#{community.post.onlyFanTitle}" th:text="#{community.post.onlyFanBadge}">ONLY FAN</span>
-                        <p class="post-card__body" th:text="${post.title}"></p>
+                        <p class="post-card__body" th:text="${post.previewTitle}"></p>
                     </a>
                 </article>
                 <div th:if="${#lists.isEmpty(bookmarkedPosts)}" class="empty-state list-empty">
@@ -536,7 +543,7 @@
                 <!-- 소개글 -->
                 <div class="pe-field">
                     <input type="text" id="profileEditBio" name="bio"
-                           maxlength="30" autocomplete="off"
+                           maxlength="30" th:maxlength="${artistSide ? 100 : 30}" autocomplete="off"
                            th:aria-label="#{portalProfile.introAria}"
                            placeholder="(선택) 내 프로필에 노출될 소개글을 작성하세요"
                            th:placeholder="#{community.profile.bioPlaceholder}"
@@ -544,7 +551,7 @@
                     <button type="button" class="pe-clear" th:aria-label="#{portalProfile.introClearAria}"
                             data-clear-for="profileEditBio">✕</button>
                 </div>
-                <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
+                <p class="text-xs text-muted pe-count" data-count-for="profileEditBio" th:text="${artistSide ? '0 / 100' : '0 / 30'}">0 / 30</p>
 
                 <!-- 파일 입력은 숨기고 메뉴로 연다. -->
                 <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>

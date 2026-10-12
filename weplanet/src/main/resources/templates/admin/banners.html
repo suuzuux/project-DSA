@@ -117,6 +117,7 @@
         <strong th:text="#{adminBanner.list.emptyTitle}">등록된 배너가 없습니다</strong>
         <th:block th:text="#{adminBanner.list.emptyDesc}">지금은 메인 페이지에 기본 배너가 보이고 있어요.</th:block>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${bannersPagination})}"></div>
     </main>
   </div>
 <script th:src="@{/js/common/main.js}"></script>

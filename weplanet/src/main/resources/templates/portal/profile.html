@@ -23,9 +23,7 @@
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
-      <p class="text-sm text-muted" style="margin-bottom:16px;" th:text="#{portalProfile.desc}">
-        팬 프로필 편집과 같은 방식으로 사진을 등록하면, 커뮤니티명 왼쪽 아바타에 표시됩니다.
-      </p>
+
 
       <form class="portal-profile-edit" style="max-width:520px;"
             th:action="@{/portal/profile}" method="post" enctype="multipart/form-data">
@@ -59,17 +57,17 @@
 
         <div class="pe-field">
           <input type="text" id="profileEditNickname" name="nickname"
-                 maxlength="50" autocomplete="off" required
+                 maxlength="20" autocomplete="off" required
                  th:attr="aria-label=#{portalProfile.nicknameAria}"
                  th:value="${artist.nickname}"/>
           <button type="button" class="pe-clear" th:attr="aria-label=#{portalProfile.nicknameClearAria}"
                   data-clear-for="profileEditNickname">✕</button>
         </div>
-        <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 50</p>
+        <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 20</p>
 
         <div class="pe-field">
           <input type="text" id="profileEditBio" name="intro"
-                 maxlength="30" autocomplete="off"
+                 maxlength="100" autocomplete="off"
                  th:attr="aria-label=#{portalProfile.introAria}"
                  th:placeholder="#{portalProfile.introPlaceholder}"
                  placeholder="(선택) 커뮤니티 About에 노출될 소개글을 작성하세요"
@@ -77,7 +75,7 @@
           <button type="button" class="pe-clear" th:attr="aria-label=#{portalProfile.introClearAria}"
                   data-clear-for="profileEditBio">✕</button>
         </div>
-        <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
+        <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 100</p>
 
         <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>
         <input type="file" id="profileEditBackground" name="background" accept="image/*" class="hidden"/>

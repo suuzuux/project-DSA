@@ -16,8 +16,15 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     // 아티스트 채팅방 메시지 조회
     List<ChatMessage> findByArtistOrderByCreatedAtAsc(User artist);
 
-    // DM 인박스 - 이 팬의 메시지 최신순 (아티스트별 마지막 메시지는 서비스에서 추림).
-    List<ChatMessage> findByFanOrderByCreatedAtDesc(User fan);
+    // DM 인박스 - 팬 개인 메시지와 방 주인의 방송을 함께 최신순으로 조회한다.
+    @Query("""
+            SELECT m FROM ChatMessage m
+            WHERE m.artist.id IN :roomIds
+              AND (m.fan = :fan OR (m.fan IS NULL AND m.sender = m.artist))
+            ORDER BY m.createdAt DESC, m.id DESC
+            """)
+    List<ChatMessage> findInboxMessages(@Param("roomIds") Collection<Long> roomIds,
+                                        @Param("fan") User fan);
 
     // 아티스트-팬 1:1 대화 이력
     List<ChatMessage> findByArtistAndFanOrderByCreatedAtAsc(User artist, User fan);

@@ -32,6 +32,20 @@ import static org.mockito.Mockito.when;
 class PostServiceTest {
 
 	@Test
+	void generatedTitlePreservesLiteralTildeAndRemovesMarkdownEscapes() {
+		PostRepository posts = mock(PostRepository.class);
+		when(posts.save(org.mockito.ArgumentMatchers.any(Post.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+		var post = serviceWith(posts).createPost(BoardType.FAN, null,
+				"# **안녕**\\~ 10~20 / 좋아요\n두 번째 줄", mock(User.class));
+
+		assertEquals("안녕~ 10~20 / 좋아요", post.getTitle());
+		// 예전 제목에 역슬래시만 남았어도 프로필 표시에는 저장 본문을 쓴다.
+		post.setTitle("안녕\\ 1020 / 좋아요");
+		assertEquals("안녕~ 10~20 / 좋아요", post.getPreviewTitle());
+	}
+
+	@Test
 	void communityPostsAreRequestedTenAtATime() {
 		PostRepository postRepository = mock(PostRepository.class);
 		PostService service = serviceWith(postRepository);

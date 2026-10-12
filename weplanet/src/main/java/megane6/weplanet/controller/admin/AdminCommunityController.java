@@ -31,12 +31,15 @@ public class AdminCommunityController {
 	public String dashboard(@RequestParam(required = false) Long projectId,
 							@RequestParam(required = false) String status,
 							@RequestParam(required = false) String keyword,
+                            @RequestParam(defaultValue = "0") int page,
+                            @RequestParam(defaultValue = "0") int pendingPage,
+                            @RequestParam(defaultValue = "0") int settlementPage,
 							Model model) {
 		FanProjectStatus statusFilter = parseStatus(status);
 		model.addAttribute("stats", acs.getStats());
-		model.addAttribute("pendingProjects", acs.getPendingProjects());
-		model.addAttribute("adminProjects", acs.getAdminProjects(statusFilter, keyword));
-		model.addAttribute("settlementProjects", acs.getSettlementProjects());
+		AdminPagination.paginate(model, "pendingProjects", acs.getPendingProjects(), pendingPage, 10, "pendingPage");
+		AdminPagination.paginate(model, "adminProjects", acs.getAdminProjects(statusFilter, keyword), page, 10, "page");
+		AdminPagination.paginate(model, "settlementProjects", acs.getSettlementProjects(), settlementPage, 10, "settlementPage");
 		model.addAttribute("projectStatuses", FanProjectStatus.values());
 		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
 		model.addAttribute("keyword", keyword == null ? "" : keyword);
@@ -52,12 +55,13 @@ public class AdminCommunityController {
 	public String communityOverview(@RequestParam(required = false) String status,
 									@RequestParam(required = false) String keyword,
 									@RequestParam(required = false) String sort,
+                                    @RequestParam(defaultValue = "0") int page,
 									Model model) {
 		UserStatus statusFilter = parseUserStatus(status);
 		String selectedSort = normalizeCommunitySort(sort);
 		List<AdminCommunityOverviewResponse> communities =
 				acs.getCommunityOverview(keyword, statusFilter, selectedSort);
-		model.addAttribute("communities", communities);
+		AdminPagination.paginate(model, "communities", communities, page, 15, "page");
 		model.addAttribute("overviewStats", acs.getCommunityOverviewStats(communities));
 		model.addAttribute("selectedStatus", statusFilter == null ? "" : statusFilter.name());
 		model.addAttribute("selectedSort", selectedSort);
@@ -67,9 +71,17 @@ public class AdminCommunityController {
 	}
 	
 	@GetMapping("/overview/{artistId}")
-	public String communityDetail(@PathVariable Long artistId, Model model) {
+	public String communityDetail(@PathVariable Long artistId,
+            @RequestParam(defaultValue = "0") int postsPage,
+            @RequestParam(defaultValue = "0") int projectsPage,
+            @RequestParam(defaultValue = "0") int blocksPage,
+            @RequestParam(defaultValue = "0") int reportsPage, Model model) {
 		AdminCommunityDetailResponse detail = acs.getCommunityDetail(artistId);
 		model.addAttribute("detail", detail);
+        AdminPagination.paginate(model, "recentPosts", detail.recentPosts(), postsPage, 15, "postsPage");
+        AdminPagination.paginate(model, "recentProjects", detail.recentProjects(), projectsPage, 10, "projectsPage");
+        AdminPagination.paginate(model, "blockedMembers", detail.blockedMembers(), blocksPage, 15, "blocksPage");
+        AdminPagination.paginate(model, "pendingReports", detail.pendingReports(), reportsPage, 15, "reportsPage");
 		return "admin/community-detail";
 	}
 	

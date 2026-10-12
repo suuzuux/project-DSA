@@ -71,4 +71,10 @@ public class Post {
     public String getPreviewText() {
         return megane6.weplanet.util.MarkdownPreview.of(content);
     }
+
+    // 기존에 잘못 생성된 제목도 프로필 이력에서는 본문으로 다시 만든다.
+    public String getPreviewTitle() {
+        String firstLine = getPreviewText().lines().findFirst().orElse(title);
+        return firstLine != null && firstLine.length() > 80 ? firstLine.substring(0, 80) : firstLine;
+    }
 }

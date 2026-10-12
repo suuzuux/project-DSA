@@ -60,6 +60,7 @@
       <form th:action="@{/admin/logout}"
             method="post"
             style="margin:0;">
+                <input type="hidden" name="page" th:value="${artistsPagination.number}" />
 
         <button type="submit"
                 class="btn"
@@ -258,7 +259,7 @@
 
         <span class="tag tag--member"
               th:text="#{admin.artists.resultCount(${#numbers.formatInteger(
-                  #lists.size(artists), 0, 'COMMA')})}">
+                  artistsTotal, 0, 'COMMA')})}">
           0명 조회
         </span>
       </div>
@@ -625,6 +626,7 @@
                         userId=${artist.userId()}
                     )}"
                     method="post">
+                <input type="hidden" name="page" th:value="${artistsPagination.number}" />
 
                 <input type="hidden"
                        name="userStatus"
@@ -654,6 +656,7 @@
                         userId=${artist.userId()}
                     )}"
                     method="post">
+                <input type="hidden" name="page" th:value="${artistsPagination.number}" />
 
                 <input type="hidden"
                        name="userStatus"
@@ -688,6 +691,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${artistsPagination})}"></div>
     </section>
 
   </main>

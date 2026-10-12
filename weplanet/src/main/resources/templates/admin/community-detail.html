@@ -255,7 +255,7 @@
               </td>
             </tr>
 
-            <tr th:each="post : ${detail.recentPosts()}">
+            <tr th:each="post : ${recentPosts}">
               <td>
                 <span class="tag tag--private"
                       th:text="${post.boardTypeLabel()}">
@@ -298,6 +298,7 @@
             </tbody>
           </table>
         </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${recentPostsPagination})}"></div>
       </section>
 
       <!-- 최근 프로젝트 -->
@@ -338,7 +339,7 @@
               </td>
             </tr>
 
-            <tr th:each="project : ${detail.recentProjects()}">
+            <tr th:each="project : ${recentProjects}">
               <td>
                 <strong th:text="${project.title()}">
                   프로젝트 제목
@@ -393,6 +394,7 @@
             </tbody>
           </table>
         </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${recentProjectsPagination})}"></div>
       </section>
 
     </div>
@@ -437,7 +439,7 @@
               </td>
             </tr>
 
-            <tr th:each="member : ${detail.blockedMembers()}">
+            <tr th:each="member : ${blockedMembers}">
               <td>
                 <strong th:text="${member.nickname()}">
                   회원 닉네임
@@ -492,6 +494,7 @@
             </tbody>
           </table>
         </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${blockedMembersPagination})}"></div>
       </section>
 
       <!-- 처리 대기 신고 -->
@@ -533,7 +536,7 @@
               </td>
             </tr>
 
-            <tr th:each="report : ${detail.pendingReports()}">
+            <tr th:each="report : ${pendingReports}">
               <td>
                 <span class="tag tag--danger"
                       th:text="${report.targetType()}">
@@ -588,6 +591,7 @@
             </tbody>
           </table>
         </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${pendingReportsPagination})}"></div>
       </section>
 
     </div>

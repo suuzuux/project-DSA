@@ -21,6 +21,8 @@ import megane6.weplanet.service.chat.ChatMessageService;
 import megane6.weplanet.service.chat.ChatQuotaService;
 import org.springframework.context.MessageSource;
 import megane6.weplanet.service.community.CommunityArtistResolver;
+import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.controller.admin.AdminPagination;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
@@ -54,6 +56,24 @@ public class ChatController {
     private final megane6.weplanet.i18n.Messages messages;
     private final CommunityArtistResolver communityArtistResolver;
     private final ArtistAccountProfileRepository artistAccountProfileRepository;
+    private final CommunityJoinService communityJoinService;
+
+    // 방 주인의 소속 커뮤니티로 닉네임을 정한다 (그룹 멤버 DM도 그룹 프로필 사용).
+    private List<Map<String, Object>> messageData(List<ChatMessage> history, User artist) {
+        var authors = communityJoinService.authorViewsByAuthorIdKey(
+                history.stream().map(ChatMessage::getSender).toList(),
+                communityArtistResolver.ownCommunityId(artist));
+        return history.stream().map(message -> {
+            User sender = message.getSender();
+            var author = authors.get(String.valueOf(sender.getId()));
+            Map<String, Object> data = new HashMap<>();
+            data.put("senderId", sender.getId());
+            data.put("senderNickname", author != null ? author.nickname() : sender.getNickname());
+            data.put("content", message.getContent());
+            data.put("createdAt", message.getCreatedAt().toString());
+            return data;
+        }).toList();
+    }
 
     // 웹소켓 요청엔 세션 로케일이 없어 보낸 사람의 선호 언어로 문구를 만든다.
     private String chatMsg(String code, User forUser) {
@@ -119,15 +139,7 @@ public class ChatController {
         User artist = getUserOrThrow(artistId, "아티스트");
 
         // 새로고침해도 대화가 남도록 지난 대화 이력을 함께 내려준다.
-        List<Map<String, Object>> history = chatMessageService.getArtistRoomHistory(artist).stream()
-                .map(m -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("senderId", m.getSender().getId());
-                    map.put("senderNickname", m.getSender().getNickname());
-                    map.put("content", m.getContent());
-                    map.put("createdAt", m.getCreatedAt().toString());
-                    return (Map<String, Object>) map;
-                }).toList();
+        List<Map<String, Object>> history = messageData(chatMessageService.getArtistRoomHistory(artist), artist);
 
         model.addAttribute("artistId", artistId);
         model.addAttribute("history", history);
@@ -189,15 +201,7 @@ public class ChatController {
     public Map<String, Object> artistRoomData(@RequestParam Long artistId) {
         User artist = getUserOrThrow(artistId, "아티스트");
 
-        List<Map<String, Object>> messages = chatMessageService.getArtistRoomHistory(artist).stream()
-                .map(m -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("senderId", m.getSender().getId());
-                    map.put("senderNickname", m.getSender().getNickname());
-                    map.put("content", m.getContent());
-                    map.put("createdAt", m.getCreatedAt().toString());
-                    return (Map<String, Object>) map;
-                }).toList();
+        List<Map<String, Object>> messages = messageData(chatMessageService.getArtistRoomHistory(artist), artist);
 
         Map<String, Object> result = new HashMap<>();
         result.put("messages", messages);
@@ -295,7 +299,8 @@ public class ChatController {
         // 엔티티 대신 화면에 필요한 값만 담아 보낸다 (민감 정보 노출 방지).
         Map<String, Object> payload = new HashMap<>();
         payload.put("senderId", sender.getId());
-        payload.put("senderNickname", sender.getNickname());
+        payload.put("senderNickname", communityJoinService.displayNickname(
+                sender, communityArtistResolver.ownCommunityId(artist)));
         payload.put("fanId", fan != null ? fan.getId() : null);
         payload.put("content", saved.getContent());
         payload.put("createdAt", saved.getCreatedAt().toString());
@@ -341,16 +346,8 @@ public class ChatController {
         User community = getUserOrThrow(communityId, "커뮤니티");
         boolean neverSubscribed = chatMessageService.isNeverSubscribed(fan, artist);
 
-        List<Map<String, Object>> messages = (neverSubscribed ? List.<ChatMessage>of()
-                : chatMessageService.getConversation(artist, fan)).stream()
-                .map(m -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("senderId", m.getSender().getId());
-                    map.put("senderNickname", m.getSender().getNickname());
-                    map.put("content", m.getContent());
-                    map.put("createdAt", m.getCreatedAt().toString());
-                    return (Map<String, Object>) map;
-                }).toList();
+        List<Map<String, Object>> messages = messageData(neverSubscribed ? List.of()
+                : chatMessageService.getConversation(artist, fan), artist);
 
         Map<String, Object> result = new HashMap<>();
         result.put("artistNickname", artist.getNickname());
@@ -373,7 +370,9 @@ public class ChatController {
                              Model model) {
         requireAdmin(requireLoginUser(principal));
         
-        model.addAttribute("keywords", chatFilterService.getAllKeywords());
+        AdminPagination.paginate(model, "keywords", chatFilterService.getAllKeywords(),
+                AdminPagination.requestedPage("page"), 15, "page", "/chat/admin/keywords",
+                AdminPagination.KEYWORD_PAGE_LINKS);
         
         return "chat/keywordManage";
     }
@@ -473,10 +472,9 @@ public class ChatController {
         }
         
         if ("fetch".equals(requestedWith)) {
-            model.addAttribute(
-                    "keywords",
-                    chatFilterService.getAllKeywords()
-            );
+            AdminPagination.paginate(model, "keywords", chatFilterService.getAllKeywords(),
+                    AdminPagination.requestedPage("page"), 15, "page", "/chat/admin/keywords",
+                    AdminPagination.KEYWORD_PAGE_LINKS);
             
             if (errorMessage == null) {
                 model.addAttribute(

@@ -72,7 +72,7 @@
         <section class="panel">
             <div class="panel__head">
                 <h2 class="panel__title" th:text="#{adminHashtag.list.title}">이벤트 목록</h2>
-                <span class="tag tag--member" th:text="#{adminHashtag.list.count(${#lists.size(events)})}">0건</span>
+                <span class="tag tag--member" th:text="#{adminHashtag.list.count(${eventsTotal})}">0건</span>
             </div>
 
             <div class="table-wrap">
@@ -128,6 +128,7 @@
                     </tbody>
                 </table>
             </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${eventsPagination})}"></div>
         </section>
     </main>
 </div>

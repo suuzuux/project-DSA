@@ -49,6 +49,7 @@
 
   <!-- 댓글 한 칸 (원댓글·답글 공용) - comment, artistStyle(배경색), isReply(답글이면 답글 링크·목록 없음) -->
   <div th:fragment="commentNode(comment, artistStyle, isReply)" class="comment-item"
+       th:id="'comment-' + ${comment.id}"
        th:classappend="${(isReply ? ' comment-item--reply' : '')
                        + (comment.deleted ? ' comment-item--deleted' : '')
                        + ((reportedCommentIds != null and #sets.contains(reportedCommentIds, comment.id)) ? ' comment-item--reported' : '')}"

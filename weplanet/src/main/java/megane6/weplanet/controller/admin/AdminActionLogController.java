@@ -69,6 +69,7 @@ public class AdminActionLogController {
 			);
 		}
 		model.addAttribute("logs", logs);
+		AdminPagination.addNavigation(model, "logsPagination", logs.getNumber(), logs.getTotalPages(), "page");
 		model.addAttribute("stats", service.getStats());
 		model.addAttribute("adminActors", service.getAdminActors());
 		model.addAttribute("actionOptions", AdminActionType.values());

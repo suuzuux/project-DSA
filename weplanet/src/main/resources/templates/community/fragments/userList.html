@@ -6,7 +6,9 @@
     <!-- 모두 이 커뮤니티의 팔로우라 이 커뮤니티 프로필로 연결한다. -->
     <a th:each="user : ${users}"
        th:href="@{/community/{artistId}/profile/{userId}(artistId=${artistId}, userId=${user.id})}">
-        <span class="avatar avatar--sm" th:text="${#strings.substring(authorNicknames.get('' + user.id),0,1)}">?</span>
+        <span class="avatar avatar--sm">
+          <th:block th:replace="~{community/fragments/authorAvatar :: image(${authorAvatarUrls.get('' + user.id)})}"></th:block>
+        </span>
         <span th:text="${authorNicknames.get('' + user.id)}">닉네임</span>
     </a>
     <p th:if="${#lists.isEmpty(users)}" class="list-empty text-sm" th:text="#{community.userList.empty}">아직 아무도 없습니다.</p>

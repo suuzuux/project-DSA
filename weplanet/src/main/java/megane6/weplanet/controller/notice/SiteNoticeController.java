@@ -99,8 +99,9 @@ public class SiteNoticeController {
 		NoticeCategory categoryFilter = (category == null || category.isBlank())
 				? null : NoticeCategory.valueOf(category);
 		
-		model.addAttribute(
-				"pageResult", siteNoticeService.listAll(categoryFilter, keyword, page, size));
+		var result = siteNoticeService.listAll(categoryFilter, keyword, page, size);
+		model.addAttribute("pageResult", result);
+		megane6.weplanet.controller.admin.AdminPagination.addNavigation(model, "noticesPagination", result.page(), result.totalPages(), "page");
 		model.addAttribute("stats", siteNoticeService.getStats());
 		model.addAttribute("maxPinned", SiteNoticeService.MAX_PINNED);
 		model.addAttribute("selectedCategory", category);

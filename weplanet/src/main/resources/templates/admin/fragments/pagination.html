@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<body>
+  <nav th:fragment="pages(pagination)" class="pagination" th:aria-label="#{admin.common.pagination}">
+    <span th:if="${pagination.previousUrl == null}" aria-disabled="true" th:text="#{admin.common.prev}">이전</span>
+    <a th:if="${pagination.previousUrl != null}" th:href="${pagination.previousUrl}" th:text="#{admin.common.prev}">이전</a>
+    <th:block th:each="link : ${pagination.links}">
+      <span th:if="${link.active}" class="is-active" aria-current="page" th:text="${link.number}">1</span>
+      <a th:unless="${link.active}" th:href="${link.url}" th:text="${link.number}">2</a>
+    </th:block>
+    <span th:if="${pagination.nextUrl == null}" aria-disabled="true" th:text="#{admin.common.next}">다음</span>
+    <a th:if="${pagination.nextUrl != null}" th:href="${pagination.nextUrl}" th:text="#{admin.common.next}">다음</a>
+  </nav>
+</body>
+</html>

@@ -74,4 +74,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     // 삭제되지 않은 최근 프로젝트 10개 조회
     @EntityGraph(attributePaths = "creator")
     List<Project> findTop10ByArtistAndDeletedAtIsNullOrderByCreatedAtDesc(User artist);
+
+    List<Project> findByArtistAndDeletedAtIsNullOrderByCreatedAtDesc(User artist);
 }
