@@ -21,6 +21,7 @@ import megane6.weplanet.service.calendar.ArtistAttendanceService;
 import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityDrawerHelper;
 import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.community.CommunityUrls;
 import megane6.weplanet.service.portal.PortalManagementService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -48,6 +49,7 @@ public class ProjectController {
 	// flash 문구와 등록 실패 사유(예외 메시지 키) 번역용
 	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;
+	private final CommunityUrls communityUrls;
 
 	// 프로젝트 목록 및 등록 폼 화면
 	@GetMapping
@@ -65,7 +67,7 @@ public class ProjectController {
 
 		boolean isOwnCommunity = communityArtistResolver.isArtistOf(currentUser, artistId);
 		if (isOwnCommunity) {
-			return "redirect:/community/" + artistId + "/fan";
+			return "redirect:" + communityUrls.of(artistId, "fan");
 		}
 		
 		if (currentUser.canParticipateInCommunity()
@@ -114,7 +116,7 @@ public class ProjectController {
 
 		boolean isOwnCommunity = currentUser.getId().equals(artistId);
 		if (isOwnCommunity && currentUser.getRole() == Role.ARTIST) {
-			return "redirect:/community/" + artistId + "/fan";
+			return "redirect:" + communityUrls.of(artistId, "fan");
 		}
 		
 		if ((currentUser.getRole() == Role.FAN || currentUser.getRole() == Role.ARTIST)
@@ -180,7 +182,7 @@ public class ProjectController {
 			Long projectId = ps.createProject(principal.getId(), dto);
 			log.info("팬 프로젝트 등록 완료: projectId={}, creatorId={}", projectId, principal.getId());
 			redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.created"));
-			return "redirect:/community/" + artistId + "/project";
+			return "redirect:" + communityUrls.of(artistId, "project");
 		} catch (IllegalArgumentException | IllegalStateException e) {
 			// 번역한 예외 문구를 기본 메시지로 넘긴다.
 			bindingResult.reject("projectCreateFailed", messages.resolve(e));
@@ -207,7 +209,7 @@ public class ProjectController {
 				principal.getId(),
 				request.getRemoteAddr());
 		redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.approved"));
-		return "redirect:/community/" + artistId + "/project/" + projectId;
+		return "redirect:" + communityUrls.of(artistId, "project") + "/" + projectId;
 	}
 
 	// ADMIN 프로젝트 반려
@@ -230,7 +232,7 @@ public class ProjectController {
 				rejectionReason,
 				request.getRemoteAddr());
 		redirectAttributes.addFlashAttribute("successMessage", messages.get("community.project.rejected"));
-		return "redirect:/community/" + artistId + "/project/" + projectId;
+		return "redirect:" + communityUrls.of(artistId, "project") + "/" + projectId;
 	}
 	
 	// 커뮤니티 화면과 등록 폼 공통 모델 구성.

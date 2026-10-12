@@ -27,7 +27,7 @@
         <nav th:replace="~{community/fragments/layout :: tabs('fan')}"></nav>
 
         <a class="section__link mb-16" style="display:inline-block;"
-           th:href="@{/community/{id}/project(id=${artist.id()})}" th:text="#{community.projectDetail.backToList}">← 프로젝트 목록</a>
+           th:href="@{${artist.homeUrl() + '/project'}}" th:text="#{community.projectDetail.backToList}">← 프로젝트 목록</a>
 
         <p th:if="${successMessage}"
            th:text="${successMessage}"
@@ -102,15 +102,13 @@
                      th:if="${project.statusBadgeCode() == 'pending'}">
                 <h2 class="project-detail__section-title" th:text="#{community.projectDetail.reviewTitle}">프로젝트 심사</h2>
 
-                <form th:action="@{/community/{artistId}/project/{projectId}/approve(
-                                  artistId=${artist.id()}, projectId=${project.id()})}"
+                <form th:action="@{${artist.homeUrl() + '/project/' + project.id() + '/approve'}}"
                       method="post">
                     <button type="submit" class="btn btn--primary" th:text="#{community.projectDetail.approve}">승인</button>
                 </form>
 
                 <form class="project-review__reject"
-                      th:action="@{/community/{artistId}/project/{projectId}/reject(
-                                 artistId=${artist.id()}, projectId=${project.id()})}"
+                      th:action="@{${artist.homeUrl() + '/project/' + project.id() + '/reject'}}"
                       method="post">
                     <label class="form-label" for="rejectionReason" th:text="#{community.projectDetail.rejectionReason}">반려 사유</label>
                     <textarea id="rejectionReason"

@@ -46,7 +46,7 @@
   </div>
 
   <div class="flex-center" style="gap:10px;justify-content:center;margin-top:28px;">
-    <a class="btn btn--ghost" th:href="@{/community/{id}/project(id=${result.artistId()})}" th:text="#{community.project.payment.backToProject}">프로젝트로 돌아가기</a>
+    <a class="btn btn--ghost" th:href="@{${projectUrl}}" th:text="#{community.project.payment.backToProject}">프로젝트로 돌아가기</a>
     <a class="btn btn--primary" th:href="@{/collection}" th:text="#{community.project.payment.viewHistory}">참여 내역 보기</a>
   </div>
 </main>

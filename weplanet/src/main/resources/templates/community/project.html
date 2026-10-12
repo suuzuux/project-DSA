@@ -33,7 +33,7 @@
             <span th:text="#{community.board.postsChip}">포스트</span>
           </a>
           <a class="chip is-active"
-             th:href="@{/community/{id}/project(id=${artist.id()})}">
+             th:href="@{${artist.homeUrl() + '/project'}}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             <span th:text="#{community.board.projectChip}">프로젝트</span>
           </a>
@@ -62,13 +62,10 @@
       <div class="project-grid" th:if="${!projects.isEmpty()}">
         <a class="project-card"
            th:each="project : ${projects}"
-           th:href="@{/community/{artistId}/project/{projectId}
-             (artistId=${artist.id()}, projectId=${project.id})}"
+           th:href="@{${artist.homeUrl() + '/project/' + project.id}}"
            data-project-detail
-           th:attr="data-modal-url=@{/community/{artistId}/project/{projectId}/modal
-             (artistId=${artist.id()}, projectId=${project.id})},
-             data-contribution-url=@{/community/{artistId}/project/{projectId}/contributions
-             (artistId=${artist.id()}, projectId=${project.id})}">
+           th:attr="data-modal-url=@{${artist.homeUrl() + '/project/' + project.id + '/modal'}},
+             data-contribution-url=@{${artist.homeUrl() + '/project/' + project.id + '/contributions'}}">
 
           <div class="project-card__thumb">
             <img th:if="${project.coverImageUrl() != null}"
@@ -334,7 +331,8 @@
       </p>
 
       <form id="projectCreateForm"
-            th:action="@{/community/{id}/project(id=${artist.id()})}"
+            th:action="@{${artist.homeUrl() + '/project'}}"
+            th:attr="data-eligibility-url=@{${artist.homeUrl() + '/project/eligibility'}}"
             th:object="${projectRequestDTO}"
             method="post"
             enctype="multipart/form-data">
@@ -463,7 +461,7 @@
             <button id="projectEmailSendButton"
                     type="button"
                     class="btn btn--soft"
-                    th:attr="data-url=@{/community/{id}/project/email-verification(id=${artist.id()})}"
+                    th:attr="data-url=@{${artist.homeUrl() + '/project/email-verification'}}"
                     th:text="#{community.project.emailSend}">
               전송하기
             </button>
@@ -490,7 +488,7 @@
             <button id="projectEmailConfirmButton"
                     type="button"
                     class="btn btn--soft"
-                    th:attr="data-url=@{/community/{id}/project/email-verification/confirm(id=${artist.id()})}"
+                    th:attr="data-url=@{${artist.homeUrl() + '/project/email-verification/confirm'}}"
                     th:text="#{community.project.emailConfirm}"
                     disabled>
               인증하기
@@ -649,17 +647,12 @@
       // 등록 버튼: 모달을 열기 전 배지 조건 확인 (캡처 단계에서 main.js 열기 동작을 막음).
       document.addEventListener("click", async function (e) {
         const openButton = e.target.closest('[data-modal-open="projectCreateModal"]');
-        if (!openButton || !modal) return;
+        if (!openButton || !modal || !form) return;
 
         e.stopPropagation();
 
-        const artistIdInput = document.getElementById("artistId");
-        const artistId = artistIdInput
-            ? artistIdInput.value
-            : window.location.pathname.split("/")[2];
-
         try {
-          const response = await fetch(`/community/${artistId}/project/eligibility`);
+          const response = await fetch(form.dataset.eligibilityUrl);
           if (!response.ok) {
             WePlaNet.alert(MSG.eligibilityCheckFailed);
             return;

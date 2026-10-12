@@ -28,7 +28,7 @@ class ProjectHeaderTest {
         PortalManagementService portal = mock(PortalManagementService.class);
         ProjectController controller = new ProjectController(mock(ProjectService.class), users, joins,
                 mock(MembershipService.class), mock(ArtistAttendanceService.class),
-                mock(CommunityDrawerHelper.class), portal, null, mock(CommunityArtistResolver.class));
+                mock(CommunityDrawerHelper.class), portal, null, mock(CommunityArtistResolver.class), mock(CommunityUrls.class));
         User artist = mock(User.class);
         when(artist.getId()).thenReturn(10L);
         when(artist.getRole()).thenReturn(Role.ARTIST);
