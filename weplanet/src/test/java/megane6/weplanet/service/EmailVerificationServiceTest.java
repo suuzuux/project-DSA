@@ -1,11 +1,13 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.account.EmailVerificationService;
+
 import megane6.weplanet.domain.entity.EmailVerification;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.EmailVerificationPurpose;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.EmailVerificationRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.account.EmailVerificationRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 

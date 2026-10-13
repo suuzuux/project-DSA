@@ -11,10 +11,7 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * 기존 멤버십 가입 POST는 무료 가입이라, 결제 화면으로만 보낸다.
- * CommunityController 는 수정하지 않는다.
- */
+/** 멤버십 가입 POST 를 결제 화면으로 보낸다. */
 @Component
 public class MembershipJoinPaymentFilter extends OncePerRequestFilter {
 

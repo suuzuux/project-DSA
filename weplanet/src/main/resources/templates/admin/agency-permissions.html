@@ -20,7 +20,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -55,6 +55,7 @@
       <form th:action="@{/admin/logout}"
             method="post"
             style="margin:0;">
+                <input type="hidden" name="page" th:value="${permissionsPagination.number}" />
 
         <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">
           🚪 로그아웃
@@ -219,7 +220,7 @@
 
         <span class="tag tag--member"
               th:text="#{admin.agencies.resultCount(${#numbers.formatInteger(
-                  #lists.size(permissions), 0, 'COMMA')})}">
+                  permissionsTotal, 0, 'COMMA')})}">
           0건 조회
         </span>
       </div>
@@ -523,6 +524,7 @@
                     th:action="@{/admin/agencies/{userId}/approve(
                         userId=${permission.userId()})}"
                     method="post">
+                <input type="hidden" name="page" th:value="${permissionsPagination.number}" />
 
                 <input type="hidden"
                        name="approval"
@@ -554,6 +556,7 @@
                     th:action="@{/admin/agencies/{userId}/revoke(
                         userId=${permission.userId()})}"
                     method="post">
+                <input type="hidden" name="page" th:value="${permissionsPagination.number}" />
 
                 <input type="hidden"
                        name="approval"
@@ -597,6 +600,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${permissionsPagination})}"></div>
     </section>
 
   </main>

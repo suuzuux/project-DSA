@@ -1,0 +1,181 @@
+package megane6.weplanet.repository.main;
+
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.enumfolder.AgencyStatus;
+import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
+import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.domain.entity.enumfolder.UserStatus;
+import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+
+    // AI 팬 계정처럼 고정 아이디로 찾을 때 사용
+    Optional<User> findByUsername(String username);
+    List<User> findByUsernameIn(List<String> usernames);
+    Optional<User> findByEmail(String email);
+
+    boolean existsByUsername(String username);
+    boolean existsByNickname(String nickname);
+    boolean existsByEmail(String email);
+
+    // 닉네임 중복은 같은 쪽(팬/아티스트) 계정끼리만 검사한다.
+    boolean existsByNicknameAndRoleNotIn(String nickname, Collection<Role> roles);
+    // 그룹 이름 중복 검사
+    boolean existsByNicknameAndRole(String nickname, Role role);
+
+    // DM 추천 칸용 전체 아티스트 목록
+    List<User> findByRole(Role role);
+    
+    long countByStatus(UserStatus status);
+    
+    List<User> findByStatus(UserStatus status);
+    
+    // 소셜 로그인 계정 조회
+    Optional<User> findByProviderAndProviderId(
+            AuthProvider provider,
+            String providerId
+    );
+
+    List<User> findByRoleAndAgency_Id(Role role, Long agencyId);
+
+    long countByRole(Role role);
+    
+    @Query("""
+        select user
+        from User user
+        where user.role = :role
+          and (:status is null or user.status = :status)
+          and (
+              :keyword is null
+              or lower(user.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.username)
+                    like lower(concat('%', :keyword, '%'))
+          )
+        order by user.nickname asc
+        """)
+    List<User> searchByRole(
+            @Param("role") Role role,
+            @Param("status") UserStatus status,
+            @Param("keyword") String keyword
+    );
+    
+    @Query(value = """
+        select user
+        from User user
+        left join fetch user.agency agency
+        where (:role is null or user.role = :role)
+          and (:status is null or user.status = :status)
+          and (:localOnly = false or user.provider is null)
+          and (:localOnly = true or :provider is null or user.provider = :provider)
+          and (
+              :keyword is null
+              or lower(user.username)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.nickname)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(user.email)
+                    like lower(concat('%', :keyword, '%'))
+              or lower(coalesce(agency.name, ''))
+                    like lower(concat('%', :keyword, '%'))
+          )
+        order by user.createdAt desc, user.id desc
+        """, countQuery = """
+        select count(user)
+        from User user
+        left join user.agency agency
+        where (:role is null or user.role = :role)
+          and (:status is null or user.status = :status)
+          and (:localOnly = false or user.provider is null)
+          and (:localOnly = true or :provider is null or user.provider = :provider)
+          and (
+              :keyword is null
+              or lower(user.username) like lower(concat('%', :keyword, '%'))
+              or lower(user.nickname) like lower(concat('%', :keyword, '%'))
+              or lower(user.email) like lower(concat('%', :keyword, '%'))
+              or lower(coalesce(agency.name, '')) like lower(concat('%', :keyword, '%'))
+          )
+        """)
+    Page<User> searchForAdmin(
+            @Param("role") Role role,
+            @Param("status") UserStatus status,
+            @Param("provider") AuthProvider provider,
+            // localOnly: 소셜 미연동 계정만 (provider 필터와 둘 중 하나만 사용)
+            @Param("localOnly") boolean localOnly,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
+
+    @Query("""
+        select user
+        from User user
+        left join fetch user.agency agency
+        where user.role = :role
+          and (:userStatus is null or user.status = :userStatus)
+          and (:agencyStatus is null or agency.status = :agencyStatus)
+        order by user.createdAt desc, user.id desc
+        """)
+    List<User> searchArtistsForAdmin(
+            @Param("role") Role role,
+            @Param("userStatus") UserStatus userStatus,
+            @Param("agencyStatus") AgencyStatus agencyStatus
+    );
+
+    long countByRoleAndStatus(Role role, UserStatus status);
+    
+    @Query(
+            value = """
+                SELECT DATE_FORMAT(u.created_at, '%Y-%m-%d') AS signupDate,
+                       COUNT(*) AS signupCount
+                FROM users u
+                WHERE u.created_at >= :start
+                  AND u.created_at < :end
+                GROUP BY DATE_FORMAT(u.created_at, '%Y-%m-%d')
+                ORDER BY DATE_FORMAT(u.created_at, '%Y-%m-%d')
+                """,
+            nativeQuery = true
+    )
+    List<DailySignupCount> countDailySignupsBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+    interface DailySignupCount {
+        String getSignupDate();
+        Long getSignupCount();
+    }
+
+    @EntityGraph(attributePaths = "agency")
+    Optional<User> findOneById(Long id);
+
+    // [휴면] 사전 안내 대상 - 팬 ACTIVE 계정 중 최근 로그인(없으면 가입일) 기준
+    @Query("""
+        SELECT u FROM User u
+        WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
+          AND u.role = megane6.weplanet.domain.entity.enumfolder.Role.FAN
+          AND u.dormantNoticeSentAt IS NULL
+          AND COALESCE(u.lastLoginAt, u.createdAt) <= :threshold
+    """)
+    List<User> findActiveUsersDueForDormantNotice(@Param("threshold") LocalDateTime threshold);
+
+    // 휴면 전환 대상 - 1년 미로그인, 안내 후 30일 지난 팬 ACTIVE 계정
+    @Query("""
+        SELECT u FROM User u
+        WHERE u.status = megane6.weplanet.domain.entity.enumfolder.UserStatus.ACTIVE
+          AND u.role = megane6.weplanet.domain.entity.enumfolder.Role.FAN
+          AND COALESCE(u.lastLoginAt, u.createdAt) <= :threshold
+          AND u.dormantNoticeSentAt IS NOT NULL
+          AND u.dormantNoticeSentAt <= :noticeThreshold
+    """)
+    List<User> findActiveUsersDueForDormantConversion(@Param("threshold") LocalDateTime threshold,
+                                                      @Param("noticeThreshold") LocalDateTime noticeThreshold);
+}

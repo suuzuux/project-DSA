@@ -45,8 +45,7 @@ public class AdminActionLog {
 	@Column(name = "target_type", nullable = false, length = 30)
 	private AdminTargetType targetType;
 	
-	// 대상 Entity의 PK
-	// 대상이 회원이면 users.id, 프로젝트면 projects.id가 저장됨
+	// 대상 엔티티의 PK (회원이면 users.id 등)
 	@Column(name = "target_id", nullable = false)
 	private Long targetId;
 	

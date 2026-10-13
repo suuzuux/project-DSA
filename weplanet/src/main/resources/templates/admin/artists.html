@@ -25,7 +25,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -60,6 +60,7 @@
       <form th:action="@{/admin/logout}"
             method="post"
             style="margin:0;">
+                <input type="hidden" name="page" th:value="${artistsPagination.number}" />
 
         <button type="submit"
                 class="btn"
@@ -258,7 +259,7 @@
 
         <span class="tag tag--member"
               th:text="#{admin.artists.resultCount(${#numbers.formatInteger(
-                  #lists.size(artists), 0, 'COMMA')})}">
+                  artistsTotal, 0, 'COMMA')})}">
           0명 조회
         </span>
       </div>
@@ -430,7 +431,7 @@
               </div>
             </td>
 
-            <!-- 그룹 멤버 - 인원수를 누르면 펼쳐진다 (details/summary, JS 없음) -->
+            <!-- 그룹 멤버 - 인원수를 누르면 펼쳐진다 (details/summary) -->
             <td style="min-width:170px;">
               <span class="text-xs text-muted"
                     th:if="${#lists.isEmpty(artist.members())}"
@@ -625,6 +626,7 @@
                         userId=${artist.userId()}
                     )}"
                     method="post">
+                <input type="hidden" name="page" th:value="${artistsPagination.number}" />
 
                 <input type="hidden"
                        name="userStatus"
@@ -654,6 +656,7 @@
                         userId=${artist.userId()}
                     )}"
                     method="post">
+                <input type="hidden" name="page" th:value="${artistsPagination.number}" />
 
                 <input type="hidden"
                        name="userStatus"
@@ -688,6 +691,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${artistsPagination})}"></div>
     </section>
 
   </main>

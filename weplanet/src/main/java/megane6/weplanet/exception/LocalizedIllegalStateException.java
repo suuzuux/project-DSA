@@ -1,9 +1,6 @@
 package megane6.weplanet.exception;
 
-/**
- * 문구에 넣을 값을 함께 들고 다니는 IllegalStateException (상태/중복 위반 → 403). 번역은 Messages.resolve(e).
- * 예) throw new LocalizedIllegalStateException("error.artistRegistration.emailTaken", email);
- */
+/** 문구 값을 함께 담는 IllegalStateException (403, Messages.resolve(e) 로 번역). */
 public class LocalizedIllegalStateException extends IllegalStateException implements LocalizedMessage {
 
 	private final Object[] args;

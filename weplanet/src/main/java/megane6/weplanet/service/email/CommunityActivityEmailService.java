@@ -14,9 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Locale;
 
-// 가입·팔로우한 아티스트의 새 게시글/공지/라이브 시작을 팬에게 알리는 메일 한 통을 보낸다 (문구는 받는 팬의 선호 언어).
-// 받을 사람 선별과 비동기 처리는 CommunityActivityNotifier 가 맡는다.
-// 그룹 멤버가 쓴 게시글·시작한 라이브는 어느 멤버인지도 적는다 (공지는 작성 멤버를 저장하지 않아 그룹 이름만).
+// 새 글·공지·라이브 시작 알림 메일 (받는 팬의 선호 언어).
 @Slf4j
 @Service
 @RequiredArgsConstructor

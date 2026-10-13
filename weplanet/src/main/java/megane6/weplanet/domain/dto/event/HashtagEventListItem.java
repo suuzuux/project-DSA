@@ -32,7 +32,7 @@ public record HashtagEventListItem(
 		return status == HashtagEventStatus.SCHEDULED;
 	}
 	
-	// 상태 태그 색 (portal.css 의 tag--* 클래스). 종료 = 집계 확정을 기다리는 중이라 눈에 띄게 빨강
+	// 상태 태그 색 (종료는 확정 대기라 빨강)
 	public String statusTagClass() {
 		return switch (status) {
 			case SCHEDULED -> "tag--member";

@@ -8,10 +8,10 @@
   <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" th:href="@{/css/community.css}" />
   <link rel="stylesheet" th:href="@{/css/shell.css}" />
-  <!-- SockJS/Stomp : DM 플로팅 위젯 실시간 채팅용 라이브러리 (dm-realtime.js가 필요로 함) -->
+  <!-- SockJS / Stomp (dm-realtime.js 용) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
-  <!-- Toast UI Editor: 포스트 작성 모달의 마크다운 리치 에디터 (예전엔 뷰어만 붙어있고 작성용은 빠져있었음) -->
+  <!-- Toast UI Editor (글쓰기 모달 마크다운 에디터) -->
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
 </head>
@@ -37,13 +37,13 @@
             <span th:text="#{community.board.postsChip}">포스트</span>
           </a>
           <a class="chip" sec:authorize="hasAnyRole('FAN','ADMIN')"
-             th:href="@{/community/{id}/project(id=${artist.id()})}">
+             th:href="@{${artist.homeUrl() + '/project'}}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             <span th:text="#{community.board.projectChip}">프로젝트</span>
           </a>
           <a class="chip" th:if="${!isOwnCommunity}"
              sec:authorize="hasAnyRole('ARTIST','ARTIST_MEMBER')"
-             th:href="@{/community/{id}/project(id=${artist.id()})}">
+             th:href="@{${artist.homeUrl() + '/project'}}">
             <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
             <span th:text="#{community.board.projectChip}">프로젝트</span>
           </a>
@@ -72,7 +72,7 @@
     <span aria-hidden="true">↑</span>
   </button>
 
-  <!-- 포스트 작성 모달 (팬 + 타 커뮤니티 방문 아티스트) -->
+  <!-- 포스트 작성 모달 (팬 + 다른 커뮤니티 방문 아티스트) -->
   <div class="modal-backdrop" id="writePostModal"
        th:if="${!isOwnCommunity}"
        sec:authorize="hasAnyRole('FAN','ARTIST','ARTIST_MEMBER')">
@@ -123,10 +123,10 @@
   </div>
 
   <script th:replace="~{community/fragments/layout :: scripts}"></script>
-  <script th:src="@{/js/main.js}"></script>
-  <script th:src="@{/js/shell.js}"></script>
-  <script th:src="@{/js/dm-realtime.js}"></script>
-  <script th:src="@{/js/community-posts.js}"></script>
+  <script th:src="@{/js/common/main.js}"></script>
+  <script th:src="@{/js/common/shell.js}"></script>
+  <script th:src="@{/js/common/dm-realtime.js}"></script>
+  <script th:src="@{/js/community/community-posts.js}"></script>
   <script>
     (function () {
       var sortSelect = document.getElementById("fanSort");

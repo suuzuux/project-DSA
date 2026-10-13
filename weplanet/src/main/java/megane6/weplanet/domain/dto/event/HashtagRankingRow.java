@@ -1,9 +1,6 @@
 package megane6.weplanet.domain.dto.event;
 
-/**
- * 해시태그 총공 순위표 한 줄 (참여 아티스트 1팀)
- * 관리자 모니터링과 공개 이벤트 페이지가 같이 쓴다.
- */
+/** 총공 순위표 한 줄 (관리자 모니터링·공개 페이지 공통). */
 public record HashtagRankingRow(
 		Long targetId,
 		Long artistId,
@@ -16,7 +13,7 @@ public record HashtagRankingRow(
 		int rank
 ) {
 	
-	// 참여율(%) = 참여 인원 / 가입자 x 100, 소수 첫째 자리까지 (38.04 → 38.0)
+	// 참여율(%) = 참여 인원 / 가입자 × 100, 소수 첫째 자리
 	public double participationRate() {
 		if (memberCount == 0) {
 			return 0;
@@ -25,7 +22,7 @@ public record HashtagRankingRow(
 		return Math.round(participantCount * 1000.0 / memberCount) / 10.0;
 	}
 	
-	// record는 값을 바꿀 수 없어서, 순위만 바꾼 "새 줄"을 만들어 돌려준다
+	// 순위만 바꾼 새 레코드를 돌려준다.
 	public HashtagRankingRow withRank(int newRank) {
 		return new HashtagRankingRow(
 				targetId,

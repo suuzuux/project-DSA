@@ -1,10 +1,12 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.account.UserService;
+
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.AuthProvider;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
-import megane6.weplanet.repository.UserFollowRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.fan.UserFollowRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.util.NicknameGenerator;
 import org.junit.jupiter.api.Test;

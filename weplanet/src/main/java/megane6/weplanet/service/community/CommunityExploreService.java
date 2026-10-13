@@ -3,13 +3,13 @@ package megane6.weplanet.service.community;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.dto.community.ArtistSearchResultView;
 import megane6.weplanet.domain.entity.enumfolder.GroupGender;
-import megane6.weplanet.repository.ArtistGroupRepository;
+import megane6.weplanet.repository.artist.ArtistGroupRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
-// 커뮤니티 검색. 가입·프로필 편집·탈퇴는 CommunityJoinService 가 맡는다.
+// 커뮤니티 검색 (가입·편집·탈퇴는 CommunityJoinService)
 @Service
 @RequiredArgsConstructor
 public class CommunityExploreService {

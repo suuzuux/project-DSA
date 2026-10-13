@@ -1,8 +1,10 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.account.DormantAccountScheduler;
+
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.UserStatus;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.service.email.DormantAccountNoticeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

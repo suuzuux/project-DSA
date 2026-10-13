@@ -17,10 +17,10 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
 import megane6.weplanet.domain.entity.enumfolder.ShopOrderSource;
 import megane6.weplanet.exception.TossPaymentException;
-import megane6.weplanet.repository.ShopCartItemRepository;
-import megane6.weplanet.repository.ShopOrderRepository;
-import megane6.weplanet.service.ShopCartService;
-import megane6.weplanet.service.ShopService;
+import megane6.weplanet.repository.goods.ShopCartItemRepository;
+import megane6.weplanet.repository.goods.ShopOrderRepository;
+import megane6.weplanet.service.goods.ShopCartService;
+import megane6.weplanet.service.goods.ShopService;
 import megane6.weplanet.service.payment.TossPaymentsClient;
 import megane6.weplanet.service.payment.TossVirtualAccountSupport;
 import org.springframework.context.MessageSource;
@@ -48,11 +48,11 @@ public class ShopPaymentService {
 	private final TossPaymentsProperties tossProperties;
 	private final TossPaymentsClient tossClient;
 	private final MessageSource messageSource;
-	// 결제 결과 화면(CommercePaymentResultView) 문구를 요청 로케일로 만든다
+	// 결제 결과 화면 문구를 요청 로케일로 만든다.
 	private final megane6.weplanet.i18n.Messages messages;
-	private final megane6.weplanet.service.UserService userService; // 주문서 배송지를 다음 주문서 기본값으로 저장
+	private final megane6.weplanet.service.account.UserService userService; // 주문서 배송지를 다음 주문서 기본값으로 저장
 
-	// 화면 언어에 맞춘 에러 메시지를 뽑아오는 공통 헬퍼
+	// 화면 언어 에러 메시지 조회
 	private String msg(String code) {
 		return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
 	}

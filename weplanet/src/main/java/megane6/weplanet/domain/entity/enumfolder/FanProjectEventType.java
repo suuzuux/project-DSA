@@ -3,11 +3,7 @@ package megane6.weplanet.domain.entity.enumfolder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 팬 프로젝트 이벤트 유형.
- * SettlementBank와 같은 방식으로 화면 표기용 한글명을 함께 들고 있는다.
- * (등록 폼의 select와 목록 카드가 같은 문구를 쓰도록)
- */
+/** 팬 프로젝트 이벤트 유형 (화면 표기용 한글명 포함). */
 @Getter
 @RequiredArgsConstructor
 public enum FanProjectEventType {
@@ -18,7 +14,7 @@ public enum FanProjectEventType {
 
     private final String displayName;
 
-    /** 사용자 화면용 메시지 키. displayName은 레거시 폴백으로 유지 */
+    /** 화면 표시용 메시지 키 (displayName 은 폴백) */
     public String getMessageKey() {
         return "project.eventType." + name();
     }

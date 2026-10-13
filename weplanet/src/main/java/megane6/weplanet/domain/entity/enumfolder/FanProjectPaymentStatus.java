@@ -3,19 +3,7 @@ package megane6.weplanet.domain.entity.enumfolder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 팬 프로젝트 참여 결제 상태 (토스 가상계좌 기준 흐름)
- *
- * READY               : 참여하기 누름 -> 주문만 만들어진 상태 (결제창 열기 전)
- * WAITING_FOR_DEPOSIT : 가상계좌 발급 완료, 입금 기다리는 중
- * PAID                : 입금 확인됨 (이때부터 모금액에 집계)
- * FAILED              : 결제창/승인 단계에서 실패, 또는 결제창을 닫아 방치됨
- * EXPIRED             : 입금기한 지남
- * CANCELLED / REFUND_REQUESTED / REFUNDED : 취소·환불 (다음 작업)
- *
- * displayName : 화면에 보여줄 한글 이름
- * badgeCode   : collection.css 의 .project-history-card__status--{badgeCode} 와 짝
- */
+/** 팬 프로젝트 결제 상태 - READY → WAITING_FOR_DEPOSIT → PAID (실패 FAILED, 기한 만료 EXPIRED). */
 @Getter
 @RequiredArgsConstructor
 public enum FanProjectPaymentStatus {
@@ -31,7 +19,7 @@ public enum FanProjectPaymentStatus {
     private final String displayName;
     private final String badgeCode;
 
-    // 화면 라벨은 메시지 키로 번역한다(displayName은 레거시 폴백)
+    // 화면 표시용 메시지 키 (displayName 은 폴백)
     public String getMessageKey() {
         return "project.paymentStatus." + name();
     }

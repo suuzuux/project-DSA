@@ -17,7 +17,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -49,7 +49,7 @@
 
     <div class="portal-sidebar__footer">
       <a class="btn" th:href="@{/}" th:text="|🏠 #{admin.nav.mainPage}|">🏠 메인 페이지 이동</a>
-      <!-- 로그아웃은 GET 링크가 아니라 POST 폼이어야 한다 (강제 로그아웃 방지) -->
+      <!-- 로그아웃은 POST 폼 (강제 로그아웃 방지) -->
       <form th:action="@{/admin/logout}" method="post" style="margin:0;">
         <button type="submit" class="btn" th:text="|🚪 #{common.logout}|">🚪 로그아웃</button>
       </form>
@@ -201,13 +201,14 @@
               </td>
               <td>
                 <a class="btn btn--ghost btn--sm"
-                   th:href="@{/admin/communities(projectId=${project.id()})}"
+                   th:href="@{/admin/communities(projectId=${project.id()},page=${adminProjectsPagination.number},pendingPage=${pendingProjectsPagination.number},settlementPage=${settlementProjectsPagination.number},status=${selectedStatus},keyword=${keyword})}"
                    th:text="#{admin.communities.review}">검토</a>
               </td>
             </tr>
             </tbody>
           </table>
         </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${pendingProjectsPagination})}"></div>
       </section>
 
       <aside class="panel">
@@ -385,7 +386,7 @@
         </div>
 
         <span class="tag tag--member"
-              th:text="#{admin.common.caseCount(${#lists.size(adminProjects)})}">
+              th:text="#{admin.common.caseCount(${adminProjectsTotal})}">
       0건
     </span>
       </div>
@@ -574,6 +575,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${adminProjectsPagination})}"></div>
     </section>
 
     <!-- 정산 대기 관리 -->
@@ -587,7 +589,7 @@
         </div>
 
         <span class="tag tag--member"
-              th:text="#{admin.common.caseCount(${#lists.size(settlementProjects)})}">
+              th:text="#{admin.common.caseCount(${settlementProjectsTotal})}">
       0건
     </span>
       </div>
@@ -785,6 +787,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${settlementProjectsPagination})}"></div>
     </section>
 
     <!-- 하위 운영 기능 -->

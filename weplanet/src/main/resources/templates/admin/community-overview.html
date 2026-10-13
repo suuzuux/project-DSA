@@ -19,7 +19,7 @@
     </div>
 
     <nav class="portal-sidebar__nav">
-      <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+      <!-- 하위 메뉴 묶음 (details/summary) -->
       <details class="portal-sidebar__group">
         <summary>
           <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -246,7 +246,7 @@
 
         <span class="text-xs text-muted"
               style="margin-left:auto;"
-              th:text="#{admin.overview.communityCount(${#lists.size(communities)})}">
+              th:text="#{admin.overview.communityCount(${communitiesTotal})}">
           0개 커뮤니티
         </span>
       </form>
@@ -378,6 +378,7 @@
           </tbody>
         </table>
       </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${communitiesPagination})}"></div>
     </section>
 
   </main>

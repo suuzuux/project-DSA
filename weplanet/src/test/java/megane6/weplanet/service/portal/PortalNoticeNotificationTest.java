@@ -2,15 +2,15 @@ package megane6.weplanet.service.portal;
 
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.portal.PortalNotice;
-import megane6.weplanet.repository.CommentReportRepository;
-import megane6.weplanet.repository.MembershipRepository;
-import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.repository.comment.CommentReportRepository;
+import megane6.weplanet.repository.membership.MembershipRepository;
+import megane6.weplanet.repository.fan.ReportRepository;
 import megane6.weplanet.repository.calendar.ArtistScheduleRepository;
 import megane6.weplanet.repository.live.LiveCommentReportRepository;
 import megane6.weplanet.repository.media.BoardMediaRepository;
 import megane6.weplanet.repository.portal.ArtistProfileRepository;
 import megane6.weplanet.repository.portal.PortalNoticeRepository;
-import megane6.weplanet.service.FileStorageService;
+import megane6.weplanet.service.main.FileStorageService;
 import megane6.weplanet.service.community.CommunityUrls;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +34,8 @@ class PortalNoticeNotificationTest {
 			mock(ArtistScheduleRepository.class), mock(ArtistProfileRepository.class), mock(BoardMediaRepository.class),
 			mock(MembershipRepository.class), mock(ReportRepository.class), mock(CommentReportRepository.class),
 			mock(LiveCommentReportRepository.class), mock(FileStorageService.class), notifier,
-			mock(MessageSource.class), mock(CommunityUrls.class));
+			mock(MessageSource.class), mock(CommunityUrls.class),
+			mock(megane6.weplanet.repository.main.UserRepository.class));
 
 	private final User artist = User.createArtist("artist01", "encoded", "그룹", "그룹", "artist01@test.com");
 

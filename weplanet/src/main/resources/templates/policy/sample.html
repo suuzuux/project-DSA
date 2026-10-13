@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org">
+<head th:replace="~{policy/layout :: head(${policyHeading})}"></head>
+<body>
+<main class="container section policy-page">
+  <th:block th:replace="~{policy/layout :: header(${policyHeading}, 'policy.effectiveDate')}"></th:block>
+  <p class="policy-meta" th:if="${#locale.language == 'ja' or #locale.language == 'en'}"
+     th:text="#{policy.translationNotice}"></p>
+  <th:block th:replace="~{policy/sample-body :: ${policyFragment}}"></th:block>
+  <th:block th:replace="~{policy/layout :: footer('policy.additional.addendum', ${policyType})}"></th:block>
+</main>
+</body>
+</html>

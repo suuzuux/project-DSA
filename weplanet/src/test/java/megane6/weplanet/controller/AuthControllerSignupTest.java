@@ -1,11 +1,13 @@
 package megane6.weplanet.controller;
 
+import megane6.weplanet.controller.common.auth.AuthController;
+
 import megane6.weplanet.domain.dto.SignupRequestDto;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.security.AuthenticatedUser;
 import megane6.weplanet.security.SocialLoginSessionSupport;
-import megane6.weplanet.service.UserService;
+import megane6.weplanet.service.account.UserService;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import megane6.weplanet.service.email.VerificationPurpose;
 import megane6.weplanet.util.NicknameGenerator;
@@ -67,8 +69,8 @@ class AuthControllerSignupTest {
 	// 로그인하지 않았으면 가입 화면이 그대로 열린다
 	@Test
 	void guestSeesSignupPages() throws Exception {
-		mockMvc.perform(get("/signup")).andExpect(view().name("signup-wireframe"));
-		mockMvc.perform(get("/signup/id")).andExpect(view().name("signup-id"));
+		mockMvc.perform(get("/signup")).andExpect(view().name("common/auth/signup-wireframe"));
+		mockMvc.perform(get("/signup/id")).andExpect(view().name("common/auth/signup-id"));
 	}
 
 	// 아이디 회원가입이 끝나면 로그인 화면을 거치지 않고 바로 로그인된 채로 메인으로 간다
@@ -92,13 +94,13 @@ class AuthControllerSignupTest {
 		when(emailVerificationService.isVerified(any(), any(), any())).thenReturn(false);
 
 		mockMvc.perform(validSignup())
-				.andExpect(view().name("signup-id"));
+				.andExpect(view().name("common/auth/signup-id"));
 
 		verify(userService, never()).signup(any());
 		verify(loginSessionSupport, never()).loginAs(any(), any(), any());
 	}
 
-	// 닉네임 중복처럼 서버에서 막혀 가입 화면이 다시 열려도, 이미 마친 아이디 중복 확인·이메일 인증은 이어간다
+	// 서버 검증으로 가입 화면이 다시 열려도 중복 확인·이메일 인증은 유지된다
 	@Test
 	void formShownAgainKeepsCheckedUsernameAndEmailVerification() throws Exception {
 		when(emailVerificationService.isVerified(any(), eq(VerificationPurpose.SIGNUP), eq("newfan01@weplanet.test")))
@@ -108,7 +110,7 @@ class AuthControllerSignupTest {
 		when(userService.isUsernameAvailable("newfan01")).thenReturn(true);
 
 		mockMvc.perform(validSignup())
-				.andExpect(view().name("signup-id"))
+				.andExpect(view().name("common/auth/signup-id"))
 				.andExpect(model().attribute("checkedUsername", "newfan01"))
 				.andExpect(model().attribute("emailVerified", true));
 

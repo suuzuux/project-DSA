@@ -1,19 +1,6 @@
-/**
- * ============================================================
- * WePlaNet – Artist / Agency Portal & Admin
- * ------------------------------------------------------------
- * 대시보드형 레이아웃 (사이드바 + 메인). 팬 UI와 톤은 맞추되
- * 정보 밀도를 높인 관리 화면용.
- * ============================================================
- */
+/* 아티스트·소속사 포털과 관리자 화면 공통 대시보드 레이아웃 */
 
-/* ---------- 관리 화면 전용 팔레트 (Bold Minimalism) ----------
- * 포털(아티스트/소속사)과 최고관리자 페이지는 팬 화면의 로즈우드 대신
- * 차콜·아이보리·웜그레이로 톤을 낮춰서 "관리 화면"인 게 한눈에 구분되게 한다.
- *   CHARCOAL #2C2C2C / SOFT CHARCOAL #4A4A4A / WARM GRAY #8A7F7A / IVORY #F8F4F0 / PURE WHITE #FFFFFF
- * portal.css 는 관리 화면에서만 불러오고 style.css(variables.css) 뒤에 오므로,
- * 같은 :root 토큰을 여기서 다시 적으면 관리 화면에만 덮어써진다.
- */
+/* 관리 화면 전용 팔레트 (차콜·아이보리·웜그레이) - 같은 :root 토큰을 관리 화면에서만 덮어쓴다. */
 :root {
   --wp-ink: #2c2c2c;
   --wp-ink-soft: #4a4a4a;
@@ -33,7 +20,7 @@
   --wp-accent-soft: #efe9e4;
   --wp-on-accent: #ffffff;
 
-  /* 사이드바(어두운 영역) 전용 */
+  /* 사이드바 전용 */
   --wp-admin-side: #2c2c2c;
   --wp-admin-side-deep: #242424;
   --wp-admin-side-line: rgba(248, 244, 240, 0.08);
@@ -143,7 +130,7 @@
   outline-offset: 2px;
 }
 
-/* 프로필 선택 그리드 (아티스트 로그인 후) */
+/* 프로필 선택 그리드 */
 .profile-pick-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -201,7 +188,7 @@
     align-items: center;
     gap: 8px !important;
     padding: 12px !important;
-    /* 모바일은 상단 가로 바 형태라 전체 높이 고정을 풀어준다 */
+    /* 모바일은 상단 가로 바라 높이 고정을 푼다. */
     height: auto !important;
     overflow-y: visible !important;
   }
@@ -228,7 +215,7 @@
   flex-direction: column;
   gap: 16px;
   border-right: 1px solid var(--wp-admin-side-line);
-  /* 관리 메뉴(.portal-sidebar)와 같이 화면에 고정. 아티스트가 많으면 이 칸 안에서만 스크롤 */
+  /* 메뉴와 같이 화면에 고정 (아티스트가 많으면 이 칸 안에서 스크롤) */
   position: sticky;
   top: 0;
   height: 100vh;
@@ -292,7 +279,7 @@
   color: var(--wp-admin-side-muted);
 }
 
-/* 아티스트 등록 버튼 - 웜그레이(#8A7F7A) 채움. 글자·아이콘을 세로 가운데로 */
+/* 아티스트 등록 버튼 (웜그레이) */
 .portal-artists__footer a.portal-artists__add {
   display: flex;
   align-items: center;
@@ -345,8 +332,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* 우측 본문이 길어져도 좌측 메뉴는 화면에 고정 (로그아웃 버튼이 항상 보이도록).
-     메뉴가 화면보다 길어지면 사이드바 안에서만 스크롤되게 overflow-y:auto */
+  /* 본문이 길어도 메뉴는 고정 (메뉴가 길면 사이드바 안에서 스크롤) */
   position: sticky;
   top: 0;
   height: 100vh;
@@ -406,7 +392,7 @@
   color: var(--wp-admin-side-muted);
 }
 
-/* 로그아웃 버튼 - 좌측 메뉴(.portal-sidebar__nav a)와 동일한 모양이 되도록 버튼 기본 스타일을 리셋 */
+/* 로그아웃 버튼을 메뉴 링크와 같은 모양으로 */
 .portal-sidebar__footer .btn {
   width: 100%;
   justify-content: flex-start;
@@ -613,7 +599,7 @@
   gap: 16px;
 }
 
-/* 프로젝트 심사 표가 상세 검토 패널의 너비를 밀어내지 않도록 열 너비를 고정한다. */
+/* 프로젝트 심사 표 열 너비 고정 */
 .project-review-grid {
   width: 100%;
   grid-template-columns: minmax(0, 1fr) 380px;
@@ -732,7 +718,7 @@
   font-size: var(--wp-fs-xs);
 }
 
-/* ---------- Admin login (와이어프레임: 좌 비주얼 / 우 로그인 폼 2단 분할) ---------- */
+/* 관리자 로그인 (좌 비주얼 / 우 로그인 폼) */
 .admin-login {
   min-height: 100vh;
   background: var(--wp-surface);
@@ -842,14 +828,13 @@
   margin-bottom: 20px;
 }
 
-/* 사이드바 하위 메뉴 (예: 통합 대시보드 > 배너 영역 관리) - 한 칸 들여쓰고 조금 작게 */
+/* 사이드바 하위 메뉴 (들여쓰기) */
 .portal-sidebar__nav a.portal-sidebar__sub {
   padding-left: 28px;
   font-size: var(--wp-fs-xs);
 }
 
-/* 하위 메뉴 묶음 - <details>/<summary> 로 열고 닫는다.
-   글자(링크)를 누르면 대시보드로 이동하고, 오른쪽 화살표 쪽을 누르면 하위 메뉴만 열리고 닫힌다 */
+/* 하위 메뉴 묶음 (<details>) - 글자는 대시보드 이동, 화살표는 열고 닫기 */
 .portal-sidebar__group > summary {
   display: flex;
   align-items: center;
@@ -903,7 +888,7 @@
   margin-top: 2px;
 }
 
-/* ---------- 배너 영역 관리 (admin/banners.html, admin/banner-form.html) ---------- */
+/* 배너 영역 관리 */
 .banner-admin-list {
   display: flex;
   flex-direction: column;
@@ -965,7 +950,7 @@
   color: var(--wp-surface);
 }
 
-/* 목록의 미니 배너 - 메인 배너를 작게 줄인 모양 */
+/* 목록의 미니 배너 */
 .banner-mini {
   display: flex;
   align-items: center;
@@ -1041,13 +1026,13 @@
   }
 }
 
-/* Admin shell – slightly darker sidebar accent */
+/* 관리자 사이드바 강조색 */
 .portal-sidebar--admin {
   background: var(--wp-admin-side-deep);
   border-right: 1px solid var(--wp-admin-side-line);
 }
 
-/* ---------- ADMIN 상단바 (SUPER ADMIN 배지 + 프로필) ---------- */
+/* 관리자 상단바 (SUPER ADMIN 배지 + 프로필) */
 .admin-topbar {
     display: flex;
     align-items: center;
@@ -1088,7 +1073,7 @@
     font-size: var(--wp-fs-sm);
 }
 
-/* ---------- ADMIN 대시보드 통계 ---------- */
+/* 관리자 대시보드 통계 */
 
 .admin-stat-grid {
     display: grid;
@@ -1142,12 +1127,12 @@
     color: var(--wp-ink);
 }
 
-/* 신고처럼 주의가 필요한 지표는 색으로 구분 */
+/* 주의가 필요한 지표 색 구분 */
 .admin-stat--alert .admin-stat__value {
     color: var(--wp-danger);
 }
 
-/* ---------- ADMIN 대시보드 패널 (차트 / 리스트 / 테이블) ---------- */
+/* 관리자 대시보드 패널 (차트 / 리스트 / 테이블) */
 .panel-grid--3 {
     grid-template-columns: 1.3fr 1fr 1fr;
 }
@@ -1158,8 +1143,7 @@
     }
 }
 
-/* 대시보드 하단 줄: 관리자 활동 표의 긴 대상 문구가 옆 패널(회원 계정 상태)을 밀어내지 않도록
-   표에 넓은 칸을 주고, 표 안에서 줄바꿈되게 한다. */
+/* 대시보드 하단: 관리자 활동 표가 옆 패널을 밀어내지 않게 넓은 칸과 줄바꿈을 준다. */
 .admin-dashboard-lower {
     grid-template-columns: 1fr 0.8fr 1.8fr;
 }
@@ -1200,7 +1184,7 @@
     text-decoration: underline;
 }
 
-/* 가입자 추이 미니 라인차트 (샘플 데이터) */
+/* 가입자 추이 미니 라인차트 */
 .admin-line-chart {
     width: 100%;
     height: 120px;
@@ -1274,9 +1258,9 @@ tr.js-pinned.is-dragging {
   opacity: 0.55;
 }
 
-/* ---------- ADMIN 로그인 인증번호 ---------- */
+/* 관리자 로그인 인증번호 */
 
-/* 입력칸 + [인증하기] + [재전송] 을 한 줄에 배치 */
+/* 입력칸 + 인증하기 + 재전송 한 줄 배치 */
 .admin-otp-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
@@ -1300,13 +1284,13 @@ tr.js-pinned.is-dragging {
     color: var(--wp-danger);
 }
 
-/* 남은 시간 (n분nn초) */
+/* 남은 시간 */
 .admin-otp-left {
     margin-left: 4px;
     font-weight: 700;
 }
 
-/* 인증 완료된 입력칸 - 회색으로 잠금 표시 */
+/* 인증 완료된 입력칸 잠금 표시 */
 .admin-login__card .form-input.is-locked {
     background: var(--wp-brand-soft);
     color: var(--wp-muted);
@@ -1323,9 +1307,8 @@ tr.js-pinned.is-dragging {
     }
 }
 
-/* ---------- ADMIN 통합 신고·제재 - 필터 바 ---------- */
-/* select/input을 알약(pill) 모양으로 둥글리고, 포커스·호버 때 살짝 튀어오르게 해서
-   각진 데이터 테이블 사이에서도 필터 영역만 말랑하고 눌러보고 싶게 만든다 */
+/* 관리자 통합 신고·제재 필터 바 */
+/* select·input 을 알약 모양으로 둥글리고 포커스·호버 효과를 준다. */
 .report-filter-bar {
     display: flex;
     flex-wrap: wrap;
@@ -1391,7 +1374,7 @@ tr.js-pinned.is-dragging {
     box-shadow: 0 0 0 3px var(--wp-brand-tint);
 }
 
-/* 검색/초기화 버튼 - 각진 .btn 대신 알약 모양 + 눌렀다 뗄 때 통통 튀는 느낌 */
+/* 검색·초기화 버튼 (알약 모양 + 눌림 효과) */
 .report-filter-bar .btn {
     border-radius: 999px;
 }
@@ -1589,7 +1572,7 @@ tr.js-pinned.is-dragging {
   min-height: 40px;
 }
 
-/* 미디어 관리 – 미리보기 모달 */
+/* 미디어 관리 미리보기 모달 */
 .portal-media-row {
   cursor: pointer;
 }
@@ -1636,7 +1619,7 @@ tr.js-pinned.is-dragging {
   border-top: 1px solid var(--wp-hairline, #e5e7eb);
 }
 
-/* ---------- 굿즈 카테고리 · 옵션 ---------- */
+/* 굿즈 카테고리·옵션 */
 .goods-category-options {
   display: flex;
   flex-direction: column;
@@ -1733,7 +1716,7 @@ tr.is-dragging {
   background: var(--wp-brand-soft);
 }
 
-/* 관리자 아티스트 목록 - 그룹 멤버 펼쳐보기 */
+/* 관리자 아티스트 목록 - 그룹 멤버 펼치기 */
 .admin-member-list > summary {
   cursor: pointer;
   font-size: var(--wp-fs-sm);
@@ -1753,7 +1736,7 @@ tr.is-dragging {
 }
 
 
-/* 최고관리자 > 해시태그 총공 폼 - 아티스트 검색 결과 / 참여 아티스트 목록 */
+/* 관리자 해시태그 총공 폼 - 검색 결과 / 참여 아티스트 목록 */
 .hashtag-search-results,
 .hashtag-target-list {
   list-style: none;
@@ -1818,7 +1801,7 @@ tr.is-dragging {
 }
 
 
-/* 최고관리자 > 해시태그 총공 모니터링 - 일자별 인정 글 수 막대 */
+/* 관리자 해시태그 총공 모니터링 - 일자별 인정 글 수 막대 */
 .hashtag-daily {
   display: flex;
   align-items: flex-end;

@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" th:lang="${#locale.language}" xmlns:th="https://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <!-- 와이어프레임/weverse 참고: 멤버십 미가입 상태로 Fan/Artist/Media/Live/Notice 탭 접근 시 -->
+    <!-- 미가입 상태로 탭 접근 시 안내 -->
     <title th:text="${artist.nickname()} + ' – WePlaNet'">WePlaNet</title>
     <link rel="stylesheet" th:href="@{/css/style.css}"/>
     <link rel="stylesheet" th:href="@{/css/community.css}"/>
@@ -27,8 +27,8 @@
 <div th:replace="~{community/fragments/layout :: membershipGate}"></div>
 
 <script th:replace="~{community/fragments/layout :: scripts}"></script>
-<script th:src="@{/js/main.js}"></script>
-<script th:src="@{/js/shell.js}"></script>
-<script th:src="@{/js/dm-realtime.js}"></script>
+<script th:src="@{/js/common/main.js}"></script>
+<script th:src="@{/js/common/shell.js}"></script>
+<script th:src="@{/js/common/dm-realtime.js}"></script>
 </body>
 </html>

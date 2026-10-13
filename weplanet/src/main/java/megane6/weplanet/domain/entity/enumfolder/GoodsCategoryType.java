@@ -7,12 +7,12 @@ public enum GoodsCategoryType {
 	ACCESSORY("goods.categoryType.accessory", "악세서리", "goods-cat--accessory", false),
 	OTHER("goods.categoryType.other", "기타", "goods-cat--other", false);
 
-	// 메시지 키 - 실제 화면에 보여줄 문구는 이 키로 MessageSource에서 로케일에 맞게 조회한다.
+	// 화면 표시용 메시지 키
 	private final String messageKey;
-	// 한국어 기본값. 새 코드는 getLabel() 대신 messageKey + MessageSource를 쓸 것.
+	// 한국어 기본값 (화면은 messageKey 사용)
 	private final String label;
 	private final String chipClass;
-	/** true면 구매자가 고르는 사이즈/치수 Variant 가 생긴다 */
+	/** true 면 구매자가 고르는 사이즈 옵션이 있다 */
 	private final boolean hasSelectableOptions;
 
 	GoodsCategoryType(String messageKey, String label, String chipClass, boolean hasSelectableOptions) {

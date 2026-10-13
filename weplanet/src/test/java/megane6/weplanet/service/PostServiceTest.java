@@ -1,15 +1,19 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.main.FileStorageService;
+import megane6.weplanet.service.chat.ChatFilterService;
+import megane6.weplanet.service.fan.PostService;
+
 import megane6.weplanet.domain.entity.BoardType;
 import megane6.weplanet.domain.entity.Post;
 import megane6.weplanet.domain.entity.User;
-import megane6.weplanet.repository.BookmarkRepository;
-import megane6.weplanet.repository.CommentReportRepository;
-import megane6.weplanet.repository.CommentRepository;
-import megane6.weplanet.repository.LikeRepository;
-import megane6.weplanet.repository.PostAttachmentRepository;
-import megane6.weplanet.repository.PostRepository;
-import megane6.weplanet.repository.ReportRepository;
+import megane6.weplanet.repository.fan.BookmarkRepository;
+import megane6.weplanet.repository.comment.CommentReportRepository;
+import megane6.weplanet.repository.comment.CommentRepository;
+import megane6.weplanet.repository.fan.LikeRepository;
+import megane6.weplanet.repository.fan.PostAttachmentRepository;
+import megane6.weplanet.repository.fan.PostRepository;
+import megane6.weplanet.repository.fan.ReportRepository;
 import megane6.weplanet.service.email.CommunityActivityNotifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,6 +30,20 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PostServiceTest {
+
+	@Test
+	void generatedTitlePreservesLiteralTildeAndRemovesMarkdownEscapes() {
+		PostRepository posts = mock(PostRepository.class);
+		when(posts.save(org.mockito.ArgumentMatchers.any(Post.class)))
+				.thenAnswer(invocation -> invocation.getArgument(0));
+		var post = serviceWith(posts).createPost(BoardType.FAN, null,
+				"# **안녕**\\~ 10~20 / 좋아요\n두 번째 줄", mock(User.class));
+
+		assertEquals("안녕~ 10~20 / 좋아요", post.getTitle());
+		// 예전 제목에 역슬래시만 남았어도 프로필 표시에는 저장 본문을 쓴다.
+		post.setTitle("안녕\\ 1020 / 좋아요");
+		assertEquals("안녕~ 10~20 / 좋아요", post.getPreviewTitle());
+	}
 
 	@Test
 	void communityPostsAreRequestedTenAtATime() {

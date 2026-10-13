@@ -25,6 +25,7 @@ public class AdminAgencyPermissionController {
 							 @RequestParam(required = false) String userStatus,
 							 @RequestParam(required = false) String agencyStatus,
 							 @RequestParam(required = false) String keyword,
+                             @RequestParam(defaultValue = "0") int page,
 							 @AuthenticationPrincipal AuthenticatedUser principal,
 							 Model model) {
 		requireAdmin(principal);
@@ -32,8 +33,8 @@ public class AdminAgencyPermissionController {
 		UserStatus userStatusFilter = parseEnum(UserStatus.class, userStatus);
 		AgencyStatus agencyStatusFilter = parseEnum(AgencyStatus.class, agencyStatus);
 		
-		model.addAttribute("permissions", service.getPermissions(
-				approvedFilter, userStatusFilter, agencyStatusFilter, keyword));
+		AdminPagination.paginate(model, "permissions", service.getPermissions(
+				approvedFilter, userStatusFilter, agencyStatusFilter, keyword), page, 15, "page");
 		model.addAttribute("stats", service.getStats());
 		model.addAttribute("selectedApproval", approvedFilter == null
 				? "" : approvedFilter ? "APPROVED" : "PENDING");
@@ -52,13 +53,14 @@ public class AdminAgencyPermissionController {
 						  @RequestParam(required = false) String userStatus,
 						  @RequestParam(required = false) String agencyStatus,
 						  @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
 						  HttpServletRequest request,
 						  @AuthenticationPrincipal AuthenticatedUser principal,
 						  RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> service.approvePermission(userId, principal.getId(), request.getRemoteAddr()),
 				messages.get("admin.agencies.flash.approved"), redirectAttributes);
-		addFilters(approval, userStatus, agencyStatus, keyword, redirectAttributes);
+		addFilters(approval, userStatus, agencyStatus, keyword, page, redirectAttributes);
 		
 		return "redirect:/admin/agencies";
 	}
@@ -69,13 +71,14 @@ public class AdminAgencyPermissionController {
 						 @RequestParam(required = false) String userStatus,
 						 @RequestParam(required = false) String agencyStatus,
 						 @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
 						 HttpServletRequest request,
 						 @AuthenticationPrincipal AuthenticatedUser principal,
 						 RedirectAttributes redirectAttributes) {
 		requireAdmin(principal);
 		handle(() -> service.revokePermission(userId, principal.getId(), request.getRemoteAddr()),
 				messages.get("admin.agencies.flash.revoked"), redirectAttributes);
-		addFilters(approval, userStatus, agencyStatus, keyword, redirectAttributes);
+		addFilters(approval, userStatus, agencyStatus, keyword, page, redirectAttributes);
 		
 		return "redirect:/admin/agencies";
 	}
@@ -98,12 +101,14 @@ public class AdminAgencyPermissionController {
 			String userStatus,
 			String agencyStatus,
 			String keyword,
+			int page,
 			RedirectAttributes redirectAttributes
 	) {
 		addFilter("approval", approval, redirectAttributes);
 		addFilter("userStatus", userStatus, redirectAttributes);
 		addFilter("agencyStatus", agencyStatus, redirectAttributes);
 		addFilter("keyword", keyword, redirectAttributes);
+        redirectAttributes.addAttribute("page", Math.max(0, page));
 	}
 	
 	private void addFilter(String name, String value,  RedirectAttributes redirectAttributes) {
