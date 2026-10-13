@@ -1,15 +1,9 @@
 package megane6.weplanet.domain.entity.enumfolder;
 
-/**
- * fan_badge.badge_code 값 목록.
- * <p>
- * 코드에서 "BASIC_FIRST_JOIN" 같은 문자열을 직접 쓰면 오타가 나도 컴파일러가 못 잡아준다.
- * enum 으로 모아두면 오타는 컴파일 에러가 되고, 어떤 배지가 있는지 한눈에 보인다.
- * name() 값이 그대로 DB 의 badge_code 이므로 이름을 바꾸면 안 된다.
- */
+/** fan_badge.badge_code 값 목록 (name() 이 DB 값이라 이름을 바꾸면 안 됨). */
 public enum BadgeCode {
 	
-	// ---------- 일반 배지 ----------
+	// 일반 배지
 	BASIC_FIRST_JOIN,
 	BASIC_FIRST_POST,
 	BASIC_COMMENT_5,
@@ -26,7 +20,7 @@ public enum BadgeCode {
 	BASIC_YEAR_2,
 	BASIC_YEAR_3,
 	
-	// ---------- 스페셜 배지 ----------
+	// 스페셜 배지
 	SPECIAL_DEBUT_1,
 	SPECIAL_DEBUT_2,
 	SPECIAL_DEBUT_3,

@@ -25,6 +25,7 @@ public class AdminArtistController {
 			@RequestParam(required = false) String userStatus,
 			@RequestParam(required = false) String agencyStatus,
 			@RequestParam(required = false) String keyword,
+			@RequestParam(defaultValue = "0") int page,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			Model model
 	) {
@@ -36,15 +37,9 @@ public class AdminArtistController {
 		AgencyStatus agencyStatusFilter =
 				parseEnum(AgencyStatus.class, agencyStatus);
 		
-		model.addAttribute(
-				"artists",
-				service.getArtists(
-						userStatusFilter,
-						agencyStatusFilter,
-						keyword
-				)
-		);
-		
+        AdminPagination.paginate(model, "artists",
+                service.getArtists(userStatusFilter, agencyStatusFilter, keyword), page, 15, "page");
+
 		model.addAttribute("stats", service.getStats());
 		
 		model.addAttribute(
@@ -75,6 +70,7 @@ public class AdminArtistController {
 			@RequestParam(required = false) String userStatus,
 			@RequestParam(required = false) String agencyStatus,
 			@RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
 			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes
@@ -95,6 +91,7 @@ public class AdminArtistController {
 				userStatus,
 				agencyStatus,
 				keyword,
+                page,
 				redirectAttributes
 		);
 		
@@ -107,6 +104,7 @@ public class AdminArtistController {
 			@RequestParam(required = false) String userStatus,
 			@RequestParam(required = false) String agencyStatus,
 			@RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
 			HttpServletRequest request,
 			@AuthenticationPrincipal AuthenticatedUser principal,
 			RedirectAttributes redirectAttributes
@@ -127,6 +125,7 @@ public class AdminArtistController {
 				userStatus,
 				agencyStatus,
 				keyword,
+                page,
 				redirectAttributes
 		);
 		
@@ -159,6 +158,7 @@ public class AdminArtistController {
 			String userStatus,
 			String agencyStatus,
 			String keyword,
+			int page,
 			RedirectAttributes redirectAttributes
 	) {
 		addFilter(
@@ -178,6 +178,7 @@ public class AdminArtistController {
 				keyword,
 				redirectAttributes
 		);
+        redirectAttributes.addAttribute("page", Math.max(0, page));
 	}
 	
 	private void addFilter(

@@ -17,7 +17,7 @@ import java.util.Locale;
  */
 @Component
 public class RoleHostEntryFilter extends OncePerRequestFilter {
-	
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 		String path = request.getRequestURI().substring(request.getContextPath().length());
@@ -31,7 +31,7 @@ public class RoleHostEntryFilter extends OncePerRequestFilter {
 		}
 		filterChain.doFilter(request, response);
 	}
-	
+
 	// 주소 맨 앞 이름으로 첫 화면을 고른다. 해당 없으면 null (평소 홈)
 	private static String entryPageFor(String host) {
 		String h = host == null ? "" : host.toLowerCase(Locale.ROOT);

@@ -1,9 +1,6 @@
 package megane6.weplanet.security;
 
-/**
- * 역할별 로그인 후 기본 진입 경로.
- * FAN → 메인 홈, ARTIST → 본인 커뮤니티, AGENCY → 포털, ADMIN → 관리자.
- */
+/** 역할별 로그인 후 기본 경로 (FAN 메인, ARTIST 커뮤니티, AGENCY 포털, ADMIN 관리자). */
 public final class RoleHomeRedirects {
 
 	private RoleHomeRedirects() {
@@ -33,7 +30,7 @@ public final class RoleHomeRedirects {
 		if ("ROLE_AGENCY".equals(roleName)) {
 			return "/portal/dashboard";
 		}
-		// ARTIST는 principal id가 필요하므로 pathFor(AuthenticatedUser) 사용
+		// ARTIST 는 pathFor(AuthenticatedUser) 사용
 		return "/";
 	}
 

@@ -4,14 +4,9 @@ import megane6.weplanet.i18n.Messages;
 
 import java.util.Locale;
 
-/**
- * 홈 캐러셀 맨 앞에 자동으로 붙는 해시태그 총공 슬라이드
- * 관리자가 배너를 따로 등록하지 않아도, 총공 상태에 맞는 문구로 알아서 바뀐다
- * 고정 문구는 메시지 키(hashtagBanner.*)로 현재 언어에 맞춰 만든다. 이벤트 제목/아티스트명은 입력값 그대로
- * 큰 제목만은 titleLocale 언어의 문장 틀로 만든다 - 제목 번역을 기다리는 동안 한국어 제목 + 일본어 틀이 한 줄에 섞이지 않게
- */
+/** 홈 총공 슬라이드 - 제목 번역 대기 중에는 한국어 문장 틀을 사용한다. */
 public record HashtagHomeBanner(
-		String kicker,		// 작은 윗줄 (예 : 지금 진행 중 · 종료까지 1일 4시간 12분)
+		String kicker,		// 작은 윗줄 (예: 진행 중 · 종료까지 1일 4시간)
 		String title,		// 큰 제목
 		String body,		// 아랫줄 안내
 		String linkUrl		// 클릭하면 갈 공개 이벤트 페이지

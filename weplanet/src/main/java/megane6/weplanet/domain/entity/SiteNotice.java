@@ -96,7 +96,7 @@ public class SiteNotice {
 		this.publishAt = publishedAt;
 	}
 	
-	// published = true여도, publishedAt이 미래 시각이면 아직 비공개로 취급
+	// 공개 상태여도 게시 예정 시각 전이면 비공개로 본다.
 	public boolean isVisible() {
 		if (!published) {
 			return false;

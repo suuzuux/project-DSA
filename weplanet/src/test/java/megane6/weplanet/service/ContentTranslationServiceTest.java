@@ -1,9 +1,12 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.main.ContentTranslationService;
+import megane6.weplanet.service.main.GeminiClient;
+
 import megane6.weplanet.domain.entity.enumfolder.Language;
 import megane6.weplanet.i18n.Messages;
-import megane6.weplanet.service.ContentTranslationService.Source;
-import megane6.weplanet.service.ContentTranslationService.Translation;
+import megane6.weplanet.service.main.ContentTranslationService.Source;
+import megane6.weplanet.service.main.ContentTranslationService.Translation;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -69,7 +72,7 @@ class ContentTranslationServiceTest {
 		assertNull(translation.body());
 	}
 
-	// 배너 여러 장은 AI 호출 한 번에 번역하고 (무료 한도 분당 5회), 같은 배너가 두 번 있어도 한 번만 보낸다
+	// 배너 여러 장은 AI 호출 한 번에 번역하고 중복 배너는 한 번만 보낸다
 	@Test
 	void translateAllSendsAllBannersInOneCall() {
 		when(geminiClient.generateTranslationJson(anyString()))
@@ -89,7 +92,7 @@ class ContentTranslationServiceTest {
 		verify(geminiClient, times(1)).generateTranslationJson(anyString());
 	}
 
-	// AI 가 개수를 다르게 돌려주면 어느 번역이 어느 배너 것인지 알 수 없으므로 모두 원문
+	// AI 결과 개수가 다르면 모두 원문
 	@Test
 	void translateAllRejectsAnswerWithWrongCount() {
 		when(geminiClient.generateTranslationJson(anyString())).thenReturn("[{\"title\":\"T1\",\"body\":\"B1\"}]");
@@ -112,8 +115,7 @@ class ContentTranslationServiceTest {
 		assertTrue(result.get(0).isEmpty());
 	}
 
-	// 배너 번역이 통째로 실패하면 한 번만 더 시도하고, 그래도 실패하면 한동안 다시 부르지 않는다
-	// (AI 한도 초과 때 메인 화면을 열 때마다 기다리지 않게). 사용자가 직접 누르는 공지 번역보기는 그와 상관없이 다시 시도한다
+	// 묶음 번역이 실패하면 한 번 재시도 후 잠시 쉬고, 공지 번역보기는 별개로 재시도한다
 	@Test
 	void failedBannerTranslationIsNotRetriedRightAway() {
 		when(geminiClient.generateTranslationJson(anyString())).thenReturn(null);
@@ -129,7 +131,7 @@ class ContentTranslationServiceTest {
 		verify(geminiClient, times(3)).generateTranslationJson(anyString());
 	}
 
-	// Gemini 가 잠깐 몰려 첫 시도가 실패해도(503) 다시 시도해서 번역되면 그 번역을 쓴다
+	// 503 일시 실패 후 재시도로 번역되면 그 번역을 쓴다
 	@Test
 	void bannerTranslationSucceedsOnSecondTry() {
 		when(geminiClient.generateTranslationJson(anyString()))

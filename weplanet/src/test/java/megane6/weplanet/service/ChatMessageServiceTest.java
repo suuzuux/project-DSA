@@ -1,16 +1,18 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.chat.ChatMessageService;
+
 import megane6.weplanet.domain.dto.DmInboxItem;
 import megane6.weplanet.domain.entity.ChatMessage;
 import megane6.weplanet.domain.entity.GroupMember;
 import megane6.weplanet.domain.entity.Membership;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.ChatMessageRepository;
-import megane6.weplanet.repository.GroupMemberRepository;
-import megane6.weplanet.repository.MembershipPeriodRepository;
-import megane6.weplanet.repository.MembershipRepository;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.chat.ChatMessageRepository;
+import megane6.weplanet.repository.artist.GroupMemberRepository;
+import megane6.weplanet.repository.membership.MembershipPeriodRepository;
+import megane6.weplanet.repository.membership.MembershipRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.service.community.CommunityArtistResolver;
 import org.junit.jupiter.api.Test;
 
@@ -55,14 +57,14 @@ class ChatMessageServiceTest {
 	private final User memberB = user(MEMBER_B, Role.ARTIST_MEMBER, "B");
 	private final User solo = user(SOLO, Role.ARTIST, "SOLO");
 
-	// 인박스: 그룹 계정 대신 멤버들이 각자 한 줄씩, 솔로는 본인 그대로. 예전 그룹 단위 방 메시지는 안 보인다
+	// 인박스: 그룹 대신 멤버별 한 줄, 솔로는 본인 그대로
 	@Test
 	void inboxListsGroupMembersInsteadOfGroupAccount() {
 		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(group, solo));
 		when(groupMemberRepository.findByGroupIdInAndLeftAtIsNullOrderByIdAsc(any())).thenReturn(List.of(
 				GroupMember.join(GROUP, memberA),
 				GroupMember.join(GROUP, memberB)));
-		when(chatMessageRepository.findByFanOrderByCreatedAtDesc(fan)).thenReturn(List.of(
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan))).thenReturn(List.of(
 				message(memberB, "B와의 대화"),
 				message(group, "예전 그룹 단위 방")));
 
@@ -76,7 +78,52 @@ class ChatMessageServiceTest {
 		assertNull(inbox.get(2).getGroupName());
 	}
 
-	// 멤버와의 DM 도 멤버십은 소속 그룹 기준으로 확인한다 (멤버 id 로 찾으면 기록이 없어 항상 만료로 막힘)
+	@Test
+	void latestBroadcastReplacesFansLastMessageInInbox() {
+		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(group, solo));
+		when(groupMemberRepository.findByGroupIdInAndLeftAtIsNullOrderByIdAsc(any()))
+				.thenReturn(List.of(GroupMember.join(GROUP, memberA)));
+		when(periodRepository.existsByFanIdAndArtistId(FAN, GROUP)).thenReturn(true);
+		LocalDateTime now = LocalDateTime.now();
+		ChatMessage broadcast = ChatMessage.builder().artist(memberA).sender(memberA)
+				.content("아티스트의 새 메시지").createdAt(now).build();
+		ChatMessage personal = message(memberA, "내 마지막 메시지");
+		personal.setCreatedAt(now.minusMinutes(1));
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan)))
+				.thenReturn(List.of(broadcast, personal));
+
+		var inbox = service.getInboxForFan(fan);
+
+		assertEquals(MEMBER_A, inbox.getFirst().getArtistId());
+		assertEquals("아티스트의 새 메시지", inbox.getFirst().getLastMessage());
+		assertEquals(now, inbox.getFirst().getLastMessageTime());
+		verify(chatMessageRepository).findInboxMessages(java.util.Set.of(MEMBER_A, SOLO), fan);
+	}
+
+	@Test
+	void subscribedFanWhoHasNeverSentAMessageSeesBroadcastConversation() {
+		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(solo));
+		when(periodRepository.existsByFanIdAndArtistId(FAN, SOLO)).thenReturn(true);
+		ChatMessage broadcast = ChatMessage.builder().artist(solo).sender(solo)
+				.content("첫 인사").createdAt(LocalDateTime.now()).build();
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan))).thenReturn(List.of(broadcast));
+
+		assertTrue(service.getInboxForFan(fan).getFirst().isHasConversation());
+	}
+
+	@Test
+	void neverSubscribedFanDoesNotSeeBroadcastPreview() {
+		when(userRepository.findByRole(Role.ARTIST)).thenReturn(List.of(solo));
+		ChatMessage broadcast = ChatMessage.builder().artist(solo).sender(solo)
+				.content("회원 전용 메시지").createdAt(LocalDateTime.now()).build();
+		when(chatMessageRepository.findInboxMessages(any(), eq(fan))).thenReturn(List.of(broadcast));
+
+		var item = service.getInboxForFan(fan).getFirst();
+		assertFalse(item.isHasConversation());
+		assertNull(item.getLastMessage());
+	}
+
+	// 멤버 DM 의 멤버십은 소속 그룹 기준으로 확인한다
 	@Test
 	void membershipForMemberRoomIsCheckedAgainstGroup() {
 		when(groupMemberRepository.findByMember_IdAndLeftAtIsNull(MEMBER_A))
@@ -122,7 +169,7 @@ class ChatMessageServiceTest {
 		assertFalse(service.isNeverSubscribed(fan, solo));
 	}
 
-	// 해지하면 membership 줄은 지워지지만 가입 이력이 남아 있으므로 처음 온 사람으로 보지 않는다
+	// 해지 후에도 가입 이력이 남아 처음 온 사람으로 보지 않는다
 	@Test
 	void cancelledFanWithHistoryIsShownAsExpired() {
 		when(membershipRepository.findByFanAndArtist(fan, solo)).thenReturn(Optional.empty());

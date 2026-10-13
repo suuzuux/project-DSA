@@ -31,7 +31,7 @@ public class MembershipPeriod {
 	@Column(name = "expires_at", nullable = false)
 	private LocalDateTime expiresAt;
 	
-	// 이 기간이 연속 몇 번째인지. 1 = 첫 가입(또는 끊겼다가 새로 시작)
+	// 연속 구독 회차 (1 = 첫 가입 또는 재시작)
 	@Column(name = "streak_count", nullable = false)
 	private int streakCount;
 	

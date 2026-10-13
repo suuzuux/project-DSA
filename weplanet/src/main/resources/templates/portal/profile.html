@@ -23,14 +23,12 @@
 
       <p th:if="${msg}" class="text-sm" style="color:#63704a;margin-bottom:12px;" th:text="${msg}"></p>
       <p th:if="${error}" class="text-sm" style="color:#c45c26;margin-bottom:12px;" th:text="${error}"></p>
-      <p class="text-sm text-muted" style="margin-bottom:16px;" th:text="#{portalProfile.desc}">
-        팬 프로필 편집과 같은 방식으로 사진을 등록하면, 커뮤니티명 왼쪽 아바타에 표시됩니다.
-      </p>
+
 
       <form class="portal-profile-edit" style="max-width:520px;"
             th:action="@{/portal/profile}" method="post" enctype="multipart/form-data">
 
-        <!-- 배경 이미지 미리보기 - 커뮤니티 히어로 배너 비율(3:1)로 표시 -->
+        <!-- 배경 이미지 미리보기 (3:1) -->
         <div class="pe-cover-preview pe-cover-preview--header" id="profileEditBackgroundPreview"
              th:classappend="${backgroundPublicUrl == null} ? ' is-empty'">
           <img th:if="${backgroundPublicUrl != null}" th:src="${backgroundPublicUrl}" alt=""/>
@@ -59,17 +57,17 @@
 
         <div class="pe-field">
           <input type="text" id="profileEditNickname" name="nickname"
-                 maxlength="50" autocomplete="off" required
+                 maxlength="20" autocomplete="off" required
                  th:attr="aria-label=#{portalProfile.nicknameAria}"
                  th:value="${artist.nickname}"/>
           <button type="button" class="pe-clear" th:attr="aria-label=#{portalProfile.nicknameClearAria}"
                   data-clear-for="profileEditNickname">✕</button>
         </div>
-        <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 50</p>
+        <p class="text-xs text-muted pe-count" data-count-for="profileEditNickname">0 / 20</p>
 
         <div class="pe-field">
           <input type="text" id="profileEditBio" name="intro"
-                 maxlength="30" autocomplete="off"
+                 maxlength="100" autocomplete="off"
                  th:attr="aria-label=#{portalProfile.introAria}"
                  th:placeholder="#{portalProfile.introPlaceholder}"
                  placeholder="(선택) 커뮤니티 About에 노출될 소개글을 작성하세요"
@@ -77,7 +75,7 @@
           <button type="button" class="pe-clear" th:attr="aria-label=#{portalProfile.introClearAria}"
                   data-clear-for="profileEditBio">✕</button>
         </div>
-        <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 30</p>
+        <p class="text-xs text-muted pe-count" data-count-for="profileEditBio">0 / 100</p>
 
         <input type="file" id="profileEditAvatar" name="avatar" accept="image/*" class="hidden"/>
         <input type="file" id="profileEditBackground" name="background" accept="image/*" class="hidden"/>
@@ -151,7 +149,7 @@
     </main>
   </div>
 
-  <!-- 이미지 크롭 모달 (아바타/배경 이미지 편집 공통) -->
+  <!-- 이미지 크롭 모달 (아바타·배경 공용) -->
   <div class="modal-backdrop" id="imageCropModal">
     <div class="modal" style="width:min(100%, 760px);">
       <div class="modal__head">
@@ -175,15 +173,14 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
   <script th:inline="javascript">
-    // profile-image-crop.js는 portal/profile.html·community/profile.html 두 화면이 함께 쓰는 공용 스크립트라,
-    // 크롭 모달 제목만 이 화면에서 로케일에 맞게 덮어씀 (community/profile.html은 이 값이 없으면 기존 한국어 기본값을 그대로 씀)
+    // 크롭 모달 제목을 화면 언어로 덮어쓴다 (공용 profile-image-crop.js).
     window.WEPLANET_PROFILE_CROP_TITLES = {
       Avatar: /*[[#{portalProfile.js.avatarEditTitle}]]*/ "프로필 이미지 편집",
       Background: /*[[#{portalProfile.js.backgroundEditTitle}]]*/ "배경 이미지 편집",
       HeaderImage: /*[[#{portalProfile.js.headerEditTitle}]]*/ "헤더 이미지 편집"
     };
   </script>
-  <script th:src="@{/js/profile-image-crop.js(v=10)}"></script>
+  <script th:src="@{/js/common/profile-image-crop.js(v=10)}"></script>
   <script th:inline="javascript">
     (function () {
       "use strict";
@@ -291,7 +288,7 @@
         var input = document.getElementById(id);
         if (!input) return;
         var kind = id.replace("profileEdit", "");
-        // 배경 이미지는 HeaderImage 크롭 설정(3:1) 사용
+        // 배경 이미지는 HeaderImage 크롭 설정(3:1)
         var cropConfigKind = kind === "Background" ? "HeaderImage" : kind;
         input.addEventListener("change", function () {
           var file = input.files && input.files[0];

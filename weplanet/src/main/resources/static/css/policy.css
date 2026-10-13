@@ -1,0 +1,20 @@
+.policy-page { max-width: 760px; }
+.policy-page > h1 { font-size: var(--wp-fs-2xl); font-weight: 800; letter-spacing: -.03em; margin: 20px 0 8px; overflow-wrap: anywhere; }
+.policy-meta { color: var(--wp-ink-soft); font-size: var(--wp-fs-xs); line-height: 1.7; margin: 8px 0 24px; }
+.policy-toc { list-style: none; padding: 0; margin: 0 0 32px; display: grid; gap: 6px; }
+.policy-toc a { color: var(--wp-ink-soft); text-decoration: none; font-size: var(--wp-fs-sm); }
+.policy-toc a:hover { color: var(--wp-brand); text-decoration: underline; }
+.policy-article { border-top: 1px solid var(--wp-hairline); padding-top: 20px; margin-bottom: 28px; }
+.policy-page h2 { font-size: var(--wp-fs-lg); font-weight: 700; margin-bottom: 10px; }
+.policy-article h2 { scroll-margin-top: 16px; }
+.policy-article p, .policy-article li, .policy-contact p, .policy-addendum p { line-height: 1.8; color: var(--wp-ink); }
+.policy-article ul, .policy-article ol { padding-left: 22px; margin: 12px 0; }
+.policy-article li { margin-bottom: 8px; }
+.policy-page a { overflow-wrap: anywhere; }
+.policy-contact, .policy-sources, .policy-related, .policy-addendum { border-top: 1px solid var(--wp-hairline); padding-top: 20px; margin-top: 28px; }
+.policy-related { display: flex; flex-wrap: wrap; gap: 12px 20px; }
+.policy-related h2 { flex-basis: 100%; margin: 0; }
+.policy-related a { font-size: var(--wp-fs-sm); }
+.policy-sources a { display: block; margin: 8px 0; }
+.policy-status { padding: 16px; border: 1px solid var(--wp-hairline); border-radius: 12px; margin: 12px 0; }
+.policy-status strong { display: block; margin-bottom: 6px; }

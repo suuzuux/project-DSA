@@ -2,7 +2,7 @@ package megane6.weplanet.controller.live;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.live.LiveCommentView;
 import megane6.weplanet.domain.dto.live.LiveStatusView;
 import megane6.weplanet.domain.entity.User;
@@ -10,9 +10,9 @@ import megane6.weplanet.domain.entity.enumfolder.ReportReason;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.domain.entity.live.LiveComment;
 import megane6.weplanet.exception.AuthenticationRequiredException;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.security.AuthenticatedUser;
-import megane6.weplanet.service.ReportService;
+import megane6.weplanet.service.fan.ReportService;
 import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.live.LiveBroadcastService;
 import megane6.weplanet.service.live.LiveRealtimePublisher;
@@ -122,7 +122,7 @@ public class LiveApiController {
 	}
 	
 	private User resolveManagedArtist(User actor, HttpSession session) {
-		// 아티스트 쪽 계정은 "내 커뮤니티"(솔로=본인, 멤버=소속 그룹)가 곧 방송 대상
+		// 아티스트 쪽 계정은 내 커뮤니티가 방송 대상이다.
 		if (actor.isArtistSide()) {
 			Long ownCommunityId = communityArtistResolver.ownCommunityId(actor);
 			if (ownCommunityId == null) {

@@ -4,9 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import megane6.weplanet.domain.entity.enumfolder.GoodsCategoryType;
 
-/**
- * 카테고리별 옵션 값. 형태가 다른 옵션(사이즈 목록 vs 가방 치수)을 key-value로 저장한다.
- */
+/** 카테고리별 옵션 값 (key-value). */
 @Entity
 @Table(name = "shop_goods_option", indexes = @Index(columnList = "goods_id, category"))
 @Getter

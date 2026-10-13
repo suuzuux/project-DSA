@@ -1,8 +1,11 @@
 package megane6.weplanet.service;
 
+import megane6.weplanet.service.main.ContentTranslationService;
+import megane6.weplanet.service.main.MainBannerTranslator;
+
 import megane6.weplanet.domain.entity.enumfolder.Language;
-import megane6.weplanet.service.ContentTranslationService.Translation;
-import megane6.weplanet.service.MainBannerService.Slide;
+import megane6.weplanet.service.main.ContentTranslationService.Translation;
+import megane6.weplanet.service.main.MainBannerService.Slide;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -63,7 +66,7 @@ class MainBannerTranslatorTest {
 		assertFalse(result.pending());
 	}
 
-	// 번역이 아직 없으면(시간 초과·실패) 원문 그대로 두고 pending - 화면이 번역문을 다시 받아 바꿔 끼운다
+	// 번역이 없으면 원문과 pending (화면이 다시 받아 교체)
 	@Test
 	void missingTranslationKeepsOriginalAndIsPending() {
 		LocaleContextHolder.setLocale(Locale.ENGLISH);

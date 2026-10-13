@@ -1,7 +1,7 @@
 package megane6.weplanet.domain.entity;
 
 import jakarta.persistence.EntityManager;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

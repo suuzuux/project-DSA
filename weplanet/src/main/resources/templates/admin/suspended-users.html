@@ -17,7 +17,7 @@
         </div>
 
         <nav class="portal-sidebar__nav">
-            <!-- 하위 메뉴 묶음 - 오른쪽 화살표로 열고 닫는다 (details/summary, JS 없음) -->
+            <!-- 하위 메뉴 묶음 (details/summary) -->
             <details class="portal-sidebar__group">
                 <summary>
                     <a th:href="@{/admin/dashboard}" th:text="|📊 #{admin.nav.dashboard}|">📊 통합 대시보드</a>
@@ -71,7 +71,7 @@
         <section class="panel">
             <div class="panel__head">
                 <h2 class="panel__title" th:text="#{admin.suspended.title}">제재 대상</h2>
-                <span class="text-xs text-muted" th:text="#{admin.common.peopleCount(${#numbers.formatInteger(#lists.size(suspendedUsers), 0, 'COMMA')})}">0명</span>
+                <span class="text-xs text-muted" th:text="#{admin.common.peopleCount(${#numbers.formatInteger(suspendedUsersTotal, 0, 'COMMA')})}">0명</span>
             </div>
 
             <div class="table-wrap">
@@ -100,6 +100,7 @@
                     </tbody>
                 </table>
             </div>
+      <div th:replace="~{admin/fragments/pagination :: pages(${suspendedUsersPagination})}"></div>
         </section>
     </main>
 </div>

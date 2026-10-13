@@ -61,9 +61,7 @@ public class ArtistAccountProfile {
 		this.debutDate = debutDate;
 	}
 	
-	// 그룹 계정과 멤버 계정 모두 이 행이 있어야 한다.
-	// group_members.artist_id가 artist_profiles.user_id 를 FK로 참조하기 때문
-	// userId는 @MapsId가 user의 id로 채워주므로 따로 넣지 않는다
+	// 그룹·멤버 계정 모두 이 행이 필요하다 (group_members FK).
 	public static ArtistAccountProfile create(
 			User user,
 			Agency agency,

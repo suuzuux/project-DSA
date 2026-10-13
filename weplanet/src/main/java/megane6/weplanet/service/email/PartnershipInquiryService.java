@@ -37,9 +37,7 @@ public class PartnershipInquiryService {
     )
     private String baseUrl;
     
-    /**
-     * 새로운 신청이 접수되었음을 관리자에게 알린다.
-     */
+    /** 새 신청 접수를 관리자에게 알린다. */
     public void sendNewApplicationNotice(
             PartnershipApplication application
     ) {
@@ -65,9 +63,7 @@ public class PartnershipInquiryService {
         );
     }
     
-    /**
-     * 신청 승인 결과와 계정 활성화 링크를 신청자에게 알린다.
-     */
+    /** 승인 결과와 계정 활성화 링크를 신청자에게 알린다. */
     public void sendApprovalNotice(
             PartnershipApplication application,
             String username,
@@ -79,7 +75,7 @@ public class PartnershipInquiryService {
         
         message.setTo(application.getEmail());
         message.setReplyTo(recipient);
-        // 신청할 때 화면 언어로 보낸다 (partnership_applications.applicant_language)
+        // 신청 당시 화면 언어로 보낸다.
         Locale locale = applicantLocale(application);
         message.setSubject(
                 messageSource.getMessage("mail.partnershipApproval.subject", null, locale)
@@ -109,9 +105,7 @@ public class PartnershipInquiryService {
                 + rawToken;
     }
     
-    /**
-     * 신청 반려 결과와 반려 사유를 신청자에게 알린다.
-     */
+    /** 반려 결과와 사유를 신청자에게 알린다. */
     
     public void sendRejectionNotice(
             PartnershipApplication application
@@ -181,7 +175,7 @@ public class PartnershipInquiryService {
             LocalDateTime expiresAt,
             Locale locale
     ) {
-        // 신청 번호는 String 으로 넘긴다 (숫자로 넘기면 MessageFormat 이 1,234 처럼 쉼표를 넣음)
+        // 숫자 쉼표가 붙지 않게 신청 번호는 String 으로 넘긴다.
         return messageSource.getMessage(
                 "mail.partnershipApproval.body",
                 new Object[]{
@@ -218,7 +212,7 @@ public class PartnershipInquiryService {
         return PreferredLocaleResolver.toLocale(application.getApplicantLanguage());
     }
     
-    // "아티스트"/"소속사" 도 받는 사람 언어로 (partnership.applicantType.ARTIST 등)
+    // 신청자 유형도 받는 사람 언어로
     private String applicantTypeLabel(PartnershipApplication application, Locale locale) {
         return messageSource.getMessage(application.getApplicantType().getMessageKey(), null, locale);
     }

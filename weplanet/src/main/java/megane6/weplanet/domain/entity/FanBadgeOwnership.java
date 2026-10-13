@@ -33,7 +33,7 @@ public class FanBadgeOwnership {
     @JoinColumn(name = "fan_id", nullable = false)
     private User fan;
 
-    // 팀 공통 커뮤니티가 users.id(ARTIST)를 기준으로 동작하므로 같은 아티스트를 참조한다.
+    // 커뮤니티 아티스트(users.id) 참조
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "artist_id", nullable = false)
     private User artist;
@@ -54,7 +54,7 @@ public class FanBadgeOwnership {
     @Column(name = "revoked_at")
     private LocalDateTime revokedAt;
 
-    // 시스템 자동 지급이면 null, 관리자가 지급하면 해당 users.id가 저장된다.
+    // 시스템 자동 지급이면 null, 관리자 지급이면 관리자 id
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "awarded_by")
     private User awardedBy;

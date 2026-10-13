@@ -2,7 +2,7 @@ package megane6.weplanet.controller.admin;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.dto.event.HashtagArtistOption;
 import megane6.weplanet.domain.dto.event.HashtagEventForm;
 import megane6.weplanet.domain.entity.User;
@@ -18,16 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 
-/**
- * 최고관리자 > 이벤트 > 해시태그 총공
- *   GET  /admin/events/hashtag              목록
- *   GET  /admin/events/hashtag/new          등록 폼
- *   POST /admin/events/hashtag              등록
- *   GET  /admin/events/hashtag/{id}/edit    수정 폼 (시작 전만)
- *   POST /admin/events/hashtag/{id}         수정
- *   POST /admin/events/hashtag/{id}/delete  삭제 (시작 전만)
- *   GET  /admin/events/hashtag/artists      참여 아티스트 검색 (JSON)
- */
+/** 최고관리자 해시태그 총공 이벤트 목록·등록·수정·삭제·참여 아티스트 검색. */
 @Controller
 @RequestMapping("/admin/events/hashtag")
 @RequiredArgsConstructor
@@ -38,9 +29,9 @@ public class AdminHashtagEventController {
 	private final megane6.weplanet.i18n.Messages messages;
 	
 	@GetMapping
-	public String list(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+	public String list(@RequestParam(defaultValue = "0") int page, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		requireAdmin(principal);
-		model.addAttribute("events", service.getEvents());
+		AdminPagination.paginate(model, "events", service.getEvents(), page, 15, "page");
 		return "admin/hashtag-events";
 	}
 	
@@ -63,7 +54,7 @@ public class AdminHashtagEventController {
 		try {
 			service.create(admin, form, request.getRemoteAddr());
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			// redirect 하면 입력한 값이 전부 날아가므로, 오류 메시지와 함께 폼을 그대로 다시 보여준다
+			// 입력값을 유지하도록 리다이렉트 대신 폼을 오류와 함께 다시 보여준다.
 			model.addAttribute("error", messages.resolve(e));
 			return showForm(model, null, form);
 		}
@@ -141,7 +132,9 @@ public class AdminHashtagEventController {
 		requireAdmin(principal);
 		
 		try {
-			model.addAttribute("dashboard", service.getDashboard(eventId));
+			var dashboard = service.getDashboard(eventId);
+			model.addAttribute("dashboard", dashboard);
+			AdminPagination.paginate(model, "rankingRows", dashboard.ranking(), AdminPagination.requestedPage("page"), 15, "page");
 		} catch (IllegalArgumentException e) {
 			redirectAttributes.addFlashAttribute("error", messages.resolve(e));
 			return "redirect:/admin/events/hashtag";
@@ -170,7 +163,7 @@ public class AdminHashtagEventController {
 	}
 	
 	
-	// 이벤트 폼의 아티스트 검색창에서 fetch 로 부른다. @ResponseBody → record 목록이 JSON 배열로 나감
+	// 이벤트 폼의 아티스트 검색 (JSON 응답).
 	@GetMapping("/artists")
 	@ResponseBody
 	public List<HashtagArtistOption> searchArtists(

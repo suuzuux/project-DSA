@@ -1,0 +1,149 @@
+package megane6.weplanet.controller.common;
+import megane6.weplanet.service.main.MainBannerTranslator;
+import megane6.weplanet.service.main.MainBannerService;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import megane6.weplanet.domain.dto.ArtistCardView;
+import megane6.weplanet.domain.dto.RisingCommunityCardView;
+import megane6.weplanet.domain.dto.event.HashtagEventPageView;
+import megane6.weplanet.domain.entity.ArtistGroup;
+import megane6.weplanet.domain.entity.Post;
+import megane6.weplanet.domain.entity.User;
+import megane6.weplanet.domain.entity.community.CommunityMember;
+import megane6.weplanet.domain.entity.enumfolder.Role;
+import megane6.weplanet.repository.artist.ArtistGroupRepository;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.security.AuthenticatedUser;
+import megane6.weplanet.service.fan.PostService;
+import megane6.weplanet.service.calendar.ArtistAttendanceService;
+import megane6.weplanet.service.community.CommunityJoinService;
+import megane6.weplanet.service.event.HashtagEventPageService;
+import megane6.weplanet.service.portal.PortalManagementService;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.*;
+
+@Slf4j
+@Controller
+@RequiredArgsConstructor
+public class HomeController {
+
+	private final UserRepository userRepository;
+	private final PostService postService;
+	private final ArtistGroupRepository artistGroupRepository;
+	private final AuthenticatedUserResolver userResolver;
+	private final CommunityJoinService communityJoinService;
+	private final megane6.weplanet.service.community.CommunityDrawerHelper communityDrawerHelper;
+	private final ArtistAttendanceService artistAttendanceService;
+	private final PortalManagementService portalManagementService;
+	private final megane6.weplanet.service.main.MainBannerService mainBannerService;
+	private final megane6.weplanet.service.main.MainBannerTranslator mainBannerTranslator; // 배너 제목·본문을 화면 언어로 (AI 번역)
+	private final HashtagEventPageService hashtagEventPageService; // 해시태그 총공 홈 배너 슬라이드
+
+	@GetMapping({"", "/"})
+	public String home(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+		if (principal != null) {
+			artistAttendanceService.recordVisitIfArtist(userResolver.resolve(principal, 1L));
+		}
+
+		List<User> artistUsers = userRepository.findByRole(Role.ARTIST);
+		List<ArtistCardView> artists = portalManagementService.toArtistCards(artistUsers);
+		model.addAttribute("artists", artists);
+
+		// 총공 제목을 메인 배너와 함께 번역한다.
+		Optional<HashtagEventPageView> eventView = hashtagEventPageService.getHomeBanner();
+		String eventTitle = eventView.map(view -> view.dashboard().title()).orElse(null);
+		// 노출 중인 배너를 번역한다 (없으면 기본 배너).
+		var mainBanners = mainBannerTranslator.localize(mainBannerService.activeSlides(), eventTitle);
+		model.addAttribute("mainBanners", mainBanners.slides());
+		model.addAttribute("mainBannersPending", mainBanners.pending()); // true 면 화면이 번역문을 다시 받아 바꿔 끼운다
+		model.addAttribute("hashtagBanner", eventView.map(view -> hashtagEventPageService.toHomeBanner(view, mainBanners.eventTitle(), mainBanners.eventTitleReady())).orElse(null));
+		Map<Long, CommunityMember> joinedProfiles;
+		Set<Long> joinedArtistIds;
+		User viewer = null;
+		if (principal != null) {
+			viewer = userResolver.resolve(principal, 1L);
+			joinedProfiles = communityJoinService.joinedProfilesByArtistId(viewer);
+			joinedArtistIds = communityJoinService.joinedArtistIds(viewer);
+		} else {
+			joinedProfiles = Collections.emptyMap();
+			joinedArtistIds = Collections.emptySet();
+		}
+		model.addAttribute("joinedProfiles", joinedProfiles);
+
+		// 햄버거: 상단(가입/내 커뮤니티) + 하단(모든 커뮤니티)
+		model.addAttribute("joinedArtists",
+				communityDrawerHelper.joined(viewer, artists, joinedArtistIds));
+		model.addAttribute("otherCommunities",
+				communityDrawerHelper.otherCommunities(viewer, artists));
+
+		// 급상승 커뮤니티: 최근 7일 신규 가입자 많은 순 상위 5개 (동률이면 전체 가입자 순).
+		Map<Long, Long> newMemberCounts = communityJoinService.countNewMembers(
+				artistUsers.stream().map(User::getId).toList(), 7);
+		List<RisingCommunityCardView> risingCommunities = artistUsers.stream()
+				.map(user -> {
+					var debutDate = artistGroupRepository.findById(user.getId())
+							.map(ArtistGroup::getDebutDate)
+							.orElse(null);
+					long memberCount = communityJoinService.countMembers(user.getId());
+					return RisingCommunityCardView.of(user, debutDate, memberCount);
+				})
+				.sorted(Comparator
+						.comparingLong((RisingCommunityCardView card) -> newMemberCounts.getOrDefault(card.id(), 0L))
+						.thenComparingLong(RisingCommunityCardView::followerCount)
+						.reversed())
+				.limit(5)
+				.toList();
+		model.addAttribute("risingCommunities", risingCommunities);
+		// Thymeleaf Long 키 조회 문제를 피하려고 문자열 키로 담는다.
+		Map<String, String> communityHomeUrls = new HashMap<>();
+		artists.forEach(card -> communityHomeUrls.put(String.valueOf(card.id()), card.homeUrl()));
+		model.addAttribute("communityHomeUrls", communityHomeUrls);
+		// 급상승 커뮤니티 카드 이미지 - 소속사가 포털에서 설정한 커뮤니티 이미지 (없으면 이름 두 글자)
+		Map<String, String> communityImageUrls = new HashMap<>();
+		artists.stream()
+				.filter(card -> card.profileImageUrl() != null)
+				.forEach(card -> communityImageUrls.put(String.valueOf(card.id()), card.profileImageUrl()));
+		model.addAttribute("communityImageUrls", communityImageUrls);
+
+		// 최신 인기 포스트 - 인기순 상위 4개와 대표 이미지 (작성자는 커뮤니티 닉네임).
+		List<Post> popularPosts = postService.getPopularPosts();
+		Map<Long, String> popularPostThumbnails = new HashMap<>();
+		Map<String, String> popularAuthorNicknames = new HashMap<>();
+		// 작성자 사진 - 게시글 상세와 같은 기준 (아티스트 쪽은 포털 프로필 사진, 팬은 커뮤니티 프로필 사진)
+		Map<String, String> popularAuthorAvatarUrls = new HashMap<>();
+		for (Post post : popularPosts) {
+			postService.getAttachments(post).stream()
+					.filter(a -> a.isImage())
+					.findFirst()
+					.ifPresent(a -> popularPostThumbnails.put(post.getId(), a.getStoredName()));
+			if (post.getAuthor() != null && post.getArtist() != null) {
+				popularAuthorNicknames.put(
+						String.valueOf(post.getId()),
+						communityJoinService.displayNickname(post.getAuthor(), post.getArtist().getId()));
+				var authorView = communityJoinService
+						.authorViewsByAuthorIdKey(List.of(post.getAuthor()), post.getArtist().getId())
+						.get(String.valueOf(post.getAuthor().getId()));
+				if (authorView != null && authorView.avatarUrl() != null) {
+					popularAuthorAvatarUrls.put(String.valueOf(post.getId()), authorView.avatarUrl());
+				}
+			}
+		}
+		model.addAttribute("popularPosts", popularPosts);
+		model.addAttribute("popularPostThumbnails", popularPostThumbnails);
+		model.addAttribute("popularAuthorNicknames", popularAuthorNicknames);
+		model.addAttribute("popularAuthorAvatarUrls", popularAuthorAvatarUrls);
+
+		return "common/home/index";
+	}
+
+	@GetMapping("/home")
+	public String homeAlias() {
+		return "redirect:/";
+	}
+
+}

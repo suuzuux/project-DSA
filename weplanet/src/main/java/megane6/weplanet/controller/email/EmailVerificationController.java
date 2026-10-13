@@ -1,9 +1,10 @@
 package megane6.weplanet.controller.email;
+import megane6.weplanet.service.account.EmailVerificationService;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import megane6.weplanet.repository.UserRepository;
+import megane6.weplanet.repository.main.UserRepository;
 import megane6.weplanet.service.email.SignupEmailVerificationService;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;

@@ -1,14 +1,14 @@
 package megane6.weplanet.controller.admin;
 
 import lombok.RequiredArgsConstructor;
-import megane6.weplanet.controller.AuthenticatedUserResolver;
+import megane6.weplanet.controller.common.AuthenticatedUserResolver;
 import megane6.weplanet.domain.entity.MainBanner;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.BannerType;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.i18n.Messages;
 import megane6.weplanet.security.AuthenticatedUser;
-import megane6.weplanet.service.MainBannerService;
+import megane6.weplanet.service.main.MainBannerService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-/**
- * 최고관리자 > 통합 대시보드 > 배너 영역 관리.
- * 메인 페이지(/) 상단 배너를 등록/수정/노출 전환/삭제한다.
- */
+/** 최고관리자 메인 배너 등록·수정·노출 전환·삭제. */
 @Controller
 @RequiredArgsConstructor
 @RequestMapping("/admin/banners")
@@ -30,9 +27,9 @@ public class AdminBannerController {
 	private final Messages messages;
 
 	@GetMapping
-	public String list(@AuthenticationPrincipal AuthenticatedUser principal, Model model) {
+	public String list(@RequestParam(defaultValue = "0") int page, @AuthenticationPrincipal AuthenticatedUser principal, Model model) {
 		requireAdmin(principal);
-		model.addAttribute("banners", mainBannerService.listAll());
+		AdminPagination.paginate(model, "banners", mainBannerService.listAll(), page, 15, "page");
 		return "admin/banners";
 	}
 

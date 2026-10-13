@@ -17,10 +17,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 호스트 웹소켓이 끊기면 잠깐 기다렸다가(재연결 여유) 아직 호스트가 없으면 방송을 종료한다.
- * 시청자가 끊기면 호스트에게 leave만 알린다.
- */
+/** 호스트 연결이 끊기면 재연결을 잠시 기다린 뒤 방송을 종료하고, 시청자는 leave 만 알린다. */
 @Component
 @RequiredArgsConstructor
 @Slf4j

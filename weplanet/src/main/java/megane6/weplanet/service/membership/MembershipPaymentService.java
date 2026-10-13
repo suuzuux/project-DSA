@@ -12,9 +12,9 @@ import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.FanProjectPaymentStatus;
 import megane6.weplanet.domain.entity.enumfolder.Role;
 import megane6.weplanet.exception.TossPaymentException;
-import megane6.weplanet.repository.MembershipOrderRepository;
-import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.service.MembershipService;
+import megane6.weplanet.repository.membership.MembershipOrderRepository;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.service.membership.MembershipService;
 import megane6.weplanet.service.community.CommunityArtistResolver;
 import megane6.weplanet.service.community.CommunityJoinService;
 import megane6.weplanet.service.payment.TossPaymentsClient;
@@ -38,7 +38,7 @@ public class MembershipPaymentService {
 	private final CommunityJoinService communityJoinService;
 	private final TossPaymentsProperties tossProperties;
 	private final TossPaymentsClient tossClient;
-	// 결제창 주문명/구매자명, 결과 화면 문구를 요청 로케일로 만든다
+	// 결제창 주문명·구매자명·결과 문구를 요청 로케일로 만든다.
 	private final megane6.weplanet.i18n.Messages messages;
 	private final CommunityArtistResolver communityArtistResolver;
 
@@ -220,7 +220,7 @@ public class MembershipPaymentService {
 				.orElseThrow(() -> new IllegalArgumentException("shop.error.artistNotFound"));
 	}
 
-	// static 을 뺐다 - 소속 그룹 판정에 주입받은 communityArtistResolver(인스턴스 필드)를 써야 하기 때문
+	// 소속 그룹 판정에 주입받은 필드를 써서 static 이 아니다.
 	private void validateEligible(User fan, User artist) {
 		if (communityArtistResolver.isArtistOf(fan, artist.getId())) {
 			throw new IllegalStateException("error.membership.ownCommunity");

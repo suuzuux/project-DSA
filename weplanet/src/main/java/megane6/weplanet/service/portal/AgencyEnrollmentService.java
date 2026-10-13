@@ -3,17 +3,15 @@ package megane6.weplanet.service.portal;
 import lombok.RequiredArgsConstructor;
 import megane6.weplanet.domain.entity.User;
 import megane6.weplanet.domain.entity.enumfolder.Role;
-import megane6.weplanet.repository.UserRepository;
-import megane6.weplanet.service.MembershipService;
+import megane6.weplanet.repository.main.UserRepository;
+import megane6.weplanet.service.membership.MembershipService;
 import megane6.weplanet.service.community.CommunityJoinService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * 에이전시 계정이 소속 아티스트 커뮤니티·멤버십에 자동 가입되도록 처리.
- */
+/** 에이전시 계정을 소속 아티스트 커뮤니티·멤버십에 자동 가입시킨다. */
 @Service
 @RequiredArgsConstructor
 public class AgencyEnrollmentService {
@@ -40,7 +38,7 @@ public class AgencyEnrollmentService {
 			try {
 				communityJoinService.ensureJoined(agencyUser, artist.getId(), nickname);
 			} catch (org.springframework.dao.DataIntegrityViolationException e) {
-				// 다른 요청(포털 탭 동시 열기 등)이 먼저 가입 처리한 경우 - 이미 가입된 것이므로 넘어간다
+				// 다른 요청이 먼저 가입시킨 경우 그대로 넘어간다.
 			}
 			membershipService.join(agencyUser, artist);
 		}

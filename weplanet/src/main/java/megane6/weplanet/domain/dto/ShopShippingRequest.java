@@ -1,8 +1,6 @@
 package megane6.weplanet.domain.dto;
 
-/**
- * 굿즈 주문서 배송지. 결제 준비 시 shop_order 에 스냅샷으로 저장한다.
- */
+/** 주문서 배송지 (결제 준비 시 주문에 스냅샷 저장). */
 public record ShopShippingRequest(
 		String receiverName,
 		String receiverPhone,
@@ -23,10 +21,7 @@ public record ShopShippingRequest(
 		);
 	}
 
-	/**
-	 * 예외 메시지는 메시지 키로 던지고, 화면으로 내보내는 쪽(GlobalExceptionHandler)에서
-	 * Messages.resolve()로 현재 로케일 문구로 바꾼다.
-	 */
+	/** 예외는 메시지 키로 던지고 GlobalExceptionHandler 가 번역한다. */
 	public void requireComplete() {
 		if (isBlank(receiverName)) {
 			throw new IllegalArgumentException("shop.error.receiverNameRequired");
@@ -49,8 +44,7 @@ public record ShopShippingRequest(
 		if (address1.length() > 255) {
 			throw new IllegalArgumentException("shop.error.addressTooLong");
 		}
-		// 상세 주소 컬럼은 VARBINARY(512)(UTF-8 바이트)라 글자 수(200자)만 보면 한글 171자부터 DB 오류가 난다.
-		// 글자 수와 실제 저장 크기(바이트)를 둘 다 확인한다.
+		// 상세 주소는 VARBINARY(512) 라 글자 수와 바이트 수를 모두 확인한다.
 		if (address2 != null && (address2.length() > 200
 				|| address2.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 512)) {
 			throw new IllegalArgumentException("shop.error.address2TooLong");
