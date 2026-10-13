@@ -94,7 +94,6 @@
     "shell.dm.joinTitle": "멤버십 가입하고 DM을 시작해보세요",
     "shell.dm.joinDesc": "아티스트 커뮤니티에서 멤버십에 가입하면 아티스트와 1:1 DM을 나눌 수 있어요.",
     "shell.dm.startConversation": "대화를 시작해보세요.",
-    "shell.dm.attach": "첨부",
     "shell.dm.inputPlaceholder": "메시지 입력",
     "shell.dm.send": "전송",
     "shell.dm.quota": "오늘 남은 메시지 {0}회",
@@ -348,7 +347,6 @@ ${isAuthenticated ? `<div class="dm-panel" id="dmPanel" role="dialog" aria-label
     <div class="dm-warning hidden" id="dmWarningBanner" role="alert"></div>
 
     <form class="dm-composer" id="dmComposer">
-      <button type="button" class="icon-btn" data-shell-alert="${escapeHtml(t("shell.dm.attach"))}" aria-label="${escapeHtml(t("shell.dm.attach"))}">＋</button>
       <input type="text" placeholder="${escapeHtml(t("shell.dm.inputPlaceholder"))}" autocomplete="off" id="dmInput" />
       <button type="submit" class="send-btn" aria-label="${escapeHtml(t("shell.dm.send"))}">${ICONS.send}</button>
     </form>

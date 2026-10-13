@@ -1367,6 +1367,12 @@
   height: 17px;
 }
 
+/* 프로필 카드·편집 미리보기의 큰 아바타(96~104px) 안 아이콘 크기 */
+.avatar--profile .avatar__placeholder {
+  width: 48px;
+  height: 48px;
+}
+
 /* 하이라이트 From 영역 - 한 줄에 두 칸 */
 .feed--grid-2 {
   display: grid;

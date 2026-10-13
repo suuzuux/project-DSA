@@ -103,11 +103,19 @@ public class HomeController {
 		Map<String, String> communityHomeUrls = new HashMap<>();
 		artists.forEach(card -> communityHomeUrls.put(String.valueOf(card.id()), card.homeUrl()));
 		model.addAttribute("communityHomeUrls", communityHomeUrls);
+		// 급상승 커뮤니티 카드 이미지 - 소속사가 포털에서 설정한 커뮤니티 이미지 (없으면 이름 두 글자)
+		Map<String, String> communityImageUrls = new HashMap<>();
+		artists.stream()
+				.filter(card -> card.profileImageUrl() != null)
+				.forEach(card -> communityImageUrls.put(String.valueOf(card.id()), card.profileImageUrl()));
+		model.addAttribute("communityImageUrls", communityImageUrls);
 
 		// 최신 인기 포스트 - 인기순 상위 4개와 대표 이미지 (작성자는 커뮤니티 닉네임).
 		List<Post> popularPosts = postService.getPopularPosts();
 		Map<Long, String> popularPostThumbnails = new HashMap<>();
 		Map<String, String> popularAuthorNicknames = new HashMap<>();
+		// 작성자 사진 - 게시글 상세와 같은 기준 (아티스트 쪽은 포털 프로필 사진, 팬은 커뮤니티 프로필 사진)
+		Map<String, String> popularAuthorAvatarUrls = new HashMap<>();
 		for (Post post : popularPosts) {
 			postService.getAttachments(post).stream()
 					.filter(a -> a.isImage())
@@ -117,11 +125,18 @@ public class HomeController {
 				popularAuthorNicknames.put(
 						String.valueOf(post.getId()),
 						communityJoinService.displayNickname(post.getAuthor(), post.getArtist().getId()));
+				var authorView = communityJoinService
+						.authorViewsByAuthorIdKey(List.of(post.getAuthor()), post.getArtist().getId())
+						.get(String.valueOf(post.getAuthor().getId()));
+				if (authorView != null && authorView.avatarUrl() != null) {
+					popularAuthorAvatarUrls.put(String.valueOf(post.getId()), authorView.avatarUrl());
+				}
 			}
 		}
 		model.addAttribute("popularPosts", popularPosts);
 		model.addAttribute("popularPostThumbnails", popularPostThumbnails);
 		model.addAttribute("popularAuthorNicknames", popularAuthorNicknames);
+		model.addAttribute("popularAuthorAvatarUrls", popularAuthorAvatarUrls);
 
 		return "common/home/index";
 	}

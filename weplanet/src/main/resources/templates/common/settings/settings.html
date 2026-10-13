@@ -41,7 +41,6 @@
     <p th:if="${param.linkError}" style="color:#c45c26;font-size:var(--wp-fs-xs);margin-bottom:12px;" th:text="#{settings.notice.linkError}">이미 다른 계정에 연동된 소셜 계정이에요.</p>
     <div class="flex-between">
       <div class="flex-center">
-        <div class="avatar avatar--lg" th:text="${#strings.substring(user.nickname,0,1)}">닉</div>
         <div>
           <strong style="font-size:var(--wp-fs-lg);" th:text="${user.nickname}">닉네임</strong>
           <p class="text-xs text-muted mt-8">

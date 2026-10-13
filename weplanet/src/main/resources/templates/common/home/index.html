@@ -181,8 +181,12 @@
                         : @{/community/{artistId}/artist/{postId}(artistId=${post.artist.id}, postId=${post.id})}"
            style="display:block;color:inherit;">
           <div class="post-card__head">
-            <div class="avatar"
-                 th:text="${#strings.substring(popularAuthorNicknames.get('' + post.id) != null ? popularAuthorNicknames.get('' + post.id) : (post.author != null ? post.author.nickname : '?'), 0, 1)}">?</div>
+            <div class="avatar">
+              <img th:if="${popularAuthorAvatarUrls.get('' + post.id) != null}"
+                   th:src="${popularAuthorAvatarUrls.get('' + post.id)}" alt="" />
+              <th:block th:unless="${popularAuthorAvatarUrls.get('' + post.id) != null}"
+                        th:text="${#strings.substring(popularAuthorNicknames.get('' + post.id) != null ? popularAuthorNicknames.get('' + post.id) : (post.author != null ? post.author.nickname : '?'), 0, 1)}">?</th:block>
+            </div>
             <div class="post-card__meta">
               <div class="post-card__name">
                 <span th:text="${popularAuthorNicknames.get('' + post.id) != null ? popularAuthorNicknames.get('' + post.id) : (post.author != null ? post.author.nickname : #messages.msg('community.post.unknownAuthor'))}"></span>
@@ -210,7 +214,11 @@
     </div>
     <div class="rising-grid" th:if="${!risingCommunities.isEmpty()}">
       <a class="rising-card" th:each="artist : ${risingCommunities}" th:href="@{${communityHomeUrls.get('' + artist.id())}}">
-        <div class="avatar avatar--lg" th:text="${artist.logo()}">AR</div>
+        <div class="avatar avatar--lg">
+          <img th:if="${communityImageUrls.get('' + artist.id()) != null}"
+               th:src="${communityImageUrls.get('' + artist.id())}" th:alt="${artist.nickname()}" />
+          <th:block th:unless="${communityImageUrls.get('' + artist.id()) != null}" th:text="${artist.logo()}">AR</th:block>
+        </div>
         <div class="rising-card__info">
           <strong th:text="${artist.nickname()}">아티스트</strong>
           <span th:if="${artist.debutDate() != null}"
