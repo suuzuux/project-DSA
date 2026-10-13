@@ -284,14 +284,16 @@
             <div style="padding:0 20px 24px;text-align:center;">
 
                 <!-- 아바타 (배경 경계에 걸침) -->
-                <div class="avatar"
+                <div class="avatar avatar--profile"
                      style="width:104px;height:104px;margin:-52px auto 0;
                             border:4px solid var(--wp-surface, #fff);font-size:36px;position:relative;">
                     <img th:if="${cardAvatarUrl != null}"
                          th:src="${cardAvatarUrl}" th:alt="#{community.profile.avatarAlt}"
                          style="width:100%;height:100%;object-fit:cover;display:block;"/>
-                    <span th:if="${cardAvatarUrl == null}"
-                          th:text="${#strings.substring(displayName, 0, 1)}">나</span>
+                    <!-- 사진이 없으면 게시글 작성자와 같은 기본 사람 아이콘 -->
+                    <th:block th:if="${cardAvatarUrl == null}">
+                        <th:block th:replace="~{community/fragments/authorAvatar :: image(null)}"></th:block>
+                    </th:block>
                 </div>
 
                 <!-- 닉네임 (숨김 중이면 본인에게만 자물쇠) -->
@@ -506,16 +508,20 @@
                 </div>
 
                 <div style="text-align:center;margin-bottom:12px;">
-                    <div class="avatar" id="profileEditAvatarPreview"
-                         th:attr="data-initial=${#strings.substring(displayName, 0, 1)}"
+                    <div class="avatar avatar--profile" id="profileEditAvatarPreview"
                          style="width:96px;height:96px;margin:-96px auto 0;font-size:34px;
                                 border:4px solid var(--wp-surface, #fff);position:relative;">
                         <img th:if="${editAvatarUrl != null}"
                              th:src="${editAvatarUrl}" alt=""
                              style="width:100%;height:100%;object-fit:cover;display:block;"/>
-                        <span th:if="${editAvatarUrl == null}"
-                              th:text="${#strings.substring(displayName, 0, 1)}">나</span>
+                        <th:block th:if="${editAvatarUrl == null}">
+                            <th:block th:replace="~{community/fragments/authorAvatar :: image(null)}"></th:block>
+                        </th:block>
                     </div>
+                    <!-- 사진을 삭제했을 때 미리보기에 다시 넣을 기본 사람 아이콘 -->
+                    <template id="profileAvatarPlaceholder">
+                        <th:block th:replace="~{community/fragments/authorAvatar :: image(null)}"></th:block>
+                    </template>
                 </div>
 
                 <!-- 닉네임 -->
@@ -784,8 +790,9 @@
           // 미리보기를 기본 상태로 되돌린다.
           if (kind === "Avatar") {
             var preview = document.getElementById("profileEditAvatarPreview");
-            if (preview) {
-              preview.innerHTML = "<span>" + (preview.getAttribute("data-initial") || "") + "</span>";
+            var placeholder = document.getElementById("profileAvatarPlaceholder");
+            if (preview && placeholder) {
+              preview.replaceChildren(placeholder.content.cloneNode(true));
             }
           } else if (kind === "Background") {
             var bgPreview = document.getElementById("profileEditBackgroundPreview");

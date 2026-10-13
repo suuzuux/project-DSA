@@ -95,7 +95,6 @@ public class I18nController {
 			"shell.dm.joinTitle",
 			"shell.dm.joinDesc",
 			"shell.dm.startConversation",
-			"shell.dm.attach",
 			"shell.dm.inputPlaceholder",
 			"shell.dm.send",
 			"shell.dm.quota",
