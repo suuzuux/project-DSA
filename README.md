@@ -99,6 +99,8 @@ https://github.com/user-attachments/assets/744fa344-1cf0-4c5d-bd1b-1c9b2bb52df9
 
 https://github.com/user-attachments/assets/469769ad-212e-4769-8841-e56bdd0d54f3
 
+**원본 화질 (1080p):** [영상 다운로드 / オリジナル動画をダウンロード](https://github.com/suuzuux/project-DSA/releases/download/demo-video-original/weplanet-full-demo-original-1080p.mp4) · 4분 41초 · 약 76MB
+
 ## 기술 구성
 
 | 구분 | 사용 기술 |
