@@ -91,6 +91,14 @@ https://github.com/user-attachments/assets/ca6e87cd-84f6-4aad-9dbe-6701d177dc60
 
 https://github.com/user-attachments/assets/744fa344-1cf0-4c5d-bd1b-1c9b2bb52df9
 
+### 풀버전 (Full Demo · 4분 41초)
+
+팬·아티스트·소속사·관리자 화면의 전체 이용 흐름을 일본어 자막과 함께 확인할 수 있습니다.
+
+**日本語:** ファン・アーティスト・所属事務所・管理者の画面を通して、サービス全体の利用の流れを日本語字幕付きでご紹介します。
+
+https://github.com/user-attachments/assets/469769ad-212e-4769-8841-e56bdd0d54f3
+
 ## 기술 구성
 
 | 구분 | 사용 기술 |
