@@ -146,7 +146,7 @@ JDK 21과 MySQL을 준비합니다. 외부 연동 기능을 사용하려면 각 
 ### 1. 코드 받기
 
 ```bash
-git clone --branch 20261008final https://github.com/suuzuux/project-DSA.git
+git clone --branch main https://github.com/suuzuux/project-DSA.git
 cd project-DSA/weplanet
 ```
 
